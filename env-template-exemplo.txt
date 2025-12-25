@@ -1,0 +1,81 @@
+# ============================================
+# TEMPLATE DO ARQUIVO .env
+# ============================================
+# Copie este conteúdo para o arquivo .env
+# Localização: C:\Users\playa\Desktop\CONECTA KING MVP DEZEMBRO\conecta-king-backend\.env
+# ============================================
+
+# ============================================
+# CONFIGURAÇÃO DO BANCO DE DADOS
+# ============================================
+# Para ambiente LOCAL (sem SSL):
+DB_USER=seu_usuario_postgres
+DB_HOST=localhost
+DB_DATABASE=nome_do_banco
+DB_PASSWORD=sua_senha_postgres
+DB_PORT=5432
+
+# Para ambiente REMOTO (Render, com SSL):
+# DB_USER=seu_usuario_postgres
+# DB_HOST=virginia-postgres.render.com
+# DB_DATABASE=conecta_king_db
+# DB_PASSWORD=sua_senha_postgres
+# DB_PORT=5432
+
+# ============================================
+# SEGURANÇA (OBRIGATÓRIO)
+# ============================================
+JWT_SECRET=seu_jwt_secret_aqui_gerar_um_token_seguro
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_EXPIRES_IN=30d
+
+# ============================================
+# SERVIDOR
+# ============================================
+NODE_ENV=development
+PORT=5000
+
+# ============================================
+# CORS
+# ============================================
+CORS_ORIGIN=*
+
+# ============================================
+# URLS
+# ============================================
+API_URL=http://localhost:5000
+FRONTEND_URL=http://localhost:3000
+PUBLIC_PROFILE_URL=http://localhost:5000
+
+# ============================================
+# EMAIL SMTP (opcional)
+# ============================================
+# SMTP_HOST=smtp.gmail.com
+# SMTP_PORT=587
+# SMTP_SECURE=false
+# SMTP_USER=seu_email@gmail.com
+# SMTP_PASS=sua_senha_app
+# SMTP_FROM=noreply@conectaking.com.br
+
+# ============================================
+# CLOUDFLARE IMAGES (opcional)
+# ============================================
+# CLOUDFLARE_ACCOUNT_HASH=
+# CLOUDFLARE_API_TOKEN=
+
+# ============================================
+# MERCADOPAGO (opcional)
+# ============================================
+# MERCADOPAGO_ACCESS_TOKEN=
+# MERCADOPAGO_PUBLIC_KEY=
+
+# ============================================
+# CONFIGURAÇÕES AVANÇADAS (opcional)
+# ============================================
+# DB_POOL_MAX=20
+# DB_POOL_MIN=5
+# DB_POOL_IDLE_TIMEOUT=30000
+# MAX_FILE_SIZE=5242880
+# CACHE_ENABLED=false
+# CACHE_TTL=3600
+# CACHE_MAX_SIZE=100

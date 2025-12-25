@@ -1,0 +1,216 @@
+<%# ============================================ %>
+<%# TEMPLATE EJS SEGURO - profile.ejs %>
+<%# ============================================ %>
+<%# 
+    Este template adiciona validações robustas
+    para evitar que dados inválidos quebrem a página
+%>
+
+<%# Validar se profile existe %>
+<% if (typeof profile === 'undefined' || !profile) { %>
+    <div class="error-message">
+        <h1>Perfil não encontrado</h1>
+        <p>Este perfil não existe ou foi removido.</p>
+    </div>
+<% } else { %>
+
+    <%# Renderizar perfil normalmente %>
+    <div class="profile-container">
+        <%# ... código do perfil ... %>
+        
+        <%# Renderizar itens com validação robusta %>
+        <div class="items-container">
+            <% 
+            // Garantir que items é um array
+            const safeItems = Array.isArray(items) ? items : [];
+            
+            safeItems.forEach((item, index) => {
+                try {
+                    // Validar item básico
+                    if (!item || !item.item_type) {
+                        return; // Pular item inválido
+                    }
+                    
+                    // Remover carrosséis (segurança extra)
+                    if (item.item_type === 'banner_carousel') {
+                        return; // Pular carrossel
+                    }
+                    
+                    // Verificar se banner é carrossel
+                    if (item.item_type === 'banner' && item.destination_url) {
+                        try {
+                            const destUrl = String(item.destination_url).trim();
+                            if (destUrl.startsWith('[') || destUrl === '[]') {
+                                return; // Pular carrossel
+                            }
+                        } catch (e) {
+                            // Se houver erro, pular item
+                            return;
+                        }
+                    }
+            %>
+            
+            <%# Renderizar item baseado no tipo %>
+            <% if (item.item_type === 'carousel' && item.destination_url) { %>
+                <%# ===== CARROSSEL COM SLIDE HORIZONTAL ===== %>
+                <% 
+                let carouselImages = [];
+                try {
+                    const parsed = JSON.parse(item.destination_url);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        carouselImages = parsed.filter(img => {
+                            const url = typeof img === 'string' ? img : (img.image_url || img);
+                            return url && !url.includes('placeholder') && !url.startsWith('data:image/svg');
+                        });
+                    }
+                } catch (e) {
+                    if (item.image_url && !item.image_url.includes('placeholder')) {
+                        carouselImages = [item.image_url];
+                    }
+                }
+                const carouselId = 'carousel-' + (item.id || Math.random().toString(36).substr(2, 9));
+                %>
+                <% if (carouselImages.length > 0) { %>
+                    <div class="carousel-container-public" id="<%= carouselId %>" style="width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative;">
+                        <div class="carousel-wrapper-public" style="display: flex; transition: transform 0.5s ease-in-out; width: <%= carouselImages.length * 100 %>%;">
+                            <% carouselImages.forEach((imgUrl, index) => { 
+                                const url = typeof imgUrl === 'string' ? imgUrl : (imgUrl.image_url || imgUrl);
+                            %>
+                                <div class="carousel-slide-public" style="width: <%= 100 / carouselImages.length %>%; flex-shrink: 0;">
+                                    <img src="<%= url %>" alt="Carrossel <%= index + 1 %>" style="width: 100%; height: auto; display: block;" onerror="this.style.display='none';" loading="lazy" />
+                                </div>
+                            <% }); %>
+                        </div>
+                        <% if (carouselImages.length > 1) { %>
+                            <div class="carousel-indicators-public" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10;">
+                                <% carouselImages.forEach((_, index) => { %>
+                                    <button class="carousel-indicator-public <%= index === 0 ? 'active' : '' %>" data-slide="<%= index %>" onclick="goToSlide_<%= carouselId %>(<%= index %>)" style="width: 8px; height: 8px; border-radius: 50%; border: none; background: <%= index === 0 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)' %>; cursor: pointer; transition: background 0.3s;"></button>
+                                <% }); %>
+                            </div>
+                        <% } %>
+                    </div>
+                    <% if (carouselImages.length > 1) { %>
+                        <script>
+                        (function() {
+                            const carouselId = '<%= carouselId %>';
+                            const totalSlides = <%= carouselImages.length %>;
+                            let currentSlide = 0;
+                            let carouselInterval;
+                            const carouselEl = document.getElementById(carouselId);
+                            const wrapperEl = carouselEl?.querySelector('.carousel-wrapper-public');
+                            const indicators = carouselEl?.querySelectorAll('.carousel-indicator-public');
+                            if (!wrapperEl) return;
+                            function updateCarousel() {
+                                const translateX = -(currentSlide * (100 / totalSlides));
+                                wrapperEl.style.transform = `translateX(${translateX}%)`;
+                                if (indicators) {
+                                    indicators.forEach((ind, idx) => {
+                                        ind.style.background = idx === currentSlide ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)';
+                                    });
+                                }
+                            }
+                            function nextSlide() {
+                                currentSlide = (currentSlide + 1) % totalSlides;
+                                updateCarousel();
+                            }
+                            window['goToSlide_' + carouselId] = function(slideIndex) {
+                                currentSlide = slideIndex;
+                                updateCarousel();
+                            };
+                            carouselInterval = setInterval(nextSlide, 3000);
+                            carouselEl?.addEventListener('mouseenter', () => clearInterval(carouselInterval));
+                            carouselEl?.addEventListener('mouseleave', () => { carouselInterval = setInterval(nextSlide, 3000); });
+                        })();
+                        </script>
+                    <% } %>
+                <% } %>
+                
+            <% } else if (item.item_type === 'banner') { %>
+                <%# BANNER NORMAL (não carrossel) - EXATAMENTE IGUAL AO CARROSSEL QUANDO AUTO %>
+                <div class="item-banner" style="width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <% 
+                    const imageUrl = (item.image_url && typeof item.image_url === 'string') 
+                        ? item.image_url 
+                        : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDYwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjMwMCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiPkJhbm5lcjwvdGV4dD4KPC9zdmc+Cg==';
+                    const aspectRatio = (item.aspect_ratio && typeof item.aspect_ratio === 'string') 
+                        ? item.aspect_ratio 
+                        : 'auto';
+                    // Quando auto, usar apenas width: 100%; height: auto; (igual ao carrossel) - SEM object-fit, SEM aspect-ratio fixo
+                    const imgStyle = aspectRatio === 'auto' 
+                        ? 'width: 100%; height: auto; display: block;'
+                        : `width: 100%; aspect-ratio: ${aspectRatio}; object-fit: cover; display: block;`;
+                    %>
+                    <img 
+                        src="<%= imageUrl %>" 
+                        alt="Banner" 
+                        style="<%= imgStyle %>"
+                        onerror="this.style.display='none';"
+                        loading="lazy"
+                    />
+                </div>
+                
+            <% } else if (item.item_type === 'youtube_embed') { %>
+                <%# YOUTUBE EMBED %>
+                <div class="item-youtube">
+                    <% 
+                    const embedUrl = item.embed_url || item.destination_url || '';
+                    if (embedUrl) {
+                    %>
+                        <iframe 
+                            src="<%= embedUrl %>" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen
+                            style="width: 100%; aspect-ratio: 16/9; border-radius: 12px;"
+                        ></iframe>
+                    <% } %>
+                </div>
+                
+            <% } else if (item.item_type === 'link') { %>
+                <%# LINK %>
+                <a 
+                    href="<%= (item.destination_url && typeof item.destination_url === 'string') ? item.destination_url : '#' %>" 
+                    class="item-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <%= (item.title && typeof item.title === 'string') ? item.title : 'Link' %>
+                </a>
+                
+            <% } else { %>
+                <%# OUTROS TIPOS - Renderizar genérico %>
+                <div class="item-generic">
+                    <% if (item.title && typeof item.title === 'string') { %>
+                        <h3><%= item.title %></h3>
+                    <% } %>
+                    <% if (item.destination_url && typeof item.destination_url === 'string') { %>
+                        <a href="<%= item.destination_url %>" target="_blank" rel="noopener noreferrer">
+                            Ver mais
+                        </a>
+                    <% } %>
+                </div>
+            <% } %>
+            
+            <% 
+                } catch (itemError) {
+                    // Se houver erro ao renderizar um item, pular ele
+                    console.error('Erro ao renderizar item:', itemError);
+                    // Não renderizar nada para este item
+                }
+            }); 
+            %>
+        </div>
+    </div>
+<% } %>
+
+<%# ============================================ %>
+<%# INSTRUÇÕES DE USO %>
+<%# ============================================ %>
+<%# 
+    1. Abra o arquivo: views/profile.ejs
+    2. Envolva a renderização de itens com try/catch
+    3. Adicione validações antes de usar cada campo
+    4. Use String() para garantir que valores são strings
+    5. Use onerror="this.style.display='none';" em imagens
+%>
+

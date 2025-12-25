@@ -1,0 +1,50 @@
+# 🚀 Comandos para Atualizar o Render
+
+## Passo a Passo Rápido
+
+### 1. Abra o Terminal/PowerShell na pasta do backend
+
+cd "C:\Users\playa\Desktop\CONECTA KING MVP DEZEMBRO\backend-conecta-king"
+
+### 2. Adicione apenas os arquivos do backend (não toda a pasta)
+
+git add routes/password.js
+git add routes/health.js
+git add utils/
+git add middleware/
+git add config/
+git add server.js
+git add package.json
+git add .gitignore
+
+### 3. Faça o commit
+
+git commit -m "Fix: Correções no sistema de recuperação de senha - validação e configurações SMTP"
+
+### 4. Envie para o GitHub
+
+git push origin main
+
+### 5. O Render fará deploy automaticamente!
+
+---
+
+## ⚠️ IMPORTANTE: Configurar Variáveis no Render
+
+Após o push, vá no painel do Render e adicione/verifique estas variáveis:
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=conectaking@gmail.com
+SMTP_PASS=imhr ogpa zeqg scms
+SMTP_FROM=noreply@conectaking.com.br
+
+---
+
+## ✅ Verificar se Funcionou
+
+1. Aguarde 2-5 minutos
+2. Teste: https://conectaking-api.onrender.com/api/health
+3. Deve retornar JSON com status "ok"
+

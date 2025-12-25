@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="pt-BR" style="background-color: <%= details.background_color || '#0D0D0F' %>;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title><%= details.display_name || 'Conecta King' %></title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="/css/profile.css?v=<%= cacheBuster %>">
+    
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <meta property="og:title" content="<%= details.display_name || 'Conecta King' %>">
+    <meta property="og:description" content="<%= details.bio %>">
+    <meta property="og:image" content="<%= details.profile_image_url || 'URL_DA_SUA_IMAGEM_PADRAO.png' %>">
+
+    <style>
+        body, h1, p, span { font-family: '<%= details.font_family || "Inter" %>', sans-serif !important; }
+        .profile-name, .profile-bio { color: <%= details.text_color || '#ECECEC' %> !important; }
+        .profile-avatar { border-color: <%= details.background_color || '#0D0D0F' %> !important; }
+
+        <%
+            let alignValue = 'center';
+            if (details.button_content_align === 'left') alignValue = 'flex-start';
+            else if (details.button_content_align === 'right') alignValue = 'flex-end';
+        %>
+
+        :root {
+            --btn-r: <%= (details.button_color_rgb && details.button_color_rgb.r) || 20 %>;
+            --btn-g: <%= (details.button_color_rgb && details.button_color_rgb.g) || 20 %>;
+            --btn-b: <%= (details.button_color_rgb && details.button_color_rgb.b) || 23 %>;
+            --btn-opacity: <%= details.button_opacity !== undefined ? details.button_opacity : 1 %>;
+            --btn-border-radius: <%= details.button_border_radius || '12px' %>;
+            --card-r: <%= (details.card_color_rgb && details.card_color_rgb.r) || 20 %>;
+            --card-g: <%= (details.card_color_rgb && details.card_color_rgb.g) || 20 %>;
+            --card-b: <%= (details.card_color_rgb && details.card_color_rgb.b) || 23 %>;
+            --card-opacity: <%= details.card_opacity !== undefined ? details.card_opacity : 1.0 %>;
+            --btn-font-size: <%= details.button_font_size || '1rem' %>;
+        }
+
+        .profile-card {
+            background-color: rgba(var(--card-r), var(--card-g), var(--card-b), var(--card-opacity)) !important;
+        }
+
+        .profile-link, .profile-button-pix {
+            background-color: rgba(var(--btn-r), var(--btn-g), var(--btn-b), var(--btn-opacity)) !important;
+            color: <%= details.button_text_color || '#FFFFFF' %> !important;
+            border-radius: var(--btn-border-radius) !important;
+            justify-content: <%= alignValue %> !important;
+            font-size: var(--btn-font-size) !important;
+        }
+        .profile-link i, .profile-button-pix i { 
+            color: <%= details.button_text_color || '#FFFFFF' %> !important; 
+            opacity: 1 !important;
+        }
+        .profile-link-logo {
+            margin-right: 12px !important;
+            flex-shrink: 0 !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+        }
+        /* PNG: logo sem border-radius (mantém forma original) */
+        .profile-link-logo.logo-png {
+            object-fit: contain !important;
+            border-radius: 0 !important;
+        }
+        /* JPEG: foto circular */
+        .profile-link-logo.logo-circular {
+            object-fit: cover !important;
+            border-radius: 50% !important;
+        }
+        /* Carrossel de imagens */
+        .profile-carousel-container {
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            margin: 10px 0;
+            background: transparent !important;
+        }
+        .profile-carousel-container img.carousel-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .profile-link .profile-link-logo + i {
+            display: none !important;
+        }
+        /* Cards de embed responsivos */
+        .profile-embed-item.tiktok-embed-container,
+        .profile-embed-item.spotify-embed-container,
+        .profile-embed-item.linkedin-embed-container,
+        .profile-embed-item.pinterest-embed-container {
+            aspect-ratio: auto !important;
+            height: auto !important;
+            overflow: visible !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 0 !important;
+            margin: 10px 0 !important;
+        }
+        .profile-embed-item.tiktok-embed-container > div,
+        .profile-embed-item.spotify-embed-container > div,
+        .profile-embed-item.linkedin-embed-container > div,
+        .profile-embed-item.pinterest-embed-container > div {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 20px !important;
+            margin: 0 !important;
+        }
+        @media (max-width: 480px) {
+            .profile-card {
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+            }
+            .profile-embed-item.tiktok-embed-container,
+            .profile-embed-item.spotify-embed-container,
+            .profile-embed-item.linkedin-embed-container,
+            .profile-embed-item.pinterest-embed-container {
+                margin: 10px 0 !important;
+                width: 100% !important;
+            }
+            .profile-embed-item.tiktok-embed-container > div,
+            .profile-embed-item.spotify-embed-container > div,
+            .profile-embed-item.linkedin-embed-container > div,
+            .profile-embed-item.pinterest-embed-container > div {
+                padding: 15px !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            /* Ajustes para catálogo de produtos no mobile */
+            .product-catalog-modal-overlay .product-card-list {
+                flex-direction: column !important;
+            }
+            .product-catalog-modal-overlay .product-card-list > div:first-child {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 100% !important;
+                height: 250px !important;
+                min-height: 250px !important;
+            }
+            .product-catalog-modal-overlay .product-card-grid > div:first-child {
+                padding: 10px !important;
+            }
+            .product-catalog-modal-overlay .product-card img {
+                max-width: 100% !important;
+                max-height: 100% !important;
+                width: auto !important;
+                height: auto !important;
+                object-fit: contain !important;
+            }
+            .profile-embed-item > div > div[style*="width: 100px"] {
+                width: 80px !important;
+                height: 80px !important;
+            }
+            .profile-embed-item > div > div[style*="width: 100px"] i {
+                font-size: 2.5rem !important;
+            }
+            .profile-embed-item > div h3 {
+                font-size: 1.25rem !important;
+            }
+            .profile-embed-item > div p {
+                font-size: 0.95rem !important;
+            }
+            .profile-embed-item > div a {
+                padding: 12px 24px !important;
+                font-size: 0.9rem !important;
+            }
+        }
+        .share-button-corner {
+            background-color: rgba(var(--btn-r), var(--btn-g), var(--btn-b), var(--btn-opacity)) !important;
+            color: <%= details.button_text_color || '#FFFFFF' %> !important;
+        }
+    </style>
+</head>
+<body>
+        <% if (details.background_type === 'image' && details.background_image_url) { %>
+        <div class="background-image-overlay" style="
+            background-image: url('<%= details.background_image_url %>');
+            opacity: <%= details.background_image_opacity !== undefined ? details.background_image_opacity : 1 %>;
+        "></div>
+    <% } %>
+    <div class="profile-page-wrapper">
+        <div class="profile-card">
+        <button class="share-button-corner" id="share-btn" title="Compartilhar">
+            <i class="fas fa-share-alt"></i>
+        </button>
+            <header class="profile-header">
+                <img src="<%= details.profile_image_url || 'https://avatar.iran.liara.run/public/boy' %>" alt="Foto de Perfil" class="profile-avatar" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=';">
+                <h1 class="profile-name"><%= details.display_name || 'Nome do Usuário' %></h1>
+                <p class="profile-bio"><%= details.bio || 'Biografia do usuário.' %></p>
+            </header>
+            
+            <% if (details.show_vcard_button) { %>
+            <div class="profile-actions">
+                <a href="/vcard/<%= details.profile_slug || details.user_id %>" class="profile-link" id="save-contact-btn">
+                    <i class="fas fa-address-card"></i>
+                    <span>Salvar Contato</span>
+                </a>
+            </div>
+            <% } %>
+
+        <section class="profile-items-container">
+            <% if (items && items.length > 0) { %>
+                <script>
+                    console.log('Total de itens recebidos:', <%= items.length %>);
+                    console.log('Tipos de itens:', [<% items.forEach((item, idx) => { %>'<%= item.item_type %>'<%= idx < items.length - 1 ? ',' : '' %><% }); %>]);
+                </script>
+                <% items.forEach(item => { 
+                    // Filtrar apenas itens ativos (is_active !== false)
+                    if (item.is_active === false) return;
+                %>
+                
+                    <% if (item.item_type === 'link') { %>
+                        <% if (item.destination_url) { %>
+                        <%
+                            // Verificar se tem logo válida
+                            const hasLogo = item.image_url && typeof item.image_url === 'string' && item.image_url.trim() !== '' && !item.image_url.includes('placeholder');
+                            const logoSize = item.logo_size ? parseInt(item.logo_size) : 24; // Tamanho padrão: 24px
+                            
+                            // Detectar se é PNG (logo) ou JPEG (foto) pela URL
+                            // Como URLs do Cloudflare R2 não têm extensão, usamos heurística melhorada
+                            let isJpeg = false;
+                            let isPng = false;
+                            let borderRadius = '50%'; // Padrão: circular (assumindo JPEG/foto se não detectar)
+                            let objectFit = 'cover'; // Padrão: cover para circular
+                            
+                            if (hasLogo) {
+                                const imageUrl = item.image_url.toLowerCase();
+                                
+                                // Tentar detectar por extensão na URL (se houver)
+                                if (imageUrl.includes('.png')) {
+                                    isPng = true;
+                                    borderRadius = '0'; // PNG: sem border-radius (logo)
+                                    objectFit = 'contain';
+                                } else if (imageUrl.includes('.jpg') || imageUrl.includes('.jpeg')) {
+                                    isJpeg = true;
+                                    borderRadius = '50%'; // JPEG: círculo (foto)
+                                    objectFit = 'cover';
+                                } else {
+                                    // URL sem extensão (Cloudflare R2) - assumir JPEG por padrão
+                                    // Se o usuário quiser PNG, deve garantir que o nome do arquivo tenha .png
+                                    // Por padrão, fotos são JPEG, então circular
+                                    isJpeg = true; // Assumir JPEG (foto circular) por padrão
+                                    borderRadius = '50%';
+                                    objectFit = 'cover';
+                                }
+                            }
+                        %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <% if (hasLogo) { %>
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Link Personalizado' %>" class="profile-link-logo <%= isJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= logoSize %>px; height: <%= logoSize %>px; border-radius: <%= borderRadius %>; object-fit: <%= objectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <i class="<%= item.icon_class || 'fas fa-link' %>" style="display: none;"></i>
+                            <% } else { %>
+                            <i class="<%= item.icon_class || 'fas fa-link' %>"></i>
+                            <% } %>
+                            <span><%= item.title || 'Link Personalizado' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'banner') { %>
+                        <% if (item.image_url) { %>
+                        <%
+                            const ratioMap = {
+                            'auto': '', 
+                            'tarja': '4 / 1',
+                            '2:1': '2 / 1',   
+                            '4:3': '4 / 3',
+                            '1:1': '1 / 1',
+                            '3:4': '3 / 4',
+                            '10:16': '10 / 16'
+                            };
+                            const aspectRatioCSS = ratioMap[item.aspect_ratio] || '';
+                            let containerStyle = '';
+                            if (aspectRatioCSS) {
+                                containerStyle = 'style="aspect-ratio: ' + aspectRatioCSS + ';"';
+                            }
+                            
+                            // Processar destination_url para adicionar mensagem personalizada
+                            let finalUrl = item.destination_url || '';
+                            // Usar whatsapp_message se existir, senão usar title (compatibilidade)
+                            const mensagemPersonalizada = item.whatsapp_message || item.title || '';
+                            if (finalUrl && finalUrl !== '#' && mensagemPersonalizada) {
+                                const destUrl = String(finalUrl).trim();
+                                const mensagem = String(mensagemPersonalizada).trim();
+                                
+                                // Se for WhatsApp (wa.me ou api.whatsapp.com)
+                                if (destUrl.includes('wa.me') || destUrl.includes('api.whatsapp.com')) {
+                                    try {
+                                        let baseUrl = '';
+                                        
+                                        // Extrair número do wa.me (suporta wa.me/numero e wa.me/qr/codigo)
+                                        if (destUrl.includes('wa.me')) {
+                                            // Se for link de QR code (wa.me/qr/...), não adicionar mensagem (QR codes não suportam)
+                                            if (destUrl.includes('wa.me/qr/')) {
+                                                finalUrl = destUrl; // Manter link original para QR codes
+                                            } else {
+                                                // Link normal do WhatsApp - extrair número
+                                                const match = destUrl.match(/wa\.me\/([^/?]+)/);
+                                                if (match) {
+                                                    // Extrair apenas o número (remover query params se houver)
+                                                    const numero = match[1].split('?')[0];
+                                                    // Verificar se é um número válido (apenas dígitos)
+                                                    if (/^\d+$/.test(numero)) {
+                                                        baseUrl = `https://wa.me/${numero}`;
+                                                        // Adicionar parâmetro text com a mensagem
+                                                        finalUrl = baseUrl + '?text=' + encodeURIComponent(mensagem);
+                                                    } else {
+                                                        // Se não for número válido, manter URL original
+                                                        finalUrl = destUrl;
+                                                    }
+                                                } else {
+                                                    finalUrl = destUrl;
+                                                }
+                                            }
+                                        } else if (destUrl.includes('api.whatsapp.com')) {
+                                            // Para api.whatsapp.com, extrair phone
+                                            const phoneMatch = destUrl.match(/phone=([^&]+)/);
+                                            if (phoneMatch) {
+                                                baseUrl = `https://api.whatsapp.com/send?phone=${phoneMatch[1]}`;
+                                                // Adicionar parâmetro text com a mensagem
+                                                finalUrl = baseUrl + '&text=' + encodeURIComponent(mensagem);
+                                            } else {
+                                                // Se não encontrar phone, tentar adicionar text na URL existente
+                                                const separator = destUrl.includes('?') ? '&' : '?';
+                                                finalUrl = destUrl + separator + 'text=' + encodeURIComponent(mensagem);
+                                            }
+                                        } else {
+                                            finalUrl = destUrl;
+                                        }
+                                    } catch (e) {
+                                        // Se falhar, manter URL original
+                                        finalUrl = destUrl;
+                                    }
+                                }
+                                // Para Instagram, apenas usar o link (mensagem não é suportada diretamente)
+                                // O title será usado como alt text da imagem
+                            }
+                        %>
+                        <div class="profile-banner-container" <%= containerStyle %> style="background: transparent !important; background-color: transparent !important;">
+                            <% if (finalUrl && finalUrl !== '#') { %>
+                            <a href="<%= finalUrl %>" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>" style="background: transparent !important; background-color: transparent !important;">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="background: transparent !important; background-color: transparent !important;">
+                            </a>
+                            <% } else { %>
+                            <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="background: transparent !important; background-color: transparent !important;">
+                            <% } %>
+                        </div>
+                        <% } %>
+                    <% } else if (item.item_type === 'carousel' && (item.destination_url || item.image_url)) { %>
+                        <%# ===== CARROSSEL COM SLIDE HORIZONTAL - ENQUADRAMENTO IGUAL AO BANNER ===== %>
+                        <% 
+                        // Parsear array de imagens do destination_url
+                        let carouselImages = [];
+                        try {
+                            const parsed = item.destination_url ? JSON.parse(item.destination_url) : [];
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                // Filtrar placeholders
+                                carouselImages = parsed.filter(img => {
+                                    const url = typeof img === 'string' ? img : (img.image_url || img);
+                                    return url && !url.includes('placeholder') && !url.startsWith('data:image/svg');
+                                });
+                            }
+                        } catch (e) {
+                            // Se não for JSON válido, tentar usar image_url
+                        }
+                        // Fallback: usar image_url se nada veio do destination_url
+                        if (carouselImages.length === 0 && item.image_url && !item.image_url.includes('placeholder')) {
+                            carouselImages = [item.image_url];
+                        }
+                        
+                        const aspectRatio = (item.aspect_ratio && typeof item.aspect_ratio === 'string') ? item.aspect_ratio : 'auto';
+                        const carouselId = 'carousel-' + (item.id || Math.random().toString(36).substr(2, 9));
+                        %>
+                        
+                        <% if (carouselImages.length > 0) { %>
+                            <div class="carousel-container-public" id="<%= carouselId %>" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
+                                <div class="carousel-wrapper-public" style="display: flex; transition: transform 0.5s ease-in-out; width: <%= carouselImages.length * 100 %>%;">
+                                    <% carouselImages.forEach((imgUrl, index) => { 
+                                        const url = typeof imgUrl === 'string' ? imgUrl : (imgUrl.image_url || imgUrl);
+                                    %>
+                                        <div class="carousel-slide-public" style="width: <%= 100 / carouselImages.length %>%; flex-shrink: 0;">
+                                            <%# ===== EXATAMENTE IGUAL AO BANNER: width: 100%; height: auto; sem object-fit, sem max-height ===== %>
+                                            <img 
+                                                src="<%= url %>" 
+                                                alt="Carrossel <%= index + 1 %>" 
+                                                style="width: 100%; height: auto; display: block;"
+                                                onerror="this.style.display='none';"
+                                                loading="lazy"
+                                            />
+                                        </div>
+                                    <% }); %>
+                                </div>
+                                <% if (carouselImages.length > 1) { %>
+                                    <div class="carousel-indicators-public" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10;">
+                                        <% carouselImages.forEach((_, index) => { %>
+                                            <button 
+                                                class="carousel-indicator-public <%= index === 0 ? 'active' : '' %>" 
+                                                data-slide="<%= index %>"
+                                                data-carousel-id="<%= carouselId %>"
+                                                style="width: 8px; height: 8px; border-radius: 50%; border: none; background: <%= index === 0 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)' %>; cursor: pointer; transition: background 0.3s;"
+                                            ></button>
+                                        <% }); %>
+                                    </div>
+                                <% } %>
+                            </div>
+                            
+                            <% if (carouselImages.length > 1) { %>
+                                <script>
+                                (function() {
+                                    const carouselId = '<%= carouselId %>';
+                                    const totalSlides = <%= carouselImages.length %>;
+                                    const INTERVAL_TIME = 3000; // 3 segundos fixos
+                                    let currentSlide = 0;
+                                    let carouselInterval = null;
+                                    let isPaused = false;
+                                    let isTransitioning = false;
+                                    let lastSlideTime = 0;
+                                    
+                                    // Variáveis para arrastar (swipe/drag)
+                                    let isDragging = false;
+                                    let startX = 0;
+                                    let startY = 0;
+                                    let currentX = 0;
+                                    let currentY = 0;
+                                    let initialTranslate = 0;
+                                    
+                                    const carouselEl = document.getElementById(carouselId);
+                                    const wrapperEl = carouselEl?.querySelector('.carousel-wrapper-public');
+                                    const indicators = carouselEl?.querySelectorAll('.carousel-indicator-public');
+                                    
+                                    if (!wrapperEl || !carouselEl) return;
+                                    
+                                    // Função para limpar TODOS os intervalos
+                                    function clearAllTimers() {
+                                        if (carouselInterval !== null) {
+                                            clearInterval(carouselInterval);
+                                            carouselInterval = null;
+                                        }
+                                    }
+                                    
+                                    function startAuto() {
+                                        // Limpar intervalo existente primeiro
+                                        clearAllTimers();
+                                        
+                                        if (isPaused) return;
+                                        
+                                        // Aguardar um pouco antes de iniciar
+                                        setTimeout(function() {
+                                            if (isPaused) return;
+                                            
+                                            // Limpar novamente (segurança extra)
+                                            if (carouselInterval !== null) {
+                                                clearInterval(carouselInterval);
+                                            }
+                                            
+                                            lastSlideTime = Date.now();
+                                            // Criar intervalo com tempo fixo de 3 segundos
+                                            carouselInterval = setInterval(function() {
+                                                // Verificação antes de executar
+                                                if (!isPaused && !isTransitioning && !isDragging && carouselInterval !== null) {
+                                                    nextSlide();
+                                                }
+                                            }, INTERVAL_TIME);
+                                        }, 100);
+                                    }
+                                    
+                                    function stopAuto() {
+                                        isPaused = true;
+                                        clearAllTimers();
+                                    }
+                                    
+                                    function updateCarousel() {
+                                        if (isTransitioning) return;
+                                        isTransitioning = true;
+                                        
+                                        // Garantir que currentSlide está dentro dos limites
+                                        if (currentSlide < 0) currentSlide = 0;
+                                        if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
+                                        
+                                        const translateX = -(currentSlide * (100 / totalSlides));
+                                        wrapperEl.style.transition = 'transform 0.5s ease-in-out';
+                                        wrapperEl.style.transform = `translateX(${translateX}%)`;
+                                        
+                                        // Atualizar indicadores
+                                        if (indicators) {
+                                            indicators.forEach((ind, idx) => {
+                                                ind.style.background = idx === currentSlide ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)';
+                                            });
+                                        }
+                                        
+                                        // Resetar flag após transição CSS (0.5s)
+                                        setTimeout(function() {
+                                            isTransitioning = false;
+                                        }, 500);
+                                    }
+                                    
+                                    function goToSlide(slideIndex) {
+                                        if (slideIndex < 0 || slideIndex >= totalSlides) return;
+                                        if (isTransitioning || slideIndex === currentSlide) return;
+                                        
+                                        // Parar antes de mudar
+                                        stopAuto();
+                                        
+                                        currentSlide = slideIndex;
+                                        updateCarousel();
+                                        
+                                        // Reiniciar após transição
+                                        setTimeout(function() {
+                                            isPaused = false;
+                                            startAuto();
+                                        }, 600);
+                                    }
+                                    
+                                    function nextSlide() {
+                                        // Verificações de segurança
+                                        if (isPaused || isTransitioning || isDragging) return;
+                                        if (carouselInterval === null) return;
+                                        
+                                        // Prevenir múltiplas chamadas muito rápidas
+                                        const now = Date.now();
+                                        if (now - lastSlideTime < (INTERVAL_TIME - 200)) {
+                                            return;
+                                        }
+                                        lastSlideTime = now;
+                                        
+                                        // Sempre ir para frente, nunca para trás
+                                        const nextSlideIndex = (currentSlide + 1) % totalSlides;
+                                        if (nextSlideIndex === currentSlide) return;
+                                        
+                                        currentSlide = nextSlideIndex;
+                                        updateCarousel();
+                                    }
+                                    
+                                    function prevSlide() {
+                                        // Só permitir prevSlide durante drag, não no autoplay
+                                        if (isTransitioning) return;
+                                        
+                                        const prevSlideIndex = (currentSlide - 1 + totalSlides) % totalSlides;
+                                        if (prevSlideIndex === currentSlide) return;
+                                        
+                                        currentSlide = prevSlideIndex;
+                                        updateCarousel();
+                                    }
+                                    
+                                    // Event listeners para os indicadores (sem onclick inline)
+                                    if (indicators) {
+                                        indicators.forEach((indicator, index) => {
+                                            indicator.addEventListener('click', (e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                goToSlide(index);
+                                            });
+                                        });
+                                    }
+                                    
+                                    // ===== FUNCIONALIDADE DE ARRASTAR (SWIPE/DRAG) =====
+                                    
+                                    // Touch events (mobile)
+                                    wrapperEl.addEventListener('touchstart', (e) => {
+                                        isDragging = true;
+                                        startX = e.touches[0].clientX;
+                                        startY = e.touches[0].clientY;
+                                        initialTranslate = -(currentSlide * (100 / totalSlides));
+                                        stopAuto(); // Pausar durante drag
+                                    }, { passive: true });
+                                    
+                                    wrapperEl.addEventListener('touchmove', (e) => {
+                                        if (!isDragging) return;
+                                        currentX = e.touches[0].clientX;
+                                        currentY = e.touches[0].clientY;
+                                        const diffX = currentX - startX;
+                                        const diffY = currentY - startY;
+                                        
+                                        // Se o usuário está rolando verticalmente, cancelar drag
+                                        if (Math.abs(diffY) > Math.abs(diffX) + 5) {
+                                            isDragging = false;
+                                            wrapperEl.style.transition = 'transform 0.5s ease-in-out';
+                                            updateCarousel();
+                                            // Retomar após um tempo
+                                            setTimeout(function() {
+                                                isPaused = false;
+                                                startAuto();
+                                            }, 500);
+                                            return;
+                                        }
+                                        
+                                        e.preventDefault();
+                                        
+                                        const containerWidth = carouselEl.offsetWidth || 1;
+                                        const translatePercentRaw = initialTranslate + (diffX / containerWidth) * 100;
+                                        const maxTranslate = 0;
+                                        const minTranslate = -((totalSlides - 1) * (100 / totalSlides));
+                                        const translatePercent = Math.min(maxTranslate, Math.max(minTranslate, translatePercentRaw));
+                                        wrapperEl.style.transition = 'none';
+                                        wrapperEl.style.transform = `translateX(${translatePercent}%)`;
+                                    }, { passive: false });
+                                    
+                                    wrapperEl.addEventListener('touchend', (e) => {
+                                        if (!isDragging) return;
+                                        isDragging = false;
+                                        wrapperEl.style.transition = 'transform 0.5s ease-in-out';
+                                        
+                                        const diffX = (currentX || startX) - startX;
+                                        const containerWidth = carouselEl.offsetWidth || 1;
+                                        const threshold = containerWidth * 0.2; // 20% do container
+                                        
+                                        if (Math.abs(diffX) > threshold) {
+                                            if (diffX > 0) {
+                                                prevSlide();
+                                            } else {
+                                                // Só permitir nextSlide durante drag
+                                                const nextIndex = (currentSlide + 1) % totalSlides;
+                                                if (nextIndex !== currentSlide) {
+                                                    currentSlide = nextIndex;
+                                                    updateCarousel();
+                                                }
+                                            }
+                                        } else {
+                                            updateCarousel(); // Voltar para o slide atual
+                                        }
+                                        
+                                        // Retomar após transição
+                                        setTimeout(function() {
+                                            isPaused = false;
+                                            startAuto();
+                                        }, 600);
+                                    }, { passive: true });
+                                    
+                                    // Mouse events (desktop)
+                                    wrapperEl.addEventListener('mousedown', (e) => {
+                                        isDragging = true;
+                                        startX = e.clientX;
+                                        startY = e.clientY;
+                                        initialTranslate = -(currentSlide * (100 / totalSlides));
+                                        stopAuto(); // Pausar durante drag
+                                        wrapperEl.style.cursor = 'grabbing';
+                                    });
+                                    
+                                    wrapperEl.addEventListener('mousemove', (e) => {
+                                        if (!isDragging) return;
+                                        currentX = e.clientX;
+                                        currentY = e.clientY;
+                                        const diffX = currentX - startX;
+                                        const diffY = currentY - startY;
+                                        
+                                        // Se movimento vertical for dominante, cancelar drag
+                                        if (Math.abs(diffY) > Math.abs(diffX) + 5) {
+                                            isDragging = false;
+                                            wrapperEl.style.cursor = 'grab';
+                                            wrapperEl.style.transition = 'transform 0.5s ease-in-out';
+                                            updateCarousel();
+                                            // Retomar após um tempo
+                                            setTimeout(function() {
+                                                isPaused = false;
+                                                startAuto();
+                                            }, 500);
+                                            return;
+                                        }
+                                        
+                                        e.preventDefault();
+                                        
+                                        const containerWidth = carouselEl.offsetWidth || 1;
+                                        const translatePercentRaw = initialTranslate + (diffX / containerWidth) * 100;
+                                        const maxTranslate = 0;
+                                        const minTranslate = -((totalSlides - 1) * (100 / totalSlides));
+                                        const translatePercent = Math.min(maxTranslate, Math.max(minTranslate, translatePercentRaw));
+                                        wrapperEl.style.transition = 'none';
+                                        wrapperEl.style.transform = `translateX(${translatePercent}%)`;
+                                    });
+                                    
+                                    wrapperEl.addEventListener('mouseup', (e) => {
+                                        if (!isDragging) return;
+                                        isDragging = false;
+                                        wrapperEl.style.cursor = 'grab';
+                                        wrapperEl.style.transition = 'transform 0.5s ease-in-out';
+                                        
+                                        const diffX = (currentX || startX) - startX;
+                                        const containerWidth = carouselEl.offsetWidth || 1;
+                                        const threshold = containerWidth * 0.2; // 20% do container
+                                        
+                                        if (Math.abs(diffX) > threshold) {
+                                            if (diffX > 0) {
+                                                prevSlide();
+                                            } else {
+                                                // Só permitir nextSlide durante drag
+                                                const nextIndex = (currentSlide + 1) % totalSlides;
+                                                if (nextIndex !== currentSlide) {
+                                                    currentSlide = nextIndex;
+                                                    updateCarousel();
+                                                }
+                                            }
+                                        } else {
+                                            updateCarousel(); // Voltar para o slide atual
+                                        }
+                                        
+                                        // Retomar após transição
+                                        setTimeout(function() {
+                                            isPaused = false;
+                                            startAuto();
+                                        }, 600);
+                                    });
+                                    
+                                    wrapperEl.addEventListener('mouseleave', (e) => {
+                                        if (isDragging) {
+                                            isDragging = false;
+                                            wrapperEl.style.cursor = 'grab';
+                                            wrapperEl.style.transition = 'transform 0.5s ease-in-out';
+                                            updateCarousel();
+                                            // Retomar após transição
+                                            setTimeout(function() {
+                                                isPaused = false;
+                                                startAuto();
+                                            }, 500);
+                                        }
+                                    });
+                                    
+                                    // Cursor pointer para indicar que pode arrastar
+                                    wrapperEl.style.cursor = 'grab';
+                                    
+                                    // Scroll vertical (mouse wheel) troca de slide, mas não bloqueia a rolagem da página
+                                    let wheelLocked = false;
+                                    carouselEl.addEventListener('wheel', (e) => {
+                                        // Se o gesto for mais horizontal que vertical, não interferir
+                                        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+                                        if (wheelLocked || isTransitioning) return;
+                                        
+                                        wheelLocked = true;
+                                        stopAuto();
+                                        
+                                        if (e.deltaY > 0) {
+                                            // Scroll para baixo = próximo slide
+                                            const nextIndex = (currentSlide + 1) % totalSlides;
+                                            if (nextIndex !== currentSlide) {
+                                                currentSlide = nextIndex;
+                                                updateCarousel();
+                                            }
+                                        } else if (e.deltaY < 0) {
+                                            // Scroll para cima = slide anterior (só durante wheel)
+                                            const prevIndex = (currentSlide - 1 + totalSlides) % totalSlides;
+                                            if (prevIndex !== currentSlide) {
+                                                currentSlide = prevIndex;
+                                                updateCarousel();
+                                            }
+                                        }
+                                        
+                                        // Retomar após transição
+                                        setTimeout(function() {
+                                            wheelLocked = false;
+                                            isPaused = false;
+                                            startAuto();
+                                        }, 600);
+                                    }, { passive: true });
+                                    
+                                    // Iniciar transição automática após um delay
+                                    setTimeout(function() {
+                                        isPaused = false;
+                                        startAuto();
+                                    }, 300);
+                                    
+                                    // Pausar ao passar o mouse (opcional - pode remover se quiser que continue)
+                                    carouselEl?.addEventListener('mouseenter', () => {
+                                        // Não pausar, apenas garantir que está rodando
+                                        if (!isDragging && !isPaused) {
+                                            startAuto();
+                                        }
+                                    });
+                                    
+                                    carouselEl?.addEventListener('mouseleave', () => {
+                                        if (!isDragging && !isPaused) {
+                                            startAuto();
+                                        }
+                                    });
+                                    
+                                    // Limpar intervalos quando a página for escondida
+                                    document.addEventListener('visibilitychange', function() {
+                                        if (document.hidden) {
+                                            stopAuto();
+                                        } else {
+                                            if (!isPaused && carouselInterval === null) {
+                                                setTimeout(function() {
+                                                    isPaused = false;
+                                                    startAuto();
+                                                }, 500);
+                                            }
+                                        }
+                                    });
+                                    
+                                    // Limpar tudo quando a página for fechada
+                                    window.addEventListener('beforeunload', function() {
+                                        clearAllTimers();
+                                    });
+                                })();
+                                </script>
+                            <% } %>
+                        <% } %>
+                    <% } else if (item.item_type === 'pix') { %>
+                        <% if (item.pix_key) { %>
+                        <button class="profile-link profile-button-pix" data-pix-key="<%= item.pix_key %>" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fa-solid fa-qrcode' %>"></i>
+                            <span><%= item.title || 'PIX' %></span>
+                        </button>
+                        <% } %>
+                    <% } else if (item.item_type === 'pdf') { %>
+                        <a href="/download/pdf/<%= item.id %>" class="profile-link" download data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fa-solid fa-file-pdf' %>"></i>
+                            <span><%= item.title || 'PDF' %></span>
+                        </a>
+                    <% } else if (item.item_type === 'product_catalog') { 
+                        // Verificar se tem logo para product_catalog
+                        const catalogHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
+                        const catalogLogoSize = item.logo_size || 24;
+                        const catalogIsJpeg = catalogHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
+                        const catalogBorderRadius = catalogHasLogo ? (catalogIsJpeg ? '50%' : '0') : '50%';
+                        const catalogObjectFit = catalogHasLogo ? (catalogIsJpeg ? 'cover' : 'contain') : 'cover';
+                    %>
+                        <button class="profile-link product-catalog-btn" 
+                                data-item-id="<%= item.id %>" 
+                                data-whatsapp="<%= item.destination_url || '' %>" 
+                                data-profile-slug="<%= details.profile_slug || details.user_id %>"
+                                data-products='<%= JSON.stringify(item.products || []) %>'>
+                            <% if (catalogHasLogo) { %>
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Minha Loja' %>" class="profile-link-logo <%= catalogIsJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= catalogLogoSize %>px; height: <%= catalogLogoSize %>px; border-radius: <%= catalogBorderRadius %>; object-fit: <%= catalogObjectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <i class="<%= item.icon_class || 'fas fa-store' %>" style="display: none;"></i>
+                            <% } else { %>
+                                <i class="<%= item.icon_class || 'fas fa-store' %>"></i>
+                            <% } %>
+                            <span><%= item.title || 'Minha Loja' %></span>
+                        </button>
+                    <% } else if (item.item_type === 'whatsapp') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="https://wa.me/<%= String(item.destination_url).replace(/\D/g,'') %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-whatsapp' %>"></i>
+                            <span><%= item.title || 'WhatsApp' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'telegram') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-telegram' %>"></i>
+                            <span><%= item.title || 'Telegram' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'email') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="mailto:<%= item.destination_url %>" class="profile-link" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fas fa-envelope' %>"></i>
+                            <span><%= item.title || 'Email' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'instagram') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-instagram' %>"></i>
+                            <span><%= item.title || 'Instagram' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'facebook') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-facebook' %>"></i>
+                            <span><%= item.title || 'Facebook' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'tiktok') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-tiktok' %>"></i>
+                            <span><%= item.title || 'TikTok' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'twitter') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-twitter' %>"></i>
+                            <span><%= item.title || 'Twitter' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'youtube') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-youtube' %>"></i>
+                            <span><%= item.title || 'YouTube' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'linkedin') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-linkedin' %>"></i>
+                            <span><%= item.title || 'LinkedIn' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'portfolio') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fas fa-briefcase' %>"></i>
+                            <span><%= item.title || 'Portfolio' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'pinterest') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-pinterest' %>"></i>
+                            <span><%= item.title || 'Pinterest' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'reddit') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-reddit' %>"></i>
+                            <span><%= item.title || 'Reddit' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'twitch') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-twitch' %>"></i>
+                            <span><%= item.title || 'Twitch' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'spotify') { %>
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fab fa-spotify' %>"></i>
+                            <span><%= item.title || 'Spotify' %></span>
+                        </a>
+                        <% } %>
+                    <% } else if (item.item_type === 'pix_qrcode') { %>
+                        <button class="profile-link profile-button-pix-qrcode" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fas fa-qrcode' %>"></i>
+                            <span><%= item.title || 'PIX QR Code' %></span>
+                        </button>
+                    <% } else if (item.item_type === 'instagram_embed') { %>
+                        <% if (item.destination_url) { %>
+                        <div class="profile-embed-item instagram-embed-container" data-item-id="<%= item.id %>" data-embed-type="instagram">
+                            <% 
+                                try { 
+                                    const instaUrl = new URL(item.destination_url); 
+                            %>
+                                <iframe 
+                                    src="https://www.instagram.com<%= instaUrl.pathname %>embed" 
+                                    allowtransparency="true" 
+                                    loading="lazy"
+                                    style="width: 100%; min-height: 600px; max-width: 540px; border-radius: 12px; border: none; margin: 0 auto; display: block;"
+                                    frameborder="0"
+                                    scrolling="no"
+                                ></iframe>
+                            <% 
+                                } catch (e) { 
+                            %>
+                                <div class="embed-error">URL do Instagram inválida.</div>
+                            <% 
+                                } 
+                            %>
+                        </div>
+                        <% } %>
+                    <% } else if (item.item_type === 'youtube_embed') { %>
+                        <div class="profile-embed-item youtube-embed-container" data-item-id="<%= item.id %>" data-embed-type="youtube" data-video-id="<%= item.embed_url ? item.embed_url.split('/embed/')[1]?.split('?')[0] : '' %>">
+                            <% 
+                                let embedUrl = item.embed_url || '';
+                                if (!embedUrl && item.destination_url) {
+                                    embedUrl = item.destination_url;
+                                }
+                            %>
+                            <% if (embedUrl) { %>
+                                <% 
+                                    let finalEmbedUrl = embedUrl;
+                                    if (!embedUrl.includes('youtube.com/embed/')) {
+                                        var videoIdMatch = embedUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^&\n?#]+)/);
+                                        if (videoIdMatch && videoIdMatch[1]) {
+                                            var cleanVideoId = videoIdMatch[1].split('&')[0].split('?')[0].split('#')[0];
+                                            finalEmbedUrl = 'https://www.youtube.com/embed/' + cleanVideoId;
+                                        }
+                                    }
+                                %>
+                                <iframe 
+                                    id="youtube-player-<%= item.id %>"
+                                    src="<%= finalEmbedUrl %>?autoplay=1&mute=1&playsinline=1&enablejsapi=1&origin=<%= encodeURIComponent('https://tag.conectaking.com.br') %>&rel=0" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen 
+                                    loading="eager"
+                                    referrerpolicy="strict-origin-when-cross-origin"
+                                    style="width: 100%; aspect-ratio: 16/9; border-radius: 12px;"
+                                ></iframe>
+                            <% } else { %>
+                                <div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>
+                            <% } %>
+                        </div>
+                    <% } else if (item.item_type === 'tiktok_embed') { %>
+                        <% if (item.destination_url) { %>
+                        <div class="profile-embed-item tiktok-embed-container" data-item-id="<%= item.id %>" data-embed-type="tiktok">
+                            <% 
+                                try { 
+                                    const tiktokUrl = new URL(item.destination_url);
+                                    const tiktokPathname = tiktokUrl.pathname;
+                                    // Extrair username se for perfil
+                                    const usernameMatch = tiktokPathname.match(/@([^\/]+)/);
+                                    const username = usernameMatch ? usernameMatch[1] : '';
+                            %>
+                                <!-- TikTok não suporta embed de perfis, usar card visual -->
+                                <div style="background: linear-gradient(135deg, #000000 0%, #161823 100%); border-radius: 12px; border: 1px solid #FF0050; padding: 20px; text-align: center; max-width: 540px; width: 100%; box-sizing: border-box; margin: 0; box-shadow: 0 8px 32px rgba(255, 0, 80, 0.2);">
+                                    <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #FF0050 0%, #FF4081 100%); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(255, 0, 80, 0.4);">
+                                        <i class="fab fa-tiktok" style="font-size: 3rem; color: #FFFFFF;"></i>
+                                    </div>
+                                    <h3 style="color: #FFFFFF; margin: 0 0 10px 0; font-size: 1.5rem; font-weight: 600; word-wrap: break-word;"><%= item.title || 'Perfil do TikTok' %></h3>
+                                    <% if (username) { %>
+                                        <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 25px 0; font-size: 1.1rem; word-wrap: break-word;">@<%= username %></p>
+                                    <% } %>
+                                    <a href="<%= item.destination_url %>" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #FF0050 0%, #FF4081 100%); color: #FFFFFF; text-decoration: none; border-radius: 25px; font-weight: 600; font-size: 0.95rem; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(255, 0, 80, 0.3); white-space: nowrap;">
+                                        Ver no TikTok
+                                        <i class="fas fa-external-link-alt" style="margin-left: 8px;"></i>
+                                    </a>
+                                </div>
+                            <% 
+                                } catch (e) { 
+                            %>
+                                <div class="embed-error">URL do TikTok inválida.</div>
+                            <% 
+                                } 
+                            %>
+                        </div>
+                        <% } %>
+                    <% } else if (item.item_type === 'spotify_embed') { %>
+                        <% if (item.destination_url) { %>
+                        <div class="profile-embed-item spotify-embed-container" data-item-id="<%= item.id %>" data-embed-type="spotify">
+                            <% 
+                                try { 
+                                    const spotifyUrl = new URL(item.destination_url);
+                                    const spotifyPathname = spotifyUrl.pathname;
+                                    const isProfile = spotifyPathname.includes('/user/') || spotifyPathname.includes('/artist/');
+                                    
+                                    if (isProfile) {
+                                        // Para perfis, não há embed oficial - usar card visual
+                                        const profileMatch = spotifyPathname.match(/\/(user|artist)\/([^\/\?]+)/);
+                                        const profileType = profileMatch ? profileMatch[1] : '';
+                                        const profileId = profileMatch ? profileMatch[2] : '';
+                            %>
+                                <div style="background: linear-gradient(135deg, #191414 0%, #1DB954 100%); border-radius: 12px; border: 1px solid #1DB954; padding: 20px; text-align: center; max-width: 540px; width: 100%; box-sizing: border-box; margin: 0; box-shadow: 0 8px 32px rgba(29, 185, 84, 0.2);">
+                                    <div style="width: 100px; height: 100px; background: #1DB954; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(29, 185, 84, 0.4);">
+                                        <i class="fab fa-spotify" style="font-size: 3rem; color: #191414;"></i>
+                                    </div>
+                                    <h3 style="color: #FFFFFF; margin: 0 0 10px 0; font-size: 1.5rem; font-weight: 600; word-wrap: break-word;"><%= item.title || 'Perfil do Spotify' %></h3>
+                                    <% if (profileId) { %>
+                                        <p style="color: rgba(255, 255, 255, 0.8); margin: 0 0 25px 0; font-size: 1.1rem; word-wrap: break-word;"><%= profileType === 'artist' ? 'Artista' : 'Usuário' %> Spotify</p>
+                                    <% } %>
+                                    <a href="<%= item.destination_url %>" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 12px 28px; background: #1DB954; color: #191414; text-decoration: none; border-radius: 25px; font-weight: 700; font-size: 0.95rem; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3); white-space: nowrap;">
+                                        Abrir no Spotify
+                                        <i class="fas fa-external-link-alt" style="margin-left: 8px;"></i>
+                                    </a>
+                                </div>
+                            <% 
+                                    } else {
+                                        // Para tracks, albums, playlists - usar embed oficial
+                                        const embedMatch = spotifyPathname.match(/\/(track|album|playlist|episode)\/([a-zA-Z0-9]+)/);
+                                        if (embedMatch) {
+                                            const type = embedMatch[1];
+                                            const id = embedMatch[2];
+                            %>
+                                <iframe 
+                                    src="https://open.spotify.com/embed/<%= type %>/<%= id %>?utm_source=generator" 
+                                    width="100%" 
+                                    height="352" 
+                                    frameBorder="0" 
+                                    allowfullscreen="" 
+                                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                                    loading="lazy"
+                                    style="border-radius: 12px; max-width: 540px; margin: 0 auto; display: block;"
+                                ></iframe>
+                            <% 
+                                        } else {
+                            %>
+                                <div class="embed-error">URL do Spotify inválida. Use uma URL de música, álbum ou playlist.</div>
+                            <% 
+                                        }
+                                    }
+                                } catch (e) { 
+                            %>
+                                <div class="embed-error">URL do Spotify inválida.</div>
+                            <% 
+                                } 
+                            %>
+                        </div>
+                        <% } %>
+                    <% } else if (item.item_type === 'linkedin_embed') { %>
+                        <% if (item.destination_url) { %>
+                        <div class="profile-embed-item linkedin-embed-container" data-item-id="<%= item.id %>" data-embed-type="linkedin">
+                            <% 
+                                try { 
+                                    const linkedinUrl = new URL(item.destination_url);
+                                    const linkedinPathname = linkedinUrl.pathname;
+                                    // Extrair username se for perfil
+                                    const usernameMatch = linkedinPathname.match(/in\/([^\/]+)/);
+                                    const username = usernameMatch ? usernameMatch[1] : '';
+                            %>
+                                <!-- LinkedIn não suporta embed de perfis, usar card visual -->
+                                <div style="background: linear-gradient(135deg, #0077B5 0%, #004182 100%); border-radius: 12px; border: 1px solid #0077B5; padding: 20px; text-align: center; max-width: 540px; width: 100%; box-sizing: border-box; margin: 0; box-shadow: 0 8px 32px rgba(0, 119, 181, 0.2);">
+                                    <div style="width: 100px; height: 100px; background: #FFFFFF; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);">
+                                        <i class="fab fa-linkedin" style="font-size: 3rem; color: #0077B5;"></i>
+                                    </div>
+                                    <h3 style="color: #FFFFFF; margin: 0 0 10px 0; font-size: 1.5rem; font-weight: 600; word-wrap: break-word;"><%= item.title || 'Perfil do LinkedIn' %></h3>
+                                    <% if (username) { %>
+                                        <p style="color: rgba(255, 255, 255, 0.8); margin: 0 0 25px 0; font-size: 1.1rem; word-wrap: break-word;"><%= username %></p>
+                                    <% } %>
+                                    <a href="<%= item.destination_url %>" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 12px 28px; background: #FFFFFF; color: #0077B5; text-decoration: none; border-radius: 25px; font-weight: 700; font-size: 0.95rem; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3); white-space: nowrap;">
+                                        Ver no LinkedIn
+                                        <i class="fas fa-external-link-alt" style="margin-left: 8px;"></i>
+                                    </a>
+                                </div>
+                            <% 
+                                } catch (e) { 
+                            %>
+                                <div class="embed-error">URL do LinkedIn inválida.</div>
+                            <% 
+                                } 
+                            %>
+                        </div>
+                        <% } %>
+                    <% } else if (item.item_type === 'pinterest_embed') { %>
+                        <% if (item.destination_url) { %>
+                        <div class="profile-embed-item pinterest-embed-container" data-item-id="<%= item.id %>" data-embed-type="pinterest">
+                            <% 
+                                try { 
+                                    const pinterestUrl = new URL(item.destination_url);
+                                    const pinterestPathname = pinterestUrl.pathname;
+                                    // Extrair username se for perfil (remover / do início)
+                                    const usernameMatch = pinterestPathname.match(/\/([^\/]+)$/);
+                                    const username = usernameMatch && !pinterestPathname.includes('/pin/') ? usernameMatch[1] : '';
+                            %>
+                                <!-- Pinterest não suporta embed de perfis, usar card visual -->
+                                <div style="background: linear-gradient(135deg, #BD081C 0%, #E60023 100%); border-radius: 12px; border: 1px solid #E60023; padding: 20px; text-align: center; max-width: 540px; width: 100%; box-sizing: border-box; margin: 0; box-shadow: 0 8px 32px rgba(230, 0, 35, 0.2);">
+                                    <div style="width: 100px; height: 100px; background: #FFFFFF; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);">
+                                        <i class="fab fa-pinterest" style="font-size: 3rem; color: #E60023;"></i>
+                                    </div>
+                                    <h3 style="color: #FFFFFF; margin: 0 0 10px 0; font-size: 1.5rem; font-weight: 600; word-wrap: break-word;"><%= item.title || 'Perfil do Pinterest' %></h3>
+                                    <% if (username) { %>
+                                        <p style="color: rgba(255, 255, 255, 0.8); margin: 0 0 25px 0; font-size: 1.1rem; word-wrap: break-word;"><%= username %></p>
+                                    <% } %>
+                                    <a href="<%= item.destination_url %>" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 12px 28px; background: #FFFFFF; color: #E60023; text-decoration: none; border-radius: 25px; font-weight: 700; font-size: 0.95rem; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3); white-space: nowrap;">
+                                        Ver no Pinterest
+                                        <i class="fas fa-external-link-alt" style="margin-left: 8px;"></i>
+                                    </a>
+                                </div>
+                            <% 
+                                } catch (e) { 
+                            %>
+                                <div class="embed-error">URL do Pinterest inválida.</div>
+                            <% 
+                                } 
+                            %>
+                        </div>
+                        <% } %>
+                    <% } else { %>
+                        <!-- Fallback para tipos não reconhecidos -->
+                        <% if (item.destination_url) { %>
+                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="<%= item.icon_class || 'fas fa-link' %>"></i>
+                            <span><%= item.title || 'Link' %></span>
+                        </a>
+                        <% } %>
+                    <% } %>
+
+                <% }) %>
+            <% } else { %>
+                <p class="no-links">Nenhum item adicionado ainda.</p>
+            <% } %>
+        </section>
+        </div>
+
+        <% if (details.company_logo_url) { %>
+            <% if (details.company_logo_link) { %>
+                <a href="<%= details.company_logo_link %>" target="_blank" rel="noopener noreferrer" class="branding-logo">
+                    <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= details.company_logo_size || 60 %>">
+                </a>
+            <% } else { %>
+                <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= details.company_logo_size || 60 %>">
+            <% } %>
+        <% } else { %>
+            <a href="https://www.instagram.com/conectaking" target="_blank" rel="noopener noreferrer" class="branding-logo">
+                <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Logo Conecta King">
+            </a>
+        <% } %>
+    </div>
+    
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("✔️ DOM carregado. Script da página de perfil iniciado.");
+
+    // ==========================================================
+    // 1. DECLARAÇÃO DE VARIÁVEIS E SELETORES
+    // ==========================================================
+    const userId = '<%= details.user_id %>';
+    const shareButton = document.getElementById('share-btn');
+    const saveContactBtn = document.getElementById('save-contact-btn');
+    const pixModal = document.getElementById('pix-qrcode-modal');
+    const pixCloseBtn = document.getElementById('pix-modal-close-btn');
+    const pixQrContainer = document.getElementById('pix-qrcode-image');
+    const pixQrLoader = document.getElementById('pix-qrcode-loader');
+    const pixBrCodeText = document.getElementById('pix-brcode-text');
+    const pixCopyBrCodeBtn = document.getElementById('pix-copy-brcode-btn');
+    let qrInstance = null;
+
+
+    const customLogo = document.querySelector('.branding-logo-custom');
+    if (customLogo) {
+        const logoSize = customLogo.getAttribute('data-logo-size');
+        if (logoSize) {
+            customLogo.style.height = `${logoSize}px`;
+        }
+    }
+
+
+    // ==========================================================
+    // 2. DECLARAÇÃO DE FUNÇÕES
+    // ==========================================================
+
+    const openPixModal = async (itemId) => {
+        if (!pixModal) return;
+        pixModal.classList.add('active');
+        pixQrLoader.style.display = 'block';
+        pixQrContainer.innerHTML = '';
+        if (qrInstance) {
+            qrInstance.clear();
+        }
+        pixBrCodeText.value = 'Gerando código...';
+
+        try {
+            const response = await fetch(`/api/pix/qrcode/${itemId}`);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message);
+            
+            pixBrCodeText.value = data.brcode;
+            qrInstance = new QRCode(pixQrContainer, {
+                text: data.brcode,
+                width: 200, height: 200,
+                colorDark: "#000000", colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        } catch (error) {
+            pixBrCodeText.value = `Erro: ${error.message}`;
+        } finally {
+            pixQrLoader.style.display = 'none';
+        }
+    };
+
+    const closePixModal = () => {
+        if (pixModal) pixModal.classList.remove('active');
+    };
+
+    // ==========================================================
+    // 3. EVENT LISTENERS (Anexando funções aos elementos)
+    // ==========================================================
+
+    // Botão de Compartilhar
+    if (shareButton) {
+        shareButton.addEventListener('click', async () => {
+            console.log("🔴 Botão de compartilhar foi CLICADO!");
+            const shareData = {
+                title: document.title,
+                text: 'Confira meu cartão de visita digital Conecta King!',
+                url: window.location.href,
+            };
+            
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                } catch (error) {
+                    console.log('Ação de compartilhar cancelada.', error);
+                }
+            } else {
+                try {
+                    await navigator.clipboard.writeText(shareData.url);
+                    alert('Link do perfil copiado para a área de transferência!');
+                } catch (error) {
+                    alert('Não foi possível copiar o link.');
+                }
+            }
+        });
+    }
+
+    // Botão Salvar Contato (Analytics)
+    if (saveContactBtn) {
+        saveContactBtn.addEventListener('click', () => {
+            try { navigator.sendBeacon(`/log/vcard/${userId}`); } catch(e) { fetch(`/log/vcard/${userId}`, { method: 'POST', keepalive: true }); }
+        });
+    }
+
+    // ==========================================================
+    // REGISTRAR CLIQUES NOS LINKS (Analytics)
+    // ==========================================================
+    // Função para registrar clique
+    function registrarClique(itemId) {
+        if (itemId) {
+            try {
+                navigator.sendBeacon(`/log/click/item/${itemId}`);
+                console.log(`📊 Clique registrado no item ${itemId}`);
+            } catch (err) {
+                fetch(`/log/click/item/${itemId}`, { method: 'POST', keepalive: true }).catch(() => {});
+            }
+        }
+    }
+    
+    // Registrar cliques em links e botões
+    document.querySelectorAll('a[data-item-id], button[data-item-id]').forEach(element => {
+        element.addEventListener('click', (e) => {
+            const itemId = element.getAttribute('data-item-id');
+            registrarClique(itemId);
+        });
+    });
+    
+    // Registrar cliques em embeds (Instagram e YouTube) quando o iframe receber foco
+    document.querySelectorAll('[data-item-id][data-embed-type]').forEach(container => {
+        const itemId = container.getAttribute('data-item-id');
+        const iframe = container.querySelector('iframe');
+        
+        if (iframe && itemId) {
+            // Quando o iframe recebe foco (usuário interagiu com ele)
+            container.addEventListener('click', () => {
+                registrarClique(itemId);
+            });
+            
+            // Quando o iframe carrega (indica que foi visualizado/interagido)
+            iframe.addEventListener('load', () => {
+                // Não registrar clique automático no load, apenas quando há interação
+            });
+        }
+    });
+
+    // Botões de PIX QR Code
+    document.querySelectorAll('.profile-button-pix-qrcode').forEach(button => {
+        button.addEventListener('click', () => {
+            const itemId = button.dataset.itemId;
+            // Registrar clique antes de abrir modal
+            if (itemId) {
+                try {
+                    navigator.sendBeacon(`/log/click/item/${itemId}`);
+                } catch (err) {
+                    fetch(`/log/click/item/${itemId}`, { method: 'POST', keepalive: true }).catch(() => {});
+                }
+            }
+            openPixModal(itemId);
+        });
+    });
+
+    // Botões de PIX Copia e Cola
+    document.querySelectorAll('.profile-button-pix').forEach(button => {
+        button.addEventListener('click', () => {
+            const itemId = button.dataset.itemId;
+            const pixKey = button.dataset.pixKey;
+            
+            // Registrar clique antes de copiar
+            if (itemId) {
+                try {
+                    navigator.sendBeacon(`/log/click/item/${itemId}`);
+                } catch (err) {
+                    fetch(`/log/click/item/${itemId}`, { method: 'POST', keepalive: true }).catch(() => {});
+                }
+            }
+            
+            if (!pixKey || pixKey === 'SuaChavePIXAqui') {
+                return alert('Nenhuma chave PIX configurada.');
+            }
+            navigator.clipboard.writeText(pixKey).then(() => {
+                const originalSpan = button.querySelector('span');
+                const originalText = originalSpan.textContent;
+                originalSpan.textContent = 'Copiado!';
+                setTimeout(() => { originalSpan.textContent = originalText; }, 2000);
+            }).catch(() => alert('Não foi possível copiar a chave PIX.'));
+        });
+    });
+
+    // Controles do Modal PIX
+    if (pixCloseBtn) pixCloseBtn.addEventListener('click', closePixModal);
+    if (pixModal) pixModal.addEventListener('click', e => { if (e.target === pixModal) closePixModal(); });
+    if (pixCopyBrCodeBtn) pixCopyBrCodeBtn.addEventListener('click', () => {
+        pixBrCodeText.select();
+        document.execCommand('copy');
+        const originalText = pixCopyBrCodeBtn.textContent;
+        pixCopyBrCodeBtn.textContent = 'Copiado!';
+        setTimeout(() => { pixCopyBrCodeBtn.textContent = originalText; }, 2000);
+    });
+
+    // ==========================================================
+    // 4. CÓDIGO DE EXECUÇÃO IMEDIATA (Analytics de View)
+    // ==========================================================
+    if (userId) {
+        try { navigator.sendBeacon(`/log/view/${userId}`); } catch (e) { fetch(`/log/view/${userId}`, { method: 'POST', keepalive: true }); }
+    }
+
+    // ==========================================================
+    // 5. YOUTUBE IFRAME API - AUTOPLAY COM SOM
+    // ==========================================================
+    var youtubePlayers = {};
+    var userInteracted = false;
+
+    function onYouTubeIframeAPIReady() {
+        var youtubeIframes = document.querySelectorAll('iframe[src*="youtube.com/embed/"]');
+        youtubeIframes.forEach(function(iframe, index) {
+            var videoId = iframe.src.match(/embed\/([^?]+)/);
+            if (videoId && videoId[1]) {
+                try {
+                    youtubePlayers[index] = new YT.Player(iframe.id || 'youtube-player-' + index, {
+                        videoId: videoId[1],
+                        playerVars: {
+                            autoplay: 1,
+                            mute: 1,
+                            playsinline: 1,
+                            enablejsapi: 1,
+                            origin: window.location.origin,
+                            rel: 0
+                        },
+                        events: {
+                            onReady: function(event) {
+                                event.target.playVideo();
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.error('Erro ao inicializar player do YouTube:', e);
+                }
+            }
+        });
+    }
+
+    function activateYouTubeSound() {
+        if (userInteracted) return;
+        userInteracted = true;
+        
+        Object.keys(youtubePlayers).forEach(function(key) {
+            try {
+                var player = youtubePlayers[key];
+                if (player && typeof player.unMute === 'function') {
+                    player.unMute();
+                    player.playVideo();
+                }
+            } catch (e) {
+                console.error('Erro ao ativar som do YouTube:', e);
+            }
+        });
+    }
+
+    // Detectar interação do usuário
+    var interactionEvents = ['click', 'touchstart', 'scroll', 'keydown', 'mousemove'];
+    interactionEvents.forEach(function(eventType) {
+        document.addEventListener(eventType, function() {
+            activateYouTubeSound();
+        }, { once: true });
+    });
+
+    // Se a API já estiver carregada
+    if (typeof YT !== 'undefined' && YT.Player) {
+        onYouTubeIframeAPIReady();
+    } else {
+        window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+    }
+    
+    // ========== CATÁLOGO DE PRODUTOS ==========
+    let productCart = JSON.parse(localStorage.getItem('productCart') || '{}');
+    const profileSlug = '<%= details.profile_slug || details.user_id %>';
+
+    function formatCurrency(value) {
+        let num = 0;
+        if (typeof value === 'number') {
+            num = value;
+        } else if (typeof value === 'string') {
+            // Remove tudo exceto dígitos, pontos e vírgulas
+            const cleaned = value.replace(/[^\d,\.]/g, '');
+            // Se tem vírgula, assume formato brasileiro (ponto = milhar, vírgula = decimal)
+            if (cleaned.includes(',')) {
+                // Remove pontos (milhares) e substitui vírgula por ponto (decimal)
+                num = Number(cleaned.replace(/\./g, '').replace(',', '.')) || 0;
+            } else if (cleaned.includes('.')) {
+                // Se tem ponto mas não vírgula, verifica se é decimal (apenas um ponto seguido de 1-2 dígitos no final)
+                const parts = cleaned.split('.');
+                if (parts.length === 2 && parts[1].length <= 2) {
+                    // É decimal (ex: 9299.99)
+                    num = Number(cleaned) || 0;
+                } else {
+                    // É milhar (ex: 9.299.999), remove pontos
+                    num = Number(cleaned.replace(/\./g, '')) || 0;
+                }
+            } else {
+                // Apenas dígitos
+                num = Number(cleaned) || 0;
+            }
+        }
+        return num.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+    
+    function updateCartCount() {
+        const cartCount = Object.values(productCart).reduce((sum, items) => {
+            return sum + Object.values(items || {}).reduce((s, item) => s + (item.quantity || 0), 0);
+        }, 0);
+        document.querySelectorAll('.cart-count-badge').forEach(badge => {
+            badge.textContent = cartCount;
+            badge.style.display = cartCount > 0 ? 'inline-block' : 'none';
+        });
+    }
+    
+    // Função para gerar HTML do produto baseado no modo e tamanho
+    function generateProductHTML(product, cartItem, itemId, profileSlug, viewMode, cardSize) {
+        const sizeConfig = {
+            small: { minWidth: '180px', imgHeight: '160px', padding: '12px', fontSize: '1rem', priceSize: '1.3rem', gap: '15px' },
+            medium: { minWidth: '280px', imgHeight: '280px', padding: '24px', fontSize: '1.3rem', priceSize: '1.8rem', gap: '25px' },
+            large: { minWidth: '350px', imgHeight: '350px', padding: '28px', fontSize: '1.5rem', priceSize: '2rem', gap: '30px' }
+        };
+        const config = sizeConfig[cardSize] || sizeConfig.medium;
+        
+        if (viewMode === 'list') {
+            return `
+                <div class="product-card product-card-list" data-product-id="${product.id}" style="background: rgba(28,28,33,0.9); border-radius: 16px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: row; box-shadow: 0 4px 12px rgba(0,0,0,0.3); margin-bottom: 20px;">
+                    ${product.image_url ? `<div style="width: 200px; min-width: 200px; max-width: 200px; height: 200px; min-height: 200px; background: #0D0D0F; display: flex; align-items: center; justify-content: center; padding: 12px; flex-shrink: 0; box-sizing: border-box; overflow: hidden;"><img src="${product.image_url}" alt="${product.name}" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; border-radius: 8px; background: transparent;"></div>` : '<div style="width: 200px; min-width: 200px; max-width: 200px; height: 200px; min-height: 200px; background: #2C2C2F; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="fas fa-image" style="font-size: 3rem; color: #666;"></i></div>'}
+                    <div style="padding: 24px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <h3 style="color: #ECECEC; margin: 0 0 12px 0; font-size: 1.4rem; font-weight: 600; line-height: 1.3;">${product.name}</h3>
+                            ${product.description ? `<p style="color: #999; font-size: 1rem; margin: 0 0 18px 0; line-height: 1.6;">${product.description}</p>` : ''}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px;">
+                            <span style="color: #FFC700; font-size: 1.8rem; font-weight: 700;">R$ ${formatCurrency(product.price)}</span>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                ${cartItem.quantity > 0 ? `
+                                    <button class="cart-btn-decrease" data-item-id="${itemId}" data-product-id="${product.id}" style="width: 40px; height: 40px; background: #2C2C2F; color: #ECECEC; border: none; border-radius: 8px; cursor: pointer; font-size: 1.2rem; transition: background 0.2s; font-weight: 600;">-</button>
+                                    <span style="color: #ECECEC; font-weight: 700; min-width: 35px; text-align: center; font-size: 1.1rem;">${cartItem.quantity}</span>
+                                    <button class="cart-btn-increase" data-item-id="${itemId}" data-product-id="${product.id}" style="width: 40px; height: 40px; background: #FFC700; color: #000; border: none; border-radius: 8px; cursor: pointer; font-size: 1.2rem; font-weight: 700; transition: background 0.2s;">+</button>
+                                    <button class="cart-btn-remove" data-item-id="${itemId}" data-product-id="${product.id}" style="padding: 10px 20px; background: #d32f2f; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 600; transition: background 0.2s;">Remover</button>
+                                ` : `
+                                    <button class="cart-btn-add" data-item-id="${itemId}" data-product-id="${product.id}" data-product-name="${product.name.replace(/"/g, '&quot;')}" data-product-price="${typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0}" style="padding: 12px 24px; background: #FFC700; color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1.05rem; transition: background 0.2s;">Adicionar</button>
+                                `}
+                            </div>
+                            <a href="/${profileSlug}/produto/${product.id}" target="_blank" style="color: #ECECEC; font-size: 0.9rem; text-decoration: none; opacity: 0.7; transition: opacity 0.2s; white-space: nowrap;">Ver detalhes →</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="product-card product-card-grid" data-product-id="${product.id}" style="background: rgba(28,28,33,0.9); border-radius: 16px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; min-height: ${cardSize === 'small' ? '320px' : cardSize === 'large' ? '550px' : '450px'}; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    ${product.image_url ? `<div style="width: 100%; height: ${config.imgHeight}; min-height: ${config.imgHeight}; background: #0D0D0F; display: flex; align-items: center; justify-content: center; padding: 12px; flex-shrink: 0; box-sizing: border-box; overflow: hidden; position: relative;"><img src="${product.image_url}" alt="${product.name}" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; border-radius: 8px; background: transparent; margin: auto;"></div>` : `<div style="width: 100%; height: ${config.imgHeight}; min-height: ${config.imgHeight}; background: #2C2C2F; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="fas fa-image" style="font-size: 3rem; color: #666;"></i></div>`}
+                    <div style="padding: ${config.padding}; flex-grow: 1; display: flex; flex-direction: column;">
+                        <h3 style="color: #ECECEC; margin: 0 0 12px 0; font-size: ${config.fontSize}; font-weight: 600; line-height: 1.3;">${product.name}</h3>
+                        ${product.description ? `<p style="color: #999; font-size: ${parseFloat(config.fontSize) * 0.73}rem; margin: 0 0 18px 0; line-height: 1.6; flex-grow: 1; display: -webkit-box; -webkit-line-clamp: ${cardSize === 'small' ? 2 : 3}; -webkit-box-orient: vertical; overflow: hidden;">${product.description}</p>` : '<div style="flex-grow: 1;"></div>'}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-shrink: 0;">
+                            <span style="color: #FFC700; font-size: ${config.priceSize}; font-weight: 700;">R$ ${formatCurrency(product.price)}</span>
+                            <a href="/${profileSlug}/produto/${product.id}" target="_blank" style="color: #ECECEC; font-size: 0.85rem; text-decoration: none; opacity: 0.7; transition: opacity 0.2s;">Ver detalhes →</a>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
+                            ${cartItem.quantity > 0 ? `
+                                <button class="cart-btn-decrease" data-item-id="${itemId}" data-product-id="${product.id}" style="width: ${cardSize === 'small' ? '35px' : '40px'}; height: ${cardSize === 'small' ? '35px' : '40px'}; background: #2C2C2F; color: #ECECEC; border: none; border-radius: 8px; cursor: pointer; font-size: 1.2rem; transition: background 0.2s; font-weight: 600;">-</button>
+                                <span style="color: #ECECEC; font-weight: 700; min-width: 35px; text-align: center; font-size: 1.1rem;">${cartItem.quantity}</span>
+                                <button class="cart-btn-increase" data-item-id="${itemId}" data-product-id="${product.id}" style="width: ${cardSize === 'small' ? '35px' : '40px'}; height: ${cardSize === 'small' ? '35px' : '40px'}; background: #FFC700; color: #000; border: none; border-radius: 8px; cursor: pointer; font-size: 1.2rem; font-weight: 700; transition: background 0.2s;">+</button>
+                                <button class="cart-btn-remove" data-item-id="${itemId}" data-product-id="${product.id}" style="flex: 1; padding: ${cardSize === 'small' ? '8px' : '10px'}; background: #d32f2f; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: ${cardSize === 'small' ? '0.85rem' : '0.95rem'}; font-weight: 600; transition: background 0.2s;">Remover</button>
+                            ` : `
+                                <button class="cart-btn-add" data-item-id="${itemId}" data-product-id="${product.id}" data-product-name="${product.name.replace(/"/g, '&quot;')}" data-product-price="${typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0}" style="flex: 1; padding: ${cardSize === 'small' ? '10px' : '14px'}; background: #FFC700; color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: ${cardSize === 'small' ? '0.95rem' : '1.05rem'}; transition: background 0.2s;">Adicionar</button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // Função para atualizar apenas o conteúdo do modal sem recriar
+    function updateProductCatalogContent(modal, itemId, whatsappNumber, products) {
+        const cartItems = productCart[itemId] || {};
+        const cartCount = Object.values(cartItems).reduce((sum, item) => sum + (item.quantity || 0), 0);
+        
+        // Carregar preferências do localStorage
+        const viewPrefs = JSON.parse(localStorage.getItem('productCatalogViewPrefs') || '{"viewMode":"grid","size":"medium"}');
+        const viewMode = viewPrefs.viewMode || 'grid';
+        const cardSize = viewPrefs.size || 'medium';
+        
+        const modalContent = modal.querySelector('div[style*="max-width: 1200px"]');
+        if (!modalContent) return;
+        
+        // Preservar scroll
+        const savedScroll = modal.scrollTop;
+        
+        // Atualizar produtos
+        const productsContainer = modalContent.querySelector('.products-container');
+        if (productsContainer) {
+            productsContainer.innerHTML = products.length === 0 ? '<p style="grid-column: 1/-1; text-align: center; color: #999; padding: 40px;">Nenhum produto disponível no momento.</p>' : products.map(product => {
+                const cartItem = cartItems[product.id] || { quantity: 0 };
+                return generateProductHTML(product, cartItem, itemId, profileSlug, viewMode, cardSize);
+            }).join('');
+        }
+        
+        // Atualizar footer do carrinho
+        const existingFooter = modalContent.querySelector('.cart-footer');
+        if (cartCount > 0) {
+            const footerHTML = `
+                <div class="cart-footer" style="position: sticky; bottom: 0; background: rgba(20,20,23,0.98); padding: 20px; border-radius: 12px; border-top: 2px solid #FFC700; margin-top: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span style="color: #ECECEC; font-size: 1.2rem; font-weight: 600;">Total: <span class="cart-total" style="color: #FFC700;">R$ 0,00</span></span>
+                        <span class="cart-count-badge" style="background: #FFC700; color: #000; padding: 5px 15px; border-radius: 20px; font-weight: 700; font-size: 1rem;">${cartCount} item${cartCount !== 1 ? 's' : ''}</span>
+                    </div>
+                    <button class="cart-checkout-btn" data-item-id="${itemId}" data-whatsapp="${(whatsappNumber || '').replace(/"/g, '&quot;')}" style="width: 100%; padding: 15px; background: #25D366; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <i class="fab fa-whatsapp" style="font-size: 1.5rem;"></i>
+                        Finalizar Compra
+                    </button>
+                </div>
+            `;
+            if (existingFooter) {
+                existingFooter.outerHTML = footerHTML;
+            } else {
+                const productsContainerEl = modalContent.querySelector('.products-container');
+                if (productsContainerEl) {
+                    productsContainerEl.insertAdjacentHTML('afterend', footerHTML);
+                }
+            }
+        } else {
+            if (existingFooter) {
+                existingFooter.remove();
+            }
+        }
+        
+        // Restaurar scroll
+        modal.scrollTop = savedScroll;
+        
+        // Atualizar total e reanexar event listeners
+        updateCartTotal(itemId, products);
+        attachProductCatalogListeners(modal, itemId, whatsappNumber, products);
+    }
+    
+    // Função para anexar event listeners aos produtos e controles
+    function attachProductCatalogListeners(modal, itemId, whatsappNumber, products) {
+        let isClosing = false;
+        const closeFn = () => {
+            if (isClosing || !document.body.contains(modal)) return;
+            isClosing = true;
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.2s';
+            setTimeout(() => {
+                if (document.body.contains(modal)) {
+                    modal.remove();
+                }
+            }, 200);
+        };
+        
+        const closeBtn = modal.querySelector('.close-catalog-modal');
+        if (closeBtn) {
+            // Remover listeners antigos e adicionar novos
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+            newCloseBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                closeFn();
+            }, { capture: true });
+        }
+        
+        // Fechar ao clicar no fundo
+        modal.removeEventListener('click', modal._backgroundClickHandler);
+        modal._backgroundClickHandler = (e) => {
+            if (e.target === modal && !isClosing) {
+                closeFn();
+            }
+        };
+        modal.addEventListener('click', modal._backgroundClickHandler);
+        
+        // Fechar com ESC
+        modal._escHandler = (ev) => {
+            if (ev.key === 'Escape') {
+                closeFn();
+                document.removeEventListener('keydown', modal._escHandler);
+            }
+        };
+        document.removeEventListener('keydown', modal._escHandler);
+        document.addEventListener('keydown', modal._escHandler);
+        
+        // Event listeners para controles de visualização
+        modal.querySelectorAll('.view-mode-btn').forEach(btn => {
+            // Remover listeners antigos
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', (e) => {
+                if (isClosing || !document.body.contains(modal)) return;
+                const newMode = newBtn.dataset.mode;
+                const currentPrefs = JSON.parse(localStorage.getItem('productCatalogViewPrefs') || '{"viewMode":"grid","size":"medium"}');
+                currentPrefs.viewMode = newMode;
+                localStorage.setItem('productCatalogViewPrefs', JSON.stringify(currentPrefs));
+                openProductCatalog(itemId, whatsappNumber, products);
+            });
+        });
+        
+        modal.querySelectorAll('.size-btn').forEach(btn => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', (e) => {
+                if (isClosing || !document.body.contains(modal)) return;
+                const newSize = newBtn.dataset.size;
+                const currentPrefs = JSON.parse(localStorage.getItem('productCatalogViewPrefs') || '{"viewMode":"grid","size":"medium"}');
+                currentPrefs.size = newSize;
+                localStorage.setItem('productCatalogViewPrefs', JSON.stringify(currentPrefs));
+                openProductCatalog(itemId, whatsappNumber, products);
+            });
+        });
+        
+        modal.querySelectorAll('.cart-btn-add').forEach(btn => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', (e) => {
+                if (isClosing || !document.body.contains(modal)) return;
+                const itemIdVal = newBtn.dataset.itemId;
+                const productId = parseInt(newBtn.dataset.productId);
+                if (!productCart[itemIdVal]) productCart[itemIdVal] = {};
+                // Garantir que o preço é um número puro
+                let productPrice = newBtn.dataset.productPrice;
+                if (typeof productPrice === 'string') {
+                    productPrice = productPrice.replace(/[^\d,\.]/g, '').replace(/\./g, '').replace(',', '.');
+                }
+                productPrice = parseFloat(productPrice) || 0;
+                if (!productCart[itemIdVal][productId]) {
+                    productCart[itemIdVal][productId] = {
+                        quantity: 1,
+                        name: newBtn.dataset.productName,
+                        price: productPrice,
+                        id: productId
+                    };
+                } else {
+                    productCart[itemIdVal][productId].quantity++;
+                }
+                localStorage.setItem('productCart', JSON.stringify(productCart));
+                updateProductCatalogContent(modal, itemIdVal, whatsappNumber, products);
+            });
+        });
+        
+        modal.querySelectorAll('.cart-btn-increase').forEach(btn => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', (e) => {
+                if (isClosing || !document.body.contains(modal)) return;
+                const itemIdVal = newBtn.dataset.itemId;
+                const productId = parseInt(newBtn.dataset.productId);
+                if (productCart[itemIdVal] && productCart[itemIdVal][productId]) {
+                    productCart[itemIdVal][productId].quantity++;
+                    localStorage.setItem('productCart', JSON.stringify(productCart));
+                    updateProductCatalogContent(modal, itemIdVal, whatsappNumber, products);
+                }
+            });
+        });
+        
+        modal.querySelectorAll('.cart-btn-decrease').forEach(btn => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', (e) => {
+                if (isClosing || !document.body.contains(modal)) return;
+                const itemIdVal = newBtn.dataset.itemId;
+                const productId = parseInt(newBtn.dataset.productId);
+                if (productCart[itemIdVal] && productCart[itemIdVal][productId] && productCart[itemIdVal][productId].quantity > 1) {
+                    productCart[itemIdVal][productId].quantity--;
+                    localStorage.setItem('productCart', JSON.stringify(productCart));
+                    updateProductCatalogContent(modal, itemIdVal, whatsappNumber, products);
+                }
+            });
+        });
+        
+        modal.querySelectorAll('.cart-btn-remove').forEach(btn => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', (e) => {
+                if (isClosing || !document.body.contains(modal)) return;
+                const itemIdVal = newBtn.dataset.itemId;
+                const productId = parseInt(newBtn.dataset.productId);
+                if (productCart[itemIdVal] && productCart[itemIdVal][productId]) {
+                    delete productCart[itemIdVal][productId];
+                    localStorage.setItem('productCart', JSON.stringify(productCart));
+                    updateProductCatalogContent(modal, itemIdVal, whatsappNumber, products);
+                }
+            });
+        });
+        
+        const checkoutBtn = modal.querySelector('.cart-checkout-btn');
+        if (checkoutBtn) {
+            const newCheckoutBtn = checkoutBtn.cloneNode(true);
+            checkoutBtn.parentNode.replaceChild(newCheckoutBtn, checkoutBtn);
+            newCheckoutBtn.addEventListener('click', () => {
+                const itemIdVal = newCheckoutBtn.dataset.itemId;
+                const whatsapp = newCheckoutBtn.dataset.whatsapp;
+                checkoutCart(itemIdVal, whatsapp, products);
+            });
+        }
+        
+        updateCartCount();
+    }
+    
+    function openProductCatalog(itemId, whatsappNumber, products) {
+        // Verificar se o modal já existe
+        let modal = document.querySelector('.product-catalog-modal-overlay');
+        const isNewModal = !modal;
+        
+        if (isNewModal) {
+            // Criar novo modal apenas se não existir
+            modal = document.createElement('div');
+            modal.className = 'product-catalog-modal-overlay';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; overflow-y: auto; padding: 20px;';
+            document.body.appendChild(modal);
+        }
+        
+        const cartItems = productCart[itemId] || {};
+        const cartCount = Object.values(cartItems).reduce((sum, item) => sum + (item.quantity || 0), 0);
+        
+        // Carregar preferências do localStorage
+        const viewPrefs = JSON.parse(localStorage.getItem('productCatalogViewPrefs') || '{"viewMode":"grid","size":"medium"}');
+        const viewMode = viewPrefs.viewMode || 'grid';
+        const cardSize = viewPrefs.size || 'medium';
+        
+        // Se for modal novo, criar HTML completo, senão apenas atualizar conteúdo
+        if (isNewModal) {
+            modal.innerHTML = `
+            <div style="max-width: 1200px; margin: 0 auto; background: rgba(20,20,23,0.95); border-radius: 16px; padding: 30px; position: relative;">
+                <button class="close-catalog-modal" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border: none; color: #ECECEC; font-size: 2.2rem; cursor: pointer; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; z-index: 20001; pointer-events: auto; line-height: 1; font-weight: 300;" onmouseover="this.style.background='rgba(220,53,69,0.8)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'; this.style.transform='scale(1)'">&times;</button>
+                <h2 style="color: #ECECEC; margin: 0 0 20px 0; font-size: 2rem; text-align: center;">🛍️ Minha Loja</h2>
+                
+                <div class="view-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 8px; align-items: center; background: rgba(28,28,33,0.8); padding: 8px; border-radius: 10px;">
+                        <button class="view-mode-btn" data-mode="grid" style="padding: 8px 16px; background: ${viewMode === 'grid' ? '#FFC700' : 'transparent'}; color: ${viewMode === 'grid' ? '#000' : '#ECECEC'}; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;" title="Modo Grade" onmouseover="if(this.style.background !== 'rgb(255, 199, 0)') this.style.background='rgba(255,199,0,0.2)'" onmouseout="if(this.style.background !== 'rgb(255, 199, 0)') this.style.background='transparent'">
+                            <i class="fas fa-th" style="margin-right: 5px;"></i>Grade
+                        </button>
+                        <button class="view-mode-btn" data-mode="list" style="padding: 8px 16px; background: ${viewMode === 'list' ? '#FFC700' : 'transparent'}; color: ${viewMode === 'list' ? '#000' : '#ECECEC'}; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;" title="Modo Lista" onmouseover="if(this.style.background !== 'rgb(255, 199, 0)') this.style.background='rgba(255,199,0,0.2)'" onmouseout="if(this.style.background !== 'rgb(255, 199, 0)') this.style.background='transparent'">
+                            <i class="fas fa-list" style="margin-right: 5px;"></i>Lista
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; background: rgba(28,28,33,0.8); padding: 8px; border-radius: 10px;">
+                        <button class="size-btn" data-size="small" style="padding: 8px 12px; background: ${cardSize === 'small' ? '#FFC700' : 'transparent'}; color: ${cardSize === 'small' ? '#000' : '#ECECEC'}; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;" title="Pequeno" onmouseover="if(this.style.background !== 'rgb(255, 199, 0)') this.style.background='rgba(255,199,0,0.2)'" onmouseout="if(this.style.background !== 'rgb(255, 199, 0)') this.style.background='transparent'">
+                            <i class="fas fa-compress-alt"></i>
+                        </button>
+                        <button class="size-btn" data-size="medium" style="padding: 8px 12px; background: ${cardSize === 'medium' ? '#FFC700' : 'transparent'}; color: ${cardSize === 'medium' ? '#000' : '#ECECEC'}; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;" title="Médio" onmouseover="if(this.style.background !== 'rgb(255, 199, 0)') this.style.background='rgba(255,199,0,0.2)'" onmouseout="if(this.style.background !== 'rgb(255, 199, 0)') this.style.background='transparent'">
+                            <i class="fas fa-square"></i>
+                        </button>
+                        <button class="size-btn" data-size="large" style="padding: 8px 12px; background: ${cardSize === 'large' ? '#FFC700' : 'transparent'}; color: ${cardSize === 'large' ? '#000' : '#ECECEC'}; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;" title="Grande" onmouseover="if(this.style.background !== 'rgb(255, 199, 0)') this.style.background='rgba(255,199,0,0.2)'" onmouseout="if(this.style.background !== 'rgb(255, 199, 0)') this.style.background='transparent'">
+                            <i class="fas fa-expand-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="products-container" data-view-mode="${viewMode}" data-card-size="${cardSize}" style="margin-bottom: 30px; ${viewMode === 'grid' ? `display: grid; grid-template-columns: repeat(auto-fill, minmax(${cardSize === 'small' ? '180px' : cardSize === 'large' ? '350px' : '280px'}, 1fr)); gap: ${cardSize === 'small' ? '15px' : cardSize === 'large' ? '30px' : '25px'};` : 'display: flex; flex-direction: column;'}">
+                    ${products.length === 0 ? '<p style="grid-column: 1/-1; text-align: center; color: #999; padding: 40px;">Nenhum produto disponível no momento.</p>' : ''}
+                    ${products.map(product => {
+                        const cartItem = cartItems[product.id] || { quantity: 0 };
+                        return generateProductHTML(product, cartItem, itemId, profileSlug, viewMode, cardSize);
+                    }).join('')}
+                </div>
+                
+                ${cartCount > 0 ? `
+                    <div class="cart-footer" style="position: sticky; bottom: 0; background: rgba(20,20,23,0.98); padding: 20px; border-radius: 12px; border-top: 2px solid #FFC700; margin-top: 30px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span style="color: #ECECEC; font-size: 1.2rem; font-weight: 600;">Total: <span class="cart-total" style="color: #FFC700;">R$ 0,00</span></span>
+                            <span class="cart-count-badge" style="background: #FFC700; color: #000; padding: 5px 15px; border-radius: 20px; font-weight: 700; font-size: 1rem;">${cartCount} item${cartCount !== 1 ? 's' : ''}</span>
+                        </div>
+                        <button class="cart-checkout-btn" data-item-id="${itemId}" data-whatsapp="${(whatsappNumber || '').replace(/"/g, '&quot;')}" style="width: 100%; padding: 15px; background: #25D366; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                            <i class="fab fa-whatsapp" style="font-size: 1.5rem;"></i>
+                            Finalizar Compra
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+            attachProductCatalogListeners(modal, itemId, whatsappNumber, products);
+            updateCartTotal(itemId, products);
+        } else {
+            // Modal já existe, apenas atualizar conteúdo sem recriar
+            updateProductCatalogContent(modal, itemId, whatsappNumber, products);
+        }
+    }
+    
+    function updateCartTotal(itemId, products) {
+        const cartItems = productCart[itemId] || {};
+        let total = 0;
+        Object.values(cartItems).forEach(item => {
+            total += item.price * item.quantity;
+        });
+        
+        document.querySelectorAll('.cart-total').forEach(el => {
+            el.textContent = `R$ ${formatCurrency(total)}`;
+        });
+    }
+    
+    function checkoutCart(itemId, whatsappNumber, products) {
+        const cartItems = productCart[itemId] || {};
+        const items = Object.values(cartItems);
+        
+        if (items.length === 0) {
+            alert('Carrinho vazio!');
+            return;
+        }
+        
+        if (!whatsappNumber || whatsappNumber.trim() === '') {
+            alert('WhatsApp não configurado. Configure o número no painel de administração.');
+            return;
+        }
+        
+        const baseUrl = window.location.origin;
+        const profileSlugVal = '<%= details.profile_slug || details.user_id %>';
+        
+        let message = 'Olá! Gostaria de comprar:\n\n';
+        items.forEach(item => {
+            const product = products.find(p => p.id === item.id);
+            const productUrl = `${baseUrl}/${profileSlugVal}/produto/${item.id}`;
+            message += `*${item.name}*\n`;
+            message += `R$ ${formatCurrency(item.price)}\n`;
+            message += `Quantidade: ${item.quantity}\n`;
+            message += `🔗 ${productUrl}\n\n`;
+        });
+        
+        const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        message += `*Total: R$ ${formatCurrency(total)}*`;
+        
+        const whatsappNum = whatsappNumber.replace(/\D/g, '');
+        const whatsappUrl = `https://wa.me/${whatsappNum}?text=${encodeURIComponent(message)}`;
+        
+        window.open(whatsappUrl, '_blank');
+    }
+    
+    // Event listener para abrir catálogo
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.product-catalog-btn')) {
+            const btn = e.target.closest('.product-catalog-btn');
+            const itemId = btn.dataset.itemId;
+            const whatsappNumber = btn.dataset.whatsapp || '';
+            let products = [];
+            try {
+                products = JSON.parse(btn.dataset.products || '[]');
+            } catch (err) {
+                console.error('Erro ao parsear produtos:', err);
+            }
+            openProductCatalog(itemId, whatsappNumber, products);
+        }
+    });
+    
+    // Atualizar contagem do carrinho ao carregar
+    updateCartCount();
+
+
+});
+    </script>
+    <script async src="//www.instagram.com/embed.js"></script>
+    <div id="pix-qrcode-modal" class="pix-modal-overlay">
+    <div class="pix-modal-content">
+        <button id="pix-modal-close-btn" class="pix-modal-close">&times;</button>
+        <h4>Escaneie para pagar com PIX</h4>
+        <div id="pix-qrcode-container">
+            <div id="pix-qrcode-image"></div>
+            <div id="pix-qrcode-loader"></div>
+        </div>
+        <h5>Ou use o Copia e Cola:</h5>
+        <div class="pix-brcode-area">
+            <textarea id="pix-brcode-text" readonly></textarea>
+            <button id="pix-copy-brcode-btn">Copiar Código</button>
+        </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR" style="background-color: <%= details.background_color || '#0D0D0F' %>;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title><%= product.name %> - <%= details.display_name || 'Conecta King' %></title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="/css/profile.css?v=<%= cacheBuster %>">
+    
+    <meta property="og:title" content="<%= product.name %>">
+    <meta property="og:description" content="<%= product.description || product.name %>">
+    <meta property="og:image" content="<%= product.image_url || details.profile_image_url %>">
+
+    <style>
+        body, h1, p, span { font-family: '<%= details.font_family || "Inter" %>', sans-serif !important; }
+        
+        .product-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .product-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .product-image-container {
+            width: 100%;
+            max-width: 680px;
+            margin: 0 auto 2rem;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            background: rgba(var(--card-r), var(--card-g), var(--card-b), var(--card-opacity));
+            padding: 16px;
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 100%;
+            max-height: 520px;
+            display: block;
+            object-fit: contain;
+            background: #0D0D0F;
+            border-radius: 12px;
+        }
+        
+        .product-info {
+            background: rgba(var(--card-r), var(--card-g), var(--card-b), var(--card-opacity));
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .product-name {
+            font-size: 2rem;
+            font-weight: 700;
+            color: <%= details.text_color || '#ECECEC' %>;
+            margin: 0 0 1rem 0;
+            line-height: 1.3;
+        }
+        
+        .product-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: <%= details.button_color || '#141417' %>;
+            margin: 1.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .product-price::before {
+            content: 'R$';
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+        
+        .product-description {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: <%= details.text_color || '#ECECEC' %>;
+            opacity: 0.9;
+            margin: 1.5rem 0 0 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 14px 28px;
+            background: rgba(var(--btn-r), var(--btn-g), var(--btn-b), var(--btn-opacity));
+            color: <%= details.button_text_color || '#FFFFFF' %>;
+            text-decoration: none;
+            border-radius: var(--btn-border-radius);
+            font-weight: 600;
+            font-size: var(--btn-font-size);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .back-button i {
+            font-size: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .product-container {
+                padding: 1rem;
+            }
+            
+            .product-name {
+                font-size: 1.5rem;
+            }
+            
+            .product-price {
+                font-size: 2rem;
+            }
+            
+            .product-info {
+                padding: 1.5rem;
+            }
+            
+            .product-description {
+                font-size: 1rem;
+            }
+        }
+        
+        :root {
+            --btn-r: <%= (details.button_color_rgb && details.button_color_rgb.r) || 20 %>;
+            --btn-g: <%= (details.button_color_rgb && details.button_color_rgb.g) || 20 %>;
+            --btn-b: <%= (details.button_color_rgb && details.button_color_rgb.b) || 23 %>;
+            --btn-opacity: <%= details.button_opacity !== undefined ? details.button_opacity : 1 %>;
+            --btn-border-radius: <%= details.button_border_radius || '12px' %>;
+            --card-r: <%= (details.card_color_rgb && details.card_color_rgb.r) || 20 %>;
+            --card-g: <%= (details.card_color_rgb && details.card_color_rgb.g) || 20 %>;
+            --card-b: <%= (details.card_color_rgb && details.card_color_rgb.b) || 23 %>;
+            --card-opacity: <%= details.card_opacity !== undefined ? details.card_opacity : 1.0 %>;
+            --btn-font-size: <%= details.button_font_size || '1rem' %>;
+        }
+    </style>
+</head>
+<body>
+    <div class="product-container">
+        <div class="product-header">
+            <% if (product.image_url) { %>
+            <div class="product-image-container">
+                <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-image" loading="lazy">
+            </div>
+            <% } %>
+        </div>
+        
+        <div class="product-info">
+            <h1 class="product-name"><%= product.name %></h1>
+            
+            <div class="product-price">
+                <%= parseFloat(product.price).toFixed(2).replace('.', ',') %>
+            </div>
+            
+            <% if (product.description) { %>
+            <p class="product-description"><%= product.description %></p>
+            <% } %>
+        </div>
+        
+        <div style="text-align: center;">
+            <a href="<%= profileUrl %>" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+                Voltar ao Catálogo
+            </a>
+        </div>
+    </div>
+</body>
+</html>
+

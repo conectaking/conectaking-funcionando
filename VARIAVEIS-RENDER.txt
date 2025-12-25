@@ -1,0 +1,49 @@
+# 📝 Variáveis de Ambiente para o Render
+
+## Copie e cole estas variáveis no painel do Render:
+
+### Email SMTP - Gmail
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=conectaking@gmail.com
+SMTP_PASS=imhr ogpa zeqg scms
+SMTP_FROM=noreply@conectaking.com.br
+
+### URL do Frontend
+FRONTEND_URL=https://conectaking.com.br
+
+---
+
+## ⚠️ IMPORTANTE:
+
+1. No Render, cada variável deve ser adicionada separadamente
+2. Nome da variável à esquerda, valor à direita
+3. NÃO inclua espaços antes ou depois do "="
+4. Salve e aguarde o servidor reiniciar
+
+---
+
+## 📋 Passo a Passo no Render:
+
+1. Acesse: https://dashboard.render.com
+2. Vá no seu serviço da API
+3. Clique em "Environment" no menu
+4. Clique em "Add Environment Variable"
+5. Para cada variável acima:
+   - Key: SMTP_HOST
+   - Value: smtp.gmail.com
+   - Clique em "Save"
+6. Repita para todas as outras variáveis
+7. O servidor reiniciará automaticamente
+
+---
+
+## ✅ Verificação:
+
+Após adicionar, verifique os logs. Não deve aparecer:
+- "Email transporter não configurado"
+- "SMTP_USER não configurado"
+
+Se não aparecerem esses erros, está tudo certo! ✅
+
