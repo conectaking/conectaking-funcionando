@@ -40,3 +40,8 @@ public/uploads/
 # Cache
 .cache/
 
+# Frontend - não commitado (deploy manual na Hostinger)
+public_html/
+
+# Backend - DEVE ser commitado
+# conectaking-funcionando/ está permitido (não ignorado)
