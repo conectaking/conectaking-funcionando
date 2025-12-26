@@ -327,8 +327,27 @@ router.put('/avatar-format', protectUser, async (req, res) => {
         const userId = req.user.userId;
         const { avatar_format } = req.body;
         
+        console.log('📝 Recebida requisição para atualizar avatar_format:', { userId, avatar_format });
+        
         if (!avatar_format || !['circular', 'square-full', 'square-small'].includes(avatar_format)) {
             return res.status(400).json({ message: 'Formato de avatar inválido.' });
+        }
+        
+        // Verificar se a coluna existe (se não existir, pode ser que a migration não foi executada)
+        const columnCheck = await client.query(`
+            SELECT EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name = 'user_profiles' 
+                AND column_name = 'avatar_format'
+            ) AS coluna_existe
+        `);
+        
+        if (!columnCheck.rows[0]?.coluna_existe) {
+            console.error('❌ Coluna avatar_format não existe na tabela user_profiles');
+            return res.status(503).json({ 
+                message: 'A coluna avatar_format ainda não foi criada. Execute a migration 015 primeiro.' 
+            });
         }
         
         // Garantir que o perfil existe
@@ -339,22 +358,35 @@ router.put('/avatar-format', protectUser, async (req, res) => {
         
         if (checkRes.rows.length === 0) {
             // Criar perfil se não existir
+            console.log('📝 Criando novo perfil com avatar_format');
             await client.query(
                 'INSERT INTO user_profiles (user_id, avatar_format) VALUES ($1, $2)',
                 [userId, avatar_format]
             );
         } else {
             // Atualizar perfil existente
-            await client.query(
+            console.log('📝 Atualizando avatar_format do perfil existente');
+            const updateResult = await client.query(
                 'UPDATE user_profiles SET avatar_format = $1 WHERE user_id = $2',
                 [avatar_format, userId]
             );
+            console.log('✅ Update executado:', updateResult.rowCount, 'linha(s) atualizada(s)');
         }
         
+        console.log('✅ Formato de avatar atualizado com sucesso');
         res.json({ message: 'Formato de avatar atualizado com sucesso.', avatar_format });
     } catch (error) {
-        console.error('Erro ao atualizar formato de avatar:', error);
-        res.status(500).json({ message: 'Erro ao atualizar formato de avatar.' });
+        console.error('❌ Erro ao atualizar formato de avatar:', error);
+        console.error('❌ Detalhes do erro:', {
+            message: error.message,
+            code: error.code,
+            detail: error.detail,
+            hint: error.hint
+        });
+        res.status(500).json({ 
+            message: 'Erro ao atualizar formato de avatar.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     } finally {
         client.release();
     }
