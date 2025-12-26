@@ -70,7 +70,11 @@ app.use(helmet({
                 "https://avatar.iran.liara.run",
                 "https://*.youtube.com",
                 "https://*.googlevideo.com",
-                "https://i.ytimg.com"
+                "https://i.ytimg.com",
+                "https://www.google-analytics.com",
+                "https://*.google-analytics.com",
+                "https://www.googletagmanager.com",
+                "https://stats.g.doubleclick.net"
             ],
             fontSrc: [
                 "'self'", 
@@ -94,7 +98,11 @@ app.use(helmet({
                 "https://manifest.googlevideo.com",
                 "https://www.google-analytics.com",
                 "https://*.google-analytics.com",
-                "https://www.googletagmanager.com"
+                "https://google-analytics.com",
+                "https://www.googletagmanager.com",
+                "https://googletagmanager.com",
+                "https://stats.g.doubleclick.net",
+                "https://www.google.com"
             ],
             mediaSrc: [
                 "'self'",
