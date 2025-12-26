@@ -114,6 +114,11 @@ router.post('/tabs', protectUser, async (req, res) => {
 
         res.status(201).json({ message: 'Aba criada com sucesso!', tab: result.rows[0] });
     } catch (error) {
+        // Se a tabela não existir (erro 42P01), retornar erro específico
+        if (error.code === '42P01') {
+            console.log("Tabela profile_tabs não existe ainda");
+            return res.status(503).json({ message: 'Funcionalidade de abas não está disponível ainda. A tabela ainda não foi criada.' });
+        }
         console.error("Erro ao criar aba:", error);
         res.status(500).json({ message: 'Erro ao criar aba.' });
     } finally {
@@ -130,10 +135,20 @@ router.put('/tabs/:tabId', protectUser, async (req, res) => {
         const { tab_name, tab_icon, content_type, content_data, is_active } = req.body;
 
         // Verificar se a aba pertence ao usuário
-        const checkRes = await client.query(
-            'SELECT * FROM profile_tabs WHERE id = $1 AND user_id = $2',
-            [tabId, userId]
-        );
+        let checkRes;
+        try {
+            checkRes = await client.query(
+                'SELECT * FROM profile_tabs WHERE id = $1 AND user_id = $2',
+                [tabId, userId]
+            );
+        } catch (checkError) {
+            // Se a tabela não existir (erro 42P01), retornar erro específico
+            if (checkError.code === '42P01') {
+                console.log("Tabela profile_tabs não existe ainda");
+                return res.status(503).json({ message: 'Funcionalidade de abas não está disponível ainda. A tabela ainda não foi criada.' });
+            }
+            throw checkError; // Re-lançar se for outro erro
+        }
 
         if (checkRes.rows.length === 0) {
             return res.status(404).json({ message: 'Aba não encontrada ou você não tem permissão para editá-la.' });
@@ -179,6 +194,11 @@ router.put('/tabs/:tabId', protectUser, async (req, res) => {
         const result = await client.query(query, updateValues);
         res.json({ message: 'Aba atualizada com sucesso!', tab: result.rows[0] });
     } catch (error) {
+        // Se a tabela não existir (erro 42P01), retornar erro específico
+        if (error.code === '42P01') {
+            console.log("Tabela profile_tabs não existe ainda");
+            return res.status(503).json({ message: 'Funcionalidade de abas não está disponível ainda. A tabela ainda não foi criada.' });
+        }
         console.error("Erro ao atualizar aba:", error);
         res.status(500).json({ message: 'Erro ao atualizar aba.' });
     } finally {
@@ -194,10 +214,20 @@ router.delete('/tabs/:tabId', protectUser, async (req, res) => {
         const { tabId } = req.params;
 
         // Verificar se a aba pertence ao usuário
-        const checkRes = await client.query(
-            'SELECT * FROM profile_tabs WHERE id = $1 AND user_id = $2',
-            [tabId, userId]
-        );
+        let checkRes;
+        try {
+            checkRes = await client.query(
+                'SELECT * FROM profile_tabs WHERE id = $1 AND user_id = $2',
+                [tabId, userId]
+            );
+        } catch (checkError) {
+            // Se a tabela não existir (erro 42P01), retornar erro específico
+            if (checkError.code === '42P01') {
+                console.log("Tabela profile_tabs não existe ainda");
+                return res.status(503).json({ message: 'Funcionalidade de abas não está disponível ainda. A tabela ainda não foi criada.' });
+            }
+            throw checkError; // Re-lançar se for outro erro
+        }
 
         if (checkRes.rows.length === 0) {
             return res.status(404).json({ message: 'Aba não encontrada ou você não tem permissão para removê-la.' });
@@ -206,6 +236,11 @@ router.delete('/tabs/:tabId', protectUser, async (req, res) => {
         await client.query('DELETE FROM profile_tabs WHERE id = $1 AND user_id = $2', [tabId, userId]);
         res.json({ message: 'Aba removida com sucesso!' });
     } catch (error) {
+        // Se a tabela não existir (erro 42P01), retornar erro específico
+        if (error.code === '42P01') {
+            console.log("Tabela profile_tabs não existe ainda");
+            return res.status(503).json({ message: 'Funcionalidade de abas não está disponível ainda. A tabela ainda não foi criada.' });
+        }
         console.error("Erro ao deletar aba:", error);
         res.status(500).json({ message: 'Erro ao deletar aba.' });
     } finally {
@@ -237,7 +272,12 @@ router.put('/tabs/reorder', protectUser, async (req, res) => {
         await client.query('COMMIT');
         res.json({ message: 'Ordem das abas salva com sucesso!' });
     } catch (error) {
-        await client.query('ROLLBACK');
+        await client.query('ROLLBACK').catch(() => {}); // Ignorar erro se já foi feito rollback
+        // Se a tabela não existir (erro 42P01), retornar erro específico
+        if (error.code === '42P01') {
+            console.log("Tabela profile_tabs não existe ainda");
+            return res.status(503).json({ message: 'Funcionalidade de abas não está disponível ainda. A tabela ainda não foi criada.' });
+        }
         console.error("Erro ao reordenar abas:", error);
         res.status(500).json({ message: 'Erro ao reordenar abas.' });
     } finally {
