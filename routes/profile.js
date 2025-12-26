@@ -427,10 +427,10 @@ router.put('/save-all', protectUser, async (req, res) => {
                     'show_vcard_button = COALESCE($18, show_vcard_button)'
                 ];
                 const updateValues = [
-                    details.display_name || details.displayName,
-                    details.bio,
-                    details.profile_image_url || details.profileImageUrl,
-                    details.font_family || details.fontFamily,
+                    details.display_name || details.displayName || null,
+                    details.bio || null,
+                    details.profile_image_url || details.profileImageUrl || null,
+                    details.font_family || details.fontFamily || null,
                     details.background_color || details.backgroundColor,
                     details.text_color || details.textColor,
                     details.button_color || details.buttonColor,
