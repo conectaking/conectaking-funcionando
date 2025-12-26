@@ -226,37 +226,7 @@
             </div>
             <% } %>
 
-            <% 
-            // Sistema de Abas (Tabs)
-            const tabs = (typeof tabs !== 'undefined' && tabs) ? tabs : [];
-            const hasTabs = tabs && Array.isArray(tabs) && tabs.length > 0;
-            const defaultTab = { id: 'inicio', tab_name: 'Início', content_type: 'modules' };
-            const allTabs = hasTabs ? [defaultTab, ...tabs] : [defaultTab];
-            %>
-            
-            <% if (hasTabs) { %>
-            <nav class="profile-tabs-nav">
-                <% allTabs.forEach((tab, index) => { %>
-                <button class="tab-nav-btn <%= index === 0 ? 'active' : '' %>" 
-                        data-tab-id="<%= tab.id || 'inicio' %>"
-                        onclick="switchTab('<%= tab.id || 'inicio' %>')">
-                    <% if (tab.tab_icon) { %>
-                    <i class="<%= tab.tab_icon %>"></i>
-                    <% } %>
-                    <span><%= tab.tab_name || 'Início' %></span>
-                </button>
-                <% }); %>
-            </nav>
-            <% } %>
-
-            <% allTabs.forEach((tab, tabIndex) => { %>
-            <div class="tab-content <%= tabIndex === 0 ? 'active' : '' %>" 
-                 data-tab-id="<%= tab.id || 'inicio' %>"
-                 id="tab-<%= tab.id || 'inicio' %>">
-                
-                <% if (tab.id === 'inicio' || !tab.id) { %>
-                <!-- Conteúdo padrão: módulos -->
-                <section class="profile-items-container">
+        <section class="profile-items-container">
             <% if (items && items.length > 0) { %>
                 <script>
                     console.log('Total de itens recebidos:', <%= items.length %>);
@@ -883,18 +853,12 @@
                             <span><%= item.title || 'Minha Loja' %></span>
                         </button>
                     <% } else if (item.item_type === 'whatsapp') { %>
-                        <% 
-                        // Permitir que WhatsApp apareça mesmo sem destination_url preenchido
-                        // Se não tiver destination_url, usar um link genérico ou desabilitar
-                        const whatsappUrl = item.destination_url && item.destination_url.trim() 
-                            ? `https://wa.me/${String(item.destination_url).replace(/\D/g,'')}` 
-                            : '#'; 
-                        const hasValidUrl = item.destination_url && item.destination_url.trim();
-                        %>
-                        <a href="<%= whatsappUrl %>" class="profile-link <%= !hasValidUrl ? 'disabled' : '' %>" <%= hasValidUrl ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;"' %> data-item-id="<%= item.id %>">
+                        <% if (item.destination_url) { %>
+                        <a href="https://wa.me/<%= String(item.destination_url).replace(/\D/g,'') %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-whatsapp' %>"></i>
                             <span><%= item.title || 'WhatsApp' %></span>
                         </a>
+                        <% } %>
                     <% } else if (item.item_type === 'telegram') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -1225,26 +1189,7 @@
             <% } else { %>
                 <p class="no-links">Nenhum item adicionado ainda.</p>
             <% } %>
-                </section>
-                <% } else { %>
-                <!-- Conteúdo de outras tabs -->
-                <% if (tab.content_type === 'text' || tab.content_type === 'html') { %>
-                    <div class="tab-content-text">
-                        <%= typeof tab.content_data === 'string' ? tab.content_data : (tab.content_data?.text || '') %>
-                    </div>
-                <% } else if (tab.content_type === 'modules') { %>
-                    <!-- Módulos específicos desta tab (futuro: filtrar por tab_id) -->
-                    <section class="profile-items-container">
-                        <p class="tab-empty-message">Módulos desta aba serão exibidos aqui.</p>
-                    </section>
-                <% } else { %>
-                    <div class="tab-content-default">
-                        <p class="tab-empty-message">Conteúdo da aba "<%= tab.tab_name %>"</p>
-                    </div>
-                <% } %>
-                <% } %>
-            </div>
-            <% }); %>
+        </section>
         </div>
 
         <% if (details.company_logo_url) { %>
@@ -2014,27 +1959,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Atualizar contagem do carrinho ao carregar
     updateCartCount();
 
-    // Função para trocar de aba
-    function switchTab(tabId) {
-        // Remover classe active de todas as abas e conteúdos
-        document.querySelectorAll('.tab-nav-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        
-        // Adicionar classe active na aba e conteúdo selecionados
-        const selectedBtn = document.querySelector(`.tab-nav-btn[data-tab-id="${tabId}"]`);
-        const selectedContent = document.querySelector(`.tab-content[data-tab-id="${tabId}"]`);
-        
-        if (selectedBtn) {
-            selectedBtn.classList.add('active');
-        }
-        if (selectedContent) {
-            selectedContent.classList.add('active');
-        }
-    }
 
 });
     </script>

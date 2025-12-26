@@ -91,7 +91,10 @@ app.use(helmet({
                 "https://www.youtube.com",
                 "https://*.youtube.com",
                 "https://*.googlevideo.com",
-                "https://manifest.googlevideo.com"
+                "https://manifest.googlevideo.com",
+                "https://www.google-analytics.com",
+                "https://*.google-analytics.com",
+                "https://www.googletagmanager.com"
             ],
             mediaSrc: [
                 "'self'",
