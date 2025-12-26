@@ -473,18 +473,21 @@ router.put('/save-all', protectUser, async (req, res) => {
 
         // Salvar itens do perfil
         if (items && Array.isArray(items)) {
+            // Verificar quais colunas existem na tabela profile_items
+            const columnsCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'profile_items'
+            `);
+            const existingColumns = columnsCheck.rows.map(row => row.column_name);
+            
             // Deletar todos os itens existentes do usuário
             await client.query('DELETE FROM profile_items WHERE user_id = $1', [userId]);
 
             // Inserir novos itens
             for (const item of items) {
-                await client.query(`
-                    INSERT INTO profile_items (
-                        user_id, item_type, title, destination_url, image_url,
-                        icon_class, display_order, is_active, pix_key, recipient_name,
-                        pix_amount, pix_description, pdf_url, logo_size, whatsapp_message, aspect_ratio
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-                `, [
+                const insertFields = ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
+                const insertValues = [
                     userId,
                     item.item_type,
                     item.title || null,
@@ -492,16 +495,48 @@ router.put('/save-all', protectUser, async (req, res) => {
                     item.image_url || null,
                     item.icon_class || null,
                     item.display_order !== undefined ? item.display_order : 0,
-                    item.is_active !== undefined ? item.is_active : true,
-                    item.pix_key || null,
-                    item.recipient_name || null,
-                    item.pix_amount || null,
-                    item.pix_description || null,
-                    item.pdf_url || null,
-                    item.logo_size || null,
-                    item.whatsapp_message || null,
-                    item.aspect_ratio || null
-                ]);
+                    item.is_active !== undefined ? item.is_active : true
+                ];
+                
+                // Adicionar campos opcionais apenas se as colunas existirem
+                if (existingColumns.includes('pix_key')) {
+                    insertFields.push('pix_key');
+                    insertValues.push(item.pix_key || null);
+                }
+                if (existingColumns.includes('recipient_name')) {
+                    insertFields.push('recipient_name');
+                    insertValues.push(item.recipient_name || null);
+                }
+                if (existingColumns.includes('pix_amount')) {
+                    insertFields.push('pix_amount');
+                    insertValues.push(item.pix_amount || null);
+                }
+                if (existingColumns.includes('pix_description')) {
+                    insertFields.push('pix_description');
+                    insertValues.push(item.pix_description || null);
+                }
+                if (existingColumns.includes('pdf_url')) {
+                    insertFields.push('pdf_url');
+                    insertValues.push(item.pdf_url || null);
+                }
+                if (existingColumns.includes('logo_size')) {
+                    insertFields.push('logo_size');
+                    insertValues.push(item.logo_size || null);
+                }
+                if (existingColumns.includes('whatsapp_message')) {
+                    insertFields.push('whatsapp_message');
+                    insertValues.push(item.whatsapp_message || null);
+                }
+                if (existingColumns.includes('aspect_ratio')) {
+                    insertFields.push('aspect_ratio');
+                    insertValues.push(item.aspect_ratio || null);
+                }
+                
+                const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+                await client.query(`
+                    INSERT INTO profile_items (${insertFields.join(', ')})
+                    VALUES (${placeholders})
+                `, insertValues);
             }
         }
 
