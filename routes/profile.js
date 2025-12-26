@@ -320,6 +320,207 @@ router.put('/tabs/reorder', protectUser, async (req, res) => {
     }
 });
 
+// PUT /api/profile/save-all - Salvar todas as alterações do perfil (detalhes + itens)
+router.put('/save-all', protectUser, async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+        const userId = req.user.userId;
+        const { details, items } = req.body;
+
+        console.log('💾 Salvando todas as alterações do perfil:', { userId, hasDetails: !!details, itemsCount: items?.length || 0 });
+
+        // Salvar detalhes do perfil
+        if (details) {
+            // Verificar se o perfil existe
+            const checkProfile = await client.query(
+                'SELECT id FROM user_profiles WHERE user_id = $1',
+                [userId]
+            );
+
+            if (checkProfile.rows.length === 0) {
+                // Verificar se a coluna avatar_format existe antes de tentar inserir
+                const columnCheck = await client.query(`
+                    SELECT EXISTS (
+                        SELECT 1 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'user_profiles' 
+                        AND column_name = 'avatar_format'
+                    ) AS coluna_existe
+                `);
+                const hasAvatarFormat = columnCheck.rows[0]?.coluna_existe;
+                const avatarFormatValue = details.avatar_format || details.avatarFormat || 'circular';
+
+                const insertFields = [
+                    'user_id', 'display_name', 'bio', 'profile_image_url', 'font_family',
+                    'background_color', 'text_color', 'button_color', 'button_text_color',
+                    'button_opacity', 'button_border_radius', 'button_content_align',
+                    'background_type', 'background_image_url',
+                    'card_background_color', 'card_opacity',
+                    'button_font_size', 'background_image_opacity',
+                    'show_vcard_button'
+                ];
+                const insertValues = [
+                    userId,
+                    details.display_name || details.displayName || null,
+                    details.bio || null,
+                    details.profile_image_url || details.profileImageUrl || null,
+                    details.font_family || details.fontFamily || null,
+                    details.background_color || details.backgroundColor || null,
+                    details.text_color || details.textColor || null,
+                    details.button_color || details.buttonColor || null,
+                    details.button_text_color || details.buttonTextColor || null,
+                    details.button_opacity || details.buttonOpacity || null,
+                    details.button_border_radius || details.buttonBorderRadius || null,
+                    details.button_content_align || details.buttonContentAlign || null,
+                    details.background_type || details.backgroundType || null,
+                    details.background_image_url || details.backgroundImageUrl || null,
+                    details.card_background_color || details.cardBackgroundColor || null,
+                    details.card_opacity || details.cardOpacity || null,
+                    details.button_font_size || details.buttonFontSize || null,
+                    details.background_image_opacity || details.backgroundImageOpacity || null,
+                    details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : true)
+                ];
+
+                if (hasAvatarFormat) {
+                    insertFields.push('avatar_format');
+                    insertValues.push(avatarFormatValue);
+                }
+
+                const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+                await client.query(`
+                    INSERT INTO user_profiles (${insertFields.join(', ')})
+                    VALUES (${placeholders})
+                `, insertValues);
+            } else {
+                // Atualizar perfil existente
+                // Verificar se a coluna avatar_format existe antes de tentar atualizar
+                const columnCheck = await client.query(`
+                    SELECT EXISTS (
+                        SELECT 1 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'user_profiles' 
+                        AND column_name = 'avatar_format'
+                    ) AS coluna_existe
+                `);
+                const hasAvatarFormat = columnCheck.rows[0]?.coluna_existe;
+
+                const avatarFormatValue = details.avatar_format || details.avatarFormat;
+                const updateFields = [
+                    'display_name = COALESCE($1, display_name)',
+                    'bio = COALESCE($2, bio)',
+                    'profile_image_url = COALESCE($3, profile_image_url)',
+                    'font_family = COALESCE($4, font_family)',
+                    'background_color = COALESCE($5, background_color)',
+                    'text_color = COALESCE($6, text_color)',
+                    'button_color = COALESCE($7, button_color)',
+                    'button_text_color = COALESCE($8, button_text_color)',
+                    'button_opacity = COALESCE($9, button_opacity)',
+                    'button_border_radius = COALESCE($10, button_border_radius)',
+                    'button_content_align = COALESCE($11, button_content_align)',
+                    'background_type = COALESCE($12, background_type)',
+                    'background_image_url = COALESCE($13, background_image_url)',
+                    'card_background_color = COALESCE($14, card_background_color)',
+                    'card_opacity = COALESCE($15, card_opacity)',
+                    'button_font_size = COALESCE($16, button_font_size)',
+                    'background_image_opacity = COALESCE($17, background_image_opacity)',
+                    'show_vcard_button = COALESCE($18, show_vcard_button)'
+                ];
+                const updateValues = [
+                    details.display_name || details.displayName,
+                    details.bio,
+                    details.profile_image_url || details.profileImageUrl,
+                    details.font_family || details.fontFamily,
+                    details.background_color || details.backgroundColor,
+                    details.text_color || details.textColor,
+                    details.button_color || details.buttonColor,
+                    details.button_text_color || details.buttonTextColor,
+                    details.button_opacity || details.buttonOpacity,
+                    details.button_border_radius || details.buttonBorderRadius,
+                    details.button_content_align || details.buttonContentAlign,
+                    details.background_type || details.backgroundType,
+                    details.background_image_url || details.backgroundImageUrl,
+                    details.card_background_color || details.cardBackgroundColor,
+                    details.card_opacity || details.cardOpacity,
+                    details.button_font_size || details.buttonFontSize,
+                    details.background_image_opacity || details.backgroundImageOpacity,
+                    details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : undefined)
+                ];
+
+                if (hasAvatarFormat && avatarFormatValue) {
+                    updateFields.push('avatar_format = COALESCE($19, avatar_format)');
+                    updateValues.push(avatarFormatValue);
+                }
+
+                updateValues.push(userId);
+                const paramIndex = updateValues.length;
+
+                await client.query(`
+                    UPDATE user_profiles SET
+                        ${updateFields.join(', ')}
+                    WHERE user_id = $${paramIndex}
+                `, updateValues);
+            }
+
+            // Atualizar profile_slug na tabela users se fornecido
+            if (details.profile_slug || details.profileSlug) {
+                await client.query(
+                    'UPDATE users SET profile_slug = $1 WHERE id = $2',
+                    [details.profile_slug || details.profileSlug, userId]
+                );
+            }
+        }
+
+        // Salvar itens do perfil
+        if (items && Array.isArray(items)) {
+            // Deletar todos os itens existentes do usuário
+            await client.query('DELETE FROM profile_items WHERE user_id = $1', [userId]);
+
+            // Inserir novos itens
+            for (const item of items) {
+                await client.query(`
+                    INSERT INTO profile_items (
+                        user_id, item_type, title, destination_url, image_url,
+                        icon_class, display_order, is_active, pix_key, recipient_name,
+                        pix_amount, pix_description, pdf_url, logo_size, whatsapp_message, aspect_ratio
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                `, [
+                    userId,
+                    item.item_type,
+                    item.title || null,
+                    item.destination_url || null,
+                    item.image_url || null,
+                    item.icon_class || null,
+                    item.display_order !== undefined ? item.display_order : 0,
+                    item.is_active !== undefined ? item.is_active : true,
+                    item.pix_key || null,
+                    item.recipient_name || null,
+                    item.pix_amount || null,
+                    item.pix_description || null,
+                    item.pdf_url || null,
+                    item.logo_size || null,
+                    item.whatsapp_message || null,
+                    item.aspect_ratio || null
+                ]);
+            }
+        }
+
+        await client.query('COMMIT');
+        console.log('✅ Todas as alterações salvas com sucesso');
+        res.json({ message: 'Alterações salvas com sucesso!' });
+
+    } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        console.error('❌ Erro ao salvar alterações:', error);
+        res.status(500).json({ 
+            message: 'Erro ao salvar alterações.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    } finally {
+        client.release();
+    }
+});
+
 // PUT /api/profile/avatar-format - Atualizar formato do avatar
 router.put('/avatar-format', protectUser, async (req, res) => {
     const client = await db.pool.connect();
