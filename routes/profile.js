@@ -21,7 +21,7 @@ router.get('/', protectUser, async (req, res) => {
         const profileQuery = `
             SELECT 
                 u.id, u.email, u.profile_slug,
-                p.display_name, p.bio, p.profile_image_url, p.font_family,
+                p.display_name, p.bio, p.profile_image_url, p.avatar_format, p.font_family,
                 p.background_color, p.text_color, p.button_color, p.button_text_color,
                 p.button_opacity, p.button_border_radius, p.button_content_align,
                 p.background_type, p.background_image_url,
@@ -280,6 +280,46 @@ router.put('/tabs/reorder', protectUser, async (req, res) => {
         }
         console.error("Erro ao reordenar abas:", error);
         res.status(500).json({ message: 'Erro ao reordenar abas.' });
+    } finally {
+        client.release();
+    }
+});
+
+// PUT /api/profile/avatar-format - Atualizar formato do avatar
+router.put('/avatar-format', protectUser, async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const { avatar_format } = req.body;
+        
+        if (!avatar_format || !['circular', 'square-full', 'square-small'].includes(avatar_format)) {
+            return res.status(400).json({ message: 'Formato de avatar inválido.' });
+        }
+        
+        // Garantir que o perfil existe
+        const checkRes = await client.query(
+            'SELECT id FROM user_profiles WHERE user_id = $1',
+            [userId]
+        );
+        
+        if (checkRes.rows.length === 0) {
+            // Criar perfil se não existir
+            await client.query(
+                'INSERT INTO user_profiles (user_id, avatar_format) VALUES ($1, $2)',
+                [userId, avatar_format]
+            );
+        } else {
+            // Atualizar perfil existente
+            await client.query(
+                'UPDATE user_profiles SET avatar_format = $1 WHERE user_id = $2',
+                [avatar_format, userId]
+            );
+        }
+        
+        res.json({ message: 'Formato de avatar atualizado com sucesso.', avatar_format });
+    } catch (error) {
+        console.error('Erro ao atualizar formato de avatar:', error);
+        res.status(500).json({ message: 'Erro ao atualizar formato de avatar.' });
     } finally {
         client.release();
     }

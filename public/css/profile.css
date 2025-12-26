@@ -81,6 +81,28 @@ body {
     border-style: solid;
     box-shadow: 0 5px 20px rgba(0,0,0,0.3);
 }
+
+/* Formatos de avatar */
+.profile-avatar.avatar-circular {
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+}
+
+.profile-avatar.avatar-square-full {
+    border-radius: 0;
+    width: 100%;
+    max-width: 680px;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+}
+
+.profile-avatar.avatar-square-small {
+    border-radius: 0;
+    width: 120px;
+    height: 120px;
+}
 .profile-name { font-size: 2rem; font-weight: 800; margin: 0 0 8px 0; }
 .profile-bio { font-size: 1.1rem; line-height: 1.6; margin: 0; padding: 0 16px; }
 
@@ -169,6 +191,21 @@ body {
         height: 100px; 
         margin-bottom: 16px;
         border-width: 3px;
+    }
+    
+    .profile-avatar.avatar-circular {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .profile-avatar.avatar-square-full {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .profile-avatar.avatar-square-small {
+        width: 100px;
+        height: 100px;
     }
     
     .profile-name { 
@@ -290,6 +327,21 @@ body {
         margin-bottom: 12px;
     }
     
+    .profile-avatar.avatar-circular {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .profile-avatar.avatar-square-full {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .profile-avatar.avatar-square-small {
+        width: 90px;
+        height: 90px;
+    }
+    
     .profile-name { 
         font-size: 1.3rem; 
         margin: 0 0 4px 0;
@@ -353,6 +405,21 @@ body {
     .profile-avatar { 
         width: 80px; 
         height: 80px; 
+    }
+    
+    .profile-avatar.avatar-circular {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .profile-avatar.avatar-square-full {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .profile-avatar.avatar-square-small {
+        width: 80px;
+        height: 80px;
     }
     
     .profile-name { 
