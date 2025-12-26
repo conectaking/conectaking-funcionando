@@ -71,6 +71,10 @@ body {
     margin-top: 0px;
     margin-bottom: 30px;
 }
+.profile-header > div {
+    position: relative;
+    display: inline-block;
+}
 .profile-avatar {
     width: 120px;
     height: 120px;
@@ -79,6 +83,8 @@ body {
     margin-bottom: 20px;
     border: none;
     box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    display: block;
+    position: relative;
 }
 
 /* Formatos de avatar */
@@ -101,6 +107,17 @@ body {
     border-radius: 0;
     width: 120px;
     height: 120px;
+}
+
+/* Overlay com degradê transparente na parte inferior (aplicado via div no EJS) */
+.avatar-gradient-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    pointer-events: none;
+    z-index: 1;
 }
 .profile-name { font-size: 2rem; font-weight: 800; margin: 0 0 8px 0; }
 .profile-bio { font-size: 1.1rem; line-height: 1.6; margin: 0; padding: 0 16px; }
