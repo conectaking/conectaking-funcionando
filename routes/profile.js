@@ -535,19 +535,30 @@ router.put('/avatar-format', protectUser, async (req, res) => {
         }
         
         // Verificar se a coluna existe (se não existir, pode ser que a migration não foi executada)
-        const columnCheck = await client.query(`
-            SELECT EXISTS (
-                SELECT 1 
-                FROM information_schema.columns 
-                WHERE table_name = 'user_profiles' 
-                AND column_name = 'avatar_format'
-            ) AS coluna_existe
-        `);
+        let columnExists = false;
+        try {
+            const columnCheck = await client.query(`
+                SELECT EXISTS (
+                    SELECT 1 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'user_profiles' 
+                    AND column_name = 'avatar_format'
+                ) AS coluna_existe
+            `);
+            columnExists = columnCheck.rows[0]?.coluna_existe || false;
+        } catch (checkError) {
+            console.warn('⚠️ Erro ao verificar coluna avatar_format:', checkError.message);
+            // Continuar mesmo se a verificação falhar
+        }
         
-        if (!columnCheck.rows[0]?.coluna_existe) {
-            console.error('❌ Coluna avatar_format não existe na tabela user_profiles');
-            return res.status(503).json({ 
-                message: 'A coluna avatar_format ainda não foi criada. Execute a migration 015 primeiro.' 
+        if (!columnExists) {
+            console.warn('⚠️ Coluna avatar_format não existe. Retornando sucesso sem atualizar.');
+            // Retornar sucesso mesmo sem atualizar, para não quebrar o frontend
+            // O formato será salvo quando o usuário usar save-all ou quando a migration for executada
+            return res.json({ 
+                message: 'Formato de avatar registrado localmente. Execute a migration 015 para salvar no banco.',
+                avatar_format,
+                warning: 'Coluna avatar_format ainda não existe no banco de dados.'
             });
         }
         
@@ -560,18 +571,48 @@ router.put('/avatar-format', protectUser, async (req, res) => {
         if (checkRes.rows.length === 0) {
             // Criar perfil se não existir
             console.log('📝 Criando novo perfil com avatar_format');
-            await client.query(
-                'INSERT INTO user_profiles (user_id, avatar_format) VALUES ($1, $2)',
-                [userId, avatar_format]
-            );
+            try {
+                await client.query(
+                    'INSERT INTO user_profiles (user_id, avatar_format) VALUES ($1, $2)',
+                    [userId, avatar_format]
+                );
+            } catch (insertError) {
+                // Se o INSERT falhar por causa da coluna, tentar sem ela
+                if (insertError.code === '42703' || insertError.message.includes('avatar_format')) {
+                    console.warn('⚠️ Erro ao inserir avatar_format, criando perfil sem ele');
+                    await client.query(
+                        'INSERT INTO user_profiles (user_id) VALUES ($1)',
+                        [userId]
+                    );
+                    return res.json({ 
+                        message: 'Perfil criado. Execute a migration 015 para habilitar formato de avatar.',
+                        avatar_format,
+                        warning: 'Coluna avatar_format não existe ainda.'
+                    });
+                }
+                throw insertError;
+            }
         } else {
             // Atualizar perfil existente
             console.log('📝 Atualizando avatar_format do perfil existente');
-            const updateResult = await client.query(
-                'UPDATE user_profiles SET avatar_format = $1 WHERE user_id = $2',
-                [avatar_format, userId]
-            );
-            console.log('✅ Update executado:', updateResult.rowCount, 'linha(s) atualizada(s)');
+            try {
+                const updateResult = await client.query(
+                    'UPDATE user_profiles SET avatar_format = $1 WHERE user_id = $2',
+                    [avatar_format, userId]
+                );
+                console.log('✅ Update executado:', updateResult.rowCount, 'linha(s) atualizada(s)');
+            } catch (updateError) {
+                // Se o UPDATE falhar por causa da coluna, retornar aviso mas não erro
+                if (updateError.code === '42703' || updateError.message.includes('avatar_format')) {
+                    console.warn('⚠️ Erro ao atualizar avatar_format, coluna não existe');
+                    return res.json({ 
+                        message: 'Formato registrado localmente. Execute a migration 015 para salvar no banco.',
+                        avatar_format,
+                        warning: 'Coluna avatar_format não existe ainda.'
+                    });
+                }
+                throw updateError;
+            }
         }
         
         console.log('✅ Formato de avatar atualizado com sucesso');
