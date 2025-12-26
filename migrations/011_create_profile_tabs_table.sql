@@ -34,6 +34,7 @@ COMMENT ON COLUMN profile_tabs.content_type IS 'Tipo de conteúdo: modules, text
 COMMENT ON COLUMN profile_tabs.content_data IS 'Dados do conteúdo da aba (texto, HTML, JSON, etc.)';
 
 -- Trigger para atualizar updated_at automaticamente
+-- Criar função primeiro
 CREATE OR REPLACE FUNCTION update_profile_tabs_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -42,8 +43,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_update_profile_tabs_updated_at
-    BEFORE UPDATE ON profile_tabs
-    FOR EACH ROW
-    EXECUTE FUNCTION update_profile_tabs_updated_at();
+-- Criar trigger depois (só funciona se a tabela existir)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'profile_tabs'
+    ) THEN
+        -- Remover trigger se já existir
+        DROP TRIGGER IF EXISTS trigger_update_profile_tabs_updated_at ON profile_tabs;
+        
+        -- Criar trigger
+        CREATE TRIGGER trigger_update_profile_tabs_updated_at
+            BEFORE UPDATE ON profile_tabs
+            FOR EACH ROW
+            EXECUTE FUNCTION update_profile_tabs_updated_at();
+    END IF;
+END $$;
 
