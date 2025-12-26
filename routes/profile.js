@@ -332,9 +332,9 @@ router.put('/save-all', protectUser, async (req, res) => {
 
         // Salvar detalhes do perfil
         if (details) {
-            // Verificar se o perfil existe
+            // Verificar se o perfil existe (user_id é a chave primária, não precisa selecionar id)
             const checkProfile = await client.query(
-                'SELECT id FROM user_profiles WHERE user_id = $1',
+                'SELECT user_id FROM user_profiles WHERE user_id = $1',
                 [userId]
             );
 
@@ -526,9 +526,16 @@ router.put('/avatar-format', protectUser, async (req, res) => {
     const client = await db.pool.connect();
     try {
         const userId = req.user.userId;
+        
+        // Verificar se req.body existe e tem avatar_format
+        if (!req.body || typeof req.body !== 'object') {
+            console.error('❌ req.body está undefined ou inválido:', req.body);
+            return res.status(400).json({ message: 'Corpo da requisição inválido.' });
+        }
+        
         const { avatar_format } = req.body;
         
-        console.log('📝 Recebida requisição para atualizar avatar_format:', { userId, avatar_format });
+        console.log('📝 Recebida requisição para atualizar avatar_format:', { userId, avatar_format, bodyKeys: Object.keys(req.body || {}) });
         
         if (!avatar_format || !['circular', 'square-full', 'square-small'].includes(avatar_format)) {
             return res.status(400).json({ message: 'Formato de avatar inválido.' });
@@ -562,9 +569,9 @@ router.put('/avatar-format', protectUser, async (req, res) => {
             });
         }
         
-        // Garantir que o perfil existe
+        // Garantir que o perfil existe (user_id é a chave primária)
         const checkRes = await client.query(
-            'SELECT id FROM user_profiles WHERE user_id = $1',
+            'SELECT user_id FROM user_profiles WHERE user_id = $1',
             [userId]
         );
         
