@@ -158,7 +158,8 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         const profileData = {
             details: details,
             items: items,
-            tabs: tabs
+            tabs: tabs,
+            origin: req.protocol + '://' + req.get('host')
         };
         
         res.render('profile', profileData);

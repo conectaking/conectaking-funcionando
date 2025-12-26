@@ -1000,7 +1000,7 @@
                                 %>
                                 <iframe 
                                     id="youtube-player-<%= item.id %>"
-                                    src="<%= finalEmbedUrl %>?autoplay=1&mute=1&playsinline=1&enablejsapi=1&origin=<%= encodeURIComponent('https://tag.conectaking.com.br') %>&rel=0" 
+                                    src="<%= finalEmbedUrl %>?autoplay=1&mute=1&playsinline=1&enablejsapi=1&origin=<%= encodeURIComponent(origin || 'https://tag.conectaking.com.br') %>&rel=0" 
                                     frameborder="0" 
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                                     allowfullscreen 
@@ -1424,6 +1424,8 @@ document.addEventListener('DOMContentLoaded', () => {
             var videoId = iframe.src.match(/embed\/([^?]+)/);
             if (videoId && videoId[1]) {
                 try {
+                    // Usar o origin atual da página para garantir compatibilidade
+                    var currentOrigin = window.location.protocol + '//' + window.location.host;
                     youtubePlayers[index] = new YT.Player(iframe.id || 'youtube-player-' + index, {
                         videoId: videoId[1],
                         playerVars: {
@@ -1431,17 +1433,26 @@ document.addEventListener('DOMContentLoaded', () => {
                             mute: 1,
                             playsinline: 1,
                             enablejsapi: 1,
-                            origin: window.location.origin,
+                            origin: currentOrigin,
                             rel: 0
                         },
                         events: {
                             onReady: function(event) {
-                                event.target.playVideo();
+                                try {
+                                    event.target.playVideo();
+                                } catch (e) {
+                                    // Ignorar erros de autoplay (normal devido a políticas do navegador)
+                                }
+                            },
+                            onError: function(event) {
+                                // Ignorar erros silenciosamente
+                                console.warn('Erro no player do YouTube (pode ser ignorado):', event.data);
                             }
                         }
                     });
                 } catch (e) {
-                    console.error('Erro ao inicializar player do YouTube:', e);
+                    // Ignorar erros de inicialização do YouTube API
+                    console.warn('Erro ao inicializar player do YouTube (pode ser ignorado):', e);
                 }
             }
         });
@@ -1456,10 +1467,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 var player = youtubePlayers[key];
                 if (player && typeof player.unMute === 'function') {
                     player.unMute();
-                    player.playVideo();
+                    try {
+                        player.playVideo();
+                    } catch (e) {
+                        // Ignorar erros de play (políticas do navegador)
+                    }
                 }
             } catch (e) {
-                console.error('Erro ao ativar som do YouTube:', e);
+                // Ignorar erros silenciosamente
             }
         });
     }
@@ -1474,7 +1489,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Se a API já estiver carregada
     if (typeof YT !== 'undefined' && YT.Player) {
-        onYouTubeIframeAPIReady();
+        try {
+            onYouTubeIframeAPIReady();
+        } catch (e) {
+            // Ignorar erros silenciosamente
+            console.warn('YouTube API não disponível (pode ser ignorado)');
+        }
     } else {
         window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
     }
