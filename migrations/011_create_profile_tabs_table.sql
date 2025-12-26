@@ -43,5 +43,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--ve
+-- Criar trigger (a tabela já foi criada acima)
+DROP TRIGGER IF EXISTS trigger_update_profile_tabs_updated_at ON profile_tabs;
+CREATE TRIGGER trigger_update_profile_tabs_updated_at
+    BEFORE UPDATE ON profile_tabs
+    FOR EACH ROW
+    EXECUTE FUNCTION update_profile_tabs_updated_at();
 
