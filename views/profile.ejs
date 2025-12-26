@@ -1114,6 +1114,7 @@
                             %>
                         </div>
                         <% } %>
+
                     <% } else if (item.item_type === 'spotify_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item spotify-embed-container" data-item-id="<%= item.id %>" data-embed-type="spotify">
@@ -1175,6 +1176,7 @@
                             %>
                         </div>
                         <% } %>
+
                     <% } else if (item.item_type === 'linkedin_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item linkedin-embed-container" data-item-id="<%= item.id %>" data-embed-type="linkedin">
@@ -1209,6 +1211,7 @@
                             %>
                         </div>
                         <% } %>
+
                     <% } else if (item.item_type === 'pinterest_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item pinterest-embed-container" data-item-id="<%= item.id %>" data-embed-type="pinterest">
@@ -1243,8 +1246,11 @@
                             %>
                         </div>
                         <% } %>
+
+                    <%# ========================================================== %>
+                    <%# FALLBACK: Tipo de item não reconhecido %>
+                    <%# ========================================================== %>
                     <% } else { %>
-                        <!-- Fallback para tipos não reconhecidos -->
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fas fa-link' %>"></i>
@@ -1253,13 +1259,19 @@
                         <% } %>
                     <% } %>
 
-                <% }) %>
+                <% }); %>
             <% } else { %>
                 <p class="no-links">Nenhum item adicionado ainda.</p>
             <% } %>
+            <%# ========================================================== %>
+            <%# FIM: CONTAINER DE ITENS DO PERFIL %>
+            <%# ========================================================== %>
         </section>
         </div>
 
+        <%# ========================================================== %>
+        <%# SEÇÃO: LOGO DA EMPRESA / BRANDING (rodapé) %>
+        <%# ========================================================== %>
         <% if (details.company_logo_url) { %>
             <% if (details.company_logo_link) { %>
                 <a href="<%= details.company_logo_link %>" target="_blank" rel="noopener noreferrer" class="branding-logo">
