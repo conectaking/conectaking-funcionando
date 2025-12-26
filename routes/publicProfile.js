@@ -78,8 +78,12 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 [userId]
             );
         } catch (tabsError) {
-            // Se a tabela não existir ainda, continuar sem tabs
-            logger.debug('Tabela profile_tabs não encontrada, continuando sem tabs', { error: tabsError.message });
+            // Se a tabela não existir (erro 42P01) ou qualquer outro erro, continuar sem tabs
+            if (tabsError.code === '42P01') {
+                logger.debug('Tabela profile_tabs não existe ainda, continuando sem tabs');
+            } else {
+                logger.debug('Erro ao buscar tabs, continuando sem tabs', { error: tabsError.message, code: tabsError.code });
+            }
             tabsRes = { rows: [] };
         }
         

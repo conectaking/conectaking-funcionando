@@ -75,6 +75,11 @@ router.get('/tabs', protectUser, async (req, res) => {
         );
         res.json(result.rows);
     } catch (error) {
+        // Se a tabela não existir (erro 42P01), retornar array vazio
+        if (error.code === '42P01') {
+            console.log("Tabela profile_tabs não existe ainda, retornando array vazio");
+            return res.json([]);
+        }
         console.error("Erro ao buscar abas:", error);
         res.status(500).json({ message: 'Erro ao buscar abas.' });
     } finally {
