@@ -853,12 +853,18 @@
                             <span><%= item.title || 'Minha Loja' %></span>
                         </button>
                     <% } else if (item.item_type === 'whatsapp') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="https://wa.me/<%= String(item.destination_url).replace(/\D/g,'') %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <% 
+                        // Permitir que WhatsApp apareça mesmo sem destination_url preenchido
+                        // Se não tiver destination_url, usar um link genérico ou desabilitar
+                        const whatsappUrl = item.destination_url && item.destination_url.trim() 
+                            ? `https://wa.me/${String(item.destination_url).replace(/\D/g,'')}` 
+                            : '#'; 
+                        const hasValidUrl = item.destination_url && item.destination_url.trim();
+                        %>
+                        <a href="<%= whatsappUrl %>" class="profile-link <%= !hasValidUrl ? 'disabled' : '' %>" <%= hasValidUrl ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;"' %> data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-whatsapp' %>"></i>
                             <span><%= item.title || 'WhatsApp' %></span>
                         </a>
-                        <% } %>
                     <% } else if (item.item_type === 'telegram') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
