@@ -528,6 +528,14 @@ router.put('/avatar-format', protectUser, async (req, res) => {
         const userId = req.user.userId;
         
         // Verificar se req.body existe e tem avatar_format
+        console.log('📝 Recebida requisição PUT /avatar-format:', { 
+            userId, 
+            bodyExists: !!req.body, 
+            bodyType: typeof req.body,
+            bodyKeys: req.body ? Object.keys(req.body) : [],
+            contentType: req.headers['content-type']
+        });
+        
         if (!req.body || typeof req.body !== 'object') {
             console.error('❌ req.body está undefined ou inválido:', req.body);
             return res.status(400).json({ message: 'Corpo da requisição inválido.' });
@@ -535,10 +543,16 @@ router.put('/avatar-format', protectUser, async (req, res) => {
         
         const { avatar_format } = req.body;
         
-        console.log('📝 Recebida requisição para atualizar avatar_format:', { userId, avatar_format, bodyKeys: Object.keys(req.body || {}) });
+        console.log('📝 Dados extraídos do body:', { avatar_format, bodyKeys: Object.keys(req.body) });
         
-        if (!avatar_format || !['circular', 'square-full', 'square-small'].includes(avatar_format)) {
-            return res.status(400).json({ message: 'Formato de avatar inválido.' });
+        if (!avatar_format) {
+            console.error('❌ avatar_format está vazio ou undefined:', avatar_format);
+            return res.status(400).json({ message: 'Formato de avatar não fornecido.' });
+        }
+        
+        if (!['circular', 'square-full', 'square-small'].includes(avatar_format)) {
+            console.error('❌ avatar_format inválido:', avatar_format);
+            return res.status(400).json({ message: `Formato de avatar inválido: ${avatar_format}. Valores permitidos: circular, square-full, square-small` });
         }
         
         // Verificar se a coluna existe (se não existir, pode ser que a migration não foi executada)
