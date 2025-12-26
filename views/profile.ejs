@@ -200,43 +200,70 @@
     </style>
 </head>
 <body>
-        <% if (details.background_type === 'image' && details.background_image_url) { %>
+    <%# ========================================================== %>
+    <%# SEÇÃO: BACKGROUND IMAGE (se configurado) %>
+    <%# ========================================================== %>
+    <% if (details.background_type === 'image' && details.background_image_url) { %>
         <div class="background-image-overlay" style="
             background-image: url('<%= details.background_image_url %>');
             opacity: <%= details.background_image_opacity !== undefined ? details.background_image_opacity : 1 %>;
         "></div>
     <% } %>
+
+    <%# ========================================================== %>
+    <%# CONTAINER PRINCIPAL DO PERFIL %>
+    <%# ========================================================== %>
     <div class="profile-page-wrapper">
         <div class="profile-card">
-        <button class="share-button-corner" id="share-btn" title="Compartilhar">
-            <i class="fas fa-share-alt"></i>
-        </button>
+            
+            <%# Botão de Compartilhar (canto superior direito) %>
+            <button class="share-button-corner" id="share-btn" title="Compartilhar">
+                <i class="fas fa-share-alt"></i>
+            </button>
+
+            <%# ========================================================== %>
+            <%# SEÇÃO: HEADER DO PERFIL (Avatar, Nome, Bio) %>
+            <%# ========================================================== %>
             <header class="profile-header">
                 <img src="<%= details.profile_image_url || 'https://avatar.iran.liara.run/public/boy' %>" alt="Foto de Perfil" class="profile-avatar" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=';">
                 <h1 class="profile-name"><%= details.display_name || 'Nome do Usuário' %></h1>
                 <p class="profile-bio"><%= details.bio || 'Biografia do usuário.' %></p>
             </header>
             
+            <%# ========================================================== %>
+            <%# SEÇÃO: BOTÃO SALVAR CONTATO (se habilitado) %>
+            <%# ========================================================== %>
             <% if (details.show_vcard_button) { %>
-            <div class="profile-actions">
-                <a href="/vcard/<%= details.profile_slug || details.user_id %>" class="profile-link" id="save-contact-btn">
-                    <i class="fas fa-address-card"></i>
-                    <span>Salvar Contato</span>
-                </a>
-            </div>
+                <div class="profile-actions">
+                    <a href="/vcard/<%= details.profile_slug || details.user_id %>" class="profile-link" id="save-contact-btn">
+                        <i class="fas fa-address-card"></i>
+                        <span>Salvar Contato</span>
+                    </a>
+                </div>
             <% } %>
 
-        <section class="profile-items-container">
+            <%# ========================================================== %>
+            <%# SEÇÃO: CONTAINER DE ITENS DO PERFIL %>
+            <%# ========================================================== %>
+            <section class="profile-items-container">
             <% if (items && items.length > 0) { %>
+                <%# Debug: Log de itens (apenas em desenvolvimento) %>
                 <script>
                     console.log('Total de itens recebidos:', <%= items.length %>);
                     console.log('Tipos de itens:', [<% items.forEach((item, idx) => { %>'<%= item.item_type %>'<%= idx < items.length - 1 ? ',' : '' %><% }); %>]);
                 </script>
+
+                <%# ========================================================== %>
+                <%# LOOP: ITERAR POR TODOS OS ITENS ATIVOS %>
+                <%# ========================================================== %>
                 <% items.forEach(item => { 
                     // Filtrar apenas itens ativos (is_active !== false)
                     if (item.is_active === false) return;
                 %>
                 
+                    <%# ========================================================== %>
+                    <%# TIPO: LINK PERSONALIZADO %>
+                    <%# ========================================================== %>
                     <% if (item.item_type === 'link') { %>
                         <% if (item.destination_url) { %>
                         <%
@@ -283,6 +310,10 @@
                             <span><%= item.title || 'Link Personalizado' %></span>
                         </a>
                         <% } %>
+
+                    <%# ========================================================== %>
+                    <%# TIPO: BANNER (Imagem com link opcional) %>
+                    <%# ========================================================== %>
                     <% } else if (item.item_type === 'banner') { %>
                         <% if (item.image_url) { %>
                         <%
@@ -372,8 +403,11 @@
                             <% } %>
                         </div>
                         <% } %>
+
+                    <%# ========================================================== %>
+                    <%# TIPO: CARROSSEL (Múltiplas imagens com slide horizontal) %>
+                    <%# ========================================================== %>
                     <% } else if (item.item_type === 'carousel' && (item.destination_url || item.image_url)) { %>
-                        <%# ===== CARROSSEL COM SLIDE HORIZONTAL - ENQUADRAMENTO IGUAL AO BANNER ===== %>
                         <% 
                         // Parsear array de imagens do destination_url
                         let carouselImages = [];
@@ -819,6 +853,10 @@
                                 </script>
                             <% } %>
                         <% } %>
+
+                    <%# ========================================================== %>
+                    <%# TIPO: PIX (Chave PIX para copiar) %>
+                    <%# ========================================================== %>
                     <% } else if (item.item_type === 'pix') { %>
                         <% if (item.pix_key) { %>
                         <button class="profile-link profile-button-pix" data-pix-key="<%= item.pix_key %>" data-item-id="<%= item.id %>">
@@ -826,6 +864,10 @@
                             <span><%= item.title || 'PIX' %></span>
                         </button>
                         <% } %>
+
+                    <%# ========================================================== %>
+                    <%# TIPO: PDF (Download de arquivo PDF) %>
+                    <%# ========================================================== %>
                     <% } else if (item.item_type === 'pdf') { %>
                         <a href="/download/pdf/<%= item.id %>" class="profile-link" download data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fa-solid fa-file-pdf' %>"></i>
@@ -852,6 +894,10 @@
                             <% } %>
                             <span><%= item.title || 'Minha Loja' %></span>
                         </button>
+
+                    <%# ========================================================== %>
+                    <%# TIPOS: REDES SOCIAIS E CONTATOS (WhatsApp, Telegram, Email, etc.) %>
+                    <%# ========================================================== %>
                     <% } else if (item.item_type === 'whatsapp') { %>
                         <% if (item.destination_url) { %>
                         <a href="https://wa.me/<%= String(item.destination_url).replace(/\D/g,'') %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -859,6 +905,7 @@
                             <span><%= item.title || 'WhatsApp' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'telegram') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -866,6 +913,7 @@
                             <span><%= item.title || 'Telegram' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'email') { %>
                         <% if (item.destination_url) { %>
                         <a href="mailto:<%= item.destination_url %>" class="profile-link" data-item-id="<%= item.id %>">
@@ -873,6 +921,7 @@
                             <span><%= item.title || 'Email' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'instagram') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -880,6 +929,7 @@
                             <span><%= item.title || 'Instagram' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'facebook') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -887,6 +937,7 @@
                             <span><%= item.title || 'Facebook' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'tiktok') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -894,6 +945,7 @@
                             <span><%= item.title || 'TikTok' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'twitter') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -901,6 +953,7 @@
                             <span><%= item.title || 'Twitter' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'youtube') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -908,6 +961,7 @@
                             <span><%= item.title || 'YouTube' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'linkedin') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -915,6 +969,7 @@
                             <span><%= item.title || 'LinkedIn' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'portfolio') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -922,6 +977,7 @@
                             <span><%= item.title || 'Portfolio' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'pinterest') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -929,6 +985,7 @@
                             <span><%= item.title || 'Pinterest' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'reddit') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -936,6 +993,7 @@
                             <span><%= item.title || 'Reddit' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'twitch') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -943,6 +1001,7 @@
                             <span><%= item.title || 'Twitch' %></span>
                         </a>
                         <% } %>
+
                     <% } else if (item.item_type === 'spotify') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -950,11 +1009,19 @@
                             <span><%= item.title || 'Spotify' %></span>
                         </a>
                         <% } %>
+
+                    <%# ========================================================== %>
+                    <%# TIPO: PIX QR CODE (Modal com QR Code PIX) %>
+                    <%# ========================================================== %>
                     <% } else if (item.item_type === 'pix_qrcode') { %>
                         <button class="profile-link profile-button-pix-qrcode" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fas fa-qrcode' %>"></i>
                             <span><%= item.title || 'PIX QR Code' %></span>
                         </button>
+
+                    <%# ========================================================== %>
+                    <%# TIPOS: EMBEDS DE REDES SOCIAIS (Instagram, YouTube, TikTok, etc.) %>
+                    <%# ========================================================== %>
                     <% } else if (item.item_type === 'instagram_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item instagram-embed-container" data-item-id="<%= item.id %>" data-embed-type="instagram">
@@ -979,6 +1046,7 @@
                             %>
                         </div>
                         <% } %>
+
                     <% } else if (item.item_type === 'youtube_embed') { %>
                         <div class="profile-embed-item youtube-embed-container" data-item-id="<%= item.id %>" data-embed-type="youtube" data-video-id="<%= item.embed_url ? item.embed_url.split('/embed/')[1]?.split('?')[0] : '' %>">
                             <% 
