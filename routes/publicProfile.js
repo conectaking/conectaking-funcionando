@@ -141,6 +141,18 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         const details = profileRes.rows[0];
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
+        
+        // Garantir que button_content_align tenha um valor válido
+        if (!details.button_content_align || !['left', 'center', 'right'].includes(details.button_content_align)) {
+            details.button_content_align = 'center';
+        }
+        
+        // Log para debug (pode remover depois)
+        logger.debug('Dados do perfil público', { 
+            userId, 
+            button_content_align: details.button_content_align,
+            hasButtonContentAlign: !!details.button_content_align
+        });
 
         const profileData = {
             details: details,
