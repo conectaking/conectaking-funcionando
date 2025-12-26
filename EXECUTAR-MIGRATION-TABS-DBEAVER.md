@@ -8,10 +8,10 @@
 
 ### 2. Executar a Primeira Migration (Criar Tabela profile_tabs)
 
-**Arquivo:** `migrations/011_create_profile_tabs_table.sql`
+**Arquivo:** `migrations/012_create_profile_tabs_table.sql`
 
 1. No DBeaver, vá em **SQL Editor** (ou pressione `Ctrl+]`)
-2. Abra o arquivo `migrations/011_create_profile_tabs_table.sql`
+2. Abra o arquivo `migrations/012_create_profile_tabs_table.sql`
 3. **OU** copie e cole o seguinte SQL:
 
 ```sql
@@ -70,10 +70,10 @@ CREATE TRIGGER trigger_update_profile_tabs_updated_at
 
 ### 3. Executar a Segunda Migration (Adicionar tab_id em profile_items)
 
-**Arquivo:** `migrations/add_tab_id_to_profile_items.sql`
+**Arquivo:** `migrations/013_add_tab_id_to_profile_items.sql`
 
 1. No mesmo SQL Editor (ou abra um novo)
-2. Abra o arquivo `migrations/add_tab_id_to_profile_items.sql`
+2. Abra o arquivo `migrations/013_add_tab_id_to_profile_items.sql`
 3. **OU** copie e cole o seguinte SQL:
 
 ```sql
@@ -141,7 +141,7 @@ Após executar as migrations:
 
 ## ⚠️ Observações Importantes
 
-- Execute as migrations **na ordem**: primeiro `011_create_profile_tabs_table.sql`, depois `add_tab_id_to_profile_items.sql`
+- Execute as migrations **na ordem**: primeiro `012_create_profile_tabs_table.sql`, depois `013_add_tab_id_to_profile_items.sql`
 - As migrations são **idempotentes** (podem ser executadas múltiplas vezes sem problemas)
 - Se alguma migration falhar, verifique os logs de erro no DBeaver
 

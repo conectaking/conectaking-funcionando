@@ -2,7 +2,7 @@
 -- Migration: Adicionar tab_id à tabela profile_items
 -- Data: 2025-01-31
 -- Descrição: Permite associar módulos a abas específicas
--- IMPORTANTE: Execute primeiro a migration 011_create_profile_tabs_table.sql
+-- IMPORTANTE: Execute primeiro a migration 012_create_profile_tabs_table.sql
 -- ===========================================
 
 DO $$
@@ -13,7 +13,7 @@ BEGIN
         FROM information_schema.tables
         WHERE table_name = 'profile_tabs'
     ) THEN
-        RAISE EXCEPTION 'ERRO: A tabela profile_tabs não existe. Execute primeiro a migration 011_create_profile_tabs_table.sql';
+        RAISE EXCEPTION 'ERRO: A tabela profile_tabs não existe. Execute primeiro a migration 012_create_profile_tabs_table.sql';
     END IF;
     
     -- Verificar se a coluna tab_id já existe
