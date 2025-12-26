@@ -43,21 +43,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Criar trigger depois (só funciona se a tabela existir)
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM information_schema.tables 
-        WHERE table_name = 'profile_tabs'
-    ) THEN
-        -- Remover trigger se já existir
-        DROP TRIGGER IF EXISTS trigger_update_profile_tabs_updated_at ON profile_tabs;
-        
-        -- Criar trigger
-        CREATE TRIGGER trigger_update_profile_tabs_updated_at
-            BEFORE UPDATE ON profile_tabs
-            FOR EACH ROW
-            EXECUTE FUNCTION update_profile_tabs_updated_at();
-    END IF;
-END $$;
+-- Criar trigger (a tabela já foi criada acima)
+DROP TRIGGER IF EXISTS trigger_update_profile_tabs_updated_at ON profile_tabs;
+CREATE TRIGGER trigger_update_profile_tabs_updated_at
+    BEFORE UPDATE ON profile_tabs
+    FOR EACH ROW
+    EXECUTE FUNCTION update_profile_tabs_updated_at();
 
