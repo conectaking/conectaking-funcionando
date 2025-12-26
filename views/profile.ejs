@@ -28,9 +28,17 @@
         .profile-avatar { border-color: <%= details.background_color || '#0D0D0F' %> !important; }
 
         <%
-            let alignValue = 'center';
-            if (details.button_content_align === 'left') alignValue = 'flex-start';
-            else if (details.button_content_align === 'right') alignValue = 'flex-end';
+            // Tratar alinhamento do conteúdo dos botões
+            let alignValue = 'center'; // padrão
+            const buttonAlign = details.button_content_align;
+            if (buttonAlign === 'left') {
+                alignValue = 'flex-start';
+            } else if (buttonAlign === 'right') {
+                alignValue = 'flex-end';
+            } else {
+                // 'center' ou null/undefined - usar center como padrão
+                alignValue = 'center';
+            }
         %>
 
         :root {

@@ -491,10 +491,16 @@ router.put('/save-all', protectUser, async (req, res) => {
                 show_vcard_button = $18
             WHERE user_id = $19;
         `;
+        // Validar e garantir que buttonContentAlign seja sempre 'left', 'center' ou 'right'
+        const validAlignments = ['left', 'center', 'right'];
+        const buttonContentAlign = validAlignments.includes(details.buttonContentAlign) 
+            ? details.buttonContentAlign 
+            : 'center';
+
         await client.query(profileUpdateQuery, [
             details.displayName, details.bio, details.profileImageUrl, details.fontFamily,
             details.backgroundColor, details.textColor, details.buttonColor, details.buttonTextColor,
-            details.buttonOpacity, details.buttonBorderRadius, details.buttonContentAlign,
+            details.buttonOpacity, details.buttonBorderRadius, buttonContentAlign,
             details.backgroundType, details.backgroundImageUrl,
             details.cardBackgroundColor, details.cardOpacity,
             details.buttonFontSize, details.backgroundImageOpacity,
