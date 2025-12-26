@@ -1285,8 +1285,14 @@
                 <img src="https://i.ibb.co/60sW9k75/logo.png" alt="Logo Conecta King">
             </a>
         <% } %>
+        <%# ========================================================== %>
+        <%# FIM: CONTAINER PRINCIPAL DO PERFIL %>
+        <%# ========================================================== %>
     </div>
     
+    <%# ========================================================== %>
+    <%# SEÇÃO: SCRIPTS JAVASCRIPT %>
+    <%# ========================================================== %>
     <script>
 document.addEventListener('DOMContentLoaded', () => {
     console.log("✔️ DOM carregado. Script da página de perfil iniciado.");
@@ -1305,7 +1311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pixCopyBrCodeBtn = document.getElementById('pix-copy-brcode-btn');
     let qrInstance = null;
 
-
+    // Ajustar tamanho do logo customizado
     const customLogo = document.querySelector('.branding-logo-custom');
     if (customLogo) {
         const logoSize = customLogo.getAttribute('data-logo-size');
@@ -1313,7 +1319,6 @@ document.addEventListener('DOMContentLoaded', () => {
             customLogo.style.height = `${logoSize}px`;
         }
     }
-
 
     // ==========================================================
     // 2. DECLARAÇÃO DE FUNÇÕES
@@ -1486,14 +1491,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================================
-    // 4. CÓDIGO DE EXECUÇÃO IMEDIATA (Analytics de View)
+    // 5. ANALYTICS - REGISTRAR VISUALIZAÇÃO DA PÁGINA
     // ==========================================================
     if (userId) {
         try { navigator.sendBeacon(`/log/view/${userId}`); } catch (e) { fetch(`/log/view/${userId}`, { method: 'POST', keepalive: true }); }
     }
 
     // ==========================================================
-    // 5. YOUTUBE IFRAME API - AUTOPLAY COM SOM
+    // 6. YOUTUBE IFRAME API - AUTOPLAY COM SOM
     // ==========================================================
     var youtubePlayers = {};
     var userInteracted = false;
@@ -1579,7 +1584,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
     }
     
-    // ========== CATÁLOGO DE PRODUTOS ==========
+    // ==========================================================
+    // 7. CATÁLOGO DE PRODUTOS
+    // ==========================================================
     let productCart = JSON.parse(localStorage.getItem('productCart') || '{}');
     const profileSlug = '<%= details.profile_slug || details.user_id %>';
 
