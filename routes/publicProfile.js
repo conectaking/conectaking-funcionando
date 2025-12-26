@@ -19,20 +19,10 @@ function hexToRgb(hex) {
 router.get('/:identifier', asyncHandler(async (req, res) => {
     const { identifier } = req.params;
     
-    // Headers para evitar cache no navegador (sempre aplicar, mesmo com cache do servidor)
+    // Headers para evitar cache no navegador
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
-    
-    // Verificar cache (DESABILITADO temporariamente para garantir dados atualizados)
-    // const cacheKey = `profile:${identifier}`;
-    // if (cache) {
-    //     const cachedProfile = cache.get(cacheKey);
-    //     if (cachedProfile) {
-    //         logger.debug('Perfil servido do cache', { identifier });
-    //         return res.render('profile', cachedProfile);
-    //     }
-    // }
     
     const client = await db.pool.connect();
     
@@ -80,7 +70,13 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC', [userId]);
         
-        // Log para debug - remover depois
+        // Buscar abas ativas do usuário
+        const tabsRes = await client.query(
+            'SELECT * FROM profile_tabs WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC',
+            [userId]
+        );
+        
+        // Log para debug
         logger.debug('Itens encontrados no banco', { 
             userId, 
             total: itemsRes.rows.length,
@@ -89,12 +85,10 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         // Filtrar e validar itens
         const validItems = (itemsRes.rows || []).filter(item => {
-            // Remover carrosséis
             if (item.item_type === 'banner_carousel') {
                 return false;
             }
             
-            // Remover banners que são carrosséis
             if (item.item_type === 'banner' && item.destination_url) {
                 const destUrl = String(item.destination_url).trim();
                 if (destUrl.startsWith('[') || destUrl === '[]') {
@@ -105,19 +99,12 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             return true;
         });
         
-        // Log itens válidos
-        logger.debug('Itens válidos após filtro', { 
-            validCount: validItems.length,
-            itemTypes: validItems.map(i => i.item_type)
-        });
-        
         // Converter URLs do YouTube para formato embed e carregar produtos dos catálogos
         const items = await Promise.all(validItems.map(async (item) => {
             if (item.item_type === 'youtube_embed' && item.destination_url) {
                 item.embed_url = convertYouTubeUrlToEmbed(item.destination_url);
             }
             
-            // Se for catálogo de produtos, carregar produtos
             if (item.item_type === 'product_catalog') {
                 try {
                     const productsRes = await client.query(
@@ -130,7 +117,6 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                         itemId: item.id, 
                         error: productError.message 
                     });
-                    // Em caso de erro, definir array vazio para não quebrar a página
                     item.products = [];
                 }
             }
@@ -142,33 +128,27 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
         
-        // Garantir que button_content_align tenha um valor válido
         if (!details.button_content_align || !['left', 'center', 'right'].includes(details.button_content_align)) {
             details.button_content_align = 'center';
         }
-        
-        // Log para debug (pode remover depois)
-        logger.debug('Dados do perfil público', { 
-            userId, 
-            button_content_align: details.button_content_align,
-            hasButtonContentAlign: !!details.button_content_align
+
+        // Processar tabs - parsear content_data se for JSON
+        const tabs = (tabsRes.rows || []).map(tab => {
+            if (tab.content_data && typeof tab.content_data === 'string') {
+                try {
+                    tab.content_data = JSON.parse(tab.content_data);
+                } catch (e) {
+                    // Se não for JSON válido, manter como string
+                }
+            }
+            return tab;
         });
 
         const profileData = {
             details: details,
-            items: items
+            items: items,
+            tabs: tabs
         };
-        
-        // Armazenar no cache (TTL de 1 hora) se habilitado
-        // Desabilitar cache temporariamente para debug
-        // if (cache) {
-        //     cache.set(cacheKey, profileData, 3600);
-        // }
-        
-        // Headers para evitar cache no navegador
-        res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private');
-        res.set('Pragma', 'no-cache');
-        res.set('Expires', '0');
         
         res.render('profile', profileData);
 
@@ -178,3 +158,4 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
 }));
 
 module.exports = router;
+
