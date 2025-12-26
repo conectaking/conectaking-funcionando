@@ -24,15 +24,15 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
     
-    // Verificar cache (se habilitado)
-    const cacheKey = `profile:${identifier}`;
-    if (cache) {
-        const cachedProfile = cache.get(cacheKey);
-        if (cachedProfile) {
-            logger.debug('Perfil servido do cache', { identifier });
-            return res.render('profile', cachedProfile);
-        }
-    }
+    // Verificar cache (DESABILITADO temporariamente para garantir dados atualizados)
+    // const cacheKey = `profile:${identifier}`;
+    // if (cache) {
+    //     const cachedProfile = cache.get(cacheKey);
+    //     if (cachedProfile) {
+    //         logger.debug('Perfil servido do cache', { identifier });
+    //         return res.render('profile', cachedProfile);
+    //     }
+    // }
     
     const client = await db.pool.connect();
     
@@ -78,7 +78,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Perfil não configurado</h1>');
         }
         
-        const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 AND is_active = TRUE ORDER BY display_order ASC', [userId]);
+        const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC', [userId]);
         
         // Log para debug - remover depois
         logger.debug('Itens encontrados no banco', { 
