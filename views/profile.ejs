@@ -203,7 +203,7 @@
     <%# ========================================================== %>
     <%# SEÇÃO: BACKGROUND IMAGE (se configurado) %>
     <%# ========================================================== %>
-    <% if (details.background_type === 'image' && details.background_image_url) { %>
+        <% if (details.background_type === 'image' && details.background_image_url) { %>
         <div class="background-image-overlay" style="
             background-image: url('<%= details.background_image_url %>');
             opacity: <%= details.background_image_opacity !== undefined ? details.background_image_opacity : 1 %>;
@@ -217,9 +217,9 @@
         <div class="profile-card">
             
             <%# Botão de Compartilhar (canto superior direito) %>
-            <button class="share-button-corner" id="share-btn" title="Compartilhar">
-                <i class="fas fa-share-alt"></i>
-            </button>
+        <button class="share-button-corner" id="share-btn" title="Compartilhar">
+            <i class="fas fa-share-alt"></i>
+        </button>
 
             <%# ========================================================== %>
             <%# SEÇÃO: HEADER DO PERFIL (Avatar, Nome, Bio) %>
@@ -238,18 +238,18 @@
             <%# SEÇÃO: BOTÃO SALVAR CONTATO (se habilitado) %>
             <%# ========================================================== %>
             <% if (details.show_vcard_button) { %>
-                <div class="profile-actions">
-                    <a href="/vcard/<%= details.profile_slug || details.user_id %>" class="profile-link" id="save-contact-btn">
-                        <i class="fas fa-address-card"></i>
-                        <span>Salvar Contato</span>
-                    </a>
-                </div>
+            <div class="profile-actions">
+                <a href="/vcard/<%= details.profile_slug || details.user_id %>" class="profile-link" id="save-contact-btn">
+                    <i class="fas fa-address-card"></i>
+                    <span>Salvar Contato</span>
+                </a>
+            </div>
             <% } %>
 
             <%# ========================================================== %>
             <%# SEÇÃO: CONTAINER DE ITENS DO PERFIL %>
             <%# ========================================================== %>
-            <section class="profile-items-container">
+        <section class="profile-items-container">
             <% if (items && items.length > 0) { %>
                 <%# Debug: Log de itens (apenas em desenvolvimento) %>
                 <script>
@@ -1528,8 +1528,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         events: {
                             onReady: function(event) {
                                 try {
-                                    event.target.playVideo();
-                                } catch (e) {
+                                event.target.playVideo();
+                } catch (e) {
                                     // Ignorar erros de autoplay (normal devido a políticas do navegador)
                                 }
                             },
@@ -1557,7 +1557,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (player && typeof player.unMute === 'function') {
                     player.unMute();
                     try {
-                        player.playVideo();
+                    player.playVideo();
                     } catch (e) {
                         // Ignorar erros de play (políticas do navegador)
                     }
@@ -1579,7 +1579,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Se a API já estiver carregada
     if (typeof YT !== 'undefined' && YT.Player) {
         try {
-            onYouTubeIframeAPIReady();
+        onYouTubeIframeAPIReady();
         } catch (e) {
             // Ignorar erros silenciosamente
             console.warn('YouTube API não disponível (pode ser ignorado)');

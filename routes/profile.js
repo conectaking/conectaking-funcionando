@@ -21,7 +21,9 @@ router.get('/', protectUser, async (req, res) => {
         const profileQuery = `
             SELECT 
                 u.id, u.email, u.profile_slug,
-                p.display_name, p.bio, p.profile_image_url, p.avatar_format, p.font_family,
+                p.display_name, p.bio, p.profile_image_url, 
+                COALESCE(p.avatar_format, 'circular') as avatar_format, 
+                p.font_family,
                 p.background_color, p.text_color, p.button_color, p.button_text_color,
                 p.button_opacity, p.button_border_radius, p.button_content_align,
                 p.background_type, p.background_image_url,
@@ -54,6 +56,39 @@ router.get('/', protectUser, async (req, res) => {
 
     } catch (error) {
         console.error("Erro ao buscar perfil completo:", error);
+        // Se o erro for relacionado à coluna avatar_format não existir, tentar novamente sem ela
+        if (error.message && error.message.includes('avatar_format')) {
+            try {
+                const fallbackQuery = `
+                    SELECT 
+                        u.id, u.email, u.profile_slug,
+                        p.display_name, p.bio, p.profile_image_url, p.font_family,
+                        p.background_color, p.text_color, p.button_color, p.button_text_color,
+                        p.button_opacity, p.button_border_radius, p.button_content_align,
+                        p.background_type, p.background_image_url,
+                        p.card_background_color, p.card_opacity,
+                        p.button_font_size, p.background_image_opacity,
+                        p.show_vcard_button
+                    FROM users u
+                    LEFT JOIN user_profiles p ON u.id = p.user_id
+                    WHERE u.id = $1;
+                `;
+                const fallbackRes = await client.query(fallbackQuery, [userId]);
+                if (fallbackRes.rows.length > 0) {
+                    const details = fallbackRes.rows[0];
+                    details.avatar_format = 'circular'; // Valor padrão
+                    details.button_color_rgb = hexToRgb(details.button_color);
+                    details.card_color_rgb = hexToRgb(details.card_background_color);
+                    const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order ASC', [userId]);
+                    return res.json({
+                        details: details,
+                        items: itemsRes.rows || []
+                    });
+                }
+            } catch (fallbackError) {
+                console.error("Erro no fallback:", fallbackError);
+            }
+        }
         res.status(500).json({ message: 'Erro ao buscar dados do perfil.' });
     } finally {
         client.release();
