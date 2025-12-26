@@ -70,11 +70,18 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC', [userId]);
         
-        // Buscar abas ativas do usuário
-        const tabsRes = await client.query(
-            'SELECT * FROM profile_tabs WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC',
-            [userId]
-        );
+        // Buscar abas ativas do usuário (se a tabela existir)
+        let tabsRes = { rows: [] };
+        try {
+            tabsRes = await client.query(
+                'SELECT * FROM profile_tabs WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC',
+                [userId]
+            );
+        } catch (tabsError) {
+            // Se a tabela não existir ainda, continuar sem tabs
+            logger.debug('Tabela profile_tabs não encontrada, continuando sem tabs', { error: tabsError.message });
+            tabsRes = { rows: [] };
+        }
         
         // Log para debug
         logger.debug('Itens encontrados no banco', { 

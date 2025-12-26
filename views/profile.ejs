@@ -228,8 +228,8 @@
 
             <% 
             // Sistema de Abas (Tabs)
-            const tabs = typeof tabs !== 'undefined' ? tabs : [];
-            const hasTabs = tabs && tabs.length > 0;
+            const tabs = (typeof tabs !== 'undefined' && tabs) ? tabs : [];
+            const hasTabs = tabs && Array.isArray(tabs) && tabs.length > 0;
             const defaultTab = { id: 'inicio', tab_name: 'Início', content_type: 'modules' };
             const allTabs = hasTabs ? [defaultTab, ...tabs] : [defaultTab];
             %>
