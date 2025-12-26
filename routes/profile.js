@@ -145,7 +145,7 @@ router.post('/items', protectUser, async (req, res) => {
 
         let query, params;
         
-        const ALL_COLUMNS = `(user_id, item_type, title, destination_url, icon_class, image_url, pix_key, pdf_url, display_order)`;
+        const ALL_COLUMNS = `(user_id, item_type, title, destination_url, icon_class, image_url, pix_key, pdf_url, display_order, is_active)`;
 
         if (['link', 'whatsapp', 'telegram', 'email', 'facebook', 'instagram', 'pinterest', 'reddit', 'tiktok', 'twitch', 'twitter', 'linkedin', 'portfolio', 'youtube', 'spotify'].includes(item_type)) {
             const defaults = {
@@ -165,23 +165,23 @@ router.post('/items', protectUser, async (req, res) => {
                 youtube: { title: 'YouTube', url: 'https://youtube.com/', icon: 'fab fa-youtube' },
                 spotify: { title: 'Spotify', url: 'https://open.spotify.com/', icon: 'fab fa-spotify' }
             };
-            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, $4, $5, null, null, null, $6) RETURNING *;`;
+            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, $4, $5, null, null, null, $6, true) RETURNING *;`;
             params = [userId, item_type, defaults[item_type].title, defaults[item_type].url, defaults[item_type].icon, nextOrder];
         
         } else if (item_type === 'banner') {
             const defaultAspectRatio = '4:3';
-            query = `INSERT INTO profile_items (user_id, item_type, destination_url, image_url, display_order, aspect_ratio) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;`;
+            query = `INSERT INTO profile_items (user_id, item_type, destination_url, image_url, display_order, aspect_ratio, is_active) VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING *;`;
             params = [userId, 'banner', '#', 'https://via.placeholder.com/600x200', nextOrder, defaultAspectRatio];
         } else if (item_type === 'pix') {
-            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, '#', $4, null, $5, null, $6) RETURNING *;`;
+            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, '#', $4, null, $5, null, $6, true) RETURNING *;`;
             params = [userId, 'pix', 'Meu PIX', 'fa-solid fa-copy', 'SuaChavePIXAqui', nextOrder];
         
         } else if (item_type === 'pix_qrcode') {
-            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, '#', $4, null, $5, null, $6) RETURNING *;`;
+            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, '#', $4, null, $5, null, $6, true) RETURNING *;`;
             params = [userId, 'pix_qrcode', 'PIX QR Code', 'fas fa-qrcode', '', nextOrder];
 
         } else if (item_type === 'pdf') {
-            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, '#', $4, null, null, '#', $5) RETURNING *;`;
+            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, '#', $4, null, null, '#', $5, true) RETURNING *;`;
             params = [userId, 'pdf', 'Baixar PDF', 'fa-solid fa-file-pdf', nextOrder];
 
         } else if (item_type === 'instagram_embed' || item_type === 'youtube_embed' || item_type === 'tiktok_embed' || item_type === 'spotify_embed' || item_type === 'linkedin_embed' || item_type === 'pinterest_embed') {
@@ -201,11 +201,11 @@ router.post('/items', protectUser, async (req, res) => {
             }
             
             const defaultConfig = defaults[item_type];
-            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, $4, $5, null, null, null, $6) RETURNING *;`;
+            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, $4, $5, null, null, null, $6, true) RETURNING *;`;
             params = [userId, item_type, defaultConfig.title, defaultConfig.url, defaultConfig.icon, nextOrder];
         
         } else if (item_type === 'pdf_embed') {
-            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, '#', $4, null, null, '#', $5) RETURNING *;`;
+            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, '#', $4, null, null, '#', $5, true) RETURNING *;`;
             params = [userId, 'pdf_embed', 'Documento PDF', 'fas fa-file-import', nextOrder];
 
         } else if (item_type === 'carousel') {
@@ -214,13 +214,13 @@ router.post('/items', protectUser, async (req, res) => {
             // Usando estrutura similar ao banner, mas com title e destination_url como JSON
             const defaultImageUrl = 'https://via.placeholder.com/600x400';
             const defaultImagesArray = JSON.stringify([defaultImageUrl]);
-            query = `INSERT INTO profile_items (user_id, item_type, destination_url, image_url, display_order, aspect_ratio) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;`;
+            query = `INSERT INTO profile_items (user_id, item_type, destination_url, image_url, display_order, aspect_ratio, is_active) VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING *;`;
             params = [userId, 'carousel', defaultImagesArray, defaultImageUrl, nextOrder, '16:9'];
 
         } else if (item_type === 'product_catalog') {
             // Catálogo de produtos - destination_url armazena URL do WhatsApp
             // Produtos serão armazenados na tabela product_catalog_items
-            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, $4, $5, null, null, null, $6) RETURNING *;`;
+            query = `INSERT INTO profile_items ${ALL_COLUMNS} VALUES ($1, $2, $3, $4, $5, null, null, null, $6, true) RETURNING *;`;
             params = [userId, 'product_catalog', 'Minha Loja', '', 'fas fa-store', nextOrder];
 
         } else {
