@@ -228,37 +228,34 @@
                 <%
                     const avatarFormat = details.avatar_format || 'circular';
                     const avatarClass = 'profile-avatar avatar-' + avatarFormat;
-                    const bgColor = details.background_color || '#0D0D0F';
-                    // Converter cor hex para RGB para o gradiente
-                    const hexToRgb = (hex) => {
-                        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                        return result ? {
-                            r: parseInt(result[1], 16),
-                            g: parseInt(result[2], 16),
-                            b: parseInt(result[3], 16)
-                        } : { r: 20, g: 20, b: 23 };
-                    };
-                    const bgRgb = hexToRgb(bgColor);
                 %>
-                <div style="position: relative; display: inline-block; overflow: hidden;">
-                    <img src="<%= details.profile_image_url || 'https://avatar.iran.liara.run/public/boy' %>" alt="Foto de Perfil" class="<%= avatarClass %>" style="outline: none !important; border: none !important; box-shadow: none !important;" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=';">
+                <div style="position: relative; display: inline-block;">
                     <% if (avatarFormat === 'square-full' || avatarFormat === 'square-small') { %>
-                    <div class="avatar-gradient-overlay" style="
-                        position: absolute;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        height: 60%;
-                        background: linear-gradient(to bottom, 
-                            transparent 0%, 
-                            rgba(<%= bgRgb.r %>, <%= bgRgb.g %>, <%= bgRgb.b %>, 0.05) 15%, 
-                            rgba(<%= bgRgb.r %>, <%= bgRgb.g %>, <%= bgRgb.b %>, 0.2) 35%, 
-                            rgba(<%= bgRgb.r %>, <%= bgRgb.g %>, <%= bgRgb.b %>, 0.5) 60%, 
-                            rgba(<%= bgRgb.r %>, <%= bgRgb.g %>, <%= bgRgb.b %>, 0.85) 85%, 
-                            rgba(<%= bgRgb.r %>, <%= bgRgb.g %>, <%= bgRgb.b %>, 1) 100%);
-                        pointer-events: none;
-                        border-radius: 0;
-                    "></div>
+                    <img src="<%= details.profile_image_url || 'https://avatar.iran.liara.run/public/boy' %>" alt="Foto de Perfil" class="<%= avatarClass %> avatar-with-gradient" style="
+                        outline: none !important; 
+                        border: none !important; 
+                        box-shadow: none !important;
+                        -webkit-mask-image: linear-gradient(to bottom, 
+                            black 0%, 
+                            black 50%, 
+                            rgba(0, 0, 0, 0.98) 65%, 
+                            rgba(0, 0, 0, 0.9) 75%, 
+                            rgba(0, 0, 0, 0.7) 85%, 
+                            rgba(0, 0, 0, 0.4) 92%, 
+                            rgba(0, 0, 0, 0.1) 97%, 
+                            transparent 100%);
+                        mask-image: linear-gradient(to bottom, 
+                            black 0%, 
+                            black 50%, 
+                            rgba(0, 0, 0, 0.98) 65%, 
+                            rgba(0, 0, 0, 0.9) 75%, 
+                            rgba(0, 0, 0, 0.7) 85%, 
+                            rgba(0, 0, 0, 0.4) 92%, 
+                            rgba(0, 0, 0, 0.1) 97%, 
+                            transparent 100%);
+                    " onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=';">
+                    <% } else { %>
+                    <img src="<%= details.profile_image_url || 'https://avatar.iran.liara.run/public/boy' %>" alt="Foto de Perfil" class="<%= avatarClass %>" style="outline: none !important; border: none !important; box-shadow: none !important;" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNzUiIGN5PSI3NSIgcj0iNzAiIGZpbGw9IiMzMzMzMzMiLz48dGV4dCB4PSI3NSIgeT0iODUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCI+8J+RiDwvdGV4dD48L3N2Zz4=';">
                     <% } %>
                 </div>
                 <h1 class="profile-name"><%= details.display_name || 'Nome do Usuário' %></h1>

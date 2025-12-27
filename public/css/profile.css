@@ -117,15 +117,10 @@ body {
     box-shadow: none !important;
 }
 
-/* Overlay com degradê transparente na parte inferior (aplicado via div no EJS) */
-.avatar-gradient-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 40%;
-    pointer-events: none;
-    z-index: 1;
+/* Degradê aplicado diretamente na imagem usando mask */
+.avatar-with-gradient {
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
 }
 .profile-name { font-size: 2rem; font-weight: 800; margin: 0 0 8px 0; }
 .profile-bio { font-size: 1.1rem; line-height: 1.6; margin: 0; padding: 0 16px; }
