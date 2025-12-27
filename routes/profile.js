@@ -343,14 +343,61 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
 }));
 
 // ===========================================
-// ROTAS DE PRODUTOS (DEVEM VIR ANTES DAS ROTAS DE ITEMS)
+// ROTAS PARA GERENCIAR ITENS (ITEMS) - ROTAS ESPECÍFICAS PRIMEIRO
 // ===========================================
-// Importar e montar rotas de produtos ANTES das rotas de items
+
+// DELETE /api/profile/items/:id - Deletar item (DEVE VIR ANTES DAS ROTAS DE PRODUTOS PARA EVITAR CONFLITO)
+router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do item inválido.' });
+        }
+
+        console.log(`🗑️ Tentando deletar item ${itemId} para usuário ${userId}`);
+
+        // Verificar se o item pertence ao usuário
+        const checkRes = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
+            [itemId, userId]
+        );
+
+        if (checkRes.rows.length === 0) {
+            console.log(`❌ Item ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
+            return res.status(404).json({ message: 'Item não encontrado ou você não tem permissão para removê-lo.' });
+        }
+
+        // Deletar produtos do catálogo se for product_catalog
+        if (checkRes.rows[0].item_type === 'product_catalog') {
+            await client.query('DELETE FROM product_catalog_items WHERE profile_item_id = $1', [itemId]);
+            console.log(`🗑️ Produtos do catálogo ${itemId} deletados`);
+        }
+
+        // Deletar o item
+        await client.query('DELETE FROM profile_items WHERE id = $1 AND user_id = $2', [itemId, userId]);
+        console.log(`✅ Item ${itemId} deletado com sucesso`);
+        
+        res.json({ message: 'Item removido com sucesso!' });
+    } catch (error) {
+        console.error("❌ Erro ao deletar item:", error);
+        res.status(500).json({ message: 'Erro ao deletar item.', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
+    } finally {
+        client.release();
+    }
+}));
+
+// ===========================================
+// ROTAS DE PRODUTOS (DEVEM VIR DEPOIS DA ROTA DELETE ESPECÍFICA)
+// ===========================================
+// Importar e montar rotas de produtos
 const productsRouter = require('./products');
 router.use('/', productsRouter);
 
 // ===========================================
-// ROTAS PARA GERENCIAR ITENS (ITEMS)
+// ROTAS PARA GERENCIAR ITENS (ITEMS) - CONTINUAÇÃO
 // ===========================================
 
 // GET /api/profile/items - Listar todos os itens do usuário
@@ -376,7 +423,7 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const userId = req.user.userId;
-        const { item_type } = req.body;
+        const { item_type, title, destination_url, icon_class, pix_key, recipient_name, pix_amount, pix_description, pdf_url, aspect_ratio, image_url, logo_size } = req.body;
 
         if (!item_type) {
             return res.status(400).json({ message: 'Tipo de item é obrigatório.' });
@@ -389,20 +436,66 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
         );
         const nextOrder = orderResult.rows[0].next_order;
 
-        console.log(`💾 Criando novo item para usuário ${userId}:`, { item_type, display_order: nextOrder });
+        // Verificar quais colunas existem na tabela
+        const columnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'profile_items'
+        `);
+        const existingColumns = columnsCheck.rows.map(row => row.column_name);
+
+        // Construir campos e valores dinamicamente
+        const insertFields = ['user_id', 'item_type', 'display_order', 'is_active'];
+        const insertValues = [userId, item_type, nextOrder, true];
+        let paramIndex = insertValues.length + 1;
+
+        // Campos padrão que sempre existem
+        if (title !== undefined) {
+            insertFields.push('title');
+            insertValues.push(title || null);
+            paramIndex++;
+        }
+        if (destination_url !== undefined) {
+            insertFields.push('destination_url');
+            insertValues.push(destination_url || null);
+            paramIndex++;
+        }
+        if (image_url !== undefined) {
+            insertFields.push('image_url');
+            insertValues.push(image_url || null);
+            paramIndex++;
+        }
+        if (icon_class !== undefined) {
+            insertFields.push('icon_class');
+            insertValues.push(icon_class || null);
+            paramIndex++;
+        }
+
+        // Campos opcionais (apenas se existirem na tabela)
+        const optionalFields = ['pix_key', 'recipient_name', 'pix_amount', 'pix_description', 'pdf_url', 'logo_size', 'whatsapp_message', 'aspect_ratio'];
+        for (const field of optionalFields) {
+            if (existingColumns.includes(field) && req.body[field] !== undefined) {
+                insertFields.push(field);
+                insertValues.push(req.body[field] || null);
+                paramIndex++;
+            }
+        }
+
+        console.log(`💾 Criando novo item para usuário ${userId}:`, { item_type, title, display_order: nextOrder, insertFields });
         
+        const placeholders = insertFields.map((_, i) => `$${i + 1}`).join(', ');
         const result = await client.query(
-            `INSERT INTO profile_items (user_id, item_type, display_order, is_active)
-             VALUES ($1, $2, $3, true)
+            `INSERT INTO profile_items (${insertFields.join(', ')})
+             VALUES (${placeholders})
              RETURNING *`,
-            [userId, item_type, nextOrder]
+            insertValues
         );
 
         console.log(`✅ Item criado com sucesso:`, result.rows[0]);
         res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error("Erro ao criar item:", error);
-        res.status(500).json({ message: 'Erro ao criar item.' });
+        res.status(500).json({ message: 'Erro ao criar item.', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
     } finally {
         client.release();
     }
@@ -548,32 +641,6 @@ router.patch('/items/:id', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
-// DELETE /api/profile/items/:id - Deletar item
-router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
-    const client = await db.pool.connect();
-    try {
-        const userId = req.user.userId;
-        const itemId = req.params.id;
-
-        // Verificar se o item pertence ao usuário
-        const checkRes = await client.query(
-            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
-            [itemId, userId]
-        );
-
-        if (checkRes.rows.length === 0) {
-            return res.status(404).json({ message: 'Item não encontrado ou você não tem permissão para removê-lo.' });
-        }
-
-        await client.query('DELETE FROM profile_items WHERE id = $1 AND user_id = $2', [itemId, userId]);
-        res.json({ message: 'Item removido com sucesso!' });
-    } catch (error) {
-        console.error("Erro ao deletar item:", error);
-        res.status(500).json({ message: 'Erro ao deletar item.' });
-    } finally {
-        client.release();
-    }
-}));
 
 // PUT /api/profile/avatar-format - Atualizar formato do avatar
 router.put('/avatar-format', protectUser, async (req, res) => {

@@ -939,12 +939,10 @@
                         <% } %>
 
                     <% } else if (item.item_type === 'telegram') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-telegram' %>"></i>
                             <span><%= item.title || 'Telegram' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'email') { %>
                         <% if (item.destination_url) { %>
@@ -955,68 +953,52 @@
                         <% } %>
 
                     <% } else if (item.item_type === 'instagram') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-instagram' %>"></i>
                             <span><%= item.title || 'Instagram' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'facebook') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-facebook' %>"></i>
                             <span><%= item.title || 'Facebook' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'tiktok') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-tiktok' %>"></i>
                             <span><%= item.title || 'TikTok' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'twitter') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-twitter' %>"></i>
                             <span><%= item.title || 'Twitter' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'youtube') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-youtube' %>"></i>
                             <span><%= item.title || 'YouTube' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'linkedin') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-linkedin' %>"></i>
                             <span><%= item.title || 'LinkedIn' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'portfolio') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fas fa-briefcase' %>"></i>
                             <span><%= item.title || 'Portfolio' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'pinterest') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-pinterest' %>"></i>
                             <span><%= item.title || 'Pinterest' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'reddit') { %>
                         <% if (item.destination_url) { %>
