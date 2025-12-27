@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR" style="background-color: <%= salesPage.background_color || '#0D0D0F' %>;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= salesPage.meta_title || salesPage.store_title || 'Loja' %></title>
+    
+    <meta name="description" content="<%= salesPage.meta_description || salesPage.store_description || '' %>">
+    <% if (salesPage.meta_image_url) { %>
+    <meta property="og:image" content="<%= salesPage.meta_image_url %>">
+    <% } %>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="/css/salesPage.css">
+    
+    <style>
+        :root {
+            --bg-color: <%= salesPage.background_color || '#0D0D0F' %>;
+            --text-color: <%= salesPage.text_color || '#ECECEC' %>;
+            --button-color: <%= salesPage.button_color || '#FFC700' %>;
+            --button-text-color: <%= salesPage.button_text_color || '#000000' %>;
+        }
+    </style>
+</head>
+<body class="sales-page <%= salesPage.theme || 'dark' %>" data-sales-page-id="<%= salesPage.id %>">
+    <!-- Header -->
+    <header class="sales-header">
+        <div class="container">
+            <% if (salesPage.button_logo_url) { %>
+            <img src="<%= salesPage.button_logo_url %>" alt="<%= salesPage.store_title %>" class="store-logo">
+            <% } %>
+            <h1 class="store-title"><%= salesPage.store_title || 'Minha Loja' %></h1>
+            <button class="cart-toggle" id="cart-toggle">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cart-count">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <% if (salesPage.background_image_url) { %>
+    <section class="hero-section" style="background-image: url('<%= salesPage.background_image_url %>');">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h2><%= salesPage.store_title %></h2>
+            <% if (salesPage.store_description) { %>
+            <p><%= salesPage.store_description %></p>
+            <% } %>
+        </div>
+    </section>
+    <% } %>
+
+    <!-- Products Grid -->
+    <main class="products-section">
+        <div class="container">
+            <h2 class="section-title">Produtos</h2>
+            <div class="products-grid" id="products-grid">
+                <% products.forEach(product => { %>
+                <div class="product-card" data-product-id="<%= product.id %>">
+                    <% if (product.image_url) { %>
+                    <div class="product-image">
+                        <img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy">
+                        <% if (product.badge) { %>
+                        <span class="product-badge badge-<%= product.badge %>"><%= product.badge %></span>
+                        <% } %>
+                    </div>
+                    <% } %>
+                    <div class="product-info">
+                        <h3 class="product-name"><%= product.name %></h3>
+                        <% if (product.description) { %>
+                        <p class="product-description"><%= product.description %></p>
+                        <% } %>
+                        <div class="product-price">
+                            <% if (product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price)) { %>
+                            <span class="compare-price">R$ <%= parseFloat(product.compare_price).toFixed(2).replace('.', ',') %></span>
+                            <% } %>
+                            <span class="current-price">R$ <%= parseFloat(product.price).toFixed(2).replace('.', ',') %></span>
+                        </div>
+                        <button class="add-to-cart-btn" data-product-id="<%= product.id %>" data-product-name="<%= product.name %>" data-product-price="<%= product.price %>">
+                            <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
+                        </button>
+                    </div>
+                </div>
+                <% }); %>
+            </div>
+        </div>
+    </main>
+
+    <!-- Cart Sidebar -->
+    <aside class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3>Carrinho</h3>
+            <button class="cart-close" id="cart-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <!-- Items serão inseridos aqui via JavaScript -->
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <strong>Total: <span id="cart-total">R$ 0,00</span></strong>
+            </div>
+            <div class="checkout-form">
+                <input type="text" id="customer-name" placeholder="Seu nome (opcional)" class="checkout-input">
+                <textarea id="customer-observation" placeholder="Observação (opcional)" class="checkout-textarea"></textarea>
+                <button class="checkout-btn" id="checkout-btn">
+                    <i class="fab fa-whatsapp"></i> Finalizar Compra
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Cart Overlay -->
+    <div class="cart-overlay" id="cart-overlay"></div>
+
+    <!-- Footer -->
+    <footer class="sales-footer">
+        <div class="container">
+            <p>&copy; <%= new Date().getFullYear() %> <%= salesPage.store_title || 'Loja' %>. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="/js/salesPage.js"></script>
+</body>
+</html>
+

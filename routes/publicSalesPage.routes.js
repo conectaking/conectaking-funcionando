@@ -1,0 +1,106 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../db');
+const salesPageService = require('../modules/salesPage/salesPage.service');
+const productService = require('../modules/salesPage/products/product.service');
+const analyticsService = require('../modules/salesPage/analytics/analytics.service');
+const { asyncHandler } = require('../middleware/errorHandler');
+const logger = require('../utils/logger');
+
+/**
+ * Rota pública: /:slug/loja/:itemId ou /:slug/loja/:slug
+ */
+router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
+    const { slug, identifier } = req.params;
+    const { token } = req.query; // Para preview seguro
+
+    const client = await db.pool.connect();
+    try {
+        // Buscar usuário pelo slug
+        const userRes = await client.query(
+            'SELECT id FROM users WHERE profile_slug = $1',
+            [slug]
+        );
+
+        if (userRes.rows.length === 0) {
+            return res.status(404).send('<h1>404 - Perfil não encontrado</h1>');
+        }
+
+        const userId = userRes.rows[0].id;
+
+        // Buscar página de vendas
+        let salesPage;
+        const isNumeric = /^\d+$/.test(identifier);
+
+        if (isNumeric) {
+            // Buscar por profile_item_id
+            const itemRes = await client.query(
+                'SELECT id FROM profile_items WHERE id = $1 AND user_id = $2 AND item_type = $3',
+                [identifier, userId, 'sales_page']
+            );
+
+            if (itemRes.rows.length === 0) {
+                return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
+            }
+
+            salesPage = await salesPageService.findByProfileItemId(itemRes.rows[0].id);
+        } else {
+            // Buscar por slug
+            salesPage = await salesPageService.findBySlug(identifier);
+            
+            // Verificar se pertence ao usuário
+            const itemRes = await client.query(
+                'SELECT id FROM profile_items WHERE id = $1 AND user_id = $2',
+                [salesPage.profile_item_id, userId]
+            );
+
+            if (itemRes.rows.length === 0) {
+                return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
+            }
+        }
+
+        // Verificar se está publicada ou se tem token de preview
+        if (salesPage.status !== 'PUBLISHED') {
+            if (!token || token !== salesPage.preview_token) {
+                return res.status(404).send('<h1>404 - Página não encontrada ou não publicada</h1>');
+            }
+        }
+
+        // Buscar produtos ativos
+        const products = await productService.findBySalesPageId(salesPage.id, false);
+
+        // Registrar evento page_view
+        try {
+            await analyticsService.trackEvent({
+                sales_page_id: salesPage.id,
+                product_id: null,
+                event_type: 'page_view',
+                metadata: {
+                    ip: req.ip,
+                    user_agent: req.get('user-agent'),
+                    referrer: req.get('referer'),
+                    timestamp: new Date().toISOString()
+                }
+            });
+        } catch (error) {
+            logger.error('Erro ao registrar page_view:', error);
+            // Não bloquear renderização se falhar
+        }
+
+        // Renderizar página
+        res.render('salesPage', {
+            salesPage,
+            products,
+            isPreview: !!token && token === salesPage.preview_token
+        });
+
+    } catch (error) {
+        logger.error('Erro ao carregar página de vendas:', error);
+        return res.status(500).send('<h1>500 - Erro ao carregar página</h1>');
+    } finally {
+        client.release();
+    }
+}));
+
+module.exports = router;
+
