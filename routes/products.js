@@ -45,12 +45,18 @@ router.post('/items/:itemId/products', protectUser, asyncHandler(async (req, res
     const userId = req.user.userId;
     const { name, description, price, image_url, display_order } = req.body;
 
+    logger.info(`📥 POST /items/${itemId}/products - Body recebido:`, req.body);
+    logger.info(`👤 User ID: ${userId}, Item ID: ${itemId}`);
+
     // Validações
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
+        logger.warn(`❌ Validação falhou: Nome inválido - "${name}"`);
         return res.status(400).json({ message: 'Nome do produto é obrigatório (mínimo 2 caracteres).' });
     }
 
-    if (!price || isNaN(price) || parseFloat(price) <= 0) {
+    const priceNum = parseFloat(price);
+    if (!price || isNaN(priceNum) || priceNum <= 0) {
+        logger.warn(`❌ Validação falhou: Preço inválido - "${price}"`);
         return res.status(400).json({ message: 'Preço deve ser maior que zero.' });
     }
 
@@ -89,11 +95,14 @@ router.post('/items/:itemId/products', protectUser, asyncHandler(async (req, res
             `INSERT INTO product_catalog_items (profile_item_id, name, description, price, image_url, display_order)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING *`,
-            [itemId, name.trim(), description ? description.trim() : null, parseFloat(price), image_url || null, finalDisplayOrder]
+            [itemId, name.trim(), description ? description.trim() : null, priceNum, image_url || null, finalDisplayOrder]
         );
 
         logger.info(`✅ Produto inserido com sucesso:`, insertRes.rows[0]);
-        res.status(201).json({ product: insertRes.rows[0] });
+        res.status(201).json({ 
+            product: insertRes.rows[0],
+            message: 'Produto adicionado com sucesso!'
+        });
     } catch (error) {
         logger.error('❌ Erro ao inserir produto:', error);
         res.status(500).json({ message: 'Erro ao inserir produto.', error: process.env.NODE_ENV === 'development' ? error.message : undefined });

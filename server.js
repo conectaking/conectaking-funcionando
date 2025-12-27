@@ -254,6 +254,7 @@ app.use('/api/inquiry', apiLimiter, inquiryRoutes);
 app.use('/api/generator', apiLimiter, generatorRoutes);
 app.use('/api/account', apiLimiter, accountRoutes);
 app.use('/api/profile', apiLimiter, profileRoutes);
+app.use('/api/profile', apiLimiter, productsRoutes); // Rotas de produtos do catálogo
 app.use('/log', loggerRoutes);
 app.use('/api/admin', apiLimiter, adminRoutes);
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
