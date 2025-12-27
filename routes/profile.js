@@ -333,6 +333,13 @@ router.put('/save-all', protectUser, async (req, res) => {
 });
 
 // ===========================================
+// ROTAS DE PRODUTOS (DEVEM VIR ANTES DAS ROTAS DE ITEMS)
+// ===========================================
+// Importar e montar rotas de produtos ANTES das rotas de items
+const productsRouter = require('./products');
+router.use('/', productsRouter);
+
+// ===========================================
 // ROTAS PARA GERENCIAR ITENS (ITEMS)
 // ===========================================
 
@@ -688,10 +695,6 @@ router.put('/avatar-format', protectUser, async (req, res) => {
         client.release();
     }
 });
-
-// Importar e montar rotas de produtos
-const productsRouter = require('./products');
-router.use('/', productsRouter);
 
 module.exports = router;
 
