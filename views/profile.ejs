@@ -466,7 +466,6 @@
                         
                         <% if (carouselImages.length > 0) { %>
                             <div class="carousel-container-public" id="<%= carouselId %>" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
-                        <% if (carouselImages.length > 0) { %>
                                 <div class="carousel-wrapper-public" style="display: flex; transition: transform 0.5s ease-in-out; width: <%= carouselImages.length * 100 %>%;">
                                     <% carouselImages.forEach((imgUrl, index) => { 
                                         const url = typeof imgUrl === 'string' ? imgUrl : (imgUrl.image_url || imgUrl);
@@ -885,6 +884,11 @@
                                 })();
                                 </script>
                             <% } %>
+                        <% } else { %>
+                            <div class="profile-link" style="opacity: 0.6; cursor: default;" data-item-id="<%= item.id %>">
+                                <i class="fas fa-images"></i>
+                                <span><%= item.title || 'Carrossel' %> (sem imagens)</span>
+                            </div>
                         <% } %>
 
                     <%# ========================================================== %>
