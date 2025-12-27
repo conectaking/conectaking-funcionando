@@ -260,8 +260,20 @@ router.put('/save-all', protectUser, async (req, res) => {
             // Deletar todos os itens existentes do usuário
             await client.query('DELETE FROM profile_items WHERE user_id = $1', [userId]);
 
+            console.log(`💾 Salvando ${items.length} itens para o usuário ${userId}`);
+            
             // Inserir novos itens
             for (const item of items) {
+                console.log(`📝 Salvando item:`, {
+                    id: item.id,
+                    item_type: item.item_type,
+                    title: item.title,
+                    is_active: item.is_active,
+                    display_order: item.display_order,
+                    has_image_url: !!item.image_url,
+                    logo_size: item.logo_size
+                });
+                
                 const insertFields = ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
                 const insertValues = [
                     userId,
