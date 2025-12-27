@@ -1,139 +1,69 @@
-# Como Executar a Migration no DBeaver
+# 📋 Como Executar a Migration no dBeaver - Passo a Passo
 
-## Passo a Passo Detalhado
+## ⚠️ IMPORTANTE: Por que o painel está vazio?
 
-### 1. Abrir o DBeaver
+O painel de resultados está vazio porque você está executando apenas a **query de verificação**, mas a **migration principal ainda não foi executada**. 
 
-1. Abra o aplicativo **DBeaver** no seu computador
-2. Conecte-se ao banco de dados PostgreSQL do Render (ou seu banco de dados)
+As queries de verificação só vão mostrar resultados **DEPOIS** que as tabelas e ENUMs forem criados.
 
-### 2. Localizar o Banco de Dados
+## 🎯 Solução: Execute a Migration Principal Primeiro
 
-1. No painel esquerdo (Database Navigator), encontre sua conexão PostgreSQL
-2. Expanda a conexão até encontrar o banco de dados (geralmente algo como `conectaking_db`)
-3. Expanda o banco de dados para ver as tabelas
+### Opção 1: Executar Script Completo (Recomendado)
 
-### 3. Abrir Editor SQL
+1. **Abra o arquivo** `EXECUTAR-MIGRATION-SALES-PAGES-DBEAVER.sql` no dBeaver
+2. **Selecione TODO o conteúdo** do arquivo (Ctrl+A)
+3. **Execute o script completo**:
+   - Pressione **Ctrl+Enter** (ou Cmd+Enter no Mac)
+   - OU clique no botão **"Execute SQL Script"** (▶️) na toolbar
+4. **Aguarde** a execução terminar
+5. **Verifique a aba "Log"** na parte inferior para ver se houve erros
 
-**Opção 1 - Criar Novo Script SQL:**
-1. Clique com o botão direito no banco de dados
-2. Selecione **SQL Editor** → **New SQL Script**
-3. Ou use o atalho: `Ctrl+Alt+S` (Windows/Linux) ou `Cmd+Option+S` (Mac)
+### Opção 2: Executar Passo a Passo (Se a Opção 1 não funcionar)
 
-**Opção 2 - Abrir Arquivo SQL:**
-1. No menu superior, vá em **File** → **Open**
-2. Navegue até a pasta `conectaking-funcionando/migrations/`
-3. Selecione o arquivo `011_add_button_content_align_to_user_profiles.sql`
+1. **Abra o arquivo** `EXECUTAR-MIGRATION-PASSO-A-PASSO.sql`
+2. **Execute cada BLOCO separadamente**:
+   - Selecione o **BLOCO 1** (criar ENUMs)
+   - Pressione **Ctrl+Enter**
+   - Aguarde executar
+   - Repita para cada bloco seguinte
 
-### 4. Copiar e Colar o Código SQL
+## ✅ Como Saber se Funcionou?
 
-Se você abriu um novo script, copie e cole o seguinte código:
+Após executar a migration, execute esta query de verificação:
 
 ```sql
--- Migration: Adicionar coluna button_content_align à tabela user_profiles
--- Data: 2025-12-25
--- Descrição: Adiciona campo para controlar o alinhamento do conteúdo dos botões (left, center, right)
-
--- Verificar se a coluna já existe antes de adicionar
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 
-        FROM information_schema.columns 
-        WHERE table_name = 'user_profiles' 
-        AND column_name = 'button_content_align'
-    ) THEN
-        ALTER TABLE user_profiles 
-        ADD COLUMN button_content_align VARCHAR(10) DEFAULT 'center' 
-        CHECK (button_content_align IN ('left', 'center', 'right'));
-        
-        -- Atualizar registros existentes para usar 'center' como padrão
-        UPDATE user_profiles 
-        SET button_content_align = 'center' 
-        WHERE button_content_align IS NULL;
-        
-        RAISE NOTICE 'Coluna button_content_align adicionada com sucesso à tabela user_profiles';
-    ELSE
-        RAISE NOTICE 'Coluna button_content_align já existe na tabela user_profiles';
-    END IF;
-END $$;
-
--- Verificação
-SELECT 
-    column_name, 
-    data_type, 
-    column_default,
-    is_nullable
-FROM information_schema.columns 
-WHERE table_name = 'user_profiles' 
-AND column_name = 'button_content_align';
+-- Verificar se as tabelas foram criadas
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public' 
+AND table_name IN ('sales_pages', 'sales_page_products', 'sales_page_events');
 ```
 
-### 5. Executar o Script
+**Resultado esperado:** Você deve ver 3 linhas:
+- `sales_pages`
+- `sales_page_products`
+- `sales_page_events`
 
-**Método 1 - Botão Executar:**
-1. Certifique-se de que o script está completo e selecionado
-2. Clique no botão **Execute SQL Script** (ícone de play ▶️) na barra de ferramentas
-3. Ou pressione `Ctrl+Enter` (Windows/Linux) ou `Cmd+Enter` (Mac)
+## 🔍 Verificar no Navegador do dBeaver
 
-**Método 2 - Executar Seleção:**
-1. Selecione todo o código SQL (Ctrl+A)
-2. Clique com o botão direito e selecione **Execute** → **Execute SQL Script**
-3. Ou use `Ctrl+Alt+X`
+1. No painel esquerdo "Navegador de banco de dados"
+2. Expanda: `conecta_king_db` → `Bancos de dados` → `conecta_king_db`
+3. Expanda: `Esquemas` → `public` → `Tabelas`
+4. Você deve ver as 3 novas tabelas:
+   - `sales_pages`
+   - `sales_page_products`
+   - `sales_page_events`
 
-### 6. Verificar o Resultado
+## ❌ Se Ainda Estiver Vazio
 
-Após executar, você deve ver:
+Se após executar a migration o painel ainda estiver vazio:
 
-1. **No painel de resultados (abaixo):**
-   - Uma mensagem de sucesso indicando que a coluna foi adicionada
-   - OU uma mensagem dizendo que a coluna já existe
+1. **Verifique a aba "Log"** (parte inferior do dBeaver)
+2. **Procure por erros** (linhas em vermelho)
+3. **Copie a mensagem de erro** e me envie
 
-2. **Na aba de resultados da query de verificação:**
-   - Uma linha mostrando os detalhes da coluna `button_content_align`
-   - Data type: `character varying` ou `varchar`
-   - Column default: `'center'::character varying`
-   - Is nullable: `YES`
+## 📝 Dica Importante
 
-### 7. Verificar Visualmente (Opcional)
-
-1. No painel esquerdo, vá em **Database Navigator**
-2. Expanda: **Databases** → **seu_banco** → **Schemas** → **public** → **Tables**
-3. Encontre a tabela `user_profiles`
-4. Clique com botão direito → **View Table**
-5. Procure pela coluna `button_content_align` na lista de colunas
-
-### 8. Se Houver Erro
-
-**Erro: "syntax error"**
-- Certifique-se de que copiou o código completo
-- Verifique se há aspas ou caracteres especiais incorretos
-
-**Erro: "permission denied"**
-- Verifique se você tem permissões de ALTER TABLE no banco
-- Pode precisar de credenciais de administrador
-
-**Erro: "column already exists"**
-- Isso significa que a coluna já existe - não é um problema!
-- Pode continuar normalmente
-
-### 9. Após Executar com Sucesso
-
-1. ✅ A migration foi aplicada
-2. Volte ao dashboard e **salve novamente** as configurações de alinhamento
-3. Recarregue a página do cartão público com **Ctrl+F5** (limpar cache)
-4. O alinhamento deve funcionar corretamente agora!
-
-## Dica Extra
-
-Se quiser verificar todos os dados atuais da coluna:
-```sql
-SELECT user_id, button_content_align 
-FROM user_profiles 
-WHERE button_content_align IS NOT NULL;
-```
-
----
-
-**Precisa de ajuda?** Se encontrar algum erro, copie a mensagem de erro completa e me envie!
-
+- **Sempre execute a migration PRIMEIRO**
+- **Depois** execute as queries de verificação
+- O painel vazio significa que as tabelas ainda não existem
