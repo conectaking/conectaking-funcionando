@@ -689,5 +689,9 @@ router.put('/avatar-format', protectUser, async (req, res) => {
     }
 });
 
+// Importar e montar rotas de produtos
+const productsRouter = require('./products');
+router.use('/', productsRouter);
+
 module.exports = router;
 

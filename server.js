@@ -263,7 +263,6 @@ app.use('/download', downloadRoutes);
 app.use('/api/pix', apiLimiter, pixRoutes);
 app.use('/api/business', apiLimiter, businessRoutes);
 app.use('/api/payment', apiLimiter, paymentRoutes);
-app.use('/api/profile', apiLimiter, productsRoutes);
 app.use('/vcard', vcardRoutes);
 
 // Rota pública de produto individual (deve vir antes de publicProfileRoutes)
