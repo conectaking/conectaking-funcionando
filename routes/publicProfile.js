@@ -156,9 +156,14 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         });
 
         // Preparar URL da imagem processada para og:image (se houver imagem)
-        const ogImageUrl = details.profile_image_url 
-            ? `${req.protocol}://${req.get('host')}/api/image/profile-image?url=${encodeURIComponent(details.profile_image_url)}`
-            : null;
+        // Adicionar cache-busting baseado na URL da imagem para forçar atualização
+        let ogImageUrl = null;
+        if (details.profile_image_url) {
+            // Extrair parte única da URL (ID do Cloudflare) para cache-busting
+            const urlParts = details.profile_image_url.match(/[a-zA-Z0-9_-]+/g);
+            const cacheBuster = urlParts ? urlParts[urlParts.length - 1] : Date.now();
+            ogImageUrl = `${req.protocol}://${req.get('host')}/api/image/profile-image?url=${encodeURIComponent(details.profile_image_url)}&v=${cacheBuster}`;
+        }
         
         const profileData = {
             details: details,

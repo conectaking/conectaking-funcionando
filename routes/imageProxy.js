@@ -56,8 +56,8 @@ router.get('/profile-image', asyncHandler(async (req, res) => {
             res.set('Content-Type', imageResponse.headers.get('content-type') || `image/${format}`);
         }
         
-        // Configurar headers para cache
-        res.set('Cache-Control', 'public, max-age=31536000'); // Cache por 1 ano
+        // Configurar headers para cache (reduzido para permitir atualizações mais frequentes)
+        res.set('Cache-Control', 'public, max-age=3600'); // Cache por 1 hora (ajustável)
         res.set('Content-Length', processedBuffer.length);
         
         res.send(processedBuffer);
