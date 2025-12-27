@@ -439,7 +439,7 @@
                     <%# ========================================================== %>
                     <%# TIPO: CARROSSEL (Múltiplas imagens com slide horizontal) %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'carousel' && (item.destination_url || item.image_url)) { %>
+                    <% } else if (item.item_type === 'carousel') { %>
                         <% 
                         // Parsear array de imagens do destination_url
                         let carouselImages = [];
@@ -466,6 +466,7 @@
                         
                         <% if (carouselImages.length > 0) { %>
                             <div class="carousel-container-public" id="<%= carouselId %>" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
+                        <% if (carouselImages.length > 0) { %>
                                 <div class="carousel-wrapper-public" style="display: flex; transition: transform 0.5s ease-in-out; width: <%= carouselImages.length * 100 %>%;">
                                     <% carouselImages.forEach((imgUrl, index) => { 
                                         const url = typeof imgUrl === 'string' ? imgUrl : (imgUrl.image_url || imgUrl);
@@ -890,12 +891,10 @@
                     <%# TIPO: PIX (Chave PIX para copiar) %>
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'pix') { %>
-                        <% if (item.pix_key) { %>
-                        <button class="profile-link profile-button-pix" data-pix-key="<%= item.pix_key %>" data-item-id="<%= item.id %>">
+                        <button class="profile-link profile-button-pix" data-pix-key="<%= item.pix_key || '' %>" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fa-solid fa-qrcode' %>"></i>
                             <span><%= item.title || 'PIX' %></span>
                         </button>
-                        <% } %>
 
                     <%# ========================================================== %>
                     <%# TIPO: PDF (Download de arquivo PDF) %>
@@ -931,12 +930,10 @@
                     <%# TIPOS: REDES SOCIAIS E CONTATOS (WhatsApp, Telegram, Email, etc.) %>
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'whatsapp') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="https://wa.me/<%= String(item.destination_url).replace(/\D/g,'') %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url ? 'https://wa.me/' + String(item.destination_url).replace(/\D/g,'') : '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-whatsapp' %>"></i>
                             <span><%= item.title || 'WhatsApp' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'telegram') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
@@ -945,12 +942,10 @@
                         </a>
 
                     <% } else if (item.item_type === 'email') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="mailto:<%= item.destination_url %>" class="profile-link" data-item-id="<%= item.id %>">
+                        <a href="<%= item.destination_url ? 'mailto:' + item.destination_url : '#' %>" class="profile-link" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fas fa-envelope' %>"></i>
                             <span><%= item.title || 'Email' %></span>
                         </a>
-                        <% } %>
 
                     <% } else if (item.item_type === 'instagram') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
