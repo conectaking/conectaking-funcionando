@@ -33,7 +33,7 @@ router.get('/profile-image', asyncHandler(async (req, res) => {
         
         // Se for PNG, adicionar fundo preto
         if (format === 'png') {
-            // Criar uma imagem com fundo preto
+            // Criar uma imagem com fundo preto e compor a imagem PNG por cima
             processedBuffer = await sharp({
                 create: {
                     width: metadata.width,
@@ -42,7 +42,10 @@ router.get('/profile-image', asyncHandler(async (req, res) => {
                     background: { r: 0, g: 0, b: 0, alpha: 1 }
                 }
             })
-            .composite([{ input: imageBuffer, blend: 'over' }])
+            .composite([{ 
+                input: imageBuffer, 
+                blend: 'over' 
+            }])
             .png()
             .toBuffer();
             
@@ -50,7 +53,7 @@ router.get('/profile-image', asyncHandler(async (req, res) => {
         } else {
             // Para JPEG ou outros formatos, manter original
             processedBuffer = imageBuffer;
-            res.set('Content-Type', `image/${format}`);
+            res.set('Content-Type', imageResponse.headers.get('content-type') || `image/${format}`);
         }
         
         // Configurar headers para cache

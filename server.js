@@ -273,6 +273,9 @@ app.use('/', publicProductRoutes);
 // Perfis públicos (sem rate limiting)
 app.use('/', publicProfileRoutes);
 
+// Proxy de imagem para processar PNGs com fundo preto
+app.use('/api/image', imageProxyRoutes);
+
 cron.schedule('0 0 * * *', async () => {
     logger.info('Executando verificação diária de assinaturas e testes...');
     try {
