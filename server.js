@@ -31,6 +31,10 @@ const vcardRoutes = require('./routes/vcard');
 const healthRoutes = require('./routes/health');
 const passwordRoutes = require('./routes/password');
 const imageProxyRoutes = require('./routes/imageProxy');
+const publicSalesPageRoutes = require('./routes/publicSalesPage');
+const salesPageRoutes = require('./modules/salesPage/salesPage.routes');
+const productRoutes = require('./modules/salesPage/products/product.routes');
+const analyticsRoutesSalesPage = require('./modules/salesPage/analytics/analytics.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize } = require('./middleware/security');
 
@@ -264,9 +268,17 @@ app.use('/api/business', apiLimiter, businessRoutes);
 app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/vcard', vcardRoutes);
 
+// Rotas do módulo Sales Page
+app.use('/api/v1/sales-pages', apiLimiter, salesPageRoutes);
+app.use('/api/v1/sales-pages', apiLimiter, productRoutes);
+app.use('/api/v1/sales-pages', apiLimiter, analyticsRoutesSalesPage);
+
 // Rota pública de produto individual (deve vir antes de publicProfileRoutes)
 const publicProductRoutes = require('./routes/publicProduct');
 app.use('/', publicProductRoutes);
+
+// Rota pública de página de vendas (deve vir antes de publicProfileRoutes)
+app.use('/', publicSalesPageRoutes);
 
 // Perfis públicos (sem rate limiting)
 app.use('/', publicProfileRoutes);

@@ -332,7 +332,8 @@
         }
 
         // Buscar informações da loja
-        const whatsappNumber = document.querySelector('.sales-page')?.dataset.whatsappNumber || '';
+        const salesPageEl = document.querySelector('.sales-page');
+        const whatsappNumber = salesPageEl?.dataset?.whatsappNumber || '';
         if (!whatsappNumber) {
             alert('Número do WhatsApp não configurado!');
             return;

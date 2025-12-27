@@ -91,7 +91,8 @@ router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
         res.render('salesPage', {
             salesPage,
             products,
-            isPreview: !!token && token === salesPage.preview_token
+            isPreview: !!token && token === salesPage.preview_token,
+            whatsappNumber: salesPage.whatsapp_number
         });
 
     } catch (error) {

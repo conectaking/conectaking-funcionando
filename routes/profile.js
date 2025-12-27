@@ -375,6 +375,11 @@ router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
             await client.query('DELETE FROM product_catalog_items WHERE profile_item_id = $1', [itemId]);
             console.log(`🗑️ Produtos do catálogo ${itemId} deletados`);
         }
+        
+        if (checkRes.rows[0].item_type === 'sales_page') {
+            await client.query('DELETE FROM sales_pages WHERE profile_item_id = $1', [itemId]);
+            console.log(`🗑️ Página de vendas ${itemId} deletada`);
+        }
 
         // Deletar o item
         await client.query('DELETE FROM profile_items WHERE id = $1 AND user_id = $2', [itemId, userId]);
@@ -498,8 +503,37 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
             insertValues
         );
 
-        console.log(`✅ Item criado com sucesso:`, result.rows[0]);
-        res.status(201).json(result.rows[0]);
+        const newItem = result.rows[0];
+
+        // Se for sales_page, criar registro na tabela sales_pages
+        if (item_type === 'sales_page') {
+            const salesPageService = require('../modules/salesPage/salesPage.service');
+            const crypto = require('crypto');
+            
+            try {
+                const salesPageData = {
+                    profile_item_id: newItem.id,
+                    store_title: title || 'Minha Loja',
+                    button_text: title || 'Minha Loja',
+                    button_logo_url: image_url || null,
+                    whatsapp_number: req.body.whatsapp_number || '',
+                    theme: 'dark',
+                    status: 'DRAFT'
+                };
+
+                // Gerar preview_token
+                salesPageData.preview_token = crypto.randomBytes(32).toString('hex');
+
+                await salesPageService.create(salesPageData);
+                console.log(`✅ Página de vendas criada para item ${newItem.id}`);
+            } catch (error) {
+                console.error("Erro ao criar página de vendas:", error);
+                // Não falhar a criação do item se falhar criar a página
+            }
+        }
+
+        console.log(`✅ Item criado com sucesso:`, newItem);
+        res.status(201).json(newItem);
     } catch (error) {
         console.error("Erro ao criar item:", error);
         res.status(500).json({ message: 'Erro ao criar item.', error: process.env.NODE_ENV === 'development' ? error.message : undefined });

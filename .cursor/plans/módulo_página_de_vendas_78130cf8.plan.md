@@ -36,13 +36,13 @@ todos:
       - migration
   - id: register_routes
     content: Registrar todas as rotas em server.js e adicionar case sales_page em routes/profile.js
-    status: pending
+    status: completed
     dependencies:
       - backend_routes
       - public_route
   - id: dashboard_html
     content: Adicionar card 'Página de Vendas' no modal de adicionar módulo em dashboard.html
-    status: pending
+    status: completed
   - id: edit_page_html
     content: Criar página dedicada de edição salesPageEdit.html com todas as abas (Configurações, Produtos, Analytics, Preview)
     status: pending
