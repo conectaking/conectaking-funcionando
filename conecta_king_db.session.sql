@@ -1,5 +1,4 @@
 -- ===========================================
-
 -- MIGRATION - EXECUTE CADA COMANDO SEPARADAMENTE
 -- Selecione UM comando por vez e execute (Ctrl+Enter)
 -- Esta versão IGNORA erros de "já existe"
@@ -151,5 +150,3 @@ FROM information_schema.tables
 WHERE table_schema = 'public' 
 AND table_name IN ('sales_pages', 'sales_page_products', 'sales_page_events')
 ORDER BY table_name;
-
-
