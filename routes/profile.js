@@ -452,7 +452,14 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
         // Campos padrão que sempre existem
         if (title !== undefined) {
             insertFields.push('title');
-            insertValues.push(title || null);
+            // Se title for vazio/null e for product_catalog, usar nome padrão
+            const finalTitle = title || (item_type === 'product_catalog' ? 'Catálogo de Produtos' : null);
+            insertValues.push(finalTitle);
+            paramIndex++;
+        } else if (item_type === 'product_catalog') {
+            // Se title não foi fornecido mas é product_catalog, adicionar título padrão
+            insertFields.push('title');
+            insertValues.push('Catálogo de Produtos');
             paramIndex++;
         }
         if (destination_url !== undefined) {
