@@ -97,7 +97,7 @@ router.get('/', protectUser, async (req, res) => {
 });
 
 // PUT /api/profile/save-all - Salvar todas as alterações do perfil (detalhes + itens)
-router.put('/save-all', protectUser, async (req, res) => {
+router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         await client.query('BEGIN');
@@ -335,14 +335,12 @@ router.put('/save-all', protectUser, async (req, res) => {
     } catch (error) {
         await client.query('ROLLBACK').catch(() => {});
         console.error('❌ Erro ao salvar alterações:', error);
-        res.status(500).json({ 
-            message: 'Erro ao salvar alterações.',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+        console.error('Stack trace:', error.stack);
+        throw error; // Deixar asyncHandler tratar o erro
     } finally {
         client.release();
     }
-});
+}));
 
 // ===========================================
 // ROTAS DE PRODUTOS (DEVEM VIR ANTES DAS ROTAS DE ITEMS)
