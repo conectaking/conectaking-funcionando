@@ -123,7 +123,7 @@ CREATE TRIGGER trigger_update_sales_page_products_updated_at
 
 -- VERIFICAÇÃO FINAL
 SELECT '✅ MIGRATION CONCLUÍDA!' as status;
-SELECT table_name as 'Tabelas criadas:'
+SELECT table_name as "Tabelas criadas"
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
 AND table_name IN ('sales_pages', 'sales_page_products', 'sales_page_events')
