@@ -1261,6 +1261,29 @@
                         <% } %>
 
                     <%# ========================================================== %>
+                    <%# TIPO: SALES PAGE (Página de Vendas) %>
+                    <%# ========================================================== %>
+                    <% } else if (item.item_type === 'sales_page') { %>
+                        <% 
+                            // Verificar se tem logo para sales_page
+                            const salesPageHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
+                            const salesPageLogoSize = item.logo_size || 24;
+                            const salesPageIsJpeg = salesPageHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
+                            const salesPageBorderRadius = salesPageHasLogo ? (salesPageIsJpeg ? '50%' : '0') : '50%';
+                            const salesPageObjectFit = salesPageHasLogo ? (salesPageIsJpeg ? 'cover' : 'contain') : 'cover';
+                            const salesPageUrl = item.sales_page_slug ? `/vendas/${item.sales_page_slug}` : '#';
+                        %>
+                        <a href="<%= salesPageUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <% if (salesPageHasLogo) { %>
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= salesPageLogoSize %>px; height: <%= salesPageLogoSize %>px; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <i class="<%= item.icon_class || 'fas fa-store' %>" style="display: none;"></i>
+                            <% } else { %>
+                            <i class="<%= item.icon_class || 'fas fa-store' %>"></i>
+                            <% } %>
+                            <span><%= item.title || 'Página de Vendas' %></span>
+                        </a>
+
+                    <%# ========================================================== %>
                     <%# FALLBACK: Tipo de item não reconhecido %>
                     <%# ========================================================== %>
                     <% } else { %>

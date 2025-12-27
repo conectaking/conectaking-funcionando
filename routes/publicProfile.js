@@ -115,6 +115,23 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 }
             }
             
+            if (item.item_type === 'sales_page') {
+                try {
+                    const salesPageRes = await client.query(
+                        'SELECT slug FROM sales_pages WHERE profile_item_id = $1 AND status = $2',
+                        [item.id, 'PUBLISHED']
+                    );
+                    if (salesPageRes.rows.length > 0) {
+                        item.sales_page_slug = salesPageRes.rows[0].slug;
+                    }
+                } catch (salesPageError) {
+                    logger.error('Erro ao carregar dados da página de vendas', { 
+                        itemId: item.id, 
+                        error: salesPageError.message 
+                    });
+                }
+            }
+            
             return item;
         }));
         
