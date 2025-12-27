@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { protectUser } = require('../middleware/protectUser');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 const router = express.Router();
 
@@ -330,6 +331,229 @@ router.put('/save-all', protectUser, async (req, res) => {
         client.release();
     }
 });
+
+// ===========================================
+// ROTAS PARA GERENCIAR ITENS (ITEMS)
+// ===========================================
+
+// GET /api/profile/items - Listar todos os itens do usuário
+router.get('/items', protectUser, async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const result = await client.query(
+            'SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order ASC',
+            [userId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Erro ao buscar itens:", error);
+        res.status(500).json({ message: 'Erro ao buscar itens.' });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/profile/items - Criar novo item
+router.post('/items', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const { item_type } = req.body;
+
+        if (!item_type) {
+            return res.status(400).json({ message: 'Tipo de item é obrigatório.' });
+        }
+
+        // Obter próxima ordem
+        const orderResult = await client.query(
+            'SELECT COALESCE(MAX(display_order), -1) + 1 as next_order FROM profile_items WHERE user_id = $1',
+            [userId]
+        );
+        const nextOrder = orderResult.rows[0].next_order;
+
+        const result = await client.query(
+            `INSERT INTO profile_items (user_id, item_type, display_order, is_active)
+             VALUES ($1, $2, $3, true)
+             RETURNING *`,
+            [userId, item_type, nextOrder]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error("Erro ao criar item:", error);
+        res.status(500).json({ message: 'Erro ao criar item.' });
+    } finally {
+        client.release();
+    }
+}));
+
+// PUT /api/profile/items/:id - Atualizar item
+router.put('/items/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = req.params.id;
+        const updates = req.body;
+
+        // Verificar se o item pertence ao usuário
+        const checkRes = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
+            [itemId, userId]
+        );
+
+        if (checkRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Item não encontrado ou você não tem permissão para editá-lo.' });
+        }
+
+        // Verificar quais colunas existem na tabela
+        const columnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'profile_items'
+        `);
+        const existingColumns = columnsCheck.rows.map(row => row.column_name);
+
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        // Campos que sempre existem
+        const standardFields = ['title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
+        for (const field of standardFields) {
+            if (updates.hasOwnProperty(field)) {
+                updateFields.push(`${field} = $${paramIndex++}`);
+                updateValues.push(updates[field]);
+            }
+        }
+
+        // Campos opcionais (apenas se existirem na tabela)
+        const optionalFields = ['pix_key', 'recipient_name', 'pix_amount', 'pix_description', 'pdf_url', 'logo_size', 'whatsapp_message', 'aspect_ratio'];
+        for (const field of optionalFields) {
+            if (existingColumns.includes(field) && updates.hasOwnProperty(field)) {
+                updateFields.push(`${field} = $${paramIndex++}`);
+                updateValues.push(updates[field]);
+            }
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+        }
+
+        updateValues.push(itemId, userId);
+        const query = `
+            UPDATE profile_items 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+            RETURNING *
+        `;
+        const result = await client.query(query, updateValues);
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error("Erro ao atualizar item:", error);
+        res.status(500).json({ message: 'Erro ao atualizar item.' });
+    } finally {
+        client.release();
+    }
+}));
+
+// PATCH /api/profile/items/:id - Atualizar item (alternativa ao PUT)
+router.patch('/items/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = req.params.id;
+        const updates = req.body;
+
+        // Verificar se o item pertence ao usuário
+        const checkRes = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
+            [itemId, userId]
+        );
+
+        if (checkRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Item não encontrado ou você não tem permissão para editá-lo.' });
+        }
+
+        // Verificar quais colunas existem na tabela
+        const columnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'profile_items'
+        `);
+        const existingColumns = columnsCheck.rows.map(row => row.column_name);
+
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        // Campos que sempre existem
+        const standardFields = ['title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
+        for (const field of standardFields) {
+            if (updates.hasOwnProperty(field)) {
+                updateFields.push(`${field} = $${paramIndex++}`);
+                updateValues.push(updates[field]);
+            }
+        }
+
+        // Campos opcionais (apenas se existirem na tabela)
+        const optionalFields = ['pix_key', 'recipient_name', 'pix_amount', 'pix_description', 'pdf_url', 'logo_size', 'whatsapp_message', 'aspect_ratio'];
+        for (const field of optionalFields) {
+            if (existingColumns.includes(field) && updates.hasOwnProperty(field)) {
+                updateFields.push(`${field} = $${paramIndex++}`);
+                updateValues.push(updates[field]);
+            }
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+        }
+
+        updateValues.push(itemId, userId);
+        const query = `
+            UPDATE profile_items 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+            RETURNING *
+        `;
+        const result = await client.query(query, updateValues);
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error("Erro ao atualizar item:", error);
+        res.status(500).json({ message: 'Erro ao atualizar item.' });
+    } finally {
+        client.release();
+    }
+}));
+
+// DELETE /api/profile/items/:id - Deletar item
+router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = req.params.id;
+
+        // Verificar se o item pertence ao usuário
+        const checkRes = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
+            [itemId, userId]
+        );
+
+        if (checkRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Item não encontrado ou você não tem permissão para removê-lo.' });
+        }
+
+        await client.query('DELETE FROM profile_items WHERE id = $1 AND user_id = $2', [itemId, userId]);
+        res.json({ message: 'Item removido com sucesso!' });
+    } catch (error) {
+        console.error("Erro ao deletar item:", error);
+        res.status(500).json({ message: 'Erro ao deletar item.' });
+    } finally {
+        client.release();
+    }
+}));
 
 // PUT /api/profile/avatar-format - Atualizar formato do avatar
 router.put('/avatar-format', protectUser, async (req, res) => {
