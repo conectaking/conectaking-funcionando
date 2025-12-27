@@ -337,7 +337,7 @@ router.put('/save-all', protectUser, async (req, res) => {
 // ===========================================
 
 // GET /api/profile/items - Listar todos os itens do usuário
-router.get('/items', protectUser, async (req, res) => {
+router.get('/items', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const userId = req.user.userId;
