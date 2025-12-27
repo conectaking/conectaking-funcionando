@@ -155,11 +155,17 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             return tab;
         });
 
+        // Preparar URL da imagem processada para og:image (se houver imagem)
+        const ogImageUrl = details.profile_image_url 
+            ? `${req.protocol}://${req.get('host')}/api/image/profile-image?url=${encodeURIComponent(details.profile_image_url)}`
+            : null;
+        
         const profileData = {
             details: details,
             items: items,
             tabs: tabs,
-            origin: req.protocol + '://' + req.get('host')
+            origin: req.protocol + '://' + req.get('host'),
+            ogImageUrl: ogImageUrl
         };
         
         res.render('profile', profileData);

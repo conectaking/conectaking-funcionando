@@ -20,7 +20,7 @@
 
     <meta property="og:title" content="<%= details.display_name || 'Conecta King' %>">
     <meta property="og:description" content="<%= details.bio %>">
-    <meta property="og:image" content="<%= details.profile_image_url || 'URL_DA_SUA_IMAGEM_PADRAO.png' %>">
+    <meta property="og:image" content="<%= typeof ogImageUrl !== 'undefined' && ogImageUrl ? ogImageUrl : (details.profile_image_url || 'URL_DA_SUA_IMAGEM_PADRAO.png') %>">
 
     <style>
         body, h1, p, span { font-family: '<%= details.font_family || "Inter" %>', sans-serif !important; }

@@ -31,6 +31,7 @@ const vcardRoutes = require('./routes/vcard');
 const healthRoutes = require('./routes/health');
 const passwordRoutes = require('./routes/password');
 const productsRoutes = require('./routes/products');
+const imageProxyRoutes = require('./routes/imageProxy');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize } = require('./middleware/security');
 
