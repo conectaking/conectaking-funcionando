@@ -70,23 +70,6 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC', [userId]);
         
-        // Buscar abas ativas do usuário (se a tabela existir)
-        let tabsRes = { rows: [] };
-        try {
-            tabsRes = await client.query(
-                'SELECT * FROM profile_tabs WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC',
-                [userId]
-            );
-        } catch (tabsError) {
-            // Se a tabela não existir (erro 42P01) ou qualquer outro erro, continuar sem tabs
-            if (tabsError.code === '42P01') {
-                logger.debug('Tabela profile_tabs não existe ainda, continuando sem tabs');
-            } else {
-                logger.debug('Erro ao buscar tabs, continuando sem tabs', { error: tabsError.message, code: tabsError.code });
-            }
-            tabsRes = { rows: [] };
-        }
-        
         // Log para debug
         logger.debug('Itens encontrados no banco', { 
             userId, 
@@ -143,18 +126,6 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             details.button_content_align = 'center';
         }
 
-        // Processar tabs - parsear content_data se for JSON
-        const tabs = (tabsRes.rows || []).map(tab => {
-            if (tab.content_data && typeof tab.content_data === 'string') {
-                try {
-                    tab.content_data = JSON.parse(tab.content_data);
-                } catch (e) {
-                    // Se não for JSON válido, manter como string
-                }
-            }
-            return tab;
-        });
-
         // Preparar URL da imagem processada para og:image (se houver imagem)
         // Adicionar cache-busting baseado na URL da imagem para forçar atualização
         let ogImageUrl = null;
@@ -168,7 +139,6 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         const profileData = {
             details: details,
             items: items,
-            tabs: tabs,
             origin: req.protocol + '://' + req.get('host'),
             ogImageUrl: ogImageUrl
         };
