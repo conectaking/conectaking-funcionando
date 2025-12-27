@@ -423,6 +423,45 @@ router.get('/items', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
+// GET /api/profile/items/:id - Buscar item específico
+router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ success: false, error: 'ID do item inválido.' });
+        }
+
+        const result = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
+            [itemId, userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Item não encontrado.' });
+        }
+
+        // Buscar profile_id do usuário
+        const userResult = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+        const profileId = userResult.rows[0]?.id || userId;
+
+        res.json({ 
+            success: true, 
+            data: {
+                ...result.rows[0],
+                profile_id: profileId
+            }
+        });
+    } catch (error) {
+        console.error("Erro ao buscar item:", error);
+        res.status(500).json({ success: false, error: 'Erro ao buscar item.' });
+    } finally {
+        client.release();
+    }
+}));
+
 // POST /api/profile/items - Criar novo item
 router.post('/items', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
