@@ -389,6 +389,8 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
         );
         const nextOrder = orderResult.rows[0].next_order;
 
+        console.log(`💾 Criando novo item para usuário ${userId}:`, { item_type, display_order: nextOrder });
+        
         const result = await client.query(
             `INSERT INTO profile_items (user_id, item_type, display_order, is_active)
              VALUES ($1, $2, $3, true)
@@ -396,6 +398,7 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
             [userId, item_type, nextOrder]
         );
 
+        console.log(`✅ Item criado com sucesso:`, result.rows[0]);
         res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error("Erro ao criar item:", error);

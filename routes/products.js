@@ -63,10 +63,12 @@ router.post('/items/:itemId/products', protectUser, asyncHandler(async (req, res
         );
 
         if (itemCheck.rows.length === 0) {
+            logger.error(`Item ${itemId} não encontrado para usuário ${userId}`);
             return res.status(404).json({ message: 'Item não encontrado.' });
         }
 
         if (itemCheck.rows[0].item_type !== 'product_catalog') {
+            logger.error(`Item ${itemId} não é um catálogo de produtos (tipo: ${itemCheck.rows[0].item_type})`);
             return res.status(400).json({ message: 'Item não é um catálogo de produtos.' });
         }
 
@@ -81,6 +83,8 @@ router.post('/items/:itemId/products', protectUser, asyncHandler(async (req, res
         }
 
         // Inserir produto
+        logger.info(`💾 Inserindo produto no catálogo ${itemId}:`, { name, price, image_url, display_order: finalDisplayOrder });
+        
         const insertRes = await client.query(
             `INSERT INTO product_catalog_items (profile_item_id, name, description, price, image_url, display_order)
              VALUES ($1, $2, $3, $4, $5, $6)
@@ -88,7 +92,11 @@ router.post('/items/:itemId/products', protectUser, asyncHandler(async (req, res
             [itemId, name.trim(), description ? description.trim() : null, parseFloat(price), image_url || null, finalDisplayOrder]
         );
 
+        logger.info(`✅ Produto inserido com sucesso:`, insertRes.rows[0]);
         res.status(201).json({ product: insertRes.rows[0] });
+    } catch (error) {
+        logger.error('❌ Erro ao inserir produto:', error);
+        res.status(500).json({ message: 'Erro ao inserir produto.', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
     } finally {
         client.release();
     }
