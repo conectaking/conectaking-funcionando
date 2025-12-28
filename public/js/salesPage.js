@@ -380,19 +380,26 @@
      * Obter profile_slug da URL atual ou de dados da página
      */
     function getProfileSlug() {
-        // Tentar extrair da URL atual (ex: /ADRIANO-KING/loja/2060)
-        const pathParts = window.location.pathname.split('/').filter(p => p);
-        if (pathParts.length > 0) {
-            return pathParts[0];
+        // Primeiro: tentar obter de data attribute do body
+        const salesPageEl = document.querySelector('.sales-page');
+        if (salesPageEl?.dataset?.profileSlug) {
+            return salesPageEl.dataset.profileSlug;
         }
         
-        // Fallback: tentar obter de meta tags ou dados da página
+        // Segundo: tentar obter de meta tag
         const metaSlug = document.querySelector('meta[name="profile-slug"]')?.content;
         if (metaSlug) {
             return metaSlug;
         }
         
-        // Último fallback: usar valor padrão (mas isso não é ideal)
+        // Terceiro: tentar extrair da URL atual (ex: /ADRIANO-KING/loja/2060)
+        const pathParts = window.location.pathname.split('/').filter(p => p);
+        if (pathParts.length > 0) {
+            return pathParts[0];
+        }
+        
+        // Último fallback: usar valor padrão (não ideal, mas evita erro)
+        console.warn('Profile slug não encontrado, usando fallback');
         return 'perfil';
     }
 
