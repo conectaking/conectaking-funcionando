@@ -23,6 +23,14 @@
     const checkoutBtn = document.getElementById('checkout-btn');
     const customerNameInput = document.getElementById('customer-name');
     const customerObservationInput = document.getElementById('customer-observation');
+    
+    // Elementos de compartilhamento
+    const shareBtn = document.getElementById('share-btn');
+    const shareMenu = document.getElementById('share-menu');
+    const shareOverlay = document.getElementById('share-overlay');
+    const shareMenuClose = document.getElementById('share-menu-close');
+    const shareUrlInput = document.getElementById('share-url-input');
+    const copyUrlBtn = document.getElementById('copy-url-btn');
 
     // Produtos disponíveis (carregados da página)
     const products = {};
@@ -884,5 +892,253 @@
 
     // Expor Cart globalmente para uso nos event handlers inline
     window.Cart = Cart;
+
+    /**
+     * Sistema de Compartilhamento
+     */
+    const Share = {
+        /**
+         * Obter URL atual da página
+         */
+        getCurrentUrl() {
+            return window.location.href;
+        },
+
+        /**
+         * Obter dados para compartilhamento
+         */
+        getShareData() {
+            const title = document.querySelector('.store-title')?.textContent || 'Minha Loja';
+            const description = document.querySelector('.hero-content p')?.textContent || 
+                              document.querySelector('meta[name="description"]')?.content || '';
+            const image = document.querySelector('meta[property="og:image"]')?.content || 
+                         document.querySelector('.store-logo')?.src || '';
+            const url = this.getCurrentUrl();
+            
+            return { title, description, image, url };
+        },
+
+        /**
+         * Compartilhar no WhatsApp
+         */
+        shareWhatsApp() {
+            const data = this.getShareData();
+            const text = `${data.title}\n\n${data.description}\n\n${data.url}`;
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(whatsappUrl, '_blank');
+            this.closeMenu();
+        },
+
+        /**
+         * Compartilhar no Facebook
+         */
+        shareFacebook() {
+            const data = this.getShareData();
+            const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(data.url)}`;
+            window.open(facebookUrl, '_blank', 'width=600,height=400');
+            this.closeMenu();
+        },
+
+        /**
+         * Compartilhar no Twitter
+         */
+        shareTwitter() {
+            const data = this.getShareData();
+            const text = `${data.title} - ${data.description}`;
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(data.url)}`;
+            window.open(twitterUrl, '_blank', 'width=600,height=400');
+            this.closeMenu();
+        },
+
+        /**
+         * Compartilhar no LinkedIn
+         */
+        shareLinkedIn() {
+            const data = this.getShareData();
+            const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(data.url)}`;
+            window.open(linkedInUrl, '_blank', 'width=600,height=400');
+            this.closeMenu();
+        },
+
+        /**
+         * Compartilhar no Telegram
+         */
+        shareTelegram() {
+            const data = this.getShareData();
+            const text = `${data.title}\n\n${data.description}`;
+            const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(data.url)}&text=${encodeURIComponent(text)}`;
+            window.open(telegramUrl, '_blank');
+            this.closeMenu();
+        },
+
+        /**
+         * Copiar link para área de transferência
+         */
+        async copyLink() {
+            const data = this.getShareData();
+            try {
+                await navigator.clipboard.writeText(data.url);
+                // Mostrar feedback visual
+                const copyBtn = copyUrlBtn || document.querySelector('.copy-url-btn');
+                if (copyBtn) {
+                    const originalHtml = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                    copyBtn.style.color = '#4CAF50';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalHtml;
+                        copyBtn.style.color = '';
+                    }, 2000);
+                }
+                // Mostrar notificação
+                this.showNotification('Link copiado para a área de transferência!');
+            } catch (error) {
+                console.error('Erro ao copiar link:', error);
+                // Fallback: selecionar texto do input
+                if (shareUrlInput) {
+                    shareUrlInput.select();
+                    shareUrlInput.setSelectionRange(0, 99999);
+                    document.execCommand('copy');
+                    this.showNotification('Link copiado!');
+                }
+            }
+        },
+
+        /**
+         * Mostrar notificação
+         */
+        showNotification(message) {
+            // Criar elemento de notificação
+            const notification = document.createElement('div');
+            notification.className = 'share-notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Mostrar
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            // Remover após 3 segundos
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        },
+
+        /**
+         * Abrir menu de compartilhamento
+         */
+        openMenu() {
+            if (shareMenu && shareOverlay) {
+                shareMenu.classList.add('active');
+                shareOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                // Atualizar URL no input
+                if (shareUrlInput) {
+                    shareUrlInput.value = this.getCurrentUrl();
+                }
+            }
+        },
+
+        /**
+         * Fechar menu de compartilhamento
+         */
+        closeMenu() {
+            if (shareMenu && shareOverlay) {
+                shareMenu.classList.remove('active');
+                shareOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        },
+
+        /**
+         * Inicializar compartilhamento
+         */
+        init() {
+            // Botão de compartilhamento
+            shareBtn?.addEventListener('click', () => {
+                this.openMenu();
+            });
+
+            // Fechar menu
+            shareMenuClose?.addEventListener('click', () => {
+                this.closeMenu();
+            });
+
+            shareOverlay?.addEventListener('click', () => {
+                this.closeMenu();
+            });
+
+            // Botões de compartilhamento
+            document.querySelectorAll('.share-option-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const platform = btn.dataset.share;
+                    switch (platform) {
+                        case 'whatsapp':
+                            this.shareWhatsApp();
+                            break;
+                        case 'facebook':
+                            this.shareFacebook();
+                            break;
+                        case 'twitter':
+                            this.shareTwitter();
+                            break;
+                        case 'linkedin':
+                            this.shareLinkedIn();
+                            break;
+                        case 'telegram':
+                            this.shareTelegram();
+                            break;
+                        case 'copy':
+                            this.copyLink();
+                            break;
+                    }
+                });
+            });
+
+            // Botão copiar URL
+            copyUrlBtn?.addEventListener('click', () => {
+                this.copyLink();
+            });
+
+            // Tentar usar Web Share API se disponível (mobile)
+            if (navigator.share) {
+                shareBtn?.addEventListener('click', async (e) => {
+                    // Se for mobile, usar Web Share API nativa
+                    if (window.innerWidth <= 768) {
+                        e.preventDefault();
+                        try {
+                            const data = this.getShareData();
+                            await navigator.share({
+                                title: data.title,
+                                text: data.description,
+                                url: data.url
+                            });
+                        } catch (error) {
+                            // Se cancelar ou erro, abrir menu normal
+                            if (error.name !== 'AbortError') {
+                                this.openMenu();
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    };
+
+    // Inicializar compartilhamento quando DOM estiver pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            Share.init();
+        });
+    } else {
+        Share.init();
+    }
+
+    // Expor Share globalmente
+    window.Share = Share;
 })();
 

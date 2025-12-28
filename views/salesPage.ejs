@@ -6,8 +6,30 @@
     <title><%= salesPage.meta_title || salesPage.store_title || 'Loja' %></title>
     
     <meta name="description" content="<%= salesPage.meta_description || salesPage.store_description || '' %>">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <% 
+    const currentUrl = typeof profileSlug !== 'undefined' && profileSlug 
+        ? `https://tag.conectaking.com.br/${profileSlug}/loja/${salesPage.slug || salesPage.id}` 
+        : '';
+    %>
+    <% if (currentUrl) { %>
+    <meta property="og:url" content="<%= currentUrl %>">
+    <meta property="twitter:url" content="<%= currentUrl %>">
+    <% } %>
+    <meta property="og:title" content="<%= salesPage.meta_title || salesPage.store_title || 'Loja' %>">
+    <meta property="og:description" content="<%= salesPage.meta_description || salesPage.store_description || '' %>">
     <% if (salesPage.meta_image_url) { %>
     <meta property="og:image" content="<%= salesPage.meta_image_url %>">
+    <% } %>
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="<%= salesPage.meta_title || salesPage.store_title || 'Loja' %>">
+    <meta property="twitter:description" content="<%= salesPage.meta_description || salesPage.store_description || '' %>">
+    <% if (salesPage.meta_image_url) { %>
+    <meta property="twitter:image" content="<%= salesPage.meta_image_url %>">
     <% } %>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,12 +64,63 @@
             <img src="<%= salesPage.button_logo_url %>" alt="<%= salesPage.store_title %>" class="store-logo">
             <% } %>
             <h1 class="store-title"><%= salesPage.store_title || 'Minha Loja' %></h1>
-            <button class="cart-toggle" id="cart-toggle">
-                <i class="fas fa-shopping-cart"></i>
-                <span class="cart-count" id="cart-count">0</span>
-            </button>
+            <div class="header-actions">
+                <button class="share-btn" id="share-btn" title="Compartilhar loja">
+                    <i class="fas fa-share-alt"></i>
+                    <span class="share-text">Compartilhar</span>
+                </button>
+                <button class="cart-toggle" id="cart-toggle">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cart-count">0</span>
+                </button>
+            </div>
         </div>
     </header>
+
+    <!-- Share Menu -->
+    <div class="share-menu" id="share-menu">
+        <div class="share-menu-header">
+            <h3>Compartilhar Loja</h3>
+            <button class="share-menu-close" id="share-menu-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="share-menu-content">
+            <div class="share-options">
+                <button class="share-option-btn" data-share="whatsapp" title="Compartilhar no WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp</span>
+                </button>
+                <button class="share-option-btn" data-share="facebook" title="Compartilhar no Facebook">
+                    <i class="fab fa-facebook"></i>
+                    <span>Facebook</span>
+                </button>
+                <button class="share-option-btn" data-share="twitter" title="Compartilhar no Twitter">
+                    <i class="fab fa-twitter"></i>
+                    <span>Twitter</span>
+                </button>
+                <button class="share-option-btn" data-share="linkedin" title="Compartilhar no LinkedIn">
+                    <i class="fab fa-linkedin"></i>
+                    <span>LinkedIn</span>
+                </button>
+                <button class="share-option-btn" data-share="telegram" title="Compartilhar no Telegram">
+                    <i class="fab fa-telegram"></i>
+                    <span>Telegram</span>
+                </button>
+                <button class="share-option-btn" data-share="copy" title="Copiar link">
+                    <i class="fas fa-link"></i>
+                    <span>Copiar Link</span>
+                </button>
+            </div>
+            <div class="share-url-container">
+                <input type="text" id="share-url-input" class="share-url-input" readonly value="<%= typeof profileSlug !== 'undefined' && profileSlug ? `https://tag.conectaking.com.br/${profileSlug}/loja/${salesPage.slug || salesPage.id}` : '' %>">
+                <button class="copy-url-btn" id="copy-url-btn" title="Copiar URL">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="share-overlay" id="share-overlay"></div>
 
     <!-- Hero Section -->
     <% if (salesPage.background_image_url) { %>
