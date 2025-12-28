@@ -29,8 +29,8 @@ const requestLogger = (req, res, next) => {
             });
         }
 
-        // Log de erros sempre
-        if (res.statusCode >= 400) {
+        // Log de erros sempre (exceto favicon.ico que é normal não existir)
+        if (res.statusCode >= 400 && req.path !== '/favicon.ico') {
             logger.warn('Requisição com erro', {
                 method: req.method,
                 path: req.path,

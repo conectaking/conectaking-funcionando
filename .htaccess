@@ -38,10 +38,45 @@ RewriteRule ^(.*)$ $1.html [L]
   ExpiresByType image/gif "access plus 1 year"
   ExpiresByType image/png "access plus 1 year"
   ExpiresByType image/svg+xml "access plus 1 year"
-  ExpiresByType text/css "access plus 1 month"
-  ExpiresByType application/javascript "access plus 1 month"
-  ExpiresByType application/x-javascript "access plus 1 month"
+  # CSS e JS com NO-CACHE para desenvolvimento (forçar atualização)
+  ExpiresByType text/css "access plus 0 seconds"
+  ExpiresByType application/javascript "access plus 0 seconds"
+  ExpiresByType application/x-javascript "access plus 0 seconds"
+  ExpiresByType text/html "access plus 0 seconds"
   ExpiresByType image/x-icon "access plus 1 year"
+</IfModule>
+
+# FORÇAR NO-CACHE PARA ARQUIVOS DE DESENVOLVIMENTO
+# ------------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    # Forçar no-cache para arquivos CSS (sempre buscar versão atualizada)
+    <FilesMatch "\.(css)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+    
+    # Forçar no-cache para arquivos JavaScript (sempre buscar versão atualizada)
+    <FilesMatch "\.(js)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+    
+    # Forçar no-cache para arquivos HTML (sempre buscar versão atualizada)
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+    
+    # Desabilitar cache para arquivos específicos críticos
+    <FilesMatch "^(salesPageEdit\.html|dashboard\.html|dashboard\.products\.js|salesPageEdit\.js|salesPageEdit\.css|dashboard\.js|dashboard\.css)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+        Header set Last-Modified "Thu, 01 Jan 1970 00:00:00 GMT"
+    </FilesMatch>
 </IfModule>
 
 # COMPRESSÃO DE ARQUIVOS

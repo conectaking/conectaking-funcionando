@@ -224,6 +224,17 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
 }));
 
+// Rota específica para favicon.ico (evitar 404)
+app.get('/favicon.ico', (req, res) => {
+    const faviconPath = path.join(__dirname, 'public', 'favicon.ico');
+    res.sendFile(faviconPath, (err) => {
+        if (err) {
+            // Se não existir, retornar 204 (No Content) em vez de 404
+            res.status(204).end();
+        }
+    });
+});
+
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
