@@ -102,18 +102,22 @@ class SalesPageService {
             throw new Error('Página de vendas não encontrada');
         }
 
-        // Se está arquivada e tentando mudar status para DRAFT, permitir (desarquivar)
-        if (currentPage.status === TYPES.STATUS.ARCHIVED && data.status !== TYPES.STATUS.DRAFT) {
-            throw new Error('Não é possível editar uma página arquivada. Altere o status para "Rascunho" primeiro para desarquivar.');
-        }
-
-        // Se está apenas mudando status, validar transição
+        // Se está apenas mudando status, validar transição primeiro
         if (Object.keys(data).length === 1 && data.status) {
             const validation = validators.validateStatusTransition(currentPage.status, data.status);
             if (!validation.isValid) {
                 throw new Error(validation.error);
             }
+            // Se está desarquivando (ARCHIVED -> DRAFT), permitir
+            if (currentPage.status === TYPES.STATUS.ARCHIVED && data.status === TYPES.STATUS.DRAFT) {
+                // Permitir continuar com a atualização
+            }
         } else {
+            // Se está arquivada e tentando editar outros campos (não apenas status), bloquear
+            if (currentPage.status === TYPES.STATUS.ARCHIVED) {
+                throw new Error('Não é possível editar uma página arquivada. Altere o status para "Rascunho" primeiro para desarquivar.');
+            }
+            
             // Validar dados completos
             const validation = validators.validateSalesPageData(data, true);
             if (!validation.isValid) {
