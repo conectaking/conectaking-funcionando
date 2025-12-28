@@ -43,9 +43,13 @@
     
     if (filterTabs.length) {
         filterTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const filter = tab.dataset.filter;
                 const productsGridEl = document.getElementById('products-grid');
+                
+                console.log('Filtro clicado:', filter);
                 
                 // Atualizar botões ativos
                 filterTabs.forEach(t => t.classList.remove('active'));
@@ -57,14 +61,27 @@
                 }
                 
                 // Filtrar produtos
-                document.querySelectorAll('.product-card').forEach(card => {
-                    const badge = card.dataset.productBadge || card.querySelector('.product-badge')?.textContent.trim() || null;
-                    if (filter === 'all' || badge === filter) {
+                const productCards = document.querySelectorAll('.product-card');
+                console.log('Total de produtos encontrados:', productCards.length);
+                
+                let visibleCount = 0;
+                productCards.forEach(card => {
+                    const badgeAttr = card.dataset.productBadge || '';
+                    // Badge pode ser múltiplos separados por vírgula
+                    const badges = badgeAttr ? badgeAttr.split(',').map(b => b.trim()).filter(b => b) : [];
+                    
+                    if (filter === 'all') {
                         card.style.display = '';
+                        visibleCount++;
                     } else {
-                        card.style.display = 'none';
+                        // Verificar se algum dos badges do produto corresponde ao filtro
+                        const matches = badges.includes(filter);
+                        card.style.display = matches ? '' : 'none';
+                        if (matches) visibleCount++;
                     }
                 });
+                
+                console.log('Produtos visíveis após filtro:', visibleCount);
             });
         });
     }
@@ -481,12 +498,35 @@
     }
 
     /**
+     * Configurar event listeners do carrinho
+     */
+    function setupCartListeners() {
+        if (cartToggle) {
+            // Remover listener antigo
+            const newToggle = cartToggle.cloneNode(true);
+            cartToggle.parentNode.replaceChild(newToggle, cartToggle);
+            
+            newToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Carrinho clicado');
+                const sidebar = document.getElementById('cart-sidebar');
+                const overlay = document.getElementById('cart-overlay');
+                if (sidebar) sidebar.classList.add('open');
+                if (overlay) overlay.classList.add('show');
+            });
+        }
+    }
+
+    /**
      * Event Listeners
      */
-    cartToggle?.addEventListener('click', () => {
-        cartSidebar.classList.add('open');
-        cartOverlay.classList.add('show');
-    });
+    // Configurar listeners do carrinho após o DOM estar pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupCartListeners);
+    } else {
+        setupCartListeners();
+    }
 
     cartClose?.addEventListener('click', () => {
         cartSidebar.classList.remove('open');
@@ -530,14 +570,13 @@
     }, 100);
     
     // Re-adicionar listeners quando produtos forem filtrados (usando MutationObserver)
-    const productsGrid = document.getElementById('products-grid');
-    if (productsGrid) {
+    if (productsGridEl) {
         const observer = new MutationObserver(() => {
             setTimeout(() => {
                 attachAddToCartListeners();
             }, 50);
         });
-        observer.observe(productsGrid, { childList: true, subtree: true });
+        observer.observe(productsGridEl, { childList: true, subtree: true });
     }
 
     // Prevenir que o link do produto dispare quando clicar no botão de adicionar ao carrinho
@@ -576,7 +615,7 @@
     /**
      * Controles de Visualização
      */
-    const productsGrid = document.getElementById('products-grid');
+    const productsGridEl = document.getElementById('products-grid');
     const viewModeButtons = document.querySelectorAll('.view-btn');
     const sizeButtons = document.querySelectorAll('.size-btn');
 
@@ -585,9 +624,9 @@
     const savedCardSize = localStorage.getItem(`sales_page_card_size_${salesPageId}`) || 'small';
 
     // Aplicar preferências salvas
-    if (productsGrid) {
-        productsGrid.setAttribute('data-view-mode', savedViewMode);
-        productsGrid.setAttribute('data-card-size', savedCardSize);
+    if (productsGridEl) {
+        productsGridEl.setAttribute('data-view-mode', savedViewMode);
+        productsGridEl.setAttribute('data-card-size', savedCardSize);
         
         // Atualizar botões ativos
         viewModeButtons.forEach(btn => {
@@ -597,7 +636,7 @@
                 btn.classList.remove('active');
             }
         });
-        
+
         sizeButtons.forEach(btn => {
             if (btn.dataset.size === savedCardSize) {
                 btn.classList.add('active');
@@ -609,7 +648,9 @@
 
     // Event listeners para modo de visualização
     viewModeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const mode = btn.dataset.mode;
             
             // Atualizar botões
@@ -617,8 +658,8 @@
             btn.classList.add('active');
             
             // Atualizar grid
-            if (productsGrid) {
-                productsGrid.setAttribute('data-view-mode', mode);
+            if (productsGridEl) {
+                productsGridEl.setAttribute('data-view-mode', mode);
                 localStorage.setItem(`sales_page_view_mode_${salesPageId}`, mode);
             }
         });
@@ -626,7 +667,9 @@
 
     // Event listeners para tamanho
     sizeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const size = btn.dataset.size;
             
             // Atualizar botões
@@ -634,8 +677,8 @@
             btn.classList.add('active');
             
             // Atualizar grid
-            if (productsGrid) {
-                productsGrid.setAttribute('data-card-size', size);
+            if (productsGridEl) {
+                productsGridEl.setAttribute('data-card-size', size);
                 localStorage.setItem(`sales_page_card_size_${salesPageId}`, size);
             }
         });
