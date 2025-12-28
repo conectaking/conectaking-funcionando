@@ -107,10 +107,18 @@ class SalesPageService {
             throw new Error('Não é possível editar uma página arquivada');
         }
 
-        // Validar dados
-        const validation = validators.validateSalesPageData(data, true);
-        if (!validation.isValid) {
-            throw new Error(`Validação falhou: ${validation.errors.join(', ')}`);
+        // Se está apenas mudando status, validar transição
+        if (Object.keys(data).length === 1 && data.status) {
+            const validation = validators.validateStatusTransition(currentPage.status, data.status);
+            if (!validation.isValid) {
+                throw new Error(validation.error);
+            }
+        } else {
+            // Validar dados completos
+            const validation = validators.validateSalesPageData(data, true);
+            if (!validation.isValid) {
+                throw new Error(`Validação falhou: ${validation.errors.join(', ')}`);
+            }
         }
 
         // Sanitizar dados

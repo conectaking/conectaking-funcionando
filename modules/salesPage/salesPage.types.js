@@ -32,8 +32,8 @@ module.exports = {
     
     STATUS_TRANSITIONS: {
         DRAFT: ['PUBLISHED', 'ARCHIVED'],
-        PUBLISHED: ['PAUSED', 'ARCHIVED'],
-        PAUSED: ['PUBLISHED', 'ARCHIVED'],
+        PUBLISHED: ['PAUSED', 'DRAFT', 'ARCHIVED'], // Permite voltar para DRAFT
+        PAUSED: ['PUBLISHED', 'DRAFT', 'ARCHIVED'], // Permite voltar para DRAFT
         ARCHIVED: [] // Não pode transicionar de ARCHIVED
     },
     
