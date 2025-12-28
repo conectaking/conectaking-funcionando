@@ -332,6 +332,15 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 }
                 
                 const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+                
+                // Se estamos preservando um ID, precisamos atualizar a sequência do PostgreSQL
+                if (item.id) {
+                    // Atualizar a sequência para o próximo valor após o ID inserido
+                    await client.query(`
+                        SELECT setval('profile_items_id_seq', GREATEST((SELECT MAX(id) FROM profile_items), $1), true)
+                    `, [item.id]);
+                }
+                
                 const result = await client.query(`
                     INSERT INTO profile_items (${insertFields.join(', ')})
                     VALUES (${placeholders})
@@ -340,6 +349,11 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 
                 const insertedId = result.rows[0].id;
                 console.log(`✅ Item inserido com ID: ${insertedId} (original: ${item.id || 'novo'})`);
+                
+                // Se o ID inserido não corresponde ao original, logar aviso
+                if (item.id && insertedId !== item.id) {
+                    console.warn(`⚠️ ID não preservado! Esperado: ${item.id}, Inserido: ${insertedId}`);
+                }
                 
                 // Se for sales_page e o item foi criado/recriado, garantir que existe registro na tabela sales_pages
                 if (item.item_type === 'sales_page') {

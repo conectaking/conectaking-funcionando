@@ -276,9 +276,10 @@ app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/vcard', vcardRoutes);
 
 // Rotas do módulo Sales Page
-app.use('/api/v1/sales-pages', apiLimiter, salesPageRoutes);
-app.use('/api/v1/sales-pages', apiLimiter, productRoutes);
+// IMPORTANTE: Rotas específicas (analytics) devem vir ANTES das rotas genéricas (/:id)
 app.use('/api/v1/sales-pages', apiLimiter, analyticsRoutesSalesPage);
+app.use('/api/v1/sales-pages', apiLimiter, productRoutes);
+app.use('/api/v1/sales-pages', apiLimiter, salesPageRoutes);
 
 // Rota pública de produto individual (deve vir antes de publicProfileRoutes)
 const publicProductRoutes = require('./routes/publicProduct');
