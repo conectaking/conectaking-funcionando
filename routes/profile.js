@@ -249,7 +249,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
 
         // Salvar itens do perfil
         if (items && Array.isArray(items)) {
-            // Verificar quais colunas existem na tabela profile_items
+            // Verificar quais colunas existem na tabela profile_items (cachear resultado)
             const columnsCheck = await client.query(`
                 SELECT column_name 
                 FROM information_schema.columns 
@@ -259,25 +259,18 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             
             // Deletar todos os itens existentes do usuário
             await client.query('DELETE FROM profile_items WHERE user_id = $1', [userId]);
-            console.log(`🗑️ Todos os itens do usuário ${userId} foram deletados`);
 
-            console.log(`💾 Salvando ${items.length} itens para o usuário ${userId}`);
+            // Encontrar o maior ID para atualizar sequência uma única vez
+            const maxIdResult = await client.query('SELECT COALESCE(MAX(id), 0) as max_id FROM profile_items');
+            const currentMaxId = parseInt(maxIdResult.rows[0].max_id, 10);
+            let maxIdToSet = currentMaxId;
+
+            // Processar itens e encontrar o maior ID que será inserido
+            const salesPageItems = [];
             
-            // Inserir novos itens (preservando IDs quando fornecidos)
             for (const item of items) {
-                console.log(`📝 Salvando item:`, {
-                    id: item.id,
-                    item_type: item.item_type,
-                    title: item.title,
-                    is_active: item.is_active,
-                    display_order: item.display_order,
-                    has_image_url: !!item.image_url,
-                    logo_size: item.logo_size
-                });
-                
                 // Verificar se item.id é válido (número e maior que 0)
                 const hasValidId = item.id && !isNaN(parseInt(item.id, 10)) && parseInt(item.id, 10) > 0;
-                console.log(`🔍 Item tem ID válido? ${hasValidId} (ID: ${item.id})`);
                 
                 // Normalizar destination_url para carrossel (evitar dupla codificação JSON)
                 let normalizedDestinationUrl = item.destination_url || null;
@@ -362,19 +355,13 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 let insertedId = null;
                 
                 try {
-                    // Se estamos preservando um ID, precisamos atualizar a sequência do PostgreSQL ANTES do INSERT
+                    // Se estamos preservando um ID, atualizar maxIdToSet para atualizar sequência depois
                     if (hasValidId) {
                         const itemIdInt = parseInt(item.id, 10);
-                        console.log(`🔄 Atualizando sequência para ID: ${itemIdInt}`);
-                        // Atualizar a sequência para o próximo valor após o ID inserido
-                        await client.query(`
-                            SELECT setval('profile_items_id_seq', GREATEST(COALESCE((SELECT MAX(id) FROM profile_items), 0), $1), true)
-                        `, [itemIdInt]);
-                        console.log(`✅ Sequência atualizada para ${itemIdInt}`);
+                        if (itemIdInt > maxIdToSet) {
+                            maxIdToSet = itemIdInt;
+                        }
                     }
-                    
-                    console.log(`💾 Executando INSERT com campos: ${insertFields.join(', ')}`);
-                    console.log(`💾 Valores:`, insertValues);
                     
                     const result = await client.query(`
                         INSERT INTO profile_items (${insertFields.join(', ')})
@@ -383,70 +370,53 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     `, insertValues);
                     
                     insertedId = result.rows[0].id;
-                    const insertedUserId = result.rows[0].user_id;
-                    const insertedItemType = result.rows[0].item_type;
-                    
-                    console.log(`✅ Item inserido com sucesso!`);
-                    console.log(`   - ID: ${insertedId} (original: ${item.id || 'novo'})`);
-                    console.log(`   - User ID: ${insertedUserId} (esperado: ${userId})`);
-                    console.log(`   - Tipo: ${insertedItemType}`);
-                    
-                    // Se o ID inserido não corresponde ao original, logar aviso
-                    if (hasValidId && insertedId !== parseInt(item.id, 10)) {
-                        console.warn(`⚠️ ID não preservado! Esperado: ${item.id}, Inserido: ${insertedId}`);
-                    }
-                    
-                    // Verificar se o item foi realmente inserido
-                    const verifyResult = await client.query(
-                        'SELECT id, user_id FROM profile_items WHERE id = $1 AND user_id = $2',
-                        [insertedId, userId]
-                    );
-                    console.log(`🔍 Verificação pós-insert: ${verifyResult.rows.length} registro(s) encontrado(s)`);
                     
                 } catch (insertError) {
                     console.error(`❌ Erro ao inserir item ${item.id || 'novo'}:`, insertError);
-                    console.error(`   - Código: ${insertError.code}`);
-                    console.error(`   - Mensagem: ${insertError.message}`);
                     throw insertError; // Re-throw para que a transação seja revertida
                 }
                 
-                // Se for sales_page e o item foi criado/recriado, garantir que existe registro na tabela sales_pages
+                // Guardar item sales_page para processar depois em lote
                 if (item.item_type === 'sales_page' && insertedId) {
-                    // Usar a mesma conexão da transação para garantir consistência
+                    salesPageItems.push({ insertedId, item });
+                }
+            }
+            
+            // Atualizar sequência uma única vez no final (se necessário)
+            if (maxIdToSet > currentMaxId) {
+                await client.query(`
+                    SELECT setval('profile_items_id_seq', GREATEST(COALESCE((SELECT MAX(id) FROM profile_items), 0), $1), true)
+                `, [maxIdToSet]);
+            }
+            
+            // Processar sales_pages em lote (após todos os INSERTs)
+            if (salesPageItems.length > 0) {
+                const salesPageService = require('../modules/salesPage/salesPage.service');
+                const crypto = require('crypto');
+                
+                for (const { insertedId, item } of salesPageItems) {
                     const salesPageCheck = await client.query(
                         'SELECT id FROM sales_pages WHERE profile_item_id = $1',
                         [insertedId]
                     );
                     
                     if (salesPageCheck.rows.length === 0) {
-                        console.log(`⚠️ Sales page não encontrada para item ${insertedId}, criando...`);
-                        const salesPageService = require('../modules/salesPage/salesPage.service');
-                        const crypto = require('crypto');
-                        
                         try {
                             const salesPageData = {
                                 profile_item_id: insertedId,
                                 store_title: item.title || 'Minha Loja',
                                 button_text: item.title || 'Minha Loja',
                                 button_logo_url: item.image_url || null,
-                                whatsapp_number: '', // String vazia (NOT NULL no banco)
+                                whatsapp_number: '',
                                 theme: 'dark',
-                                status: 'DRAFT'
+                                status: 'DRAFT',
+                                preview_token: crypto.randomBytes(32).toString('hex')
                             };
-
-                            // Gerar preview_token
-                            salesPageData.preview_token = crypto.randomBytes(32).toString('hex');
                             
                             await salesPageService.create(salesPageData);
-                            console.log(`✅ Página de vendas criada para item ${insertedId}`);
                         } catch (error) {
-                            console.error(`❌ Erro ao criar página de vendas para item ${insertedId}:`, error);
-                            console.error(`   - Stack: ${error.stack}`);
-                            // Não falhar a criação do item se falhar criar a página
-                            // Mas logar o erro para debug
+                            console.error(`❌ Erro ao criar página de vendas para item ${insertedId}:`, error.message);
                         }
-                    } else {
-                        console.log(`✅ Sales page já existe para item ${insertedId} (ID: ${salesPageCheck.rows[0].id})`);
                     }
                 }
             }
