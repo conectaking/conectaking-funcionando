@@ -389,6 +389,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 
                 // Se for sales_page e o item foi criado/recriado, garantir que existe registro na tabela sales_pages
                 if (item.item_type === 'sales_page') {
+                    // Usar a mesma conexão da transação para garantir consistência
                     const salesPageCheck = await client.query(
                         'SELECT id FROM sales_pages WHERE profile_item_id = $1',
                         [insertedId]
@@ -405,18 +406,24 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                                 store_title: item.title || 'Minha Loja',
                                 button_text: item.title || 'Minha Loja',
                                 button_logo_url: item.image_url || null,
-                                whatsapp_number: '',
+                                whatsapp_number: '', // String vazia (NOT NULL no banco)
                                 theme: 'dark',
-                                status: 'DRAFT',
-                                preview_token: crypto.randomBytes(32).toString('hex')
+                                status: 'DRAFT'
                             };
+
+                            // Gerar preview_token
+                            salesPageData.preview_token = crypto.randomBytes(32).toString('hex');
                             
                             await salesPageService.create(salesPageData);
                             console.log(`✅ Página de vendas criada para item ${insertedId}`);
                         } catch (error) {
                             console.error(`❌ Erro ao criar página de vendas para item ${insertedId}:`, error);
+                            console.error(`   - Stack: ${error.stack}`);
                             // Não falhar a criação do item se falhar criar a página
+                            // Mas logar o erro para debug
                         }
+                    } else {
+                        console.log(`✅ Sales page já existe para item ${insertedId} (ID: ${salesPageCheck.rows[0].id})`);
                     }
                 }
             }
@@ -968,6 +975,83 @@ router.put('/avatar-format', protectUser, async (req, res) => {
         client.release();
     }
 });
+
+// Rota de reparo: Criar sales_pages para itens sales_page que não têm
+router.post('/items/repair-sales-pages', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        
+        console.log(`🔧 Iniciando reparo de sales_pages para usuário ${userId}`);
+        
+        // Buscar todos os itens sales_page do usuário que não têm sales_page associada
+        const itemsWithoutSalesPage = await client.query(`
+            SELECT pi.id, pi.title, pi.image_url, pi.user_id
+            FROM profile_items pi
+            LEFT JOIN sales_pages sp ON pi.id = sp.profile_item_id
+            WHERE pi.user_id = $1 
+            AND pi.item_type = 'sales_page'
+            AND sp.id IS NULL
+        `, [userId]);
+        
+        console.log(`📊 Encontrados ${itemsWithoutSalesPage.rows.length} itens sales_page sem sales_page associada`);
+        
+        if (itemsWithoutSalesPage.rows.length === 0) {
+            return res.json({ 
+                success: true, 
+                message: 'Todos os itens sales_page já têm sales_page associada',
+                created: 0
+            });
+        }
+        
+        const salesPageService = require('../modules/salesPage/salesPage.service');
+        const crypto = require('crypto');
+        let created = 0;
+        const errors = [];
+        
+        for (const item of itemsWithoutSalesPage.rows) {
+            try {
+                const salesPageData = {
+                    profile_item_id: item.id,
+                    store_title: item.title || 'Minha Loja',
+                    button_text: item.title || 'Minha Loja',
+                    button_logo_url: item.image_url || null,
+                    whatsapp_number: '', // String vazia (NOT NULL no banco)
+                    theme: 'dark',
+                    status: 'DRAFT'
+                };
+
+                // Gerar preview_token
+                salesPageData.preview_token = crypto.randomBytes(32).toString('hex');
+                
+                await salesPageService.create(salesPageData);
+                console.log(`✅ Página de vendas criada para item ${item.id}`);
+                created++;
+            } catch (error) {
+                console.error(`❌ Erro ao criar página de vendas para item ${item.id}:`, error);
+                errors.push({ itemId: item.id, error: error.message });
+            }
+        }
+        
+        res.json({
+            success: true,
+            message: `Reparo concluído. ${created} sales_page(s) criada(s)`,
+            created,
+            total: itemsWithoutSalesPage.rows.length,
+            errors: errors.length > 0 ? errors : undefined
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao reparar sales_pages:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao reparar sales_pages',
+            message: error.message 
+        });
+    } finally {
+        client.release();
+    }
+}));
 
 module.exports = router;
 
