@@ -107,13 +107,41 @@
      */
     const Cart = {
         get() {
-            const cart = localStorage.getItem(CART_KEY);
-            return cart ? JSON.parse(cart) : { items: [], total: 0 };
+            try {
+                const cartStr = localStorage.getItem(CART_KEY);
+                if (!cartStr) {
+                    return { items: [], total: 0 };
+                }
+                const cart = JSON.parse(cartStr);
+                // Garantir estrutura válida
+                if (!cart.items) cart.items = [];
+                if (typeof cart.total !== 'number') {
+                    // Recalcular total se não for número
+                    cart.total = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                }
+                return cart;
+            } catch (error) {
+                console.error('Erro ao carregar carrinho do localStorage:', error);
+                // Retornar carrinho vazio em caso de erro
+                return { items: [], total: 0 };
+            }
         },
 
         save(cart) {
-            localStorage.setItem(CART_KEY, JSON.stringify(cart));
-            this.updateUI();
+            try {
+                // Garantir que o carrinho tem a estrutura correta
+                if (!cart.items) cart.items = [];
+                if (typeof cart.total !== 'number') cart.total = 0;
+                
+                // Salvar no localStorage
+                localStorage.setItem(CART_KEY, JSON.stringify(cart));
+                console.log('Carrinho salvo:', cart);
+                
+                // Atualizar UI
+                this.updateUI();
+            } catch (error) {
+                console.error('Erro ao salvar carrinho:', error);
+            }
         },
 
         add(productId, quantity = 1) {
@@ -232,12 +260,31 @@
         },
 
         renderItems(cart) {
+            if (!cartItems) {
+                console.error('Elemento cart-items não encontrado');
+                return;
+            }
+
             if (cart.items.length === 0) {
                 cartItems.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Carrinho vazio</p>';
                 return;
             }
 
-            cartItems.innerHTML = cart.items.map(item => `
+            // Filtrar apenas itens válidos (produtos que ainda existem na página)
+            const validItems = cart.items.filter(item => {
+                // Se o produto não existe mais na página, manter no carrinho mesmo assim
+                // (pode ter sido removido temporariamente ou o usuário pode querer finalizar a compra)
+                return item.id && item.name && item.price;
+            });
+
+            // Se houver itens inválidos, atualizar o carrinho
+            if (validItems.length !== cart.items.length) {
+                cart.items = validItems;
+                this.calculateTotal(cart);
+                this.save(cart);
+            }
+
+            cartItems.innerHTML = validItems.map(item => `
                 <div class="cart-item" data-product-id="${item.id}">
                     ${item.image ? `<img src="${item.image}" alt="${item.name}" class="cart-item-image">` : ''}
                     <div class="cart-item-info">
@@ -737,8 +784,34 @@
         });
     });
 
-    // Inicialização
-    Cart.updateUI();
+    // Inicialização - garantir que o carrinho seja restaurado quando a página carregar
+    function initializeCart() {
+        console.log('Inicializando carrinho...');
+        const cart = Cart.get();
+        console.log('Carrinho carregado do localStorage:', cart);
+        
+        // Validar e limpar itens inválidos se necessário
+        if (cart.items && cart.items.length > 0) {
+            // Recalcular total para garantir consistência
+            Cart.calculateTotal(cart);
+            // Salvar novamente para garantir que está sincronizado
+            localStorage.setItem(CART_KEY, JSON.stringify(cart));
+        }
+        
+        // Atualizar UI
+        Cart.updateUI();
+        console.log('Carrinho inicializado com', cart.items.length, 'itens');
+    }
+
+    // Aguardar DOM estar pronto antes de inicializar
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeCart, 100);
+        });
+    } else {
+        setTimeout(initializeCart, 100);
+    }
+
     trackPageView();
 
     // Expor Cart globalmente para uso nos event handlers inline
