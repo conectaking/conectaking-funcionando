@@ -14,22 +14,22 @@ router.post('/track', asyncHandler(async (req, res) => {
 router.use(protectUser);
 
 // Buscar analytics de uma página
-router.get('/:salesPageId', asyncHandler(async (req, res) => {
+router.get('/analytics/:salesPageId', asyncHandler(async (req, res) => {
     await controller.getAnalytics(req, res);
 }));
 
 // Buscar analytics de um produto
-router.get('/products/:productId', asyncHandler(async (req, res) => {
+router.get('/analytics/products/:productId', asyncHandler(async (req, res) => {
     await controller.getProductAnalytics(req, res);
 }));
 
 // Buscar funil de vendas
-router.get('/:salesPageId/funnel', asyncHandler(async (req, res) => {
+router.get('/analytics/:salesPageId/funnel', asyncHandler(async (req, res) => {
     await controller.getSalesFunnel(req, res);
 }));
 
 // Buscar ranking de produtos
-router.get('/:salesPageId/ranking', asyncHandler(async (req, res) => {
+router.get('/analytics/:salesPageId/ranking', asyncHandler(async (req, res) => {
     await controller.getProductRanking(req, res);
 }));
 
