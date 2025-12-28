@@ -50,8 +50,14 @@ class ProductValidators {
             errors.push(`status deve ser um dos valores: ${Object.values(TYPES.STATUS).join(', ')}`);
         }
 
-        if (data.badge !== undefined && data.badge && !Object.values(TYPES.BADGES).includes(data.badge)) {
-            errors.push(`badge deve ser um dos valores: ${Object.values(TYPES.BADGES).join(', ')}`);
+        if (data.badge !== undefined && data.badge) {
+            // Se badge contém vírgulas, validar cada um separadamente
+            const badges = data.badge.split(',').map(b => b.trim()).filter(b => b);
+            const validBadges = Object.values(TYPES.BADGES);
+            const invalidBadges = badges.filter(b => !validBadges.includes(b));
+            if (invalidBadges.length > 0) {
+                errors.push(`badge deve ser um dos valores: ${validBadges.join(', ')}. Valores inválidos encontrados: ${invalidBadges.join(', ')}`);
+            }
         }
 
         return {
