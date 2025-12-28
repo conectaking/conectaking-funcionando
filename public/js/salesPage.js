@@ -337,32 +337,63 @@
      * Checkout WhatsApp
      */
     function formatWhatsAppMessage(cart, storeInfo, customerName, observation) {
-        let message = 'Olá! Gostaria de comprar os seguintes produtos:\n\n';
+        // Obter profile_slug e base URL
+        const baseUrl = window.location.origin;
+        const profileSlug = getProfileSlug(); // Função auxiliar para obter profile_slug
+        
+        let message = 'Olá! Gostaria de comprar:\n\n';
 
-        cart.items.forEach(item => {
-            const total = item.price * item.quantity;
-            message += `📦 ${item.name}`;
-            if (item.quantity > 1) {
-                message += ` (Qtd: ${item.quantity})`;
+        cart.items.forEach((item, index) => {
+            // Nome do produto
+            message += `${item.name}\n`;
+            
+            // Preço
+            message += `${Cart.formatCurrency(item.price)}\n`;
+            
+            // Quantidade
+            message += `Quantidade: ${item.quantity}\n`;
+            
+            // Link personalizável do produto
+            const productUrl = `${baseUrl}/${profileSlug}/produto/${item.id}`;
+            message += `🔗 ${productUrl}\n`;
+            
+            // Adicionar linha em branco entre produtos (exceto no último)
+            if (index < cart.items.length - 1) {
+                message += '\n';
             }
-            message += ` - ${Cart.formatCurrency(item.price)}`;
-            if (item.quantity > 1) {
-                message += ` = ${Cart.formatCurrency(total)}`;
-            }
-            message += '\n';
         });
 
-        message += `\n💰 Total: ${Cart.formatCurrency(cart.total)}\n`;
+        message += `\nTotal: ${Cart.formatCurrency(cart.total)}\n`;
 
         if (customerName && customerName.trim()) {
-            message += `\n👤 Nome: ${customerName.trim()}\n`;
+            message += `\nNome: ${customerName.trim()}\n`;
         }
 
         if (observation && observation.trim()) {
-            message += `\n📝 Observação: ${observation.trim()}\n`;
+            message += `\nObservação: ${observation.trim()}\n`;
         }
 
         return message;
+    }
+
+    /**
+     * Obter profile_slug da URL atual ou de dados da página
+     */
+    function getProfileSlug() {
+        // Tentar extrair da URL atual (ex: /ADRIANO-KING/loja/2060)
+        const pathParts = window.location.pathname.split('/').filter(p => p);
+        if (pathParts.length > 0) {
+            return pathParts[0];
+        }
+        
+        // Fallback: tentar obter de meta tags ou dados da página
+        const metaSlug = document.querySelector('meta[name="profile-slug"]')?.content;
+        if (metaSlug) {
+            return metaSlug;
+        }
+        
+        // Último fallback: usar valor padrão (mas isso não é ideal)
+        return 'perfil';
     }
 
     function formatWhatsAppNumber(number) {
