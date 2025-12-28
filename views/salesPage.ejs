@@ -17,6 +17,8 @@
     
     <link rel="stylesheet" href="/css/salesPage.css">
     
+    <meta name="profile-slug" content="<%= typeof profileSlug !== 'undefined' ? profileSlug : '' %>">
+    
     <style>
         :root {
             --bg-color: <%= salesPage.background_color || '#0D0D0F' %>;
@@ -26,7 +28,7 @@
         }
     </style>
 </head>
-<body class="sales-page <%= salesPage.theme || 'dark' %>" data-sales-page-id="<%= salesPage.id %>" data-whatsapp-number="<%= whatsappNumber || '' %>">
+<body class="sales-page <%= salesPage.theme || 'dark' %>" data-sales-page-id="<%= salesPage.id %>" data-whatsapp-number="<%= whatsappNumber || '' %>" data-profile-slug="<%= typeof profileSlug !== 'undefined' ? profileSlug : '' %>">
     <!-- Header -->
     <header class="sales-header">
         <div class="container">
