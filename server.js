@@ -35,6 +35,7 @@ const publicSalesPageRoutes = require('./routes/publicSalesPage.routes');
 const salesPageRoutes = require('./modules/salesPage/salesPage.routes');
 const productRoutes = require('./modules/salesPage/products/product.routes');
 const analyticsRoutesSalesPage = require('./modules/salesPage/analytics/analytics.routes');
+const suggestionsRoutes = require('./routes/suggestions');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize } = require('./middleware/security');
 
@@ -273,6 +274,7 @@ app.use('/download', downloadRoutes);
 app.use('/api/pix', apiLimiter, pixRoutes);
 app.use('/api/business', apiLimiter, businessRoutes);
 app.use('/api/payment', apiLimiter, paymentRoutes);
+app.use('/api/suggestions', apiLimiter, suggestionsRoutes);
 app.use('/vcard', vcardRoutes);
 
 // Rotas do módulo Sales Page
