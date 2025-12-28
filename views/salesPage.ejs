@@ -118,34 +118,36 @@
                         <% if (product.image_url) { %>
                         <div class="product-image">
                             <img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy">
-                            <% 
-                            // Mostrar badge se tiver badge OU se for featured (sem badge)
-                            let showBadge = false;
-                            let badgeValue = product.badge || '';
-                            let badgeLabel = '';
-                            
-                            if (product.badge) {
-                                showBadge = true;
-                                const badgeLabels = {
-                                    'oferta': 'Oferta',
-                                    'destaque': 'Destaque',
-                                    'novo': 'Novidade'
-                                };
-                                badgeLabel = badgeLabels[product.badge.toLowerCase()] || product.badge;
-                            } else if (product.is_featured) {
-                                // Se não tem badge mas é featured, mostrar como destaque
-                                showBadge = true;
-                                badgeValue = 'destaque';
-                                badgeLabel = 'Destaque';
-                            }
-                            %>
-                            <% if (showBadge) { %>
-                            <span class="product-badge badge-<%= badgeValue.toLowerCase() %>"><%= badgeLabel %></span>
-                            <% } %>
                         </div>
                         <% } %>
                         <div class="product-info">
                             <h3 class="product-name"><%= product.name %></h3>
+                            <% 
+                            // Processar badges (pode ser string única ou múltiplos separados por vírgula)
+                            let badges = [];
+                            if (product.badge) {
+                                // Se for string com vírgulas, separar
+                                badges = product.badge.split(',').map(b => b.trim()).filter(b => b);
+                            }
+                            // Se não tem badge mas é featured, adicionar destaque
+                            if (badges.length === 0 && product.is_featured) {
+                                badges.push('destaque');
+                            }
+                            
+                            const badgeLabels = {
+                                'oferta': 'Oferta',
+                                'destaque': 'Destaque',
+                                'novo': 'Novidade'
+                            };
+                            %>
+                            <% if (badges.length > 0) { %>
+                            <div class="product-badges-container">
+                                <% badges.forEach(badgeValue => { %>
+                                    <% const badgeLabel = badgeLabels[badgeValue.toLowerCase()] || badgeValue; %>
+                                    <span class="product-badge badge-<%= badgeValue.toLowerCase() %>"><%= badgeLabel %></span>
+                                <% }); %>
+                            </div>
+                            <% } %>
                             <% if (product.description) { %>
                             <p class="product-description"><%= product.description %></p>
                             <% } %>
