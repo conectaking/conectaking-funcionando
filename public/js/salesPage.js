@@ -168,7 +168,15 @@
             }
 
             this.calculateTotal(cart);
-            this.save(cart);
+            // Salvar diretamente no localStorage primeiro
+            try {
+                localStorage.setItem(CART_KEY, JSON.stringify(cart));
+                console.log('Produto adicionado. Carrinho salvo com', cart.items.length, 'itens');
+            } catch (error) {
+                console.error('Erro ao salvar carrinho:', error);
+            }
+            // Depois atualizar UI
+            this.updateUI();
             
             // Tracking
             trackAddToCart(productId, quantity);
@@ -670,13 +678,14 @@
     }, 100);
     
     // Re-adicionar listeners quando produtos forem filtrados (usando MutationObserver)
-    if (productsGridEl) {
+    const productsGridForObserver = document.getElementById('products-grid');
+    if (productsGridForObserver) {
         const observer = new MutationObserver(() => {
             setTimeout(() => {
                 attachAddToCartListeners();
             }, 50);
         });
-        observer.observe(productsGridEl, { childList: true, subtree: true });
+        observer.observe(productsGridForObserver, { childList: true, subtree: true });
     }
 
     // Prevenir que o link do produto dispare quando clicar no botão de adicionar ao carrinho
@@ -713,18 +722,23 @@
     });
 
     /**
-     * Controles de Visualização
+     * Configurar controles de visualização
      */
-    const productsGridEl = document.getElementById('products-grid');
-    const viewModeButtons = document.querySelectorAll('.view-btn');
-    const sizeButtons = document.querySelectorAll('.size-btn');
+    function setupViewControls() {
+        const productsGridEl = document.getElementById('products-grid');
+        const viewModeButtons = document.querySelectorAll('.view-btn');
+        const sizeButtons = document.querySelectorAll('.size-btn');
 
-    // Carregar preferências do localStorage
-    const savedViewMode = localStorage.getItem(`sales_page_view_mode_${salesPageId}`) || 'grid';
-    const savedCardSize = localStorage.getItem(`sales_page_card_size_${salesPageId}`) || 'small';
+        if (!productsGridEl) {
+            console.warn('Elemento products-grid não encontrado');
+            return;
+        }
 
-    // Aplicar preferências salvas
-    if (productsGridEl) {
+        // Carregar preferências do localStorage
+        const savedViewMode = localStorage.getItem(`sales_page_view_mode_${salesPageId}`) || 'grid';
+        const savedCardSize = localStorage.getItem(`sales_page_card_size_${salesPageId}`) || 'small';
+
+        // Aplicar preferências salvas
         productsGridEl.setAttribute('data-view-mode', savedViewMode);
         productsGridEl.setAttribute('data-card-size', savedCardSize);
         
@@ -744,72 +758,126 @@
                 btn.classList.remove('active');
             }
         });
+
+        // Event listeners para modo de visualização
+        viewModeButtons.forEach(btn => {
+            // Remover listeners antigos
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const mode = newBtn.dataset.mode;
+                console.log('Modo de visualização clicado:', mode);
+                
+                // Atualizar botões
+                document.querySelectorAll('.view-btn').forEach(b => {
+                    if (b.dataset.mode === mode) {
+                        b.classList.add('active');
+                    } else {
+                        b.classList.remove('active');
+                    }
+                });
+                
+                // Atualizar grid
+                const grid = document.getElementById('products-grid');
+                if (grid) {
+                    grid.setAttribute('data-view-mode', mode);
+                    localStorage.setItem(`sales_page_view_mode_${salesPageId}`, mode);
+                }
+            });
+        });
+
+        // Event listeners para tamanho
+        sizeButtons.forEach(btn => {
+            // Remover listeners antigos
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const size = newBtn.dataset.size;
+                console.log('Tamanho clicado:', size);
+                
+                // Atualizar botões
+                document.querySelectorAll('.size-btn').forEach(b => {
+                    if (b.dataset.size === size) {
+                        b.classList.add('active');
+                    } else {
+                        b.classList.remove('active');
+                    }
+                });
+                
+                // Atualizar grid
+                const grid = document.getElementById('products-grid');
+                if (grid) {
+                    grid.setAttribute('data-card-size', size);
+                    localStorage.setItem(`sales_page_card_size_${salesPageId}`, size);
+                }
+            });
+        });
     }
 
-    // Event listeners para modo de visualização
-    viewModeButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const mode = btn.dataset.mode;
-            
-            // Atualizar botões
-            viewModeButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            // Atualizar grid
-            if (productsGridEl) {
-                productsGridEl.setAttribute('data-view-mode', mode);
-                localStorage.setItem(`sales_page_view_mode_${salesPageId}`, mode);
-            }
-        });
-    });
-
-    // Event listeners para tamanho
-    sizeButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const size = btn.dataset.size;
-            
-            // Atualizar botões
-            sizeButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            // Atualizar grid
-            if (productsGridEl) {
-                productsGridEl.setAttribute('data-card-size', size);
-                localStorage.setItem(`sales_page_card_size_${salesPageId}`, size);
-            }
-        });
-    });
+    // Configurar controles de visualização após o DOM estar pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupViewControls);
+    } else {
+        setTimeout(setupViewControls, 100);
+    }
 
     // Inicialização - garantir que o carrinho seja restaurado quando a página carregar
     function initializeCart() {
         console.log('Inicializando carrinho...');
-        const cart = Cart.get();
-        console.log('Carrinho carregado do localStorage:', cart);
-        
-        // Validar e limpar itens inválidos se necessário
-        if (cart.items && cart.items.length > 0) {
-            // Recalcular total para garantir consistência
-            Cart.calculateTotal(cart);
-            // Salvar novamente para garantir que está sincronizado
-            localStorage.setItem(CART_KEY, JSON.stringify(cart));
+        try {
+            const cartStr = localStorage.getItem(CART_KEY);
+            console.log('Carrinho no localStorage (raw):', cartStr);
+            
+            if (!cartStr) {
+                console.log('Nenhum carrinho encontrado no localStorage');
+                Cart.updateUI();
+                return;
+            }
+            
+            const cart = JSON.parse(cartStr);
+            console.log('Carrinho carregado do localStorage:', cart);
+            
+            // Validar estrutura
+            if (!cart.items) {
+                cart.items = [];
+            }
+            if (typeof cart.total !== 'number') {
+                cart.total = 0;
+            }
+            
+            // Validar e manter itens válidos
+            if (cart.items && cart.items.length > 0) {
+                // Recalcular total para garantir consistência
+                Cart.calculateTotal(cart);
+                // Salvar novamente para garantir que está sincronizado
+                localStorage.setItem(CART_KEY, JSON.stringify(cart));
+                console.log('Carrinho validado e salvo. Total de itens:', cart.items.length);
+            }
+            
+            // Atualizar UI
+            Cart.updateUI();
+            console.log('Carrinho inicializado com', cart.items.length, 'itens');
+        } catch (error) {
+            console.error('Erro ao inicializar carrinho:', error);
+            // Em caso de erro, limpar e começar do zero
+            localStorage.removeItem(CART_KEY);
+            Cart.updateUI();
         }
-        
-        // Atualizar UI
-        Cart.updateUI();
-        console.log('Carrinho inicializado com', cart.items.length, 'itens');
     }
 
     // Aguardar DOM estar pronto antes de inicializar
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(initializeCart, 100);
+            setTimeout(initializeCart, 200);
         });
     } else {
-        setTimeout(initializeCart, 100);
+        setTimeout(initializeCart, 200);
     }
 
     trackPageView();
