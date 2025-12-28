@@ -503,30 +503,39 @@
     // Função para adicionar event listeners aos botões de adicionar ao carrinho
     function attachAddToCartListeners() {
         document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-            // Remover listeners antigos para evitar duplicação
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
+            // Verificar se já tem listener
+            if (btn.dataset.listenerAttached === 'true') {
+                return;
+            }
             
-            newBtn.addEventListener('click', (e) => {
+            btn.dataset.listenerAttached = 'true';
+            btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const productId = newBtn.dataset.productId;
-                if (productId) {
+                const productId = btn.dataset.productId;
+                console.log('Adicionar ao carrinho clicado, productId:', productId);
+                if (productId && products[productId]) {
                     Cart.add(productId, 1);
                     trackProductClick(productId);
+                } else {
+                    console.error('Produto não encontrado:', productId, products);
                 }
             });
         });
     }
 
     // Adicionar listeners iniciais
-    attachAddToCartListeners();
+    setTimeout(() => {
+        attachAddToCartListeners();
+    }, 100);
     
     // Re-adicionar listeners quando produtos forem filtrados (usando MutationObserver)
     const productsGrid = document.getElementById('products-grid');
     if (productsGrid) {
         const observer = new MutationObserver(() => {
-            attachAddToCartListeners();
+            setTimeout(() => {
+                attachAddToCartListeners();
+            }, 50);
         });
         observer.observe(productsGrid, { childList: true, subtree: true });
     }

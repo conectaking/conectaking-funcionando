@@ -118,11 +118,10 @@ router.get('/:slug/produto/:productId', asyncHandler(async (req, res) => {
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
 
-        // URL do perfil para botão voltar
-        const profileUrl = `/${slug}`;
-
-        // Se for produto de sales page, buscar dados da sales page
+        // Se for produto de sales page, buscar dados da sales page e URL da loja
         let salesPageData = null;
+        let backUrl = `/${slug}`; // Default: voltar para perfil
+        
         if (isSalesPageProduct) {
             const salesPageRes = await client.query(
                 `SELECT sp.*, pi.id as profile_item_id
@@ -133,6 +132,27 @@ router.get('/:slug/produto/:productId', asyncHandler(async (req, res) => {
             );
             if (salesPageRes.rows.length > 0) {
                 salesPageData = salesPageRes.rows[0];
+                // URL para voltar à loja (sales page)
+                backUrl = `/${slug}/loja/${salesPageData.profile_item_id}`;
+            }
+        }
+        
+        // Preparar todas as imagens do produto (principal + adicionais)
+        const allImages = [];
+        if (product.image_url) {
+            allImages.push(product.image_url);
+        }
+        // Adicionar imagens de variations se existirem
+        if (product.variations) {
+            try {
+                const variations = typeof product.variations === 'string' 
+                    ? JSON.parse(product.variations) 
+                    : product.variations;
+                if (variations.images && Array.isArray(variations.images)) {
+                    allImages.push(...variations.images);
+                }
+            } catch (e) {
+                console.error('Erro ao parsear variations:', e);
             }
         }
 
@@ -141,11 +161,13 @@ router.get('/:slug/produto/:productId', asyncHandler(async (req, res) => {
         res.render('product', {
             details: details,
             product: product,
-            profileUrl: profileUrl,
+            profileUrl: backUrl,
             isSalesPageProduct: isSalesPageProduct,
             salesPageData: salesPageData,
             baseUrl: baseUrl,
-            slug: slug
+            slug: slug,
+            allImages: allImages,
+            backButtonText: isSalesPageProduct && salesPageData ? (salesPageData.store_title || 'Voltar à Loja') : 'Voltar ao Catálogo'
         });
 
     } finally {

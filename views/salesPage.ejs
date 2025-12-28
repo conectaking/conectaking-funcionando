@@ -106,21 +106,41 @@
             <div class="products-grid" id="products-grid" data-view-mode="grid" data-card-size="small" data-filter="all">
                 <% products.forEach(product => { %>
                 <% const productUrl = `/${typeof profileSlug !== 'undefined' ? profileSlug : ''}/produto/${product.id}`; %>
-                <div class="product-card" data-product-id="<%= product.id %>" data-product-badge="<%= product.badge || '' %>">
+                <% 
+                // Determinar badge para data attribute (usado no filtro)
+                let productBadgeForFilter = product.badge || '';
+                if (!productBadgeForFilter && product.is_featured) {
+                    productBadgeForFilter = 'destaque';
+                }
+                %>
+                <div class="product-card" data-product-id="<%= product.id %>" data-product-badge="<%= productBadgeForFilter %>">
                     <a href="<%= productUrl %>" class="product-link" data-product-id="<%= product.id %>">
                         <% if (product.image_url) { %>
                         <div class="product-image">
                             <img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy">
-                            <% if (product.badge) { %>
                             <% 
-                            const badgeLabels = {
-                                'oferta': 'Oferta',
-                                'destaque': 'Destaque',
-                                'novo': 'Novidade'
-                            };
-                            const badgeLabel = badgeLabels[product.badge.toLowerCase()] || product.badge;
+                            // Mostrar badge se tiver badge OU se for featured (sem badge)
+                            let showBadge = false;
+                            let badgeValue = product.badge || '';
+                            let badgeLabel = '';
+                            
+                            if (product.badge) {
+                                showBadge = true;
+                                const badgeLabels = {
+                                    'oferta': 'Oferta',
+                                    'destaque': 'Destaque',
+                                    'novo': 'Novidade'
+                                };
+                                badgeLabel = badgeLabels[product.badge.toLowerCase()] || product.badge;
+                            } else if (product.is_featured) {
+                                // Se não tem badge mas é featured, mostrar como destaque
+                                showBadge = true;
+                                badgeValue = 'destaque';
+                                badgeLabel = 'Destaque';
+                            }
                             %>
-                            <span class="product-badge badge-<%= product.badge.toLowerCase() %>"><%= badgeLabel %></span>
+                            <% if (showBadge) { %>
+                            <span class="product-badge badge-<%= badgeValue.toLowerCase() %>"><%= badgeLabel %></span>
                             <% } %>
                         </div>
                         <% } %>
