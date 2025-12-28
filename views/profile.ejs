@@ -1271,9 +1271,24 @@
                             const salesPageIsJpeg = salesPageHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
                             const salesPageBorderRadius = salesPageHasLogo ? (salesPageIsJpeg ? '50%' : '0') : '50%';
                             const salesPageObjectFit = salesPageHasLogo ? (salesPageIsJpeg ? 'cover' : 'contain') : 'cover';
-                            const salesPageUrl = item.sales_page_slug ? `/vendas/${item.sales_page_slug}` : '#';
+                            
+                            // Construir URL correta: /:slug/loja/:itemId
+                            // Usar o profile_slug do usuário e o item.id como identifier
+                            // profile_slug vem do objeto passado para o template via profileData
+                            let profileSlug = '';
+                            if (typeof profile_slug !== 'undefined' && profile_slug) {
+                                profileSlug = profile_slug;
+                            } else if (typeof details !== 'undefined' && details.profile_slug) {
+                                profileSlug = details.profile_slug;
+                            } else if (typeof identifier !== 'undefined' && identifier) {
+                                profileSlug = identifier;
+                            }
+                            
+                            const salesPageUrl = item.sales_page_slug && item.sales_page_status === 'PUBLISHED' && profileSlug
+                                ? `/${profileSlug}/loja/${item.id}` 
+                                : '#';
                         %>
-                        <a href="<%= salesPageUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                        <a href="<%= salesPageUrl %>" class="profile-link" <%= salesPageUrl !== '#' ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;" style="opacity: 0.5; cursor: not-allowed;" title="Página não publicada"' %> data-item-id="<%= item.id %>">
                             <% if (salesPageHasLogo) { %>
                                 <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= salesPageLogoSize %>px; height: <%= salesPageLogoSize %>px; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
                                 <i class="<%= item.icon_class || 'fas fa-store' %>" style="display: none;"></i>

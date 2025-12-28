@@ -44,6 +44,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         const profileQuery = `
             SELECT 
                 u.id AS user_id,
+                u.profile_slug,
                 p.*,
                 CASE
                     WHEN u.account_type = 'business_owner' THEN u.company_logo_url
@@ -117,18 +118,29 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             
             if (item.item_type === 'sales_page') {
                 try {
+                    // Buscar sales_page (mesmo que não esteja publicada, para construir a URL)
                     const salesPageRes = await client.query(
-                        'SELECT slug FROM sales_pages WHERE profile_item_id = $1 AND status = $2',
-                        [item.id, 'PUBLISHED']
+                        'SELECT slug, status FROM sales_pages WHERE profile_item_id = $1',
+                        [item.id]
                     );
                     if (salesPageRes.rows.length > 0) {
-                        item.sales_page_slug = salesPageRes.rows[0].slug;
+                        const salesPage = salesPageRes.rows[0];
+                        item.sales_page_slug = salesPage.slug;
+                        item.sales_page_status = salesPage.status;
+                        // Se não estiver publicada, não definir URL (será '#')
+                        if (salesPage.status !== 'PUBLISHED') {
+                            item.sales_page_slug = null; // Não permitir acesso público se não estiver publicada
+                        }
+                    } else {
+                        // Se não existe sales_page, não definir slug
+                        item.sales_page_slug = null;
                     }
                 } catch (salesPageError) {
                     logger.error('Erro ao carregar dados da página de vendas', { 
                         itemId: item.id, 
                         error: salesPageError.message 
                     });
+                    item.sales_page_slug = null;
                 }
             }
             
@@ -138,6 +150,11 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         const details = profileRes.rows[0];
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
+        
+        // Garantir que profile_slug está disponível em details
+        if (!details.profile_slug) {
+            details.profile_slug = user.profile_slug || identifier;
+        }
         
         if (!details.button_content_align || !['left', 'center', 'right'].includes(details.button_content_align)) {
             details.button_content_align = 'center';
@@ -153,11 +170,17 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             ogImageUrl = `${req.protocol}://${req.get('host')}/api/image/profile-image?url=${encodeURIComponent(details.profile_image_url)}&v=${cacheBuster}`;
         }
         
+        // Buscar profile_slug do usuário para usar nas URLs
+        const userSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
+        const userProfileSlug = userSlugRes.rows[0]?.profile_slug || identifier;
+        
         const profileData = {
             details: details,
             items: items,
             origin: req.protocol + '://' + req.get('host'),
-            ogImageUrl: ogImageUrl
+            ogImageUrl: ogImageUrl,
+            profile_slug: userProfileSlug, // Adicionar profile_slug para uso no template
+            identifier: identifier // Adicionar identifier também
         };
         
         res.render('profile', profileData);

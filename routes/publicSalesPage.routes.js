@@ -46,20 +46,33 @@ router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
             salesPage = await salesPageService.findByProfileItemId(itemRes.rows[0].id, userId);
         } else {
             // Buscar por slug
-            salesPage = await salesPageService.findBySlug(identifier);
-            
-            // Verificar se pertence ao usuário
-            const itemRes = await client.query(
-                'SELECT id FROM profile_items WHERE id = $1 AND user_id = $2',
-                [salesPage.profile_item_id, userId]
-            );
+            try {
+                salesPage = await salesPageService.findBySlug(identifier);
+                
+                if (!salesPage) {
+                    return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
+                }
+                
+                // Verificar se pertence ao usuário
+                const itemRes = await client.query(
+                    'SELECT id FROM profile_items WHERE id = $1 AND user_id = $2',
+                    [salesPage.profile_item_id, userId]
+                );
 
-            if (itemRes.rows.length === 0) {
+                if (itemRes.rows.length === 0) {
+                    return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
+                }
+            } catch (error) {
+                logger.error('Erro ao buscar sales page por slug:', error);
                 return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
             }
         }
 
         // Verificar se está publicada ou se tem token de preview
+        if (!salesPage) {
+            return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
+        }
+        
         if (salesPage.status !== 'PUBLISHED') {
             if (!token || token !== salesPage.preview_token) {
                 return res.status(404).send('<h1>404 - Página não encontrada ou não publicada</h1>');
