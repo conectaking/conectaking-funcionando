@@ -142,14 +142,68 @@
                         <div class="cart-item-name">${this.escapeHtml(item.name)}</div>
                         <div class="cart-item-price">${this.formatCurrency(item.price)}</div>
                         <div class="cart-item-quantity">
-                            <button class="quantity-btn" onclick="Cart.decreaseQuantity('${item.id}')">-</button>
+                            <button class="quantity-btn quantity-decrease" data-product-id="${item.id}">-</button>
                             <span>${item.quantity}</span>
-                            <button class="quantity-btn" onclick="Cart.increaseQuantity('${item.id}')">+</button>
-                            <button class="cart-item-remove" onclick="Cart.remove('${item.id}')">Remover</button>
+                            <button class="quantity-btn quantity-increase" data-product-id="${item.id}">+</button>
+                            <button class="cart-item-remove" data-product-id="${item.id}">Remover</button>
                         </div>
                     </div>
                 </div>
             `).join('');
+
+            // Adicionar event listeners após renderizar (CSP safe)
+            this.attachCartItemListeners();
+        },
+
+        attachCartItemListeners() {
+            // Remover listeners anteriores (limpar)
+            const removeButtons = cartItems.querySelectorAll('.cart-item-remove');
+            const decreaseButtons = cartItems.querySelectorAll('.quantity-decrease');
+            const increaseButtons = cartItems.querySelectorAll('.quantity-increase');
+
+            removeButtons.forEach(btn => {
+                // Remover listeners antigos
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                
+                // Adicionar novo listener
+                newBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const productId = newBtn.dataset.productId;
+                    if (productId) {
+                        this.remove(productId);
+                    }
+                });
+            });
+
+            decreaseButtons.forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                
+                newBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const productId = newBtn.dataset.productId;
+                    if (productId) {
+                        this.decreaseQuantity(productId);
+                    }
+                });
+            });
+
+            increaseButtons.forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                
+                newBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const productId = newBtn.dataset.productId;
+                    if (productId) {
+                        this.increaseQuantity(productId);
+                    }
+                });
+            });
         },
 
         increaseQuantity(productId) {
