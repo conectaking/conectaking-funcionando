@@ -100,12 +100,17 @@ router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
             // Não bloquear renderização se falhar
         }
 
+        // Buscar profile_slug do usuário para usar no template
+        const profileSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
+        const profileSlug = profileSlugRes.rows[0]?.profile_slug || slug;
+        
         // Renderizar página
         res.render('salesPage', {
             salesPage,
             products,
             isPreview: !!token && token === salesPage.preview_token,
-            whatsappNumber: salesPage.whatsapp_number
+            whatsappNumber: salesPage.whatsapp_number,
+            profileSlug: profileSlug // Passar profile_slug para o template
         });
 
     } catch (error) {
