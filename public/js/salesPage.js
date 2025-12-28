@@ -40,19 +40,21 @@
 
     // Configurar filtros por badge
     const filterTabs = document.querySelectorAll('.filter-tab-public');
-    const productsGrid = document.getElementById('products-grid');
     
-    if (filterTabs.length && productsGrid) {
+    if (filterTabs.length) {
         filterTabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const filter = tab.dataset.filter;
+                const productsGridEl = document.getElementById('products-grid');
                 
                 // Atualizar botões ativos
                 filterTabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 
                 // Atualizar filtro
-                productsGrid.setAttribute('data-filter', filter);
+                if (productsGridEl) {
+                    productsGridEl.setAttribute('data-filter', filter);
+                }
                 
                 // Filtrar produtos
                 document.querySelectorAll('.product-card').forEach(card => {
@@ -498,16 +500,36 @@
 
     checkoutBtn?.addEventListener('click', checkout);
 
-    // Botões "Adicionar ao Carrinho"
-    document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const productId = btn.dataset.productId;
-            Cart.add(productId, 1);
-            trackProductClick(productId);
+    // Função para adicionar event listeners aos botões de adicionar ao carrinho
+    function attachAddToCartListeners() {
+        document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+            // Remover listeners antigos para evitar duplicação
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const productId = newBtn.dataset.productId;
+                if (productId) {
+                    Cart.add(productId, 1);
+                    trackProductClick(productId);
+                }
+            });
         });
-    });
+    }
+
+    // Adicionar listeners iniciais
+    attachAddToCartListeners();
+    
+    // Re-adicionar listeners quando produtos forem filtrados (usando MutationObserver)
+    const productsGrid = document.getElementById('products-grid');
+    if (productsGrid) {
+        const observer = new MutationObserver(() => {
+            attachAddToCartListeners();
+        });
+        observer.observe(productsGrid, { childList: true, subtree: true });
+    }
 
     // Prevenir que o link do produto dispare quando clicar no botão de adicionar ao carrinho
     document.querySelectorAll('.product-link').forEach(link => {
