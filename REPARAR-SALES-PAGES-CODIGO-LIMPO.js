@@ -19,7 +19,8 @@
         
         if (result.success) {
             console.log('✅ Sucesso!', result);
-            alert(`Reparo concluído!\n\n${result.message}\nTotal encontrado: ${result.total}\nCriados: ${result.created}`);
+            const total = result.total !== undefined ? result.total : 0;
+            alert(`Reparo concluído!\n\n${result.message}\nTotal encontrado: ${total}\nCriados: ${result.created || 0}`);
         } else {
             console.error('❌ Erro:', result);
             alert('Erro ao executar reparo: ' + (result.error || result.message));

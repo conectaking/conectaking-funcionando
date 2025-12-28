@@ -1000,7 +1000,8 @@ router.post('/items/repair-sales-pages', protectUser, asyncHandler(async (req, r
             return res.json({ 
                 success: true, 
                 message: 'Todos os itens sales_page já têm sales_page associada',
-                created: 0
+                created: 0,
+                total: 0
             });
         }
         
