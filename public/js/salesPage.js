@@ -31,11 +31,41 @@
         const name = card.querySelector('.product-name')?.textContent.trim();
         const price = parseFloat(card.querySelector('.current-price')?.textContent.replace(/[^\d,]/g, '').replace(',', '.'));
         const image = card.querySelector('.product-image img')?.src;
+        const badge = card.dataset.productBadge || card.querySelector('.product-badge')?.textContent.trim() || null;
         
         if (productId && name && price) {
-            products[productId] = { id: productId, name, price, image };
+            products[productId] = { id: productId, name, price, image, badge };
         }
     });
+
+    // Configurar filtros por badge
+    const filterTabs = document.querySelectorAll('.filter-tab-public');
+    const productsGrid = document.getElementById('products-grid');
+    
+    if (filterTabs.length && productsGrid) {
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const filter = tab.dataset.filter;
+                
+                // Atualizar botões ativos
+                filterTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Atualizar filtro
+                productsGrid.setAttribute('data-filter', filter);
+                
+                // Filtrar produtos
+                document.querySelectorAll('.product-card').forEach(card => {
+                    const badge = card.dataset.productBadge || card.querySelector('.product-badge')?.textContent.trim() || null;
+                    if (filter === 'all' || badge === filter) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
 
     /**
      * Gerenciamento do Carrinho
