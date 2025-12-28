@@ -31,7 +31,8 @@ class SalesPageValidators {
         }
 
         if (data.whatsapp_number !== undefined) {
-            // whatsapp_number pode ser vazio na criação, mas se fornecido deve ser válido
+            // whatsapp_number é obrigatório na criação, mas pode ser vazio temporariamente
+            // Se vazio, será definido como string vazia (NOT NULL no banco aceita string vazia)
             if (data.whatsapp_number && typeof data.whatsapp_number !== 'string') {
                 errors.push('whatsapp_number deve ser uma string');
             } else if (data.whatsapp_number && data.whatsapp_number.trim()) {
@@ -41,6 +42,13 @@ class SalesPageValidators {
                     errors.push('whatsapp_number deve conter apenas números e caracteres de formatação (+ - ( ) espaços)');
                 }
             }
+            // Se não fornecido ou null, usar string vazia como padrão
+            if (data.whatsapp_number === null || data.whatsapp_number === undefined) {
+                data.whatsapp_number = '';
+            }
+        } else if (!isUpdate) {
+            // Na criação, se não fornecido, usar string vazia
+            data.whatsapp_number = '';
         }
 
         if (data.background_color !== undefined && data.background_color) {
@@ -114,7 +122,17 @@ class SalesPageValidators {
             sanitized.button_text = data.button_text ? data.button_text.trim() : null;
         }
         if (data.whatsapp_number !== undefined) {
-            sanitized.whatsapp_number = data.whatsapp_number ? data.whatsapp_number.trim() : null;
+            // whatsapp_number é NOT NULL no banco, então usar string vazia se não fornecido ou null
+            if (data.whatsapp_number === null || data.whatsapp_number === undefined) {
+                sanitized.whatsapp_number = '';
+            } else if (typeof data.whatsapp_number === 'string') {
+                sanitized.whatsapp_number = data.whatsapp_number.trim() || '';
+            } else {
+                sanitized.whatsapp_number = String(data.whatsapp_number).trim() || '';
+            }
+        } else {
+            // Se não fornecido, usar string vazia como padrão (NOT NULL no banco)
+            sanitized.whatsapp_number = '';
         }
         if (data.meta_title !== undefined) {
             sanitized.meta_title = data.meta_title ? data.meta_title.trim() : null;

@@ -10,6 +10,11 @@ class SalesPageService {
      * Criar nova página de vendas
      */
     async create(data) {
+        // Garantir que whatsapp_number seja string vazia se não fornecido (NOT NULL no banco)
+        if (!data.whatsapp_number && data.whatsapp_number !== '') {
+            data.whatsapp_number = '';
+        }
+        
         // Validar dados
         const validation = validators.validateSalesPageData(data, false);
         if (!validation.isValid) {
@@ -19,6 +24,11 @@ class SalesPageService {
         // Sanitizar dados
         const sanitized = validators.sanitize(data);
 
+        // Garantir que whatsapp_number não seja null após sanitização (NOT NULL no banco)
+        if (!sanitized.whatsapp_number && sanitized.whatsapp_number !== '') {
+            sanitized.whatsapp_number = '';
+        }
+
         // Gerar slug se não fornecido
         if (!sanitized.slug && sanitized.store_title) {
             sanitized.slug = await slugify.generateUnique(sanitized.store_title, (slug) => 
@@ -26,8 +36,10 @@ class SalesPageService {
             );
         }
 
-        // Gerar preview_token
-        sanitized.preview_token = crypto.randomBytes(32).toString('hex');
+        // Gerar preview_token se não fornecido
+        if (!sanitized.preview_token) {
+            sanitized.preview_token = crypto.randomBytes(32).toString('hex');
+        }
 
         // Criar página
         const salesPage = await repository.create(sanitized);
