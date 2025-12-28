@@ -31,10 +31,11 @@ class SalesPageValidators {
         }
 
         if (data.whatsapp_number !== undefined) {
-            if (!data.whatsapp_number || typeof data.whatsapp_number !== 'string') {
-                errors.push('whatsapp_number é obrigatório');
-            } else {
-                // Validar formato básico de WhatsApp (números, +, espaços, parênteses, hífens)
+            // whatsapp_number pode ser vazio na criação, mas se fornecido deve ser válido
+            if (data.whatsapp_number && typeof data.whatsapp_number !== 'string') {
+                errors.push('whatsapp_number deve ser uma string');
+            } else if (data.whatsapp_number && data.whatsapp_number.trim()) {
+                // Validar formato básico de WhatsApp apenas se não for vazio
                 const whatsappRegex = /^[\d\s\+\-\(\)]+$/;
                 if (!whatsappRegex.test(data.whatsapp_number)) {
                     errors.push('whatsapp_number deve conter apenas números e caracteres de formatação (+ - ( ) espaços)');
