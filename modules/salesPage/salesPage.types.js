@@ -34,7 +34,7 @@ module.exports = {
         DRAFT: ['PUBLISHED', 'ARCHIVED'],
         PUBLISHED: ['PAUSED', 'DRAFT', 'ARCHIVED'], // Permite voltar para DRAFT
         PAUSED: ['PUBLISHED', 'DRAFT', 'ARCHIVED'], // Permite voltar para DRAFT
-        ARCHIVED: [] // Não pode transicionar de ARCHIVED
+        ARCHIVED: ['DRAFT'] // Permite desarquivar voltando para DRAFT
     },
     
     PRODUCT_STATUS_TRANSITIONS: {

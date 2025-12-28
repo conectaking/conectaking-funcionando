@@ -102,9 +102,9 @@ class SalesPageService {
             throw new Error('Página de vendas não encontrada');
         }
 
-        // Verificar se está arquivada
-        if (currentPage.status === TYPES.STATUS.ARCHIVED) {
-            throw new Error('Não é possível editar uma página arquivada');
+        // Se está arquivada e tentando mudar status para DRAFT, permitir (desarquivar)
+        if (currentPage.status === TYPES.STATUS.ARCHIVED && data.status !== TYPES.STATUS.DRAFT) {
+            throw new Error('Não é possível editar uma página arquivada. Altere o status para "Rascunho" primeiro para desarquivar.');
         }
 
         // Se está apenas mudando status, validar transição
