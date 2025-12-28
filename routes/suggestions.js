@@ -73,23 +73,60 @@ function generateSuggestions(type, prompt, context = {}) {
  */
 function generateStoreDescriptions(prompt, context = {}) {
     const storeTitle = context.storeTitle || prompt;
+    const keywords = prompt.toLowerCase();
     const suggestions = [];
 
-    suggestions.push(
-        `Bem-vindo à ${storeTitle}! Somos especialistas em oferecer produtos de alta qualidade com os melhores preços do mercado. Nossa missão é proporcionar uma experiência única de compra, com atendimento personalizado e entrega rápida. Confira nossos produtos exclusivos e descubra o que temos de melhor para você!`,
-        
-        `${storeTitle} - Sua loja de confiança! Trabalhamos com produtos selecionados, sempre pensando no seu bem-estar e satisfação. Oferecemos variedade, qualidade e preços que cabem no seu bolso. Venha conhecer nossas ofertas especiais e transforme sua experiência de compra!`,
-        
-        `Na ${storeTitle}, acreditamos que cada cliente merece o melhor. Por isso, selecionamos cuidadosamente nossos produtos para garantir qualidade, durabilidade e excelente custo-benefício. Faça parte da nossa família de clientes satisfeitos e aproveite as melhores ofertas!`,
-        
-        `Descubra ${storeTitle} - onde qualidade encontra preço justo! Nossa equipe está sempre pronta para atendê-lo com dedicação e carinho. Oferecemos produtos cuidadosamente escolhidos para atender suas necessidades. Venha nos visitar e aproveite nossas promoções exclusivas!`,
-        
-        `${storeTitle} é sinônimo de confiança e qualidade. Trabalhamos há anos no mercado, sempre priorizando a satisfação dos nossos clientes. Nossos produtos são selecionados com rigor para garantir que você tenha acesso ao melhor. Explore nosso catálogo e encontre exatamente o que procura!`,
-        
-        `Conheça a ${storeTitle}, sua parceira ideal para encontrar os melhores produtos com preços incríveis. Oferecemos uma experiência de compra completa, com atendimento diferenciado e produtos que realmente fazem a diferença. Aproveite nossas condições especiais!`,
-        
-        `${storeTitle} nasceu com o propósito de oferecer produtos de excelência a preços acessíveis. Nossa equipe trabalha diariamente para trazer as melhores opções do mercado, sempre pensando em você. Venha fazer parte da nossa comunidade de clientes satisfeitos!`
-    );
+    // Detectar tipo de negócio baseado em palavras-chave
+    const isPhotography = keywords.includes('fotografo') || keywords.includes('fotografia') || 
+                         keywords.includes('retratista') || keywords.includes('foto') ||
+                         keywords.includes('ensaios') || keywords.includes('sessão');
+    
+    const isService = keywords.includes('serviço') || keywords.includes('consultoria') ||
+                     keywords.includes('atendimento') || keywords.includes('trabalho');
+    
+    const isProduct = keywords.includes('produto') || keywords.includes('venda') ||
+                     keywords.includes('loja') || keywords.includes('comércio');
+
+    if (isPhotography) {
+        // Sugestões específicas para fotógrafos e retratistas
+        suggestions.push(
+            `${storeTitle} - Especializado em fotografia e retratos profissionais. Capturo momentos únicos e transformo em memórias eternas. Com anos de experiência, ofereço serviços personalizados de alta qualidade para casamentos, eventos, ensaios e retratos familiares. Cada clique é uma obra de arte!`,
+            
+            `Bem-vindo à ${storeTitle}! Sou fotógrafo profissional especializado em retratos e ensaios fotográficos. Minha paixão é capturar a essência de cada pessoa, criando imagens autênticas e emocionantes. Trabalho com equipamentos de última geração e técnicas modernas para garantir resultados excepcionais.`,
+            
+            `${storeTitle} - Fotografia profissional com olhar artístico. Especializado em retratos que revelam a personalidade única de cada cliente. Ofereço sessões personalizadas, desde ensaios individuais até eventos corporativos. Cada projeto é tratado com dedicação e criatividade para superar expectativas.`,
+            
+            `Na ${storeTitle}, transformo momentos especiais em memórias duradouras através da fotografia profissional. Com experiência em diversos estilos e técnicas, ofereço serviços completos de retrato, eventos e ensaios. Comprometido em entregar imagens que emocionam e contam histórias únicas.`,
+            
+            `${storeTitle} - Sua referência em fotografia e retratos. Trabalho com paixão e profissionalismo para criar imagens que realmente importam. Especializado em capturar a beleza natural e autenticidade de cada pessoa. Agende sua sessão e descubra como a fotografia pode transformar momentos em arte!`,
+            
+            `Conheça ${storeTitle}, onde a fotografia encontra a arte. Especializado em retratos profissionais que valorizam a essência de cada cliente. Ofereço serviços personalizados com atenção aos detalhes, desde o planejamento até a entrega final. Cada imagem é cuidadosamente trabalhada para garantir excelência.`,
+            
+            `${storeTitle} - Fotografia profissional com toque artístico. Capturo momentos únicos através de uma visão criativa e técnica apurada. Especializado em retratos, ensaios e eventos, ofereço uma experiência completa e personalizada. Suas memórias merecem ser eternizadas com qualidade e dedicação.`
+        );
+    } else if (isService) {
+        // Sugestões para serviços em geral
+        suggestions.push(
+            `${storeTitle} - Serviços profissionais de excelência. Oferecemos soluções personalizadas para atender suas necessidades com qualidade e comprometimento. Nossa equipe está preparada para entregar resultados que superam expectativas. Entre em contato e descubra como podemos ajudar!`,
+            
+            `Bem-vindo à ${storeTitle}! Somos especialistas em oferecer serviços de alta qualidade com atendimento diferenciado. Trabalhamos com dedicação e profissionalismo para garantir sua satisfação. Cada projeto é tratado com atenção especial e compromisso com a excelência.`,
+            
+            `${storeTitle} - Sua parceira em soluções profissionais. Oferecemos serviços personalizados com foco em resultados e qualidade. Nossa experiência e comprometimento fazem a diferença em cada atendimento. Conte conosco para transformar suas necessidades em soluções eficientes.`
+        );
+    } else {
+        // Sugestões genéricas para produtos/lojas
+        suggestions.push(
+            `Bem-vindo à ${storeTitle}! Somos especialistas em oferecer produtos de alta qualidade com os melhores preços do mercado. Nossa missão é proporcionar uma experiência única de compra, com atendimento personalizado e entrega rápida. Confira nossos produtos exclusivos e descubra o que temos de melhor para você!`,
+            
+            `${storeTitle} - Sua loja de confiança! Trabalhamos com produtos selecionados, sempre pensando no seu bem-estar e satisfação. Oferecemos variedade, qualidade e preços que cabem no seu bolso. Venha conhecer nossas ofertas especiais e transforme sua experiência de compra!`,
+            
+            `Na ${storeTitle}, acreditamos que cada cliente merece o melhor. Por isso, selecionamos cuidadosamente nossos produtos para garantir qualidade, durabilidade e excelente custo-benefício. Faça parte da nossa família de clientes satisfeitos e aproveite as melhores ofertas!`,
+            
+            `Descubra ${storeTitle} - onde qualidade encontra preço justo! Nossa equipe está sempre pronta para atendê-lo com dedicação e carinho. Oferecemos produtos cuidadosamente escolhidos para atender suas necessidades. Venha nos visitar e aproveite nossas promoções exclusivas!`,
+            
+            `${storeTitle} é sinônimo de confiança e qualidade. Trabalhamos há anos no mercado, sempre priorizando a satisfação dos nossos clientes. Nossos produtos são selecionados com rigor para garantir que você tenha acesso ao melhor. Explore nosso catálogo e encontre exatamente o que procura!`
+        );
+    }
 
     return suggestions;
 }
@@ -119,21 +156,45 @@ function generateMetaTitles(prompt, context = {}) {
  */
 function generateMetaDescriptions(prompt, context = {}) {
     const storeTitle = context.storeTitle || prompt;
+    const keywords = prompt.toLowerCase();
     const suggestions = [];
 
-    suggestions.push(
-        `Descubra ${storeTitle} - sua loja de confiança com produtos de alta qualidade e os melhores preços. Atendimento personalizado, entrega rápida e garantia de satisfação. Aproveite nossas ofertas exclusivas!`,
-        
-        `Na ${storeTitle}, você encontra produtos selecionados com cuidado para garantir qualidade e durabilidade. Oferecemos variedade, preços justos e um atendimento que faz a diferença. Venha conhecer!`,
-        
-        `${storeTitle} - onde qualidade encontra preço justo! Trabalhamos com produtos cuidadosamente escolhidos para atender suas necessidades. Confira nossas promoções e transforme sua experiência de compra.`,
-        
-        `Explore ${storeTitle} e descubra uma seleção especial de produtos. Oferecemos qualidade, variedade e os melhores preços do mercado. Faça parte da nossa família de clientes satisfeitos!`,
-        
-        `Compre com confiança na ${storeTitle}. Produtos de excelência, preços competitivos e atendimento de primeira qualidade. Encontre exatamente o que você procura com as melhores condições!`,
-        
-        `${storeTitle} oferece os melhores produtos com preços que cabem no seu bolso. Qualidade garantida, entrega rápida e suporte especializado. Aproveite nossas condições especiais!`
-    );
+    // Detectar tipo de negócio
+    const isPhotography = keywords.includes('fotografo') || keywords.includes('fotografia') || 
+                         keywords.includes('retratista') || keywords.includes('foto') ||
+                         keywords.includes('ensaios') || keywords.includes('sessão');
+    
+    const isService = keywords.includes('serviço') || keywords.includes('consultoria') ||
+                     keywords.includes('atendimento') || keywords.includes('trabalho');
+
+    if (isPhotography) {
+        // Meta descrições para fotógrafos
+        suggestions.push(
+            `${storeTitle} - Fotografia profissional especializada em retratos e ensaios. Capturo momentos únicos e transformo em memórias eternas. Serviços personalizados com qualidade excepcional. Agende sua sessão!`,
+            
+            `Fotografia profissional com ${storeTitle}. Especializado em retratos que revelam a personalidade única. Ensaios personalizados, eventos e sessões corporativas. Qualidade e dedicação em cada projeto.`,
+            
+            `${storeTitle} oferece serviços de fotografia profissional com olhar artístico. Retratos autênticos, ensaios personalizados e cobertura de eventos. Transforme momentos especiais em obras de arte.`,
+            
+            `Fotógrafo profissional ${storeTitle} - Especializado em criar imagens que emocionam. Retratos, ensaios e eventos com técnica apurada e criatividade. Suas memórias merecem ser eternizadas com qualidade.`
+        );
+    } else if (isService) {
+        // Meta descrições para serviços
+        suggestions.push(
+            `${storeTitle} - Serviços profissionais de excelência. Soluções personalizadas com qualidade e comprometimento. Entre em contato e descubra como podemos ajudar!`,
+            
+            `Serviços profissionais com ${storeTitle}. Atendimento diferenciado e resultados que superam expectativas. Qualidade e dedicação em cada projeto.`
+        );
+    } else {
+        // Meta descrições genéricas
+        suggestions.push(
+            `Descubra ${storeTitle} - sua loja de confiança com produtos de alta qualidade e os melhores preços. Atendimento personalizado, entrega rápida e garantia de satisfação. Aproveite nossas ofertas exclusivas!`,
+            
+            `Na ${storeTitle}, você encontra produtos selecionados com cuidado para garantir qualidade e durabilidade. Oferecemos variedade, preços justos e um atendimento que faz a diferença. Venha conhecer!`,
+            
+            `${storeTitle} - onde qualidade encontra preço justo! Trabalhamos com produtos cuidadosamente escolhidos para atender suas necessidades. Confira nossas promoções e transforme sua experiência de compra.`
+        );
+    }
 
     return suggestions;
 }
