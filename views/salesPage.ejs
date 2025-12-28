@@ -59,32 +59,63 @@
     <!-- Products Grid -->
     <main class="products-section">
         <div class="container">
-            <h2 class="section-title">Produtos</h2>
-            <div class="products-grid" id="products-grid">
-                <% products.forEach(product => { %>
-                <div class="product-card" data-product-id="<%= product.id %>">
-                    <% if (product.image_url) { %>
-                    <div class="product-image">
-                        <img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy">
-                        <% if (product.badge) { %>
-                        <span class="product-badge badge-<%= product.badge %>"><%= product.badge %></span>
-                        <% } %>
+            <div class="products-header">
+                <h2 class="section-title">Produtos</h2>
+                <div class="view-controls">
+                    <div class="view-mode-controls">
+                        <button class="view-btn active" data-mode="grid" title="Modo Miniatura">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="view-btn" data-mode="list" title="Modo Lista">
+                            <i class="fas fa-list"></i>
+                        </button>
                     </div>
-                    <% } %>
-                    <div class="product-info">
-                        <h3 class="product-name"><%= product.name %></h3>
-                        <% if (product.description) { %>
-                        <p class="product-description"><%= product.description %></p>
-                        <% } %>
-                        <div class="product-price">
-                            <% if (product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price)) { %>
-                            <span class="compare-price">R$ <%= parseFloat(product.compare_price).toFixed(2).replace('.', ',') %></span>
+                    <div class="view-size-controls">
+                        <button class="size-btn active" data-size="small" title="Pequeno">
+                            <i class="fas fa-square" style="font-size: 0.7rem;"></i>
+                        </button>
+                        <button class="size-btn" data-size="medium" title="Médio">
+                            <i class="fas fa-square" style="font-size: 0.85rem;"></i>
+                        </button>
+                        <button class="size-btn" data-size="large" title="Grande">
+                            <i class="fas fa-square" style="font-size: 1rem;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="products-grid" id="products-grid" data-view-mode="grid" data-card-size="small">
+                <% products.forEach(product => { %>
+                <% const productUrl = `/${typeof profileSlug !== 'undefined' ? profileSlug : ''}/produto/${product.id}`; %>
+                <div class="product-card" data-product-id="<%= product.id %>">
+                    <a href="<%= productUrl %>" class="product-link" data-product-id="<%= product.id %>">
+                        <% if (product.image_url) { %>
+                        <div class="product-image">
+                            <img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy">
+                            <% if (product.badge) { %>
+                            <span class="product-badge badge-<%= product.badge %>"><%= product.badge %></span>
                             <% } %>
-                            <span class="current-price">R$ <%= parseFloat(product.price).toFixed(2).replace('.', ',') %></span>
                         </div>
+                        <% } %>
+                        <div class="product-info">
+                            <h3 class="product-name"><%= product.name %></h3>
+                            <% if (product.description) { %>
+                            <p class="product-description"><%= product.description %></p>
+                            <% } %>
+                            <div class="product-price">
+                                <% if (product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price)) { %>
+                                <span class="compare-price">R$ <%= parseFloat(product.compare_price).toFixed(2).replace('.', ',') %></span>
+                                <% } %>
+                                <span class="current-price">R$ <%= parseFloat(product.price).toFixed(2).replace('.', ',') %></span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="product-actions">
                         <button class="add-to-cart-btn" data-product-id="<%= product.id %>" data-product-name="<%= product.name %>" data-product-price="<%= product.price %>">
                             <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
                         </button>
+                        <a href="<%= productUrl %>" class="view-details-btn">
+                            <i class="fas fa-eye"></i> Ver Detalhes
+                        </a>
                     </div>
                 </div>
                 <% }); %>

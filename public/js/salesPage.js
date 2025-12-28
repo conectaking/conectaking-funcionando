@@ -471,9 +471,21 @@
     // Botões "Adicionar ao Carrinho"
     document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const productId = btn.dataset.productId;
             Cart.add(productId, 1);
             trackProductClick(productId);
+        });
+    });
+
+    // Prevenir que o link do produto dispare quando clicar no botão de adicionar ao carrinho
+    document.querySelectorAll('.product-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            // Se o clique foi em um botão ou elemento interativo, não seguir o link
+            if (e.target.closest('.add-to-cart-btn') || e.target.closest('.view-details-btn')) {
+                e.preventDefault();
+            }
         });
     });
 
@@ -498,6 +510,74 @@
 
     document.querySelectorAll('.product-card').forEach(card => {
         productObserver.observe(card);
+    });
+
+    /**
+     * Controles de Visualização
+     */
+    const productsGrid = document.getElementById('products-grid');
+    const viewModeButtons = document.querySelectorAll('.view-btn');
+    const sizeButtons = document.querySelectorAll('.size-btn');
+
+    // Carregar preferências do localStorage
+    const savedViewMode = localStorage.getItem(`sales_page_view_mode_${salesPageId}`) || 'grid';
+    const savedCardSize = localStorage.getItem(`sales_page_card_size_${salesPageId}`) || 'small';
+
+    // Aplicar preferências salvas
+    if (productsGrid) {
+        productsGrid.setAttribute('data-view-mode', savedViewMode);
+        productsGrid.setAttribute('data-card-size', savedCardSize);
+        
+        // Atualizar botões ativos
+        viewModeButtons.forEach(btn => {
+            if (btn.dataset.mode === savedViewMode) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        
+        sizeButtons.forEach(btn => {
+            if (btn.dataset.size === savedCardSize) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    // Event listeners para modo de visualização
+    viewModeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.mode;
+            
+            // Atualizar botões
+            viewModeButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Atualizar grid
+            if (productsGrid) {
+                productsGrid.setAttribute('data-view-mode', mode);
+                localStorage.setItem(`sales_page_view_mode_${salesPageId}`, mode);
+            }
+        });
+    });
+
+    // Event listeners para tamanho
+    sizeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const size = btn.dataset.size;
+            
+            // Atualizar botões
+            sizeButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Atualizar grid
+            if (productsGrid) {
+                productsGrid.setAttribute('data-card-size', size);
+                localStorage.setItem(`sales_page_card_size_${salesPageId}`, size);
+            }
+        });
     });
 
     // Inicialização
