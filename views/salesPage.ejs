@@ -32,6 +32,12 @@
     <!-- Header -->
     <header class="sales-header">
         <div class="container">
+            <% if (typeof profileSlug !== 'undefined' && profileSlug) { %>
+            <a href="/<%= profileSlug %>" class="back-to-profile-btn" title="Voltar ao cartão virtual">
+                <i class="fas fa-arrow-left"></i>
+                <span>Voltar</span>
+            </a>
+            <% } %>
             <% if (salesPage.button_logo_url) { %>
             <img src="<%= salesPage.button_logo_url %>" alt="<%= salesPage.store_title %>" class="store-logo">
             <% } %>
