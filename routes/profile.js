@@ -259,6 +259,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             
             // Deletar todos os itens existentes do usuário
             await client.query('DELETE FROM profile_items WHERE user_id = $1', [userId]);
+            console.log(`🗑️ Todos os itens do usuário ${userId} foram deletados`);
 
             console.log(`💾 Salvando ${items.length} itens para o usuário ${userId}`);
             
@@ -274,10 +275,14 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     logo_size: item.logo_size
                 });
                 
-                // Se o item tem ID, incluir no INSERT para preservar
-                const insertFields = item.id ? ['id', 'user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'] : ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
-                const insertValues = item.id ? [
-                    item.id, // Preservar ID original
+                // Verificar se item.id é válido (número e maior que 0)
+                const hasValidId = item.id && !isNaN(parseInt(item.id, 10)) && parseInt(item.id, 10) > 0;
+                console.log(`🔍 Item tem ID válido? ${hasValidId} (ID: ${item.id})`);
+                
+                // Se o item tem ID válido, incluir no INSERT para preservar
+                const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'] : ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
+                const insertValues = hasValidId ? [
+                    parseInt(item.id, 10), // Preservar ID original (garantir que é número)
                     userId,
                     item.item_type,
                     item.title || null,
@@ -333,26 +338,53 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 
                 const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
                 
-                // Se estamos preservando um ID, precisamos atualizar a sequência do PostgreSQL
-                if (item.id) {
-                    // Atualizar a sequência para o próximo valor após o ID inserido
-                    await client.query(`
-                        SELECT setval('profile_items_id_seq', GREATEST((SELECT MAX(id) FROM profile_items), $1), true)
-                    `, [item.id]);
-                }
-                
-                const result = await client.query(`
-                    INSERT INTO profile_items (${insertFields.join(', ')})
-                    VALUES (${placeholders})
-                    RETURNING id
-                `, insertValues);
-                
-                const insertedId = result.rows[0].id;
-                console.log(`✅ Item inserido com ID: ${insertedId} (original: ${item.id || 'novo'})`);
-                
-                // Se o ID inserido não corresponde ao original, logar aviso
-                if (item.id && insertedId !== item.id) {
-                    console.warn(`⚠️ ID não preservado! Esperado: ${item.id}, Inserido: ${insertedId}`);
+                try {
+                    // Se estamos preservando um ID, precisamos atualizar a sequência do PostgreSQL ANTES do INSERT
+                    if (hasValidId) {
+                        const itemIdInt = parseInt(item.id, 10);
+                        console.log(`🔄 Atualizando sequência para ID: ${itemIdInt}`);
+                        // Atualizar a sequência para o próximo valor após o ID inserido
+                        await client.query(`
+                            SELECT setval('profile_items_id_seq', GREATEST(COALESCE((SELECT MAX(id) FROM profile_items), 0), $1), true)
+                        `, [itemIdInt]);
+                        console.log(`✅ Sequência atualizada para ${itemIdInt}`);
+                    }
+                    
+                    console.log(`💾 Executando INSERT com campos: ${insertFields.join(', ')}`);
+                    console.log(`💾 Valores:`, insertValues);
+                    
+                    const result = await client.query(`
+                        INSERT INTO profile_items (${insertFields.join(', ')})
+                        VALUES (${placeholders})
+                        RETURNING id, user_id, item_type
+                    `, insertValues);
+                    
+                    const insertedId = result.rows[0].id;
+                    const insertedUserId = result.rows[0].user_id;
+                    const insertedItemType = result.rows[0].item_type;
+                    
+                    console.log(`✅ Item inserido com sucesso!`);
+                    console.log(`   - ID: ${insertedId} (original: ${item.id || 'novo'})`);
+                    console.log(`   - User ID: ${insertedUserId} (esperado: ${userId})`);
+                    console.log(`   - Tipo: ${insertedItemType}`);
+                    
+                    // Se o ID inserido não corresponde ao original, logar aviso
+                    if (hasValidId && insertedId !== parseInt(item.id, 10)) {
+                        console.warn(`⚠️ ID não preservado! Esperado: ${item.id}, Inserido: ${insertedId}`);
+                    }
+                    
+                    // Verificar se o item foi realmente inserido
+                    const verifyResult = await client.query(
+                        'SELECT id, user_id FROM profile_items WHERE id = $1 AND user_id = $2',
+                        [insertedId, userId]
+                    );
+                    console.log(`🔍 Verificação pós-insert: ${verifyResult.rows.length} registro(s) encontrado(s)`);
+                    
+                } catch (insertError) {
+                    console.error(`❌ Erro ao inserir item ${item.id || 'novo'}:`, insertError);
+                    console.error(`   - Código: ${insertError.code}`);
+                    console.error(`   - Mensagem: ${insertError.message}`);
+                    throw insertError; // Re-throw para que a transação seja revertida
                 }
                 
                 // Se for sales_page e o item foi criado/recriado, garantir que existe registro na tabela sales_pages
