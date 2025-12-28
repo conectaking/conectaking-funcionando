@@ -31,25 +31,18 @@ class SalesPageValidators {
         }
 
         if (data.whatsapp_number !== undefined) {
-            // whatsapp_number é obrigatório na criação, mas pode ser vazio temporariamente
-            // Se vazio, será definido como string vazia (NOT NULL no banco aceita string vazia)
+            // whatsapp_number é obrigatório na criação (NOT NULL), mas pode ser string vazia temporariamente
             if (data.whatsapp_number && typeof data.whatsapp_number !== 'string') {
                 errors.push('whatsapp_number deve ser uma string');
-            } else if (data.whatsapp_number && data.whatsapp_number.trim()) {
+            } else if (data.whatsapp_number && typeof data.whatsapp_number === 'string' && data.whatsapp_number.trim()) {
                 // Validar formato básico de WhatsApp apenas se não for vazio
                 const whatsappRegex = /^[\d\s\+\-\(\)]+$/;
                 if (!whatsappRegex.test(data.whatsapp_number)) {
                     errors.push('whatsapp_number deve conter apenas números e caracteres de formatação (+ - ( ) espaços)');
                 }
             }
-            // Se não fornecido ou null, usar string vazia como padrão
-            if (data.whatsapp_number === null || data.whatsapp_number === undefined) {
-                data.whatsapp_number = '';
-            }
-        } else if (!isUpdate) {
-            // Na criação, se não fornecido, usar string vazia
-            data.whatsapp_number = '';
         }
+        // Se não fornecido na criação, será tratado no service como string vazia
 
         if (data.background_color !== undefined && data.background_color) {
             if (!/^#[0-9A-Fa-f]{6}$/.test(data.background_color)) {
