@@ -395,13 +395,6 @@ router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
 }));
 
 // ===========================================
-// ROTAS DE PRODUTOS (DEVEM VIR DEPOIS DA ROTA DELETE ESPECÍFICA)
-// ===========================================
-// Importar e montar rotas de produtos
-const productsRouter = require('./products');
-router.use('/', productsRouter);
-
-// ===========================================
 // ROTAS PARA GERENCIAR ITENS (ITEMS) - CONTINUAÇÃO
 // ===========================================
 
@@ -423,7 +416,7 @@ router.get('/items', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
-// GET /api/profile/items/:id - Buscar item específico
+// GET /api/profile/items/:id - Buscar item específico (DEVE VIR ANTES DO router.use)
 router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
