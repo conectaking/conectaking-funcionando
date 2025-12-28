@@ -38,6 +38,41 @@
         }
     });
 
+    /**
+     * Aplicar filtro de produtos
+     */
+    function applyProductFilter(filter) {
+        const productsGridEl = document.getElementById('products-grid');
+        const productCards = document.querySelectorAll('.product-card');
+        
+        console.log('Aplicando filtro:', filter);
+        console.log('Total de produtos encontrados:', productCards.length);
+        
+        let visibleCount = 0;
+        productCards.forEach(card => {
+            const badgeAttr = card.dataset.productBadge || '';
+            // Badge pode ser múltiplos separados por vírgula
+            const badges = badgeAttr ? badgeAttr.split(',').map(b => b.trim()).filter(b => b) : [];
+            
+            if (filter === 'all') {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                // Verificar se algum dos badges do produto corresponde ao filtro
+                const matches = badges.includes(filter);
+                card.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            }
+        });
+        
+        console.log('Produtos visíveis após filtro:', visibleCount);
+        
+        // Atualizar atributo do grid
+        if (productsGridEl) {
+            productsGridEl.setAttribute('data-filter', filter);
+        }
+    }
+
     // Configurar filtros por badge
     const filterTabs = document.querySelectorAll('.filter-tab-public');
     
@@ -47,42 +82,23 @@
                 e.preventDefault();
                 e.stopPropagation();
                 const filter = tab.dataset.filter;
-                const productsGridEl = document.getElementById('products-grid');
-                
-                console.log('Filtro clicado:', filter);
                 
                 // Atualizar botões ativos
                 filterTabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 
-                // Atualizar filtro
-                if (productsGridEl) {
-                    productsGridEl.setAttribute('data-filter', filter);
-                }
-                
-                // Filtrar produtos
-                const productCards = document.querySelectorAll('.product-card');
-                console.log('Total de produtos encontrados:', productCards.length);
-                
-                let visibleCount = 0;
-                productCards.forEach(card => {
-                    const badgeAttr = card.dataset.productBadge || '';
-                    // Badge pode ser múltiplos separados por vírgula
-                    const badges = badgeAttr ? badgeAttr.split(',').map(b => b.trim()).filter(b => b) : [];
-                    
-                    if (filter === 'all') {
-                        card.style.display = '';
-                        visibleCount++;
-                    } else {
-                        // Verificar se algum dos badges do produto corresponde ao filtro
-                        const matches = badges.includes(filter);
-                        card.style.display = matches ? '' : 'none';
-                        if (matches) visibleCount++;
-                    }
-                });
-                
-                console.log('Produtos visíveis após filtro:', visibleCount);
+                // Aplicar filtro
+                applyProductFilter(filter);
             });
+        });
+        
+        // Aplicar filtro inicial "all" quando a página carregar
+        const initialFilter = 'all';
+        applyProductFilter(initialFilter);
+    } else {
+        // Se não houver filtros, garantir que todos os produtos sejam visíveis
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.style.display = '';
         });
     }
 
