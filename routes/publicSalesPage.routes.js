@@ -43,7 +43,7 @@ router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
                 return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
             }
 
-            salesPage = await salesPageService.findByProfileItemId(itemRes.rows[0].id);
+            salesPage = await salesPageService.findByProfileItemId(itemRes.rows[0].id, userId);
         } else {
             // Buscar por slug
             salesPage = await salesPageService.findBySlug(identifier);

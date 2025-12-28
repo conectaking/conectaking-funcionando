@@ -112,6 +112,13 @@ app.use(helmet({
                 "'self'",
                 "https://*.youtube.com",
                 "https://*.googlevideo.com"
+            ],
+            frameAncestors: [
+                "'self'",
+                "http://127.0.0.1:*",
+                "http://localhost:*",
+                "https://*.conectaking.com.br",
+                "https://conectaking-api.onrender.com"
             ]
         }
     },
