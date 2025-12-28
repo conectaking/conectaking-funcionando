@@ -80,13 +80,22 @@ class SalesPageRepository {
             );
             
             if (itemCheck.rows.length === 0) {
+                console.log(`❌ Profile item ${profileItemId} não encontrado ou não pertence ao usuário ${userId}`);
                 return null; // Item não encontrado ou não pertence ao usuário
             }
             
+            console.log(`✅ Profile item ${profileItemId} encontrado, buscando sales_page...`);
             const result = await client.query(
                 'SELECT * FROM sales_pages WHERE profile_item_id = $1',
                 [profileItemId]
             );
+            
+            if (result.rows.length === 0) {
+                console.log(`⚠️ Sales page não encontrada para profile_item_id: ${profileItemId}`);
+            } else {
+                console.log(`✅ Sales page encontrada: ${result.rows[0].id}`);
+            }
+            
             return result.rows[0] || null;
         } finally {
             client.release();

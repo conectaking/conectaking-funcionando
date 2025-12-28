@@ -37,10 +37,16 @@ class SalesPageController {
         try {
             const { itemId } = req.params;
             const userId = req.user.userId;
+            
+            logger.info(`🔍 Buscando sales_page por profile_item_id: ${itemId} para userId: ${userId}`);
+            
             const salesPage = await service.findByProfileItemId(itemId, userId);
             if (!salesPage) {
+                logger.warn(`❌ Sales page não encontrada para profile_item_id: ${itemId}`);
                 return responseFormatter.error(res, 'Página de vendas não encontrada', 404);
             }
+            
+            logger.info(`✅ Sales page encontrada: ${salesPage.id}`);
             return responseFormatter.success(res, salesPage);
         } catch (error) {
             logger.error('Erro ao buscar página de vendas:', error);
