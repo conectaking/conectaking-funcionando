@@ -430,15 +430,35 @@ router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
             return res.status(400).json({ success: false, error: 'ID do item inválido.' });
         }
 
+        // Primeiro verificar se o item existe (sem filtro de user_id para debug)
+        const checkExists = await client.query(
+            'SELECT id, user_id, item_type FROM profile_items WHERE id = $1',
+            [itemId]
+        );
+
+        if (checkExists.rows.length === 0) {
+            console.log(`❌ Item ${itemId} não existe no banco de dados`);
+            return res.status(404).json({ success: false, error: 'Item não encontrado.' });
+        }
+
+        // Verificar se pertence ao usuário
         const result = await client.query(
             'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
             [itemId, userId]
         );
 
         console.log(`🔍 Resultado da busca: ${result.rows.length} item(s) encontrado(s)`);
+        console.log(`🔍 Item existe? ${checkExists.rows.length > 0 ? 'Sim' : 'Não'}`);
+        if (checkExists.rows.length > 0) {
+            console.log(`🔍 Item pertence ao usuário ${checkExists.rows[0].user_id}, usuário atual: ${userId}`);
+        }
 
         if (result.rows.length === 0) {
             console.log(`❌ Item ${itemId} não encontrado para usuário ${userId}`);
+            // Se o item existe mas não pertence ao usuário, retornar erro de permissão
+            if (checkExists.rows.length > 0 && checkExists.rows[0].user_id !== userId) {
+                return res.status(403).json({ success: false, error: 'Você não tem permissão para acessar este item.' });
+            }
             return res.status(404).json({ success: false, error: 'Item não encontrado.' });
         }
 
