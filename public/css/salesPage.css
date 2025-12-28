@@ -771,6 +771,237 @@ body.sales-page {
     display: block;
 }
 
+/* Share Menu */
+.share-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.share-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.share-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border-radius: 20px 20px 0 0;
+    z-index: 1001;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.share-menu.active {
+    transform: translateY(0);
+}
+
+.share-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.share-menu-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.share-menu-close {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.share-menu-close:hover {
+    background: var(--bg-color);
+    color: var(--button-color);
+}
+
+.share-menu-content {
+    padding: 20px;
+}
+
+.share-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.share-option-btn {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.share-option-btn:hover {
+    background: var(--button-color);
+    color: var(--button-text-color);
+    border-color: var(--button-color);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(255, 199, 0, 0.3);
+}
+
+.share-option-btn i {
+    font-size: 2rem;
+}
+
+.share-option-btn span {
+    display: none; /* Remover nomes das redes sociais */
+}
+
+.share-option-btn[data-share="whatsapp"]:hover {
+    background: #25D366;
+    color: white;
+    border-color: #25D366;
+}
+
+.share-option-btn[data-share="facebook"]:hover {
+    background: #1877F2;
+    color: white;
+    border-color: #1877F2;
+}
+
+.share-option-btn[data-share="twitter"]:hover {
+    background: #1DA1F2;
+    color: white;
+    border-color: #1DA1F2;
+}
+
+.share-option-btn[data-share="linkedin"]:hover {
+    background: #0077B5;
+    color: white;
+    border-color: #0077B5;
+}
+
+.share-option-btn[data-share="telegram"]:hover {
+    background: #0088CC;
+    color: white;
+    border-color: #0088CC;
+}
+
+.share-url-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.share-url-input {
+    flex: 1;
+    padding: 12px 16px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-family: monospace;
+}
+
+.share-url-input:focus {
+    outline: none;
+    border-color: var(--button-color);
+}
+
+.copy-url-btn {
+    background: var(--button-color);
+    color: var(--button-text-color);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.copy-url-btn:hover {
+    background: #ffd633;
+    transform: translateY(-2px);
+}
+
+.share-notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--button-color);
+    color: var(--button-text-color);
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.share-notification.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 768px) {
+    .share-options {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+    }
+    
+    .share-option-btn {
+        padding: 15px 10px;
+    }
+    
+    .share-option-btn i {
+        font-size: 1.8rem;
+    }
+    
+    .share-url-container {
+        flex-direction: column;
+    }
+    
+    .copy-url-btn {
+        width: 100%;
+    }
+}
+
 /* Footer */
 .sales-footer {
     background: var(--card-bg);
