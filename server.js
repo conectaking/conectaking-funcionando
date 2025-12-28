@@ -264,6 +264,17 @@ app.use((req, res, next) => {
     next();
 });
 
+// Rota raiz para health checks de serviços de monitoramento (Render, etc.)
+app.get('/', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        service: 'Conecta King API',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        message: 'Servidor Conecta King está funcionando corretamente'
+    });
+});
+
 // Health check (sem rate limit)
 app.use('/api', healthRoutes);
 
