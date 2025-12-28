@@ -279,6 +279,26 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 const hasValidId = item.id && !isNaN(parseInt(item.id, 10)) && parseInt(item.id, 10) > 0;
                 console.log(`🔍 Item tem ID válido? ${hasValidId} (ID: ${item.id})`);
                 
+                // Normalizar destination_url para carrossel (evitar dupla codificação JSON)
+                let normalizedDestinationUrl = item.destination_url || null;
+                if (item.item_type === 'carousel' && normalizedDestinationUrl) {
+                    try {
+                        // Se já for uma string JSON válida, tentar parsear e re-stringify para garantir formato correto
+                        const parsed = JSON.parse(normalizedDestinationUrl);
+                        if (Array.isArray(parsed)) {
+                            normalizedDestinationUrl = JSON.stringify(parsed);
+                        } else {
+                            // Se não for array, converter para array
+                            normalizedDestinationUrl = JSON.stringify([parsed]);
+                        }
+                    } catch (e) {
+                        // Se não for JSON válido, tentar tratar como string simples
+                        if (typeof normalizedDestinationUrl === 'string' && !normalizedDestinationUrl.startsWith('[')) {
+                            normalizedDestinationUrl = JSON.stringify([normalizedDestinationUrl]);
+                        }
+                    }
+                }
+                
                 // Se o item tem ID válido, incluir no INSERT para preservar
                 const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'] : ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
                 const insertValues = hasValidId ? [
@@ -286,7 +306,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     userId,
                     item.item_type,
                     item.title || null,
-                    item.destination_url || null,
+                    normalizedDestinationUrl,
                     item.image_url || null,
                     item.icon_class || null,
                     item.display_order !== undefined ? item.display_order : 0,
@@ -295,7 +315,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     userId,
                     item.item_type,
                     item.title || null,
-                    item.destination_url || null,
+                    normalizedDestinationUrl,
                     item.image_url || null,
                     item.icon_class || null,
                     item.display_order !== undefined ? item.display_order : 0,
@@ -338,6 +358,9 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 
                 const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
                 
+                // Declarar insertedId fora do try para que possa ser usada depois
+                let insertedId = null;
+                
                 try {
                     // Se estamos preservando um ID, precisamos atualizar a sequência do PostgreSQL ANTES do INSERT
                     if (hasValidId) {
@@ -359,7 +382,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                         RETURNING id, user_id, item_type
                     `, insertValues);
                     
-                    const insertedId = result.rows[0].id;
+                    insertedId = result.rows[0].id;
                     const insertedUserId = result.rows[0].user_id;
                     const insertedItemType = result.rows[0].item_type;
                     
@@ -388,7 +411,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 }
                 
                 // Se for sales_page e o item foi criado/recriado, garantir que existe registro na tabela sales_pages
-                if (item.item_type === 'sales_page') {
+                if (item.item_type === 'sales_page' && insertedId) {
                     // Usar a mesma conexão da transação para garantir consistência
                     const salesPageCheck = await client.query(
                         'SELECT id FROM sales_pages WHERE profile_item_id = $1',
