@@ -276,16 +276,19 @@ body.sales-page {
 
 .product-card {
     background: var(--card-bg);
-    border-radius: 12px;
+    border-radius: 16px;
     overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+    border-color: var(--button-color);
 }
 
 .product-link {
@@ -451,24 +454,27 @@ body.sales-page {
     background: var(--button-color);
     color: var(--button-text-color);
     border: none;
-    padding: 12px;
-    border-radius: 8px;
+    padding: 14px;
+    border-radius: 10px;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: opacity 0.3s ease;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    box-shadow: 0 2px 8px rgba(255, 199, 0, 0.3);
 }
 
 .add-to-cart-btn:hover {
-    opacity: 0.9;
+    background: #ffd633;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 199, 0, 0.4);
 }
 
 .add-to-cart-btn:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.98);
 }
 
 .view-details-btn {
