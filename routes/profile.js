@@ -423,7 +423,10 @@ router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
         const userId = req.user.userId;
         const itemId = parseInt(req.params.id, 10);
 
+        console.log(`📥 GET /api/profile/items/:id - userId: ${userId}, itemId: ${itemId}`);
+
         if (!itemId || isNaN(itemId)) {
+            console.log(`❌ ID do item inválido: ${req.params.id}`);
             return res.status(400).json({ success: false, error: 'ID do item inválido.' });
         }
 
@@ -432,7 +435,10 @@ router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
             [itemId, userId]
         );
 
+        console.log(`🔍 Resultado da busca: ${result.rows.length} item(s) encontrado(s)`);
+
         if (result.rows.length === 0) {
+            console.log(`❌ Item ${itemId} não encontrado para usuário ${userId}`);
             return res.status(404).json({ success: false, error: 'Item não encontrado.' });
         }
 
