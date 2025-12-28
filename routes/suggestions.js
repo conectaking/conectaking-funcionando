@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { protectUser } = require('../middleware/auth');
+const { protectUser } = require('../middleware/protectUser');
 
 /**
  * POST /api/suggestions/generate
