@@ -344,10 +344,10 @@
         let message = 'Olá! Gostaria de comprar:\n\n';
 
         cart.items.forEach((item, index) => {
-            // Nome do produto
-            message += `${item.name}\n`;
+            // Nome do produto (em maiúsculas)
+            message += `${item.name.toUpperCase()}\n`;
             
-            // Preço
+            // Preço unitário
             message += `${Cart.formatCurrency(item.price)}\n`;
             
             // Quantidade
@@ -355,10 +355,12 @@
             
             // Link personalizável do produto
             const productUrl = `${baseUrl}/${profileSlug}/produto/${item.id}`;
-            message += `🔗 ${productUrl}\n`;
+            message += `🔗 ${productUrl}`;
             
             // Adicionar linha em branco entre produtos (exceto no último)
             if (index < cart.items.length - 1) {
+                message += '\n\n';
+            } else {
                 message += '\n';
             }
         });
