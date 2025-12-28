@@ -36,7 +36,8 @@ class SalesPageController {
     async findByProfileItemId(req, res) {
         try {
             const { itemId } = req.params;
-            const salesPage = await service.findByProfileItemId(itemId);
+            const userId = req.user.userId;
+            const salesPage = await service.findByProfileItemId(itemId, userId);
             if (!salesPage) {
                 return responseFormatter.error(res, 'Página de vendas não encontrada', 404);
             }

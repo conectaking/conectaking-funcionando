@@ -12,14 +12,14 @@ router.post('/', asyncHandler(async (req, res) => {
     await controller.create(req, res);
 }));
 
-// Buscar página por ID
-router.get('/:id', asyncHandler(async (req, res) => {
-    await controller.findById(req, res);
-}));
-
-// Buscar página por profile_item_id
+// Buscar página por profile_item_id (DEVE VIR ANTES DE /:id para evitar conflito)
 router.get('/item/:itemId', asyncHandler(async (req, res) => {
     await controller.findByProfileItemId(req, res);
+}));
+
+// Buscar página por ID (rotas específicas devem vir antes das genéricas)
+router.get('/:id', asyncHandler(async (req, res) => {
+    await controller.findById(req, res);
 }));
 
 // Atualizar página

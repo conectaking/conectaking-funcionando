@@ -68,11 +68,21 @@ class SalesPageRepository {
     }
 
     /**
-     * Buscar página por profile_item_id
+     * Buscar página por profile_item_id (com verificação de ownership)
      */
-    async findByProfileItemId(profileItemId) {
+    async findByProfileItemId(profileItemId, userId) {
         const client = await db.pool.connect();
         try {
+            // Verificar se o profile_item pertence ao usuário antes de buscar a sales_page
+            const itemCheck = await client.query(
+                'SELECT id FROM profile_items WHERE id = $1 AND user_id = $2',
+                [profileItemId, userId]
+            );
+            
+            if (itemCheck.rows.length === 0) {
+                return null; // Item não encontrado ou não pertence ao usuário
+            }
+            
             const result = await client.query(
                 'SELECT * FROM sales_pages WHERE profile_item_id = $1',
                 [profileItemId]

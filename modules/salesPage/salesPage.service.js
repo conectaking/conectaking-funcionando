@@ -48,10 +48,14 @@ class SalesPageService {
     }
 
     /**
-     * Buscar página por profile_item_id
+     * Buscar página por profile_item_id (com verificação de ownership)
      */
-    async findByProfileItemId(profileItemId) {
-        return await repository.findByProfileItemId(profileItemId);
+    async findByProfileItemId(profileItemId, userId) {
+        const salesPage = await repository.findByProfileItemId(profileItemId, userId);
+        if (!salesPage) {
+            return null;
+        }
+        return salesPage;
     }
 
     /**
