@@ -262,7 +262,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
 
             console.log(`💾 Salvando ${items.length} itens para o usuário ${userId}`);
             
-            // Inserir novos itens
+            // Inserir novos itens (preservando IDs quando fornecidos)
             for (const item of items) {
                 console.log(`📝 Salvando item:`, {
                     id: item.id,
@@ -274,8 +274,19 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     logo_size: item.logo_size
                 });
                 
-                const insertFields = ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
-                const insertValues = [
+                // Se o item tem ID, incluir no INSERT para preservar
+                const insertFields = item.id ? ['id', 'user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'] : ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
+                const insertValues = item.id ? [
+                    item.id, // Preservar ID original
+                    userId,
+                    item.item_type,
+                    item.title || null,
+                    item.destination_url || null,
+                    item.image_url || null,
+                    item.icon_class || null,
+                    item.display_order !== undefined ? item.display_order : 0,
+                    item.is_active !== undefined ? item.is_active : true
+                ] : [
                     userId,
                     item.item_type,
                     item.title || null,
@@ -321,10 +332,47 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 }
                 
                 const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
-                await client.query(`
+                const result = await client.query(`
                     INSERT INTO profile_items (${insertFields.join(', ')})
                     VALUES (${placeholders})
+                    RETURNING id
                 `, insertValues);
+                
+                const insertedId = result.rows[0].id;
+                console.log(`✅ Item inserido com ID: ${insertedId} (original: ${item.id || 'novo'})`);
+                
+                // Se for sales_page e o item foi criado/recriado, garantir que existe registro na tabela sales_pages
+                if (item.item_type === 'sales_page') {
+                    const salesPageCheck = await client.query(
+                        'SELECT id FROM sales_pages WHERE profile_item_id = $1',
+                        [insertedId]
+                    );
+                    
+                    if (salesPageCheck.rows.length === 0) {
+                        console.log(`⚠️ Sales page não encontrada para item ${insertedId}, criando...`);
+                        const salesPageService = require('../modules/salesPage/salesPage.service');
+                        const crypto = require('crypto');
+                        
+                        try {
+                            const salesPageData = {
+                                profile_item_id: insertedId,
+                                store_title: item.title || 'Minha Loja',
+                                button_text: item.title || 'Minha Loja',
+                                button_logo_url: item.image_url || null,
+                                whatsapp_number: '',
+                                theme: 'dark',
+                                status: 'DRAFT',
+                                preview_token: crypto.randomBytes(32).toString('hex')
+                            };
+                            
+                            await salesPageService.create(salesPageData);
+                            console.log(`✅ Página de vendas criada para item ${insertedId}`);
+                        } catch (error) {
+                            console.error(`❌ Erro ao criar página de vendas para item ${insertedId}:`, error);
+                            // Não falhar a criação do item se falhar criar a página
+                        }
+                    }
+                }
             }
         }
 
