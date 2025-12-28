@@ -44,23 +44,47 @@ router.get('/:slug/produto/:productId', asyncHandler(async (req, res) => {
 
         const userId = user.id;
 
-        // Buscar produto e validar que pertence ao perfil correto
-        const productRes = await client.query(
+        // Primeiro tentar buscar produto de sales page
+        let productRes = await client.query(
             `SELECT 
-                pci.*,
-                pi.user_id,
-                pi.destination_url as whatsapp_url
-             FROM product_catalog_items pci
-             INNER JOIN profile_items pi ON pci.profile_item_id = pi.id
-             WHERE pci.id = $1 AND pi.user_id = $2 AND pi.item_type = 'product_catalog'`,
+                spp.*,
+                sp.store_title,
+                sp.store_description,
+                sp.whatsapp_number,
+                sp.profile_item_id,
+                pi.user_id
+             FROM sales_page_products spp
+             INNER JOIN sales_pages sp ON spp.sales_page_id = sp.id
+             INNER JOIN profile_items pi ON sp.profile_item_id = pi.id
+             WHERE spp.id = $1 AND pi.user_id = $2 AND spp.status != 'ARCHIVED'`,
             [productId, userId]
         );
 
-        if (productRes.rows.length === 0) {
-            return res.status(404).send('<h1>404 - Produto não encontrado</h1>');
-        }
+        let product = null;
+        let isSalesPageProduct = false;
 
-        const product = productRes.rows[0];
+        if (productRes.rows.length > 0) {
+            product = productRes.rows[0];
+            isSalesPageProduct = true;
+        } else {
+            // Se não encontrou, tentar buscar produto de catálogo
+            productRes = await client.query(
+                `SELECT 
+                    pci.*,
+                    pi.user_id,
+                    pi.destination_url as whatsapp_url
+                 FROM product_catalog_items pci
+                 INNER JOIN profile_items pi ON pci.profile_item_id = pi.id
+                 WHERE pci.id = $1 AND pi.user_id = $2 AND pi.item_type = 'product_catalog'`,
+                [productId, userId]
+            );
+
+            if (productRes.rows.length === 0) {
+                return res.status(404).send('<h1>404 - Produto não encontrado</h1>');
+            }
+
+            product = productRes.rows[0];
+        }
 
         // Buscar dados do perfil para layout
         const profileRes = await client.query(
@@ -97,10 +121,31 @@ router.get('/:slug/produto/:productId', asyncHandler(async (req, res) => {
         // URL do perfil para botão voltar
         const profileUrl = `/${slug}`;
 
+        // Se for produto de sales page, buscar dados da sales page
+        let salesPageData = null;
+        if (isSalesPageProduct) {
+            const salesPageRes = await client.query(
+                `SELECT sp.*, pi.id as profile_item_id
+                 FROM sales_pages sp
+                 INNER JOIN profile_items pi ON sp.profile_item_id = pi.id
+                 WHERE sp.id = $1 AND pi.user_id = $2`,
+                [product.sales_page_id, userId]
+            );
+            if (salesPageRes.rows.length > 0) {
+                salesPageData = salesPageRes.rows[0];
+            }
+        }
+
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        
         res.render('product', {
             details: details,
             product: product,
-            profileUrl: profileUrl
+            profileUrl: profileUrl,
+            isSalesPageProduct: isSalesPageProduct,
+            salesPageData: salesPageData,
+            baseUrl: baseUrl,
+            slug: slug
         });
 
     } finally {

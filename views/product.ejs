@@ -17,7 +17,18 @@
     
     <meta property="og:title" content="<%= product.name %>">
     <meta property="og:description" content="<%= product.description || product.name %>">
-    <meta property="og:image" content="<%= product.image_url || details.profile_image_url %>">
+    <% 
+    // URL completa da imagem para Open Graph
+    const imageUrl = product.image_url || details.profile_image_url;
+    const fullImageUrl = imageUrl && !imageUrl.startsWith('http') ? `${typeof baseUrl !== 'undefined' ? baseUrl : ''}${imageUrl}` : imageUrl;
+    %>
+    <meta property="og:image" content="<%= fullImageUrl || '' %>">
+    <meta property="og:url" content="<%= typeof baseUrl !== 'undefined' ? baseUrl : '' %>/<%= typeof slug !== 'undefined' ? slug : '' %>/produto/<%= product.id %>">
+    <meta property="og:type" content="product">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= product.name %>">
+    <meta name="twitter:description" content="<%= product.description || product.name %>">
+    <meta name="twitter:image" content="<%= fullImageUrl || '' %>">
 
     <style>
         body, h1, p, span { font-family: '<%= details.font_family || "Inter" %>', sans-serif !important; }

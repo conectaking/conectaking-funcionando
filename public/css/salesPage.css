@@ -351,7 +351,9 @@ body.sales-page {
 
 .cart-footer {
     padding: 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border-color);
+    background: var(--card-bg);
 }
 
 .cart-total {
@@ -444,6 +446,14 @@ body.sales-page {
     
     .store-title {
         font-size: 1.2rem;
+    }
+    
+    .cart-footer {
+        padding-bottom: calc(30px + env(safe-area-inset-bottom));
+    }
+    
+    .checkout-btn {
+        margin-bottom: env(safe-area-inset-bottom);
     }
 }
 
