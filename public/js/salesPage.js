@@ -185,10 +185,47 @@
             
             // Atualizar contador
             const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-            cartCount.textContent = itemCount;
+            console.log('Atualizando UI do carrinho. Total de itens:', itemCount, 'Itens:', cart.items);
+            
+            // Buscar elemento do contador dinamicamente
+            const cartCountEl = document.getElementById('cart-count');
+            if (cartCountEl) {
+                cartCountEl.textContent = itemCount;
+                // Mostrar/ocultar badge baseado no contador
+                if (itemCount > 0) {
+                    cartCountEl.style.display = '';
+                    cartCountEl.style.visibility = 'visible';
+                    cartCountEl.style.opacity = '1';
+                } else {
+                    cartCountEl.style.display = 'none';
+                }
+                console.log('Contador atualizado com sucesso:', itemCount);
+            } else {
+                console.warn('Elemento cart-count não encontrado. Tentando novamente...');
+                // Tentar novamente após um pequeno delay
+                setTimeout(() => {
+                    const retryCartCount = document.getElementById('cart-count');
+                    if (retryCartCount) {
+                        retryCartCount.textContent = itemCount;
+                        if (itemCount > 0) {
+                            retryCartCount.style.display = '';
+                            retryCartCount.style.visibility = 'visible';
+                            retryCartCount.style.opacity = '1';
+                        }
+                        console.log('Contador atualizado na segunda tentativa:', itemCount);
+                    } else {
+                        console.error('Elemento cart-count ainda não encontrado após retry');
+                    }
+                }, 100);
+            }
             
             // Atualizar total
-            cartTotal.textContent = this.formatCurrency(cart.total);
+            const cartTotalEl = document.getElementById('cart-total');
+            if (cartTotalEl) {
+                cartTotalEl.textContent = this.formatCurrency(cart.total);
+            } else {
+                console.warn('Elemento cart-total não encontrado');
+            }
             
             // Renderizar itens
             this.renderItems(cart);
