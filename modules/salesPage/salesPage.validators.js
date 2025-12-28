@@ -141,7 +141,7 @@ class SalesPageValidators {
         const fieldsToCopy = [
             'profile_item_id', 'button_logo_url', 'theme', 'background_color',
             'text_color', 'button_color', 'button_text_color', 'background_image_url',
-            'meta_image_url', 'preview_token'
+            'meta_image_url', 'preview_token', 'status' // IMPORTANTE: incluir status para permitir mudanças de status
         ];
 
         fieldsToCopy.forEach(field => {
