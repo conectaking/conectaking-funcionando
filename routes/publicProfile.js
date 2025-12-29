@@ -102,22 +102,40 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 return false;
             }
             
-            if (item.item_type === 'banner' && item.destination_url) {
-                const destUrl = String(item.destination_url).trim();
-                if (destUrl.startsWith('[') || destUrl === '[]') {
+            // Para banners, verificar se tem image_url válido
+            if (item.item_type === 'banner') {
+                // Se não tem image_url ou é placeholder, não incluir
+                if (!item.image_url || 
+                    item.image_url.trim() === '' || 
+                    item.image_url.includes('placeholder') || 
+                    item.image_url.startsWith('data:image/svg')) {
+                    logger.debug('Banner filtrado - sem imagem válida', {
+                        id: item.id,
+                        title: item.title,
+                        image_url: item.image_url || 'null'
+                    });
                     return false;
                 }
-            }
-            
-            // Log se banner foi filtrado
-            if (item.item_type === 'banner') {
-                logger.debug('Banner sendo processado', {
+                
+                // Se destination_url é JSON (carrossel antigo), filtrar
+                if (item.destination_url) {
+                    const destUrl = String(item.destination_url).trim();
+                    if (destUrl.startsWith('[') || destUrl === '[]') {
+                        logger.debug('Banner filtrado - destination_url é JSON', {
+                            id: item.id,
+                            destination_url: destUrl
+                        });
+                        return false;
+                    }
+                }
+                
+                // Banner válido - incluir
+                logger.debug('Banner válido incluído', {
                     id: item.id,
                     title: item.title,
                     hasImageUrl: !!item.image_url,
-                    imageUrl: item.image_url ? 'presente' : 'ausente',
-                    destinationUrl: item.destination_url || 'null',
-                    willBeIncluded: true
+                    imageUrl: item.image_url ? item.image_url.substring(0, 50) + '...' : 'null',
+                    destinationUrl: item.destination_url || 'null'
                 });
             }
             
