@@ -307,6 +307,17 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
         // Salvar itens do perfil
         if (items && Array.isArray(items)) {
             console.log(`📦 [SAVE-ALL] Processando ${items.length} itens do perfil...`);
+            
+            // IMPORTANTE: Preservar sales_page ANTES de deletar
+            // sales_page não é incluído no save-all, então precisa ser preservado
+            console.log('🔒 [SAVE-ALL] Preservando sales_page antes de deletar itens...');
+            const salesPagePreserveStart = Date.now();
+            const salesPageItemsToPreserve = await client.query(`
+                SELECT * FROM profile_items 
+                WHERE user_id = $1 AND item_type = 'sales_page'
+            `, [userId]);
+            console.log(`✅ [SAVE-ALL] ${salesPageItemsToPreserve.rows.length} sales_page(s) preservado(s) em ${Date.now() - salesPagePreserveStart}ms`);
+            
             // Verificar quais colunas existem na tabela profile_items (cachear resultado)
             console.log('🔍 [SAVE-ALL] Verificando colunas da tabela profile_items...');
             const columnsCheckStart = Date.now();
@@ -319,11 +330,11 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             const existingColumns = columnsCheck.rows.map(row => row.column_name);
             console.log(`✅ [SAVE-ALL] ${existingColumns.length} colunas encontradas`);
             
-            // Deletar todos os itens existentes do usuário
-            console.log('🗑️ [SAVE-ALL] Deletando itens existentes do usuário...');
+            // Deletar apenas itens que NÃO são sales_page
+            console.log('🗑️ [SAVE-ALL] Deletando itens existentes do usuário (exceto sales_page)...');
             const deleteStart = Date.now();
-            const deleteResult = await client.query('DELETE FROM profile_items WHERE user_id = $1', [userId]);
-            console.log(`✅ [SAVE-ALL] ${deleteResult.rowCount} itens deletados em ${Date.now() - deleteStart}ms`);
+            const deleteResult = await client.query('DELETE FROM profile_items WHERE user_id = $1 AND item_type != $2', [userId, 'sales_page']);
+            console.log(`✅ [SAVE-ALL] ${deleteResult.rowCount} itens deletados em ${Date.now() - deleteStart}ms (sales_page preservado)`);
 
             // Encontrar o maior ID para atualizar sequência uma única vez
             const maxIdResult = await client.query('SELECT COALESCE(MAX(id), 0) as max_id FROM profile_items');
