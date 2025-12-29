@@ -1111,10 +1111,43 @@
                                     </a>
                                 </div>
                             <% 
-                                    } else if (hasEmbedUrl) {
-                                        // Post individual via iframe
+                                    } else if (hasEmbedHtml) {
+                                        // PRIORIDADE: usar HTML do oEmbed API (método oficial do Instagram)
                             %>
-                                <!-- Embed direto do Instagram via iframe (post individual - foto ou vídeo) -->
+                                <!-- Embed oficial do Instagram via oEmbed API -->
+                                <div class="instagram-embed-wrapper" style="max-width: 540px; width: 100%; margin: 0 auto; display: block; min-height: 600px;">
+                                    <%- item.instagram_embed_html %>
+                                </div>
+                                <!-- Script do Instagram (carregado apenas uma vez) -->
+                                <script>
+                                    (function() {
+                                        if (!window.instagramEmbedLoaded) {
+                                            window.instagramEmbedLoaded = true;
+                                            var script = document.createElement('script');
+                                            script.src = 'https://www.instagram.com/embed.js';
+                                            script.async = true;
+                                            script.onload = function() {
+                                                console.log('[INSTAGRAM] Script embed.js carregado');
+                                                if (window.instgrm && window.instgrm.Embeds) {
+                                                    window.instgrm.Embeds.process();
+                                                    console.log('[INSTAGRAM] Embeds processados');
+                                                }
+                                            };
+                                            document.body.appendChild(script);
+                                        } else {
+                                            // Se o script já foi carregado, forçar renderização
+                                            console.log('[INSTAGRAM] Script já carregado, processando embeds...');
+                                            if (window.instgrm && window.instgrm.Embeds) {
+                                                window.instgrm.Embeds.process();
+                                            }
+                                        }
+                                    })();
+                                </script>
+                            <% 
+                                    } else if (hasEmbedUrl) {
+                                        // Fallback: Post individual via iframe (pode não funcionar)
+                            %>
+                                <!-- Embed direto do Instagram via iframe (fallback - pode não funcionar) -->
                                 <div class="instagram-embed-wrapper" style="max-width: 540px; width: 100%; margin: 0 auto; display: block;">
                                     <iframe 
                                         src="<%= item.instagram_embed_url %>" 
@@ -1139,36 +1172,6 @@
                                         </a>
                                     </div>
                                 </div>
-                            <% 
-                                    } else if (hasEmbedHtml) {
-                                        // Fallback: usar HTML do oEmbed API se disponível
-                            %>
-                                <!-- Embed oficial do Instagram via oEmbed API (fallback) -->
-                                <div class="instagram-embed-wrapper" style="max-width: 540px; width: 100%; margin: 0 auto; display: block; min-height: 600px;">
-                                    <%- item.instagram_embed_html %>
-                                </div>
-                                <!-- Script do Instagram (carregado apenas uma vez) -->
-                                <script>
-                                    (function() {
-                                        if (!window.instagramEmbedLoaded) {
-                                            window.instagramEmbedLoaded = true;
-                                            var script = document.createElement('script');
-                                            script.src = 'https://www.instagram.com/embed.js';
-                                            script.async = true;
-                                            script.onload = function() {
-                                                if (window.instgrm && window.instgrm.Embeds) {
-                                                    window.instgrm.Embeds.process();
-                                                }
-                                            };
-                                            document.body.appendChild(script);
-                                        } else {
-                                            // Se o script já foi carregado, forçar renderização
-                                            if (window.instgrm && window.instgrm.Embeds) {
-                                                window.instgrm.Embeds.process();
-                                            }
-                                        }
-                                    })();
-                                </script>
                             <% 
                                     } else {
                                         // Nenhum embed disponível - mostrar card visual
