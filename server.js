@@ -65,6 +65,9 @@ app.use(helmet({
                 "https://www.googletagmanager.com",
                 "blob:"
             ],
+            scriptSrcAttr: [
+                "'unsafe-inline'"
+            ],
             styleSrc: [
                 "'self'", 
                 "'unsafe-inline'", 

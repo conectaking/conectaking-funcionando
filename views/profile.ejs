@@ -1051,12 +1051,12 @@
                                     // Verificar se temos embed HTML do oEmbed API (fallback)
                                     const hasEmbedHtml = item.instagram_embed_html && typeof item.instagram_embed_html === 'string' && item.instagram_embed_html.trim();
                                     
-                                    // Se for perfil, usar widget de feed completo
+                                    // Se for perfil, usar widget de feed completo (SnapWidget - funciona com HTTPS)
                                     if (isProfile && username) {
                                         // Limpar username de caracteres inválidos
                                         const cleanUsername = username.replace(/[^a-zA-Z0-9._]/g, '').toLowerCase();
                             %>
-                                <!-- Feed completo do Instagram usando iframe direto -->
+                                <!-- Feed completo do Instagram usando SnapWidget (funciona com HTTPS) -->
                                 <div class="instagram-profile-feed" style="max-width: 540px; width: 100%; margin: 0 auto; display: block;">
                                     <!-- Widget do Instagram Feed -->
                                     <div id="instagram-feed-<%= item.id %>" style="width: 100%; min-height: 600px; border-radius: 12px; overflow: hidden; position: relative; background: #000;">
@@ -1067,28 +1067,50 @@
                                             <p style="margin: 10px 0 0 0; opacity: 0.7; font-size: 0.9rem;">Carregando feed do Instagram...</p>
                                         </div>
                                         
-                                        <!-- Iframe do Instagram usando LightWidget (mais confiável) -->
+                                        <!-- Iframe do Instagram usando SnapWidget (funciona com HTTPS gratuito) -->
                                         <iframe 
                                             id="instagram-iframe-<%= item.id %>"
-                                            src="https://lightwidget.com/widgets/<%= cleanUsername %>.html" 
+                                            src="https://snapwidget.com/embed/<%= cleanUsername %>" 
                                             scrolling="no" 
                                             allowtransparency="true" 
                                             allow="encrypted-media"
                                             style="width:100%; border:0; overflow:hidden; min-height:600px; border-radius: 12px; background: #000; display: block; position: relative; z-index: 2;"
                                             loading="lazy"
-                                            onload="(function(el){setTimeout(function(){var placeholder = document.getElementById('instagram-placeholder-<%= item.id %>'); if(placeholder) placeholder.style.display='none';}, 1000);})(this);"
                                         ></iframe>
                                     </div>
                                     
-                                    <!-- Fallback: Link direto para o perfil se o widget não carregar -->
+                                    <!-- Script para esconder placeholder quando iframe carregar -->
+                                    <script>
+                                        (function() {
+                                            var iframe = document.getElementById('instagram-iframe-<%= item.id %>');
+                                            var placeholder = document.getElementById('instagram-placeholder-<%= item.id %>');
+                                            
+                                            if (iframe && placeholder) {
+                                                iframe.addEventListener('load', function() {
+                                                    setTimeout(function() {
+                                                        if (placeholder) {
+                                                            placeholder.style.display = 'none';
+                                                        }
+                                                    }, 1000);
+                                                });
+                                                
+                                                // Esconder placeholder após 3 segundos mesmo se iframe não carregar
+                                                setTimeout(function() {
+                                                    if (placeholder && placeholder.style.display !== 'none') {
+                                                        placeholder.style.display = 'none';
+                                                    }
+                                                }, 3000);
+                                            }
+                                        })();
+                                    </script>
+                                    
+                                    <!-- Link direto para o perfil -->
                                     <div style="text-align: center; margin-top: 15px;">
                                         <a 
                                             href="<%= item.destination_url %>" 
                                             target="_blank" 
                                             rel="noopener noreferrer"
                                             style="display: inline-block; color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9rem; transition: opacity 0.3s;"
-                                            onmouseover="this.style.opacity='1'"
-                                            onmouseout="this.style.opacity='0.7'"
                                         >
                                             Ver perfil completo no Instagram <i class="fas fa-external-link-alt" style="margin-left: 5px; font-size: 0.8rem;"></i>
                                         </a>
