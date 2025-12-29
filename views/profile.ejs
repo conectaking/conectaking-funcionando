@@ -1045,11 +1045,11 @@
                                     const isProfile = item.instagram_is_profile === true;
                                     const username = item.instagram_username || '';
                                     
-                                    // Verificar se temos URL de embed direto (para posts)
-                                    const hasEmbedUrl = item.instagram_embed_url && typeof item.instagram_embed_url === 'string' && item.instagram_embed_url.trim();
-                                    
-                                    // Verificar se temos embed HTML do oEmbed API (fallback)
+                                    // Verificar se temos embed HTML do oEmbed API (PRIORIDADE - método oficial)
                                     const hasEmbedHtml = item.instagram_embed_html && typeof item.instagram_embed_html === 'string' && item.instagram_embed_html.trim();
+                                    
+                                    // Verificar se temos URL de embed direto (fallback)
+                                    const hasEmbedUrl = item.instagram_embed_url && typeof item.instagram_embed_url === 'string' && item.instagram_embed_url.trim();
                                     
                                     // Se for perfil, mostrar card visual atrativo com link direto
                                     // Nota: Instagram não permite embed de perfis completos sem API oficial
