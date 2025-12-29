@@ -115,13 +115,31 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     urlToProcess = urlToProcess.replace(/\s*\/\s*/g, '/');
                     urlToProcess = urlToProcess.replace(/\/+/g, '/'); // Remover barras duplicadas
                     
-                    // Garantir que começa com http:// ou https://
-                    if (!urlToProcess.startsWith('http://') && !urlToProcess.startsWith('https://')) {
-                        if (urlToProcess.startsWith('www.instagram.com') || urlToProcess.startsWith('instagram.com')) {
-                            urlToProcess = 'https://' + urlToProcess;
-                        } else if (urlToProcess.includes('instagram.com')) {
-                            urlToProcess = 'https://www.' + urlToProcess;
+                    // PRIMEIRO: Extrair apenas a primeira ocorrência válida de URL do Instagram
+                    // Isso resolve o problema de duplicação: https://www.https:/www.
+                    const instagramUrlMatch = urlToProcess.match(/(https?:\/\/www?\.?instagram\.com\/[^\s\?]*)/i);
+                    if (instagramUrlMatch) {
+                        // Usar apenas a primeira ocorrência válida
+                        urlToProcess = instagramUrlMatch[1];
+                        // Normalizar para formato padrão
+                        urlToProcess = urlToProcess.replace(/^https?:\/\/(www\.)?instagram\.com/i, 'https://www.instagram.com');
+                    } else {
+                        // Se não encontrou padrão válido, construir a URL
+                        // Remover duplicações de protocolo
+                        urlToProcess = urlToProcess.replace(/^(https?:\/\/)+/i, 'https://');
+                        urlToProcess = urlToProcess.replace(/(https?:\/\/)(www\.)+/i, '$1www.');
+                        
+                        // Garantir que começa com http:// ou https:// (só se não tiver)
+                        if (!urlToProcess.startsWith('http://') && !urlToProcess.startsWith('https://')) {
+                            if (urlToProcess.startsWith('www.instagram.com') || urlToProcess.startsWith('instagram.com')) {
+                                urlToProcess = 'https://' + urlToProcess;
+                            } else if (urlToProcess.includes('instagram.com')) {
+                                urlToProcess = 'https://www.' + urlToProcess.replace(/^(www\.)?/i, '');
+                            }
                         }
+                        
+                        // Garantir que tem www. após https://
+                        urlToProcess = urlToProcess.replace(/^https:\/\/instagram\.com/i, 'https://www.instagram.com');
                     }
                     
                     console.log(`🔍 [INSTAGRAM] URL normalizada: ${urlToProcess}`);
@@ -267,4 +285,5 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
 }));
 
 module.exports = router;
+
 
