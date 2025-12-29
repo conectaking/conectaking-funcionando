@@ -424,7 +424,9 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
 
         await client.query('COMMIT');
         console.log('✅ Todas as alterações salvas com sucesso');
+        console.log('📤 Enviando resposta para o cliente...');
         res.json({ message: 'Alterações salvas com sucesso!' });
+        console.log('✅ Resposta enviada com sucesso');
 
     } catch (error) {
         await client.query('ROLLBACK').catch(() => {});
