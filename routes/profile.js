@@ -98,9 +98,24 @@ router.get('/', protectUser, async (req, res) => {
 
 // PUT /api/profile/save-all - Salvar todas as alterações do perfil (detalhes + itens)
 router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
+    console.log('🚀 [SAVE-ALL] Iniciando rota save-all...');
+    const startTime = Date.now();
+    
+    // Timeout de 2 minutos para a operação completa
+    const timeout = setTimeout(() => {
+        console.error('⏰ [SAVE-ALL] TIMEOUT: Operação demorou mais de 2 minutos');
+    }, 120000);
+    
     const client = await db.pool.connect();
+    console.log('✅ [SAVE-ALL] Conexão do banco obtida');
+    
     try {
+        // Configurar timeout na conexão
+        await client.query('SET statement_timeout = 90000'); // 90 segundos
+        
+        console.log('🔄 [SAVE-ALL] Iniciando transação...');
         await client.query('BEGIN');
+        console.log('✅ [SAVE-ALL] Transação iniciada');
         const userId = req.user.userId;
         const { details, items } = req.body;
 
