@@ -523,6 +523,15 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
         }
 
         console.log(`📝 PUT /api/profile/items/banner/${itemId} - userId: ${userId}`);
+        console.log(`📦 [BANNER] Dados recebidos:`, {
+            title: title !== undefined ? (title || 'null') : 'undefined',
+            destination_url: destination_url !== undefined ? (destination_url || 'null') : 'undefined',
+            image_url: image_url !== undefined ? (image_url ? image_url.substring(0, 50) + '...' : 'null') : 'undefined',
+            whatsapp_message: whatsapp_message !== undefined ? (whatsapp_message || 'null') : 'undefined',
+            aspect_ratio: aspect_ratio !== undefined ? (aspect_ratio || 'null') : 'undefined',
+            is_active: is_active !== undefined ? is_active : 'undefined',
+            display_order: display_order !== undefined ? display_order : 'undefined'
+        });
 
         // Verificar se o item pertence ao usuário e é do tipo banner
         const checkRes = await client.query(
@@ -534,6 +543,12 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
             console.log(`❌ Banner ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
             return res.status(404).json({ message: 'Banner não encontrado ou você não tem permissão para editá-lo.' });
         }
+        
+        console.log(`✅ [BANNER] Banner encontrado:`, {
+            id: checkRes.rows[0].id,
+            title: checkRes.rows[0].title,
+            currentImageUrl: checkRes.rows[0].image_url ? checkRes.rows[0].image_url.substring(0, 50) + '...' : 'null'
+        });
 
         // Verificar quais colunas existem na tabela
         const columnsCheck = await client.query(`
@@ -583,21 +598,36 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
             return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
         }
 
+        // Calcular números dos parâmetros (paramIndex já está no próximo número disponível)
+        const itemIdParam = paramIndex;
+        const userIdParam = paramIndex + 1;
+        
+        // Adicionar itemId e userId aos valores
         updateValues.push(itemId, userId);
+        
         const query = `
             UPDATE profile_items 
             SET ${updateFields.join(', ')}
-            WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+            WHERE id = $${itemIdParam} AND user_id = $${userIdParam}
             RETURNING *
         `;
+        
+        console.log(`🔍 [BANNER] Query SQL:`, query.replace(/\s+/g, ' ').trim());
+        console.log(`🔍 [BANNER] Total de campos: ${updateFields.length}`);
+        console.log(`🔍 [BANNER] Total de valores: ${updateValues.length} (${updateFields.length} campos + itemId + userId)`);
+        console.log(`🔍 [BANNER] Parâmetros WHERE: itemId=$${itemIdParam}, userId=$${userIdParam}`);
+        console.log(`🔍 [BANNER] Valores:`, updateValues.map((v, i) => `$${i + 1}: ${v === null ? 'null' : (typeof v === 'string' && v.length > 50 ? v.substring(0, 50) + '...' : String(v))}`).join(', '));
+        
         const result = await client.query(query, updateValues);
+        console.log(`✅ [BANNER] Query executada com sucesso. Linhas afetadas: ${result.rowCount}`);
 
         console.log(`✅ Banner ${itemId} atualizado com sucesso`);
-        console.log(`📸 image_url salvo: ${result.rows[0].image_url ? 'Sim' : 'Não'}`);
+        console.log(`📸 image_url salvo: ${result.rows[0].image_url ? 'Sim (' + result.rows[0].image_url.substring(0, 50) + '...)' : 'Não'}`);
 
         res.json(result.rows[0]);
     } catch (error) {
         console.error(`❌ Erro ao atualizar banner ${req.params.id}:`, error);
+        console.error(`❌ Stack trace:`, error.stack);
         res.status(500).json({ message: 'Erro ao atualizar banner.', error: error.message });
     } finally {
         client.release();
