@@ -101,7 +101,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 item.embed_url = convertYouTubeUrlToEmbed(item.destination_url);
             }
             
-            // Buscar embed HTML do Instagram usando oEmbed API
+            // Processar Instagram embed - usar iframe direto (mais confiável que oEmbed API)
             if (item.item_type === 'instagram_embed' && item.destination_url) {
                 console.log(`🔍 [INSTAGRAM] Processando item ${item.id} com URL: ${item.destination_url}`);
                 try {
@@ -127,116 +127,34 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     console.log(`🔍 [INSTAGRAM] É post? ${isPost}`);
                     
                     if (isPost) {
-                        // Normalizar URL para usar como chave de cache
+                        // Normalizar URL para embed direto
                         const normalizedUrl = urlToProcess.split('?')[0].split('#')[0].trim();
-                        const cacheKey = `instagram_oembed:${normalizedUrl}`;
-                        console.log(`🔍 [INSTAGRAM] URL normalizada para cache: ${normalizedUrl}`);
                         
-                        // Cache simples em memória para Instagram (independente do cache global)
-                        if (!router.instagramCache) {
-                            router.instagramCache = new Map();
+                        // Converter para URL de embed do Instagram
+                        // Formato: https://www.instagram.com/p/ABC123/embed/
+                        let embedUrl = normalizedUrl;
+                        if (!embedUrl.endsWith('/')) {
+                            embedUrl += '/';
                         }
+                        embedUrl += 'embed/';
                         
-                        // Verificar cache primeiro (TTL de 24 horas para evitar rate limit)
-                        let embedData = null;
-                        const cachedItem = router.instagramCache.get(cacheKey);
-                        if (cachedItem && Date.now() < cachedItem.expiresAt) {
-                            embedData = cachedItem.data;
-                            console.log(`✅ [INSTAGRAM] Embed encontrado no cache para: ${normalizedUrl}`);
-                            item.instagram_embed_html = embedData.html;
-                            item.instagram_embed_width = embedData.width || 540;
-                            item.instagram_embed_height = embedData.height || null;
-                        }
+                        console.log(`✅ [INSTAGRAM] Usando embed direto: ${embedUrl}`);
                         
-                        // Se não está no cache, buscar da API
-                        if (!embedData) {
-                            const oembedUrl = `https://api.instagram.com/oembed?url=${encodeURIComponent(normalizedUrl)}&omitscript=true`;
-                            console.log(`🔍 [INSTAGRAM] Buscando oEmbed para: ${normalizedUrl}`);
-                            
-                            // Usar Promise.race para timeout (node-fetch 2.x)
-                            const fetchPromise = fetch(oembedUrl, {
-                                headers: {
-                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                                    'Accept': 'application/json'
-                                }
-                            });
-                            
-                            const timeoutPromise = new Promise((_, reject) => 
-                                setTimeout(() => reject(new Error('Timeout')), 10000)
-                            );
-                            
-                            try {
-                                const response = await Promise.race([fetchPromise, timeoutPromise]);
-                                
-                                if (response.ok) {
-                                    const data = await response.json();
-                                    console.log(`✅ [INSTAGRAM] Resposta recebida:`, { 
-                                        hasHtml: !!data.html, 
-                                        width: data.width, 
-                                        height: data.height,
-                                        htmlLength: data.html ? data.html.length : 0
-                                    });
-                                    
-                                    if (data.html && data.html.trim()) {
-                                        embedData = {
-                                            html: data.html,
-                                            width: data.width || 540,
-                                            height: data.height || null
-                                        };
-                                        
-                                        // Salvar no cache por 24 horas (86400000 ms) para evitar rate limit
-                                        router.instagramCache.set(cacheKey, {
-                                            data: embedData,
-                                            expiresAt: Date.now() + 86400000 // 24 horas
-                                        });
-                                        console.log(`💾 [INSTAGRAM] Embed salvo no cache por 24 horas`);
-                                        
-                                        item.instagram_embed_html = embedData.html;
-                                        item.instagram_embed_width = embedData.width;
-                                        item.instagram_embed_height = embedData.height;
-                                        console.log(`✅ [INSTAGRAM] Embed HTML obtido com sucesso para item ${item.id}`);
-                                    } else {
-                                        console.warn(`⚠️ [INSTAGRAM] Resposta não contém HTML`);
-                                        item.instagram_embed_html = null;
-                                    }
-                                } else if (response.status === 429) {
-                                    // Rate limit - usar cache mesmo que expirado se disponível
-                                    console.warn(`⚠️ [INSTAGRAM] Rate limit (429) - Instagram bloqueou muitas requisições`);
-                                    const expiredCache = router.instagramCache.get(cacheKey);
-                                    if (expiredCache && expiredCache.data) {
-                                        console.log(`🔄 [INSTAGRAM] Usando cache (mesmo que expirado) devido ao rate limit`);
-                                        item.instagram_embed_html = expiredCache.data.html;
-                                        item.instagram_embed_width = expiredCache.data.width || 540;
-                                        item.instagram_embed_height = expiredCache.data.height || null;
-                                    } else {
-                                        console.warn(`⚠️ [INSTAGRAM] Nenhum cache disponível, exibindo card visual`);
-                                        item.instagram_embed_html = null;
-                                    }
-                                } else {
-                                    const errorText = await response.text();
-                                    console.warn(`⚠️ [INSTAGRAM] Erro HTTP ${response.status}: ${response.statusText}`);
-                                    console.warn(`⚠️ [INSTAGRAM] Resposta: ${errorText.substring(0, 200)}`);
-                                    item.instagram_embed_html = null;
-                                }
-                            } catch (fetchError) {
-                                if (fetchError.message === 'Timeout') {
-                                    console.warn(`⚠️ [INSTAGRAM] Timeout ao buscar oEmbed após 10 segundos`);
-                                } else {
-                                    console.error(`❌ [INSTAGRAM] Erro na requisição:`, fetchError.message);
-                                }
-                                item.instagram_embed_html = null;
-                            }
-                        }
+                        // Armazenar URL de embed para usar no template
+                        item.instagram_embed_url = embedUrl;
+                        item.instagram_embed_html = null; // Não usar oEmbed HTML
                     } else {
-                        // Para perfis, não há oEmbed disponível
-                        console.log(`ℹ️ [INSTAGRAM] URL é de perfil ou formato inválido, não há oEmbed disponível`);
+                        // Para perfis, não há embed disponível
+                        console.log(`ℹ️ [INSTAGRAM] URL é de perfil ou formato inválido, não há embed disponível`);
                         console.log(`ℹ️ [INSTAGRAM] URL original: ${item.destination_url}`);
                         console.log(`ℹ️ [INSTAGRAM] URL processada: ${urlToProcess}`);
                         console.log(`ℹ️ [INSTAGRAM] Dica: Use URL de post (contém /p/) ou reel (contém /reel/)`);
+                        item.instagram_embed_url = null;
                         item.instagram_embed_html = null;
                     }
                 } catch (error) {
-                    console.error(`❌ [INSTAGRAM] Erro ao buscar oEmbed para item ${item.id}:`, error.message);
+                    console.error(`❌ [INSTAGRAM] Erro ao processar URL para item ${item.id}:`, error.message);
+                    item.instagram_embed_url = null;
                     item.instagram_embed_html = null;
                 }
             }

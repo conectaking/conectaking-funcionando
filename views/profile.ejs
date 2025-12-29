@@ -1041,13 +1041,34 @@
                         <div class="profile-embed-item instagram-embed-container" data-item-id="<%= item.id %>" data-embed-type="instagram">
                             <% 
                                 try { 
-                                    // Debug: verificar se temos embed HTML
+                                    // Verificar se temos URL de embed direto (mais confiável que oEmbed API)
+                                    const hasEmbedUrl = item.instagram_embed_url && typeof item.instagram_embed_url === 'string' && item.instagram_embed_url.trim();
+                                    
+                                    // Verificar se temos embed HTML do oEmbed API (fallback)
                                     const hasEmbedHtml = item.instagram_embed_html && typeof item.instagram_embed_html === 'string' && item.instagram_embed_html.trim();
                                     
-                                    // Se temos o embed HTML do oEmbed API, usar ele
-                                    if (hasEmbedHtml) {
+                                    // Priorizar embed direto via iframe (mais confiável)
+                                    if (hasEmbedUrl) {
                             %>
-                                <!-- Embed oficial do Instagram via oEmbed API -->
+                                <!-- Embed direto do Instagram via iframe -->
+                                <div class="instagram-embed-wrapper" style="max-width: 540px; width: 100%; margin: 0 auto; display: block;">
+                                    <iframe 
+                                        src="<%= item.instagram_embed_url %>" 
+                                        width="100%" 
+                                        height="600" 
+                                        frameborder="0" 
+                                        scrolling="no" 
+                                        allowtransparency="true"
+                                        allow="encrypted-media"
+                                        style="border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);"
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            <% 
+                                    } else if (hasEmbedHtml) {
+                                        // Fallback: usar HTML do oEmbed API se disponível
+                            %>
+                                <!-- Embed oficial do Instagram via oEmbed API (fallback) -->
                                 <div class="instagram-embed-wrapper" style="max-width: 540px; width: 100%; margin: 0 auto; display: block; min-height: 600px;">
                                     <%- item.instagram_embed_html %>
                                 </div>
@@ -1075,12 +1096,7 @@
                                 </script>
                             <% 
                                     } else {
-                                        // Debug info (apenas em desenvolvimento)
-                                        // console.log('[FRONTEND] Instagram embed não disponível:', {
-                                        //     hasDestinationUrl: !!item.destination_url,
-                                        //     destinationUrl: item.destination_url,
-                                        //     hasEmbedHtml: !!item.instagram_embed_html
-                                        // });
+                                        // Nenhum embed disponível - mostrar card visual
                                         // Fallback: card visual para perfis ou quando oEmbed falha
                                         const instaUrl = new URL(item.destination_url);
                                         const instaPathname = instaUrl.pathname;
