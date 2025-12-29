@@ -108,8 +108,12 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     // Normalizar e verificar URL
                     let urlToProcess = String(item.destination_url).trim();
                     
-                    // Remover espaços e caracteres estranhos
+                    // Remover TODOS os espaços e caracteres estranhos (incluindo espaços no meio)
                     urlToProcess = urlToProcess.replace(/\s+/g, '');
+                    
+                    // Remover espaços antes e depois de barras
+                    urlToProcess = urlToProcess.replace(/\s*\/\s*/g, '/');
+                    urlToProcess = urlToProcess.replace(/\/+/g, '/'); // Remover barras duplicadas
                     
                     // Garantir que começa com http:// ou https://
                     if (!urlToProcess.startsWith('http://') && !urlToProcess.startsWith('https://')) {
