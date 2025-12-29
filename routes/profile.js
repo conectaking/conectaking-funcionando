@@ -460,28 +460,24 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 const crypto = require('crypto');
                 
                 for (const { insertedId, item } of salesPageItems) {
-                    const salesPageCheck = await client.query(
-                        'SELECT id FROM sales_pages WHERE profile_item_id = $1',
-                        [insertedId]
-                    );
-                    
-                    if (salesPageCheck.rows.length === 0) {
-                        try {
-                            const salesPageData = {
-                                profile_item_id: insertedId,
-                                store_title: item.title || 'Minha Loja',
-                                button_text: item.title || 'Minha Loja',
-                                button_logo_url: item.image_url || null,
-                                whatsapp_number: '',
-                                theme: 'dark',
-                                status: 'DRAFT',
-                                preview_token: crypto.randomBytes(32).toString('hex')
-                            };
-                            
-                            await salesPageService.create(salesPageData);
-                        } catch (error) {
-                            console.error(`❌ Erro ao criar página de vendas para item ${insertedId}:`, error.message);
-                        }
+                    try {
+                        const salesPageData = {
+                            profile_item_id: insertedId,
+                            store_title: item.title || 'Minha Loja',
+                            button_text: item.title || 'Minha Loja',
+                            button_logo_url: item.image_url || null,
+                            whatsapp_number: '',
+                            theme: 'dark',
+                            status: 'DRAFT',
+                            preview_token: crypto.randomBytes(32).toString('hex')
+                        };
+                        
+                        // Passar o client existente para usar a mesma transação
+                        await salesPageService.create(salesPageData, client);
+                        console.log(`✅ [SAVE-ALL] Página de vendas criada/atualizada para item ${insertedId}`);
+                    } catch (error) {
+                        console.error(`❌ [SAVE-ALL] Erro ao criar página de vendas para item ${insertedId}:`, error.message);
+                        // Não falhar a operação inteira se uma sales_page falhar
                     }
                 }
             }

@@ -4,8 +4,10 @@ const logger = require('../../utils/logger');
 class SalesPageRepository {
     /**
      * Criar nova página de vendas
+     * @param {Object} data - Dados da página de vendas
+     * @param {Object} existingClient - Cliente de banco existente (opcional, para usar em transações)
      */
-    async create(data) {
+    async create(data, existingClient = null) {
         const {
             profile_item_id,
             slug,
@@ -26,8 +28,16 @@ class SalesPageRepository {
             preview_token
         } = data;
 
-        const client = await db.pool.connect();
+        const client = existingClient || await db.pool.connect();
+        const shouldRelease = !existingClient;
+        
         try {
+            // Configurar timeout para evitar locks longos
+            if (!existingClient) {
+                await client.query('SET statement_timeout = 30000'); // 30 segundos
+            }
+            
+            // Usar ON CONFLICT para evitar deadlocks e race conditions
             const result = await client.query(
                 `INSERT INTO sales_pages (
                     profile_item_id, slug, store_title, store_description,
@@ -36,6 +46,8 @@ class SalesPageRepository {
                     background_image_url, whatsapp_number, meta_title,
                     meta_description, meta_image_url, preview_token, status
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'DRAFT')
+                ON CONFLICT (profile_item_id) DO UPDATE SET
+                    updated_at = NOW()
                 RETURNING *`,
                 [
                     profile_item_id, slug, store_title, store_description,
@@ -46,8 +58,22 @@ class SalesPageRepository {
                 ]
             );
             return result.rows[0];
+        } catch (error) {
+            // Se for erro de deadlock, tentar novamente uma vez
+            if (error.code === '40P01' || error.message.includes('deadlock')) {
+                console.warn(`⚠️ [SALES-PAGE] Deadlock detectado, tentando novamente...`);
+                if (shouldRelease) {
+                    client.release();
+                }
+                // Aguardar um pouco antes de tentar novamente
+                await new Promise(resolve => setTimeout(resolve, 100));
+                return this.create(data, existingClient);
+            }
+            throw error;
         } finally {
-            client.release();
+            if (shouldRelease) {
+                client.release();
+            }
         }
     }
 

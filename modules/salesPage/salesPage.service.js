@@ -8,8 +8,10 @@ const logger = require('../../utils/logger');
 class SalesPageService {
     /**
      * Criar nova página de vendas
+     * @param {Object} data - Dados da página de vendas
+     * @param {Object} existingClient - Cliente de banco existente (opcional, para usar em transações)
      */
-    async create(data) {
+    async create(data, existingClient = null) {
         // Garantir que whatsapp_number seja string vazia se não fornecido (NOT NULL no banco)
         if (!data.whatsapp_number && data.whatsapp_number !== '') {
             data.whatsapp_number = '';
@@ -29,8 +31,8 @@ class SalesPageService {
             sanitized.whatsapp_number = '';
         }
 
-        // Gerar slug se não fornecido
-        if (!sanitized.slug && sanitized.store_title) {
+        // Gerar slug se não fornecido (pular se estiver em transação para evitar deadlock)
+        if (!sanitized.slug && sanitized.store_title && !existingClient) {
             sanitized.slug = await slugify.generateUnique(sanitized.store_title, (slug) => 
                 repository.slugExists(slug)
             );
@@ -41,8 +43,8 @@ class SalesPageService {
             sanitized.preview_token = crypto.randomBytes(32).toString('hex');
         }
 
-        // Criar página
-        const salesPage = await repository.create(sanitized);
+        // Criar página (passar client se existir)
+        const salesPage = await repository.create(sanitized, existingClient);
         logger.info(`Página de vendas criada: ${salesPage.id}`);
         
         return salesPage;
