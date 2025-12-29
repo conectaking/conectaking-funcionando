@@ -697,10 +697,17 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
 // PUT /api/profile/items/:id - Atualizar item
 router.put('/items/:id', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
+    const startTime = Date.now();
     try {
         const userId = req.user.userId;
-        const itemId = req.params.id;
+        const itemId = parseInt(req.params.id, 10);
         const updates = req.body;
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do item inválido.' });
+        }
+
+        console.log(`📝 PUT /api/profile/items/${itemId} - userId: ${userId}, updates:`, Object.keys(updates));
 
         // Verificar se o item pertence ao usuário
         const checkRes = await client.query(
@@ -709,6 +716,7 @@ router.put('/items/:id', protectUser, asyncHandler(async (req, res) => {
         );
 
         if (checkRes.rows.length === 0) {
+            console.log(`❌ Item ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
             return res.status(404).json({ message: 'Item não encontrado ou você não tem permissão para editá-lo.' });
         }
 
@@ -755,10 +763,16 @@ router.put('/items/:id', protectUser, asyncHandler(async (req, res) => {
         `;
         const result = await client.query(query, updateValues);
 
+        const duration = Date.now() - startTime;
+        console.log(`✅ Item ${itemId} atualizado com sucesso em ${duration}ms`);
+
         res.json(result.rows[0]);
     } catch (error) {
-        console.error("Erro ao atualizar item:", error);
-        res.status(500).json({ message: 'Erro ao atualizar item.' });
+        const duration = Date.now() - startTime;
+        console.error(`❌ Erro ao atualizar item ${req.params.id}:`, error);
+        console.error(`   Duração: ${duration}ms`);
+        console.error(`   Stack:`, error.stack);
+        res.status(500).json({ message: 'Erro ao atualizar item.', error: error.message });
     } finally {
         client.release();
     }
