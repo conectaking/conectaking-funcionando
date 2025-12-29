@@ -348,7 +348,25 @@
                     <%# TIPO: BANNER (Imagem com link opcional) %>
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'banner') { %>
-                        <% if (item.image_url) { %>
+                        <% 
+                            // Debug: verificar se banner tem image_url
+                            if (!item.image_url || item.image_url.trim() === '' || item.image_url.includes('placeholder') || item.image_url.startsWith('data:image/svg')) {
+                                console.log('⚠️ Banner sem imagem válida:', {
+                                    id: item.id,
+                                    title: item.title,
+                                    image_url: item.image_url || 'null/vazio',
+                                    hasImageUrl: !!item.image_url
+                                });
+                            } else {
+                                console.log('✅ Banner com imagem válida:', {
+                                    id: item.id,
+                                    title: item.title,
+                                    image_url: item.image_url.substring(0, 50) + '...',
+                                    hasImageUrl: true
+                                });
+                            }
+                        %>
+                        <% if (item.image_url && item.image_url.trim() !== '' && !item.image_url.includes('placeholder') && !item.image_url.startsWith('data:image/svg')) { %>
                         <%
                             const ratioMap = {
                             'auto': '', 
@@ -426,13 +444,13 @@
                                 // O title será usado como alt text da imagem
                             }
                         %>
-                        <div class="profile-banner-container" <%= containerStyle %> style="background: transparent !important; background-color: transparent !important;">
+                        <div class="profile-banner-container" <%= containerStyle %> style="width: 100%; margin: 10px 0; background: transparent !important; background-color: transparent !important;">
                             <% if (finalUrl && finalUrl !== '#') { %>
-                            <a href="<%= finalUrl %>" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>" style="background: transparent !important; background-color: transparent !important;">
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="background: transparent !important; background-color: transparent !important;">
+                            <a href="<%= finalUrl %>" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>" style="width: 100%; display: block; background: transparent !important; background-color: transparent !important;">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
                             </a>
                             <% } else { %>
-                            <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="background: transparent !important; background-color: transparent !important;">
+                            <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
                             <% } %>
                         </div>
                         <% } %>

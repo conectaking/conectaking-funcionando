@@ -79,6 +79,23 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             itemTypes: itemsRes.rows.map(i => i.item_type)
         });
         
+        // Log específico para banners
+        const banners = itemsRes.rows.filter(i => i.item_type === 'banner');
+        if (banners.length > 0) {
+            logger.debug('Banners encontrados', {
+                total: banners.length,
+                banners: banners.map(b => ({
+                    id: b.id,
+                    title: b.title,
+                    hasImageUrl: !!b.image_url,
+                    imageUrl: b.image_url ? (b.image_url.substring(0, 50) + '...') : 'null',
+                    destinationUrl: b.destination_url || 'null',
+                    isActive: b.is_active,
+                    displayOrder: b.display_order
+                }))
+            });
+        }
+        
         // Filtrar e validar itens
         const validItems = (itemsRes.rows || []).filter(item => {
             if (item.item_type === 'banner_carousel') {
@@ -90,6 +107,18 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 if (destUrl.startsWith('[') || destUrl === '[]') {
                     return false;
                 }
+            }
+            
+            // Log se banner foi filtrado
+            if (item.item_type === 'banner') {
+                logger.debug('Banner sendo processado', {
+                    id: item.id,
+                    title: item.title,
+                    hasImageUrl: !!item.image_url,
+                    imageUrl: item.image_url ? 'presente' : 'ausente',
+                    destinationUrl: item.destination_url || 'null',
+                    willBeIncluded: true
+                });
             }
             
             return true;
