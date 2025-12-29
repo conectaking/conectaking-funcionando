@@ -1041,20 +1041,66 @@
                         <div class="profile-embed-item instagram-embed-container" data-item-id="<%= item.id %>" data-embed-type="instagram">
                             <% 
                                 try { 
-                                    const instaUrl = new URL(item.destination_url); 
+                                    const instaUrl = new URL(item.destination_url);
+                                    const instaPathname = instaUrl.pathname;
+                                    
+                                    // Extrair username ou post ID
+                                    let username = '';
+                                    let isPost = false;
+                                    
+                                    // Verificar se é um post (contém /p/)
+                                    if (instaPathname.includes('/p/')) {
+                                        isPost = true;
+                                        const postMatch = instaPathname.match(/\/p\/([^\/]+)/);
+                                        // Para posts, tentar usar oEmbed (mas pode não funcionar sem API key)
+                                    } else {
+                                        // É um perfil
+                                        const usernameMatch = instaPathname.match(/\/([^\/]+)\/?$/);
+                                        username = usernameMatch ? usernameMatch[1].replace(/^@/, '') : '';
+                                    }
                             %>
-                                <iframe 
-                                    src="https://www.instagram.com<%= instaUrl.pathname %>embed" 
-                                    allowtransparency="true" 
-                                    loading="lazy"
-                                    style="width: 100%; min-height: 600px; max-width: 540px; border-radius: 12px; border: none; margin: 0 auto; display: block;"
-                                    frameborder="0"
-                                    scrolling="no"
-                                ></iframe>
+                                <!-- Instagram não suporta embed direto, usar card visual -->
+                                <div style="background: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCB045 100%); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); padding: 30px 20px; text-align: center; max-width: 540px; width: 100%; box-sizing: border-box; margin: 0 auto; box-shadow: 0 8px 32px rgba(131, 58, 180, 0.3); position: relative; overflow: hidden;">
+                                    <!-- Efeito de brilho de fundo -->
+                                    <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%); animation: rotate 20s linear infinite;"></div>
+                                    <style>
+                                        @keyframes rotate {
+                                            from { transform: rotate(0deg); }
+                                            to { transform: rotate(360deg); }
+                                        }
+                                    </style>
+                                    
+                                    <div style="position: relative; z-index: 1;">
+                                        <div style="width: 100px; height: 100px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); border: 2px solid rgba(255, 255, 255, 0.3);">
+                                            <i class="fab fa-instagram" style="font-size: 3rem; color: #FFFFFF; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);"></i>
+                                        </div>
+                                        <h3 style="color: #FFFFFF; margin: 0 0 10px 0; font-size: 1.5rem; font-weight: 600; word-wrap: break-word; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);"><%= item.title || (isPost ? 'Post do Instagram' : 'Perfil do Instagram') %></h3>
+                                        <% if (username) { %>
+                                            <p style="color: rgba(255, 255, 255, 0.9); margin: 0 0 25px 0; font-size: 1.1rem; word-wrap: break-word; text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);">@<%= username %></p>
+                                        <% } else if (isPost) { %>
+                                            <p style="color: rgba(255, 255, 255, 0.9); margin: 0 0 25px 0; font-size: 1rem; word-wrap: break-word; text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);">Visualize este post no Instagram</p>
+                                        <% } %>
+                                        <a 
+                                            href="<%= item.destination_url %>" 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            style="display: inline-block; background: rgba(255, 255, 255, 0.95); color: #833AB4; padding: 14px 32px; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 1rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); border: none; cursor: pointer;"
+                                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0, 0, 0, 0.3)';"
+                                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0, 0, 0, 0.2)';"
+                                        >
+                                            <i class="fab fa-instagram" style="margin-right: 8px;"></i>
+                                            Ver no Instagram
+                                            <i class="fas fa-external-link-alt" style="margin-left: 8px; font-size: 0.85rem;"></i>
+                                        </a>
+                                    </div>
+                                </div>
                             <% 
                                 } catch (e) { 
                             %>
-                                <div class="embed-error">URL do Instagram inválida.</div>
+                                <div class="embed-error" style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; text-align: center; max-width: 540px; margin: 0 auto;">
+                                    <i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>
+                                    URL do Instagram inválida. Verifique o link no painel.
+                                </div>
                             <% 
                                 } 
                             %>
