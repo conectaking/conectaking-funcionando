@@ -1051,70 +1051,64 @@
                                     // Verificar se temos embed HTML do oEmbed API (fallback)
                                     const hasEmbedHtml = item.instagram_embed_html && typeof item.instagram_embed_html === 'string' && item.instagram_embed_html.trim();
                                     
-                                    // Se for perfil, usar widget de feed completo (SnapWidget - funciona com HTTPS)
+                                    // Se for perfil, mostrar card visual atrativo com link direto
+                                    // Nota: Instagram não permite embed de perfis completos sem API oficial
                                     if (isProfile && username) {
                                         // Limpar username de caracteres inválidos
                                         const cleanUsername = username.replace(/[^a-zA-Z0-9._]/g, '').toLowerCase();
                             %>
-                                <!-- Feed completo do Instagram usando SnapWidget (funciona com HTTPS) -->
-                                <div class="instagram-profile-feed" style="max-width: 540px; width: 100%; margin: 0 auto; display: block;">
-                                    <!-- Widget do Instagram Feed -->
-                                    <div id="instagram-feed-<%= item.id %>" style="width: 100%; min-height: 600px; border-radius: 12px; overflow: hidden; position: relative; background: #000;">
-                                        <!-- Placeholder enquanto carrega -->
-                                        <div id="instagram-placeholder-<%= item.id %>" style="display: flex; align-items: center; justify-content: center; height: 600px; color: #fff; flex-direction: column; background: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCB045 100%); position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;">
-                                            <i class="fab fa-instagram" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.9;"></i>
-                                            <p style="margin: 0; opacity: 0.9; font-weight: 600;">@<%= cleanUsername %></p>
-                                            <p style="margin: 10px 0 0 0; opacity: 0.7; font-size: 0.9rem;">Carregando feed do Instagram...</p>
-                                        </div>
-                                        
-                                        <!-- Iframe do Instagram usando SnapWidget (funciona com HTTPS gratuito) -->
-                                        <iframe 
-                                            id="instagram-iframe-<%= item.id %>"
-                                            src="https://snapwidget.com/embed/<%= cleanUsername %>" 
-                                            scrolling="no" 
-                                            allowtransparency="true" 
-                                            allow="encrypted-media"
-                                            style="width:100%; border:0; overflow:hidden; min-height:600px; border-radius: 12px; background: #000; display: block; position: relative; z-index: 2;"
-                                            loading="lazy"
-                                        ></iframe>
-                                    </div>
-                                    
-                                    <!-- Script para esconder placeholder quando iframe carregar -->
-                                    <script>
-                                        (function() {
-                                            var iframe = document.getElementById('instagram-iframe-<%= item.id %>');
-                                            var placeholder = document.getElementById('instagram-placeholder-<%= item.id %>');
+                                <!-- Card visual do perfil do Instagram -->
+                                <div class="instagram-profile-card" style="max-width: 540px; width: 100%; margin: 0 auto; display: block;">
+                                    <a 
+                                        href="<%= item.destination_url %>" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        style="text-decoration: none; display: block;"
+                                    >
+                                        <div style="background: linear-gradient(135deg, #833AB4 0%, #C13584 30%, #E1306C 60%, #FD1D1D 80%, #FCAF45 100%); border-radius: 16px; padding: 40px 30px; text-align: center; box-shadow: 0 10px 40px rgba(225, 48, 108, 0.3); position: relative; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;">
+                                            <!-- Efeito de brilho animado -->
+                                            <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%); animation: rotate 15s linear infinite; pointer-events: none;"></div>
+                                            <style>
+                                                @keyframes rotate {
+                                                    from { transform: rotate(0deg); }
+                                                    to { transform: rotate(360deg); }
+                                                }
+                                                .instagram-profile-card a:hover > div {
+                                                    transform: translateY(-5px);
+                                                    box-shadow: 0 15px 50px rgba(225, 48, 108, 0.4);
+                                                }
+                                            </style>
                                             
-                                            if (iframe && placeholder) {
-                                                iframe.addEventListener('load', function() {
-                                                    setTimeout(function() {
-                                                        if (placeholder) {
-                                                            placeholder.style.display = 'none';
-                                                        }
-                                                    }, 1000);
-                                                });
+                                            <div style="position: relative; z-index: 1;">
+                                                <!-- Ícone do Instagram -->
+                                                <div style="width: 120px; height: 120px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border-radius: 50%; margin: 0 auto 25px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3); border: 3px solid rgba(255, 255, 255, 0.3);">
+                                                    <i class="fab fa-instagram" style="font-size: 4rem; color: #FFFFFF; text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);"></i>
+                                                </div>
                                                 
-                                                // Esconder placeholder após 3 segundos mesmo se iframe não carregar
-                                                setTimeout(function() {
-                                                    if (placeholder && placeholder.style.display !== 'none') {
-                                                        placeholder.style.display = 'none';
-                                                    }
-                                                }, 3000);
-                                            }
-                                        })();
-                                    </script>
-                                    
-                                    <!-- Link direto para o perfil -->
-                                    <div style="text-align: center; margin-top: 15px;">
-                                        <a 
-                                            href="<%= item.destination_url %>" 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            style="display: inline-block; color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9rem; transition: opacity 0.3s;"
-                                        >
-                                            Ver perfil completo no Instagram <i class="fas fa-external-link-alt" style="margin-left: 5px; font-size: 0.8rem;"></i>
-                                        </a>
-                                    </div>
+                                                <!-- Título -->
+                                                <h3 style="color: #FFFFFF; margin: 0 0 15px 0; font-size: 2rem; font-weight: 700; word-wrap: break-word; text-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);">
+                                                    <%= item.title || 'Perfil do Instagram' %>
+                                                </h3>
+                                                
+                                                <!-- Username -->
+                                                <p style="color: rgba(255, 255, 255, 0.95); margin: 0 0 30px 0; font-size: 1.3rem; font-weight: 600; word-wrap: break-word; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);">
+                                                    @<%= cleanUsername %>
+                                                </p>
+                                                
+                                                <!-- Botão de ação -->
+                                                <div style="display: inline-block; background: rgba(255, 255, 255, 0.95); color: #E1306C; padding: 16px 40px; border-radius: 30px; font-weight: 700; font-size: 1.1rem; box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3); transition: all 0.3s ease; border: none;">
+                                                    <i class="fab fa-instagram" style="margin-right: 10px;"></i>
+                                                    Ver Perfil Completo
+                                                    <i class="fas fa-external-link-alt" style="margin-left: 10px; font-size: 0.9rem;"></i>
+                                                </div>
+                                                
+                                                <!-- Texto informativo -->
+                                                <p style="color: rgba(255, 255, 255, 0.8); margin: 25px 0 0 0; font-size: 0.9rem; font-weight: 500;">
+                                                    Clique para ver todas as fotos e vídeos
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </a>
                                 </div>
                             <% 
                                     } else if (hasEmbedUrl) {
