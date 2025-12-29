@@ -103,12 +103,34 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             
             // Buscar embed HTML do Instagram usando oEmbed API
             if (item.item_type === 'instagram_embed' && item.destination_url) {
+                console.log(`🔍 [INSTAGRAM] Processando item ${item.id} com URL: ${item.destination_url}`);
                 try {
+                    // Normalizar e verificar URL
+                    let urlToProcess = String(item.destination_url).trim();
+                    
+                    // Remover espaços e caracteres estranhos
+                    urlToProcess = urlToProcess.replace(/\s+/g, '');
+                    
+                    // Garantir que começa com http:// ou https://
+                    if (!urlToProcess.startsWith('http://') && !urlToProcess.startsWith('https://')) {
+                        if (urlToProcess.startsWith('www.instagram.com') || urlToProcess.startsWith('instagram.com')) {
+                            urlToProcess = 'https://' + urlToProcess;
+                        } else if (urlToProcess.includes('instagram.com')) {
+                            urlToProcess = 'https://www.' + urlToProcess;
+                        }
+                    }
+                    
+                    console.log(`🔍 [INSTAGRAM] URL normalizada: ${urlToProcess}`);
+                    
                     // Verificar se é um post (contém /p/ ou /reel/)
-                    if (item.destination_url.includes('/p/') || item.destination_url.includes('/reel/')) {
+                    const isPost = urlToProcess.includes('/p/') || urlToProcess.includes('/reel/');
+                    console.log(`🔍 [INSTAGRAM] É post? ${isPost}`);
+                    
+                    if (isPost) {
                         // Normalizar URL para usar como chave de cache
-                        const normalizedUrl = item.destination_url.split('?')[0].split('#')[0].trim();
+                        const normalizedUrl = urlToProcess.split('?')[0].split('#')[0].trim();
                         const cacheKey = `instagram_oembed:${normalizedUrl}`;
+                        console.log(`🔍 [INSTAGRAM] URL normalizada para cache: ${normalizedUrl}`);
                         
                         // Cache simples em memória para Instagram (independente do cache global)
                         if (!router.instagramCache) {
@@ -207,7 +229,10 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                         }
                     } else {
                         // Para perfis, não há oEmbed disponível
-                        console.log(`ℹ️ [INSTAGRAM] URL é de perfil, não há oEmbed disponível: ${item.destination_url}`);
+                        console.log(`ℹ️ [INSTAGRAM] URL é de perfil ou formato inválido, não há oEmbed disponível`);
+                        console.log(`ℹ️ [INSTAGRAM] URL original: ${item.destination_url}`);
+                        console.log(`ℹ️ [INSTAGRAM] URL processada: ${urlToProcess}`);
+                        console.log(`ℹ️ [INSTAGRAM] Dica: Use URL de post (contém /p/) ou reel (contém /reel/)`);
                         item.instagram_embed_html = null;
                     }
                 } catch (error) {

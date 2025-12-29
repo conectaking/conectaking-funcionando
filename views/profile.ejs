@@ -1041,8 +1041,11 @@
                         <div class="profile-embed-item instagram-embed-container" data-item-id="<%= item.id %>" data-embed-type="instagram">
                             <% 
                                 try { 
+                                    // Debug: verificar se temos embed HTML
+                                    const hasEmbedHtml = item.instagram_embed_html && typeof item.instagram_embed_html === 'string' && item.instagram_embed_html.trim();
+                                    
                                     // Se temos o embed HTML do oEmbed API, usar ele
-                                    if (item.instagram_embed_html && typeof item.instagram_embed_html === 'string' && item.instagram_embed_html.trim()) {
+                                    if (hasEmbedHtml) {
                             %>
                                 <!-- Embed oficial do Instagram via oEmbed API -->
                                 <div class="instagram-embed-wrapper" style="max-width: 540px; width: 100%; margin: 0 auto; display: block; min-height: 600px;">
@@ -1056,6 +1059,11 @@
                                             var script = document.createElement('script');
                                             script.src = 'https://www.instagram.com/embed.js';
                                             script.async = true;
+                                            script.onload = function() {
+                                                if (window.instgrm && window.instgrm.Embeds) {
+                                                    window.instgrm.Embeds.process();
+                                                }
+                                            };
                                             document.body.appendChild(script);
                                         } else {
                                             // Se o script já foi carregado, forçar renderização
@@ -1067,6 +1075,12 @@
                                 </script>
                             <% 
                                     } else {
+                                        // Debug info (apenas em desenvolvimento)
+                                        // console.log('[FRONTEND] Instagram embed não disponível:', {
+                                        //     hasDestinationUrl: !!item.destination_url,
+                                        //     destinationUrl: item.destination_url,
+                                        //     hasEmbedHtml: !!item.instagram_embed_html
+                                        // });
                                         // Fallback: card visual para perfis ou quando oEmbed falha
                                         const instaUrl = new URL(item.destination_url);
                                         const instaPathname = instaUrl.pathname;
