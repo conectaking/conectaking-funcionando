@@ -5,6 +5,7 @@ const { convertYouTubeUrlToEmbed } = require('../utils/youtube');
 const cache = require('../utils/cache');
 const logger = require('../utils/logger');
 const { asyncHandler } = require('../middleware/errorHandler');
+const fetch = require('node-fetch');
 
 function hexToRgb(hex) {
     if (!hex || typeof hex !== 'string') return { r: 20, g: 20, b: 23 }; 
@@ -94,10 +95,45 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             return true;
         });
         
-        // Converter URLs do YouTube para formato embed e carregar produtos dos catálogos
+        // Converter URLs do YouTube para formato embed, buscar Instagram oEmbed e carregar produtos dos catálogos
         const items = await Promise.all(validItems.map(async (item) => {
             if (item.item_type === 'youtube_embed' && item.destination_url) {
                 item.embed_url = convertYouTubeUrlToEmbed(item.destination_url);
+            }
+            
+            // Buscar embed HTML do Instagram usando oEmbed API
+            if (item.item_type === 'instagram_embed' && item.destination_url) {
+                try {
+                    // Verificar se é um post (contém /p/)
+                    if (item.destination_url.includes('/p/') || item.destination_url.includes('/reel/')) {
+                        const oembedUrl = `https://api.instagram.com/oembed?url=${encodeURIComponent(item.destination_url)}&omitscript=true`;
+                        console.log(`🔍 [INSTAGRAM] Buscando oEmbed para: ${item.destination_url}`);
+                        
+                        const response = await fetch(oembedUrl, {
+                            headers: {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            },
+                            timeout: 10000
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            item.instagram_embed_html = data.html || null;
+                            item.instagram_embed_width = data.width || 540;
+                            item.instagram_embed_height = data.height || null;
+                            console.log(`✅ [INSTAGRAM] Embed HTML obtido com sucesso`);
+                        } else {
+                            console.warn(`⚠️ [INSTAGRAM] Erro ao buscar oEmbed: ${response.status} ${response.statusText}`);
+                            item.instagram_embed_html = null;
+                        }
+                    } else {
+                        // Para perfis, não há oEmbed disponível
+                        item.instagram_embed_html = null;
+                    }
+                } catch (error) {
+                    console.error(`❌ [INSTAGRAM] Erro ao buscar oEmbed:`, error.message);
+                    item.instagram_embed_html = null;
+                }
             }
             
             if (item.item_type === 'product_catalog') {

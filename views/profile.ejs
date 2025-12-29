@@ -1041,25 +1041,35 @@
                         <div class="profile-embed-item instagram-embed-container" data-item-id="<%= item.id %>" data-embed-type="instagram">
                             <% 
                                 try { 
-                                    const instaUrl = new URL(item.destination_url);
-                                    const instaPathname = instaUrl.pathname;
-                                    
-                                    // Extrair username ou post ID
-                                    let username = '';
-                                    let isPost = false;
-                                    
-                                    // Verificar se é um post (contém /p/)
-                                    if (instaPathname.includes('/p/')) {
-                                        isPost = true;
-                                        const postMatch = instaPathname.match(/\/p\/([^\/]+)/);
-                                        // Para posts, tentar usar oEmbed (mas pode não funcionar sem API key)
-                                    } else {
-                                        // É um perfil
-                                        const usernameMatch = instaPathname.match(/\/([^\/]+)\/?$/);
-                                        username = usernameMatch ? usernameMatch[1].replace(/^@/, '') : '';
-                                    }
+                                    // Se temos o embed HTML do oEmbed API, usar ele
+                                    if (item.instagram_embed_html) {
                             %>
-                                <!-- Instagram não suporta embed direto, usar card visual -->
+                                <!-- Embed oficial do Instagram via oEmbed API -->
+                                <div style="max-width: 540px; width: 100%; margin: 0 auto; display: block;">
+                                    <%- item.instagram_embed_html %>
+                                </div>
+                                <!-- Script do Instagram (carregado apenas uma vez) -->
+                                <script async src="https://www.instagram.com/embed.js"></script>
+                            <% 
+                                    } else {
+                                        // Fallback: card visual para perfis ou quando oEmbed falha
+                                        const instaUrl = new URL(item.destination_url);
+                                        const instaPathname = instaUrl.pathname;
+                                        
+                                        // Extrair username ou post ID
+                                        let username = '';
+                                        let isPost = false;
+                                        
+                                        // Verificar se é um post (contém /p/ ou /reel/)
+                                        if (instaPathname.includes('/p/') || instaPathname.includes('/reel/')) {
+                                            isPost = true;
+                                        } else {
+                                            // É um perfil
+                                            const usernameMatch = instaPathname.match(/\/([^\/]+)\/?$/);
+                                            username = usernameMatch ? usernameMatch[1].replace(/^@/, '') : '';
+                                        }
+                            %>
+                                <!-- Instagram não suporta embed direto para perfis, usar card visual -->
                                 <div style="background: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCB045 100%); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); padding: 30px 20px; text-align: center; max-width: 540px; width: 100%; box-sizing: border-box; margin: 0 auto; box-shadow: 0 8px 32px rgba(131, 58, 180, 0.3); position: relative; overflow: hidden;">
                                     <!-- Efeito de brilho de fundo -->
                                     <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%); animation: rotate 20s linear infinite;"></div>
@@ -1095,6 +1105,7 @@
                                     </div>
                                 </div>
                             <% 
+                                    }
                                 } catch (e) { 
                             %>
                                 <div class="embed-error" style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; text-align: center; max-width: 540px; margin: 0 auto;">
