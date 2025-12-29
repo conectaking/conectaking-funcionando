@@ -95,20 +95,31 @@ router.post(
         const loginStartTime = Date.now();
         
         try {
-            // Timeout para query do banco (10 segundos)
-            const queryPromise = db.query('SELECT * FROM users WHERE email = $1', [email]);
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout: Query do banco demorou mais de 10 segundos')), 10000)
-            );
-            
-            const userResult = await Promise.race([queryPromise, timeoutPromise]);
-            
-            if (userResult.rows.length === 0) {
-                logger.warn('Tentativa de login com email não encontrado', { email });
-                throw new UnauthorizedError('Credenciais inválidas.');
-            }
+            // Usar client com timeout configurado (30 segundos)
+            const client = await db.pool.connect();
+            let user;
+            try {
+                // Configurar statement_timeout no client
+                await client.query('SET statement_timeout = 30000'); // 30 segundos
+                
+                // Timeout adicional para garantir (30 segundos)
+                const queryPromise = client.query('SELECT * FROM users WHERE email = $1', [email]);
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout: Query do banco demorou mais de 30 segundos')), 30000)
+                );
+                
+                const userResult = await Promise.race([queryPromise, timeoutPromise]);
+                
+                if (userResult.rows.length === 0) {
+                    logger.warn('Tentativa de login com email não encontrado', { email });
+                    throw new UnauthorizedError('Credenciais inválidas.');
+                }
 
-            const user = userResult.rows[0];
+                user = userResult.rows[0];
+            } finally {
+                client.release();
+            }
+            
             
             // Verificar se o usuário tem password_hash (caso de usuários antigos ou problemas)
             if (!user.password_hash) {
@@ -125,11 +136,11 @@ router.post(
             // Gerar par de tokens (access + refresh)
             const { accessToken, refreshToken } = generateTokenPair(user);
             
-            // Salvar refresh token no banco (com timeout de 5 segundos)
+            // Salvar refresh token no banco (com timeout de 10 segundos - aumentado)
             try {
                 const saveTokenPromise = saveRefreshToken(user.id, refreshToken);
                 const tokenTimeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout ao salvar refresh token')), 5000)
+                    setTimeout(() => reject(new Error('Timeout ao salvar refresh token')), 10000)
                 );
                 await Promise.race([saveTokenPromise, tokenTimeoutPromise]);
             } catch (tokenError) {
@@ -140,12 +151,12 @@ router.post(
                 // Continua mesmo se falhar ao salvar o refresh token
             }
             
-            // Registrar atividade de login (com timeout de 3 segundos, não bloqueia login)
+            // Registrar atividade de login (com timeout de 5 segundos - aumentado, não bloqueia login)
             try {
                 const activityLogger = require('../utils/activityLogger');
                 const logPromise = activityLogger.logLogin(user.id, req);
                 const logTimeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout ao registrar atividade')), 3000)
+                    setTimeout(() => reject(new Error('Timeout ao registrar atividade')), 5000)
                 );
                 await Promise.race([logPromise, logTimeoutPromise]);
             } catch (activityError) {
