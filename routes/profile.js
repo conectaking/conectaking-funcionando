@@ -185,10 +185,13 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 }
 
                 const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+                console.log('🔄 [SAVE-ALL] Executando INSERT em user_profiles...');
+                const insertStart = Date.now();
                 await client.query(`
                     INSERT INTO user_profiles (${insertFields.join(', ')})
                     VALUES (${placeholders})
                 `, insertValues);
+                console.log(`✅ [SAVE-ALL] INSERT concluído em ${Date.now() - insertStart}ms`);
             } else {
                 // Atualizar perfil existente
                 // Verificar se a coluna avatar_format existe antes de tentar atualizar
@@ -253,7 +256,25 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 const paramIndex = updateValues.length;
 
                 console.log(`🔄 [SAVE-ALL] Executando UPDATE em user_profiles (${updateFields.length} campos)...`);
+                console.log(`🔄 [SAVE-ALL] Primeiros 5 campos: ${updateFields.slice(0, 5).join(', ')}${updateFields.length > 5 ? '...' : ''}`);
                 const updateStart = Date.now();
+                
+                // Verificar locks antes do UPDATE
+                try {
+                    const lockCheck = await client.query(`
+                        SELECT locktype, relation::regclass, mode, granted 
+                        FROM pg_locks 
+                        WHERE relation = 'user_profiles'::regclass::oid
+                        AND NOT granted
+                    `);
+                    if (lockCheck.rows.length > 0) {
+                        console.warn(`⚠️ [SAVE-ALL] Locks detectados na tabela user_profiles:`, lockCheck.rows);
+                    } else {
+                        console.log(`✅ [SAVE-ALL] Nenhum lock detectado na tabela user_profiles`);
+                    }
+                } catch (lockError) {
+                    console.warn(`⚠️ [SAVE-ALL] Erro ao verificar locks:`, lockError.message);
+                }
                 
                 try {
                     const updateResult = await client.query(`
@@ -264,17 +285,23 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     console.log(`✅ [SAVE-ALL] UPDATE concluído em ${Date.now() - updateStart}ms (${updateResult.rowCount} linha(s) atualizada(s))`);
                 } catch (updateError) {
                     console.error(`❌ [SAVE-ALL] Erro no UPDATE após ${Date.now() - updateStart}ms:`, updateError);
+                    console.error(`❌ [SAVE-ALL] Código do erro: ${updateError.code}`);
+                    console.error(`❌ [SAVE-ALL] Mensagem: ${updateError.message}`);
                     throw updateError;
                 }
             }
 
             // Atualizar profile_slug na tabela users se fornecido
             if (details.profile_slug || details.profileSlug) {
+                console.log('🔄 [SAVE-ALL] Atualizando profile_slug na tabela users...');
+                const slugUpdateStart = Date.now();
                 await client.query(
                     'UPDATE users SET profile_slug = $1 WHERE id = $2',
                     [details.profile_slug || details.profileSlug, userId]
                 );
+                console.log(`✅ [SAVE-ALL] profile_slug atualizado em ${Date.now() - slugUpdateStart}ms`);
             }
+            console.log('✅ [SAVE-ALL] Detalhes do perfil processados com sucesso');
         }
 
         // Salvar itens do perfil
