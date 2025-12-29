@@ -110,8 +110,9 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
     console.log('✅ [SAVE-ALL] Conexão do banco obtida');
     
     try {
-        // Configurar timeout na conexão
-        await client.query('SET statement_timeout = 90000'); // 90 segundos
+        // Configurar timeout na conexão (aumentado para 120 segundos)
+        await client.query('SET statement_timeout = 120000'); // 120 segundos
+        console.log('⏱️ [SAVE-ALL] Timeout configurado para 120 segundos');
         
         console.log('🔄 [SAVE-ALL] Iniciando transação...');
         await client.query('BEGIN');
@@ -123,11 +124,16 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
 
         // Salvar detalhes do perfil
         if (details) {
+            console.log('📝 [SAVE-ALL] Processando detalhes do perfil...');
             // Verificar se o perfil existe (user_id é a chave primária, não precisa selecionar id)
+            console.log('🔍 [SAVE-ALL] Verificando se perfil existe...');
+            const checkStart = Date.now();
             const checkProfile = await client.query(
                 'SELECT user_id FROM user_profiles WHERE user_id = $1',
                 [userId]
             );
+            console.log(`✅ [SAVE-ALL] Verificação de perfil concluída em ${Date.now() - checkStart}ms`);
+            console.log(`✅ [SAVE-ALL] Perfil ${checkProfile.rows.length > 0 ? 'existe' : 'não existe'}`);
 
             if (checkProfile.rows.length === 0) {
                 // Verificar se a coluna avatar_format existe antes de tentar inserir
@@ -246,11 +252,20 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 updateValues.push(userId);
                 const paramIndex = updateValues.length;
 
-                await client.query(`
-                    UPDATE user_profiles SET
-                        ${updateFields.join(', ')}
-                    WHERE user_id = $${paramIndex}
-                `, updateValues);
+                console.log(`🔄 [SAVE-ALL] Executando UPDATE em user_profiles (${updateFields.length} campos)...`);
+                const updateStart = Date.now();
+                
+                try {
+                    const updateResult = await client.query(`
+                        UPDATE user_profiles SET
+                            ${updateFields.join(', ')}
+                        WHERE user_id = $${paramIndex}
+                    `, updateValues);
+                    console.log(`✅ [SAVE-ALL] UPDATE concluído em ${Date.now() - updateStart}ms (${updateResult.rowCount} linha(s) atualizada(s))`);
+                } catch (updateError) {
+                    console.error(`❌ [SAVE-ALL] Erro no UPDATE após ${Date.now() - updateStart}ms:`, updateError);
+                    throw updateError;
+                }
             }
 
             // Atualizar profile_slug na tabela users se fornecido
