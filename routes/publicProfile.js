@@ -143,14 +143,27 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                         // Armazenar URL de embed para usar no template
                         item.instagram_embed_url = embedUrl;
                         item.instagram_embed_html = null; // Não usar oEmbed HTML
+                        item.instagram_is_profile = false;
                     } else {
-                        // Para perfis, não há embed disponível
-                        console.log(`ℹ️ [INSTAGRAM] URL é de perfil ou formato inválido, não há embed disponível`);
-                        console.log(`ℹ️ [INSTAGRAM] URL original: ${item.destination_url}`);
-                        console.log(`ℹ️ [INSTAGRAM] URL processada: ${urlToProcess}`);
-                        console.log(`ℹ️ [INSTAGRAM] Dica: Use URL de post (contém /p/) ou reel (contém /reel/)`);
-                        item.instagram_embed_url = null;
-                        item.instagram_embed_html = null;
+                        // É um perfil - extrair username
+                        const profileMatch = urlToProcess.match(/instagram\.com\/([^\/\?]+)/);
+                        const username = profileMatch ? profileMatch[1].replace('@', '') : null;
+                        
+                        if (username) {
+                            console.log(`✅ [INSTAGRAM] Detectado perfil: @${username}`);
+                            console.log(`✅ [INSTAGRAM] Usando widget de feed do Instagram`);
+                            
+                            // Marcar como perfil e armazenar username
+                            item.instagram_is_profile = true;
+                            item.instagram_username = username;
+                            item.instagram_embed_url = null;
+                            item.instagram_embed_html = null;
+                        } else {
+                            console.log(`⚠️ [INSTAGRAM] Não foi possível extrair username do perfil`);
+                            item.instagram_is_profile = false;
+                            item.instagram_embed_url = null;
+                            item.instagram_embed_html = null;
+                        }
                     }
                 } catch (error) {
                     console.error(`❌ [INSTAGRAM] Erro ao processar URL para item ${item.id}:`, error.message);
