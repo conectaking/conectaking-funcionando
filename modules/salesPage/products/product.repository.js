@@ -21,6 +21,15 @@ class ProductRepository {
 
         const client = await db.pool.connect();
         try {
+            const finalStatus = status || 'ACTIVE';
+            console.log(`💾 [PRODUCT-REPO] Criando produto:`, {
+                sales_page_id,
+                name,
+                price,
+                status: finalStatus,
+                display_order: display_order || 0
+            });
+            
             const result = await client.query(
                 `INSERT INTO sales_page_products (
                     sales_page_id, name, description, price, compare_price,
@@ -30,10 +39,11 @@ class ProductRepository {
                 [
                     sales_page_id, name, description || null, price,
                     compare_price || null, stock, variations || null,
-                    image_url || null, display_order || 0, status || 'ACTIVE',
+                    image_url || null, display_order || 0, finalStatus,
                     badge || null
                 ]
             );
+            console.log(`✅ [PRODUCT-REPO] Produto criado com sucesso: ID ${result.rows[0].id}, status: ${result.rows[0].status}`);
             return result.rows[0];
         } finally {
             client.release();
@@ -66,13 +76,20 @@ class ProductRepository {
             const params = [salesPageId];
 
             if (!includeArchived) {
+                // Para página pública, mostrar apenas produtos ACTIVE
+                query += ' AND status = $2';
+                params.push('ACTIVE');
+            } else {
+                // Para admin, mostrar todos exceto ARCHIVED
                 query += ' AND status != $2';
                 params.push('ARCHIVED');
             }
 
             query += ' ORDER BY display_order ASC, created_at ASC';
 
+            console.log(`🔍 [PRODUCT-REPO] Buscando produtos para sales_page_id: ${salesPageId}, query: ${query}, params:`, params);
             const result = await client.query(query, params);
+            console.log(`✅ [PRODUCT-REPO] Encontrados ${result.rows.length} produtos`);
             return result.rows;
         } finally {
             client.release();

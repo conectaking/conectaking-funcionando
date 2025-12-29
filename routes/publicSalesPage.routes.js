@@ -79,8 +79,25 @@ router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
             }
         }
 
-        // Buscar produtos ativos
+        // Buscar produtos ativos (apenas ACTIVE para página pública)
+        console.log(`🔍 [SALES-PAGE] Buscando produtos para sales_page_id: ${salesPage.id}`);
+        console.log(`🔍 [SALES-PAGE] Sales page encontrada:`, {
+            id: salesPage.id,
+            profile_item_id: salesPage.profile_item_id,
+            status: salesPage.status,
+            store_title: salesPage.store_title
+        });
         const products = await productService.findBySalesPageId(salesPage.id, false);
+        console.log(`✅ [SALES-PAGE] Encontrados ${products.length} produtos para exibição`);
+        if (products.length === 0) {
+            console.warn(`⚠️ [SALES-PAGE] Nenhum produto encontrado para sales_page_id: ${salesPage.id}`);
+            // Verificar se há produtos no banco (mesmo com status diferente)
+            const allProductsCheck = await productService.findBySalesPageId(salesPage.id, true);
+            console.log(`🔍 [SALES-PAGE] Total de produtos no banco (incluindo arquivados): ${allProductsCheck.length}`);
+            if (allProductsCheck.length > 0) {
+                console.log(`📊 [SALES-PAGE] Status dos produtos:`, allProductsCheck.map(p => ({ id: p.id, name: p.name, status: p.status })));
+            }
+        }
 
         // Registrar evento page_view
         try {
