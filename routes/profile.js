@@ -592,11 +592,15 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
             const isActiveValue = is_active === true || is_active === 'true' || is_active === 1 || is_active === '1';
             updateValues.push(isActiveValue);
         }
-        if (display_order !== undefined) {
-            updateFields.push(`display_order = $${paramIndex++}`);
-            // Garantir que display_order seja um número inteiro
-            const displayOrderValue = display_order !== null && display_order !== undefined ? parseInt(display_order, 10) : null;
-            updateValues.push(isNaN(displayOrderValue) ? null : displayOrderValue);
+        if (display_order !== undefined && display_order !== null) {
+            // display_order não pode ser null (constraint NOT NULL no banco)
+            // Apenas atualizar se tiver um valor válido
+            const displayOrderValue = parseInt(display_order, 10);
+            if (!isNaN(displayOrderValue)) {
+                updateFields.push(`display_order = $${paramIndex++}`);
+                updateValues.push(displayOrderValue);
+            }
+            // Se for null ou NaN, simplesmente não atualizar (mantém o valor atual do banco)
         }
 
         // Validar que temos pelo menos um campo para atualizar
