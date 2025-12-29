@@ -92,15 +92,23 @@ router.post(
     handleValidationErrors,
     asyncHandler(async (req, res) => {
         const { email, password } = req.body;
+        const loginStartTime = Date.now();
         
         try {
-        const userResult = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-        if (userResult.rows.length === 0) {
-            logger.warn('Tentativa de login com email não encontrado', { email });
-            throw new UnauthorizedError('Credenciais inválidas.');
-        }
+            // Timeout para query do banco (10 segundos)
+            const queryPromise = db.query('SELECT * FROM users WHERE email = $1', [email]);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout: Query do banco demorou mais de 10 segundos')), 10000)
+            );
+            
+            const userResult = await Promise.race([queryPromise, timeoutPromise]);
+            
+            if (userResult.rows.length === 0) {
+                logger.warn('Tentativa de login com email não encontrado', { email });
+                throw new UnauthorizedError('Credenciais inválidas.');
+            }
 
-        const user = userResult.rows[0];
+            const user = userResult.rows[0];
             
             // Verificar se o usuário tem password_hash (caso de usuários antigos ou problemas)
             if (!user.password_hash) {
@@ -108,51 +116,74 @@ router.post(
                 throw new Error('Erro interno: conta sem senha cadastrada. Entre em contato com o suporte.');
             }
             
-        const isMatch = await bcrypt.compare(password, user.password_hash);
-        if (!isMatch) {
-            logger.warn('Tentativa de login com senha incorreta', { email });
-            throw new UnauthorizedError('Credenciais inválidas.');
-        }
-        
-        // Gerar par de tokens (access + refresh)
-        const { accessToken, refreshToken } = generateTokenPair(user);
-        
-            // Salvar refresh token no banco (pode falhar se tabela não existir, então tentamos com tratamento)
+            const isMatch = await bcrypt.compare(password, user.password_hash);
+            if (!isMatch) {
+                logger.warn('Tentativa de login com senha incorreta', { email });
+                throw new UnauthorizedError('Credenciais inválidas.');
+            }
+            
+            // Gerar par de tokens (access + refresh)
+            const { accessToken, refreshToken } = generateTokenPair(user);
+            
+            // Salvar refresh token no banco (com timeout de 5 segundos)
             try {
-        await saveRefreshToken(user.id, refreshToken);
+                const saveTokenPromise = saveRefreshToken(user.id, refreshToken);
+                const tokenTimeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout ao salvar refresh token')), 5000)
+                );
+                await Promise.race([saveTokenPromise, tokenTimeoutPromise]);
             } catch (tokenError) {
-                logger.error('Erro ao salvar refresh token (continuando mesmo assim)', { error: tokenError.message, userId: user.id });
+                logger.error('Erro ao salvar refresh token (continuando mesmo assim)', { 
+                    error: tokenError.message, 
+                    userId: user.id 
+                });
                 // Continua mesmo se falhar ao salvar o refresh token
             }
-        
-        logger.info('Login bem-sucedido', { userId: user.id, email: user.email });
-        
-        // Registrar atividade de login
-        try {
-            const activityLogger = require('../utils/activityLogger');
-            await activityLogger.logLogin(user.id, req);
-        } catch (activityError) {
-            // Não queremos que erro no log de atividade quebre o login
-            logger.warn('Erro ao registrar atividade de login', { error: activityError.message });
-        }
-        
-        // Retorna os dados essenciais para o front-end
-        res.json({ 
-            success: true,
-            message: 'Login bem-sucedido!', 
-            token: accessToken,
-            refreshToken: refreshToken,
-            user: { 
-                id: user.id, 
-                email: user.email, 
-                name: user.name, 
-                isAdmin: user.is_admin,
-                accountType: user.account_type
+            
+            // Registrar atividade de login (com timeout de 3 segundos, não bloqueia login)
+            try {
+                const activityLogger = require('../utils/activityLogger');
+                const logPromise = activityLogger.logLogin(user.id, req);
+                const logTimeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout ao registrar atividade')), 3000)
+                );
+                await Promise.race([logPromise, logTimeoutPromise]);
+            } catch (activityError) {
+                // Não queremos que erro no log de atividade quebre o login
+                logger.warn('Erro ao registrar atividade de login', { error: activityError.message });
             }
-        });
+            
+            const loginDuration = Date.now() - loginStartTime;
+            logger.info('Login bem-sucedido', { 
+                userId: user.id, 
+                email: user.email,
+                duration: `${loginDuration}ms`
+            });
+            
+            // Retorna os dados essenciais para o front-end
+            res.json({ 
+                success: true,
+                message: 'Login bem-sucedido!', 
+                token: accessToken,
+                refreshToken: refreshToken,
+                user: { 
+                    id: user.id, 
+                    email: user.email, 
+                    name: user.name, 
+                    isAdmin: user.is_admin,
+                    accountType: user.account_type
+                }
+            });
         } catch (error) {
+            const loginDuration = Date.now() - loginStartTime;
+            
             // Se já é um erro tratado (ValidationError, UnauthorizedError), apenas propaga
             if (error instanceof ValidationError || error instanceof UnauthorizedError) {
+                logger.warn('Login falhou', { 
+                    email, 
+                    error: error.message,
+                    duration: `${loginDuration}ms`
+                });
                 throw error;
             }
             
@@ -160,7 +191,8 @@ router.post(
             logger.error('Erro interno no login', { 
                 error: error.message, 
                 stack: error.stack, 
-                email 
+                email,
+                duration: `${loginDuration}ms`
             });
             
             // Propagar erro para o errorHandler
