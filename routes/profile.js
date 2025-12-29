@@ -334,6 +334,57 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             const salesPageItems = [];
             
             for (const item of items) {
+                // IMPORTANTE: Para sales_page, incluir APENAS is_active e display_order
+                // NÃO incluir title, image_url, icon_class ou outros campos
+                // Esses campos são gerenciados exclusivamente pela página de vendas
+                if (item.item_type === 'sales_page') {
+                    const hasValidId = item.id && !isNaN(parseInt(item.id, 10)) && parseInt(item.id, 10) > 0;
+                    const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'display_order', 'is_active'] : ['user_id', 'item_type', 'display_order', 'is_active'];
+                    const insertValues = hasValidId ? [
+                        parseInt(item.id, 10),
+                        userId,
+                        item.item_type,
+                        item.display_order !== undefined ? item.display_order : 0,
+                        item.is_active !== undefined ? item.is_active : true
+                    ] : [
+                        userId,
+                        item.item_type,
+                        item.display_order !== undefined ? item.display_order : 0,
+                        item.is_active !== undefined ? item.is_active : true
+                    ];
+                    
+                    const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+                    let insertedId = null;
+                    
+                    try {
+                        if (hasValidId) {
+                            const itemIdInt = parseInt(item.id, 10);
+                            if (itemIdInt > maxIdToSet) {
+                                maxIdToSet = itemIdInt;
+                            }
+                        }
+                        
+                        const result = await client.query(`
+                            INSERT INTO profile_items (${insertFields.join(', ')})
+                            VALUES (${placeholders})
+                            RETURNING id, user_id, item_type
+                        `, insertValues);
+                        
+                        insertedId = result.rows[0].id;
+                        console.log(`✅ [SAVE-ALL] Sales_page ${insertedId} inserido (apenas is_active e display_order)`);
+                        
+                        // Guardar para verificar se precisa criar sales_page (só se não existir)
+                        salesPageItems.push({ insertedId, item });
+                    } catch (insertError) {
+                        console.error(`❌ Erro ao inserir sales_page ${item.id || 'novo'}:`, insertError);
+                        throw insertError;
+                    }
+                    
+                    // Pular para o próximo item (sales_page já processado)
+                    continue;
+                }
+                
+                // Para outros tipos de item, usar lógica normal
                 // Verificar se item.id é válido (número e maior que 0)
                 const hasValidId = item.id && !isNaN(parseInt(item.id, 10)) && parseInt(item.id, 10) > 0;
                 
@@ -440,11 +491,6 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     console.error(`❌ Erro ao inserir item ${item.id || 'novo'}:`, insertError);
                     throw insertError; // Re-throw para que a transação seja revertida
                 }
-                
-                // Guardar item sales_page para processar depois em lote
-                if (item.item_type === 'sales_page' && insertedId) {
-                    salesPageItems.push({ insertedId, item });
-                }
             }
             
             // Atualizar sequência uma única vez no final (se necessário)
@@ -454,13 +500,27 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 `, [maxIdToSet]);
             }
             
-            // Processar sales_pages em lote (após todos os INSERTs)
+            // Processar sales_pages em lote (apenas para NOVOS itens, não atualizar existentes)
             if (salesPageItems.length > 0) {
                 const salesPageService = require('../modules/salesPage/salesPage.service');
                 const crypto = require('crypto');
                 
                 for (const { insertedId, item } of salesPageItems) {
                     try {
+                        // IMPORTANTE: Verificar se já existe uma sales_page para este profile_item_id
+                        // Se existir, NÃO criar/atualizar - apenas deixar como está
+                        const existingSalesPage = await client.query(
+                            'SELECT id FROM sales_pages WHERE profile_item_id = $1',
+                            [insertedId]
+                        );
+                        
+                        if (existingSalesPage.rows.length > 0) {
+                            // Já existe uma sales_page - NÃO modificar
+                            console.log(`⚠️ [SAVE-ALL] Sales_page já existe para item ${insertedId} - NÃO modificando (preservando dados existentes)`);
+                            continue;
+                        }
+                        
+                        // Apenas criar se NÃO existir (novo item)
                         const salesPageData = {
                             profile_item_id: insertedId,
                             store_title: item.title || 'Minha Loja',
@@ -474,7 +534,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                         
                         // Passar o client existente para usar a mesma transação
                         await salesPageService.create(salesPageData, client);
-                        console.log(`✅ [SAVE-ALL] Página de vendas criada/atualizada para item ${insertedId}`);
+                        console.log(`✅ [SAVE-ALL] Nova página de vendas criada para item ${insertedId}`);
                     } catch (error) {
                         console.error(`❌ [SAVE-ALL] Erro ao criar página de vendas para item ${insertedId}:`, error.message);
                         // Não falhar a operação inteira se uma sales_page falhar
