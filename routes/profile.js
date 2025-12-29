@@ -614,18 +614,20 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
         const itemIdParam = paramIndex;
         const userIdParam = paramIndex + 1;
         
-        // Adicionar itemId e userId aos valores
-        updateValues.push(itemId, userId);
-        
         // Validar tipos dos parâmetros WHERE
+        // itemId deve ser um número (é um INTEGER no banco)
         if (typeof itemId !== 'number' || isNaN(itemId)) {
             console.error(`❌ [BANNER] itemId inválido: ${itemId} (tipo: ${typeof itemId})`);
             return res.status(400).json({ message: 'ID do item inválido.' });
         }
-        if (typeof userId !== 'number' || isNaN(userId)) {
+        // userId pode ser string ou número (é VARCHAR no banco, mas pode vir como número em alguns casos)
+        if (!userId || (typeof userId !== 'string' && typeof userId !== 'number')) {
             console.error(`❌ [BANNER] userId inválido: ${userId} (tipo: ${typeof userId})`);
             return res.status(400).json({ message: 'ID do usuário inválido.' });
         }
+        
+        // Adicionar itemId e userId aos valores (userId como string)
+        updateValues.push(itemId, String(userId));
         
         const query = `
             UPDATE profile_items 
