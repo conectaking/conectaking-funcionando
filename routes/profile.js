@@ -264,16 +264,24 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
 
         // Salvar itens do perfil
         if (items && Array.isArray(items)) {
+            console.log(`📦 [SAVE-ALL] Processando ${items.length} itens do perfil...`);
             // Verificar quais colunas existem na tabela profile_items (cachear resultado)
+            console.log('🔍 [SAVE-ALL] Verificando colunas da tabela profile_items...');
+            const columnsCheckStart = Date.now();
             const columnsCheck = await client.query(`
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'profile_items'
             `);
+            console.log(`✅ [SAVE-ALL] Colunas verificadas em ${Date.now() - columnsCheckStart}ms`);
             const existingColumns = columnsCheck.rows.map(row => row.column_name);
+            console.log(`✅ [SAVE-ALL] ${existingColumns.length} colunas encontradas`);
             
             // Deletar todos os itens existentes do usuário
-            await client.query('DELETE FROM profile_items WHERE user_id = $1', [userId]);
+            console.log('🗑️ [SAVE-ALL] Deletando itens existentes do usuário...');
+            const deleteStart = Date.now();
+            const deleteResult = await client.query('DELETE FROM profile_items WHERE user_id = $1', [userId]);
+            console.log(`✅ [SAVE-ALL] ${deleteResult.rowCount} itens deletados em ${Date.now() - deleteStart}ms`);
 
             // Encontrar o maior ID para atualizar sequência uma única vez
             const maxIdResult = await client.query('SELECT COALESCE(MAX(id), 0) as max_id FROM profile_items');
