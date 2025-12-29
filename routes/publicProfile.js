@@ -104,34 +104,68 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             // Buscar embed HTML do Instagram usando oEmbed API
             if (item.item_type === 'instagram_embed' && item.destination_url) {
                 try {
-                    // Verificar se é um post (contém /p/)
+                    // Verificar se é um post (contém /p/ ou /reel/)
                     if (item.destination_url.includes('/p/') || item.destination_url.includes('/reel/')) {
                         const oembedUrl = `https://api.instagram.com/oembed?url=${encodeURIComponent(item.destination_url)}&omitscript=true`;
                         console.log(`🔍 [INSTAGRAM] Buscando oEmbed para: ${item.destination_url}`);
+                        console.log(`🔍 [INSTAGRAM] URL da API: ${oembedUrl}`);
                         
-                        const response = await fetch(oembedUrl, {
+                        // Usar Promise.race para timeout (node-fetch 2.x)
+                        const fetchPromise = fetch(oembedUrl, {
                             headers: {
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                            },
-                            timeout: 10000
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                                'Accept': 'application/json'
+                            }
                         });
                         
-                        if (response.ok) {
-                            const data = await response.json();
-                            item.instagram_embed_html = data.html || null;
-                            item.instagram_embed_width = data.width || 540;
-                            item.instagram_embed_height = data.height || null;
-                            console.log(`✅ [INSTAGRAM] Embed HTML obtido com sucesso`);
-                        } else {
-                            console.warn(`⚠️ [INSTAGRAM] Erro ao buscar oEmbed: ${response.status} ${response.statusText}`);
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Timeout')), 10000)
+                        );
+                        
+                        try {
+                            const response = await Promise.race([fetchPromise, timeoutPromise]);
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                console.log(`✅ [INSTAGRAM] Resposta recebida:`, { 
+                                    hasHtml: !!data.html, 
+                                    width: data.width, 
+                                    height: data.height,
+                                    htmlLength: data.html ? data.html.length : 0,
+                                    htmlPreview: data.html ? data.html.substring(0, 100) : 'null'
+                                });
+                                
+                                if (data.html) {
+                                    item.instagram_embed_html = data.html;
+                                    item.instagram_embed_width = data.width || 540;
+                                    item.instagram_embed_height = data.height || null;
+                                    console.log(`✅ [INSTAGRAM] Embed HTML obtido com sucesso para item ${item.id}`);
+                                } else {
+                                    console.warn(`⚠️ [INSTAGRAM] Resposta não contém HTML`);
+                                    item.instagram_embed_html = null;
+                                }
+                            } else {
+                                const errorText = await response.text();
+                                console.warn(`⚠️ [INSTAGRAM] Erro ao buscar oEmbed: ${response.status} ${response.statusText}`);
+                                console.warn(`⚠️ [INSTAGRAM] Resposta: ${errorText.substring(0, 200)}`);
+                                item.instagram_embed_html = null;
+                            }
+                        } catch (fetchError) {
+                            if (fetchError.message === 'Timeout') {
+                                console.warn(`⚠️ [INSTAGRAM] Timeout ao buscar oEmbed após 10 segundos`);
+                            } else {
+                                console.error(`❌ [INSTAGRAM] Erro na requisição:`, fetchError.message);
+                            }
                             item.instagram_embed_html = null;
                         }
                     } else {
                         // Para perfis, não há oEmbed disponível
+                        console.log(`ℹ️ [INSTAGRAM] URL é de perfil, não há oEmbed disponível: ${item.destination_url}`);
                         item.instagram_embed_html = null;
                     }
                 } catch (error) {
-                    console.error(`❌ [INSTAGRAM] Erro ao buscar oEmbed:`, error.message);
+                    console.error(`❌ [INSTAGRAM] Erro ao buscar oEmbed para item ${item.id}:`, error.message);
+                    console.error(`❌ [INSTAGRAM] Stack:`, error.stack);
                     item.instagram_embed_html = null;
                 }
             }

@@ -1042,14 +1042,29 @@
                             <% 
                                 try { 
                                     // Se temos o embed HTML do oEmbed API, usar ele
-                                    if (item.instagram_embed_html) {
+                                    if (item.instagram_embed_html && typeof item.instagram_embed_html === 'string' && item.instagram_embed_html.trim()) {
                             %>
                                 <!-- Embed oficial do Instagram via oEmbed API -->
-                                <div style="max-width: 540px; width: 100%; margin: 0 auto; display: block;">
+                                <div class="instagram-embed-wrapper" style="max-width: 540px; width: 100%; margin: 0 auto; display: block; min-height: 600px;">
                                     <%- item.instagram_embed_html %>
                                 </div>
                                 <!-- Script do Instagram (carregado apenas uma vez) -->
-                                <script async src="https://www.instagram.com/embed.js"></script>
+                                <script>
+                                    (function() {
+                                        if (!window.instagramEmbedLoaded) {
+                                            window.instagramEmbedLoaded = true;
+                                            var script = document.createElement('script');
+                                            script.src = 'https://www.instagram.com/embed.js';
+                                            script.async = true;
+                                            document.body.appendChild(script);
+                                        } else {
+                                            // Se o script já foi carregado, forçar renderização
+                                            if (window.instgrm && window.instgrm.Embeds) {
+                                                window.instgrm.Embeds.process();
+                                            }
+                                        }
+                                    })();
+                                </script>
                             <% 
                                     } else {
                                         // Fallback: card visual para perfis ou quando oEmbed falha
