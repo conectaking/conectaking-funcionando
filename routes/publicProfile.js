@@ -149,23 +149,67 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     console.log(`🔍 [INSTAGRAM] É post? ${isPost}`);
                     
                     if (isPost) {
-                        // Normalizar URL para embed direto
+                        // Normalizar URL para usar na API oEmbed
                         const normalizedUrl = urlToProcess.split('?')[0].split('#')[0].trim();
                         
-                        // Converter para URL de embed do Instagram
-                        // Formato: https://www.instagram.com/p/ABC123/embed/
-                        let embedUrl = normalizedUrl;
-                        if (!embedUrl.endsWith('/')) {
-                            embedUrl += '/';
+                        console.log(`✅ [INSTAGRAM] Tentando buscar embed via oEmbed API para: ${normalizedUrl}`);
+                        
+                        // Tentar buscar via oEmbed API (método oficial do Instagram)
+                        try {
+                            const oembedUrl = `https://api.instagram.com/oembed?url=${encodeURIComponent(normalizedUrl)}&omitscript=true`;
+                            
+                            // Usar Promise.race para timeout
+                            const fetchPromise = fetch(oembedUrl, {
+                                headers: {
+                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                    'Accept': 'application/json'
+                                }
+                            });
+                            
+                            const timeoutPromise = new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('Timeout')), 8000)
+                            );
+                            
+                            try {
+                                const response = await Promise.race([fetchPromise, timeoutPromise]);
+                                
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    if (data.html && data.html.trim()) {
+                                        console.log(`✅ [INSTAGRAM] Embed HTML obtido via oEmbed API`);
+                                        item.instagram_embed_html = data.html;
+                                        item.instagram_embed_url = null;
+                                        item.instagram_is_profile = false;
+                                    } else {
+                                        throw new Error('Resposta oEmbed não contém HTML');
+                                    }
+                                } else if (response.status === 429) {
+                                    console.warn(`⚠️ [INSTAGRAM] Rate limit (429), usando fallback`);
+                                    // Fallback: usar URL de embed direto mesmo com limitações
+                                    item.instagram_embed_url = normalizedUrl + (normalizedUrl.endsWith('/') ? '' : '/') + 'embed/';
+                                    item.instagram_embed_html = null;
+                                    item.instagram_is_profile = false;
+                                } else {
+                                    throw new Error(`HTTP ${response.status}`);
+                                }
+                            } catch (fetchError) {
+                                if (fetchError.message === 'Timeout') {
+                                    console.warn(`⚠️ [INSTAGRAM] Timeout na API, usando fallback`);
+                                } else {
+                                    console.warn(`⚠️ [INSTAGRAM] Erro na API: ${fetchError.message}, usando fallback`);
+                                }
+                                // Fallback: usar URL de embed direto
+                                item.instagram_embed_url = normalizedUrl + (normalizedUrl.endsWith('/') ? '' : '/') + 'embed/';
+                                item.instagram_embed_html = null;
+                                item.instagram_is_profile = false;
+                            }
+                        } catch (error) {
+                            console.error(`❌ [INSTAGRAM] Erro ao processar oEmbed: ${error.message}`);
+                            // Fallback: usar URL de embed direto
+                            item.instagram_embed_url = normalizedUrl + (normalizedUrl.endsWith('/') ? '' : '/') + 'embed/';
+                            item.instagram_embed_html = null;
+                            item.instagram_is_profile = false;
                         }
-                        embedUrl += 'embed/';
-                        
-                        console.log(`✅ [INSTAGRAM] Usando embed direto: ${embedUrl}`);
-                        
-                        // Armazenar URL de embed para usar no template
-                        item.instagram_embed_url = embedUrl;
-                        item.instagram_embed_html = null; // Não usar oEmbed HTML
-                        item.instagram_is_profile = false;
                     } else {
                         // É um perfil - extrair username
                         const profileMatch = urlToProcess.match(/instagram\.com\/([^\/\?]+)/);
