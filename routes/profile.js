@@ -429,12 +429,19 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
         console.log('✅ Resposta enviada com sucesso');
 
     } catch (error) {
-        await client.query('ROLLBACK').catch(() => {});
+        console.error('❌ Erro capturado no save-all. Fazendo ROLLBACK...');
+        await client.query('ROLLBACK').catch((rollbackError) => {
+            console.error('❌ Erro ao fazer ROLLBACK:', rollbackError);
+        });
         console.error('❌ Erro ao salvar alterações:', error);
-        console.error('Stack trace:', error.stack);
+        console.error('❌ Stack trace:', error.stack);
+        console.error('❌ Error name:', error.name);
+        console.error('❌ Error message:', error.message);
         throw error; // Deixar asyncHandler tratar o erro
     } finally {
+        console.log('🔄 Liberando conexão do banco de dados...');
         client.release();
+        console.log('✅ Conexão liberada');
     }
 }));
 
