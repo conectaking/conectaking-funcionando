@@ -504,6 +504,56 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 }
             }
             
+            // IMPORTANTE: Reinserir sales_page preservados (se houver)
+            if (salesPageItemsToPreserve.rows.length > 0) {
+                console.log(`🔄 [SAVE-ALL] Reinserindo ${salesPageItemsToPreserve.rows.length} sales_page(s) preservado(s)...`);
+                for (const preservedSalesPage of salesPageItemsToPreserve.rows) {
+                    try {
+                        // Verificar se o item ainda existe (pode ter sido deletado por outro processo)
+                        const existingCheck = await client.query(
+                            'SELECT id FROM profile_items WHERE id = $1',
+                            [preservedSalesPage.id]
+                        );
+                        
+                        if (existingCheck.rows.length > 0) {
+                            // Já existe, não precisa reinserir
+                            console.log(`✅ [SAVE-ALL] Sales_page ${preservedSalesPage.id} já existe, não precisa reinserir`);
+                            continue;
+                        }
+                        
+                        // Reinserir o sales_page exatamente como estava
+                        const insertFields = Object.keys(preservedSalesPage).filter(key => 
+                            key !== 'id' && // Não incluir id na lista de campos (será preservado)
+                            preservedSalesPage[key] !== null && 
+                            preservedSalesPage[key] !== undefined
+                        );
+                        
+                        // Se o item tinha ID, tentar preservar
+                        const hasId = preservedSalesPage.id && !isNaN(parseInt(preservedSalesPage.id, 10)) && parseInt(preservedSalesPage.id, 10) > 0;
+                        if (hasId) {
+                            insertFields.unshift('id');
+                        }
+                        
+                        const insertValues = hasId 
+                            ? [preservedSalesPage.id, ...insertFields.slice(1).map(key => preservedSalesPage[key])]
+                            : insertFields.map(key => preservedSalesPage[key]);
+                        
+                        const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+                        
+                        await client.query(`
+                            INSERT INTO profile_items (${insertFields.join(', ')})
+                            VALUES (${placeholders})
+                            ON CONFLICT (id) DO NOTHING
+                        `, insertValues);
+                        
+                        console.log(`✅ [SAVE-ALL] Sales_page ${preservedSalesPage.id} preservado e reinserido`);
+                    } catch (preserveError) {
+                        console.error(`❌ [SAVE-ALL] Erro ao preservar sales_page ${preservedSalesPage.id}:`, preserveError);
+                        // Não falhar a operação inteira se uma sales_page falhar ao preservar
+                    }
+                }
+            }
+            
             // Atualizar sequência uma única vez no final (se necessário)
             if (maxIdToSet > currentMaxId) {
                 await client.query(`
