@@ -510,6 +510,456 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
 // ROTAS PARA GERENCIAR ITENS (ITEMS) - ROTAS ESPECÍFICAS PRIMEIRO
 // ===========================================
 
+// PUT /api/profile/items/banner/:id - Atualizar banner específico
+router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+        const { title, destination_url, image_url, whatsapp_message, aspect_ratio, is_active, display_order } = req.body;
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do item inválido.' });
+        }
+
+        console.log(`📝 PUT /api/profile/items/banner/${itemId} - userId: ${userId}`);
+
+        // Verificar se o item pertence ao usuário e é do tipo banner
+        const checkRes = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2 AND item_type = $3',
+            [itemId, userId, 'banner']
+        );
+
+        if (checkRes.rows.length === 0) {
+            console.log(`❌ Banner ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
+            return res.status(404).json({ message: 'Banner não encontrado ou você não tem permissão para editá-lo.' });
+        }
+
+        // Verificar quais colunas existem na tabela
+        const columnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'profile_items'
+        `);
+        const existingColumns = columnsCheck.rows.map(row => row.column_name);
+
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        // Campos específicos do banner
+        if (title !== undefined) {
+            updateFields.push(`title = $${paramIndex++}`);
+            updateValues.push(title || null);
+        }
+        if (destination_url !== undefined) {
+            updateFields.push(`destination_url = $${paramIndex++}`);
+            updateValues.push(destination_url || null);
+        }
+        if (image_url !== undefined) {
+            updateFields.push(`image_url = $${paramIndex++}`);
+            updateValues.push(image_url || null);
+            console.log(`📸 [BANNER] Salvando image_url: ${image_url ? 'URL presente' : 'null'}`);
+        }
+        if (existingColumns.includes('whatsapp_message') && whatsapp_message !== undefined) {
+            updateFields.push(`whatsapp_message = $${paramIndex++}`);
+            updateValues.push(whatsapp_message || null);
+        }
+        if (existingColumns.includes('aspect_ratio') && aspect_ratio !== undefined) {
+            updateFields.push(`aspect_ratio = $${paramIndex++}`);
+            updateValues.push(aspect_ratio || null);
+        }
+        if (is_active !== undefined) {
+            updateFields.push(`is_active = $${paramIndex++}`);
+            updateValues.push(is_active);
+        }
+        if (display_order !== undefined) {
+            updateFields.push(`display_order = $${paramIndex++}`);
+            updateValues.push(display_order);
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+        }
+
+        updateValues.push(itemId, userId);
+        const query = `
+            UPDATE profile_items 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+            RETURNING *
+        `;
+        const result = await client.query(query, updateValues);
+
+        console.log(`✅ Banner ${itemId} atualizado com sucesso`);
+        console.log(`📸 image_url salvo: ${result.rows[0].image_url ? 'Sim' : 'Não'}`);
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(`❌ Erro ao atualizar banner ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Erro ao atualizar banner.', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// PUT /api/profile/items/link/:id - Atualizar link específico
+router.put('/items/link/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+        const { title, destination_url, image_url, icon_class, logo_size, is_active, display_order } = req.body;
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do item inválido.' });
+        }
+
+        // Verificar se o item pertence ao usuário e é do tipo link
+        const checkRes = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2 AND item_type = $3',
+            [itemId, userId, 'link']
+        );
+
+        if (checkRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Link não encontrado ou você não tem permissão para editá-lo.' });
+        }
+
+        // Verificar quais colunas existem na tabela
+        const columnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'profile_items'
+        `);
+        const existingColumns = columnsCheck.rows.map(row => row.column_name);
+
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        // Campos específicos do link
+        if (title !== undefined) {
+            updateFields.push(`title = $${paramIndex++}`);
+            updateValues.push(title || null);
+        }
+        if (destination_url !== undefined) {
+            updateFields.push(`destination_url = $${paramIndex++}`);
+            updateValues.push(destination_url || null);
+        }
+        if (image_url !== undefined) {
+            updateFields.push(`image_url = $${paramIndex++}`);
+            updateValues.push(image_url || null);
+        }
+        if (icon_class !== undefined) {
+            updateFields.push(`icon_class = $${paramIndex++}`);
+            updateValues.push(icon_class || null);
+        }
+        if (existingColumns.includes('logo_size') && logo_size !== undefined) {
+            updateFields.push(`logo_size = $${paramIndex++}`);
+            updateValues.push(logo_size || null);
+        }
+        if (is_active !== undefined) {
+            updateFields.push(`is_active = $${paramIndex++}`);
+            updateValues.push(is_active);
+        }
+        if (display_order !== undefined) {
+            updateFields.push(`display_order = $${paramIndex++}`);
+            updateValues.push(display_order);
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+        }
+
+        updateValues.push(itemId, userId);
+        const query = `
+            UPDATE profile_items 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+            RETURNING *
+        `;
+        const result = await client.query(query, updateValues);
+
+        console.log(`✅ Link ${itemId} atualizado com sucesso`);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(`❌ Erro ao atualizar link ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Erro ao atualizar link.', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// PUT /api/profile/items/carousel/:id - Atualizar carousel específico
+router.put('/items/carousel/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+        const { title, destination_url, image_url, aspect_ratio, is_active, display_order } = req.body;
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do item inválido.' });
+        }
+
+        console.log(`📝 PUT /api/profile/items/carousel/${itemId} - userId: ${userId}`);
+
+        // Verificar se o item pertence ao usuário e é do tipo carousel
+        const checkRes = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2 AND item_type = $3',
+            [itemId, userId, 'carousel']
+        );
+
+        if (checkRes.rows.length === 0) {
+            console.log(`❌ Carousel ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
+            return res.status(404).json({ message: 'Carousel não encontrado ou você não tem permissão para editá-lo.' });
+        }
+
+        // Verificar quais colunas existem na tabela
+        const columnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'profile_items'
+        `);
+        const existingColumns = columnsCheck.rows.map(row => row.column_name);
+
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        // Campos específicos do carousel
+        if (title !== undefined) {
+            updateFields.push(`title = $${paramIndex++}`);
+            updateValues.push(title || null);
+        }
+        if (destination_url !== undefined) {
+            // destination_url do carousel é um JSON com array de imagens
+            updateFields.push(`destination_url = $${paramIndex++}`);
+            updateValues.push(destination_url || null);
+        }
+        if (image_url !== undefined) {
+            updateFields.push(`image_url = $${paramIndex++}`);
+            updateValues.push(image_url || null);
+            console.log(`📸 [CAROUSEL] Salvando image_url: ${image_url ? 'URL presente' : 'null'}`);
+        }
+        if (existingColumns.includes('aspect_ratio') && aspect_ratio !== undefined) {
+            updateFields.push(`aspect_ratio = $${paramIndex++}`);
+            updateValues.push(aspect_ratio || null);
+        }
+        if (is_active !== undefined) {
+            updateFields.push(`is_active = $${paramIndex++}`);
+            updateValues.push(is_active);
+        }
+        if (display_order !== undefined) {
+            updateFields.push(`display_order = $${paramIndex++}`);
+            updateValues.push(display_order);
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+        }
+
+        updateValues.push(itemId, userId);
+        const query = `
+            UPDATE profile_items 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+            RETURNING *
+        `;
+        const result = await client.query(query, updateValues);
+
+        console.log(`✅ Carousel ${itemId} atualizado com sucesso`);
+        console.log(`📸 image_url salvo: ${result.rows[0].image_url ? 'Sim' : 'Não'}`);
+        console.log(`🖼️ destination_url (JSON): ${result.rows[0].destination_url ? 'Presente' : 'Vazio'}`);
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(`❌ Erro ao atualizar carousel ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Erro ao atualizar carousel.', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// PUT /api/profile/items/pix/:id - Atualizar PIX específico
+router.put('/items/pix/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+        const { title, pix_key, recipient_name, pix_amount, pix_description, icon_class, is_active, display_order } = req.body;
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do item inválido.' });
+        }
+
+        console.log(`📝 PUT /api/profile/items/pix/${itemId} - userId: ${userId}`);
+
+        // Verificar se o item pertence ao usuário e é do tipo pix ou pix_qrcode
+        const checkRes = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2 AND (item_type = $3 OR item_type = $4)',
+            [itemId, userId, 'pix', 'pix_qrcode']
+        );
+
+        if (checkRes.rows.length === 0) {
+            console.log(`❌ PIX ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
+            return res.status(404).json({ message: 'PIX não encontrado ou você não tem permissão para editá-lo.' });
+        }
+
+        // Verificar quais colunas existem na tabela
+        const columnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'profile_items'
+        `);
+        const existingColumns = columnsCheck.rows.map(row => row.column_name);
+
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        // Campos específicos do PIX
+        if (title !== undefined) {
+            updateFields.push(`title = $${paramIndex++}`);
+            updateValues.push(title || null);
+        }
+        if (existingColumns.includes('pix_key') && pix_key !== undefined) {
+            updateFields.push(`pix_key = $${paramIndex++}`);
+            updateValues.push(pix_key || null);
+        }
+        if (existingColumns.includes('recipient_name') && recipient_name !== undefined) {
+            updateFields.push(`recipient_name = $${paramIndex++}`);
+            updateValues.push(recipient_name || null);
+        }
+        if (existingColumns.includes('pix_amount') && pix_amount !== undefined) {
+            updateFields.push(`pix_amount = $${paramIndex++}`);
+            updateValues.push(pix_amount ? parseFloat(pix_amount) : null);
+        }
+        if (existingColumns.includes('pix_description') && pix_description !== undefined) {
+            updateFields.push(`pix_description = $${paramIndex++}`);
+            updateValues.push(pix_description || null);
+        }
+        if (icon_class !== undefined) {
+            updateFields.push(`icon_class = $${paramIndex++}`);
+            updateValues.push(icon_class || null);
+        }
+        if (is_active !== undefined) {
+            updateFields.push(`is_active = $${paramIndex++}`);
+            updateValues.push(is_active);
+        }
+        if (display_order !== undefined) {
+            updateFields.push(`display_order = $${paramIndex++}`);
+            updateValues.push(display_order);
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+        }
+
+        updateValues.push(itemId, userId);
+        const query = `
+            UPDATE profile_items 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+            RETURNING *
+        `;
+        const result = await client.query(query, updateValues);
+
+        console.log(`✅ PIX ${itemId} atualizado com sucesso`);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(`❌ Erro ao atualizar PIX ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Erro ao atualizar PIX.', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// PUT /api/profile/items/pdf/:id - Atualizar PDF específico
+router.put('/items/pdf/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+        const { title, pdf_url, destination_url, is_active, display_order } = req.body;
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do item inválido.' });
+        }
+
+        console.log(`📝 PUT /api/profile/items/pdf/${itemId} - userId: ${userId}`);
+
+        // Verificar se o item pertence ao usuário e é do tipo pdf ou pdf_embed
+        const checkRes = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2 AND (item_type = $3 OR item_type = $4)',
+            [itemId, userId, 'pdf', 'pdf_embed']
+        );
+
+        if (checkRes.rows.length === 0) {
+            console.log(`❌ PDF ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
+            return res.status(404).json({ message: 'PDF não encontrado ou você não tem permissão para editá-lo.' });
+        }
+
+        // Verificar quais colunas existem na tabela
+        const columnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'profile_items'
+        `);
+        const existingColumns = columnsCheck.rows.map(row => row.column_name);
+
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        // Campos específicos do PDF
+        if (title !== undefined) {
+            updateFields.push(`title = $${paramIndex++}`);
+            updateValues.push(title || null);
+        }
+        if (existingColumns.includes('pdf_url') && pdf_url !== undefined) {
+            updateFields.push(`pdf_url = $${paramIndex++}`);
+            updateValues.push(pdf_url || null);
+            console.log(`📄 [PDF] Salvando pdf_url: ${pdf_url ? 'URL presente' : 'null'}`);
+        }
+        if (destination_url !== undefined) {
+            updateFields.push(`destination_url = $${paramIndex++}`);
+            updateValues.push(destination_url || null);
+        }
+        if (is_active !== undefined) {
+            updateFields.push(`is_active = $${paramIndex++}`);
+            updateValues.push(is_active);
+        }
+        if (display_order !== undefined) {
+            updateFields.push(`display_order = $${paramIndex++}`);
+            updateValues.push(display_order);
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+        }
+
+        updateValues.push(itemId, userId);
+        const query = `
+            UPDATE profile_items 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+            RETURNING *
+        `;
+        const result = await client.query(query, updateValues);
+
+        console.log(`✅ PDF ${itemId} atualizado com sucesso`);
+        console.log(`📄 pdf_url salvo: ${result.rows[0].pdf_url ? 'Sim' : 'Não'}`);
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(`❌ Erro ao atualizar PDF ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Erro ao atualizar PDF.', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
 // DELETE /api/profile/items/:id - Deletar item (DEVE VIR ANTES DAS ROTAS DE PRODUTOS PARA EVITAR CONFLITO)
 router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
