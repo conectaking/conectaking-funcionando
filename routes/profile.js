@@ -565,37 +565,49 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
         // Campos específicos do banner
         if (title !== undefined) {
             updateFields.push(`title = $${paramIndex++}`);
-            updateValues.push(title || null);
+            updateValues.push(title ? String(title).trim() || null : null);
         }
         if (destination_url !== undefined) {
             updateFields.push(`destination_url = $${paramIndex++}`);
-            updateValues.push(destination_url || null);
+            updateValues.push(destination_url ? String(destination_url).trim() || null : null);
         }
         if (image_url !== undefined) {
             // Sempre salvar image_url, mesmo se for null (permite limpar imagem)
             updateFields.push(`image_url = $${paramIndex++}`);
-            updateValues.push(image_url || null);
-            console.log(`📸 [BANNER] Salvando image_url: ${image_url ? 'URL presente (' + image_url.substring(0, 50) + '...)' : 'null'}`);
+            const imageUrlValue = image_url && String(image_url).trim() ? String(image_url).trim() : null;
+            updateValues.push(imageUrlValue);
+            console.log(`📸 [BANNER] Salvando image_url: ${imageUrlValue ? 'URL presente (' + imageUrlValue.substring(0, 50) + '...)' : 'null'}`);
         }
         if (existingColumns.includes('whatsapp_message') && whatsapp_message !== undefined) {
             updateFields.push(`whatsapp_message = $${paramIndex++}`);
-            updateValues.push(whatsapp_message || null);
+            updateValues.push(whatsapp_message ? String(whatsapp_message).trim() || null : null);
         }
         if (existingColumns.includes('aspect_ratio') && aspect_ratio !== undefined) {
             updateFields.push(`aspect_ratio = $${paramIndex++}`);
-            updateValues.push(aspect_ratio || null);
+            updateValues.push(aspect_ratio ? String(aspect_ratio).trim() || null : null);
         }
         if (is_active !== undefined) {
             updateFields.push(`is_active = $${paramIndex++}`);
-            updateValues.push(is_active);
+            // Garantir que is_active seja um booleano
+            const isActiveValue = is_active === true || is_active === 'true' || is_active === 1 || is_active === '1';
+            updateValues.push(isActiveValue);
         }
         if (display_order !== undefined) {
             updateFields.push(`display_order = $${paramIndex++}`);
-            updateValues.push(display_order);
+            // Garantir que display_order seja um número inteiro
+            const displayOrderValue = display_order !== null && display_order !== undefined ? parseInt(display_order, 10) : null;
+            updateValues.push(isNaN(displayOrderValue) ? null : displayOrderValue);
         }
 
+        // Validar que temos pelo menos um campo para atualizar
         if (updateFields.length === 0) {
             return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+        }
+
+        // Validar que temos valores correspondentes
+        if (updateFields.length !== updateValues.length) {
+            console.error(`❌ [BANNER] Inconsistência: ${updateFields.length} campos mas ${updateValues.length} valores`);
+            return res.status(500).json({ message: 'Erro interno: inconsistência entre campos e valores.' });
         }
 
         // Calcular números dos parâmetros (paramIndex já está no próximo número disponível)
@@ -604,6 +616,16 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
         
         // Adicionar itemId e userId aos valores
         updateValues.push(itemId, userId);
+        
+        // Validar tipos dos parâmetros WHERE
+        if (typeof itemId !== 'number' || isNaN(itemId)) {
+            console.error(`❌ [BANNER] itemId inválido: ${itemId} (tipo: ${typeof itemId})`);
+            return res.status(400).json({ message: 'ID do item inválido.' });
+        }
+        if (typeof userId !== 'number' || isNaN(userId)) {
+            console.error(`❌ [BANNER] userId inválido: ${userId} (tipo: ${typeof userId})`);
+            return res.status(400).json({ message: 'ID do usuário inválido.' });
+        }
         
         const query = `
             UPDATE profile_items 
@@ -618,17 +640,44 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
         console.log(`🔍 [BANNER] Parâmetros WHERE: itemId=$${itemIdParam}, userId=$${userIdParam}`);
         console.log(`🔍 [BANNER] Valores:`, updateValues.map((v, i) => `$${i + 1}: ${v === null ? 'null' : (typeof v === 'string' && v.length > 50 ? v.substring(0, 50) + '...' : String(v))}`).join(', '));
         
-        const result = await client.query(query, updateValues);
-        console.log(`✅ [BANNER] Query executada com sucesso. Linhas afetadas: ${result.rowCount}`);
+        try {
+            const result = await client.query(query, updateValues);
+            console.log(`✅ [BANNER] Query executada com sucesso. Linhas afetadas: ${result.rowCount}`);
 
-        console.log(`✅ Banner ${itemId} atualizado com sucesso`);
-        console.log(`📸 image_url salvo: ${result.rows[0].image_url ? 'Sim (' + result.rows[0].image_url.substring(0, 50) + '...)' : 'Não'}`);
+            if (result.rows.length === 0) {
+                console.error(`❌ [BANNER] Nenhuma linha foi atualizada!`);
+                return res.status(404).json({ message: 'Banner não encontrado ou não foi atualizado.' });
+            }
 
-        res.json(result.rows[0]);
+            console.log(`✅ Banner ${itemId} atualizado com sucesso`);
+            console.log(`📸 image_url salvo: ${result.rows[0].image_url ? 'Sim (' + result.rows[0].image_url.substring(0, 50) + '...)' : 'Não'}`);
+
+            res.json(result.rows[0]);
+        } catch (queryError) {
+            console.error(`❌ [BANNER] Erro na query SQL:`, queryError);
+            console.error(`❌ [BANNER] Query que falhou:`, query);
+            console.error(`❌ [BANNER] Valores que falharam:`, updateValues);
+            console.error(`❌ [BANNER] Stack trace:`, queryError.stack);
+            // Não lançar o erro novamente, enviar resposta diretamente
+            return res.status(500).json({ 
+                message: 'Erro ao atualizar banner.', 
+                error: queryError.message,
+                details: process.env.NODE_ENV === 'development' ? queryError.stack : undefined
+            });
+        }
     } catch (error) {
+        // Verificar se a resposta já foi enviada
+        if (res.headersSent) {
+            console.error(`❌ Erro após resposta já enviada:`, error);
+            return;
+        }
         console.error(`❌ Erro ao atualizar banner ${req.params.id}:`, error);
-        console.error(`❌ Stack trace:`, error.stack);
-        res.status(500).json({ message: 'Erro ao atualizar banner.', error: error.message });
+        console.error(`❌ Stack trace completo:`, error.stack);
+        res.status(500).json({ 
+            message: 'Erro ao atualizar banner.', 
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     } finally {
         client.release();
     }
@@ -1617,4 +1666,5 @@ router.post('/items/repair-sales-pages', protectUser, asyncHandler(async (req, r
 // ============================================
 
 module.exports = router;
+
 
