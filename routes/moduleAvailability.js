@@ -18,6 +18,7 @@ router.get('/plan-availability', protectUser, asyncHandler(async (req, res) => {
         }
         
         // Buscar todos os módulos e sua disponibilidade por plano
+        // Apenas módulos que existem e estão ativos no sistema
         const availabilityQuery = `
             SELECT 
                 mpa.id,
@@ -26,6 +27,13 @@ router.get('/plan-availability', protectUser, asyncHandler(async (req, res) => {
                 mpa.is_available,
                 mpa.updated_at
             FROM module_plan_availability mpa
+            WHERE mpa.module_type IN (
+                'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode',
+                'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
+                'spotify', 'linkedin', 'pinterest',
+                'link', 'portfolio', 'banner', 'carousel', 
+                'youtube_embed', 'sales_page'
+            )
             ORDER BY mpa.module_type, mpa.plan_code
         `;
         const availabilityResult = await client.query(availabilityQuery);

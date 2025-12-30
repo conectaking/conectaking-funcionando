@@ -41,7 +41,7 @@ CREATE INDEX IF NOT EXISTS idx_module_plan_availability_plan ON module_plan_avai
 CREATE INDEX IF NOT EXISTS idx_module_plan_availability_available ON module_plan_availability(is_available);
 
 -- Inserir disponibilidade padrão para todos os módulos em todos os planos (todos disponíveis por padrão)
--- Isso permite que o ADM configure depois quais módulos ficam em quais planos
+-- Apenas módulos que existem e estão ativos no sistema
 INSERT INTO module_plan_availability (module_type, plan_code, is_available)
 SELECT DISTINCT 
     item_type::VARCHAR as module_type,
@@ -49,13 +49,15 @@ SELECT DISTINCT
     true as is_available
 FROM (
     SELECT unnest(ARRAY[
+        -- Contato
         'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode',
+        -- Redes Sociais
         'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
-        'spotify', 'linkedin', 'pinterest', 'reddit', 'twitch',
-        'link', 'portfolio', 'banner', 'banner_carousel', 'carousel', 'pdf', 
-        'pdf_embed', 'youtube_embed', 'instagram_embed', 'tiktok_embed',
-        'spotify_embed', 'linkedin_embed', 'pinterest_embed',
-        'sales_page', 'product_catalog'
+        'spotify', 'linkedin', 'pinterest',
+        -- Outros
+        'link', 'portfolio', 'banner', 'carousel', 
+        'youtube_embed',
+        'sales_page'
     ]) as item_type
 ) modules
 CROSS JOIN (
