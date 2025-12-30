@@ -145,7 +145,8 @@ body {
     word-wrap: break-word;
     overflow-wrap: break-word;
     border: 2px solid rgba(255, 255, 255, 0.1); 
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; 
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    overflow: visible; /* Garantir que logos não sejam cortadas */
 }
 
 .profile-link span,
@@ -266,10 +267,22 @@ body {
     }
     
     .profile-link-logo {
-        width: 24px !important;
-        height: 24px !important;
         margin-right: 10px !important;
         flex-shrink: 0 !important;
+    }
+    
+    /* Logo PNG - garantir que não seja cortada */
+    .profile-link-logo.logo-png {
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
+        overflow: visible !important;
+    }
+    
+    /* Logo circular (JPEG) - manter comportamento original */
+    .profile-link-logo.logo-circular {
+        width: 24px !important;
+        height: 24px !important;
     }
     
     .profile-banner-item,
@@ -395,9 +408,21 @@ body {
     }
     
     .profile-link-logo {
+        margin-right: 8px !important;
+    }
+    
+    /* Logo PNG - garantir que não seja cortada em mobile */
+    .profile-link-logo.logo-png {
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
+        overflow: visible !important;
+    }
+    
+    /* Logo circular (JPEG) - manter comportamento original */
+    .profile-link-logo.logo-circular {
         width: 22px !important;
         height: 22px !important;
-        margin-right: 8px !important;
     }
     
     .branding-logo img {

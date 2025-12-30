@@ -1500,7 +1500,7 @@
                         %>
                         <a href="<%= salesPageUrl %>" class="profile-link" <%= salesPageUrl !== '#' ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;" style="opacity: 0.5; cursor: not-allowed;" title="Página não publicada"' %> data-item-id="<%= item.id %>">
                             <% if (salesPageHasLogo) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= salesPageLogoSize %>px; height: <%= salesPageLogoSize %>px; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="max-width: <%= salesPageLogoSize %>px; max-height: <%= salesPageLogoSize %>px; width: <%= salesPageLogoSize %>px; height: <%= salesPageLogoSize %>px; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %>; overflow: visible;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
                                 <i class="<%= item.icon_class || 'fas fa-store' %>" style="display: none;"></i>
                             <% } else { %>
                                 <i class="<%= item.icon_class || 'fas fa-store' %>"></i>
