@@ -1119,9 +1119,20 @@ async function extractTextFromDocument(fileUrl, fileType) {
 
 // POST /api/ia-king/documents/upload - Upload de documento
 router.post('/documents/upload', protectAdmin, documentUpload.single('document'), asyncHandler(async (req, res) => {
+    console.log('📤 Iniciando upload de documento...');
+    
     if (!req.file) {
+        console.error('❌ Nenhum arquivo recebido');
         return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
     }
+    
+    console.log('✅ Arquivo recebido:', {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        key: req.file.key,
+        location: req.file.location
+    });
     
     const { title, category_id } = req.body;
     const adminId = req.user.userId;
@@ -1132,22 +1143,25 @@ router.post('/documents/upload', protectAdmin, documentUpload.single('document')
     
     const client = await db.pool.connect();
     try {
+        // Verificar variáveis de ambiente
+        if (!process.env.R2_PUBLIC_URL) {
+            console.error('❌ R2_PUBLIC_URL não configurado');
+            throw new Error('Configuração do servidor incompleta. R2_PUBLIC_URL não encontrado.');
+        }
+        
         const publicUrlBase = process.env.R2_PUBLIC_URL;
-        const fileUrl = `${publicUrlBase}/${req.file.key}`;
+        // Usar location se disponível, senão construir URL
+        const fileUrl = req.file.location || `${publicUrlBase}/${req.file.key}`;
+        
+        console.log('🔗 URL do arquivo:', fileUrl);
+        
         const fileType = req.file.mimetype.includes('pdf') ? 'pdf' : 
                         req.file.mimetype.includes('wordprocessingml') ? 'docx' :
                         req.file.mimetype.includes('msword') ? 'doc' : 'txt';
         
-        // Extrair texto (por enquanto placeholder)
-        let extractedText = '';
-        try {
-            extractedText = await extractTextFromDocument(fileUrl, fileType);
-        } catch (extractError) {
-            console.warn('Erro ao extrair texto, continuando sem texto:', extractError);
-            extractedText = `Documento ${fileType} carregado. Extração de texto será implementada.`;
-        }
+        console.log('📄 Tipo do arquivo:', fileType);
         
-        // Salvar no banco
+        // Salvar no banco primeiro (sem extrair texto ainda)
         const result = await client.query(
             `INSERT INTO ia_documents (title, file_name, file_url, file_type, file_size, extracted_text, processed, category_id, uploaded_by)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -1158,41 +1172,85 @@ router.post('/documents/upload', protectAdmin, documentUpload.single('document')
                 fileUrl,
                 fileType,
                 req.file.size,
-                extractedText,
-                extractedText.length > 0, // Processado se tiver texto
+                '', // Texto vazio inicialmente
+                false, // Não processado ainda
                 category_id || null,
                 adminId
             ]
         );
         
-        // Se conseguiu extrair texto, indexar na base de conhecimento
-        if (extractedText && extractedText.length > 100) {
-            const keywords = extractKeywords(title + ' ' + extractedText.substring(0, 1000));
-            
-            await client.query(
-                `INSERT INTO ia_knowledge_base (title, content, category_id, keywords, source_type, source_reference, created_by)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                [
-                    `Conteúdo do documento: ${title}`,
-                    extractedText.substring(0, 5000), // Limitar tamanho
-                    category_id || null,
-                    keywords,
-                    'document',
-                    `ia_documents:${result.rows[0].id}`,
-                    adminId
-                ]
-            );
-        }
+        console.log('✅ Documento salvo no banco com ID:', result.rows[0].id);
         
+        // Retornar sucesso imediatamente
         res.json({
-            message: 'Documento enviado e processado com sucesso!',
+            message: 'Documento enviado com sucesso! O processamento do texto será feito em segundo plano.',
             document: result.rows[0]
         });
+        
+        // Liberar cliente antes do processamento em segundo plano
+        client.release();
+        
+        // Processar extração de texto em segundo plano (não bloquear resposta)
+        setTimeout(async () => {
+            const bgClient = await db.pool.connect();
+            try {
+                console.log('🔄 Iniciando extração de texto em segundo plano...');
+                let extractedText = '';
+                
+                try {
+                    extractedText = await extractTextFromDocument(fileUrl, fileType);
+                    console.log('✅ Texto extraído:', extractedText.length, 'caracteres');
+                } catch (extractError) {
+                    console.warn('⚠️ Erro ao extrair texto:', extractError.message);
+                    extractedText = `Documento ${fileType} carregado. Para extração completa, instale as bibliotecas necessárias.`;
+                }
+                
+                // Atualizar documento com texto extraído
+                await bgClient.query(
+                    `UPDATE ia_documents 
+                     SET extracted_text = $1, processed = $2, updated_at = CURRENT_TIMESTAMP
+                     WHERE id = $3`,
+                    [extractedText, extractedText.length > 0, result.rows[0].id]
+                );
+                
+                // Se conseguiu extrair texto significativo, indexar na base de conhecimento
+                if (extractedText && extractedText.length > 100) {
+                    const keywords = extractKeywords(title + ' ' + extractedText.substring(0, 1000));
+                    
+                    await bgClient.query(
+                        `INSERT INTO ia_knowledge_base (title, content, category_id, keywords, source_type, source_reference, created_by)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                        [
+                            `Conteúdo do documento: ${title}`,
+                            extractedText.substring(0, 5000),
+                            category_id || null,
+                            keywords,
+                            'document',
+                            `ia_documents:${result.rows[0].id}`,
+                            adminId
+                        ]
+                    );
+                    console.log('✅ Conhecimento indexado na base');
+                }
+            } catch (bgError) {
+                console.error('❌ Erro no processamento em segundo plano:', bgError);
+            } finally {
+                bgClient.release();
+            }
+        }, 2000); // Aguardar 2 segundos para garantir que o arquivo está disponível no R2
+        
     } catch (error) {
         console.error('❌ Erro ao fazer upload de documento:', error);
-        throw error;
-    } finally {
+        console.error('Stack:', error.stack);
+        
+        // Liberar cliente em caso de erro
         client.release();
+        
+        // Retornar erro mais detalhado
+        res.status(500).json({ 
+            message: 'Erro interno do servidor ao processar documento.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 }));
 
