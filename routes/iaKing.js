@@ -27,6 +27,220 @@ function isAboutSystem(message) {
     return systemKeywords.some(keyword => lowerMessage.includes(keyword));
 }
 
+// Função para extrair entidades e tópicos principais da pergunta (INTELIGÊNCIA CONTEXTUAL)
+function extractQuestionContext(question) {
+    const lowerQuestion = question.toLowerCase().trim();
+    
+    // Entidades importantes (nomes próprios, conceitos)
+    const entities = [];
+    
+    // Padrões para extrair entidades
+    const entityPatterns = [
+        /(?:quem\s+é|quem\s+foi|o\s+que\s+é|o\s+que\s+foi)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/gi,
+        /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g, // Nomes próprios (começam com maiúscula)
+    ];
+    
+    // Extrair entidades dos padrões
+    for (const pattern of entityPatterns) {
+        const matches = lowerQuestion.match(pattern);
+        if (matches) {
+            entities.push(...matches.map(m => m.toLowerCase().trim()));
+        }
+    }
+    
+    // Palavras-chave importantes da pergunta (remover palavras comuns)
+    const commonWords = ['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas', 'para', 'com', 'por', 'que', 'é', 'são', 'está', 'estão', 'ser', 'ter', 'fazer', 'pode', 'sua', 'seu', 'suas', 'seus', 'me', 'te', 'nos', 'você', 'vocês', 'qual', 'quais', 'como', 'quando', 'onde', 'quem', 'foi', 'sabe', 'conhece'];
+    const keywords = lowerQuestion.split(/\s+/)
+        .filter(w => w.length > 2 && !commonWords.includes(w))
+        .filter((v, i, a) => a.indexOf(v) === i); // Remover duplicatas
+    
+    // Tipo de pergunta
+    let questionType = 'general';
+    if (lowerQuestion.includes('quem') || lowerQuestion.includes('quem é') || lowerQuestion.includes('quem foi')) {
+        questionType = 'who';
+    } else if (lowerQuestion.includes('o que é') || lowerQuestion.includes('o que foi') || lowerQuestion.includes('que é')) {
+        questionType = 'what';
+    } else if (lowerQuestion.includes('como') || lowerQuestion.includes('como fazer')) {
+        questionType = 'how';
+    } else if (lowerQuestion.includes('onde') || lowerQuestion.includes('onde está')) {
+        questionType = 'where';
+    } else if (lowerQuestion.includes('quando') || lowerQuestion.includes('quando foi')) {
+        questionType = 'when';
+    } else if (lowerQuestion.includes('por que') || lowerQuestion.includes('porque') || lowerQuestion.includes('por quê')) {
+        questionType = 'why';
+    }
+    
+    return {
+        entities: entities,
+        keywords: keywords,
+        questionType: questionType,
+        originalQuestion: question
+    };
+}
+
+// Função para encontrar trecho relevante dentro do conteúdo que responde à pergunta
+function findRelevantExcerpt(content, questionContext, maxLength = 400) {
+    if (!content || !questionContext) return null;
+    
+    // Filtrar conteúdo acadêmico primeiro
+    if (filterAcademicContent(content)) {
+        console.log('🚫 [IA] Conteúdo acadêmico filtrado ao buscar trecho relevante');
+        return null;
+    }
+    
+    const contentLower = content.toLowerCase();
+    const sentences = content.split(/[.!?]\s+/).filter(s => s.trim().length > 10);
+    
+    // Procurar sentenças que contêm as entidades ou palavras-chave principais
+    const relevantSentences = [];
+    
+    for (const sentence of sentences) {
+        // Filtrar sentenças acadêmicas
+        if (filterAcademicContent(sentence)) continue;
+        
+        const sentenceLower = sentence.toLowerCase();
+        let score = 0;
+        
+        // PRIORIDADE MÁXIMA: Entidades encontradas (especialmente para "quem é X")
+        for (const entity of questionContext.entities) {
+            if (sentenceLower.includes(entity)) {
+                score += 100; // Muito alto para entidades
+                
+                // BONUS EXTRA: Se a sentença começa com a entidade ou tem padrão de definição
+                if (sentenceLower.startsWith(entity) || 
+                    sentenceLower.match(new RegExp(`(?:^|\\s)${entity}\\s+(?:é|foi|nasceu|filho|filha|profeta|rei|mestre|santo|santa)`, 'i'))) {
+                    score += 50; // Bonus extra para definições diretas
+                }
+            }
+        }
+        
+        // PRIORIDADE ALTA: Palavras-chave principais
+        for (const keyword of questionContext.keywords) {
+            if (sentenceLower.includes(keyword)) {
+                score += 30;
+            }
+        }
+        
+        // BONUS: Padrões de resposta baseados no tipo de pergunta
+        if (questionContext.questionType === 'who') {
+            // Para "quem é", procurar padrões de definição de pessoa
+            if (sentenceLower.match(/(?:^|\s)(?:é|foi|nasceu|filho|filha|profeta|rei|mestre|santo|santa|apóstolo|discípulo)/)) {
+                score += 40;
+            }
+        } else if (questionContext.questionType === 'what') {
+            // Para "o que é", procurar padrões de definição
+            if (sentenceLower.match(/(?:^|\s)(?:é|significa|consiste|refere-se|representa)/)) {
+                score += 40;
+            }
+        }
+        
+        if (score > 0) {
+            relevantSentences.push({ sentence, score });
+        }
+    }
+    
+    // Ordenar por score e pegar as melhores
+    relevantSentences.sort((a, b) => b.score - a.score);
+    
+    // Se encontrou sentenças relevantes, construir resposta
+    if (relevantSentences.length > 0) {
+        // Pegar sentenças com maior score (priorizar as que têm entidades)
+        const topSentences = relevantSentences.slice(0, 6); // Top 6 sentenças
+        
+        // Construir resposta começando pelas sentenças mais relevantes
+        let excerpt = '';
+        for (const item of topSentences) {
+            if (excerpt.length + item.sentence.length > maxLength) break;
+            if (excerpt) excerpt += '. ';
+            excerpt += item.sentence;
+        }
+        
+        // Se ainda tem espaço, adicionar contexto (sentenças próximas)
+        if (excerpt.length < maxLength * 0.7 && relevantSentences.length > topSentences.length) {
+            const remaining = maxLength - excerpt.length;
+            const nextSentence = relevantSentences[topSentences.length];
+            if (nextSentence && nextSentence.sentence.length <= remaining) {
+                excerpt += '. ' + nextSentence.sentence;
+            }
+        }
+        
+        // Limitar tamanho final
+        if (excerpt.length > maxLength) {
+            excerpt = excerpt.substring(0, maxLength);
+            // Tentar cortar em uma frase completa
+            const lastPeriod = excerpt.lastIndexOf('.');
+            if (lastPeriod > maxLength * 0.6) {
+                excerpt = excerpt.substring(0, lastPeriod + 1);
+            } else {
+                excerpt += '...';
+            }
+        }
+        
+        if (excerpt.length > 50) {
+            console.log('✅ [IA] Trecho relevante encontrado:', excerpt.substring(0, 100) + '...');
+            return excerpt;
+        }
+    }
+    
+    // Se não encontrou sentenças específicas, procurar por padrões de resposta no conteúdo completo
+    const answerPatterns = {
+        'who': [
+            new RegExp(`(${questionContext.entities.join('|')})\\s+(?:é|foi|nasceu|filho|filha|profeta|rei|mestre|santo|santa|apóstolo|discípulo)\\s+([^.!?]{20,200})`, 'gi'),
+            new RegExp(`(?:quem|quem é|quem foi)\\s+(${questionContext.entities.join('|')})\\s*[?!.]?\\s*([^.!?]{20,200})`, 'gi')
+        ],
+        'what': [
+            new RegExp(`(${questionContext.entities.join('|')}|${questionContext.keywords.join('|')})\\s+(?:é|significa|consiste|refere-se)\\s+([^.!?]{20,200})`, 'gi')
+        ]
+    };
+    
+    if (answerPatterns[questionContext.questionType]) {
+        for (const pattern of answerPatterns[questionContext.questionType]) {
+            const matches = [...content.matchAll(pattern)];
+            if (matches && matches.length > 0) {
+                // Pegar o melhor match (mais completo)
+                const bestMatch = matches.reduce((best, match) => {
+                    return match[0].length > (best?.[0].length || 0) ? match : best;
+                }, null);
+                
+                if (bestMatch && bestMatch[0].length > 50) {
+                    let excerpt = bestMatch[0].substring(0, maxLength);
+                    // Garantir que termina em ponto
+                    if (!excerpt.match(/[.!?]$/)) {
+                        const lastPeriod = excerpt.lastIndexOf('.');
+                        if (lastPeriod > maxLength * 0.7) {
+                            excerpt = excerpt.substring(0, lastPeriod + 1);
+                        }
+                    }
+                    console.log('✅ [IA] Padrão de resposta encontrado:', excerpt.substring(0, 100) + '...');
+                    return excerpt;
+                }
+            }
+        }
+    }
+    
+    // Fallback: primeiro parágrafo que contém entidade ou palavra-chave principal
+    const paragraphs = content.split(/\n\n+/);
+    for (const para of paragraphs) {
+        // Filtrar parágrafos acadêmicos
+        if (filterAcademicContent(para)) continue;
+        
+        const paraLower = para.toLowerCase();
+        const hasEntity = questionContext.entities.some(ent => paraLower.includes(ent));
+        const hasMainKeyword = questionContext.keywords.length > 0 && 
+                              questionContext.keywords.slice(0, 2).some(kw => paraLower.includes(kw));
+        
+        if (hasEntity || hasMainKeyword) {
+            const excerpt = para.substring(0, maxLength);
+            if (excerpt.length > 50) {
+                console.log('✅ [IA] Parágrafo relevante encontrado (fallback)');
+                return excerpt;
+            }
+        }
+    }
+    
+    return null;
+}
+
 // Função para calcular similaridade entre textos (melhorada e mais inteligente)
 function calculateSimilarity(text1, text2) {
     if (!text1 || !text2) return 0;
@@ -76,6 +290,67 @@ function calculateSimilarity(text1, text2) {
         console.error('Erro ao calcular similaridade:', error);
         return 0;
     }
+}
+
+// Função para calcular relevância inteligente (considera contexto semântico)
+function calculateIntelligentRelevance(questionContext, knowledgeItem) {
+    if (!questionContext || !knowledgeItem) return 0;
+    
+    const titleLower = (knowledgeItem.title || '').toLowerCase();
+    const contentLower = (knowledgeItem.content || '').toLowerCase();
+    let score = 0;
+    
+    // BONUS ALTO: Entidades encontradas no título (máxima relevância)
+    for (const entity of questionContext.entities) {
+        if (titleLower.includes(entity)) {
+            score += 100; // Muito alto - título contém a entidade
+        } else if (contentLower.includes(entity)) {
+            score += 50; // Alto - conteúdo contém a entidade
+        }
+    }
+    
+    // BONUS MÉDIO: Palavras-chave no título
+    let keywordMatches = 0;
+    for (const keyword of questionContext.keywords) {
+        if (titleLower.includes(keyword)) {
+            keywordMatches++;
+            score += 30;
+        } else if (contentLower.includes(keyword)) {
+            keywordMatches++;
+            score += 15;
+        }
+    }
+    
+    // BONUS: Tipo de pergunta corresponde ao conteúdo
+    if (questionContext.questionType === 'who') {
+        // Para "quem é", procurar padrões de definição de pessoa
+        if (contentLower.match(/(?:é|foi|nasceu|filho|filha|profeta|rei|mestre)/)) {
+            score += 40;
+        }
+    } else if (questionContext.questionType === 'what') {
+        // Para "o que é", procurar padrões de definição
+        if (contentLower.match(/(?:é|significa|consiste|refere-se)/)) {
+            score += 40;
+        }
+    }
+    
+    // BONUS: Conhecimento de livros tem prioridade (mas não se não for relevante)
+    if (knowledgeItem.source_type === 'book_training' && score > 30) {
+        score += 20; // Bonus apenas se já for relevante
+    }
+    
+    // PENALIDADE: Se não tem nenhuma entidade ou palavra-chave relevante
+    if (questionContext.entities.length > 0 && score < 50) {
+        // Se a pergunta tem entidades específicas mas o conhecimento não as contém
+        const hasEntity = questionContext.entities.some(ent => 
+            titleLower.includes(ent) || contentLower.includes(ent)
+        );
+        if (!hasEntity) {
+            score = Math.max(0, score - 80); // Grande penalidade
+        }
+    }
+    
+    return score;
 }
 
 // Função para encontrar palavras-chave na mensagem
@@ -625,10 +900,18 @@ async function findBestAnswer(userMessage, userId) {
             console.error('Erro ao buscar Q&A:', error);
         }
         
-        // 2. Buscar na base de conhecimento
+        // 2. Buscar na base de conhecimento COM INTELIGÊNCIA CONTEXTUAL
         try {
+            // Extrair contexto da pergunta (entidades, palavras-chave, tipo)
+            const questionContext = extractQuestionContext(userMessage);
+            console.log('🧠 [IA] Contexto da pergunta:', {
+                entities: questionContext.entities,
+                keywords: questionContext.keywords,
+                type: questionContext.questionType
+            });
+            
             knowledgeResult = await client.query(`
-                SELECT id, title, content, keywords, usage_count
+                SELECT id, title, content, keywords, usage_count, source_type
                 FROM ia_knowledge_base
                 WHERE is_active = true
             `);
@@ -636,11 +919,22 @@ async function findBestAnswer(userMessage, userId) {
             // Extrair palavras-chave da mensagem do usuário
             const userKeywords = extractKeywords(userMessage);
             
+            // Array para armazenar todos os candidatos com scores
+            const candidates = [];
+            
             for (const kb of knowledgeResult.rows) {
                 if (!kb.title || !kb.content) continue;
                 
-                // Calcular scores múltiplos
-                const titleScore = calculateSimilarity(userMessage, kb.title) * 2.0; // Título tem peso maior
+                // CALCULAR RELEVÂNCIA INTELIGENTE (novo sistema)
+                const intelligentScore = calculateIntelligentRelevance(questionContext, {
+                    title: kb.title,
+                    content: kb.content,
+                    keywords: kb.keywords,
+                    source_type: kb.source_type
+                });
+                
+                // Calcular scores tradicionais (para compatibilidade)
+                const titleScore = calculateSimilarity(userMessage, kb.title) * 2.0;
                 const contentScore = calculateSimilarity(userMessage, kb.content) * 0.8;
                 
                 // Score por palavras-chave cadastradas
@@ -651,7 +945,7 @@ async function findBestAnswer(userMessage, userId) {
                         return userMessage.toLowerCase().includes(lowerK) || 
                                userKeywords.some(uk => lowerK.includes(uk) || uk.includes(lowerK));
                     });
-                    keywordScore = matchingKeywords.length * 20; // Aumentado peso das palavras-chave
+                    keywordScore = matchingKeywords.length * 20;
                 }
                 
                 // Score por palavras-chave extraídas da mensagem
@@ -662,38 +956,61 @@ async function findBestAnswer(userMessage, userId) {
                     extractedKeywordScore = matchingExtracted.length * 10;
                 }
                 
-                // Score por similaridade de título (mais importante)
+                // Score por similaridade de título
                 const titleKeywordMatch = userKeywords.some(uk => kb.title.toLowerCase().includes(uk));
                 const titleBonus = titleKeywordMatch ? 30 : 0;
                 
-                // BONUS MÁXIMO para conhecimento de livros (prioridade sobre tudo)
-                const bookBonus = kb.source_type === 'book_training' ? 50 : 0;
+                // PRIORIDADE: Usar score inteligente se for alto, senão usar score tradicional
+                const totalScore = intelligentScore > 50 ? intelligentScore : (titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus);
                 
-                const totalScore = titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus + bookBonus;
+                // Adicionar à lista de candidatos
+                candidates.push({
+                    kb: kb,
+                    score: totalScore,
+                    intelligentScore: intelligentScore
+                });
+            }
+            
+            // Ordenar candidatos por score (maior primeiro)
+            candidates.sort((a, b) => b.score - a.score);
+            
+            // Pegar o melhor candidato
+            if (candidates.length > 0 && candidates[0].score > 30) {
+                const bestCandidate = candidates[0];
+                const kb = bestCandidate.kb;
                 
-                if (totalScore > bestScore) {
-                    bestScore = totalScore;
-                    
-                    // Extrair resposta direta e objetiva
-                    let extractedAnswer = extractDirectAnswer(kb.content, userMessage);
-                    
-                    // Se não conseguiu extrair resposta direta, resumir
-                    if (!extractedAnswer) {
-                        extractedAnswer = summarizeAnswer(kb.content, 300);
-                    }
-                    
-                    // Se ainda não tem resposta, usar conteúdo original (mas limitado)
-                    if (!extractedAnswer) {
-                        extractedAnswer = kb.content.substring(0, 300);
-                    }
-                    
-                    bestAnswer = extractedAnswer;
-                    bestSource = 'knowledge';
-                    
-                    // Se for conhecimento de livro, marcar como prioridade máxima
-                    if (kb.source_type === 'book_training') {
-                        console.log('📚 [IA] Usando conhecimento de LIVRO:', kb.title.substring(0, 50));
-                    }
+                console.log('🎯 [IA] Melhor conhecimento encontrado:', {
+                    title: kb.title.substring(0, 50),
+                    score: bestCandidate.score,
+                    intelligentScore: bestCandidate.intelligentScore,
+                    source_type: kb.source_type
+                });
+                
+                // ENCONTRAR TRECHO RELEVANTE que responde à pergunta
+                let relevantExcerpt = findRelevantExcerpt(kb.content, questionContext, 400);
+                
+                // Se não encontrou trecho relevante, tentar extrair resposta direta
+                if (!relevantExcerpt) {
+                    relevantExcerpt = extractDirectAnswer(kb.content, userMessage);
+                }
+                
+                // Se ainda não encontrou, resumir
+                if (!relevantExcerpt) {
+                    relevantExcerpt = summarizeAnswer(kb.content, 300);
+                }
+                
+                // Se ainda não tem, usar início do conteúdo
+                if (!relevantExcerpt) {
+                    relevantExcerpt = kb.content.substring(0, 300);
+                }
+                
+                bestAnswer = relevantExcerpt;
+                bestScore = bestCandidate.score;
+                bestSource = 'knowledge';
+                
+                // Log para debug
+                if (kb.source_type === 'book_training') {
+                    console.log('📚 [IA] Usando conhecimento de LIVRO (com inteligência contextual):', kb.title.substring(0, 50));
                 }
             }
         } catch (error) {
