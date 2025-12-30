@@ -44,6 +44,7 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
                 description,
                 features,
                 whatsapp_number,
+                whatsapp_message,
                 pix_key,
                 is_active
             FROM subscription_plans
@@ -109,6 +110,7 @@ router.get('/plans', protectUser, asyncHandler(async (req, res) => {
                 description,
                 features,
                 whatsapp_number,
+                whatsapp_message,
                 pix_key,
                 is_active,
                 created_at,
@@ -135,7 +137,7 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
     try {
         const userId = req.user.userId;
         const planId = parseInt(req.params.id, 10);
-        const { plan_name, price, description, features, whatsapp_number, pix_key, is_active } = req.body;
+        const { plan_name, price, description, features, whatsapp_number, whatsapp_message, pix_key, is_active } = req.body;
         
         // Verificar se é admin
         const adminCheck = await client.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
@@ -173,6 +175,10 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
         if (whatsapp_number !== undefined) {
             updateFields.push(`whatsapp_number = $${paramIndex++}`);
             updateValues.push(whatsapp_number || null);
+        }
+        if (whatsapp_message !== undefined) {
+            updateFields.push(`whatsapp_message = $${paramIndex++}`);
+            updateValues.push(whatsapp_message || null);
         }
         if (pix_key !== undefined) {
             updateFields.push(`pix_key = $${paramIndex++}`);
