@@ -30,23 +30,85 @@ function isAboutSystem(message) {
 // Função para extrair entidades e tópicos principais da pergunta (INTELIGÊNCIA CONTEXTUAL)
 function extractQuestionContext(question) {
     const lowerQuestion = question.toLowerCase().trim();
+    const originalQuestion = question;
     
     // Entidades importantes (nomes próprios, conceitos)
     const entities = [];
     
-    // Padrões para extrair entidades
+    // Padrões para extrair entidades (melhorados e mais robustos)
     const entityPatterns = [
-        /(?:quem\s+é|quem\s+foi|o\s+que\s+é|o\s+que\s+foi)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/gi,
-        /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g, // Nomes próprios (começam com maiúscula)
+        // Padrão: "quem é X" ou "quem foi X" ou "quem e X" (com ou sem acento)
+        /(?:quem\s+(?:é|e|foi|era))\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi,
+        // Padrão: "o que é X"
+        /(?:o\s+que\s+(?:é|e|foi|era))\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi,
+        // Padrão: "X é" ou "X foi" (com maiúscula)
+        /([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+)*)\s+(?:é|e|foi|era|nasceu)/gi,
+        // Padrão: Nomes próprios no final da pergunta (após "quem é", "o que é", etc.)
+        /(?:quem|o\s+que)\s+(?:é|e|foi|era)\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi
     ];
     
     // Extrair entidades dos padrões
     for (const pattern of entityPatterns) {
-        const matches = lowerQuestion.match(pattern);
-        if (matches) {
-            entities.push(...matches.map(m => m.toLowerCase().trim()));
+        const matches = [...originalQuestion.matchAll(pattern)];
+        if (matches && matches.length > 0) {
+            for (const match of matches) {
+                if (match[1]) {
+                    const entity = match[1].toLowerCase().trim();
+                    // Filtrar palavras muito comuns
+                    const commonWords = ['o', 'a', 'um', 'uma', 'de', 'do', 'da', 'que', 'você', 'voce', 'sabe', 'conhece', 'você', 'voce'];
+                    if (entity.length > 2 && !commonWords.includes(entity)) {
+                        entities.push(entity);
+                    }
+                }
+            }
         }
     }
+    
+    // EXTRAÇÃO DIRETA: Procurar palavras que aparecem após "quem é", "quem e", etc.
+    const directPattern = /(?:quem\s+(?:é|e|foi|era)|o\s+que\s+(?:é|e|foi|era))\s+([a-záàâãéêíóôõúç]+)/gi;
+    const directMatches = [...lowerQuestion.matchAll(directPattern)];
+    for (const match of directMatches) {
+        if (match[1]) {
+            const entity = match[1].trim();
+            const commonWords = ['o', 'a', 'um', 'uma', 'de', 'do', 'da', 'que', 'você', 'voce', 'sabe', 'conhece'];
+            if (entity.length > 2 && !commonWords.includes(entity) && !entities.includes(entity)) {
+                entities.push(entity);
+            }
+        }
+    }
+    
+    // Extrair palavras que parecem nomes próprios (começam com maiúscula e não são no início da frase)
+    const words = originalQuestion.split(/\s+/);
+    for (let i = 1; i < words.length; i++) {
+        const word = words[i];
+        // Se começa com maiúscula e não é no início da frase, pode ser nome próprio
+        if (word.match(/^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+$/) && 
+            word.length > 2 && 
+            !['O', 'A', 'Os', 'As', 'Um', 'Uma', 'De', 'Do', 'Da', 'Que', 'Você', 'Voce'].includes(word)) {
+            const entity = word.toLowerCase();
+            if (!entities.includes(entity)) {
+                entities.push(entity);
+            }
+        }
+    }
+    
+    // EXTRAÇÃO ESPECIAL: Se não encontrou entidades, procurar palavras-chave importantes na pergunta
+    if (entities.length === 0) {
+        // Procurar palavras que não são comuns e podem ser entidades
+        const allWords = lowerQuestion.split(/\s+/);
+        const importantWords = allWords.filter(w => 
+            w.length > 3 && 
+            !['quem', 'que', 'você', 'voce', 'sabe', 'conhece', 'pode', 'fazer', 'como', 'onde', 'quando', 'porque'].includes(w)
+        );
+        
+        // Se encontrou palavras importantes, adicionar como possíveis entidades
+        if (importantWords.length > 0) {
+            entities.push(...importantWords.slice(0, 3)); // Máximo 3 palavras
+        }
+    }
+    
+    // Remover duplicatas
+    const uniqueEntities = [...new Set(entities)];
     
     // Palavras-chave importantes da pergunta (remover palavras comuns)
     const commonWords = ['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas', 'para', 'com', 'por', 'que', 'é', 'são', 'está', 'estão', 'ser', 'ter', 'fazer', 'pode', 'sua', 'seu', 'suas', 'seus', 'me', 'te', 'nos', 'você', 'vocês', 'qual', 'quais', 'como', 'quando', 'onde', 'quem', 'foi', 'sabe', 'conhece'];
@@ -71,7 +133,7 @@ function extractQuestionContext(question) {
     }
     
     return {
-        entities: entities,
+        entities: uniqueEntities,
         keywords: keywords,
         questionType: questionType,
         originalQuestion: question
