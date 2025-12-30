@@ -27,6 +27,236 @@ function isAboutSystem(message) {
     return systemKeywords.some(keyword => lowerMessage.includes(keyword));
 }
 
+// ============================================
+// SISTEMA DE FILTROS E CATEGORIZAÇÃO
+// ============================================
+
+// Função para categorizar a pergunta (FILTROS INTELIGENTES)
+function categorizeQuestion(question, questionContext) {
+    const lowerQuestion = question.toLowerCase();
+    const categories = {
+        religious: false,      // Religioso
+        political: false,      // Político
+        scientific: false,     // Científico
+        philosophical: false,  // Filosófico
+        historical: false,     // Histórico
+        psychological: false,   // Psicológico
+        technical: false,       // Técnico
+        personal: false,       // Pessoal
+        educational: false,    // Educacional
+        health: false,         // Saúde
+        business: false,      // Negócios
+        entertainment: false   // Entretenimento
+    };
+    
+    // FILTRO RELIGIOSO
+    const religiousKeywords = [
+        'jesus', 'cristo', 'deus', 'deus', 'bíblia', 'biblia', 'evangelho', 'igreja', 'religião', 'religiao',
+        'fé', 'fe', 'santo', 'santa', 'profeta', 'apóstolo', 'apostolo', 'cristianismo', 'catolicismo',
+        'protestante', 'islam', 'islamismo', 'budismo', 'judaísmo', 'judaismo', 'espiritualidade',
+        'oração', 'oracao', 'rezar', 'rezar', 'salvação', 'salvacao', 'pecado', 'céu', 'ceu', 'inferno',
+        'anjo', 'demônio', 'demonio', 'milagre', 'sagrado', 'divino', 'messias', 'salvador'
+    ];
+    
+    for (const keyword of religiousKeywords) {
+        if (lowerQuestion.includes(keyword) || questionContext.entities.some(e => e.includes(keyword))) {
+            categories.religious = true;
+            break;
+        }
+    }
+    
+    // FILTRO POLÍTICO
+    const politicalKeywords = [
+        'política', 'politica', 'político', 'politico', 'governo', 'presidente', 'eleição', 'eleicao',
+        'partido', 'voto', 'votar', 'democracia', 'ditadura', 'esquerda', 'direita', 'liberal',
+        'conservador', 'socialista', 'comunista', 'capitalismo', 'socialismo', 'congresso', 'senado',
+        'deputado', 'senador', 'prefeito', 'governador', 'eleitor', 'candidato', 'campanha'
+    ];
+    
+    for (const keyword of politicalKeywords) {
+        if (lowerQuestion.includes(keyword)) {
+            categories.political = true;
+            break;
+        }
+    }
+    
+    // FILTRO CIENTÍFICO
+    const scientificKeywords = [
+        'ciência', 'ciencia', 'científico', 'cientifico', 'pesquisa', 'experimento', 'laboratório', 'laboratorio',
+        'física', 'fisica', 'química', 'quimica', 'biologia', 'matemática', 'matematica', 'astronomia',
+        'teoria', 'hipótese', 'hipotese', 'método científico', 'metodo cientifico', 'dados', 'estatística',
+        'estatistica', 'análise', 'analise', 'pesquisador', 'cientista', 'estudo', 'descoberta'
+    ];
+    
+    for (const keyword of scientificKeywords) {
+        if (lowerQuestion.includes(keyword)) {
+            categories.scientific = true;
+            break;
+        }
+    }
+    
+    // FILTRO FILOSÓFICO
+    const philosophicalKeywords = [
+        'filosofia', 'filosófico', 'filosofico', 'filosofo', 'filosofo', 'ética', 'etica', 'moral',
+        'existência', 'existencia', 'sentido da vida', 'verdade', 'realidade', 'consciência', 'consciencia',
+        'razão', 'razao', 'lógica', 'logica', 'pensamento', 'reflexão', 'reflexao', 'questionamento',
+        'socrático', 'socratico', 'aristóteles', 'aristoteles', 'platão', 'platao', 'kant', 'nietzsche'
+    ];
+    
+    for (const keyword of philosophicalKeywords) {
+        if (lowerQuestion.includes(keyword)) {
+            categories.philosophical = true;
+            break;
+        }
+    }
+    
+    // FILTRO HISTÓRICO
+    const historicalKeywords = [
+        'história', 'historia', 'histórico', 'historico', 'passado', 'antigo', 'antiga', 'época', 'epoca',
+        'século', 'seculo', 'idade', 'era', 'civilização', 'civilizacao', 'império', 'imperio', 'guerra',
+        'batalha', 'revolução', 'revolucao', 'independência', 'independencia', 'colonização', 'colonizacao'
+    ];
+    
+    for (const keyword of historicalKeywords) {
+        if (lowerQuestion.includes(keyword)) {
+            categories.historical = true;
+            break;
+        }
+    }
+    
+    // FILTRO PSICOLÓGICO
+    const psychologicalKeywords = [
+        'psicologia', 'psicológico', 'psicologico', 'psicólogo', 'psicologo', 'psiquiatra', 'terapia',
+        'mental', 'emocional', 'ansiedade', 'depressão', 'depressao', 'estresse', 'stress', 'transtorno',
+        'comportamento', 'personalidade', 'mente', 'cognição', 'cognicao', 'trauma', 'emoção', 'emocao'
+    ];
+    
+    for (const keyword of psychologicalKeywords) {
+        if (lowerQuestion.includes(keyword)) {
+            categories.psychological = true;
+            break;
+        }
+    }
+    
+    // FILTRO TÉCNICO
+    const technicalKeywords = [
+        'tecnologia', 'técnico', 'tecnico', 'programação', 'programacao', 'código', 'codigo', 'software',
+        'hardware', 'computador', 'aplicativo', 'app', 'sistema', 'plataforma', 'desenvolvimento', 'api',
+        'banco de dados', 'database', 'servidor', 'cliente', 'interface', 'algoritmo', 'função', 'funcao'
+    ];
+    
+    for (const keyword of technicalKeywords) {
+        if (lowerQuestion.includes(keyword)) {
+            categories.technical = true;
+            break;
+        }
+    }
+    
+    // FILTRO PESSOAL
+    const personalKeywords = [
+        'eu', 'meu', 'minha', 'me', 'mim', 'você', 'voce', 'sua', 'seu', 'pessoal', 'privado',
+        'ajuda pessoal', 'conselho pessoal', 'minha vida', 'meu problema', 'estou', 'sinto'
+    ];
+    
+    for (const keyword of personalKeywords) {
+        if (lowerQuestion.includes(keyword) && (lowerQuestion.includes('ajuda') || lowerQuestion.includes('problema') || lowerQuestion.includes('conselho'))) {
+            categories.personal = true;
+            break;
+        }
+    }
+    
+    // FILTRO EDUCACIONAL
+    const educationalKeywords = [
+        'aprender', 'estudar', 'estudo', 'curso', 'aula', 'professor', 'professora', 'ensino', 'educação',
+        'educacao', 'escola', 'universidade', 'faculdade', 'aluno', 'estudante', 'matéria', 'materia',
+        'disciplina', 'conteúdo', 'conteudo', 'explicar', 'ensinar', 'como fazer', 'como aprender'
+    ];
+    
+    for (const keyword of educationalKeywords) {
+        if (lowerQuestion.includes(keyword)) {
+            categories.educational = true;
+            break;
+        }
+    }
+    
+    // FILTRO SAÚDE
+    const healthKeywords = [
+        'saúde', 'saude', 'médico', 'medico', 'médica', 'medica', 'doença', 'doenca', 'tratamento',
+        'sintoma', 'diagnóstico', 'diagnostico', 'medicina', 'hospital', 'clínica', 'clinica',
+        'remédio', 'remedio', 'medicamento', 'cura', 'prevenção', 'prevencao'
+    ];
+    
+    for (const keyword of healthKeywords) {
+        if (lowerQuestion.includes(keyword)) {
+            categories.health = true;
+            break;
+        }
+    }
+    
+    // Determinar categoria principal
+    let primaryCategory = 'general';
+    const activeCategories = Object.entries(categories).filter(([_, active]) => active);
+    
+    if (activeCategories.length > 0) {
+        // Priorizar: religioso > histórico > filosófico > científico > político
+        if (categories.religious) primaryCategory = 'religious';
+        else if (categories.historical) primaryCategory = 'historical';
+        else if (categories.philosophical) primaryCategory = 'philosophical';
+        else if (categories.scientific) primaryCategory = 'scientific';
+        else if (categories.political) primaryCategory = 'political';
+        else if (categories.psychological) primaryCategory = 'psychological';
+        else if (categories.technical) primaryCategory = 'technical';
+        else if (categories.personal) primaryCategory = 'personal';
+        else if (categories.educational) primaryCategory = 'educational';
+        else if (categories.health) primaryCategory = 'health';
+        else primaryCategory = activeCategories[0][0];
+    }
+    
+    return {
+        categories: categories,
+        primaryCategory: primaryCategory,
+        allCategories: activeCategories.map(([cat, _]) => cat)
+    };
+}
+
+// Função para aplicar filtros na busca de conhecimento
+function applyCategoryFilters(knowledgeItems, categoryInfo, questionContext) {
+    if (!categoryInfo || categoryInfo.primaryCategory === 'general') {
+        return knowledgeItems; // Sem filtro se categoria geral
+    }
+    
+    const filtered = knowledgeItems.filter(kb => {
+        if (!kb.content || !kb.title) return false;
+        
+        const contentLower = kb.content.toLowerCase();
+        const titleLower = kb.title.toLowerCase();
+        
+        // Para perguntas religiosas, priorizar conhecimento religioso
+        if (categoryInfo.primaryCategory === 'religious') {
+            const religiousTerms = ['jesus', 'cristo', 'deus', 'bíblia', 'biblia', 'evangelho', 'fé', 'fe', 'santo', 'santa', 'cristianismo', 'religião', 'religiao'];
+            return religiousTerms.some(term => contentLower.includes(term) || titleLower.includes(term));
+        }
+        
+        // Para perguntas políticas, priorizar conhecimento político
+        if (categoryInfo.primaryCategory === 'political') {
+            const politicalTerms = ['política', 'politica', 'governo', 'presidente', 'eleição', 'eleicao', 'partido', 'voto'];
+            return politicalTerms.some(term => contentLower.includes(term) || titleLower.includes(term));
+        }
+        
+        // Para perguntas científicas, priorizar conhecimento científico
+        if (categoryInfo.primaryCategory === 'scientific') {
+            const scientificTerms = ['ciência', 'ciencia', 'científico', 'cientifico', 'pesquisa', 'experimento', 'teoria'];
+            return scientificTerms.some(term => contentLower.includes(term) || titleLower.includes(term));
+        }
+        
+        // Para outras categorias, manter todos mas priorizar os que têm termos relacionados
+        return true;
+    });
+    
+    // Se o filtro removeu tudo, retornar todos (não filtrar muito agressivamente)
+    return filtered.length > 0 ? filtered : knowledgeItems;
+}
+
 // Função para extrair entidades e tópicos principais da pergunta (INTELIGÊNCIA CONTEXTUAL)
 function extractQuestionContext(question) {
     const lowerQuestion = question.toLowerCase().trim();
@@ -100,8 +330,27 @@ function extractQuestionContext(question) {
             !['é', 'e', 'foi', 'era', 'o', 'a', 'um', 'uma', 'de', 'do', 'da', 'que', 'você', 'voce', 'sabe', 'conhece'].includes(w)
         );
         if (importantAfterQuem.length > 0) {
-            entities.push(importantAfterQuem[0]); // Pegar primeira palavra importante
-            console.log('✅ [IA] Entidade extraída como última palavra importante:', importantAfterQuem[0]);
+            const entity = importantAfterQuem[0];
+            if (!entities.includes(entity)) {
+                entities.push(entity); // Pegar primeira palavra importante
+                console.log('✅ [IA] Entidade extraída como última palavra importante:', entity);
+            }
+        }
+    }
+    
+    // EXTRAÇÃO ESPECIAL PARA "JESUS": Garantir que seja capturado mesmo com variações
+    if (lowerQuestion.includes('jesus') || lowerQuestion.includes('cristo')) {
+        if (lowerQuestion.includes('jesus')) {
+            if (!entities.includes('jesus')) {
+                entities.push('jesus');
+                console.log('✅ [IA] Entidade "jesus" detectada e adicionada');
+            }
+        }
+        if (lowerQuestion.includes('cristo')) {
+            if (!entities.includes('cristo')) {
+                entities.push('cristo');
+                console.log('✅ [IA] Entidade "cristo" detectada e adicionada');
+            }
         }
     }
     
@@ -1667,11 +1916,18 @@ async function findBestAnswer(userMessage, userId) {
         const questionContext = extractQuestionContext(userMessage);
         const thoughts = thinkAboutQuestion(userMessage, questionContext);
         
+        // ============================================
+        // SISTEMA DE FILTROS E CATEGORIZAÇÃO
+        // ============================================
+        const categoryInfo = categorizeQuestion(userMessage, questionContext);
+        
         console.log('🧠 [IA] Pensamento sobre a pergunta:', {
             intent: thoughts.intent,
             entities: thoughts.entities,
             emotionalTone: thoughts.emotionalTone,
-            complexity: thoughts.complexity
+            complexity: thoughts.complexity,
+            category: categoryInfo.primaryCategory,
+            allCategories: categoryInfo.allCategories
         });
         
         let bestAnswer = null;
@@ -1708,10 +1964,21 @@ async function findBestAnswer(userMessage, userId) {
         // 2. Buscar na base de conhecimento COM INTELIGÊNCIA CONTEXTUAL E SISTEMA DE PENSAMENTO
         try {
             knowledgeResult = await client.query(`
-                SELECT id, title, content, keywords, usage_count, source_type
+                SELECT id, title, content, keywords, usage_count, source_type, category
                 FROM ia_knowledge_base
                 WHERE is_active = true
             `);
+            
+            // APLICAR FILTROS DE CATEGORIA ANTES DE BUSCAR
+            let filteredKnowledge = knowledgeResult.rows;
+            if (categoryInfo && categoryInfo.primaryCategory !== 'general') {
+                filteredKnowledge = applyCategoryFilters(knowledgeResult.rows, categoryInfo, questionContext);
+                console.log('🔍 [IA] Filtros aplicados:', {
+                    categoria: categoryInfo.primaryCategory,
+                    totalAntes: knowledgeResult.rows.length,
+                    totalDepois: filteredKnowledge.length
+                });
+            }
             
             // Extrair palavras-chave da mensagem do usuário
             const userKeywords = extractKeywords(userMessage);
@@ -1719,7 +1986,7 @@ async function findBestAnswer(userMessage, userId) {
             // Array para armazenar todos os candidatos com scores
             const candidates = [];
             
-            for (const kb of knowledgeResult.rows) {
+            for (const kb of filteredKnowledge) {
                 if (!kb.title || !kb.content) continue;
                 
                 // BUSCA FLEXÍVEL: Se temos entidades, verificar se aparecem no conhecimento
@@ -2567,7 +2834,23 @@ async function findBestAnswer(userMessage, userId) {
             mentalMode: mentalMode,
             auditPassed: auditResult ? auditResult.passed : null,
             hallucinationRisk: validation ? validation.hallucinationRisk : null,
-            cognitiveVersion: '2.0'
+            cognitiveVersion: '2.0',
+            category: categoryInfo ? categoryInfo.primaryCategory : 'general'
+        };
+    } catch (error) {
+        console.error('❌ [IA] ERRO em findBestAnswer:', error);
+        console.error('Stack:', error.stack);
+        
+        // Retornar resposta de erro educada
+        return {
+            answer: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou reformule sua pergunta.',
+            confidence: 0,
+            source: 'error',
+            mentalMode: null,
+            auditPassed: null,
+            hallucinationRisk: null,
+            cognitiveVersion: '2.0',
+            category: 'general'
         };
     } finally {
         client.release();
