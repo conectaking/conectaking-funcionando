@@ -1913,6 +1913,27 @@ Entre em contato para saber mais sobre o plano empresarial.`,
 router.get('/web-search/config', protectAdmin, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
+        // Verificar se a tabela existe, se não, criar
+        try {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS ia_web_search_config (
+                    id SERIAL PRIMARY KEY,
+                    is_enabled BOOLEAN DEFAULT false,
+                    api_provider VARCHAR(50) DEFAULT 'scraping',
+                    api_key TEXT,
+                    max_results INTEGER DEFAULT 5,
+                    search_domains TEXT[],
+                    blocked_domains TEXT[],
+                    use_cache BOOLEAN DEFAULT true,
+                    cache_duration_hours INTEGER DEFAULT 24,
+                    updated_by VARCHAR(255),
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+        } catch (tableError) {
+            console.log('Tabela já existe ou erro ao criar:', tableError.message);
+        }
+        
         const result = await client.query(`
             SELECT * FROM ia_web_search_config
             ORDER BY id DESC
@@ -1921,18 +1942,21 @@ router.get('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
         
         if (result.rows.length === 0) {
             // Criar configuração padrão se não existir
-            await client.query(`
+            const insertResult = await client.query(`
                 INSERT INTO ia_web_search_config (is_enabled, api_provider, max_results, use_cache)
                 VALUES (false, 'scraping', 5, true)
                 RETURNING *
             `);
-            const newConfig = await client.query(`
-                SELECT * FROM ia_web_search_config ORDER BY id DESC LIMIT 1
-            `);
-            return res.json({ config: newConfig.rows[0] });
+            return res.json({ config: insertResult.rows[0] });
         }
         
         res.json({ config: result.rows[0] });
+    } catch (error) {
+        console.error('Erro ao buscar configuração de busca na web:', error);
+        res.status(500).json({ 
+            error: 'Erro ao buscar configuração',
+            message: error.message 
+        });
     } finally {
         client.release();
     }
