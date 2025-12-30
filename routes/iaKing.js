@@ -2940,4 +2940,208 @@ router.post('/train-acquired-knowledge', protectAdmin, asyncHandler(async (req, 
     }
 }));
 
+// ============================================
+// ROTA DE TREINAMENTO COM LIVROS
+// ============================================
+
+// Função para dividir texto em chunks inteligentes
+function splitBookIntoSections(text, maxChunkSize = 2000) {
+    const sections = [];
+    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    
+    let currentSection = '';
+    let currentSize = 0;
+    
+    for (const paragraph of paragraphs) {
+        const paraSize = paragraph.length;
+        
+        // Se adicionar este parágrafo ultrapassar o limite, salvar seção atual
+        if (currentSize + paraSize > maxChunkSize && currentSection.length > 0) {
+            sections.push(currentSection.trim());
+            currentSection = paragraph + '\n\n';
+            currentSize = paraSize;
+        } else {
+            currentSection += paragraph + '\n\n';
+            currentSize += paraSize;
+        }
+    }
+    
+    // Adicionar última seção
+    if (currentSection.trim().length > 0) {
+        sections.push(currentSection.trim());
+    }
+    
+    return sections;
+}
+
+// Função para extrair título de seção (capítulo, parte, etc.)
+function extractSectionTitle(text) {
+    const lines = text.split('\n').slice(0, 5);
+    for (const line of lines) {
+        const trimmed = line.trim();
+        // Procurar por padrões de título (CAPÍTULO, PARTE, SEÇÃO, etc.)
+        if (trimmed.match(/^(CAPÍTULO|PARTE|SEÇÃO|CHAPTER|PART|SECTION)\s+\d+/i)) {
+            return trimmed;
+        }
+        // Se a linha é curta e parece um título
+        if (trimmed.length < 100 && trimmed.length > 5 && !trimmed.match(/^[a-z]/)) {
+            return trimmed;
+        }
+    }
+    return null;
+}
+
+// POST /api/ia-king/train-with-book - Treinar IA com livro completo
+router.post('/train-with-book', protectAdmin, asyncHandler(async (req, res) => {
+    console.log('📥 Requisição recebida: POST /api/ia-king/train-with-book');
+    const { title, author, content, category_id, create_qa = true } = req.body;
+    const adminId = req.user.userId;
+    
+    if (!title || !content) {
+        return res.status(400).json({ error: 'Título e conteúdo são obrigatórios' });
+    }
+    
+    if (content.length < 100) {
+        return res.status(400).json({ error: 'O conteúdo do livro é muito curto (mínimo 100 caracteres)' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        console.log(`📚 Iniciando treinamento com livro: "${title}"${author ? ` - ${author}` : ''}`);
+        console.log(`📊 Tamanho do conteúdo: ${content.length.toLocaleString()} caracteres`);
+        
+        await client.query('BEGIN');
+        
+        // Verificar se o livro já foi treinado
+        const existingBook = await client.query(`
+            SELECT id FROM ia_knowledge_base
+            WHERE LOWER(title) = LOWER($1)
+            AND source_type = 'book_training'
+            LIMIT 1
+        `, [title]);
+        
+        if (existingBook.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'Este livro já foi treinado. Se deseja treinar novamente, use um título diferente ou remova o conhecimento anterior.' });
+        }
+        
+        // Dividir livro em seções inteligentes
+        console.log('📖 Dividindo livro em seções...');
+        const sections = splitBookIntoSections(content, 2000);
+        console.log(`✅ Livro dividido em ${sections.length} seções`);
+        
+        let knowledgeItemsCreated = 0;
+        let qaCreated = 0;
+        const wordsProcessed = content.split(/\s+/).length;
+        
+        // Processar cada seção
+        for (let i = 0; i < sections.length; i++) {
+            const section = sections[i];
+            const sectionTitle = extractSectionTitle(section) || `${title} - Seção ${i + 1}`;
+            const sectionContent = section.substring(0, 5000); // Limitar tamanho
+            
+            try {
+                // Extrair palavras-chave da seção
+                const keywords = extractKeywords(sectionTitle + ' ' + sectionContent);
+                
+                // Criar título completo
+                const fullTitle = author 
+                    ? `${title} - ${author} - ${sectionTitle}`
+                    : `${title} - ${sectionTitle}`;
+                
+                // Inserir na base de conhecimento
+                await client.query(`
+                    INSERT INTO ia_knowledge_base (title, content, keywords, category_id, source_type, source_reference, is_active, created_by, priority)
+                    VALUES ($1, $2, $3, $4, 'book_training', $5, true, $6, 90)
+                `, [
+                    fullTitle,
+                    sectionContent,
+                    keywords,
+                    category_id || null,
+                    `book_${title}_section_${i + 1}`,
+                    adminId
+                ]);
+                
+                knowledgeItemsCreated++;
+                
+                // Criar Q&A se solicitado
+                if (create_qa && sectionContent.length > 100) {
+                    // Criar pergunta baseada no título da seção
+                    const question = sectionTitle.length > 100 
+                        ? sectionTitle.substring(0, 100) + '...'
+                        : sectionTitle;
+                    
+                    const answer = sectionContent.substring(0, 2000);
+                    
+                    // Verificar se Q&A já existe
+                    const existingQA = await client.query(`
+                        SELECT id FROM ia_qa
+                        WHERE LOWER(question) = LOWER($1)
+                        LIMIT 1
+                    `, [question]);
+                    
+                    if (existingQA.rows.length === 0) {
+                        await client.query(`
+                            INSERT INTO ia_qa (question, answer, keywords, category_id, is_active)
+                            VALUES ($1, $2, $3, $4, true)
+                        `, [
+                            question,
+                            answer,
+                            keywords,
+                            category_id || null
+                        ]);
+                        qaCreated++;
+                    }
+                }
+            } catch (error) {
+                console.error(`Erro ao processar seção ${i + 1}:`, error);
+                // Continuar com próxima seção
+            }
+        }
+        
+        // Criar entrada principal do livro (resumo)
+        const bookSummary = content.substring(0, 1000);
+        const bookKeywords = extractKeywords(title + ' ' + (author || '') + ' ' + bookSummary);
+        
+        await client.query(`
+            INSERT INTO ia_knowledge_base (title, content, keywords, category_id, source_type, source_reference, is_active, created_by, priority)
+            VALUES ($1, $2, $3, $4, 'book_training', $5, true, $6, 100)
+        `, [
+            author ? `${title} - ${author}` : title,
+            `Livro completo: ${title}${author ? ` por ${author}` : ''}\n\n${bookSummary}...\n\nEste livro foi dividido em ${sections.length} seções para melhor compreensão.`,
+            bookKeywords,
+            category_id || null,
+            `book_${title}_main`,
+            adminId
+        ]);
+        
+        knowledgeItemsCreated++;
+        
+        await client.query('COMMIT');
+        
+        console.log(`✅ Treinamento com livro concluído!`);
+        console.log(`   - Seções processadas: ${sections.length}`);
+        console.log(`   - Itens de conhecimento: ${knowledgeItemsCreated}`);
+        console.log(`   - Q&As criados: ${qaCreated}`);
+        console.log(`   - Palavras processadas: ${wordsProcessed.toLocaleString()}`);
+        
+        res.json({
+            message: `Livro "${title}" treinado com sucesso! A IA agora conhece este livro e pode responder perguntas sobre ele.`,
+            stats: {
+                sections_created: sections.length,
+                knowledge_items: knowledgeItemsCreated,
+                qa_created: qaCreated,
+                words_processed: wordsProcessed
+            }
+        });
+        
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('❌ Erro no treinamento com livro:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
