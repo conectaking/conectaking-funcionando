@@ -13,6 +13,20 @@ console.log('✅ Rotas IA KING carregadas');
 // FUNÇÕES AUXILIARES
 // ============================================
 
+// Função para detectar se a pergunta é sobre o sistema Conecta King
+function isAboutSystem(message) {
+    const systemKeywords = [
+        'conecta king', 'conectaking', 'cartão virtual', 'cartão', 'cartao',
+        'assinatura', 'plano', 'pacote', 'módulo', 'modulo', 'dashboard',
+        'perfil', 'sistema', 'funcionalidade', 'como usar', 'como funciona',
+        'valores', 'preços', 'preco', 'quanto custa', 'custa', 'logomarca',
+        'logo', 'personalização', 'personalizacao', 'compartilhar', 'compartilhamento'
+    ];
+    
+    const lowerMessage = message.toLowerCase();
+    return systemKeywords.some(keyword => lowerMessage.includes(keyword));
+}
+
 // Função para calcular similaridade entre textos (melhorada e mais inteligente)
 function calculateSimilarity(text1, text2) {
     if (!text1 || !text2) return 0;
@@ -28,7 +42,7 @@ function calculateSimilarity(text1, text2) {
         if (lower1.includes(lower2) || lower2.includes(lower1)) return 80;
         
         // Processar palavras (remover palavras muito comuns)
-        const commonWords = ['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas', 'para', 'com', 'por', 'que', 'é', 'são', 'está', 'estão', 'ser', 'ter', 'fazer', 'pode', 'sua', 'seu', 'suas', 'seus', 'me', 'te', 'nos', 'você', 'vocês'];
+        const commonWords = ['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas', 'para', 'com', 'por', 'que', 'é', 'são', 'está', 'estão', 'ser', 'ter', 'fazer', 'pode', 'sua', 'seu', 'suas', 'seus', 'me', 'te', 'nos', 'você', 'vocês', 'qual', 'quais', 'como', 'quando', 'onde'];
         const words1 = lower1.split(/\s+/).filter(w => w.length > 2 && !commonWords.includes(w));
         const words2 = lower2.split(/\s+/).filter(w => w.length > 2 && !commonWords.includes(w));
         
@@ -46,17 +60,18 @@ function calculateSimilarity(text1, text2) {
         // Calcular similaridade básica
         const basicSimilarity = (intersection.size / union.size) * 100;
         
-        // Bonus por palavras importantes em comum
-        const importantWords = ['como', 'quando', 'onde', 'porque', 'qual', 'quais', 'problema', 'erro', 'não', 'consigo', 'valores', 'planos', 'preços', 'módulos', 'cartão', 'sistema', 'funcionalidades', 'assinatura'];
-        const importantMatches = words1.filter(w => importantWords.includes(w) && set2.has(w)).length;
-        const bonus = importantMatches * 8; // Aumentado bonus
+        // Bonus por palavras importantes em comum (apenas palavras do sistema)
+        const systemImportantWords = ['valores', 'planos', 'preços', 'módulos', 'cartão', 'sistema', 'funcionalidades', 'assinatura', 'pacote'];
+        const systemMatches = words1.filter(w => systemImportantWords.includes(w) && set2.has(w)).length;
+        const systemBonus = systemMatches * 10;
         
-        // Bonus por palavras-chave específicas do sistema
-        const systemKeywords = ['conecta king', 'conectaking', 'cartão virtual', 'assinatura', 'plano', 'módulo', 'dashboard', 'perfil'];
-        const systemMatches = systemKeywords.filter(kw => lower1.includes(kw) && lower2.includes(kw)).length;
-        const systemBonus = systemMatches * 15;
+        // Penalidade se pergunta não é sobre sistema mas resposta é
+        let penalty = 0;
+        if (!isAboutSystem(lower1) && isAboutSystem(lower2)) {
+            penalty = -50; // Grande penalidade se pergunta não é sobre sistema mas resposta é
+        }
         
-        return Math.min(100, basicSimilarity + bonus + systemBonus);
+        return Math.max(0, Math.min(100, basicSimilarity + systemBonus + penalty));
     } catch (error) {
         console.error('Erro ao calcular similaridade:', error);
         return 0;
@@ -268,6 +283,37 @@ function generateGreetingResponse() {
     return greetings[Math.floor(Math.random() * greetings.length)];
 }
 
+// Função para aprender com Tavily e adicionar à base de conhecimento
+async function learnFromTavily(question, answer, client) {
+    try {
+        // Verificar se já existe resposta similar (buscar por título similar)
+        const existing = await client.query(`
+            SELECT id, title FROM ia_knowledge_base 
+            WHERE LOWER(title) = LOWER($1)
+            LIMIT 1
+        `, [question]);
+        
+        if (existing.rows.length === 0) {
+            // Adicionar à base de conhecimento
+            const keywords = extractKeywords(question);
+            await client.query(`
+                INSERT INTO ia_knowledge_base (title, content, keywords, source_type, is_active)
+                VALUES ($1, $2, $3, 'tavily_learned', true)
+            `, [
+                question,
+                answer.substring(0, 5000), // Limitar tamanho
+                keywords
+            ]);
+            console.log('📚 [IA] Aprendido e adicionado à base de conhecimento:', question.substring(0, 50));
+        } else {
+            console.log('ℹ️ [IA] Já existe conhecimento similar, não adicionando duplicado');
+        }
+    } catch (error) {
+        console.error('Erro ao aprender com Tavily:', error);
+        // Não bloquear se der erro ao aprender
+    }
+}
+
 // Função para encontrar melhor resposta
 async function findBestAnswer(userMessage, userId) {
     const client = await db.pool.connect();
@@ -415,15 +461,26 @@ async function findBestAnswer(userMessage, userId) {
             console.error('Erro ao buscar configuração de busca na web:', error);
         }
         
-        // Buscar na web apenas se não encontrou resposta satisfatória (score < 30)
-        // Isso evita desperdiçar créditos da API quando já temos boa resposta
-        if ((!bestAnswer || bestScore < 30) && webSearchConfig && webSearchConfig.is_enabled) {
+        // Verificar se a pergunta é sobre o sistema ou sobre outras coisas
+        const questionIsAboutSystem = isAboutSystem(userMessage);
+        
+        // Buscar na web se:
+        // 1. Não encontrou resposta OU score baixo (< 40 para perguntas sobre sistema, < 50 para outras)
+        // 2. OU se a pergunta NÃO é sobre o sistema (sempre buscar na web para perguntas externas)
+        const shouldSearchWeb = webSearchConfig && webSearchConfig.is_enabled && (
+            !bestAnswer || 
+            bestScore < (questionIsAboutSystem ? 40 : 50) ||
+            !questionIsAboutSystem // Sempre buscar se não é sobre o sistema
+        );
+        
+        if (shouldSearchWeb) {
             console.log('🔍 [IA] Buscando na web porque:', {
                 hasAnswer: !!bestAnswer,
                 score: bestScore,
+                isAboutSystem: questionIsAboutSystem,
                 webSearchEnabled: webSearchConfig.is_enabled,
                 provider: webSearchConfig.api_provider,
-                reason: !bestAnswer ? 'Sem resposta' : 'Score baixo (< 30)'
+                reason: !questionIsAboutSystem ? 'Pergunta não é sobre o sistema' : (!bestAnswer ? 'Sem resposta' : 'Score baixo')
             });
             try {
                 const webResults = await searchWeb(userMessage, webSearchConfig);
@@ -432,9 +489,12 @@ async function findBestAnswer(userMessage, userId) {
                     // Se Tavily retornou resposta direta, usar ela
                     if (webResults.answer) {
                         bestAnswer = webResults.answer;
-                        bestScore = 50; // Score médio para respostas da web
+                        bestScore = 60; // Score bom para respostas da web
                         bestSource = 'web_tavily';
                         console.log('✅ [IA] Usando resposta direta do Tavily');
+                        
+                        // APRENDER: Adicionar à base de conhecimento automaticamente
+                        await learnFromTavily(userMessage, webResults.answer, client);
                     } else if (webResults.results.length > 0) {
                         // Combinar os melhores resultados da web
                         const topResults = webResults.results.slice(0, 3);
@@ -442,10 +502,13 @@ async function findBestAnswer(userMessage, userId) {
                             `${idx + 1}. ${r.title}\n${r.snippet.substring(0, 200)}${r.snippet.length > 200 ? '...' : ''}`
                         ).join('\n\n');
                         
-                        bestAnswer = `Encontrei algumas informações na internet que podem ajudar:\n\n${webAnswer}\n\n*Fonte: ${webResults.provider}*`;
-                        bestScore = 40;
+                        bestAnswer = webAnswer;
+                        bestScore = 50;
                         bestSource = `web_${webResults.provider}`;
                         console.log('✅ [IA] Usando resultados da web:', webResults.provider);
+                        
+                        // APRENDER: Adicionar à base de conhecimento
+                        await learnFromTavily(userMessage, webAnswer, client);
                     }
                 } else {
                     console.log('⚠️ [IA] Nenhum resultado encontrado na web');
@@ -454,11 +517,12 @@ async function findBestAnswer(userMessage, userId) {
                 console.error('❌ [IA] Erro ao buscar na web:', error.message);
                 // Continuar sem buscar na web se der erro
             }
-        } else if (webSearchConfig && webSearchConfig.is_enabled) {
+        } else if (webSearchConfig && webSearchConfig.is_enabled && questionIsAboutSystem) {
             console.log('ℹ️ [IA] Não buscando na web porque:', {
                 hasAnswer: !!bestAnswer,
                 score: bestScore,
-                reason: bestScore >= 30 ? 'Resposta encontrada na base (score >= 30)' : 'Busca desabilitada'
+                isAboutSystem: questionIsAboutSystem,
+                reason: 'Resposta encontrada na base sobre o sistema'
             });
         } else {
             console.log('ℹ️ [IA] Busca na web não está habilitada');
@@ -530,8 +594,19 @@ async function findBestAnswer(userMessage, userId) {
                 };
             }
             
+            // Se não é sobre o sistema e busca na web está desabilitada, ser mais direto
+            const questionIsAboutSystem = isAboutSystem(userMessage);
+            
+            if (!questionIsAboutSystem) {
+                return {
+                    answer: `Desculpe, não tenho informações sobre isso na minha base de conhecimento.\n\nPosso te ajudar com dúvidas sobre o Conecta King:\n• Planos e valores\n• Como usar os módulos\n• Personalização do cartão\n• Compartilhar cartão\n• Problemas técnicos\n\nSe você habilitar a busca na web nas configurações, posso buscar informações atualizadas na internet para você! 😊`,
+                    confidence: 0,
+                    source: 'default'
+                };
+            }
+            
             return {
-                answer: `Olá! 😊 Não encontrei uma resposta específica para sua pergunta, mas posso te ajudar com:\n\n• Informações sobre planos e valores\n• Como usar os módulos do sistema\n• Como editar e personalizar seu cartão\n• Como compartilhar seu cartão\n• Resolver problemas técnicos\n• Dúvidas sobre funcionalidades\n\nPode reformular sua pergunta de outra forma ou me perguntar sobre algum desses tópicos? Estou aqui para ajudar! 😊`,
+                answer: `Olá! 😊 Não encontrei uma resposta específica para sua pergunta sobre o Conecta King.\n\nPosso te ajudar com:\n• Informações sobre planos e valores\n• Como usar os módulos do sistema\n• Como editar e personalizar seu cartão\n• Como compartilhar seu cartão\n• Resolver problemas técnicos\n• Dúvidas sobre funcionalidades\n\nPode reformular sua pergunta de outra forma ou me perguntar sobre algum desses tópicos? Estou aqui para ajudar! 😊`,
                 confidence: 0,
                 source: 'default'
             };
