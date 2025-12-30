@@ -38,6 +38,7 @@ const salesPageRoutes = require('./modules/salesPage/salesPage.routes');
 const productRoutes = require('./modules/salesPage/products/product.routes');
 const analyticsRoutesSalesPage = require('./modules/salesPage/analytics/analytics.routes');
 const suggestionsRoutes = require('./routes/suggestions');
+const iaKingRoutes = require('./routes/iaKing');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize } = require('./middleware/security');
 
