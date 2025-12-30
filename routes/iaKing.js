@@ -1977,6 +1977,9 @@ async function findBestAnswer(userMessage, userId) {
             allCategories: categoryInfo ? categoryInfo.allCategories : []
         });
         
+        // Ativar modo mental
+        const mentalMode = activateMentalMode(userMessage, questionContext, thoughts);
+        
         let bestAnswer = null;
         let bestScore = 0;
         let bestSource = null;
@@ -2839,7 +2842,9 @@ async function findBestAnswer(userMessage, userId) {
                 return {
                     answer: `Olá! 😊 Não encontrei informações específicas sobre "${entity}" na minha base de conhecimento atual.\n\nMas estou sempre aprendendo! Se você tiver informações sobre isso ou quiser que eu busque na internet (se estiver habilitado), posso ajudar.\n\nTambém posso te ajudar com dúvidas sobre o Conecta King se precisar! 😊`,
                     confidence: 0,
-                    source: 'no_knowledge'
+                    source: 'no_knowledge',
+                    mentalMode: mentalMode,
+                    category: categoryInfo ? categoryInfo.primaryCategory : 'general'
                 };
             }
             
@@ -2850,7 +2855,9 @@ async function findBestAnswer(userMessage, userId) {
                 return {
                     answer: `Olá! 😊 Não tenho informações sobre isso na minha base de conhecimento no momento.\n\nMas estou sempre aprendendo! Se você habilitar a busca na web nas configurações, posso buscar informações atualizadas para você.\n\nTambém posso te ajudar com qualquer dúvida sobre o Conecta King! 😊`,
                     confidence: 0,
-                    source: 'no_knowledge'
+                    source: 'no_knowledge',
+                    mentalMode: mentalMode,
+                    category: categoryInfo ? categoryInfo.primaryCategory : 'general'
                 };
             }
             
@@ -2858,7 +2865,9 @@ async function findBestAnswer(userMessage, userId) {
             return {
                 answer: `Olá! 😊 Não encontrei uma resposta específica para sua pergunta sobre o Conecta King.\n\nPosso te ajudar com:\n• Informações sobre planos e valores\n• Como usar os módulos do sistema\n• Como editar e personalizar seu cartão\n• Como compartilhar seu cartão\n• Resolver problemas técnicos\n• Dúvidas sobre funcionalidades\n\nPode reformular sua pergunta de outra forma? Estou aqui para ajudar! 😊`,
                 confidence: 0,
-                source: 'default'
+                source: 'default',
+                mentalMode: mentalMode,
+                category: categoryInfo ? categoryInfo.primaryCategory : 'general'
             };
         }
         
