@@ -800,6 +800,17 @@ router.put('/learning/:id/approve', protectAdmin, asyncHandler(async (req, res) 
     
     const client = await db.pool.connect();
     try {
+        // Converter adminId para número ou usar NULL
+        let reviewedByValue = null;
+        let createdByValue = null;
+        if (adminId) {
+            const adminIdNum = parseInt(adminId);
+            if (!isNaN(adminIdNum)) {
+                reviewedByValue = adminIdNum;
+                createdByValue = adminIdNum;
+            }
+        }
+        
         await client.query('BEGIN');
         
         // Atualizar status do aprendizado
@@ -807,27 +818,39 @@ router.put('/learning/:id/approve', protectAdmin, asyncHandler(async (req, res) 
             `UPDATE ia_learning 
              SET status = 'approved', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP
              WHERE id = $2`,
-            [adminId, id]
+            [reviewedByValue, id]
         );
         
         // Criar Q&A aprovado
         const learning = await client.query('SELECT * FROM ia_learning WHERE id = $1', [id]);
-        if (learning.rows.length > 0) {
-            const extractedKeywords = extractKeywords((question || learning.rows[0].question) + ' ' + (answer || learning.rows[0].suggested_answer));
-            
-            await client.query(
-                `INSERT INTO ia_qa (question, answer, question_variations, category_id, keywords, created_by)
-                 VALUES ($1, $2, $3, $4, $5, $6)`,
-                [
-                    question || learning.rows[0].question,
-                    answer || learning.rows[0].suggested_answer,
-                    question_variations || [],
-                    category_id || null,
-                    extractedKeywords,
-                    adminId
-                ]
-            );
+        if (learning.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Aprendizado não encontrado.' });
         }
+        
+        const learningData = learning.rows[0];
+        const finalQuestion = question || learningData.question;
+        const finalAnswer = answer || learningData.suggested_answer;
+        
+        if (!finalQuestion || !finalAnswer) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ message: 'Pergunta e resposta são obrigatórias.' });
+        }
+        
+        const extractedKeywords = extractKeywords(finalQuestion + ' ' + finalAnswer);
+        
+        await client.query(
+            `INSERT INTO ia_qa (question, answer, question_variations, category_id, keywords, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+                finalQuestion,
+                finalAnswer,
+                question_variations || [],
+                category_id || null,
+                extractedKeywords,
+                createdByValue
+            ]
+        );
         
         await client.query('COMMIT');
         
@@ -835,6 +858,7 @@ router.put('/learning/:id/approve', protectAdmin, asyncHandler(async (req, res) 
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('❌ Erro ao aprovar aprendizado:', error);
+        console.error('Stack:', error.stack);
         throw error;
     } finally {
         client.release();
@@ -848,16 +872,31 @@ router.put('/learning/:id/reject', protectAdmin, asyncHandler(async (req, res) =
     
     const client = await db.pool.connect();
     try {
-        await client.query(
+        // Converter adminId para número ou usar NULL
+        let reviewedByValue = null;
+        if (adminId) {
+            const adminIdNum = parseInt(adminId);
+            if (!isNaN(adminIdNum)) {
+                reviewedByValue = adminIdNum;
+            }
+        }
+        
+        const result = await client.query(
             `UPDATE ia_learning 
              SET status = 'rejected', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP
-             WHERE id = $2`,
-            [adminId, id]
+             WHERE id = $2
+             RETURNING id`,
+            [reviewedByValue, id]
         );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Aprendizado não encontrado.' });
+        }
         
         res.json({ message: 'Aprendizado rejeitado.' });
     } catch (error) {
         console.error('❌ Erro ao rejeitar aprendizado:', error);
+        console.error('Stack:', error.stack);
         throw error;
     } finally {
         client.release();
