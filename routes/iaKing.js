@@ -65,7 +65,7 @@ function extractQuestionContext(question) {
     }
     
     // EXTRAÇÃO DIRETA: Procurar palavras que aparecem após "quem é", "quem e", etc.
-    const directPattern = /(?:quem\s+(?:é|e|foi|era)|o\s+que\s+(?:é|e|foi|era))\s+([a-záàâãéêíóôõúç]+)/gi;
+    const directPattern = /(?:quem\s+(?:é|e|foi|era)|o\s+que\s+(?:é|e|foi|era))\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi;
     const directMatches = [...lowerQuestion.matchAll(directPattern)];
     for (const match of directMatches) {
         if (match[1]) {
@@ -74,6 +74,34 @@ function extractQuestionContext(question) {
             if (entity.length > 2 && !commonWords.includes(entity) && !entities.includes(entity)) {
                 entities.push(entity);
             }
+        }
+    }
+    
+    // EXTRAÇÃO MELHORADA: Se a pergunta é "quem e X" ou "quem é X", pegar X diretamente
+    // Exemplo: "quem e jesus" -> entidade: "jesus"
+    const simpleWhoPattern = /^quem\s+(?:é|e|foi|era)\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)\s*$/i;
+    const simpleWhoMatch = originalQuestion.match(simpleWhoPattern);
+    if (simpleWhoMatch && simpleWhoMatch[1]) {
+        const entity = simpleWhoMatch[1].toLowerCase().trim();
+        const commonWords = ['o', 'a', 'um', 'uma', 'de', 'do', 'da', 'que', 'você', 'voce', 'sabe', 'conhece'];
+        if (entity.length > 2 && !commonWords.includes(entity) && !entities.includes(entity)) {
+            entities.push(entity);
+            console.log('✅ [IA] Entidade extraída diretamente:', entity);
+        }
+    }
+    
+    // EXTRAÇÃO ALTERNATIVA: Se não encontrou, pegar última palavra importante da pergunta
+    if (entities.length === 0 && lowerQuestion.includes('quem')) {
+        const words = lowerQuestion.split(/\s+/);
+        // Pegar palavras após "quem" que não são comuns
+        const afterQuem = words.slice(words.indexOf('quem') + 1);
+        const importantAfterQuem = afterQuem.filter(w => 
+            w.length > 2 && 
+            !['é', 'e', 'foi', 'era', 'o', 'a', 'um', 'uma', 'de', 'do', 'da', 'que', 'você', 'voce', 'sabe', 'conhece'].includes(w)
+        );
+        if (importantAfterQuem.length > 0) {
+            entities.push(importantAfterQuem[0]); // Pegar primeira palavra importante
+            console.log('✅ [IA] Entidade extraída como última palavra importante:', importantAfterQuem[0]);
         }
     }
     
@@ -1185,6 +1213,43 @@ async function findBestAnswer(userMessage, userId) {
             for (const kb of knowledgeResult.rows) {
                 if (!kb.title || !kb.content) continue;
                 
+                // BUSCA FLEXÍVEL: Se temos entidades, verificar se aparecem no conhecimento
+                let entityMatchScore = 0;
+                if (questionContext.entities.length > 0) {
+                    const contentLower = kb.content.toLowerCase();
+                    const titleLower = kb.title.toLowerCase();
+                    
+                    for (const entity of questionContext.entities) {
+                        // Verificar se entidade aparece no conteúdo ou título
+                        if (contentLower.includes(entity) || titleLower.includes(entity)) {
+                            entityMatchScore += 100; // Score muito alto para match de entidade
+                            
+                            // Bonus se está no título
+                            if (titleLower.includes(entity)) {
+                                entityMatchScore += 50;
+                            }
+                            
+                            // Bonus se aparece múltiplas vezes no conteúdo
+                            const entityCount = (contentLower.match(new RegExp(entity, 'g')) || []).length;
+                            entityMatchScore += Math.min(entityCount * 10, 50);
+                        }
+                        
+                        // Busca flexível: variações da entidade
+                        const entityVariations = [
+                            entity + 's', // plural
+                            entity.substring(0, entity.length - 1), // sem última letra
+                            entity + ' ', // com espaço
+                            ' ' + entity + ' ' // com espaços
+                        ];
+                        
+                        for (const variation of entityVariations) {
+                            if (contentLower.includes(variation) || titleLower.includes(variation)) {
+                                entityMatchScore += 30;
+                            }
+                        }
+                    }
+                }
+                
                 // CALCULAR RELEVÂNCIA INTELIGENTE (novo sistema)
                 const intelligentScore = calculateIntelligentRelevance(questionContext, {
                     title: kb.title,
@@ -1220,8 +1285,11 @@ async function findBestAnswer(userMessage, userId) {
                 const titleKeywordMatch = userKeywords.some(uk => kb.title.toLowerCase().includes(uk));
                 const titleBonus = titleKeywordMatch ? 30 : 0;
                 
-                // PRIORIDADE: Usar score inteligente se for alto, senão usar score tradicional
-                const totalScore = intelligentScore > 50 ? intelligentScore : (titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus);
+                // PRIORIDADE: Se temos match de entidade, usar ele (prioridade máxima)
+                // Senão, usar score inteligente se for alto, senão usar score tradicional
+                const totalScore = entityMatchScore > 0 ? entityMatchScore : 
+                                 (intelligentScore > 50 ? intelligentScore : 
+                                 (titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus));
                 
                 // Adicionar à lista de candidatos
                 candidates.push({
@@ -1234,9 +1302,31 @@ async function findBestAnswer(userMessage, userId) {
             // Ordenar candidatos por score (maior primeiro)
             candidates.sort((a, b) => b.score - a.score);
             
-            // Pegar o melhor candidato
-            if (candidates.length > 0 && candidates[0].score > 30) {
-                const bestCandidate = candidates[0];
+            // FILTRO CRÍTICO: Se a pergunta NÃO é sobre o sistema, NÃO usar conhecimento do sistema
+            const questionIsAboutSystem = isAboutSystem(userMessage);
+            let filteredCandidates = candidates;
+            
+            if (!questionIsAboutSystem) {
+                // Filtrar conhecimento do sistema (source_type: 'initial', 'advanced', 'manual')
+                filteredCandidates = candidates.filter(c => {
+                    const sourceType = c.kb.source_type;
+                    // Permitir apenas conhecimento de livros, Tavily, documentos, etc.
+                    return sourceType !== 'initial' && 
+                           sourceType !== 'advanced' && 
+                           sourceType !== 'manual' &&
+                           sourceType !== 'system';
+                });
+                
+                console.log('🔍 [IA] Pergunta NÃO é sobre sistema. Filtrados:', {
+                    total: candidates.length,
+                    filtrados: filteredCandidates.length,
+                    removidos: candidates.length - filteredCandidates.length
+                });
+            }
+            
+            // Pegar o melhor candidato (dos filtrados)
+            if (filteredCandidates.length > 0 && filteredCandidates[0].score > 30) {
+                const bestCandidate = filteredCandidates[0];
                 const kb = bestCandidate.kb;
                 
                 console.log('🎯 [IA] Melhor conhecimento encontrado:', {
@@ -1626,72 +1716,105 @@ async function findBestAnswer(userMessage, userId) {
             bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
         }
         
-        // Resposta padrão mais educada e útil - SEM buscar na internet (se busca na web não estiver habilitada)
-        if (!bestAnswer || bestScore < 30) {
-            // Tentar encontrar resposta parcial mesmo com baixa confiança
-            const partialMatches = [];
+        // BUSCA ULTRA-INTELIGENTE: Se não encontrou resposta, fazer busca mais profunda
+        if (!bestAnswer || bestScore < 40) {
+            console.log('🔍 [IA] Busca profunda: Não encontrei resposta relevante, fazendo busca mais profunda...');
             
-            // Buscar palavras-chave na base de conhecimento já carregada
-            const words = extractKeywords(userMessage);
-            
-            // Usar knowledgeResult que já foi carregado acima
-            if (knowledgeResult && knowledgeResult.rows && knowledgeResult.rows.length > 0) {
-                for (const kb of knowledgeResult.rows) {
-                    if (!kb.content || !kb.title) continue;
+            // Se temos entidades identificadas, buscar especificamente por elas
+            if (questionContext.entities.length > 0 && knowledgeResult && knowledgeResult.rows.length > 0) {
+                const entity = questionContext.entities[0];
+                console.log('🔍 [IA] Buscando especificamente por entidade:', entity);
+                
+                // Buscar conhecimento que contém a entidade (busca mais flexível)
+                const entityKnowledge = knowledgeResult.rows.filter(kb => {
+                    if (!kb.content || !kb.title) return false;
                     
                     const contentLower = kb.content.toLowerCase();
                     const titleLower = kb.title.toLowerCase();
                     
-                    // Verificar se alguma palavra-chave aparece no conteúdo ou título
-                    const matchingWords = words.filter(w => 
-                        contentLower.includes(w) || titleLower.includes(w)
-                    );
+                    // Busca flexível: entidade pode estar em qualquer parte
+                    return contentLower.includes(entity) || titleLower.includes(entity) ||
+                           contentLower.includes(entity + ' ') || titleLower.includes(entity + ' ') ||
+                           (kb.keywords && Array.isArray(kb.keywords) && 
+                            kb.keywords.some(k => k.toLowerCase().includes(entity)));
+                });
+                
+                if (entityKnowledge.length > 0) {
+                    console.log(`✅ [IA] Encontrei ${entityKnowledge.length} conhecimento(s) sobre "${entity}"`);
                     
-                    if (matchingWords.length > 0) {
-                        // Calcular score baseado em quantas palavras correspondem
-                        let score = matchingWords.length;
+                    // Ordenar por relevância (título tem prioridade)
+                    entityKnowledge.sort((a, b) => {
+                        const aTitle = (a.title || '').toLowerCase();
+                        const bTitle = (b.title || '').toLowerCase();
+                        const aHasInTitle = aTitle.includes(entity);
+                        const bHasInTitle = bTitle.includes(entity);
                         
-                        // Bonus se palavras importantes correspondem
-                        const importantWords = ['problema', 'erro', 'não', 'consigo', 'como', 'quando', 'onde', 'valores', 'planos', 'preços'];
-                        const importantMatches = words.filter(w => 
-                            importantWords.includes(w) && (contentLower.includes(w) || titleLower.includes(w))
-                        );
-                        score += importantMatches.length * 2;
+                        if (aHasInTitle && !bHasInTitle) return -1;
+                        if (!aHasInTitle && bHasInTitle) return 1;
+                        return 0;
+                    });
+                    
+                    const bestEntityKnowledge = entityKnowledge[0];
+                    
+                    // Extrair trecho relevante
+                    let entityExcerpt = findRelevantExcerpt(bestEntityKnowledge.content, questionContext, 500);
+                    if (!entityExcerpt) {
+                        entityExcerpt = extractDirectAnswer(bestEntityKnowledge.content, userMessage);
+                    }
+                    if (!entityExcerpt) {
+                        // Procurar parágrafos que mencionam a entidade
+                        const paragraphs = bestEntityKnowledge.content.split(/\n\n+/);
+                        for (const para of paragraphs) {
+                            if (para.toLowerCase().includes(entity) && para.length > 50) {
+                                entityExcerpt = para.substring(0, 500);
+                                break;
+                            }
+                        }
+                    }
+                    if (!entityExcerpt) {
+                        entityExcerpt = bestEntityKnowledge.content.substring(0, 500);
+                    }
+                    
+                    if (entityExcerpt && entityExcerpt.length > 50) {
+                        bestAnswer = entityExcerpt;
+                        bestScore = 70; // Score bom para conhecimento encontrado
+                        bestSource = 'knowledge_deep_search';
                         
-                        partialMatches.push({
-                            content: kb.content,
-                            title: kb.title,
-                            score: score
-                        });
+                        // Adicionar personalidade
+                        bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
+                        
+                        console.log('✅ [IA] Resposta encontrada através de busca profunda!');
                     }
                 }
             }
-            
-            if (partialMatches.length > 0) {
-                // Ordenar por score e pegar a melhor
-                partialMatches.sort((a, b) => b.score - a.score);
-                const bestPartial = partialMatches[0];
-                
+        }
+        
+        // Se AINDA não encontrou resposta relevante, retornar resposta educada
+        if (!bestAnswer || bestScore < 30) {
+            // Se a pergunta tem entidades mas não encontramos conhecimento, ser específico
+            if (questionContext.entities.length > 0) {
+                const entity = questionContext.entities[0];
                 return {
-                    answer: `Com base na sua pergunta sobre "${bestPartial.title}", aqui está uma informação que pode ajudar:\n\n${bestPartial.content}\n\nSe isso não respondeu completamente sua dúvida, pode reformular a pergunta ou me perguntar sobre:\n\n• Planos e valores\n• Como usar módulos\n• Editar e personalizar cartão\n• Compartilhar cartão\n• Resolver problemas técnicos\n\nEstou aqui para ajudar! 😊`,
-                    confidence: 25,
-                    source: 'partial_match'
+                    answer: `Olá! 😊 Não encontrei informações específicas sobre "${entity}" na minha base de conhecimento atual.\n\nMas estou sempre aprendendo! Se você tiver informações sobre isso ou quiser que eu busque na internet (se estiver habilitado), posso ajudar.\n\nTambém posso te ajudar com dúvidas sobre o Conecta King se precisar! 😊`,
+                    confidence: 0,
+                    source: 'no_knowledge'
                 };
             }
             
-            // Se não é sobre o sistema e busca na web está desabilitada, ser mais direto
+            // Se não é sobre o sistema, ser educado mas direto
             const questionIsAboutSystem = isAboutSystem(userMessage);
             
             if (!questionIsAboutSystem) {
                 return {
-                    answer: `Desculpe, não tenho informações sobre isso na minha base de conhecimento.\n\nPosso te ajudar com dúvidas sobre o Conecta King:\n• Planos e valores\n• Como usar os módulos\n• Personalização do cartão\n• Compartilhar cartão\n• Problemas técnicos\n\nSe você habilitar a busca na web nas configurações, posso buscar informações atualizadas na internet para você! 😊`,
+                    answer: `Olá! 😊 Não tenho informações sobre isso na minha base de conhecimento no momento.\n\nMas estou sempre aprendendo! Se você habilitar a busca na web nas configurações, posso buscar informações atualizadas para você.\n\nTambém posso te ajudar com qualquer dúvida sobre o Conecta King! 😊`,
                     confidence: 0,
-                    source: 'default'
+                    source: 'no_knowledge'
                 };
             }
             
+            // Se é sobre o sistema mas não encontrou resposta
             return {
-                answer: `Olá! 😊 Não encontrei uma resposta específica para sua pergunta sobre o Conecta King.\n\nPosso te ajudar com:\n• Informações sobre planos e valores\n• Como usar os módulos do sistema\n• Como editar e personalizar seu cartão\n• Como compartilhar seu cartão\n• Resolver problemas técnicos\n• Dúvidas sobre funcionalidades\n\nPode reformular sua pergunta de outra forma ou me perguntar sobre algum desses tópicos? Estou aqui para ajudar! 😊`,
+                answer: `Olá! 😊 Não encontrei uma resposta específica para sua pergunta sobre o Conecta King.\n\nPosso te ajudar com:\n• Informações sobre planos e valores\n• Como usar os módulos do sistema\n• Como editar e personalizar seu cartão\n• Como compartilhar seu cartão\n• Resolver problemas técnicos\n• Dúvidas sobre funcionalidades\n\nPode reformular sua pergunta de outra forma? Estou aqui para ajudar! 😊`,
                 confidence: 0,
                 source: 'default'
             };
