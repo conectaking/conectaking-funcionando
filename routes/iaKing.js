@@ -1346,6 +1346,194 @@ router.post('/documents/:id/process', protectAdmin, asyncHandler(async (req, res
     }
 }));
 
+// POST /api/ia-king/books/search - Buscar livros online
+router.post('/books/search', protectAdmin, asyncHandler(async (req, res) => {
+    const { query } = req.body;
+    
+    if (!query) {
+        return res.status(400).json({ message: 'Termo de pesquisa é obrigatório.' });
+    }
+    
+    try {
+        // Usar Google Books API (gratuita)
+        const fetch = require('node-fetch');
+        const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=20&langRestrict=pt`;
+        
+        console.log('📚 Buscando livros:', query);
+        
+        const response = await fetch(googleBooksUrl);
+        const data = await response.json();
+        
+        if (!data.items || data.items.length === 0) {
+            return res.json({ books: [] });
+        }
+        
+        // Processar resultados
+        const books = data.items.map(item => {
+            const volumeInfo = item.volumeInfo || {};
+            const accessInfo = item.accessInfo || {};
+            
+            return {
+                id: item.id,
+                title: volumeInfo.title || 'Sem título',
+                authors: volumeInfo.authors || [],
+                publishedDate: volumeInfo.publishedDate || '',
+                description: volumeInfo.description || '',
+                thumbnail: volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail || null,
+                infoLink: volumeInfo.infoLink || null,
+                pdfUrl: accessInfo.pdf?.isAvailable ? accessInfo.pdf.acsTokenLink : null,
+                epubUrl: accessInfo.epub?.isAvailable ? accessInfo.epub.acsTokenLink : null,
+                categories: volumeInfo.categories || [],
+                pageCount: volumeInfo.pageCount || 0,
+                language: volumeInfo.language || 'pt'
+            };
+        });
+        
+        console.log(`✅ ${books.length} livros encontrados`);
+        
+        res.json({ books });
+    } catch (error) {
+        console.error('❌ Erro ao buscar livros:', error);
+        throw error;
+    }
+}));
+
+// POST /api/ia-king/books/import - Importar livro (baixar PDF e processar)
+router.post('/books/import', protectAdmin, asyncHandler(async (req, res) => {
+    const { bookId } = req.body;
+    const adminId = req.user.userId;
+    
+    if (!bookId) {
+        return res.status(400).json({ message: 'ID do livro é obrigatório.' });
+    }
+    
+    try {
+        const fetch = require('node-fetch');
+        
+        // Buscar detalhes do livro
+        const bookResponse = await fetch(`https://www.googleapis.com/books/v1/volumes/${bookId}`);
+        const bookData = await bookResponse.json();
+        
+        if (!bookData.volumeInfo) {
+            return res.status(404).json({ message: 'Livro não encontrado.' });
+        }
+        
+        const volumeInfo = bookData.volumeInfo;
+        const accessInfo = bookData.accessInfo || {};
+        
+        // Verificar se tem PDF disponível
+        if (!accessInfo.pdf?.isAvailable) {
+            return res.status(400).json({ 
+                message: 'Este livro não possui PDF disponível para download gratuito. Use a opção "Adicionar Informações" para adicionar os dados do livro.',
+                hasInfo: true
+            });
+        }
+        
+        // Tentar baixar o PDF (pode não funcionar para todos os livros)
+        // Google Books API não fornece link direto para PDFs gratuitos na maioria dos casos
+        // Vamos adicionar as informações do livro e sugerir busca manual
+        
+        const title = volumeInfo.title || 'Livro sem título';
+        const authors = (volumeInfo.authors || []).join(', ');
+        const description = volumeInfo.description || '';
+        
+        // Adicionar como conhecimento mesmo sem PDF
+        const client = await db.pool.connect();
+        try {
+            const keywords = extractKeywords(title + ' ' + authors + ' ' + description);
+            
+            await client.query(
+                `INSERT INTO ia_knowledge_base (title, content, keywords, source_type, source_reference, created_by)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [
+                    `Livro: ${title}`,
+                    `Autor(es): ${authors}\n\n${description}\n\nFonte: Google Books (ID: ${bookId})`,
+                    keywords,
+                    'book',
+                    `google_books:${bookId}`,
+                    adminId
+                ]
+            );
+            
+            res.json({
+                message: `Informações do livro "${title}" adicionadas à base de conhecimento. Para adicionar o conteúdo completo, faça upload manual do PDF.`,
+                book: {
+                    title,
+                    authors,
+                    description
+                }
+            });
+        } finally {
+            client.release();
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao importar livro:', error);
+        throw error;
+    }
+}));
+
+// POST /api/ia-king/books/import-info - Adicionar apenas informações do livro
+router.post('/books/import-info', protectAdmin, asyncHandler(async (req, res) => {
+    const { bookId } = req.body;
+    const adminId = req.user.userId;
+    
+    if (!bookId) {
+        return res.status(400).json({ message: 'ID do livro é obrigatório.' });
+    }
+    
+    try {
+        const fetch = require('node-fetch');
+        
+        // Buscar detalhes do livro
+        const bookResponse = await fetch(`https://www.googleapis.com/books/v1/volumes/${bookId}`);
+        const bookData = await bookResponse.json();
+        
+        if (!bookData.volumeInfo) {
+            return res.status(404).json({ message: 'Livro não encontrado.' });
+        }
+        
+        const volumeInfo = bookData.volumeInfo;
+        const title = volumeInfo.title || 'Livro sem título';
+        const authors = (volumeInfo.authors || []).join(', ');
+        const description = volumeInfo.description || '';
+        const categories = (volumeInfo.categories || []).join(', ');
+        
+        const client = await db.pool.connect();
+        try {
+            const keywords = extractKeywords(title + ' ' + authors + ' ' + description + ' ' + categories);
+            
+            await client.query(
+                `INSERT INTO ia_knowledge_base (title, content, keywords, source_type, source_reference, created_by)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [
+                    `Livro: ${title}`,
+                    `Autor(es): ${authors}\n\nCategorias: ${categories}\n\nDescrição:\n${description}\n\nFonte: Google Books (ID: ${bookId})`,
+                    keywords,
+                    'book',
+                    `google_books:${bookId}`,
+                    adminId
+                ]
+            );
+            
+            res.json({
+                message: `Informações do livro "${title}" adicionadas com sucesso!`,
+                book: {
+                    title,
+                    authors,
+                    description
+                }
+            });
+        } finally {
+            client.release();
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao adicionar informações do livro:', error);
+        throw error;
+    }
+}));
+
 // POST /api/ia-king/web-search - Buscar na internet
 router.post('/web-search', protectUser, iaLimiter, asyncHandler(async (req, res) => {
     const { query } = req.body;
