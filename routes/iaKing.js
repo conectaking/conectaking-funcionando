@@ -2774,4 +2774,170 @@ router.post('/import-book-tavily', protectAdmin, asyncHandler(async (req, res) =
     }
 }));
 
+// ============================================
+// ROTA DE TREINAMENTO COM CONHECIMENTO ADQUIRIDO
+// ============================================
+
+// POST /api/ia-king/train-acquired-knowledge - Treinar com todo conhecimento adquirido (livros, Tavily, documentos)
+router.post('/train-acquired-knowledge', protectAdmin, asyncHandler(async (req, res) => {
+    console.log('📥 Requisição recebida: POST /api/ia-king/train-acquired-knowledge');
+    const client = await db.pool.connect();
+    try {
+        console.log('🧠 Iniciando treinamento com TODO conhecimento adquirido...');
+        
+        await client.query('BEGIN');
+        
+        // Buscar categorias
+        const categoriesResult = await client.query('SELECT id, name FROM ia_categories');
+        const categoryMap = {};
+        categoriesResult.rows.forEach(cat => {
+            categoryMap[cat.name] = cat.id;
+        });
+        
+        // 1. Buscar TODO conhecimento adquirido (livros, Tavily, documentos)
+        const acquiredKnowledge = await client.query(`
+            SELECT 
+                id,
+                title,
+                content,
+                keywords,
+                category_id,
+                source_type,
+                source_reference,
+                created_at
+            FROM ia_knowledge_base
+            WHERE source_type IN ('tavily_learned', 'tavily_training', 'tavily_book', 'document', 'manual')
+            AND is_active = true
+            ORDER BY created_at DESC
+        `);
+        
+        console.log(`📚 Encontrados ${acquiredKnowledge.rows.length} itens de conhecimento adquirido`);
+        
+        // 2. Buscar documentos processados
+        const documents = await client.query(`
+            SELECT 
+                id,
+                title,
+                extracted_text,
+                category_id,
+                created_at
+            FROM ia_documents
+            WHERE processed = true 
+            AND extracted_text IS NOT NULL 
+            AND LENGTH(extracted_text) > 0
+            ORDER BY created_at DESC
+        `);
+        
+        console.log(`📄 Encontrados ${documents.rows.length} documentos processados`);
+        
+        // 3. Re-processar e melhorar indexação de cada item
+        let processedCount = 0;
+        let improvedCount = 0;
+        let createdQACount = 0;
+        
+        // Processar conhecimento da base
+        for (const knowledge of acquiredKnowledge.rows) {
+            try {
+                // Extrair palavras-chave melhoradas
+                const improvedKeywords = extractKeywords(knowledge.title + ' ' + knowledge.content);
+                
+                // Atualizar keywords se melhorou
+                if (JSON.stringify(improvedKeywords) !== JSON.stringify(knowledge.keywords || [])) {
+                    await client.query(`
+                        UPDATE ia_knowledge_base
+                        SET keywords = $1, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $2
+                    `, [improvedKeywords, knowledge.id]);
+                    improvedCount++;
+                }
+                
+                // Criar Q&A baseado no conhecimento (se não existir)
+                const qaTitle = knowledge.title;
+                const qaAnswer = knowledge.content.substring(0, 2000); // Limitar tamanho
+                
+                const existingQA = await client.query(`
+                    SELECT id FROM ia_qa
+                    WHERE LOWER(question) = LOWER($1)
+                    LIMIT 1
+                `, [qaTitle]);
+                
+                if (existingQA.rows.length === 0 && qaAnswer.length > 50) {
+                    await client.query(`
+                        INSERT INTO ia_qa (question, answer, keywords, category_id, is_active)
+                        VALUES ($1, $2, $3, $4, true)
+                    `, [
+                        qaTitle,
+                        qaAnswer,
+                        improvedKeywords,
+                        knowledge.category_id
+                    ]);
+                    createdQACount++;
+                }
+                
+                processedCount++;
+            } catch (error) {
+                console.error(`Erro ao processar conhecimento ID ${knowledge.id}:`, error);
+            }
+        }
+        
+        // Processar documentos
+        for (const doc of documents.rows) {
+            try {
+                // Extrair conhecimento do documento
+                const docKeywords = extractKeywords(doc.title + ' ' + doc.extracted_text);
+                
+                // Verificar se já existe na base de conhecimento
+                const existingKnowledge = await client.query(`
+                    SELECT id FROM ia_knowledge_base
+                    WHERE LOWER(title) = LOWER($1)
+                    AND source_type = 'document'
+                    LIMIT 1
+                `, [doc.title]);
+                
+                if (existingKnowledge.rows.length === 0) {
+                    // Adicionar à base de conhecimento
+                    await client.query(`
+                        INSERT INTO ia_knowledge_base (title, content, keywords, category_id, source_type, source_reference, is_active)
+                        VALUES ($1, $2, $3, $4, 'document', $5, true)
+                    `, [
+                        doc.title,
+                        doc.extracted_text.substring(0, 5000), // Limitar tamanho
+                        docKeywords,
+                        doc.category_id,
+                        `document_${doc.id}`
+                    ]);
+                    processedCount++;
+                }
+            } catch (error) {
+                console.error(`Erro ao processar documento ID ${doc.id}:`, error);
+            }
+        }
+        
+        await client.query('COMMIT');
+        
+        console.log(`✅ Treinamento com conhecimento adquirido concluído!`);
+        console.log(`   - Processados: ${processedCount} itens`);
+        console.log(`   - Melhorados: ${improvedCount} itens`);
+        console.log(`   - Q&As criados: ${createdQACount} itens`);
+        
+        res.json({
+            message: `Treinamento com conhecimento adquirido concluído com sucesso!`,
+            stats: {
+                total_acquired: acquiredKnowledge.rows.length,
+                total_documents: documents.rows.length,
+                processed: processedCount,
+                improved: improvedCount,
+                qa_created: createdQACount
+            }
+        });
+        
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('❌ Erro no treinamento com conhecimento adquirido:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
