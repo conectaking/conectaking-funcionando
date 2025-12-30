@@ -57,7 +57,7 @@ router.get('/status', protectUser, async (req, res) => {
 router.post('/upgrade', protectUser, async (req, res) => {
     const { targetUserId, newPlan } = req.body; 
     
-    if (!['individual', 'business_owner', 'free'].includes(newPlan)) {
+    if (!['individual', 'individual_com_logo', 'business_owner', 'free'].includes(newPlan)) {
         return res.status(400).json({ message: 'Plano inválido.' });
     }
 

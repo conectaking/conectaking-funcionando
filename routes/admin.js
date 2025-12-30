@@ -273,7 +273,7 @@ router.put('/users/:id/manage', protectAdmin, async (req, res) => {
     if (parseInt(id, 10) === adminUserId && isAdmin === false) {
         return res.status(403).json({ message: 'Você não pode remover seu próprio status de administrador.' });
     }
-    if (!email || !['free', 'individual', 'business_owner', 'team_member'].includes(accountType) || typeof isAdmin !== 'boolean') {
+    if (!email || !['free', 'individual', 'individual_com_logo', 'business_owner', 'team_member'].includes(accountType) || typeof isAdmin !== 'boolean') {
         return res.status(400).json({ message: 'Dados inválidos.' });
     }
     if (isNaN(maxInvites) || maxInvites < 0) {
@@ -329,7 +329,7 @@ router.put('/users/:id/update-role', protectAdmin, async (req, res) => {
         return res.status(403).json({ message: 'Você não pode remover seu próprio status de administrador.' });
     }
 
-    if (!['free', 'individual', 'business_owner', 'team_member'].includes(accountType) || typeof isAdmin !== 'boolean') {
+    if (!['free', 'individual', 'individual_com_logo', 'business_owner', 'team_member'].includes(accountType) || typeof isAdmin !== 'boolean') {
         return res.status(400).json({ message: 'Dados de atualização inválidos.' });
     }
 
