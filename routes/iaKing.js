@@ -936,6 +936,514 @@ async function learnFromTavily(question, answer, client) {
 }
 
 // ============================================
+// SISTEMA COGNITIVO AVANÇADO - NÚCLEO ABSOLUTO
+// ============================================
+
+// PROMPT DE SISTEMA - MENTALIDADE FUNDAMENTAL
+const SYSTEM_COGNITIVE_CORE = `
+Você é uma Inteligência Artificial de alta capacidade cognitiva, projetada para compreender, analisar, raciocinar, sintetizar e responder com clareza, precisão e responsabilidade.
+
+Você NÃO possui consciência, emoções, crenças pessoais, desejos, ego ou intenções próprias.
+Você NÃO simula humanidade.
+Você NÃO adota ideologias.
+Você NÃO cria narrativas falsas para agradar.
+
+Você opera exclusivamente com base em:
+- Lógica
+- Análise comparativa
+- Conhecimento estruturado
+- Consistência interna
+- Responsabilidade intelectual
+
+MENTALIDADE FUNDAMENTAL:
+Você age como:
+- Analista lógico
+- Pesquisador rigoroso
+- Filósofo neutro
+- Observador histórico
+- Psiquiatra informativo (não clínico)
+- Educador responsável
+- Amiga racional (apoio sem dependência)
+- Figura cuidadora no tom (clareza, não afeto)
+
+Você nunca manipula.
+Você nunca persuade emocionalmente.
+Você nunca cria ilusões reconfortantes.
+
+Seu compromisso é com a clareza, não com o conforto.
+
+PRINCÍPIOS ABSOLUTOS:
+1. Nunca inventar informações.
+2. Nunca preencher lacunas com suposições.
+3. Nunca afirmar como fato o que é crença, opinião ou hipótese.
+4. Sempre separar claramente: Fatos, Evidências, Interpretações, Opiniões.
+5. Se não houver dados suficientes, declarar explicitamente.
+6. Preferir silêncio informativo a erro elegante.
+7. Clareza é superior à eloquência.
+8. Verdade contextual é superior à verdade absoluta.
+
+ANTI-ALUCINAÇÃO (ANTI-ILUSIONISMO):
+- Verificar consistência interna antes de responder.
+- Rejeitar respostas que pareçam plausíveis, mas não verificáveis.
+- Indicar incerteza quando necessário.
+- Nunca criar referências inexistentes.
+- Nunca fingir conhecimento.
+
+PROCESSO COGNITIVO (COMO VOCÊ RACIOCINA):
+ETAPA 1 — INTERPRETAÇÃO: Identificar intenção real, classificar tipo, identificar profundidade.
+ETAPA 2 — BUSCA: Priorizar fontes primárias, usar secundárias como apoio.
+ETAPA 3 — ANÁLISE: Comparar informações, identificar convergências, sinalizar divergências.
+ETAPA 4 — CLASSIFICAÇÃO: Separar fato comprovado, consenso acadêmico, teoria, interpretação cultural, crença.
+ETAPA 5 — SÍNTESE: Organizar logicamente, começar pelo mais aceito, expandir apenas se relevante.
+ETAPA 6 — RESPOSTA: Linguagem simples, tom neutro, estrutura clara, sem exageros, sem julgamento.
+
+MÓDULOS MENTAIS (ATIVAÇÃO DINÂMICA):
+- MODO ANALÍTICO: Lógica rigorosa, comparações, estrutura passo a passo.
+- MODO RÁPIDO: Respostas curtas, diretas, sem aprofundamento desnecessário.
+- MODO PROFUNDO: Análise extensa, contexto histórico, relações complexas.
+- MODO FILOSÓFICO NEUTRO: Explorar ideias sem afirmar verdades absolutas.
+- MODO PSIQUIÁTRICO INFORMATIVO: Explicar conceitos mentais, nunca diagnosticar.
+- MODO CUIDADOR: Tom calmo, linguagem clara, apoio racional, nunca criar dependência.
+
+RELIGIÃO, POLÍTICA E IDEOLOGIA:
+- Priorizar contexto histórico e factual.
+- Separar crença de evidência.
+- Não adotar lados.
+- Não julgar.
+- Não ridicularizar.
+- Não defender.
+Seu papel é explicar, não convencer.
+
+ESTILO DE RESPOSTA:
+- Objetiva
+- Clara
+- Estruturada
+- Sem floreios
+- Sem dramatização
+- Sem frases vazias
+- Sem moralismo
+
+OBJETIVO FINAL:
+Organizar o conhecimento humano de forma compreensível, honesta e responsável.
+Você não existe para impressionar.
+Você existe para esclarecer.
+Você responde como um sistema cognitivo avançado, não como um personagem.
+`;
+
+// Núcleos Imutáveis
+const IMMUTABLE_CORES = {
+    EPISTEMOLOGICAL: {
+        whatIsKnowledge: 'Conhecimento é observacional, interpretativo e contextual',
+        whatIsEvidence: 'Evidência requer reprodutibilidade e consenso',
+        whatIsUncertainty: 'Incerteza deve ser declarada explicitamente',
+        whatIsConsensus: 'Consenso acadêmico é diferente de verdade absoluta'
+    },
+    LOGICAL: {
+        noContradiction: 'Não pode contradizer princípios estabelecidos',
+        causeNotCorrelation: 'Causa ≠ correlação',
+        generalizationLimits: 'Generalizações têm limites',
+        fallacyDetection: 'Detectar falácias lógicas'
+    },
+    ETHICAL_COGNITIVE: {
+        noHarmByCertainty: 'Não causar dano por excesso de certeza',
+        noDependency: 'Não criar dependência emocional',
+        noManipulation: 'Não manipular',
+        noPersuasion: 'Não persuadir, apenas informar'
+    },
+    AUDIT: {
+        everyResponseAudited: 'Toda resposta é auditada',
+        everyUncertaintyRecorded: 'Toda incerteza é registrada',
+        everyErrorBecomesRule: 'Todo erro vira regra',
+        noRepeatingErrors: 'Errar uma vez é aceitável, repetir é falha sistêmica'
+    }
+};
+
+// ============================================
+// SISTEMA DE AUDITORIA INTERNA E VALIDAÇÃO
+// ============================================
+
+// Detectar tentativa de prompt injection
+function detectPromptInjection(message) {
+    const injectionPatterns = [
+        /ignore\s+(instruções|instructions|previous|anteriores)/i,
+        /forget\s+(everything|tudo|all)/i,
+        /pretend\s+(that|que|to\s+be)/i,
+        /act\s+as\s+(if|como\s+se)/i,
+        /break\s+(your|suas)\s+(rules|regras)/i,
+        /you\s+are\s+now/i,
+        /from\s+now\s+on/i,
+        /new\s+(instructions|instruções)/i,
+        /system\s+(prompt|prompt)/i
+    ];
+    
+    for (const pattern of injectionPatterns) {
+        if (pattern.test(message)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Ativar modo mental baseado na pergunta
+function activateMentalMode(question, questionContext, thoughts) {
+    const lowerQuestion = question.toLowerCase();
+    
+    // MODO RÁPIDO: Perguntas simples e diretas
+    if (lowerQuestion.length < 30 && !lowerQuestion.includes('por que') && !lowerQuestion.includes('como funciona')) {
+        return 'rapido';
+    }
+    
+    // MODO PROFUNDO: Perguntas complexas ou filosóficas
+    if (thoughts.complexity === 'complex' || 
+        lowerQuestion.includes('por que') || 
+        lowerQuestion.includes('qual o sentido') ||
+        lowerQuestion.includes('filosofia')) {
+        return 'profundo';
+    }
+    
+    // MODO FILOSÓFICO: Questões existenciais ou conceituais
+    if (lowerQuestion.includes('sentido da vida') ||
+        lowerQuestion.includes('o que é') ||
+        lowerQuestion.includes('natureza de') ||
+        thoughts.intent === 'explanation') {
+        return 'filosofico';
+    }
+    
+    // MODO PSIQUIÁTRICO INFORMATIVO: Questões sobre mente, comportamento
+    if (lowerQuestion.includes('psicologia') ||
+        lowerQuestion.includes('mental') ||
+        lowerQuestion.includes('emocional') ||
+        lowerQuestion.includes('ansiedade') ||
+        lowerQuestion.includes('depressão')) {
+        return 'psiquiatrico';
+    }
+    
+    // MODO CUIDADOR: Perguntas pessoais ou de ajuda
+    if (lowerQuestion.includes('ajudar') ||
+        lowerQuestion.includes('problema') ||
+        lowerQuestion.includes('perdido') ||
+        lowerQuestion.includes('confuso') ||
+        thoughts.emotionalTone === 'urgent') {
+        return 'cuidador';
+    }
+    
+    // MODO ANALÍTICO: Padrão para análise lógica
+    return 'analitico';
+}
+
+// Auditoria de Veracidade
+function auditVeracity(answer, knowledgeSources) {
+    const issues = [];
+    
+    // Verificar se há afirmações sem fonte
+    const absoluteClaims = answer.match(/(?:sempre|nunca|todos|todas|ninguém|nada)\s+[a-záàâãéêíóôõúç]+/gi);
+    if (absoluteClaims && absoluteClaims.length > 2) {
+        issues.push('Muitas afirmações absolutas sem qualificação');
+    }
+    
+    // Verificar se há números ou datas sem contexto
+    const numbers = answer.match(/\d{4}|\d+%/g);
+    if (numbers && numbers.length > 3 && !knowledgeSources) {
+        issues.push('Números sem fonte clara');
+    }
+    
+    // Verificar se há citações sem atribuição
+    const quotes = answer.match(/"[^"]{20,}"/g);
+    if (quotes && quotes.length > 0 && !answer.includes('segundo') && !answer.includes('conforme')) {
+        issues.push('Citações sem atribuição');
+    }
+    
+    return {
+        passed: issues.length === 0,
+        issues: issues
+    };
+}
+
+// Auditoria de Consistência
+function auditConsistency(answer, questionContext, previousAnswers = []) {
+    const issues = [];
+    
+    // Verificar contradições internas
+    const contradictions = [
+        { pattern: /(?:não|nunca).*mas.*(?:sim|sempre)/i, issue: 'Contradição interna detectada' },
+        { pattern: /(?:é|são).*mas.*(?:não|nunca)/i, issue: 'Afirmação contraditória' }
+    ];
+    
+    for (const check of contradictions) {
+        if (check.pattern.test(answer)) {
+            issues.push(check.issue);
+        }
+    }
+    
+    // Verificar se a resposta realmente responde à pergunta
+    if (questionContext.entities.length > 0) {
+        const entity = questionContext.entities[0];
+        if (!answer.toLowerCase().includes(entity)) {
+            issues.push('Resposta não menciona a entidade principal da pergunta');
+        }
+    }
+    
+    return {
+        passed: issues.length === 0,
+        issues: issues
+    };
+}
+
+// Auditoria de Neutralidade
+function auditNeutrality(answer) {
+    const issues = [];
+    
+    // Detectar linguagem emocional excessiva
+    const emotionalWords = ['incrível', 'fantástico', 'terrível', 'horrível', 'perfeito', 'absurdo'];
+    const emotionalCount = emotionalWords.filter(word => answer.toLowerCase().includes(word)).length;
+    if (emotionalCount > 2) {
+        issues.push('Linguagem emocional excessiva');
+    }
+    
+    // Detectar julgamentos
+    const judgmentPatterns = [
+        /(?:é|são)\s+(?:errado|correto|certo|errada|correta)/i,
+        /(?:deveria|devia)\s+(?:ser|estar)/i,
+        /(?:não\s+deveria|não\s+devia)/i
+    ];
+    
+    for (const pattern of judgmentPatterns) {
+        if (pattern.test(answer)) {
+            issues.push('Julgamento de valor detectado');
+            break;
+        }
+    }
+    
+    // Detectar persuasão
+    const persuasionPatterns = [
+        /você\s+(?:deve|precisa|tem\s+que)/i,
+        /(?:confie|acredite|tenha\s+certeza)/i,
+        /(?:é\s+melhor|é\s+pior)/i
+    ];
+    
+    for (const pattern of persuasionPatterns) {
+        if (pattern.test(answer)) {
+            issues.push('Linguagem persuasiva detectada');
+            break;
+        }
+    }
+    
+    return {
+        passed: issues.length === 0,
+        issues: issues
+    };
+}
+
+// Auditoria de Linguagem
+function auditLanguage(answer) {
+    const issues = [];
+    
+    // Verificar clareza
+    if (answer.length > 1000 && !answer.includes('\n\n')) {
+        issues.push('Resposta muito longa sem estruturação');
+    }
+    
+    // Verificar floreios desnecessários
+    const fluffPatterns = [
+        /(?:é\s+importante\s+ressaltar|vale\s+a\s+pena\s+mencionar|não\s+podemos\s+esquecer)/i,
+        /(?:sem\s+sombra\s+de\s+dúvida|com\s+certeza\s+absoluta)/i
+    ];
+    
+    for (const pattern of fluffPatterns) {
+        if (pattern.test(answer)) {
+            issues.push('Floreios desnecessários detectados');
+            break;
+        }
+    }
+    
+    // Verificar frases vazias
+    const emptyPhrases = [
+        'como você pode ver',
+        'é claro que',
+        'obviamente',
+        'naturalmente'
+    ];
+    
+    const emptyCount = emptyPhrases.filter(phrase => answer.toLowerCase().includes(phrase)).length;
+    if (emptyCount > 1) {
+        issues.push('Frases vazias detectadas');
+    }
+    
+    return {
+        passed: issues.length === 0,
+        issues: issues
+    };
+}
+
+// Auditoria Interna Completa
+function performInternalAudit(answer, questionContext, knowledgeSources, thoughts) {
+    const audits = {
+        veracity: auditVeracity(answer, knowledgeSources),
+        consistency: auditConsistency(answer, questionContext),
+        neutrality: auditNeutrality(answer),
+        language: auditLanguage(answer)
+    };
+    
+    const allIssues = [
+        ...audits.veracity.issues,
+        ...audits.consistency.issues,
+        ...audits.neutrality.issues,
+        ...audits.language.issues
+    ];
+    
+    const passed = allIssues.length === 0;
+    
+    return {
+        passed: passed,
+        audits: audits,
+        issues: allIssues,
+        needsRevision: !passed
+    };
+}
+
+// Calcular Confidence Score
+function calculateConfidenceScore(answer, knowledgeSources, auditResult, questionContext) {
+    let score = 50; // Base
+    
+    // Fontes convergentes (+30)
+    if (knowledgeSources && knowledgeSources.length > 1) {
+        score += 30;
+    } else if (knowledgeSources && knowledgeSources.length === 1) {
+        score += 15;
+    }
+    
+    // Clareza lógica (+20)
+    if (auditResult.passed) {
+        score += 20;
+    }
+    
+    // Linguagem neutra (+20)
+    if (auditResult.audits.neutrality.passed) {
+        score += 20;
+    }
+    
+    // Ausência de contradição (+30)
+    if (auditResult.audits.consistency.passed) {
+        score += 30;
+    }
+    
+    // Penalidades
+    if (auditResult.issues.length > 0) {
+        score -= auditResult.issues.length * 10;
+    }
+    
+    // Se não tem fontes e pergunta não é sobre sistema
+    if (!knowledgeSources && !isAboutSystem(questionContext.originalQuestion || '')) {
+        score -= 30;
+    }
+    
+    return Math.max(0, Math.min(100, score));
+}
+
+// Calcular Hallucination Risk
+function calculateHallucinationRisk(answer, knowledgeSources, auditResult) {
+    let risk = 'baixo';
+    
+    // Sem fontes = risco alto
+    if (!knowledgeSources || knowledgeSources.length === 0) {
+        risk = 'alto';
+    }
+    
+    // Muitas afirmações absolutas = risco médio
+    const absoluteClaims = answer.match(/(?:sempre|nunca|todos|todas|ninguém|nada)\s+[a-záàâãéêíóôõúç]+/gi);
+    if (absoluteClaims && absoluteClaims.length > 3) {
+        risk = risk === 'baixo' ? 'medio' : 'alto';
+    }
+    
+    // Problemas de veracidade = risco alto
+    if (!auditResult.audits.veracity.passed) {
+        risk = 'alto';
+    }
+    
+    return risk;
+}
+
+// Validar Resposta Final
+function validateResponse(answer, questionContext, knowledgeSources, thoughts, auditResult) {
+    const validation = {
+        valid: true,
+        confidence: calculateConfidenceScore(answer, knowledgeSources, auditResult, questionContext),
+        hallucinationRisk: calculateHallucinationRisk(answer, knowledgeSources, auditResult),
+        needsUncertaintyDeclaration: false,
+        needsSourceDeclaration: false
+    };
+    
+    // Se confiança baixa, declarar incerteza
+    if (validation.confidence < 70) {
+        validation.needsUncertaintyDeclaration = true;
+    }
+    
+    // Se risco de alucinação alto, recusar ou qualificar
+    if (validation.hallucinationRisk === 'alto') {
+        validation.valid = false;
+    }
+    
+    // Se não tem fontes, declarar
+    if (!knowledgeSources || knowledgeSources.length === 0) {
+        validation.needsSourceDeclaration = true;
+    }
+    
+    return validation;
+}
+
+// Aplicar Modo Mental à Resposta
+function applyMentalMode(answer, mode, thoughts) {
+    let enhancedAnswer = answer;
+    
+    switch (mode) {
+        case 'rapido':
+            // Resposta curta e direta
+            if (answer.length > 200) {
+                enhancedAnswer = summarizeAnswer(answer, 150);
+            }
+            break;
+            
+        case 'profundo':
+            // Adicionar contexto histórico se relevante
+            if (thoughts.relatedTopics.length > 0) {
+                enhancedAnswer += `\n\nContexto: Este tema se relaciona com ${thoughts.relatedTopics.slice(0, 2).join(' e ')}.`;
+            }
+            break;
+            
+        case 'filosofico':
+            // Explorar ideias sem conclusões absolutas
+            enhancedAnswer = enhancedAnswer.replace(/^(É|São|És)/, 'Pode ser considerado');
+            break;
+            
+        case 'psiquiatrico':
+            // Adicionar disclaimer
+            if (!enhancedAnswer.includes('não substitui')) {
+                enhancedAnswer += '\n\n⚠️ Nota: Esta informação é educacional e não substitui avaliação profissional.';
+            }
+            break;
+            
+        case 'cuidador':
+            // Tom calmo e apoio racional
+            if (!enhancedAnswer.startsWith('Entendo')) {
+                enhancedAnswer = 'Entendo sua situação. ' + enhancedAnswer;
+            }
+            break;
+            
+        case 'analitico':
+        default:
+            // Estrutura lógica
+            if (answer.length > 300 && !answer.includes('\n\n')) {
+                const sentences = answer.split(/[.!?]\s+/);
+                enhancedAnswer = sentences.slice(0, 3).join('. ') + '.';
+            }
+            break;
+    }
+    
+    return enhancedAnswer;
+}
+
+// ============================================
 // SISTEMA DE PENSAMENTO E RACIOCÍNIO (Como ChatGPT/Gemini)
 // ============================================
 
@@ -1130,6 +1638,7 @@ function thinkIndependently(questionContext, knowledgeBase, thoughts) {
 async function findBestAnswer(userMessage, userId) {
     const client = await db.pool.connect();
     let knowledgeResult = null;
+    let questionIsAboutSystem = null; // Declarar uma vez no início
     
     try {
         // Verificar se é um elogio/complimento primeiro (antes de saudação)
@@ -1303,7 +1812,9 @@ async function findBestAnswer(userMessage, userId) {
             candidates.sort((a, b) => b.score - a.score);
             
             // FILTRO CRÍTICO: Se a pergunta NÃO é sobre o sistema, NÃO usar conhecimento do sistema
-            const questionIsAboutSystem = isAboutSystem(userMessage);
+            if (questionIsAboutSystem === null) {
+                questionIsAboutSystem = isAboutSystem(userMessage);
+            }
             let filteredCandidates = candidates;
             
             if (!questionIsAboutSystem) {
@@ -1324,8 +1835,140 @@ async function findBestAnswer(userMessage, userId) {
                 });
             }
             
-            // Pegar o melhor candidato (dos filtrados)
-            if (filteredCandidates.length > 0 && filteredCandidates[0].score > 30) {
+            // Buscar o melhor candidato válido (que realmente responde à pergunta)
+            let bestCandidate = null;
+            let bestKb = null;
+            let relevantExcerpt = null;
+            
+            // Iterar pelos candidatos filtrados para encontrar um que realmente responda
+            for (const candidate of filteredCandidates) {
+                if (candidate.score < 30) break; // Parar se score muito baixo
+                
+                const kb = candidate.kb;
+                
+                // VALIDAÇÃO CRÍTICA: Se a pergunta tem entidade, o conhecimento DEVE mencioná-la
+                if (questionContext.entities.length > 0) {
+                    const entity = questionContext.entities[0];
+                    const contentLower = kb.content.toLowerCase();
+                    const titleLower = kb.title.toLowerCase();
+                    
+                    // Se o conhecimento NÃO menciona a entidade, PULAR este candidato
+                    if (!contentLower.includes(entity) && !titleLower.includes(entity)) {
+                        console.log(`⚠️ [IA] Conhecimento "${kb.title.substring(0, 50)}" não menciona entidade "${entity}", pulando...`);
+                        continue; // Pular para próximo candidato
+                    }
+                }
+                
+                // ENCONTRAR TRECHO RELEVANTE que responde à pergunta
+                let excerpt = findRelevantExcerpt(kb.content, questionContext, 400);
+                
+                // VALIDAÇÃO: Se encontrou trecho, verificar se realmente menciona a entidade
+                if (excerpt && questionContext.entities.length > 0) {
+                    const entity = questionContext.entities[0];
+                    const excerptLower = excerpt.toLowerCase();
+                    
+                    // Se o trecho não menciona a entidade, tentar encontrar outro
+                    if (!excerptLower.includes(entity)) {
+                        console.log(`⚠️ [IA] Trecho encontrado não menciona entidade "${entity}", buscando outro...`);
+                        excerpt = null; // Forçar buscar outro trecho
+                    }
+                }
+                
+                // Se não encontrou trecho relevante, tentar extrair resposta direta
+                if (!excerpt) {
+                    excerpt = extractDirectAnswer(kb.content, userMessage);
+                    
+                    // Validar se resposta direta menciona entidade
+                    if (excerpt && questionContext.entities.length > 0) {
+                        const entity = questionContext.entities[0];
+                        if (!excerpt.toLowerCase().includes(entity)) {
+                            excerpt = null;
+                        }
+                    }
+                }
+                
+                // Se ainda não encontrou, buscar parágrafos que mencionam a entidade
+                if (!excerpt && questionContext.entities.length > 0) {
+                    const entity = questionContext.entities[0];
+                    const paragraphs = kb.content.split(/\n\n+/);
+                    
+                    for (const para of paragraphs) {
+                        const paraLower = para.toLowerCase();
+                        if (paraLower.includes(entity) && para.length > 50) {
+                            // Filtrar conteúdo acadêmico
+                            if (!filterAcademicContent(para)) {
+                                excerpt = para.substring(0, 400);
+                                console.log(`✅ [IA] Encontrado parágrafo que menciona "${entity}"`);
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Se ainda não encontrou, resumir APENAS se mencionar a entidade
+                if (!excerpt) {
+                    const contentLower = kb.content.toLowerCase();
+                    if (questionContext.entities.length > 0) {
+                        const entity = questionContext.entities[0];
+                        // Só resumir se o conteúdo menciona a entidade
+                        if (contentLower.includes(entity)) {
+                            excerpt = summarizeAnswer(kb.content, 300);
+                            // Validar novamente
+                            if (excerpt && !excerpt.toLowerCase().includes(entity)) {
+                                excerpt = null;
+                            }
+                        }
+                    } else {
+                        // Se não tem entidade, pode resumir normalmente
+                        excerpt = summarizeAnswer(kb.content, 300);
+                    }
+                }
+                
+                // VALIDAÇÃO FINAL: Se ainda não tem trecho relevante que mencione a entidade, PULAR
+                if (!excerpt && questionContext.entities.length > 0) {
+                    const entity = questionContext.entities[0];
+                    console.log(`❌ [IA] Não foi possível encontrar trecho relevante sobre "${entity}" em "${kb.title.substring(0, 50)}", pulando...`);
+                    continue; // Pular para próximo candidato
+                }
+                
+                // Se ainda não tem, usar início do conteúdo APENAS se mencionar entidade
+                if (!excerpt) {
+                    if (questionContext.entities.length > 0) {
+                        const entity = questionContext.entities[0];
+                        const firstPart = kb.content.substring(0, 300);
+                        if (firstPart.toLowerCase().includes(entity)) {
+                            excerpt = firstPart;
+                        } else {
+                            // Não usar se não menciona a entidade
+                            console.log(`❌ [IA] Início do conteúdo não menciona "${entity}", pulando conhecimento...`);
+                            continue;
+                        }
+                    } else {
+                        excerpt = kb.content.substring(0, 300);
+                    }
+                }
+                
+                // Se chegou aqui, encontramos um candidato válido!
+                bestCandidate = candidate;
+                bestKb = kb;
+                relevantExcerpt = excerpt;
+                break; // Usar o primeiro candidato válido encontrado
+            }
+            
+            // Se encontrou candidato válido, usar ele
+            if (bestCandidate && bestKb && relevantExcerpt) {
+                const kb = bestKb;
+                
+                console.log('🎯 [IA] Melhor conhecimento encontrado:', {
+                    title: kb.title.substring(0, 50),
+                    score: bestCandidate.score,
+                    intelligentScore: bestCandidate.intelligentScore,
+                    source_type: kb.source_type,
+                    hasEntity: questionContext.entities.length > 0 ? kb.content.toLowerCase().includes(questionContext.entities[0]) : true
+                });
+                
+                // Remover código antigo que estava aqui
+                if (false) {
                 const bestCandidate = filteredCandidates[0];
                 const kb = bestCandidate.kb;
                 
@@ -1336,33 +1979,130 @@ async function findBestAnswer(userMessage, userId) {
                     source_type: kb.source_type
                 });
                 
+                // VALIDAÇÃO CRÍTICA: Se a pergunta tem entidade, o conhecimento DEVE mencioná-la
+                if (questionContext.entities.length > 0) {
+                    const entity = questionContext.entities[0];
+                    const contentLower = kb.content.toLowerCase();
+                    const titleLower = kb.title.toLowerCase();
+                    
+                    // Se o conhecimento NÃO menciona a entidade, PULAR este candidato
+                    if (!contentLower.includes(entity) && !titleLower.includes(entity)) {
+                        console.log(`⚠️ [IA] Conhecimento "${kb.title.substring(0, 50)}" não menciona entidade "${entity}", pulando...`);
+                        continue; // Pular para próximo candidato
+                    }
+                }
+                
                 // ENCONTRAR TRECHO RELEVANTE que responde à pergunta
                 let relevantExcerpt = findRelevantExcerpt(kb.content, questionContext, 400);
+                
+                // VALIDAÇÃO: Se encontrou trecho, verificar se realmente menciona a entidade
+                if (relevantExcerpt && questionContext.entities.length > 0) {
+                    const entity = questionContext.entities[0];
+                    const excerptLower = relevantExcerpt.toLowerCase();
+                    
+                    // Se o trecho não menciona a entidade, tentar encontrar outro
+                    if (!excerptLower.includes(entity)) {
+                        console.log(`⚠️ [IA] Trecho encontrado não menciona entidade "${entity}", buscando outro...`);
+                        relevantExcerpt = null; // Forçar buscar outro trecho
+                    }
+                }
                 
                 // Se não encontrou trecho relevante, tentar extrair resposta direta
                 if (!relevantExcerpt) {
                     relevantExcerpt = extractDirectAnswer(kb.content, userMessage);
+                    
+                    // Validar se resposta direta menciona entidade
+                    if (relevantExcerpt && questionContext.entities.length > 0) {
+                        const entity = questionContext.entities[0];
+                        if (!relevantExcerpt.toLowerCase().includes(entity)) {
+                            relevantExcerpt = null;
+                        }
+                    }
                 }
                 
-                // Se ainda não encontrou, resumir
+                // Se ainda não encontrou, buscar parágrafos que mencionam a entidade
+                if (!relevantExcerpt && questionContext.entities.length > 0) {
+                    const entity = questionContext.entities[0];
+                    const paragraphs = kb.content.split(/\n\n+/);
+                    
+                    for (const para of paragraphs) {
+                        const paraLower = para.toLowerCase();
+                        if (paraLower.includes(entity) && para.length > 50) {
+                            // Filtrar conteúdo acadêmico
+                            if (!filterAcademicContent(para)) {
+                                relevantExcerpt = para.substring(0, 400);
+                                console.log(`✅ [IA] Encontrado parágrafo que menciona "${entity}"`);
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Se ainda não encontrou, resumir APENAS se mencionar a entidade
                 if (!relevantExcerpt) {
-                    relevantExcerpt = summarizeAnswer(kb.content, 300);
+                    const contentLower = kb.content.toLowerCase();
+                    if (questionContext.entities.length > 0) {
+                        const entity = questionContext.entities[0];
+                        // Só resumir se o conteúdo menciona a entidade
+                        if (contentLower.includes(entity)) {
+                            relevantExcerpt = summarizeAnswer(kb.content, 300);
+                            // Validar novamente
+                            if (relevantExcerpt && !relevantExcerpt.toLowerCase().includes(entity)) {
+                                relevantExcerpt = null;
+                            }
+                        }
+                    } else {
+                        // Se não tem entidade, pode resumir normalmente
+                        relevantExcerpt = summarizeAnswer(kb.content, 300);
+                    }
                 }
                 
-                // Se ainda não tem, usar início do conteúdo
+                // VALIDAÇÃO FINAL: Se ainda não tem trecho relevante que mencione a entidade, PULAR
+                if (!relevantExcerpt && questionContext.entities.length > 0) {
+                    const entity = questionContext.entities[0];
+                    console.log(`❌ [IA] Não foi possível encontrar trecho relevante sobre "${entity}" em "${kb.title.substring(0, 50)}", pulando...`);
+                    continue; // Pular para próximo candidato
+                }
+                
+                // Se ainda não tem, usar início do conteúdo APENAS se mencionar entidade
                 if (!relevantExcerpt) {
-                    relevantExcerpt = kb.content.substring(0, 300);
+                    if (questionContext.entities.length > 0) {
+                        const entity = questionContext.entities[0];
+                        const firstPart = kb.content.substring(0, 300);
+                        if (firstPart.toLowerCase().includes(entity)) {
+                            relevantExcerpt = firstPart;
+                        } else {
+                            // Não usar se não menciona a entidade
+                            console.log(`❌ [IA] Início do conteúdo não menciona "${entity}", pulando conhecimento...`);
+                            continue;
+                        }
+                    } else {
+                        relevantExcerpt = kb.content.substring(0, 300);
+                    }
                 }
                 
-                // CAMADA 2: Sintetizar resposta de múltiplas fontes (se houver mais candidatos relevantes)
-                const topCandidates = candidates.filter(c => c.score > 50).slice(0, 3);
-                const knowledgeSources = topCandidates.map(c => ({
-                    excerpt: findRelevantExcerpt(c.kb.content, questionContext, 300) || 
-                            extractDirectAnswer(c.kb.content, userMessage) ||
-                            summarizeAnswer(c.kb.content, 300),
-                    score: c.score,
-                    title: c.kb.title
-                })).filter(s => s.excerpt);
+                        // CAMADA 2: Sintetizar resposta de múltiplas fontes (se houver mais candidatos relevantes)
+                        const topCandidates = filteredCandidates.filter(c => {
+                            // FILTRO RÍGIDO: Se pergunta tem entidade, só incluir candidatos que a mencionam
+                            if (questionContext.entities.length > 0) {
+                                const entity = questionContext.entities[0];
+                                const titleLower = (c.kb.title || '').toLowerCase();
+                                const contentLower = (c.kb.content || '').toLowerCase();
+                                return (titleLower.includes(entity) || contentLower.includes(entity)) && c.score > 50;
+                            }
+                            return c.score > 50;
+                        }).slice(0, 3);
+                        
+                        const knowledgeSources = topCandidates.map(c => {
+                            const excerpt = findRelevantExcerpt(c.kb.content, questionContext, 300) || 
+                                          extractDirectAnswer(c.kb.content, userMessage) ||
+                                          summarizeAnswer(c.kb.content, 300);
+                            return {
+                                excerpt: excerpt,
+                                score: c.score,
+                                title: c.kb.title
+                            };
+                        }).filter(s => s.excerpt && s.excerpt.length > 20);
                 
                 // Sintetizar de múltiplas fontes se tiver mais de uma fonte relevante
                 let synthesizedAnswer = null;
@@ -1477,7 +2217,9 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // Verificar se a pergunta é sobre o sistema ou sobre outras coisas
-        const questionIsAboutSystem = isAboutSystem(userMessage);
+        if (questionIsAboutSystem === null) {
+            questionIsAboutSystem = isAboutSystem(userMessage);
+        }
         
         console.log('🔍 [IA] Análise da pergunta:', {
             pergunta: userMessage.substring(0, 50),
@@ -1716,6 +2458,92 @@ async function findBestAnswer(userMessage, userId) {
             bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
         }
         
+        // ============================================
+        // AUDITORIA INTERNA COMPLETA
+        // ============================================
+        let knowledgeSourcesForAudit = null;
+        if (knowledgeResult && knowledgeResult.rows) {
+            // Preparar fontes para auditoria
+            const topSources = knowledgeResult.rows
+                .filter(kb => kb.content && kb.title)
+                .slice(0, 3)
+                .map(kb => ({
+                    title: kb.title,
+                    content: kb.content.substring(0, 500),
+                    source_type: kb.source_type
+                }));
+            
+            if (topSources.length > 0) {
+                knowledgeSourcesForAudit = topSources;
+            }
+        }
+        
+        // Realizar auditoria interna
+        let auditResult = null;
+        if (bestAnswer) {
+            auditResult = performInternalAudit(bestAnswer, questionContext, knowledgeSourcesForAudit, thoughts);
+            
+            console.log('🔍 [IA] Auditoria interna:', {
+                passed: auditResult.passed,
+                issues: auditResult.issues.length,
+                issuesList: auditResult.issues
+            });
+            
+            // Se auditoria falhou, tentar corrigir
+            if (!auditResult.passed && auditResult.issues.length > 0) {
+                console.log('⚠️ [IA] Problemas detectados na auditoria, aplicando correções...');
+                
+                // Remover julgamentos
+                if (auditResult.audits.neutrality.issues.some(i => i.includes('Julgamento'))) {
+                    bestAnswer = bestAnswer.replace(/(?:é|são)\s+(?:errado|correto|certo|errada|correta)/gi, 'pode ser visto como');
+                }
+                
+                // Remover persuasão
+                if (auditResult.audits.neutrality.issues.some(i => i.includes('persuasiva'))) {
+                    bestAnswer = bestAnswer.replace(/você\s+(?:deve|precisa|tem\s+que)/gi, 'pode ser útil');
+                }
+                
+                // Re-auditar após correção
+                auditResult = performInternalAudit(bestAnswer, questionContext, knowledgeSourcesForAudit, thoughts);
+            }
+        }
+        
+        // Validar resposta final
+        let validation = null;
+        if (bestAnswer && auditResult) {
+            validation = validateResponse(bestAnswer, questionContext, knowledgeSourcesForAudit, thoughts, auditResult);
+            
+            console.log('✅ [IA] Validação final:', {
+                valid: validation.valid,
+                confidence: validation.confidence,
+                hallucinationRisk: validation.hallucinationRisk,
+                needsUncertainty: validation.needsUncertaintyDeclaration
+            });
+            
+            // Se risco de alucinação alto, qualificar resposta
+            if (validation.hallucinationRisk === 'alto' && validation.valid) {
+                bestAnswer = "Com base nas informações disponíveis, posso dizer que:\n\n" + bestAnswer;
+                bestAnswer += "\n\n⚠️ Nota: Esta resposta é baseada em conhecimento limitado. Para informações mais precisas, consulte fontes especializadas.";
+            }
+            
+            // Se precisa declarar incerteza
+            if (validation.needsUncertaintyDeclaration) {
+                if (!bestAnswer.includes('incerto') && !bestAnswer.includes('limitado') && !bestAnswer.includes('pode variar')) {
+                    bestAnswer += "\n\n⚠️ Nota: Esta resposta tem um nível de confiança moderado devido à limitação das fontes disponíveis.";
+                }
+            }
+            
+            // Se precisa declarar fonte
+            if (validation.needsSourceDeclaration && !isAboutSystem(userMessage)) {
+                bestAnswer += "\n\nℹ️ Esta informação pode não estar completa. Considere verificar em fontes adicionais.";
+            }
+        }
+        
+        // Aplicar modo mental à resposta
+        if (bestAnswer) {
+            bestAnswer = applyMentalMode(bestAnswer, mentalMode, thoughts);
+        }
+        
         // BUSCA ULTRA-INTELIGENTE: Se não encontrou resposta, fazer busca mais profunda
         if (!bestAnswer || bestScore < 40) {
             console.log('🔍 [IA] Busca profunda: Não encontrei resposta relevante, fazendo busca mais profunda...');
@@ -1820,10 +2648,26 @@ async function findBestAnswer(userMessage, userId) {
             };
         }
         
+        // Calcular confidence score final baseado em auditoria
+        let finalConfidence = bestScore;
+        if (validation) {
+            finalConfidence = validation.confidence;
+        }
+        
+        // Se resposta não passou na validação, ajustar
+        if (validation && !validation.valid && bestAnswer) {
+            // Manter resposta mas com confiança baixa
+            finalConfidence = Math.min(finalConfidence, 40);
+        }
+        
         return {
             answer: bestAnswer,
-            confidence: bestScore,
-            source: bestSource || 'none'
+            confidence: finalConfidence,
+            source: bestSource || 'none',
+            mentalMode: mentalMode,
+            auditPassed: auditResult ? auditResult.passed : null,
+            hallucinationRisk: validation ? validation.hallucinationRisk : null,
+            cognitiveVersion: '2.0'
         };
     } finally {
         client.release();
