@@ -1117,8 +1117,34 @@ async function extractTextFromDocument(fileUrl, fileType) {
     }
 }
 
+// Middleware para tratar erros do multer
+const handleMulterError = (err, req, res, next) => {
+    if (err) {
+        console.error('❌ Erro no multer:', err);
+        
+        if (err.Code === 'NotEntitled' || err.message?.includes('enable R2')) {
+            return res.status(500).json({
+                message: 'Erro de configuração: R2 não está habilitado no Cloudflare Dashboard. Verifique as configurações do servidor.',
+                error: 'R2_NOT_ENABLED'
+            });
+        }
+        
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+                message: 'Arquivo muito grande. Tamanho máximo: 50MB.'
+            });
+        }
+        
+        return res.status(500).json({
+            message: 'Erro ao fazer upload do arquivo.',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+    next();
+};
+
 // POST /api/ia-king/documents/upload - Upload de documento
-router.post('/documents/upload', protectAdmin, documentUpload.single('document'), asyncHandler(async (req, res) => {
+router.post('/documents/upload', protectAdmin, documentUpload.single('document'), handleMulterError, asyncHandler(async (req, res) => {
     console.log('📤 Iniciando upload de documento...');
     
     if (!req.file) {
