@@ -72,11 +72,21 @@ CROSS JOIN (
 ) plans
 ON CONFLICT (module_type, plan_code) DO NOTHING;
 
--- Verificação
-SELECT 
-    module_type,
-    plan_code,
-    is_available
-FROM module_plan_availability
-ORDER BY module_type, plan_code;
+-- Verificação (só executa se a tabela existir)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'module_plan_availability') THEN
+        RAISE NOTICE 'Tabela module_plan_availability criada com sucesso!';
+    ELSE
+        RAISE WARNING 'Tabela module_plan_availability não foi criada. Verifique os erros acima.';
+    END IF;
+END $$;
+
+-- Verificação final (descomente após executar a migration completa)
+-- SELECT 
+--     module_type,
+--     plan_code,
+--     is_available
+-- FROM module_plan_availability
+-- ORDER BY module_type, plan_code;
 
