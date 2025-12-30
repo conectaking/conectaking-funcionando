@@ -6,8 +6,11 @@ const { asyncHandler } = require('../middleware/errorHandler');
 
 const router = express.Router();
 
+console.log('✅ Rotas IA KING carregadas');
+
 // POST /api/ia-king/train-initial - Treinamento inicial completo do sistema (ADM)
 router.post('/train-initial', protectAdmin, asyncHandler(async (req, res) => {
+    console.log('📥 Requisição recebida: POST /api/ia-king/train-initial');
     const client = await db.pool.connect();
     try {
         console.log('🧠 Iniciando treinamento inicial completo da IA KING...');
@@ -278,7 +281,7 @@ Todas as visualizações são registradas e você pode acompanhar nos relatório
                             entry.title,
                             entry.content,
                             categoryMap[entry.category] || null,
-                            entry.keywords,
+                            Array.isArray(entry.keywords) ? entry.keywords : [],
                             'system_training',
                             100 // Alta prioridade
                         ]
