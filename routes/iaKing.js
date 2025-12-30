@@ -492,11 +492,32 @@ async function findBestAnswer(userMessage, userId) {
                 ORDER BY id DESC
                 LIMIT 1
             `);
-            if (configResult.rows.length > 0 && configResult.rows[0].is_enabled) {
-                webSearchConfig = configResult.rows[0];
+            
+            console.log('🔍 [IA] Query de configuração retornou:', {
+                rowsCount: configResult.rows.length,
+                hasRows: configResult.rows.length > 0,
+                firstRow: configResult.rows.length > 0 ? {
+                    id: configResult.rows[0].id,
+                    is_enabled: configResult.rows[0].is_enabled,
+                    api_provider: configResult.rows[0].api_provider,
+                    has_api_key: !!configResult.rows[0].api_key
+                } : null
+            });
+            
+            if (configResult.rows.length > 0) {
+                const config = configResult.rows[0];
+                if (config.is_enabled) {
+                    webSearchConfig = config;
+                    console.log('✅ [IA] Configuração encontrada e habilitada!');
+                } else {
+                    console.log('⚠️ [IA] Configuração encontrada mas DESABILITADA (is_enabled = false)');
+                }
+            } else {
+                console.log('⚠️ [IA] Nenhuma configuração encontrada na tabela ia_web_search_config');
             }
         } catch (error) {
-            console.error('Erro ao buscar configuração de busca na web:', error);
+            console.error('❌ [IA] ERRO ao buscar configuração de busca na web:', error);
+            console.error('Stack:', error.stack);
         }
         
         // Verificar se a pergunta é sobre o sistema ou sobre outras coisas
@@ -639,9 +660,9 @@ async function findBestAnswer(userMessage, userId) {
         try {
             if (userId) {
                 await client.query(`
-                    INSERT INTO ia_conversations (user_id, user_message, ai_response, confidence_score, source_type)
-                    VALUES ($1, $2, $3, $4, $5)
-                `, [userId, userMessage, bestAnswer || 'Não encontrei uma resposta específica.', bestScore, bestSource || 'none']);
+                    INSERT INTO ia_conversations (user_id, message, response, confidence_score)
+                    VALUES ($1, $2, $3, $4)
+                `, [userId, userMessage, bestAnswer || 'Não encontrei uma resposta específica.', bestScore]);
             }
         } catch (error) {
             console.error('Erro ao salvar conversa:', error);
