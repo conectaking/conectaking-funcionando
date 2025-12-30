@@ -13,41 +13,54 @@ console.log('✅ Rotas IA KING carregadas');
 // FUNÇÕES AUXILIARES
 // ============================================
 
-// Função para calcular similaridade entre textos (melhorada)
+// Função para calcular similaridade entre textos (melhorada e mais inteligente)
 function calculateSimilarity(text1, text2) {
     if (!text1 || !text2) return 0;
     
-    const lower1 = text1.toLowerCase().trim();
-    const lower2 = text2.toLowerCase().trim();
-    
-    // Verificação exata (maior peso)
-    if (lower1 === lower2) return 100;
-    
-    // Verificação de substring (alto peso)
-    if (lower1.includes(lower2) || lower2.includes(lower1)) return 80;
-    
-    // Processar palavras
-    const words1 = lower1.split(/\s+/).filter(w => w.length > 2);
-    const words2 = lower2.split(/\s+/).filter(w => w.length > 2);
-    
-    if (words1.length === 0 || words2.length === 0) return 0;
-    
-    const set1 = new Set(words1);
-    const set2 = new Set(words2);
-    
-    // Intersecção de palavras
-    const intersection = new Set([...set1].filter(x => set2.has(x)));
-    const union = new Set([...set1, ...set2]);
-    
-    // Calcular similaridade básica
-    const basicSimilarity = (intersection.size / union.size) * 100;
-    
-    // Bonus por palavras importantes em comum
-    const importantWords = ['como', 'quando', 'onde', 'porque', 'qual', 'quais', 'problema', 'erro', 'não', 'consigo'];
-    const importantMatches = words1.filter(w => importantWords.includes(w) && set2.has(w)).length;
-    const bonus = importantMatches * 5;
-    
-    return Math.min(100, basicSimilarity + bonus);
+    try {
+        const lower1 = text1.toLowerCase().trim();
+        const lower2 = text2.toLowerCase().trim();
+        
+        // Verificação exata (maior peso)
+        if (lower1 === lower2) return 100;
+        
+        // Verificação de substring (alto peso)
+        if (lower1.includes(lower2) || lower2.includes(lower1)) return 80;
+        
+        // Processar palavras (remover palavras muito comuns)
+        const commonWords = ['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas', 'para', 'com', 'por', 'que', 'é', 'são', 'está', 'estão', 'ser', 'ter', 'fazer', 'pode', 'sua', 'seu', 'suas', 'seus', 'me', 'te', 'nos', 'você', 'vocês'];
+        const words1 = lower1.split(/\s+/).filter(w => w.length > 2 && !commonWords.includes(w));
+        const words2 = lower2.split(/\s+/).filter(w => w.length > 2 && !commonWords.includes(w));
+        
+        if (words1.length === 0 || words2.length === 0) return 0;
+        
+        const set1 = new Set(words1);
+        const set2 = new Set(words2);
+        
+        // Intersecção de palavras
+        const intersection = new Set([...set1].filter(x => set2.has(x)));
+        const union = new Set([...set1, ...set2]);
+        
+        if (union.size === 0) return 0;
+        
+        // Calcular similaridade básica
+        const basicSimilarity = (intersection.size / union.size) * 100;
+        
+        // Bonus por palavras importantes em comum
+        const importantWords = ['como', 'quando', 'onde', 'porque', 'qual', 'quais', 'problema', 'erro', 'não', 'consigo', 'valores', 'planos', 'preços', 'módulos', 'cartão', 'sistema', 'funcionalidades', 'assinatura'];
+        const importantMatches = words1.filter(w => importantWords.includes(w) && set2.has(w)).length;
+        const bonus = importantMatches * 8; // Aumentado bonus
+        
+        // Bonus por palavras-chave específicas do sistema
+        const systemKeywords = ['conecta king', 'conectaking', 'cartão virtual', 'assinatura', 'plano', 'módulo', 'dashboard', 'perfil'];
+        const systemMatches = systemKeywords.filter(kw => lower1.includes(kw) && lower2.includes(kw)).length;
+        const systemBonus = systemMatches * 15;
+        
+        return Math.min(100, basicSimilarity + bonus + systemBonus);
+    } catch (error) {
+        console.error('Erro ao calcular similaridade:', error);
+        return 0;
+    }
 }
 
 // Função para encontrar palavras-chave na mensagem
@@ -160,6 +173,8 @@ function generateGreetingResponse() {
 // Função para encontrar melhor resposta
 async function findBestAnswer(userMessage, userId) {
     const client = await db.pool.connect();
+    let knowledgeResult = null;
+    
     try {
         // Verificar se é uma saudação primeiro
         if (detectGreeting(userMessage)) {
@@ -175,108 +190,133 @@ async function findBestAnswer(userMessage, userId) {
         let bestSource = null;
         
         // 1. Buscar em Q&A
-        const qaResult = await client.query(`
-            SELECT id, question, answer, keywords, usage_count
-            FROM ia_qa
-            WHERE is_active = true
-        `);
-        
-        for (const qa of qaResult.rows) {
-            const questionScore = calculateSimilarity(userMessage, qa.question);
-            const keywordScore = qa.keywords && Array.isArray(qa.keywords) 
-                ? qa.keywords.filter(k => userMessage.toLowerCase().includes(k.toLowerCase())).length * 10
-                : 0;
-            const totalScore = questionScore + keywordScore;
+        try {
+            const qaResult = await client.query(`
+                SELECT id, question, answer, keywords, usage_count
+                FROM ia_qa
+                WHERE is_active = true
+            `);
             
-            if (totalScore > bestScore) {
-                bestScore = totalScore;
-                bestAnswer = qa.answer;
-                bestSource = 'qa';
+            for (const qa of qaResult.rows) {
+                if (!qa.question || !qa.answer) continue;
+                
+                const questionScore = calculateSimilarity(userMessage, qa.question);
+                const keywordScore = qa.keywords && Array.isArray(qa.keywords) 
+                    ? qa.keywords.filter(k => userMessage.toLowerCase().includes(k.toLowerCase())).length * 10
+                    : 0;
+                const totalScore = questionScore + keywordScore;
+                
+                if (totalScore > bestScore) {
+                    bestScore = totalScore;
+                    bestAnswer = qa.answer;
+                    bestSource = 'qa';
+                }
             }
+        } catch (error) {
+            console.error('Erro ao buscar Q&A:', error);
         }
         
         // 2. Buscar na base de conhecimento
-        const knowledgeResult = await client.query(`
-            SELECT id, title, content, keywords, usage_count
-            FROM ia_knowledge_base
-            WHERE is_active = true
-        `);
+        try {
+            knowledgeResult = await client.query(`
+                SELECT id, title, content, keywords, usage_count
+                FROM ia_knowledge_base
+                WHERE is_active = true
+            `);
+            
+            // Extrair palavras-chave da mensagem do usuário
+            const userKeywords = extractKeywords(userMessage);
+            
+            for (const kb of knowledgeResult.rows) {
+                if (!kb.title || !kb.content) continue;
+                
+                // Calcular scores múltiplos
+                const titleScore = calculateSimilarity(userMessage, kb.title) * 2.0; // Título tem peso maior
+                const contentScore = calculateSimilarity(userMessage, kb.content) * 0.8;
+                
+                // Score por palavras-chave cadastradas
+                let keywordScore = 0;
+                if (kb.keywords && Array.isArray(kb.keywords)) {
+                    const matchingKeywords = kb.keywords.filter(k => {
+                        const lowerK = k.toLowerCase();
+                        return userMessage.toLowerCase().includes(lowerK) || 
+                               userKeywords.some(uk => lowerK.includes(uk) || uk.includes(lowerK));
+                    });
+                    keywordScore = matchingKeywords.length * 20; // Aumentado peso das palavras-chave
+                }
+                
+                // Score por palavras-chave extraídas da mensagem
+                let extractedKeywordScore = 0;
+                if (kb.content) {
+                    const contentLower = kb.content.toLowerCase();
+                    const matchingExtracted = userKeywords.filter(uk => contentLower.includes(uk));
+                    extractedKeywordScore = matchingExtracted.length * 10;
+                }
+                
+                // Score por similaridade de título (mais importante)
+                const titleKeywordMatch = userKeywords.some(uk => kb.title.toLowerCase().includes(uk));
+                const titleBonus = titleKeywordMatch ? 30 : 0;
+                
+                const totalScore = titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus;
+                
+                if (totalScore > bestScore) {
+                    bestScore = totalScore;
+                    bestAnswer = kb.content;
+                    bestSource = 'knowledge';
+                }
+            }
         
-        // Extrair palavras-chave da mensagem do usuário
-        const userKeywords = extractKeywords(userMessage);
-        
-        for (const kb of knowledgeResult.rows) {
-            // Calcular scores múltiplos
-            const titleScore = calculateSimilarity(userMessage, kb.title) * 2.0; // Título tem peso maior
-            const contentScore = calculateSimilarity(userMessage, kb.content) * 0.8;
-            
-            // Score por palavras-chave cadastradas
-            let keywordScore = 0;
-            if (kb.keywords && Array.isArray(kb.keywords)) {
-                const matchingKeywords = kb.keywords.filter(k => {
-                    const lowerK = k.toLowerCase();
-                    return userMessage.toLowerCase().includes(lowerK) || 
-                           userKeywords.some(uk => lowerK.includes(uk) || uk.includes(lowerK));
-                });
-                keywordScore = matchingKeywords.length * 20; // Aumentado peso das palavras-chave
             }
-            
-            // Score por palavras-chave extraídas da mensagem
-            let extractedKeywordScore = 0;
-            if (kb.content) {
-                const contentLower = kb.content.toLowerCase();
-                const matchingExtracted = userKeywords.filter(uk => contentLower.includes(uk));
-                extractedKeywordScore = matchingExtracted.length * 10;
-            }
-            
-            // Score por similaridade de título (mais importante)
-            const titleKeywordMatch = userKeywords.some(uk => kb.title.toLowerCase().includes(uk));
-            const titleBonus = titleKeywordMatch ? 30 : 0;
-            
-            const totalScore = titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus;
-            
-            if (totalScore > bestScore) {
-                bestScore = totalScore;
-                bestAnswer = kb.content;
-                bestSource = 'knowledge';
-            }
+        } catch (error) {
+            console.error('Erro ao buscar base de conhecimento:', error);
         }
         
         // 3. Buscar em documentos processados
-        const docsResult = await client.query(`
-            SELECT id, title, extracted_text
-            FROM ia_documents
-            WHERE processed = true AND extracted_text IS NOT NULL AND LENGTH(extracted_text) > 0
-        `);
-        
-        for (const doc of docsResult.rows) {
-            const text = doc.extracted_text.substring(0, 5000); // Limitar busca
-            const titleScore = calculateSimilarity(userMessage, doc.title) * 2;
-            const contentScore = calculateSimilarity(userMessage, text);
-            const totalScore = titleScore + contentScore;
+        try {
+            const docsResult = await client.query(`
+                SELECT id, title, extracted_text
+                FROM ia_documents
+                WHERE processed = true AND extracted_text IS NOT NULL AND LENGTH(extracted_text) > 0
+            `);
             
-            if (totalScore > bestScore) {
-                bestScore = totalScore;
-                // Extrair trecho relevante
-                const words = userMessage.toLowerCase().split(/\s+/);
-                const relevantPart = text.split('\n').find(para => 
-                    words.some(w => para.toLowerCase().includes(w))
-                ) || text.substring(0, 500);
+            for (const doc of docsResult.rows) {
+                if (!doc.title || !doc.extracted_text) continue;
                 
-                bestAnswer = `Com base no documento "${doc.title}":\n\n${relevantPart}`;
-                bestSource = 'document';
+                const text = doc.extracted_text.substring(0, 5000); // Limitar busca
+                const titleScore = calculateSimilarity(userMessage, doc.title) * 2;
+                const contentScore = calculateSimilarity(userMessage, text);
+                const totalScore = titleScore + contentScore;
+                
+                if (totalScore > bestScore) {
+                    bestScore = totalScore;
+                    // Extrair trecho relevante
+                    const words = userMessage.toLowerCase().split(/\s+/);
+                    const relevantPart = text.split('\n').find(para => 
+                        words.some(w => para.toLowerCase().includes(w))
+                    ) || text.substring(0, 500);
+                    
+                    bestAnswer = `Com base no documento "${doc.title}":\n\n${relevantPart}`;
+                    bestSource = 'document';
+                }
             }
+        } catch (error) {
+            console.error('Erro ao buscar documentos:', error);
         }
         
         // 4. Não buscar na web - focar apenas no conhecimento do sistema
         // A IA deve ter todas as respostas na base de conhecimento
         
         // Salvar conversa
-        if (userId) {
-            await client.query(`
-                INSERT INTO ia_conversations (user_id, user_message, ai_response, confidence_score, source_type)
-                VALUES ($1, $2, $3, $4, $5)
-            `, [userId, userMessage, bestAnswer || 'Não encontrei uma resposta específica.', bestScore, bestSource || 'none']);
+        try {
+            if (userId) {
+                await client.query(`
+                    INSERT INTO ia_conversations (user_id, user_message, ai_response, confidence_score, source_type)
+                    VALUES ($1, $2, $3, $4, $5)
+                `, [userId, userMessage, bestAnswer || 'Não encontrei uma resposta específica.', bestScore, bestSource || 'none']);
+            }
+        } catch (error) {
+            console.error('Erro ao salvar conversa:', error);
+            // Não bloquear a resposta por erro ao salvar
         }
         
         // Resposta padrão mais educada e útil - SEM buscar na internet
@@ -798,15 +838,43 @@ O Conecta King é ideal para profissionais, empresas e empreendedores que querem
                 category: 'Assinatura'
             });
             
-            // Entrada específica sobre valores
-            knowledgeEntries.push({
-                title: 'Quais são os valores dos planos?',
-                content: `Os valores dos planos do Conecta King são:\n\n${plansResult.rows.map(p => {
-                    const price = typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0;
-                    return `• **${p.plan_name}**: R$ ${price.toFixed(2)} por mês`;
-                }).join('\n')}\n\nCada plano oferece funcionalidades específicas. O Pacote 1 (R$ 480) inclui todas as funcionalidades mas não permite alterar a logomarca. O Pacote 2 (R$ 700) permite alterar a logomarca. O Pacote 3 (R$ 1.500) é empresarial e inclui 3 cartões com logomarcas personalizáveis.`,
-                keywords: ['valores', 'preços', 'quanto custa', 'mensalidade', '480', '700', '1500', 'R$', 'reais'],
-                category: 'Assinatura'
+            // Entrada específica sobre valores - MÚLTIPLAS VARIAÇÕES
+            plansResult.rows.forEach(p => {
+                const price = typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0;
+                const priceStr = price.toFixed(2);
+                
+                // Variação 1: Pergunta direta sobre valores
+                knowledgeEntries.push({
+                    title: 'Quais são os valores dos planos?',
+                    content: `Os valores dos planos do Conecta King são:\n\n${plansResult.rows.map(pl => {
+                        const plPrice = typeof pl.price === 'number' ? pl.price : parseFloat(pl.price) || 0;
+                        return `• **${pl.plan_name}**: R$ ${plPrice.toFixed(2)} por mês`;
+                    }).join('\n')}\n\nCada plano oferece funcionalidades específicas. O Pacote 1 (R$ 480) inclui todas as funcionalidades mas não permite alterar a logomarca. O Pacote 2 (R$ 700) permite alterar a logomarca. O Pacote 3 (R$ 1.500) é empresarial e inclui 3 cartões com logomarcas personalizáveis.`,
+                    keywords: ['valores', 'preços', 'quanto custa', 'mensalidade', '480', '700', '1500', 'R$', 'reais', 'planos', 'pacotes'],
+                    category: 'Assinatura'
+                });
+                
+                // Variação 2: Pergunta sobre valores e planos
+                knowledgeEntries.push({
+                    title: 'Valores e planos do Conecta King',
+                    content: `Aqui estão os valores dos planos do Conecta King:\n\n${plansResult.rows.map(pl => {
+                        const plPrice = typeof pl.price === 'number' ? pl.price : parseFloat(pl.price) || 0;
+                        return `**${pl.plan_name}**: R$ ${plPrice.toFixed(2)}/mês`;
+                    }).join('\n')}\n\nPara mais detalhes sobre cada plano, acesse a seção "Assinatura" no dashboard.`,
+                    keywords: ['valores', 'planos', 'preços', 'quanto', 'custa', 'mensal', '480', '700', '1500'],
+                    category: 'Assinatura'
+                });
+                
+                // Variação 3: Pergunta específica sobre preços
+                knowledgeEntries.push({
+                    title: 'Preços dos planos',
+                    content: `Os preços dos planos do Conecta King são:\n\n${plansResult.rows.map(pl => {
+                        const plPrice = typeof pl.price === 'number' ? pl.price : parseFloat(pl.price) || 0;
+                        return `• ${pl.plan_name}: R$ ${plPrice.toFixed(2)} por mês`;
+                    }).join('\n')}\n\nTodos os planos incluem acesso completo a todas as funcionalidades do sistema.`,
+                    keywords: ['preços', 'preço', 'valor', 'valores', 'quanto', 'custa', 'mensalidade'],
+                    category: 'Assinatura'
+                });
             });
             
             // Entrada sobre como assinar
