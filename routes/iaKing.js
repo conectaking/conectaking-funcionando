@@ -2156,4 +2156,370 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
     }
 }));
 
+// ============================================
+// ROTAS DE APRENDIZADO PENDENTE (ADMIN)
+// ============================================
+
+// GET /api/ia-king/learning
+router.get('/learning', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const { status = 'pending' } = req.query;
+        
+        const result = await client.query(`
+            SELECT l.*, c.id as conversation_id, c.user_id
+            FROM ia_learning l
+            LEFT JOIN ia_conversations c ON l.source_conversation_id = c.id
+            WHERE l.status = $1
+            ORDER BY l.created_at DESC
+        `, [status]);
+        
+        res.json({ learning: result.rows });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/learning/:id/approve
+router.post('/learning/:id/approve', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const adminId = req.user.userId;
+    const client = await db.pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        // Buscar aprendizado pendente
+        const learning = await client.query(`
+            SELECT * FROM ia_learning WHERE id = $1 AND status = 'pending'
+        `, [id]);
+        
+        if (learning.rows.length === 0) {
+            return res.status(404).json({ error: 'Aprendizado não encontrado ou já processado' });
+        }
+        
+        const item = learning.rows[0];
+        
+        // Adicionar à base de conhecimento
+        await client.query(`
+            INSERT INTO ia_knowledge_base (title, content, keywords, source_type, is_active, created_by)
+            VALUES ($1, $2, $3, 'learning_approved', true, $4)
+        `, [
+            item.question,
+            item.suggested_answer,
+            extractKeywords(item.question),
+            adminId
+        ]);
+        
+        // Marcar como aprovado
+        await client.query(`
+            UPDATE ia_learning
+            SET status = 'approved', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP
+            WHERE id = $2
+        `, [adminId, id]);
+        
+        await client.query('COMMIT');
+        
+        res.json({ message: 'Aprendizado aprovado e adicionado à base de conhecimento' });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/learning/:id/reject
+router.post('/learning/:id/reject', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const adminId = req.user.userId;
+    const client = await db.pool.connect();
+    
+    try {
+        await client.query(`
+            UPDATE ia_learning
+            SET status = 'rejected', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP
+            WHERE id = $2
+        `, [adminId, id]);
+        
+        res.json({ message: 'Aprendizado rejeitado' });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// ROTAS DE MENTORIAS (ADMIN)
+// ============================================
+
+// GET /api/ia-king/mentorias
+router.get('/mentorias', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT m.*, c.name as category_name
+            FROM ia_mentorias m
+            LEFT JOIN ia_categories c ON m.category_id = c.id
+            ORDER BY m.created_at DESC
+        `);
+        res.json({ mentorias: result.rows });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/mentorias
+router.post('/mentorias', protectAdmin, asyncHandler(async (req, res) => {
+    const { title, description, content, category_id, keywords, video_url, audio_url, document_url, duration_minutes, difficulty_level } = req.body;
+    const adminId = req.user.userId;
+    
+    if (!title || !content) {
+        return res.status(400).json({ error: 'Título e conteúdo são obrigatórios' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            INSERT INTO ia_mentorias (title, description, content, category_id, keywords, video_url, audio_url, document_url, duration_minutes, difficulty_level, created_by)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            RETURNING *
+        `, [
+            title,
+            description || null,
+            content,
+            category_id || null,
+            Array.isArray(keywords) ? keywords : [],
+            video_url || null,
+            audio_url || null,
+            document_url || null,
+            duration_minutes || null,
+            difficulty_level || 'beginner',
+            adminId
+        ]);
+        
+        res.json({ mentoria: result.rows[0] });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// ROTAS DE TREINAMENTO COM TAVILY
+// ============================================
+
+// POST /api/ia-king/train-with-tavily
+router.post('/train-with-tavily', protectAdmin, asyncHandler(async (req, res) => {
+    const { query, max_results = 5, category_id } = req.body;
+    const adminId = req.user.userId;
+    
+    if (!query || !query.trim()) {
+        return res.status(400).json({ error: 'Query é obrigatória' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        // Buscar configuração do Tavily
+        const configResult = await client.query(`
+            SELECT * FROM ia_web_search_config
+            WHERE is_enabled = true AND api_provider = 'tavily' AND api_key IS NOT NULL
+            ORDER BY id DESC LIMIT 1
+        `);
+        
+        if (configResult.rows.length === 0) {
+            return res.status(400).json({ error: 'Tavily não está configurado ou habilitado' });
+        }
+        
+        const config = configResult.rows[0];
+        
+        // Buscar com Tavily
+        console.log('🔍 [Treinamento Tavily] Buscando:', query);
+        const tavilyResult = await searchWithTavily(query, config.api_key);
+        
+        if (!tavilyResult.results || tavilyResult.results.length === 0) {
+            return res.status(404).json({ error: 'Nenhum resultado encontrado no Tavily' });
+        }
+        
+        await client.query('BEGIN');
+        
+        let insertedCount = 0;
+        
+        // Adicionar cada resultado à base de conhecimento
+        for (const result of tavilyResult.results.slice(0, max_results)) {
+            try {
+                // Verificar se já existe
+                const existing = await client.query(`
+                    SELECT id FROM ia_knowledge_base 
+                    WHERE LOWER(title) = LOWER($1)
+                    LIMIT 1
+                `, [result.title]);
+                
+                if (existing.rows.length === 0) {
+                    await client.query(`
+                        INSERT INTO ia_knowledge_base (title, content, keywords, category_id, source_type, is_active, created_by)
+                        VALUES ($1, $2, $3, $4, 'tavily_training', true, $5)
+                    `, [
+                        result.title,
+                        result.snippet || result.content || '',
+                        extractKeywords(result.title + ' ' + (result.snippet || '')),
+                        category_id || null,
+                        adminId
+                    ]);
+                    insertedCount++;
+                }
+            } catch (error) {
+                console.error('Erro ao inserir conhecimento do Tavily:', error);
+            }
+        }
+        
+        // Se houver resposta direta do Tavily, adicionar também
+        if (tavilyResult.answer) {
+            try {
+                const existing = await client.query(`
+                    SELECT id FROM ia_knowledge_base 
+                    WHERE LOWER(title) = LOWER($1)
+                    LIMIT 1
+                `, [query]);
+                
+                if (existing.rows.length === 0) {
+                    await client.query(`
+                        INSERT INTO ia_knowledge_base (title, content, keywords, category_id, source_type, is_active, created_by)
+                        VALUES ($1, $2, $3, $4, 'tavily_training', true, $5)
+                    `, [
+                        query,
+                        tavilyResult.answer,
+                        extractKeywords(query),
+                        category_id || null,
+                        adminId
+                    ]);
+                    insertedCount++;
+                }
+            } catch (error) {
+                console.error('Erro ao inserir resposta direta do Tavily:', error);
+            }
+        }
+        
+        await client.query('COMMIT');
+        
+        res.json({
+            message: `Treinamento com Tavily concluído! ${insertedCount} itens adicionados à base de conhecimento.`,
+            inserted: insertedCount,
+            total_results: tavilyResult.results.length,
+            has_answer: !!tavilyResult.answer
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro no treinamento com Tavily:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/search-books-tavily
+router.post('/search-books-tavily', protectAdmin, asyncHandler(async (req, res) => {
+    const { query, max_results = 10 } = req.body;
+    
+    if (!query || !query.trim()) {
+        return res.status(400).json({ error: 'Query é obrigatória' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        // Buscar configuração do Tavily
+        const configResult = await client.query(`
+            SELECT * FROM ia_web_search_config
+            WHERE is_enabled = true AND api_provider = 'tavily' AND api_key IS NOT NULL
+            ORDER BY id DESC LIMIT 1
+        `);
+        
+        if (configResult.rows.length === 0) {
+            return res.status(400).json({ error: 'Tavily não está configurado ou habilitado' });
+        }
+        
+        const config = configResult.rows[0];
+        
+        // Buscar livros com Tavily (adicionar "livro" ou "book" à query)
+        const bookQuery = `${query} livro book`;
+        console.log('📚 [Busca Livros Tavily] Buscando:', bookQuery);
+        
+        const tavilyResult = await searchWithTavily(bookQuery, config.api_key);
+        
+        if (!tavilyResult.results || tavilyResult.results.length === 0) {
+            return res.json({ books: [], message: 'Nenhum livro encontrado' });
+        }
+        
+        // Filtrar e formatar resultados de livros
+        const books = tavilyResult.results
+            .filter(r => {
+                const titleLower = (r.title || '').toLowerCase();
+                const contentLower = (r.snippet || '').toLowerCase();
+                return titleLower.includes('livro') || 
+                       titleLower.includes('book') ||
+                       contentLower.includes('livro') ||
+                       contentLower.includes('book') ||
+                       contentLower.includes('autor') ||
+                       contentLower.includes('author');
+            })
+            .slice(0, max_results)
+            .map(r => ({
+                title: r.title,
+                description: r.snippet || r.content || '',
+                url: r.url,
+                source: 'tavily'
+            }));
+        
+        res.json({
+            books: books,
+            total: books.length,
+            query: bookQuery
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/import-book-tavily
+router.post('/import-book-tavily', protectAdmin, asyncHandler(async (req, res) => {
+    const { title, description, category_id } = req.body;
+    const adminId = req.user.userId;
+    
+    if (!title || !description) {
+        return res.status(400).json({ error: 'Título e descrição são obrigatórios' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        // Verificar se já existe
+        const existing = await client.query(`
+            SELECT id FROM ia_knowledge_base 
+            WHERE LOWER(title) = LOWER($1)
+            LIMIT 1
+        `, [title]);
+        
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ error: 'Este livro já está na base de conhecimento' });
+        }
+        
+        // Adicionar à base de conhecimento
+        const result = await client.query(`
+            INSERT INTO ia_knowledge_base (title, content, keywords, category_id, source_type, is_active, created_by)
+            VALUES ($1, $2, $3, $4, 'tavily_book', true, $5)
+            RETURNING *
+        `, [
+            title,
+            description,
+            extractKeywords(title + ' ' + description),
+            category_id || null,
+            adminId
+        ]);
+        
+        res.json({
+            message: 'Livro importado com sucesso!',
+            knowledge: result.rows[0]
+        });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
