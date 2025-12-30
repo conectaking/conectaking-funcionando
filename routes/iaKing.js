@@ -1000,7 +1000,7 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
     }
 }));
 
-// Função auxiliar: Buscar na internet (web scraping básico)
+// Função auxiliar: Buscar na internet (busca real usando DuckDuckGo)
 async function searchWeb(query, maxResults = 5, client = null) {
     try {
         // Verificar cache se client fornecido
@@ -1014,7 +1014,7 @@ async function searchWeb(query, maxResults = 5, client = null) {
                 if (cacheResult.rows.length > 0) {
                     return {
                         results: cacheResult.rows[0].results,
-                        provider: 'scraping',
+                        provider: 'duckduckgo',
                         cached: true
                     };
                 }
@@ -1023,25 +1023,108 @@ async function searchWeb(query, maxResults = 5, client = null) {
             }
         }
         
-        // Nota: Para busca real na internet, você pode usar:
-        // 1. DuckDuckGo Instant Answer API (gratuito, limitado)
-        // 2. SerpAPI (pago, mas confiável) - https://serpapi.com
-        // 3. Google Custom Search API (limitado, mas funcional)
-        // 4. Web scraping com puppeteer/playwright (mais complexo)
-        // 5. Bing Web Search API (pago)
+        console.log(`🔍 Buscando na internet: "${query}"`);
         
-        // Por enquanto, retornar resultados simulados baseados em conhecimento comum
-        // TODO: Implementar busca real quando necessário
+        // Usar DuckDuckGo Instant Answer API (gratuito)
+        try {
+            const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+            const response = await fetch(ddgUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                let results = [];
+                
+                // Processar Abstract (resposta direta)
+                if (data.AbstractText) {
+                    results.push({
+                        title: data.Heading || query,
+                        snippet: data.AbstractText,
+                        url: data.AbstractURL || null,
+                        source: 'DuckDuckGo Instant Answer'
+                    });
+                }
+                
+                // Processar RelatedTopics
+                if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
+                    for (const topic of data.RelatedTopics.slice(0, maxResults - results.length)) {
+                        if (topic.Text) {
+                            results.push({
+                                title: topic.FirstURL ? topic.FirstURL.split('/').pop().replace(/_/g, ' ') : query,
+                                snippet: topic.Text.substring(0, 300),
+                                url: topic.FirstURL || null,
+                                source: 'DuckDuckGo Related Topics'
+                            });
+                        }
+                    }
+                }
+                
+                // Processar Results
+                if (data.Results && Array.isArray(data.Results)) {
+                    for (const result of data.Results.slice(0, maxResults - results.length)) {
+                        results.push({
+                            title: result.Text || query,
+                            snippet: result.Text || '',
+                            url: result.FirstURL || null,
+                            source: 'DuckDuckGo Results'
+                        });
+                    }
+                }
+                
+                if (results.length > 0) {
+                    console.log(`✅ Encontrados ${results.length} resultados`);
+                    return {
+                        results: results.slice(0, maxResults),
+                        provider: 'duckduckgo',
+                        cached: false
+                    };
+                }
+            }
+        } catch (ddgError) {
+            console.warn('⚠️ Erro ao buscar no DuckDuckGo:', ddgError.message);
+        }
+        
+        // Fallback: Buscar usando Wikipedia API (gratuito e confiável)
+        try {
+            const wikiUrl = `https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+            const wikiResponse = await fetch(wikiUrl);
+            
+            if (wikiResponse.ok) {
+                const wikiData = await wikiResponse.json();
+                if (wikiData.extract) {
+                    console.log(`✅ Encontrado resultado na Wikipedia`);
+                    return {
+                        results: [{
+                            title: wikiData.title || query,
+                            snippet: wikiData.extract.substring(0, 500),
+                            url: wikiData.content_urls?.desktop?.page || null,
+                            source: 'Wikipedia'
+                        }],
+                        provider: 'wikipedia',
+                        cached: false
+                    };
+                }
+            }
+        } catch (wikiError) {
+            console.warn('⚠️ Erro ao buscar na Wikipedia:', wikiError.message);
+        }
+        
+        // Fallback final: resultados básicos
         const commonAnswers = {
             'conecta king': {
                 title: 'Conecta King - Cartão Virtual Profissional',
                 snippet: 'O Conecta King é uma plataforma completa para criação de cartões virtuais profissionais com módulos personalizáveis.',
-                url: 'https://conectaking.com.br'
+                url: 'https://conectaking.com.br',
+                source: 'Sistema'
             },
             'módulos': {
                 title: 'Módulos do Conecta King',
                 snippet: 'Você pode adicionar diversos módulos como WhatsApp, Instagram, TikTok, YouTube, Link Personalizado, Banner, Carrossel, Página de Vendas e muito mais!',
-                url: null
+                url: null,
+                source: 'Sistema'
             }
         };
         
@@ -1060,18 +1143,19 @@ async function searchWeb(query, maxResults = 5, client = null) {
             results.push({
                 title: `Informações sobre: ${query}`,
                 snippet: `Estou buscando informações atualizadas sobre "${query}" na internet. Por enquanto, recomendo verificar fontes confiáveis ou entrar em contato com o suporte para mais detalhes.`,
-                url: null
+                url: null,
+                source: 'Sistema'
             });
         }
         
         return {
             results: results.slice(0, maxResults),
-            provider: 'scraping',
+            provider: 'fallback',
             cached: false
         };
     } catch (error) {
-        console.error('Erro ao buscar na web:', error);
-        return { results: [], provider: 'scraping', cached: false, error: error.message };
+        console.error('❌ Erro ao buscar na web:', error);
+        return { results: [], provider: 'error', cached: false, error: error.message };
     }
 }
 
@@ -1635,6 +1719,106 @@ router.post('/books/import-info', protectAdmin, asyncHandler(async (req, res) =>
     } catch (error) {
         console.error('❌ Erro ao adicionar informações do livro:', error);
         throw error;
+    }
+}));
+
+// POST /api/ia-king/web-search/learn - Pesquisar e aprender automaticamente
+router.post('/web-search/learn', protectAdmin, asyncHandler(async (req, res) => {
+    const { query, category_id, auto_add } = req.body;
+    const adminId = req.user.userId;
+    
+    if (!query || !query.trim()) {
+        return res.status(400).json({ message: 'Query de busca é obrigatória.' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        console.log(`🧠 Aprendendo sobre: "${query}"`);
+        
+        // Buscar na internet
+        const searchResults = await searchWeb(query, 5, client);
+        
+        if (!searchResults.results || searchResults.results.length === 0) {
+            return res.status(404).json({ 
+                message: 'Nenhum resultado encontrado para esta busca.',
+                results: []
+            });
+        }
+        
+        let addedCount = 0;
+        const addedItems = [];
+        
+        // Se auto_add estiver habilitado, adicionar automaticamente à base de conhecimento
+        if (auto_add !== false) {
+            // created_by pode ser string, converter para número ou NULL
+            let createdByValue = null;
+            if (adminId) {
+                const adminIdNum = parseInt(adminId);
+                createdByValue = isNaN(adminIdNum) ? null : adminIdNum;
+            }
+            
+            for (const result of searchResults.results) {
+                try {
+                    // Criar título e conteúdo estruturado
+                    const title = result.title || query;
+                    const content = `${result.snippet}\n\n${result.url ? `Fonte: ${result.url}` : ''}\nFonte da busca: ${result.source || 'Internet'}`;
+                    const keywords = extractKeywords(title + ' ' + result.snippet);
+                    
+                    // Verificar se já existe conhecimento similar
+                    const existing = await client.query(
+                        `SELECT id FROM ia_knowledge_base 
+                         WHERE LOWER(title) = LOWER($1)
+                         LIMIT 1`,
+                        [title]
+                    );
+                    
+                    if (existing.rows.length === 0) {
+                        // Adicionar à base de conhecimento
+                        const insertResult = await client.query(
+                            `INSERT INTO ia_knowledge_base (title, content, category_id, keywords, source_type, source_reference, created_by)
+                             VALUES ($1, $2, $3, $4, $5, $6, $7)
+                             RETURNING id, title`,
+                            [
+                                title,
+                                content.substring(0, 10000), // Limitar tamanho
+                                category_id || null,
+                                keywords,
+                                'web_search',
+                                `web_search:${query}`,
+                                createdByValue
+                            ]
+                        );
+                        
+                        addedCount++;
+                        addedItems.push({
+                            id: insertResult.rows[0].id,
+                            title: insertResult.rows[0].title
+                        });
+                        
+                        console.log(`✅ Adicionado à base: "${title}"`);
+                    } else {
+                        console.log(`⏭️ Já existe conhecimento similar: "${title}"`);
+                    }
+                } catch (addError) {
+                    console.error(`❌ Erro ao adicionar resultado:`, addError);
+                }
+            }
+        }
+        
+        res.json({
+            message: `Busca concluída. ${addedCount} item(s) adicionado(s) à base de conhecimento.`,
+            results: searchResults.results,
+            added_count: addedCount,
+            added_items: addedItems,
+            provider: searchResults.provider,
+            cached: searchResults.cached || false
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao aprender da web:', error);
+        throw error;
+    } finally {
+        client.release();
     }
 }));
 
