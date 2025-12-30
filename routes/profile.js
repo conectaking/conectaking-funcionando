@@ -1430,7 +1430,17 @@ router.put('/share-image', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const userId = req.user.userId;
-        const { share_image_url } = req.body;
+        
+        // Verificar se req.body existe
+        if (!req.body) {
+            console.error('❌ req.body está undefined');
+            return res.status(400).json({ 
+                message: 'Corpo da requisição não encontrado. Verifique o Content-Type.',
+                error: 'INVALID_REQUEST_BODY'
+            });
+        }
+        
+        const { share_image_url } = req.body || {};
 
         // Verificar se a coluna existe
         const columnCheck = await client.query(`
