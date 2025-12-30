@@ -309,7 +309,8 @@ function extractQuestionContext(question) {
     
     // EXTRAÇÃO MELHORADA: Se a pergunta é "quem e X" ou "quem é X", pegar X diretamente
     // Exemplo: "quem e jesus" -> entidade: "jesus"
-    const simpleWhoPattern = /^quem\s+(?:é|e|foi|era)\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)\s*$/i;
+    // Também detecta "quen" (erro de digitação de "quem")
+    const simpleWhoPattern = /^(?:quem|quen)\s+(?:é|e|foi|era)\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)\s*$/i;
     const simpleWhoMatch = originalQuestion.match(simpleWhoPattern);
     if (simpleWhoMatch && simpleWhoMatch[1]) {
         const entity = simpleWhoMatch[1].toLowerCase().trim();
@@ -321,24 +322,30 @@ function extractQuestionContext(question) {
     }
     
     // EXTRAÇÃO ALTERNATIVA: Se não encontrou, pegar última palavra importante da pergunta
-    if (entities.length === 0 && lowerQuestion.includes('quem')) {
+    // Também funciona com "quen" (erro de digitação)
+    if (entities.length === 0 && (lowerQuestion.includes('quem') || lowerQuestion.includes('quen'))) {
         const words = lowerQuestion.split(/\s+/);
-        // Pegar palavras após "quem" que não são comuns
-        const afterQuem = words.slice(words.indexOf('quem') + 1);
-        const importantAfterQuem = afterQuem.filter(w => 
-            w.length > 2 && 
-            !['é', 'e', 'foi', 'era', 'o', 'a', 'um', 'uma', 'de', 'do', 'da', 'que', 'você', 'voce', 'sabe', 'conhece'].includes(w)
-        );
-        if (importantAfterQuem.length > 0) {
-            const entity = importantAfterQuem[0];
-            if (!entities.includes(entity)) {
-                entities.push(entity); // Pegar primeira palavra importante
-                console.log('✅ [IA] Entidade extraída como última palavra importante:', entity);
+        // Encontrar índice de "quem" ou "quen"
+        const quemIndex = words.findIndex(w => w === 'quem' || w === 'quen');
+        if (quemIndex >= 0) {
+            // Pegar palavras após "quem"/"quen" que não são comuns
+            const afterQuem = words.slice(quemIndex + 1);
+            const importantAfterQuem = afterQuem.filter(w => 
+                w.length > 2 && 
+                !['é', 'e', 'foi', 'era', 'o', 'a', 'um', 'uma', 'de', 'do', 'da', 'que', 'você', 'voce', 'sabe', 'conhece'].includes(w)
+            );
+            if (importantAfterQuem.length > 0) {
+                const entity = importantAfterQuem[0];
+                if (!entities.includes(entity)) {
+                    entities.push(entity); // Pegar primeira palavra importante
+                    console.log('✅ [IA] Entidade extraída como última palavra importante:', entity);
+                }
             }
         }
     }
     
     // EXTRAÇÃO ESPECIAL PARA "JESUS": Garantir que seja capturado mesmo com variações
+    // Detectar "jesus" mesmo com erros de digitação como "quen e jesus"
     if (lowerQuestion.includes('jesus') || lowerQuestion.includes('cristo')) {
         if (lowerQuestion.includes('jesus')) {
             if (!entities.includes('jesus')) {
@@ -351,6 +358,40 @@ function extractQuestionContext(question) {
                 entities.push('cristo');
                 console.log('✅ [IA] Entidade "cristo" detectada e adicionada');
             }
+        }
+    }
+    
+    // EXTRAÇÃO MELHORADA: Detectar padrões com erros de digitação
+    // "quen e jesus" -> "jesus"
+    // "quem e jesus" -> "jesus"
+    // "quem é jesus" -> "jesus"
+    const typoPatterns = [
+        /(?:quen|quem|quem)\s+(?:é|e|foi|era)\s+(jesus|cristo|deus)/gi,
+        /(?:quen|quem|quem)\s+(jesus|cristo|deus)/gi
+    ];
+    
+    for (const pattern of typoPatterns) {
+        const matches = [...lowerQuestion.matchAll(pattern)];
+        for (const match of matches) {
+            if (match[1]) {
+                const entity = match[1].toLowerCase().trim();
+                if (!entities.includes(entity)) {
+                    entities.push(entity);
+                    console.log(`✅ [IA] Entidade "${entity}" detectada via padrão de erro de digitação`);
+                }
+            }
+        }
+    }
+    
+    // Se encontrou "jesus" ou "cristo" na pergunta, garantir que está nas entidades
+    if ((lowerQuestion.includes('jesus') || lowerQuestion.includes('cristo')) && entities.length === 0) {
+        if (lowerQuestion.includes('jesus')) {
+            entities.push('jesus');
+            console.log('✅ [IA] Entidade "jesus" adicionada como fallback');
+        }
+        if (lowerQuestion.includes('cristo')) {
+            entities.push('cristo');
+            console.log('✅ [IA] Entidade "cristo" adicionada como fallback');
         }
     }
     
@@ -1919,15 +1960,21 @@ async function findBestAnswer(userMessage, userId) {
         // ============================================
         // SISTEMA DE FILTROS E CATEGORIZAÇÃO
         // ============================================
-        const categoryInfo = categorizeQuestion(userMessage, questionContext);
+        let categoryInfo = null;
+        try {
+            categoryInfo = categorizeQuestion(userMessage, questionContext);
+        } catch (error) {
+            console.error('❌ [IA] Erro ao categorizar pergunta:', error);
+            categoryInfo = { primaryCategory: 'general', allCategories: [], categories: {} };
+        }
         
         console.log('🧠 [IA] Pensamento sobre a pergunta:', {
             intent: thoughts.intent,
             entities: thoughts.entities,
             emotionalTone: thoughts.emotionalTone,
             complexity: thoughts.complexity,
-            category: categoryInfo.primaryCategory,
-            allCategories: categoryInfo.allCategories
+            category: categoryInfo ? categoryInfo.primaryCategory : 'general',
+            allCategories: categoryInfo ? categoryInfo.allCategories : []
         });
         
         let bestAnswer = null;
