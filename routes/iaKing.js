@@ -907,6 +907,197 @@ async function learnFromTavily(question, answer, client) {
     }
 }
 
+// ============================================
+// SISTEMA DE PENSAMENTO E RACIOCÍNIO (Como ChatGPT/Gemini)
+// ============================================
+
+// Função para raciocinar sobre a pergunta (CAMADA 1: Análise Profunda)
+function thinkAboutQuestion(question, questionContext) {
+    const thoughts = {
+        intent: null, // O que o usuário realmente quer saber
+        entities: questionContext.entities,
+        keywords: questionContext.keywords,
+        questionType: questionContext.questionType,
+        emotionalTone: 'neutral', // neutral, curious, urgent, friendly
+        complexity: 'simple', // simple, medium, complex
+        needsContext: false,
+        relatedTopics: []
+    };
+    
+    const lowerQuestion = question.toLowerCase();
+    
+    // Detectar intenção
+    if (lowerQuestion.includes('quem') || lowerQuestion.includes('o que') || lowerQuestion.includes('que é')) {
+        thoughts.intent = 'definition';
+        thoughts.complexity = 'medium';
+    } else if (lowerQuestion.includes('como') || lowerQuestion.includes('fazer')) {
+        thoughts.intent = 'how_to';
+        thoughts.complexity = 'medium';
+        thoughts.needsContext = true;
+    } else if (lowerQuestion.includes('por que') || lowerQuestion.includes('porque')) {
+        thoughts.intent = 'explanation';
+        thoughts.complexity = 'complex';
+        thoughts.needsContext = true;
+    } else if (lowerQuestion.includes('quando') || lowerQuestion.includes('onde')) {
+        thoughts.intent = 'factual';
+        thoughts.complexity = 'simple';
+    } else {
+        thoughts.intent = 'general';
+    }
+    
+    // Detectar tom emocional
+    if (lowerQuestion.includes('!') || lowerQuestion.includes('urgente') || lowerQuestion.includes('preciso')) {
+        thoughts.emotionalTone = 'urgent';
+    } else if (lowerQuestion.includes('?') && lowerQuestion.length > 20) {
+        thoughts.emotionalTone = 'curious';
+    } else if (lowerQuestion.includes('obrigad') || lowerQuestion.includes('por favor')) {
+        thoughts.emotionalTone = 'friendly';
+    }
+    
+    // Identificar tópicos relacionados
+    if (thoughts.entities.length > 0) {
+        const mainEntity = thoughts.entities[0];
+        // Adicionar tópicos relacionados baseados na entidade
+        if (mainEntity.includes('jesus') || mainEntity.includes('cristo')) {
+            thoughts.relatedTopics = ['bíblia', 'cristianismo', 'fé', 'religião', 'evangelho'];
+        } else if (mainEntity.includes('psicologia') || mainEntity.includes('emocional')) {
+            thoughts.relatedTopics = ['terapia', 'saúde mental', 'bem-estar', 'ansiedade'];
+        }
+    }
+    
+    return thoughts;
+}
+
+// Função para sintetizar resposta de múltiplas fontes (CAMADA 2: Síntese)
+function synthesizeAnswer(knowledgeSources, questionContext, thoughts) {
+    if (!knowledgeSources || knowledgeSources.length === 0) return null;
+    
+    // Ordenar por relevância
+    const sortedSources = knowledgeSources.sort((a, b) => b.score - a.score);
+    const topSources = sortedSources.slice(0, 3); // Top 3 fontes
+    
+    // Se temos apenas uma fonte muito relevante, usar ela
+    if (topSources.length === 1 && topSources[0].score > 80) {
+        return topSources[0].excerpt;
+    }
+    
+    // Sintetizar de múltiplas fontes
+    let synthesized = '';
+    const usedSentences = new Set();
+    
+    for (const source of topSources) {
+        if (!source.excerpt) continue;
+        
+        // Extrair sentenças únicas
+        const sentences = source.excerpt.split(/[.!?]\s+/).filter(s => s.trim().length > 20);
+        
+        for (const sentence of sentences) {
+            const sentenceKey = sentence.toLowerCase().substring(0, 50);
+            if (!usedSentences.has(sentenceKey)) {
+                usedSentences.add(sentenceKey);
+                
+                // Verificar se a sentença é relevante
+                const hasEntity = questionContext.entities.some(ent => 
+                    sentence.toLowerCase().includes(ent)
+                );
+                const hasKeyword = questionContext.keywords.some(kw => 
+                    sentence.toLowerCase().includes(kw)
+                );
+                
+                if (hasEntity || hasKeyword) {
+                    if (synthesized) synthesized += ' ';
+                    synthesized += sentence.trim();
+                    if (!sentence.match(/[.!?]$/)) synthesized += '.';
+                    
+                    // Limitar tamanho
+                    if (synthesized.length > 500) break;
+                }
+            }
+        }
+        
+        if (synthesized.length > 500) break;
+    }
+    
+    return synthesized || (topSources[0]?.excerpt || null);
+}
+
+// Função para adicionar personalidade e emoção (CAMADA 3: Personalidade)
+function addPersonalityAndEmotion(answer, thoughts, questionContext) {
+    if (!answer) return answer;
+    
+    let enhancedAnswer = answer;
+    
+    // Adicionar introdução baseada no tom emocional
+    if (thoughts.emotionalTone === 'curious') {
+        enhancedAnswer = `Ótima pergunta! 😊 ${enhancedAnswer}`;
+    } else if (thoughts.emotionalTone === 'urgent') {
+        enhancedAnswer = `Entendo sua urgência! ${enhancedAnswer}`;
+    } else if (thoughts.emotionalTone === 'friendly') {
+        enhancedAnswer = `Claro! Com prazer te explico: ${enhancedAnswer}`;
+    }
+    
+    // Adicionar conclusão proativa se for pergunta complexa
+    if (thoughts.complexity === 'complex' && thoughts.relatedTopics.length > 0) {
+        enhancedAnswer += `\n\n💡 Você também pode querer saber sobre: ${thoughts.relatedTopics.slice(0, 2).join(', ')}. Posso ajudar com isso também!`;
+    }
+    
+    // Adicionar emoção baseada no tipo de resposta
+    if (thoughts.intent === 'definition' && questionContext.entities.length > 0) {
+        // Para definições, ser mais didática
+        enhancedAnswer = enhancedAnswer.replace(/^/, '📚 ');
+    } else if (thoughts.intent === 'how_to') {
+        // Para "como fazer", ser mais prática
+        enhancedAnswer = enhancedAnswer.replace(/^/, '🔧 ');
+    }
+    
+    return enhancedAnswer;
+}
+
+// Função para raciocinar independentemente (CAMADA 4: Raciocínio Independente)
+function thinkIndependently(questionContext, knowledgeBase, thoughts) {
+    const independentThoughts = {
+        shouldExpand: false,
+        shouldSuggest: false,
+        missingInfo: [],
+        connections: []
+    };
+    
+    // Se a pergunta é sobre uma entidade, verificar se temos informação completa
+    if (questionContext.entities.length > 0 && thoughts.intent === 'definition') {
+        const entity = questionContext.entities[0];
+        
+        // Verificar se temos conhecimento suficiente
+        const entityKnowledge = knowledgeBase.filter(kb => {
+            const titleLower = (kb.title || '').toLowerCase();
+            const contentLower = (kb.content || '').toLowerCase();
+            return titleLower.includes(entity) || contentLower.includes(entity);
+        });
+        
+        if (entityKnowledge.length === 0) {
+            independentThoughts.missingInfo.push(`Não encontrei informações específicas sobre "${entity}"`);
+            independentThoughts.shouldSuggest = true;
+        } else if (entityKnowledge.length === 1) {
+            // Temos apenas uma fonte, pode precisar expandir
+            independentThoughts.shouldExpand = true;
+        }
+    }
+    
+    // Identificar conexões entre conhecimentos
+    if (questionContext.entities.length > 0) {
+        const entity = questionContext.entities[0];
+        const relatedKnowledge = knowledgeBase.filter(kb => {
+            const contentLower = (kb.content || '').toLowerCase();
+            return contentLower.includes(entity) && kb.title !== entity;
+        });
+        
+        if (relatedKnowledge.length > 0) {
+            independentThoughts.connections = relatedKnowledge.slice(0, 3).map(kb => kb.title);
+        }
+    }
+    
+    return independentThoughts;
+}
+
 // Função para encontrar melhor resposta
 async function findBestAnswer(userMessage, userId) {
     const client = await db.pool.connect();
@@ -930,6 +1121,21 @@ async function findBestAnswer(userMessage, userId) {
                 source: 'greeting'
             };
         }
+        
+        // ============================================
+        // SISTEMA DE PENSAMENTO (Como ChatGPT/Gemini)
+        // ============================================
+        
+        // CAMADA 1: Extrair contexto e raciocinar sobre a pergunta
+        const questionContext = extractQuestionContext(userMessage);
+        const thoughts = thinkAboutQuestion(userMessage, questionContext);
+        
+        console.log('🧠 [IA] Pensamento sobre a pergunta:', {
+            intent: thoughts.intent,
+            entities: thoughts.entities,
+            emotionalTone: thoughts.emotionalTone,
+            complexity: thoughts.complexity
+        });
         
         let bestAnswer = null;
         let bestScore = 0;
@@ -962,16 +1168,8 @@ async function findBestAnswer(userMessage, userId) {
             console.error('Erro ao buscar Q&A:', error);
         }
         
-        // 2. Buscar na base de conhecimento COM INTELIGÊNCIA CONTEXTUAL
+        // 2. Buscar na base de conhecimento COM INTELIGÊNCIA CONTEXTUAL E SISTEMA DE PENSAMENTO
         try {
-            // Extrair contexto da pergunta (entidades, palavras-chave, tipo)
-            const questionContext = extractQuestionContext(userMessage);
-            console.log('🧠 [IA] Contexto da pergunta:', {
-                entities: questionContext.entities,
-                keywords: questionContext.keywords,
-                type: questionContext.questionType
-            });
-            
             knowledgeResult = await client.query(`
                 SELECT id, title, content, keywords, usage_count, source_type
                 FROM ia_knowledge_base
@@ -1066,14 +1264,47 @@ async function findBestAnswer(userMessage, userId) {
                     relevantExcerpt = kb.content.substring(0, 300);
                 }
                 
-                bestAnswer = relevantExcerpt;
+                // CAMADA 2: Sintetizar resposta de múltiplas fontes (se houver mais candidatos relevantes)
+                const topCandidates = candidates.filter(c => c.score > 50).slice(0, 3);
+                const knowledgeSources = topCandidates.map(c => ({
+                    excerpt: findRelevantExcerpt(c.kb.content, questionContext, 300) || 
+                            extractDirectAnswer(c.kb.content, userMessage) ||
+                            summarizeAnswer(c.kb.content, 300),
+                    score: c.score,
+                    title: c.kb.title
+                })).filter(s => s.excerpt);
+                
+                // Sintetizar de múltiplas fontes se tiver mais de uma fonte relevante
+                let synthesizedAnswer = null;
+                if (knowledgeSources.length > 1) {
+                    synthesizedAnswer = synthesizeAnswer(knowledgeSources, questionContext, thoughts);
+                }
+                
+                // Usar resposta sintetizada se disponível, senão usar a melhor única
+                bestAnswer = synthesizedAnswer || relevantExcerpt;
                 bestScore = bestCandidate.score;
                 bestSource = 'knowledge';
                 
+                // CAMADA 3: Adicionar personalidade e emoção
+                bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
+                
+                // CAMADA 4: Raciocínio independente - adicionar sugestões e conexões
+                const independentThoughts = thinkIndependently(questionContext, knowledgeResult.rows, thoughts);
+                if (independentThoughts.connections.length > 0 && bestAnswer.length < 600) {
+                    bestAnswer += `\n\n🔗 Relacionado: Também tenho informações sobre ${independentThoughts.connections.slice(0, 2).join(' e ')}. Quer saber mais?`;
+                }
+                
                 // Log para debug
                 if (kb.source_type === 'book_training') {
-                    console.log('📚 [IA] Usando conhecimento de LIVRO (com inteligência contextual):', kb.title.substring(0, 50));
+                    console.log('📚 [IA] Usando conhecimento de LIVRO (com sistema de pensamento):', kb.title.substring(0, 50));
                 }
+                
+                console.log('🧠 [IA] Resposta processada com sistema de pensamento:', {
+                    intent: thoughts.intent,
+                    synthesized: !!synthesizedAnswer,
+                    sourcesUsed: knowledgeSources.length,
+                    hasConnections: independentThoughts.connections.length > 0
+                });
             }
         } catch (error) {
             console.error('Erro ao buscar base de conhecimento:', error);
@@ -1317,6 +1548,39 @@ async function findBestAnswer(userMessage, userId) {
             // Não bloquear a resposta por erro ao salvar
         }
         
+        // CAMADA 5: Raciocínio Independente - Se não encontrou resposta, pensar sobre o que sabe
+        if (!bestAnswer || bestScore < 40) {
+            const independentThoughts = thinkIndependently(questionContext, knowledgeResult?.rows || [], thoughts);
+            
+            // Se temos conhecimento relacionado mas não direto, usar raciocínio
+            if (questionContext.entities.length > 0 && knowledgeResult && knowledgeResult.rows.length > 0) {
+                const entity = questionContext.entities[0];
+                
+                // Procurar conhecimento que menciona a entidade
+                const relatedKnowledge = knowledgeResult.rows.filter(kb => {
+                    const contentLower = (kb.content || '').toLowerCase();
+                    const titleLower = (kb.title || '').toLowerCase();
+                    return contentLower.includes(entity) || titleLower.includes(entity);
+                });
+                
+                if (relatedKnowledge.length > 0) {
+                    // Encontrar melhor trecho relacionado
+                    const bestRelated = relatedKnowledge[0];
+                    const relatedExcerpt = findRelevantExcerpt(bestRelated.content, questionContext, 400) ||
+                                         extractDirectAnswer(bestRelated.content, userMessage) ||
+                                         summarizeAnswer(bestRelated.content, 300);
+                    
+                    if (relatedExcerpt && relatedExcerpt.length > 50) {
+                        bestAnswer = `Com base no que aprendi sobre "${entity}":\n\n${relatedExcerpt}`;
+                        bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
+                        bestScore = 60;
+                        bestSource = 'knowledge_reasoning';
+                        console.log('🧠 [IA] Resposta criada através de raciocínio independente');
+                    }
+                }
+            }
+        }
+        
         // LÓGICA ESPECIAL: Para perguntas diretas, responder de forma objetiva primeiro
         if (detectDirectQuestion(userMessage) && bestAnswer) {
             const questionLower = userMessage.toLowerCase();
@@ -1355,6 +1619,11 @@ async function findBestAnswer(userMessage, userId) {
                     console.log('✅ [IA] Resposta direta e objetiva gerada para pergunta direta');
                 }
             }
+        }
+        
+        // CAMADA 6: Aplicar personalidade e emoção em TODAS as respostas (se ainda não aplicado)
+        if (bestAnswer && bestSource !== 'knowledge_reasoning') {
+            bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
         }
         
         // Resposta padrão mais educada e útil - SEM buscar na internet (se busca na web não estiver habilitada)
