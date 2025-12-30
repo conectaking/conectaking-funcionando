@@ -1078,30 +1078,39 @@ async function searchWeb(query, maxResults = 5, client = null) {
 // Função auxiliar: Extrair texto de documentos
 async function extractTextFromDocument(fileUrl, fileType) {
     try {
-        // Para implementação completa, você precisaria instalar:
-        // npm install pdf-parse mammoth
-        // Por enquanto, retornar texto básico
+        const fetch = require('node-fetch');
         
-        // TODO: Implementar extração real quando bibliotecas estiverem instaladas
-        // if (fileType === 'pdf') {
-        //     const pdfParse = require('pdf-parse');
-        //     const response = await fetch(fileUrl);
-        //     const buffer = await response.buffer();
-        //     const data = await pdfParse(buffer);
-        //     return data.text;
-        // } else if (fileType === 'docx') {
-        //     const mammoth = require('mammoth');
-        //     const response = await fetch(fileUrl);
-        //     const buffer = await response.buffer();
-        //     const result = await mammoth.extractRawText({ buffer });
-        //     return result.value;
-        // } else if (fileType === 'txt') {
-        //     const response = await fetch(fileUrl);
-        //     return await response.text();
-        // }
+        if (fileType === 'pdf') {
+            try {
+                const pdfParse = require('pdf-parse');
+                const response = await fetch(fileUrl);
+                const buffer = await response.buffer();
+                const data = await pdfParse(buffer);
+                return data.text || '';
+            } catch (pdfError) {
+                console.warn('Erro ao extrair texto de PDF (biblioteca pdf-parse pode não estar instalada):', pdfError.message);
+                return `PDF carregado. Para extração de texto, instale: npm install pdf-parse`;
+            }
+        } else if (fileType === 'docx') {
+            try {
+                const mammoth = require('mammoth');
+                const response = await fetch(fileUrl);
+                const buffer = await response.buffer();
+                const result = await mammoth.extractRawText({ buffer });
+                return result.value || '';
+            } catch (docxError) {
+                console.warn('Erro ao extrair texto de DOCX (biblioteca mammoth pode não estar instalada):', docxError.message);
+                return `DOCX carregado. Para extração de texto, instale: npm install mammoth`;
+            }
+        } else if (fileType === 'doc') {
+            // DOC antigo é mais complicado, requer biblioteca adicional
+            return `Documento DOC carregado. Para extração de texto de arquivos DOC antigos, é necessário biblioteca adicional.`;
+        } else if (fileType === 'txt') {
+            const response = await fetch(fileUrl);
+            return await response.text();
+        }
         
-        // Por enquanto, retornar placeholder
-        return `Texto extraído do documento ${fileType}. Para extração completa, instale as bibliotecas pdf-parse e mammoth.`;
+        return '';
     } catch (error) {
         console.error('Erro ao extrair texto:', error);
         throw error;
