@@ -13,22 +13,49 @@ console.log('✅ Rotas IA KING carregadas');
 // FUNÇÕES AUXILIARES
 // ============================================
 
-// Função para calcular similaridade entre textos
+// Função para calcular similaridade entre textos (melhorada)
 function calculateSimilarity(text1, text2) {
     if (!text1 || !text2) return 0;
     
-    const words1 = text1.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-    const words2 = text2.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    const lower1 = text1.toLowerCase().trim();
+    const lower2 = text2.toLowerCase().trim();
+    
+    // Verificação exata (maior peso)
+    if (lower1 === lower2) return 100;
+    
+    // Verificação de substring (alto peso)
+    if (lower1.includes(lower2) || lower2.includes(lower1)) return 80;
+    
+    // Processar palavras
+    const words1 = lower1.split(/\s+/).filter(w => w.length > 2);
+    const words2 = lower2.split(/\s+/).filter(w => w.length > 2);
     
     if (words1.length === 0 || words2.length === 0) return 0;
     
     const set1 = new Set(words1);
     const set2 = new Set(words2);
     
+    // Intersecção de palavras
     const intersection = new Set([...set1].filter(x => set2.has(x)));
     const union = new Set([...set1, ...set2]);
     
-    return (intersection.size / union.size) * 100;
+    // Calcular similaridade básica
+    const basicSimilarity = (intersection.size / union.size) * 100;
+    
+    // Bonus por palavras importantes em comum
+    const importantWords = ['como', 'quando', 'onde', 'porque', 'qual', 'quais', 'problema', 'erro', 'não', 'consigo'];
+    const importantMatches = words1.filter(w => importantWords.includes(w) && set2.has(w)).length;
+    const bonus = importantMatches * 5;
+    
+    return Math.min(100, basicSimilarity + bonus);
+}
+
+// Função para encontrar palavras-chave na mensagem
+function extractKeywords(message) {
+    const lowerMessage = message.toLowerCase();
+    const commonWords = ['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas', 'para', 'com', 'por', 'que', 'é', 'são', 'está', 'estão'];
+    const words = lowerMessage.split(/\s+/).filter(w => w.length > 2 && !commonWords.includes(w));
+    return words;
 }
 
 // Função para buscar na web
@@ -175,13 +202,38 @@ async function findBestAnswer(userMessage, userId) {
             WHERE is_active = true
         `);
         
+        // Extrair palavras-chave da mensagem do usuário
+        const userKeywords = extractKeywords(userMessage);
+        
         for (const kb of knowledgeResult.rows) {
-            const titleScore = calculateSimilarity(userMessage, kb.title) * 1.5;
-            const contentScore = calculateSimilarity(userMessage, kb.content);
-            const keywordScore = kb.keywords && Array.isArray(kb.keywords)
-                ? kb.keywords.filter(k => userMessage.toLowerCase().includes(k.toLowerCase())).length * 15
-                : 0;
-            const totalScore = titleScore + contentScore + keywordScore;
+            // Calcular scores múltiplos
+            const titleScore = calculateSimilarity(userMessage, kb.title) * 2.0; // Título tem peso maior
+            const contentScore = calculateSimilarity(userMessage, kb.content) * 0.8;
+            
+            // Score por palavras-chave cadastradas
+            let keywordScore = 0;
+            if (kb.keywords && Array.isArray(kb.keywords)) {
+                const matchingKeywords = kb.keywords.filter(k => {
+                    const lowerK = k.toLowerCase();
+                    return userMessage.toLowerCase().includes(lowerK) || 
+                           userKeywords.some(uk => lowerK.includes(uk) || uk.includes(lowerK));
+                });
+                keywordScore = matchingKeywords.length * 20; // Aumentado peso das palavras-chave
+            }
+            
+            // Score por palavras-chave extraídas da mensagem
+            let extractedKeywordScore = 0;
+            if (kb.content) {
+                const contentLower = kb.content.toLowerCase();
+                const matchingExtracted = userKeywords.filter(uk => contentLower.includes(uk));
+                extractedKeywordScore = matchingExtracted.length * 10;
+            }
+            
+            // Score por similaridade de título (mais importante)
+            const titleKeywordMatch = userKeywords.some(uk => kb.title.toLowerCase().includes(uk));
+            const titleBonus = titleKeywordMatch ? 30 : 0;
+            
+            const totalScore = titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus;
             
             if (totalScore > bestScore) {
                 bestScore = totalScore;
@@ -216,19 +268,8 @@ async function findBestAnswer(userMessage, userId) {
             }
         }
         
-        // 4. Se confiança baixa, buscar na web
-        if (bestScore < 50) {
-            const webResults = await searchWeb(userMessage);
-            if (webResults.results.length > 0) {
-                const bestWeb = webResults.results[0];
-                return {
-                    answer: bestWeb.snippet + (bestWeb.url ? `\n\n📚 Fonte: ${bestWeb.url}` : ''),
-                    confidence: 40,
-                    source: 'web',
-                    webResults: webResults.results
-                };
-            }
-        }
+        // 4. Não buscar na web - focar apenas no conhecimento do sistema
+        // A IA deve ter todas as respostas na base de conhecimento
         
         // Salvar conversa
         if (userId) {
@@ -238,10 +279,57 @@ async function findBestAnswer(userMessage, userId) {
             `, [userId, userMessage, bestAnswer || 'Não encontrei uma resposta específica.', bestScore, bestSource || 'none']);
         }
         
-        // Resposta padrão mais educada e útil
+        // Resposta padrão mais educada e útil - SEM buscar na internet
         if (!bestAnswer || bestScore < 30) {
+            // Tentar encontrar resposta parcial mesmo com baixa confiança
+            const partialMatches = [];
+            
+            // Buscar palavras-chave na base de conhecimento já carregada
+            const words = extractKeywords(userMessage);
+            if (knowledgeResult && knowledgeResult.rows) {
+                for (const kb of knowledgeResult.rows) {
+                    const contentLower = kb.content.toLowerCase();
+                    const titleLower = kb.title.toLowerCase();
+                    
+                    // Verificar se alguma palavra-chave aparece no conteúdo ou título
+                    const matchingWords = words.filter(w => 
+                        contentLower.includes(w) || titleLower.includes(w)
+                    );
+                    
+                    if (matchingWords.length > 0) {
+                        // Calcular score baseado em quantas palavras correspondem
+                        let score = matchingWords.length;
+                        
+                        // Bonus se palavras importantes correspondem
+                        const importantMatches = words.filter(w => {
+                            const importantWords = ['problema', 'erro', 'não', 'consigo', 'como', 'quando', 'onde'];
+                            return importantWords.includes(w) && (contentLower.includes(w) || titleLower.includes(w));
+                        });
+                        score += importantMatches.length * 2;
+                        
+                        partialMatches.push({
+                            content: kb.content,
+                            title: kb.title,
+                            score: score
+                        });
+                    }
+                }
+            }
+            
+            if (partialMatches.length > 0) {
+                // Ordenar por score e pegar a melhor
+                partialMatches.sort((a, b) => b.score - a.score);
+                const bestPartial = partialMatches[0];
+                
+                return {
+                    answer: `Com base na sua pergunta sobre "${bestPartial.title}", aqui está uma informação que pode ajudar:\n\n${bestPartial.content}\n\nSe isso não respondeu completamente sua dúvida, pode reformular a pergunta ou me perguntar sobre:\n\n• Planos e valores\n• Como usar módulos\n• Editar e personalizar cartão\n• Compartilhar cartão\n• Resolver problemas técnicos\n\nEstou aqui para ajudar! 😊`,
+                    confidence: 25,
+                    source: 'partial_match'
+                };
+            }
+            
             return {
-                answer: `Olá! 😊 Não encontrei uma resposta específica para sua pergunta, mas posso te ajudar com:\n\n• Informações sobre planos e valores\n• Como usar os módulos do sistema\n• Como editar e personalizar seu cartão\n• Como compartilhar seu cartão\n• Dúvidas sobre funcionalidades\n\nPode reformular sua pergunta de outra forma ou me perguntar sobre algum desses tópicos? Estou aqui para ajudar! 😊`,
+                answer: `Olá! 😊 Não encontrei uma resposta específica para sua pergunta, mas posso te ajudar com:\n\n• Informações sobre planos e valores\n• Como usar os módulos do sistema\n• Como editar e personalizar seu cartão\n• Como compartilhar seu cartão\n• Resolver problemas técnicos\n• Dúvidas sobre funcionalidades\n\nPode reformular sua pergunta de outra forma ou me perguntar sobre algum desses tópicos? Estou aqui para ajudar! 😊`,
                 confidence: 0,
                 source: 'default'
             };
@@ -1145,6 +1233,460 @@ Seu link é sua identidade digital!`,
         
     } catch (error) {
         console.error('❌ Erro no treinamento inicial:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/train-advanced - Treinamento avançado completo (ADM)
+router.post('/train-advanced', protectAdmin, asyncHandler(async (req, res) => {
+    console.log('📥 Requisição recebida: POST /api/ia-king/train-advanced');
+    const client = await db.pool.connect();
+    try {
+        console.log('🧠 Iniciando treinamento AVANÇADO completo da IA KING...');
+        
+        await client.query('BEGIN');
+        
+        // Buscar categorias
+        const categoriesResult = await client.query('SELECT id, name FROM ia_categories');
+        const categoryMap = {};
+        categoriesResult.rows.forEach(cat => {
+            categoryMap[cat.name] = cat.id;
+        });
+        
+        // Conhecimento avançado sobre problemas e soluções
+        const advancedKnowledge = [
+            // PROBLEMAS COMUNS E SOLUÇÕES
+            {
+                title: 'Não consigo fazer login',
+                content: `Se você está tendo problemas para fazer login:
+
+**Soluções:**
+1. Verifique se está usando o email correto
+2. Confirme que a senha está correta (verifique maiúsculas/minúsculas)
+3. Tente usar "Esqueci minha senha" para redefinir
+4. Limpe o cache do navegador
+5. Tente em outro navegador ou modo anônimo
+6. Verifique sua conexão com a internet
+
+**Se ainda não funcionar:**
+• Entre em contato com o suporte via WhatsApp
+• Nossa equipe pode ajudar a recuperar seu acesso rapidamente`,
+                keywords: ['login', 'entrar', 'acessar', 'senha', 'email', 'problema login', 'não consigo entrar', 'esqueci senha'],
+                category: 'Suporte'
+            },
+            {
+                title: 'Meu cartão não está aparecendo',
+                content: `Se seu cartão não está aparecendo corretamente:
+
+**Verificações:**
+1. Certifique-se de que publicou as alterações (botão "Publicar alterações")
+2. Verifique se você está usando o link correto
+3. Limpe o cache do navegador
+4. Tente em modo anônimo/privado
+5. Verifique se seu plano está ativo
+
+**Soluções:**
+• Publique novamente as alterações
+• Compartilhe o link novamente
+• Verifique se não há bloqueadores de conteúdo ativos
+• Entre em contato se o problema persistir`,
+                keywords: ['cartão não aparece', 'não aparece', 'não carrega', 'erro visualização', 'problema visualizar'],
+                category: 'Suporte'
+            },
+            {
+                title: 'Não consigo adicionar módulos',
+                content: `Se você não consegue adicionar módulos:
+
+**Possíveis causas:**
+1. Seu plano pode ter limite de módulos
+2. Você pode ter atingido o limite máximo
+3. Pode haver um problema temporário
+
+**Soluções:**
+1. Verifique qual plano você tem ativo
+2. Veja quantos módulos você já adicionou
+3. Tente remover um módulo antigo antes de adicionar novo
+4. Recarregue a página (F5)
+5. Limpe o cache do navegador
+
+**Planos e limites:**
+• Pacote 1: Todos os módulos disponíveis
+• Pacote 2: Todos os módulos disponíveis
+• Pacote 3: Todos os módulos disponíveis
+
+Se o problema persistir, entre em contato com o suporte.`,
+                keywords: ['adicionar módulo', 'não consigo adicionar', 'erro adicionar', 'limite módulos', 'módulo não adiciona'],
+                category: 'Suporte'
+            },
+            {
+                title: 'Minha foto não está carregando',
+                content: `Se sua foto de perfil não está carregando:
+
+**Soluções:**
+1. Verifique o formato da imagem (aceita JPG, PNG)
+2. Confirme que o tamanho não excede 5MB
+3. Tente fazer upload novamente
+4. Use uma imagem com boa qualidade
+5. Aguarde alguns segundos após o upload
+
+**Dicas:**
+• Use imagens quadradas para melhor resultado
+• Formatos recomendados: JPG ou PNG
+• Tamanho ideal: entre 500x500 e 2000x2000 pixels
+• Evite imagens muito pesadas
+
+**Se ainda não funcionar:**
+• Tente outra imagem
+• Redimensione a imagem antes de fazer upload
+• Entre em contato com o suporte`,
+                keywords: ['foto não carrega', 'imagem não aparece', 'upload foto', 'erro foto', 'foto não funciona'],
+                category: 'Suporte'
+            },
+            {
+                title: 'Não consigo editar meu cartão',
+                content: `Se você não consegue editar seu cartão:
+
+**Verificações:**
+1. Certifique-se de estar logado
+2. Verifique se está na página correta (dashboard)
+3. Confirme que seu plano está ativo
+4. Verifique sua conexão com a internet
+
+**Soluções:**
+1. Recarregue a página (F5)
+2. Limpe o cache do navegador
+3. Tente em outro navegador
+4. Faça logout e login novamente
+5. Verifique se não há bloqueadores de JavaScript
+
+**Se o problema persistir:**
+• Entre em contato com o suporte
+• Nossa equipe pode verificar sua conta
+• Podemos ajudar a resolver rapidamente`,
+                keywords: ['não consigo editar', 'erro editar', 'edição não funciona', 'não salva', 'erro salvar'],
+                category: 'Suporte'
+            },
+            {
+                title: 'Meu link não está funcionando',
+                content: `Se seu link do cartão não está funcionando:
+
+**Verificações:**
+1. Confirme que você copiou o link completo
+2. Verifique se não há espaços extras no link
+3. Teste o link em outro navegador
+4. Verifique se seu plano está ativo
+
+**Soluções:**
+1. Acesse seu dashboard
+2. Vá em "Compartilhar" ou "Ver Cartão"
+3. Copie o link novamente
+4. Teste em modo anônimo/privado
+5. Compartilhe o link novamente
+
+**Formato correto do link:**
+• tag.conectaking.com.br/seu-usuario
+• Ou o slug personalizado que você configurou
+
+Se o problema persistir, entre em contato com o suporte.`,
+                keywords: ['link não funciona', 'link quebrado', 'erro link', 'link inválido', 'não abre link'],
+                category: 'Suporte'
+            },
+            
+            // PERGUNTAS FREQUENTES AVANÇADAS
+            {
+                title: 'Como cancelar minha assinatura?',
+                content: `Para cancelar sua assinatura:
+
+**Processo:**
+1. Entre em contato com o suporte via WhatsApp
+2. Informe que deseja cancelar
+3. Nossa equipe processará o cancelamento
+4. Você continuará tendo acesso até o fim do período pago
+
+**Importante:**
+• O cancelamento não é imediato
+• Você mantém acesso até o fim do período contratado
+• Após o cancelamento, seu cartão ficará inativo
+• Você pode reativar a qualquer momento
+
+**Dúvidas?**
+Entre em contato com nosso suporte para mais informações.`,
+                keywords: ['cancelar', 'cancelamento', 'desistir', 'sair', 'cancelar plano', 'cancelar assinatura'],
+                category: 'Assinatura'
+            },
+            {
+                title: 'Como alterar meu plano?',
+                content: `Para alterar seu plano:
+
+**Processo:**
+1. Acesse a seção "Assinatura" no dashboard
+2. Escolha o novo plano desejado
+3. Entre em contato via WhatsApp para fazer a alteração
+4. Nossa equipe processará a mudança
+
+**Informações importantes:**
+• Você pode fazer upgrade a qualquer momento
+• O downgrade pode ter restrições
+• A diferença de valor será ajustada proporcionalmente
+• Suas configurações são mantidas
+
+**Entre em contato:**
+Use o WhatsApp informado na seção de assinatura para fazer a alteração.`,
+                keywords: ['alterar plano', 'mudar plano', 'trocar plano', 'upgrade', 'downgrade', 'mudança plano'],
+                category: 'Assinatura'
+            },
+            {
+                title: 'Como recuperar minha senha?',
+                content: `Para recuperar sua senha:
+
+**Passo a passo:**
+1. Na tela de login, clique em "Esqueci minha senha"
+2. Digite o email cadastrado
+3. Verifique sua caixa de entrada
+4. Clique no link recebido por email
+5. Defina uma nova senha
+
+**Se não recebeu o email:**
+• Verifique a pasta de spam/lixo eletrônico
+• Aguarde alguns minutos
+• Tente novamente
+• Entre em contato com o suporte se necessário
+
+**Dicas de segurança:**
+• Use uma senha forte (mínimo 8 caracteres)
+• Combine letras, números e símbolos
+• Não compartilhe sua senha
+• Altere periodicamente`,
+                keywords: ['recuperar senha', 'esqueci senha', 'redefinir senha', 'reset senha', 'senha esquecida'],
+                category: 'Suporte'
+            },
+            
+            // INFORMAÇÕES TÉCNICAS AVANÇADAS
+            {
+                title: 'Quais navegadores são compatíveis?',
+                content: `O Conecta King funciona melhor nos seguintes navegadores:
+
+**Navegadores recomendados:**
+• Google Chrome (versão mais recente)
+• Mozilla Firefox (versão mais recente)
+• Microsoft Edge (versão mais recente)
+• Safari (versão mais recente)
+
+**Dispositivos:**
+• Computadores (Windows, Mac, Linux)
+• Tablets (iPad, Android)
+• Smartphones (iOS, Android)
+
+**Requisitos:**
+• JavaScript habilitado
+• Cookies habilitados
+• Conexão com internet estável
+
+**Se tiver problemas:**
+• Atualize seu navegador
+• Limpe cache e cookies
+• Desative extensões que possam interferir`,
+                keywords: ['navegador', 'browser', 'compatível', 'chrome', 'firefox', 'safari', 'edge', 'suporte navegador'],
+                category: 'Suporte'
+            },
+            {
+                title: 'Como funciona o sistema de pagamento?',
+                content: `O sistema de pagamento do Conecta King:
+
+**Formas de pagamento:**
+• PIX (recomendado - mais rápido)
+• Transferência bancária
+• Via WhatsApp (para negociação)
+
+**Processo:**
+1. Escolha seu plano
+2. Entre em contato via WhatsApp ou use PIX
+3. Envie o comprovante de pagamento
+4. Nossa equipe ativa seu plano
+5. Você recebe confirmação por email
+
+**Prazos:**
+• PIX: Ativação em até 24 horas
+• Transferência: Ativação em até 48 horas
+• WhatsApp: Negociação direta
+
+**Dúvidas sobre pagamento?**
+Entre em contato com nosso suporte via WhatsApp.`,
+                keywords: ['pagamento', 'pix', 'transferência', 'como pagar', 'forma pagamento', 'comprovante'],
+                category: 'Assinatura'
+            },
+            {
+                title: 'Meu cartão está lento ou travando',
+                content: `Se seu cartão está lento ou travando:
+
+**Possíveis causas:**
+1. Muitas imagens pesadas
+2. Conexão com internet lenta
+3. Navegador desatualizado
+4. Cache do navegador cheio
+
+**Soluções:**
+1. Otimize suas imagens antes de fazer upload
+2. Reduza o tamanho das imagens
+3. Limpe o cache do navegador
+4. Atualize seu navegador
+5. Verifique sua conexão com internet
+6. Tente em outro navegador
+
+**Dicas de otimização:**
+• Use imagens JPG para fotos (menor tamanho)
+• Use PNG apenas quando precisar de transparência
+• Redimensione imagens antes de fazer upload
+• Evite imagens muito grandes (acima de 2MB)
+
+Se o problema persistir, entre em contato com o suporte.`,
+                keywords: ['lento', 'travando', 'lentidão', 'demora', 'carregamento lento', 'performance'],
+                category: 'Suporte'
+            },
+            
+            // INFORMAÇÕES SOBRE FUNCIONALIDADES AVANÇADAS
+            {
+                title: 'Como usar o QR Code?',
+                content: `O QR Code do Conecta King:
+
+**O que é:**
+Um código que pode ser escaneado por qualquer celular para acessar seu cartão diretamente.
+
+**Como gerar:**
+1. Acesse seu dashboard
+2. Vá em "Compartilhar"
+3. Você verá o QR Code do seu cartão
+4. Baixe a imagem do QR Code
+
+**Como usar:**
+• Imprima em cartões de visita físicos
+• Adicione em assinaturas de email
+• Compartilhe em redes sociais
+• Use em materiais impressos
+
+**Vantagens:**
+• Acesso rápido e direto
+• Não precisa digitar o link
+• Profissional e moderno
+• Funciona em qualquer celular
+
+Qualquer pessoa pode escanear e acessar seu cartão instantaneamente!`,
+                keywords: ['QR code', 'qrcode', 'código QR', 'escaneamento', 'código de barras'],
+                category: 'Sistema'
+            },
+            {
+                title: 'Como organizar os módulos na ordem que eu quero?',
+                content: `Para organizar os módulos na ordem desejada:
+
+**Método 1 - Arrastar e Soltar:**
+1. Acesse a aba "Módulos" no dashboard
+2. Clique e segure um módulo
+3. Arraste para a posição desejada
+4. Solte para reposicionar
+
+**Método 2 - Botões de Mover:**
+1. Clique no módulo que deseja mover
+2. Use os botões "Mover para cima" ou "Mover para baixo"
+3. Reposicione até ficar na ordem desejada
+4. Publique as alterações
+
+**Dicas:**
+• Coloque os módulos mais importantes primeiro
+• WhatsApp e contatos geralmente ficam no topo
+• Redes sociais podem ficar em seguida
+• Links e páginas de vendas podem ficar depois
+
+A ordem que você definir será a ordem que aparece no seu cartão!`,
+                keywords: ['organizar', 'ordem', 'reorganizar', 'mover', 'arrastar', 'posição módulos'],
+                category: 'Sistema'
+            },
+            {
+                title: 'Posso ter mais de um cartão?',
+                content: `Sobre múltiplos cartões:
+
+**Pacote 1 e 2:**
+• 1 cartão/perfil por assinatura
+• Você pode criar apenas um cartão
+• Para ter mais cartões, precisa de múltiplas assinaturas
+
+**Pacote 3 (Empresarial):**
+• 3 cartões/perfis em uma única assinatura
+• Ideal para empresas
+• Cada cartão pode ter configurações diferentes
+• Todos os cartões compartilham o mesmo plano
+
+**Como criar múltiplos cartões (Pacote 3):**
+1. Acesse seu dashboard
+2. Use a aba "Empresa" ou "Perfis"
+3. Crie novos perfis/cartões
+4. Configure cada um individualmente
+
+**Dúvidas?**
+Entre em contato para saber mais sobre o plano empresarial.`,
+                keywords: ['múltiplos cartões', 'vários cartões', 'mais de um', 'múltiplos perfis', 'vários perfis'],
+                category: 'Assinatura'
+            }
+        ];
+        
+        let insertedCount = 0;
+        
+        // Inserir conhecimento avançado
+        for (const entry of advancedKnowledge) {
+            try {
+                // Verificar se já existe
+                const existing = await client.query(
+                    'SELECT id FROM ia_knowledge_base WHERE LOWER(title) = LOWER($1)',
+                    [entry.title]
+                );
+                
+                if (existing.rows.length === 0) {
+                    await client.query(
+                        `INSERT INTO ia_knowledge_base (title, content, category_id, keywords, source_type, priority)
+                         VALUES ($1, $2, $3, $4, $5, $6)`,
+                        [
+                            entry.title,
+                            entry.content,
+                            categoryMap[entry.category] || null,
+                            Array.isArray(entry.keywords) ? entry.keywords : [],
+                            'advanced_training',
+                            150 // Prioridade ainda maior que o treinamento inicial
+                        ]
+                    );
+                    insertedCount++;
+                } else {
+                    // Atualizar se já existe
+                    await client.query(
+                        `UPDATE ia_knowledge_base 
+                         SET content = $1, keywords = $2, priority = $3, updated_at = CURRENT_TIMESTAMP
+                         WHERE LOWER(title) = LOWER($4)`,
+                        [
+                            entry.content,
+                            Array.isArray(entry.keywords) ? entry.keywords : [],
+                            150,
+                            entry.title
+                        ]
+                    );
+                }
+            } catch (error) {
+                console.error(`Erro ao inserir conhecimento avançado: ${entry.title}`, error);
+            }
+        }
+        
+        await client.query('COMMIT');
+        
+        console.log(`✅ Treinamento avançado concluído! ${insertedCount} entradas adicionadas/atualizadas.`);
+        
+        res.json({
+            message: `Treinamento avançado concluído com sucesso! ${insertedCount} entradas de conhecimento avançado adicionadas/atualizadas.`,
+            inserted: insertedCount,
+            total: advancedKnowledge.length
+        });
+        
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('❌ Erro no treinamento avançado:', error);
         throw error;
     } finally {
         client.release();
