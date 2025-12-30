@@ -447,7 +447,7 @@ router.get('/stats', protectAdmin, asyncHandler(async (req, res) => {
             client.query('SELECT COUNT(*) as count FROM ia_qa'),
             client.query('SELECT COUNT(*) as count FROM ia_documents'),
             client.query('SELECT COUNT(*) as count FROM ia_conversations WHERE DATE(created_at) = CURRENT_DATE'),
-            client.query('SELECT COUNT(*) as count FROM ia_learning WHERE reviewed = false')
+            client.query("SELECT COUNT(*) as count FROM ia_learning WHERE status = 'pending'")
         ]);
         
         res.json({
@@ -566,7 +566,19 @@ O Conecta King é ideal para profissionais, empresas e empreendedores que querem
             let plansContent = 'O Conecta King oferece os seguintes planos de assinatura:\n\n';
             
             plansResult.rows.forEach((plan, index) => {
-                const features = plan.features ? JSON.parse(plan.features) : {};
+                // Verificar se features já é um objeto ou precisa ser parseado
+                let features = {};
+                if (plan.features) {
+                    if (typeof plan.features === 'string') {
+                        try {
+                            features = JSON.parse(plan.features);
+                        } catch (e) {
+                            features = {};
+                        }
+                    } else if (typeof plan.features === 'object') {
+                        features = plan.features;
+                    }
+                }
                 plansContent += `**${plan.plan_name}** - R$ ${plan.price.toFixed(2)}/mês\n`;
                 plansContent += `Código: ${plan.plan_code}\n`;
                 if (plan.description) {
