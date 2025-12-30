@@ -88,7 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_ia_qa_question ON ia_qa USING GIN(to_tsvector('po
 -- Criar tabela primeiro sem foreign key
 CREATE TABLE IF NOT EXISTS ia_conversations (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+    user_id VARCHAR(255) NOT NULL, -- Tipo correto: VARCHAR para corresponder à tabela users
     message TEXT NOT NULL,
     response TEXT NOT NULL,
     knowledge_used INTEGER[], -- IDs do conhecimento usado
