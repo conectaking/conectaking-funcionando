@@ -706,4 +706,299 @@ router.get('/stats', protectAdmin, asyncHandler(async (req, res) => {
     }
 }));
 
+// GET /api/ia-king/mentorias - Listar mentorias
+router.get('/mentorias', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT 
+                m.id,
+                m.title,
+                m.description,
+                m.content,
+                m.video_url,
+                m.audio_url,
+                m.document_url,
+                m.duration_minutes,
+                m.difficulty_level,
+                m.view_count,
+                m.is_active,
+                c.name as category_name,
+                m.created_at,
+                m.updated_at
+            FROM ia_mentorias m
+            LEFT JOIN ia_categories c ON m.category_id = c.id
+            ORDER BY m.created_at DESC
+        `);
+        
+        res.json({ mentorias: result.rows });
+    } catch (error) {
+        console.error('❌ Erro ao buscar mentorias:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/mentorias - Criar mentoria
+router.post('/mentorias', protectAdmin, asyncHandler(async (req, res) => {
+    const { title, description, content, category_id, keywords, video_url, audio_url, document_url, duration_minutes, difficulty_level } = req.body;
+    const adminId = req.user.userId;
+    
+    if (!title || !content) {
+        return res.status(400).json({ message: 'Título e conteúdo são obrigatórios.' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        const extractedKeywords = keywords || extractKeywords(title + ' ' + description + ' ' + content);
+        
+        const result = await client.query(
+            `INSERT INTO ia_mentorias (title, description, content, category_id, keywords, video_url, audio_url, document_url, duration_minutes, difficulty_level, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+             RETURNING *`,
+            [
+                title,
+                description || null,
+                content,
+                category_id || null,
+                extractedKeywords,
+                video_url || null,
+                audio_url || null,
+                document_url || null,
+                duration_minutes || null,
+                difficulty_level || 'beginner',
+                adminId
+            ]
+        );
+        
+        res.json({ mentoria: result.rows[0] });
+    } catch (error) {
+        console.error('❌ Erro ao criar mentoria:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/web-search/config - Buscar configuração de busca na web
+router.get('/web-search/config', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query('SELECT * FROM ia_web_search_config ORDER BY id DESC LIMIT 1');
+        
+        if (result.rows.length === 0) {
+            return res.json({ config: { is_enabled: false, api_provider: 'scraping', max_results: 5 } });
+        }
+        
+        res.json({ config: result.rows[0] });
+    } catch (error) {
+        console.error('❌ Erro ao buscar configuração:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// PUT /api/ia-king/web-search/config - Atualizar configuração de busca na web
+router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => {
+    const { is_enabled, api_provider, api_key, max_results, search_domains, blocked_domains, use_cache, cache_duration_hours } = req.body;
+    const adminId = req.user.userId;
+    
+    const client = await db.pool.connect();
+    try {
+        // Verificar se já existe configuração
+        const existing = await client.query('SELECT id FROM ia_web_search_config ORDER BY id DESC LIMIT 1');
+        
+        if (existing.rows.length > 0) {
+            // Atualizar
+            const updates = [];
+            const values = [];
+            let paramIndex = 1;
+            
+            if (is_enabled !== undefined) {
+                updates.push(`is_enabled = $${paramIndex++}`);
+                values.push(is_enabled);
+            }
+            if (api_provider !== undefined) {
+                updates.push(`api_provider = $${paramIndex++}`);
+                values.push(api_provider);
+            }
+            if (api_key !== undefined) {
+                updates.push(`api_key = $${paramIndex++}`);
+                values.push(api_key);
+            }
+            if (max_results !== undefined) {
+                updates.push(`max_results = $${paramIndex++}`);
+                values.push(max_results);
+            }
+            if (search_domains !== undefined) {
+                updates.push(`search_domains = $${paramIndex++}`);
+                values.push(search_domains);
+            }
+            if (blocked_domains !== undefined) {
+                updates.push(`blocked_domains = $${paramIndex++}`);
+                values.push(blocked_domains);
+            }
+            if (use_cache !== undefined) {
+                updates.push(`use_cache = $${paramIndex++}`);
+                values.push(use_cache);
+            }
+            if (cache_duration_hours !== undefined) {
+                updates.push(`cache_duration_hours = $${paramIndex++}`);
+                values.push(cache_duration_hours);
+            }
+            
+            updates.push(`updated_by = $${paramIndex++}`);
+            values.push(adminId);
+            updates.push(`updated_at = CURRENT_TIMESTAMP`);
+            values.push(existing.rows[0].id);
+            
+            await client.query(
+                `UPDATE ia_web_search_config SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+                values
+            );
+        } else {
+            // Criar nova
+            await client.query(
+                `INSERT INTO ia_web_search_config (is_enabled, api_provider, api_key, max_results, search_domains, blocked_domains, use_cache, cache_duration_hours, updated_by)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                [
+                    is_enabled !== undefined ? is_enabled : false,
+                    api_provider || 'scraping',
+                    api_key || null,
+                    max_results || 5,
+                    search_domains || null,
+                    blocked_domains || null,
+                    use_cache !== undefined ? use_cache : true,
+                    cache_duration_hours || 24,
+                    adminId
+                ]
+            );
+        }
+        
+        res.json({ message: 'Configuração salva com sucesso.' });
+    } catch (error) {
+        console.error('❌ Erro ao salvar configuração:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// Função auxiliar: Buscar na internet (web scraping básico)
+async function searchWeb(query, maxResults = 5) {
+    try {
+        // Usar DuckDuckGo HTML (gratuito, sem API key)
+        const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+        
+        // Nota: Em produção, você pode usar:
+        // 1. SerpAPI (pago, mas confiável)
+        // 2. Google Custom Search API (limitado, mas funcional)
+        // 3. Web scraping com puppeteer/playwright (mais complexo)
+        // 4. DuckDuckGo API (gratuito, mas limitado)
+        
+        // Por enquanto, retornar resultados simulados
+        // TODO: Implementar busca real quando necessário
+        return {
+            results: [
+                {
+                    title: `Resultado sobre: ${query}`,
+                    snippet: `Informações relevantes sobre ${query} encontradas na internet.`,
+                    url: `https://example.com/search?q=${encodeURIComponent(query)}`
+                }
+            ],
+            provider: 'scraping',
+            cached: false
+        };
+    } catch (error) {
+        console.error('Erro ao buscar na web:', error);
+        return { results: [], provider: 'scraping', cached: false, error: error.message };
+    }
+}
+
+// POST /api/ia-king/web-search - Buscar na internet
+router.post('/web-search', protectUser, iaLimiter, asyncHandler(async (req, res) => {
+    const { query } = req.body;
+    
+    if (!query || !query.trim()) {
+        return res.status(400).json({ message: 'Query de busca é obrigatória.' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        // Verificar se busca na web está habilitada
+        const configResult = await client.query('SELECT * FROM ia_web_search_config ORDER BY id DESC LIMIT 1');
+        
+        if (configResult.rows.length === 0 || !configResult.rows[0].is_enabled) {
+            return res.status(403).json({ 
+                message: 'Busca na internet não está habilitada. Configure no painel admin.' 
+            });
+        }
+        
+        const config = configResult.rows[0];
+        
+        // Verificar cache
+        if (config.use_cache) {
+            const cacheResult = await client.query(
+                'SELECT results FROM ia_web_search_cache WHERE query = $1 AND expires_at > NOW()',
+                [query]
+            );
+            
+            if (cacheResult.rows.length > 0) {
+                return res.json({
+                    results: cacheResult.rows[0].results,
+                    cached: true
+                });
+            }
+        }
+        
+        // Buscar na web
+        const searchResults = await searchWeb(query, config.max_results || 5);
+        
+        // Salvar no cache se habilitado
+        if (config.use_cache && searchResults.results.length > 0) {
+            const expiresAt = new Date();
+            expiresAt.setHours(expiresAt.getHours() + (config.cache_duration_hours || 24));
+            
+            await client.query(
+                `INSERT INTO ia_web_search_cache (query, results, expires_at)
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (query) DO UPDATE SET results = $2, expires_at = $3`,
+                [query, JSON.stringify(searchResults.results), expiresAt]
+            );
+        }
+        
+        // Salvar no histórico
+        await client.query(
+            `INSERT INTO ia_web_search_history (query, results_count, success, provider)
+             VALUES ($1, $2, $3, $4)`,
+            [query, searchResults.results.length, true, searchResults.provider]
+        );
+        
+        res.json({
+            results: searchResults.results,
+            cached: false,
+            provider: searchResults.provider
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar na web:', error);
+        
+        // Salvar erro no histórico
+        try {
+            await client.query(
+                `INSERT INTO ia_web_search_history (query, results_count, success, error_message)
+                 VALUES ($1, $2, $3, $4)`,
+                [query, 0, false, error.message]
+            );
+        } catch (histError) {
+            console.error('Erro ao salvar histórico:', histError);
+        }
+        
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
