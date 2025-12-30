@@ -1143,6 +1143,12 @@ router.post('/documents/upload', protectAdmin, documentUpload.single('document')
     
     const client = await db.pool.connect();
     try {
+        // Verificar se o upload foi bem-sucedido
+        if (!req.file.key && !req.file.location) {
+            console.error('❌ Arquivo não foi enviado para o storage');
+            throw new Error('Erro ao fazer upload do arquivo. Verifique a configuração do R2.');
+        }
+        
         // Verificar variáveis de ambiente
         if (!process.env.R2_PUBLIC_URL) {
             console.error('❌ R2_PUBLIC_URL não configurado');
@@ -1217,6 +1223,13 @@ router.post('/documents/upload', protectAdmin, documentUpload.single('document')
                 if (extractedText && extractedText.length > 100) {
                     const keywords = extractKeywords(title + ' ' + extractedText.substring(0, 1000));
                     
+                    // created_by pode ser string, converter para número ou NULL
+                    let createdByValue = null;
+                    if (adminId) {
+                        const adminIdNum = parseInt(adminId);
+                        createdByValue = isNaN(adminIdNum) ? null : adminIdNum;
+                    }
+                    
                     await bgClient.query(
                         `INSERT INTO ia_knowledge_base (title, content, category_id, keywords, source_type, source_reference, created_by)
                          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -1227,7 +1240,7 @@ router.post('/documents/upload', protectAdmin, documentUpload.single('document')
                             keywords,
                             'document',
                             `ia_documents:${result.rows[0].id}`,
-                            adminId
+                            createdByValue
                         ]
                     );
                     console.log('✅ Conhecimento indexado na base');
@@ -1242,14 +1255,35 @@ router.post('/documents/upload', protectAdmin, documentUpload.single('document')
     } catch (error) {
         console.error('❌ Erro ao fazer upload de documento:', error);
         console.error('Stack:', error.stack);
+        console.error('Detalhes do erro:', {
+            name: error.name,
+            code: error.Code,
+            message: error.message,
+            httpStatusCode: error.$metadata?.httpStatusCode
+        });
         
         // Liberar cliente em caso de erro
-        client.release();
+        if (client) {
+            client.release();
+        }
+        
+        // Mensagem de erro mais específica
+        let errorMessage = 'Erro interno do servidor ao processar documento.';
+        if (error.Code === 'NotEntitled' || error.message?.includes('enable R2')) {
+            errorMessage = 'Erro de configuração: R2 não está habilitado no Cloudflare. Verifique as configurações do servidor.';
+        } else if (error.message) {
+            errorMessage = `Erro: ${error.message}`;
+        }
         
         // Retornar erro mais detalhado
         res.status(500).json({ 
-            message: 'Erro interno do servidor ao processar documento.',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: errorMessage,
+            error: process.env.NODE_ENV === 'development' ? {
+                name: error.name,
+                code: error.Code,
+                message: error.message,
+                details: error.$metadata
+            } : undefined
         });
     }
 }));
