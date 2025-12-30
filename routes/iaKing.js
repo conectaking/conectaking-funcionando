@@ -489,12 +489,20 @@ async function findBestAnswer(userMessage, userId) {
                 const titleKeywordMatch = userKeywords.some(uk => kb.title.toLowerCase().includes(uk));
                 const titleBonus = titleKeywordMatch ? 30 : 0;
                 
-                const totalScore = titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus;
+                // BONUS MÁXIMO para conhecimento de livros (prioridade sobre tudo)
+                const bookBonus = kb.source_type === 'book_training' ? 50 : 0;
+                
+                const totalScore = titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus + bookBonus;
                 
                 if (totalScore > bestScore) {
                     bestScore = totalScore;
                     bestAnswer = kb.content;
                     bestSource = 'knowledge';
+                    
+                    // Se for conhecimento de livro, marcar como prioridade máxima
+                    if (kb.source_type === 'book_training') {
+                        console.log('📚 [IA] Usando conhecimento de LIVRO:', kb.title.substring(0, 50));
+                    }
                 }
             }
         } catch (error) {
@@ -595,17 +603,22 @@ async function findBestAnswer(userMessage, userId) {
         
         // LÓGICA MELHORADA: Buscar na web se:
         // 1. Tavily está configurado E habilitado
-        // 2. PRIORIDADE ABSOLUTA: Se pergunta NÃO é sobre sistema, SEMPRE buscar (mesmo com resposta na base)
-        // 3. Se é sobre sistema, buscar apenas se não tem resposta ou score baixo
+        // 2. NÃO buscar se já temos resposta de LIVRO (prioridade máxima - conhecimento dos livros é mais confiável)
+        // 3. PRIORIDADE: Se pergunta NÃO é sobre sistema, buscar (mas não se tiver resposta de livro)
+        // 4. Se é sobre sistema, buscar apenas se não tem resposta ou score baixo
         const hasTavilyConfig = webSearchConfig && 
                                 webSearchConfig.is_enabled && 
                                 webSearchConfig.api_provider === 'tavily' &&
                                 webSearchConfig.api_key;
         
-        // Para perguntas EXTERNAS (não sobre sistema), SEMPRE buscar no Tavily
+        // Verificar se temos resposta de livro (prioridade máxima - não buscar na web)
+        // Livros têm score alto (50+ de bonus) então se bestScore > 50 e source é knowledge, provavelmente é livro
+        const hasBookKnowledge = bestAnswer && bestScore > 50 && bestSource === 'knowledge';
+        
+        // Para perguntas EXTERNAS (não sobre sistema), buscar no Tavily APENAS se não tiver resposta de livro
         // Para perguntas SOBRE SISTEMA, buscar apenas se não tem resposta ou score baixo
-        const shouldSearchWeb = hasTavilyConfig && (
-            !questionIsAboutSystem || // PRIORIDADE: Sempre buscar se não é sobre sistema (mesmo com resposta na base)
+        const shouldSearchWeb = hasTavilyConfig && !hasBookKnowledge && (
+            !questionIsAboutSystem || // PRIORIDADE: Sempre buscar se não é sobre sistema (mas não se tiver livro)
             !bestAnswer || 
             bestScore < 60 // Score mais alto para perguntas sobre sistema
         );
@@ -620,6 +633,7 @@ async function findBestAnswer(userMessage, userId) {
                     !webSearchConfig.is_enabled ? '❌ Desabilitado' :
                     webSearchConfig.api_provider !== 'tavily' ? `❌ Provider errado: ${webSearchConfig.api_provider}` :
                     !webSearchConfig.api_key ? '❌ Sem API key' :
+                    hasBookKnowledge ? '📚 Tem conhecimento de LIVRO - Prioridade máxima!' :
                     !questionIsAboutSystem ? '✅ PERGUNTA EXTERNA - Sempre buscar!' :
                     !bestAnswer ? '✅ Sem resposta na base' :
                     bestScore < 60 ? `✅ Score baixo: ${bestScore}` :
