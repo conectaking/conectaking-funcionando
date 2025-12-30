@@ -78,6 +78,7 @@ async function searchWithTavily(query, apiKey) {
             throw new Error('API Key do Tavily não configurada');
         }
         
+        console.log('🌐 [Tavily] Fazendo requisição para Tavily API...');
         const tavilyUrl = 'https://api.tavily.com/search';
         
         // Criar promise com timeout
@@ -107,6 +108,11 @@ async function searchWithTavily(query, apiKey) {
         }
         
         const data = await response.json();
+        console.log('📥 [Tavily] Resposta recebida:', {
+            hasAnswer: !!data.answer,
+            resultsCount: data.results?.length || 0
+        });
+        
         const results = [];
         
         // Processar resultados
@@ -151,10 +157,20 @@ async function searchWeb(query, config = null) {
         
         // Se Tavily estiver configurado e habilitado, usar primeiro
         if (config && config.is_enabled && config.api_provider === 'tavily' && config.api_key) {
+            console.log('🔍 [Tavily] Buscando na web usando Tavily API:', query.substring(0, 50));
             const tavilyResult = await searchWithTavily(query, config.api_key);
             if (tavilyResult.results && tavilyResult.results.length > 0) {
+                console.log('✅ [Tavily] Resultados encontrados:', tavilyResult.results.length, 'resultados');
                 return tavilyResult;
+            } else {
+                console.log('⚠️ [Tavily] Nenhum resultado encontrado, usando fallback');
             }
+        } else {
+            console.log('ℹ️ [Tavily] Não configurado ou desabilitado. Config:', {
+                is_enabled: config?.is_enabled,
+                api_provider: config?.api_provider,
+                has_api_key: !!config?.api_key
+            });
         }
         
         // Fallback para buscas gratuitas
@@ -401,6 +417,12 @@ async function findBestAnswer(userMessage, userId) {
         
         // Se não encontrou resposta satisfatória e busca na web está habilitada, buscar na web
         if ((!bestAnswer || bestScore < 30) && webSearchConfig) {
+            console.log('🔍 [IA] Buscando na web porque:', {
+                hasAnswer: !!bestAnswer,
+                score: bestScore,
+                webSearchEnabled: webSearchConfig.is_enabled,
+                provider: webSearchConfig.api_provider
+            });
             try {
                 const webResults = await searchWeb(userMessage, webSearchConfig);
                 
