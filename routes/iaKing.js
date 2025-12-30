@@ -1197,27 +1197,66 @@ function generateGreetingResponse() {
 // Função para aprender com Tavily e adicionar à base de conhecimento
 async function learnFromTavily(question, answer, client) {
     try {
-        // Verificar se já existe resposta similar (buscar por título similar)
+        // SEMPRE GRAVAR: Gravar cada pergunta e resposta aprendida
+        const keywords = extractKeywords(question + ' ' + answer);
+        
+        // Verificar se já existe resposta similar
         const existing = await client.query(`
-            SELECT id, title FROM ia_knowledge_base 
+            SELECT id, title, content FROM ia_knowledge_base 
             WHERE LOWER(title) = LOWER($1)
+            OR (LENGTH(title) > 10 AND LOWER(title) LIKE LOWER($2))
             LIMIT 1
-        `, [question]);
+        `, [question, `%${question.substring(0, Math.min(20, question.length))}%`]);
         
         if (existing.rows.length === 0) {
-            // Adicionar à base de conhecimento
-            const keywords = extractKeywords(question);
+            // Adicionar à base de conhecimento (SEMPRE)
             await client.query(`
-                INSERT INTO ia_knowledge_base (title, content, keywords, source_type, is_active)
-                VALUES ($1, $2, $3, 'tavily_learned', true)
+                INSERT INTO ia_knowledge_base (title, content, keywords, source_type, is_active, priority)
+                VALUES ($1, $2, $3, 'tavily_learned', true, 80)
             `, [
-                question,
-                answer.substring(0, 5000), // Limitar tamanho
+                question.substring(0, 255),
+                answer.substring(0, 10000), // Aumentar limite para aprender mais
                 keywords
             ]);
-            console.log('📚 [IA] Aprendido e adicionado à base de conhecimento:', question.substring(0, 50));
+            console.log('📚 [IA] Aprendido e GRAVADO na memória:', question.substring(0, 50));
+            
+            // Criar Q&A para facilitar busca futura
+            try {
+                await client.query(`
+                    INSERT INTO ia_qa (question, answer, keywords, is_active)
+                    VALUES ($1, $2, $3, true)
+                `, [
+                    question,
+                    answer.substring(0, 2000),
+                    keywords
+                ]);
+            } catch (qaError) {
+                // Ignorar erro de Q&A duplicado
+            }
         } else {
-            console.log('ℹ️ [IA] Já existe conhecimento similar, não adicionando duplicado');
+            // Atualizar conhecimento existente se a nova resposta for melhor/mais completa
+            const existingContent = existing.rows[0].content || '';
+            if (existingContent.length < answer.length || answer.length > existingContent.length * 1.2) {
+                await client.query(`
+                    UPDATE ia_knowledge_base
+                    SET content = $1, updated_at = CURRENT_TIMESTAMP, keywords = $2
+                    WHERE id = $3
+                `, [answer.substring(0, 10000), keywords, existing.rows[0].id]);
+                console.log('📚 [IA] Conhecimento existente ATUALIZADO com mais informações');
+            } else {
+                console.log('ℹ️ [IA] Conhecimento similar já existe, mantendo o existente');
+            }
+        }
+        
+        // SEMPRE registrar no histórico de auto-aprendizado
+        try {
+            await client.query(`
+                INSERT INTO ia_auto_learning_history 
+                (question, answer, source, confidence_score, keywords)
+                VALUES ($1, $2, 'tavily', 70, $3)
+            `, [question, answer.substring(0, 5000), keywords]);
+        } catch (historyError) {
+            // Ignorar erro se tabela não existir ainda
         }
     } catch (error) {
         console.error('Erro ao aprender com Tavily:', error);
@@ -2613,17 +2652,115 @@ async function findBestAnswer(userMessage, userId) {
             });
         }
         
-        // Salvar conversa
+        // Salvar conversa E aprender automaticamente
         try {
             if (userId) {
                 await client.query(`
                     INSERT INTO ia_conversations (user_id, message, response, confidence_score)
                     VALUES ($1, $2, $3, $4)
                 `, [userId, userMessage, bestAnswer || 'Não encontrei uma resposta específica.', bestScore]);
+                
+                // AUTO-APRENDIZADO: Se encontrou resposta (especialmente da web), aprender e gravar
+                if (bestAnswer && bestScore > 50) {
+                    try {
+                        // Verificar se auto-aprendizado está habilitado
+                        const autoLearnConfig = await client.query(`
+                            SELECT * FROM ia_auto_learning_config
+                            ORDER BY id DESC LIMIT 1
+                        `);
+                        
+                        const shouldLearn = autoLearnConfig.rows.length === 0 || 
+                                          autoLearnConfig.rows[0].is_enabled === true;
+                        
+                        if (shouldLearn && bestSource && bestSource.includes('web')) {
+                            // Aprender de resposta da web
+                            await learnFromTavily(userMessage, bestAnswer, client);
+                            
+                            // Registrar no histórico de auto-aprendizado
+                            const keywords = extractKeywords(userMessage);
+                            await client.query(`
+                                INSERT INTO ia_auto_learning_history 
+                                (question, answer, source, confidence_score, keywords)
+                                VALUES ($1, $2, 'tavily', $3, $4)
+                            `, [userMessage, bestAnswer.substring(0, 5000), bestScore, keywords]);
+                            
+                            console.log('🧠 [IA] Auto-aprendizado: Resposta gravada na memória!');
+                        } else if (shouldLearn && bestAnswer) {
+                            // Gravar qualquer resposta útil (mesmo que não seja da web)
+                            const keywords = extractKeywords(userMessage);
+                            await client.query(`
+                                INSERT INTO ia_auto_learning_history 
+                                (question, answer, source, confidence_score, keywords)
+                                VALUES ($1, $2, 'conversation', $3, $4)
+                                ON CONFLICT DO NOTHING
+                            `, [userMessage, bestAnswer.substring(0, 5000), bestScore, keywords]);
+                        }
+                    } catch (learnError) {
+                        console.error('Erro no auto-aprendizado:', learnError);
+                        // Não bloquear resposta por erro no aprendizado
+                    }
+                }
             }
         } catch (error) {
             console.error('Erro ao salvar conversa:', error);
             // Não bloquear a resposta por erro ao salvar
+        }
+        
+        // AUTO-PESQUISA: Se não encontrou resposta e auto-pesquisa está habilitada
+        if (!bestAnswer || bestScore < 40) {
+            try {
+                const autoLearnConfig = await client.query(`
+                    SELECT * FROM ia_auto_learning_config
+                    ORDER BY id DESC LIMIT 1
+                `);
+                
+                if (autoLearnConfig.rows.length > 0 && autoLearnConfig.rows[0].auto_search_enabled) {
+                    const config = autoLearnConfig.rows[0];
+                    
+                    // Verificar limite diário
+                    const today = new Date().toISOString().split('T')[0];
+                    const dailyCount = await client.query(`
+                        SELECT search_count FROM ia_daily_search_count
+                        WHERE search_date = $1
+                    `, [today]);
+                    
+                    const currentCount = dailyCount.rows.length > 0 ? 
+                                       parseInt(dailyCount.rows[0].search_count) : 0;
+                    
+                    if (currentCount < config.max_searches_per_day) {
+                        console.log('🔍 [IA] Auto-pesquisa: Buscando automaticamente para melhorar...');
+                        
+                        // Buscar automaticamente
+                        if (webSearchConfig && webSearchConfig.is_enabled) {
+                            const autoSearchResult = await searchWithTavily(userMessage, webSearchConfig);
+                            
+                            if (autoSearchResult && autoSearchResult.results && autoSearchResult.results.length > 0) {
+                                const autoAnswer = autoSearchResult.results.slice(0, 3).map((r, idx) => 
+                                    `${idx + 1}. **${r.title}**\n${(r.snippet || r.content || '').substring(0, 250)}${(r.snippet || r.content || '').length > 250 ? '...' : ''}`
+                                ).join('\n\n');
+                                
+                                // Aprender automaticamente
+                                await learnFromTavily(userMessage, autoAnswer, client);
+                                
+                                // Atualizar contador diário
+                                await client.query(`
+                                    INSERT INTO ia_daily_search_count (search_date, search_count)
+                                    VALUES ($1, 1)
+                                    ON CONFLICT (search_date) 
+                                    DO UPDATE SET search_count = ia_daily_search_count.search_count + 1
+                                `, [today]);
+                                
+                                console.log('✅ [IA] Auto-pesquisa: Aprendeu e gravou automaticamente!');
+                            }
+                        }
+                    } else {
+                        console.log('⚠️ [IA] Auto-pesquisa: Limite diário atingido');
+                    }
+                }
+            } catch (autoSearchError) {
+                console.error('Erro na auto-pesquisa:', autoSearchError);
+                // Não bloquear resposta por erro na auto-pesquisa
+            }
         }
         
         // CAMADA 5: Raciocínio Independente - Se não encontrou resposta, pensar sobre o que sabe
