@@ -1503,18 +1503,33 @@ router.post('/books/import-info', protectAdmin, asyncHandler(async (req, res) =>
         try {
             const keywords = extractKeywords(title + ' ' + authors + ' ' + description + ' ' + categories);
             
+            // Preparar conteúdo seguro
+            const content = `Autor(es): ${authors || 'Não informado'}\n\nCategorias: ${categories || 'Não informado'}\n\nDescrição:\n${description || 'Sem descrição disponível'}\n\nFonte: Google Books (ID: ${bookId})`;
+            
+            console.log('📚 Adicionando livro:', { title, bookId, adminId });
+            
+            // created_by é INTEGER, mas adminId pode ser string - usar NULL se não for número
+            let createdByValue = null;
+            if (adminId) {
+                const adminIdNum = parseInt(adminId);
+                createdByValue = isNaN(adminIdNum) ? null : adminIdNum;
+            }
+            
             await client.query(
                 `INSERT INTO ia_knowledge_base (title, content, keywords, source_type, source_reference, created_by)
-                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                 VALUES ($1, $2, $3, $4, $5, $6)
+                 RETURNING id`,
                 [
                     `Livro: ${title}`,
-                    `Autor(es): ${authors}\n\nCategorias: ${categories}\n\nDescrição:\n${description}\n\nFonte: Google Books (ID: ${bookId})`,
-                    keywords,
+                    content,
+                    keywords, // Array de strings
                     'book',
                     `google_books:${bookId}`,
-                    adminId
+                    createdByValue
                 ]
             );
+            
+            console.log('✅ Livro adicionado com sucesso');
             
             res.json({
                 message: `Informações do livro "${title}" adicionadas com sucesso!`,
@@ -1524,6 +1539,10 @@ router.post('/books/import-info', protectAdmin, asyncHandler(async (req, res) =>
                     description
                 }
             });
+        } catch (dbError) {
+            console.error('❌ Erro ao inserir no banco:', dbError);
+            console.error('Stack:', dbError.stack);
+            throw dbError;
         } finally {
             client.release();
         }
