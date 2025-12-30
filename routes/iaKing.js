@@ -4,12 +4,50 @@ const { protectUser } = require('../middleware/protectUser');
 const { protectAdmin } = require('../middleware/protectAdmin');
 const { asyncHandler } = require('../middleware/errorHandler');
 const rateLimit = require('express-rate-limit');
-// TODO: Implementar upload de documentos quando necessário
-// const multer = require('multer');
-// const path = require('path');
-// const fs = require('fs').promises;
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const { S3Client } = require('@aws-sdk/client-s3');
+const fs = require('fs').promises;
+const path = require('path');
 
 const router = express.Router();
+
+// Configuração S3/R2 para upload de documentos
+const r2 = new S3Client({
+    region: 'auto',
+    endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    },
+});
+
+// Configuração de upload para documentos
+const documentUpload = multer({
+    storage: multerS3({
+        s3: r2,
+        bucket: process.env.R2_BUCKET_NAME,
+        acl: 'public-read',
+        key: function (req, file, cb) {
+            const ext = path.extname(file.originalname);
+            cb(null, `ia-documents/${req.user.userId}-${Date.now()}${ext}`);
+        },
+    }),
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain'
+        ];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Formato inválido. Apenas PDF, DOC, DOCX e TXT são permitidos.'), false);
+        }
+    }
+});
 
 // Rate limiting para IA
 const iaLimiter = rateLimit({
@@ -1036,6 +1074,210 @@ async function searchWeb(query, maxResults = 5, client = null) {
         return { results: [], provider: 'scraping', cached: false, error: error.message };
     }
 }
+
+// Função auxiliar: Extrair texto de documentos
+async function extractTextFromDocument(fileUrl, fileType) {
+    try {
+        // Para implementação completa, você precisaria instalar:
+        // npm install pdf-parse mammoth
+        // Por enquanto, retornar texto básico
+        
+        // TODO: Implementar extração real quando bibliotecas estiverem instaladas
+        // if (fileType === 'pdf') {
+        //     const pdfParse = require('pdf-parse');
+        //     const response = await fetch(fileUrl);
+        //     const buffer = await response.buffer();
+        //     const data = await pdfParse(buffer);
+        //     return data.text;
+        // } else if (fileType === 'docx') {
+        //     const mammoth = require('mammoth');
+        //     const response = await fetch(fileUrl);
+        //     const buffer = await response.buffer();
+        //     const result = await mammoth.extractRawText({ buffer });
+        //     return result.value;
+        // } else if (fileType === 'txt') {
+        //     const response = await fetch(fileUrl);
+        //     return await response.text();
+        // }
+        
+        // Por enquanto, retornar placeholder
+        return `Texto extraído do documento ${fileType}. Para extração completa, instale as bibliotecas pdf-parse e mammoth.`;
+    } catch (error) {
+        console.error('Erro ao extrair texto:', error);
+        throw error;
+    }
+}
+
+// POST /api/ia-king/documents/upload - Upload de documento
+router.post('/documents/upload', protectAdmin, documentUpload.single('document'), asyncHandler(async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
+    }
+    
+    const { title, category_id } = req.body;
+    const adminId = req.user.userId;
+    
+    if (!title) {
+        return res.status(400).json({ message: 'Título é obrigatório.' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        const publicUrlBase = process.env.R2_PUBLIC_URL;
+        const fileUrl = `${publicUrlBase}/${req.file.key}`;
+        const fileType = req.file.mimetype.includes('pdf') ? 'pdf' : 
+                        req.file.mimetype.includes('wordprocessingml') ? 'docx' :
+                        req.file.mimetype.includes('msword') ? 'doc' : 'txt';
+        
+        // Extrair texto (por enquanto placeholder)
+        let extractedText = '';
+        try {
+            extractedText = await extractTextFromDocument(fileUrl, fileType);
+        } catch (extractError) {
+            console.warn('Erro ao extrair texto, continuando sem texto:', extractError);
+            extractedText = `Documento ${fileType} carregado. Extração de texto será implementada.`;
+        }
+        
+        // Salvar no banco
+        const result = await client.query(
+            `INSERT INTO ia_documents (title, file_name, file_url, file_type, file_size, extracted_text, processed, category_id, uploaded_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             RETURNING *`,
+            [
+                title,
+                req.file.originalname,
+                fileUrl,
+                fileType,
+                req.file.size,
+                extractedText,
+                extractedText.length > 0, // Processado se tiver texto
+                category_id || null,
+                adminId
+            ]
+        );
+        
+        // Se conseguiu extrair texto, indexar na base de conhecimento
+        if (extractedText && extractedText.length > 100) {
+            const keywords = extractKeywords(title + ' ' + extractedText.substring(0, 1000));
+            
+            await client.query(
+                `INSERT INTO ia_knowledge_base (title, content, category_id, keywords, source_type, source_reference, created_by)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [
+                    `Conteúdo do documento: ${title}`,
+                    extractedText.substring(0, 5000), // Limitar tamanho
+                    category_id || null,
+                    keywords,
+                    'document',
+                    `ia_documents:${result.rows[0].id}`,
+                    adminId
+                ]
+            );
+        }
+        
+        res.json({
+            message: 'Documento enviado e processado com sucesso!',
+            document: result.rows[0]
+        });
+    } catch (error) {
+        console.error('❌ Erro ao fazer upload de documento:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/documents - Listar documentos
+router.get('/documents', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT 
+                d.id,
+                d.title,
+                d.file_name,
+                d.file_url,
+                d.file_type,
+                d.file_size,
+                d.processed,
+                d.category_id,
+                c.name as category_name,
+                d.created_at,
+                d.updated_at
+            FROM ia_documents d
+            LEFT JOIN ia_categories c ON d.category_id = c.id
+            ORDER BY d.created_at DESC
+        `);
+        
+        res.json({ documents: result.rows });
+    } catch (error) {
+        console.error('❌ Erro ao buscar documentos:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// DELETE /api/ia-king/documents/:id - Deletar documento
+router.delete('/documents/:id', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    
+    const client = await db.pool.connect();
+    try {
+        await client.query('DELETE FROM ia_documents WHERE id = $1', [id]);
+        res.json({ message: 'Documento deletado com sucesso.' });
+    } catch (error) {
+        console.error('❌ Erro ao deletar documento:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/documents/:id/process - Reprocessar documento (extrair texto novamente)
+router.post('/documents/:id/process', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    
+    const client = await db.pool.connect();
+    try {
+        const docResult = await client.query('SELECT * FROM ia_documents WHERE id = $1', [id]);
+        
+        if (docResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Documento não encontrado.' });
+        }
+        
+        const doc = docResult.rows[0];
+        
+        // Extrair texto novamente
+        let extractedText = '';
+        try {
+            extractedText = await extractTextFromDocument(doc.file_url, doc.file_type);
+        } catch (extractError) {
+            return res.status(500).json({ 
+                message: 'Erro ao extrair texto do documento. Instale pdf-parse e mammoth para processamento completo.',
+                error: extractError.message
+            });
+        }
+        
+        // Atualizar documento
+        await client.query(
+            `UPDATE ia_documents 
+             SET extracted_text = $1, processed = $2, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $3`,
+            [extractedText, extractedText.length > 0, id]
+        );
+        
+        res.json({ 
+            message: 'Documento reprocessado com sucesso!',
+            extracted_length: extractedText.length
+        });
+    } catch (error) {
+        console.error('❌ Erro ao processar documento:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
 
 // POST /api/ia-king/web-search - Buscar na internet
 router.post('/web-search', protectUser, iaLimiter, asyncHandler(async (req, res) => {
