@@ -4,9 +4,10 @@ const { protectUser } = require('../middleware/protectUser');
 const { protectAdmin } = require('../middleware/protectAdmin');
 const { asyncHandler } = require('../middleware/errorHandler');
 const rateLimit = require('express-rate-limit');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs').promises;
+// TODO: Implementar upload de documentos quando necessário
+// const multer = require('multer');
+// const path = require('path');
+// const fs = require('fs').promises;
 
 const router = express.Router();
 
@@ -15,12 +16,6 @@ const iaLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minuto
     max: 20, // 20 requisições por minuto
     message: 'Muitas requisições. Aguarde um momento antes de tentar novamente.'
-});
-
-// Configuração de upload para documentos
-const upload = multer({
-    dest: 'uploads/ia-documents/',
-    limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
 // Função auxiliar: Extrair palavras-chave de um texto
