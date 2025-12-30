@@ -2550,21 +2550,37 @@ async function findBestAnswer(userMessage, userId) {
         // Verificar se a resposta veio de um livro processado
         let hasBookKnowledge = false;
         let bookAnswerScore = 0;
+        const bookSources = ['book_training', 'tavily_book', 'tavily_book_trained'];
         
         if (bestAnswer && bestSource === 'knowledge') {
-            // Verificar se a resposta veio de um livro
-            const bookSources = ['book_training', 'tavily_book', 'tavily_book_trained'];
-            if (candidates && candidates.length > 0) {
-                const topCandidate = candidates[0];
-                if (topCandidate && topCandidate.kb && bookSources.includes(topCandidate.kb.source_type)) {
+            // Verificar se a resposta veio de um livro - buscar na base de conhecimento novamente se necessário
+            try {
+                const bookCheck = await client.query(`
+                    SELECT source_type FROM ia_knowledge_base
+                    WHERE is_active = true
+                    AND source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+                    AND (
+                        LOWER(title) LIKE LOWER($1) OR
+                        LOWER(content) LIKE LOWER($1)
+                    )
+                    LIMIT 1
+                `, [`%${userMessage.substring(0, 50)}%`]);
+                
+                if (bookCheck.rows.length > 0) {
                     hasBookKnowledge = true;
-                    bookAnswerScore = topCandidate.score;
-                    console.log('📚 [IA] RESPOSTA ENCONTRADA EM LIVRO:', {
-                        livro: topCandidate.kb.title.substring(0, 50),
+                    bookAnswerScore = bestScore; // Usar o score atual
+                    console.log('📚 [IA] RESPOSTA ENCONTRADA EM LIVRO (verificado):', {
                         score: bookAnswerScore,
-                        source_type: topCandidate.kb.source_type
+                        source_type: bookCheck.rows[0].source_type
                     });
+                } else if (bestScore >= 200) {
+                    // Se score muito alto (200+), provavelmente é de livro devido ao bonus
+                    hasBookKnowledge = true;
+                    bookAnswerScore = bestScore;
+                    console.log('📚 [IA] RESPOSTA PROVAVELMENTE DE LIVRO (score alto):', bookAnswerScore);
                 }
+            } catch (error) {
+                console.error('Erro ao verificar livro:', error);
             }
         }
         
