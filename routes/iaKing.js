@@ -463,6 +463,64 @@ router.get('/stats', protectAdmin, asyncHandler(async (req, res) => {
 }));
 
 // ============================================
+// ROTAS DE DOCUMENTOS (ADMIN)
+// ============================================
+
+// GET /api/ia-king/documents
+router.get('/documents', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT d.*, c.name as category_name
+            FROM ia_documents d
+            LEFT JOIN ia_categories c ON d.category_id = c.id
+            ORDER BY d.created_at DESC
+        `);
+        res.json({ documents: result.rows });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/documents/upload
+router.post('/documents/upload', protectAdmin, asyncHandler(async (req, res) => {
+    // Esta rota precisa de multer - será implementada separadamente se necessário
+    res.status(501).json({ error: 'Upload de documentos será implementado em breve' });
+}));
+
+// POST /api/ia-king/documents/:id/process
+router.post('/documents/:id/process', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    
+    const client = await db.pool.connect();
+    try {
+        // Marcar documento como processado (processamento real será feito em background)
+        await client.query(`
+            UPDATE ia_documents
+            SET processed = true, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1
+        `, [id]);
+        
+        res.json({ message: 'Documento marcado para processamento' });
+    } finally {
+        client.release();
+    }
+}));
+
+// DELETE /api/ia-king/documents/:id
+router.delete('/documents/:id', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    
+    const client = await db.pool.connect();
+    try {
+        await client.query('DELETE FROM ia_documents WHERE id = $1', [id]);
+        res.json({ message: 'Documento deletado com sucesso' });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
 // ROTA DE TREINAMENTO INICIAL
 // ============================================
 
