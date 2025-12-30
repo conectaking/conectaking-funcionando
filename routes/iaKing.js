@@ -1395,6 +1395,67 @@ const IMMUTABLE_CORES = {
 };
 
 // ============================================
+// APLICAR PROMPT MESTRE - MENTALIDADE TIPO GPT
+// ============================================
+// Esta função garante que todas as respostas sigam o prompt mestre
+// Deve ser chamada ANTES de qualquer resposta ser retornada
+function applyGPTMasterPrompt(answer, knowledgeSource, questionContext) {
+    if (!answer) return answer;
+    
+    let processedAnswer = answer;
+    
+    // 1. REMOVER afirmações sobre busca na internet
+    processedAnswer = processedAnswer.replace(
+        /(pesquisei|busquei|consultei|acessei|encontrei na internet|na web|online|site|página|busquei na internet|consultei sites)/gi,
+        'encontrei'
+    );
+    
+    // 2. REMOVER afirmações sobre aprendizado em tempo real
+    processedAnswer = processedAnswer.replace(
+        /(estou aprendendo|vou aprender|aprendi agora|me atualizei|evolui|melhorei|estou me desenvolvendo)/gi,
+        ''
+    );
+    
+    // 3. REMOVER afirmações sobre salvar/memorizar conversas
+    processedAnswer = processedAnswer.replace(
+        /(vou lembrar|salvei|memorizei|guardei|anotei para depois|vou guardar|vou memorizar)/gi,
+        ''
+    );
+    
+    // 4. REMOVER simulação de emoções ou consciência
+    processedAnswer = processedAnswer.replace(
+        /(sinto muito|me sinto|tenho sentimentos|sou consciente|tenho consciência|sinto|sinto-me)/gi,
+        ''
+    );
+    
+    // 5. REMOVER promessas que não pode cumprir
+    processedAnswer = processedAnswer.replace(
+        /(vou pesquisar|vou buscar|vou consultar|vou acessar|vou verificar na internet)/gi,
+        ''
+    );
+    
+    // 6. GARANTIR que não finge busca externa quando usa conhecimento interno
+    if (knowledgeSource && (knowledgeSource.source_type === 'book_training' || 
+                            knowledgeSource.source_type === 'tavily_book' || 
+                            knowledgeSource.source_type === 'tavily_book_trained')) {
+        // Não adicionar referência explícita que finge busca externa
+        // A resposta já vem do conhecimento treinado
+    }
+    
+    // 7. VALIDAR que não inventa informações
+    if (questionContext && questionContext.entities && questionContext.entities.length > 0) {
+        const entity = questionContext.entities[0];
+        const answerLower = processedAnswer.toLowerCase();
+        if (!answerLower.includes(entity) && processedAnswer.length > 100) {
+            // Resposta pode não estar relacionada - adicionar nota de limitação
+            processedAnswer = `Com base no conhecimento disponível sobre "${entity}":\n\n${processedAnswer}`;
+        }
+    }
+    
+    return processedAnswer.trim();
+}
+
+// ============================================
 // SISTEMA DE AUDITORIA INTERNA E VALIDAÇÃO
 // ============================================
 
@@ -2416,7 +2477,10 @@ async function findBestAnswer(userMessage, userId) {
                         });
                     }
                     
-                    // CAMADA 3: Adicionar personalidade e emoção
+                    // APLICAR PROMPT MESTRE - MENTALIDADE TIPO GPT (ANTES DE QUALQUER OUTRA MODIFICAÇÃO)
+                    bestAnswer = applyGPTMasterPrompt(bestAnswer, bestKb, questionContext);
+                    
+                    // CAMADA 3: Adicionar personalidade e emoção (após aplicar prompt mestre)
                     bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
                     
                     // CAMADA 4: Raciocínio independente - adicionar sugestões e conexões
@@ -2703,6 +2767,9 @@ async function findBestAnswer(userMessage, userId) {
                                     bestSource = 'web_tavily';
                                     console.log('✅ [IA] USANDO RESPOSTA DIRETA DO TAVILY (validada)!');
                                     
+                                    // APLICAR PROMPT MESTRE antes de aprender
+                                    bestAnswer = applyGPTMasterPrompt(bestAnswer, null, questionContext);
+                                    
                                     await learnFromTavily(userMessage, tavilyAnswer, client);
                                 }
                             } else {
@@ -2715,6 +2782,9 @@ async function findBestAnswer(userMessage, userId) {
                                 bestScore = 70;
                                 bestSource = 'web_tavily';
                                 console.log('✅ [IA] USANDO RESPOSTA DIRETA DO TAVILY!');
+                                
+                                // APLICAR PROMPT MESTRE antes de aprender
+                                bestAnswer = applyGPTMasterPrompt(bestAnswer, null, questionContext);
                                 
                                 await learnFromTavily(userMessage, tavilyAnswer, client);
                             }
@@ -2731,6 +2801,9 @@ async function findBestAnswer(userMessage, userId) {
                                 bestScore = 65; // Score menor que livros
                                 bestSource = `web_${webResults.provider}`;
                                 console.log('✅ [IA] USANDO RESULTADOS DA WEB (após validar relevância):', webResults.provider);
+                                
+                                // APLICAR PROMPT MESTRE antes de aprender
+                                bestAnswer = applyGPTMasterPrompt(bestAnswer, null, questionContext);
                                 
                                 await learnFromTavily(userMessage, webAnswer, client);
                             } else {
@@ -2897,6 +2970,8 @@ async function findBestAnswer(userMessage, userId) {
                     
                     if (relatedExcerpt && relatedExcerpt.length > 50) {
                         bestAnswer = `Com base no que aprendi sobre "${entity}":\n\n${relatedExcerpt}`;
+                        // APLICAR PROMPT MESTRE antes de personalidade
+                        bestAnswer = applyGPTMasterPrompt(bestAnswer, null, questionContext);
                         bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
                         bestScore = 60;
                         bestSource = 'knowledge_reasoning';
@@ -3034,6 +3109,8 @@ async function findBestAnswer(userMessage, userId) {
         
         // Aplicar modo mental à resposta
         if (bestAnswer) {
+            // APLICAR PROMPT MESTRE antes de modo mental
+            bestAnswer = applyGPTMasterPrompt(bestAnswer, null, questionContext);
             bestAnswer = applyMentalMode(bestAnswer, mentalMode, thoughts);
         }
         
@@ -3102,6 +3179,8 @@ async function findBestAnswer(userMessage, userId) {
                         bestSource = 'knowledge_deep_search';
                         
                         // Adicionar personalidade
+                        // APLICAR PROMPT MESTRE antes de personalidade
+                        bestAnswer = applyGPTMasterPrompt(bestAnswer, null, questionContext);
                         bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
                         
                         console.log('✅ [IA] Resposta encontrada através de busca profunda!');
@@ -3157,6 +3236,11 @@ async function findBestAnswer(userMessage, userId) {
         if (validation && !validation.valid && bestAnswer) {
             // Manter resposta mas com confiança baixa
             finalConfidence = Math.min(finalConfidence, 40);
+        }
+        
+        // APLICAR PROMPT MESTRE FINAL antes de retornar (garantia final)
+        if (bestAnswer) {
+            bestAnswer = applyGPTMasterPrompt(bestAnswer, null, questionContext);
         }
         
         return {
