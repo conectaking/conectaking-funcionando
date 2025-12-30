@@ -189,41 +189,111 @@ async function findBestAnswer(userMessage, userId) {
         try {
             const documentsQuery = `
                 SELECT 
-                    id, title, extracted_text
+                    id, title, extracted_text, file_type
                 FROM ia_documents
-                WHERE processed = true AND extracted_text IS NOT NULL
+                WHERE processed = true 
+                AND extracted_text IS NOT NULL 
+                AND LENGTH(extracted_text) > 0
             `;
             documentsResult = await client.query(documentsQuery);
         } catch (error) {
             // Tabela não existe ainda, continuar sem ela
-            console.warn('Tabela ia_documents não existe ainda');
+            console.warn('Tabela ia_documents não existe ainda:', error.message);
         }
         
+        console.log(`📚 Buscando em ${documentsResult.rows.length} documento(s) processado(s)`);
+        
         for (const doc of documentsResult.rows) {
-            const score = calculateSimilarity(messageLower, doc.extracted_text.substring(0, 1000));
+            if (!doc.extracted_text || doc.extracted_text.trim().length === 0) {
+                console.log(`⏭️ Documento "${doc.title}" não tem texto extraído`);
+                continue;
+            }
             
-            if (score > bestScore && score > 30) {
+            // Buscar no título primeiro (maior peso)
+            const titleScore = calculateSimilarity(messageLower, doc.title.toLowerCase()) * 1.5;
+            
+            // Buscar em todo o texto (não apenas primeiros 1000 caracteres)
+            // Dividir o texto em chunks para melhor busca
+            const textLower = doc.extracted_text.toLowerCase();
+            const textLength = textLower.length;
+            
+            // Buscar em múltiplos trechos do documento
+            let maxTextScore = 0;
+            const chunkSize = 2000; // Chunks de 2000 caracteres
+            const overlap = 500; // Overlap para não perder contexto
+            
+            for (let i = 0; i < textLength; i += chunkSize - overlap) {
+                const chunk = textLower.substring(i, Math.min(i + chunkSize, textLength));
+                const chunkScore = calculateSimilarity(messageLower, chunk);
+                if (chunkScore > maxTextScore) {
+                    maxTextScore = chunkScore;
+                }
+            }
+            
+            // Combinar score do título e do texto
+            let score = Math.max(titleScore, maxTextScore);
+            
+            // Bônus se palavras-chave da mensagem aparecem no título
+            const messageWords = messageLower.split(/\W+/).filter(w => w.length > 2);
+            const titleWords = doc.title.toLowerCase().split(/\W+/);
+            const titleMatches = messageWords.filter(mw => titleWords.some(tw => tw.includes(mw) || mw.includes(tw))).length;
+            if (titleMatches > 0) {
+                score += (titleMatches / messageWords.length) * 30;
+            }
+            
+            // Bônus se palavras-chave aparecem no texto
+            const textMatches = messageWords.filter(mw => textLower.includes(mw)).length;
+            if (textMatches > 0) {
+                score += (textMatches / messageWords.length) * 20;
+            }
+            
+            // Threshold mais baixo para documentos (20 ao invés de 30)
+            if (score > bestScore && score > 20) {
                 bestScore = score;
-                // Extrair trecho relevante
-                const textLower = doc.extracted_text.toLowerCase();
-                const messageWords = messageLower.split(/\W+/).filter(w => w.length > 2);
-                const firstMatch = messageWords.find(w => textLower.includes(w));
                 
-                let excerpt = doc.extracted_text.substring(0, 300);
-                if (firstMatch) {
-                    const index = textLower.indexOf(firstMatch);
-                    if (index > 0) {
-                        const start = Math.max(0, index - 150);
-                        excerpt = doc.extracted_text.substring(start, start + 300);
+                // Extrair trecho relevante com contexto
+                let excerpt = '';
+                let bestMatchIndex = -1;
+                let bestMatchScore = 0;
+                
+                // Encontrar o melhor trecho que contém palavras da mensagem
+                for (const word of messageWords) {
+                    const index = textLower.indexOf(word);
+                    if (index >= 0) {
+                        const start = Math.max(0, index - 200);
+                        const end = Math.min(textLength, index + 400);
+                        const snippet = doc.extracted_text.substring(start, end);
+                        const snippetScore = calculateSimilarity(messageLower, snippet.toLowerCase());
+                        
+                        if (snippetScore > bestMatchScore) {
+                            bestMatchScore = snippetScore;
+                            bestMatchIndex = index;
+                            excerpt = snippet;
+                        }
                     }
                 }
+                
+                // Se não encontrou trecho específico, usar início do documento
+                if (!excerpt || excerpt.length === 0) {
+                    excerpt = doc.extracted_text.substring(0, 500);
+                }
+                
+                // Limpar e formatar excerpt
+                excerpt = excerpt.trim();
+                if (excerpt.length > 500) {
+                    excerpt = excerpt.substring(0, 500) + '...';
+                }
+                
+                const docType = doc.file_type === 'pdf' ? 'livro' : 'documento';
                 
                 bestMatch = {
                     type: 'document',
                     id: doc.id,
-                    answer: `Com base no documento "${doc.title}":\n\n${excerpt}...`,
+                    answer: `Com base no ${docType} "${doc.title}":\n\n${excerpt}\n\n*Fonte: ${doc.title}*`,
                     confidence: Math.min(score, 100)
                 };
+                
+                console.log(`✅ Encontrado em documento "${doc.title}" com score ${score.toFixed(2)}`);
             }
         }
         
