@@ -3,32 +3,23 @@
 -- Descrição: Adiciona novo tipo de conta e sistema de controle de módulos por plano
 
 -- ============================================
--- PARTE 1: Adicionar 'individual_com_logo' ao CHECK constraint de account_type
+-- PARTE 1: Adicionar 'individual_com_logo' ao ENUM account_type_enum
 -- ============================================
 
--- Primeiro, verificar se a constraint existe e qual é o nome dela
+-- Adicionar valor ao ENUM se não existir
 DO $$ 
-DECLARE
-    constraint_name TEXT;
 BEGIN
-    -- Buscar nome da constraint
-    SELECT conname INTO constraint_name
-    FROM pg_constraint
-    WHERE conrelid = 'users'::regclass
-    AND contype = 'c'
-    AND pg_get_constraintdef(oid) LIKE '%account_type%';
-    
-    IF constraint_name IS NOT NULL THEN
-        -- Remover constraint antiga
-        EXECUTE format('ALTER TABLE users DROP CONSTRAINT IF EXISTS %I', constraint_name);
-        RAISE NOTICE 'Constraint % removida', constraint_name;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_enum 
+        WHERE enumlabel = 'individual_com_logo' 
+        AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'account_type_enum')
+    ) THEN
+        ALTER TYPE account_type_enum ADD VALUE 'individual_com_logo';
+        RAISE NOTICE 'Valor individual_com_logo adicionado ao account_type_enum com sucesso!';
+    ELSE
+        RAISE NOTICE 'Valor individual_com_logo já existe no account_type_enum.';
     END IF;
 END $$;
-
--- Criar nova constraint com individual_com_logo
-ALTER TABLE users 
-ADD CONSTRAINT users_account_type_check 
-CHECK (account_type IN ('free', 'individual', 'individual_com_logo', 'business_owner', 'team_member'));
 
 -- ============================================
 -- PARTE 2: Criar tabela de disponibilidade de módulos por plano
