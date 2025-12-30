@@ -82,10 +82,67 @@ async function searchWeb(query) {
     }
 }
 
+// Função para detectar saudações
+function detectGreeting(message) {
+    const greetings = [
+        'oi', 'olá', 'ola', 'hey', 'eae', 'e aí', 'eai', 'opa', 'fala', 'fala aí',
+        'bom dia', 'boa tarde', 'boa noite', 'bom dia', 'good morning', 'hello',
+        'hi', 'tudo bem', 'td bem', 'como vai', 'como está', 'como esta',
+        'tudo bom', 'td bom', 'beleza', 'salve', 'e aí', 'eai'
+    ];
+    
+    const lowerMessage = message.toLowerCase().trim();
+    
+    // Verificar se é uma saudação simples
+    for (const greeting of greetings) {
+        if (lowerMessage === greeting || lowerMessage.startsWith(greeting + ' ') || lowerMessage.endsWith(' ' + greeting)) {
+            return true;
+        }
+    }
+    
+    // Verificar padrões de saudação
+    const greetingPatterns = [
+        /^(oi|olá|ola|hey|eae|opa|fala|salve)[\s!.,]*$/i,
+        /^(bom\s+dia|boa\s+tarde|boa\s+noite)[\s!.,]*$/i,
+        /^(tudo\s+bem|td\s+bem|tudo\s+bom|td\s+bom)[\s!?.,]*$/i,
+        /^(como\s+(vai|está|esta|vcs|vocês))[\s!?.,]*$/i
+    ];
+    
+    for (const pattern of greetingPatterns) {
+        if (pattern.test(lowerMessage)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Função para gerar resposta de saudação educada
+function generateGreetingResponse() {
+    const greetings = [
+        "Olá! 😊 Tudo bem? Como posso te ajudar hoje?",
+        "Oi! Tudo bem? Estou aqui para tirar todas as suas dúvidas sobre o Conecta King! 😊",
+        "Olá! Como vai? Fico feliz em ajudar você com qualquer dúvida sobre o sistema! 😊",
+        "Oi! Tudo bem? Estou pronta para responder suas perguntas sobre o Conecta King! 😊",
+        "Olá! Como posso te ajudar hoje? Tenho todas as informações sobre o Conecta King! 😊"
+    ];
+    
+    return greetings[Math.floor(Math.random() * greetings.length)];
+}
+
 // Função para encontrar melhor resposta
 async function findBestAnswer(userMessage, userId) {
     const client = await db.pool.connect();
     try {
+        // Verificar se é uma saudação primeiro
+        if (detectGreeting(userMessage)) {
+            return {
+                answer: generateGreetingResponse(),
+                confidence: 100,
+                source: 'greeting'
+            };
+        }
+        
         let bestAnswer = null;
         let bestScore = 0;
         let bestSource = null;
@@ -181,8 +238,17 @@ async function findBestAnswer(userMessage, userId) {
             `, [userId, userMessage, bestAnswer || 'Não encontrei uma resposta específica.', bestScore, bestSource || 'none']);
         }
         
+        // Resposta padrão mais educada e útil
+        if (!bestAnswer || bestScore < 30) {
+            return {
+                answer: `Olá! 😊 Não encontrei uma resposta específica para sua pergunta, mas posso te ajudar com:\n\n• Informações sobre planos e valores\n• Como usar os módulos do sistema\n• Como editar e personalizar seu cartão\n• Como compartilhar seu cartão\n• Dúvidas sobre funcionalidades\n\nPode reformular sua pergunta de outra forma ou me perguntar sobre algum desses tópicos? Estou aqui para ajudar! 😊`,
+                confidence: 0,
+                source: 'default'
+            };
+        }
+        
         return {
-            answer: bestAnswer || 'Desculpe, ainda não tenho uma resposta específica para isso. Pode reformular sua pergunta ou entrar em contato com o suporte?',
+            answer: bestAnswer,
             confidence: bestScore,
             source: bestSource || 'none'
         };
@@ -788,6 +854,246 @@ Você também pode usar o QR Code para compartilhamento físico (impressão em c
 
 Todas as visualizações são registradas e você pode acompanhar nos relatórios.`,
             keywords: ['compartilhar', 'link', 'QR code', 'como compartilhar', 'link único'],
+            category: 'Sistema'
+        });
+        
+        // 9. Informações sobre relatórios e analytics
+        knowledgeEntries.push({
+            title: 'Relatórios e Analytics do Conecta King',
+            content: `O Conecta King oferece relatórios completos para você acompanhar o desempenho do seu cartão virtual:
+
+**Métricas Disponíveis:**
+• Total de visualizações do cartão
+• Total de cliques nos links
+• Taxa de conversão (CTR)
+• Visualizações por período (7, 30, 90 dias)
+• Cliques por módulo/item
+• Top itens mais clicados
+
+**Como Acessar:**
+1. Acesse seu dashboard
+2. Clique na aba "Relatórios"
+3. Escolha o período que deseja visualizar
+4. Veja todas as métricas e gráficos
+
+Os relatórios ajudam você a entender como as pessoas estão interagindo com seu cartão e quais módulos são mais populares.`,
+            keywords: ['relatórios', 'analytics', 'estatísticas', 'métricas', 'visualizações', 'cliques', 'desempenho'],
+            category: 'Sistema'
+        });
+        
+        // 10. Informações sobre personalização
+        knowledgeEntries.push({
+            title: 'Personalização do Cartão Virtual',
+            content: `O Conecta King oferece várias opções de personalização:
+
+**Cores e Estilo:**
+• Escolha cores personalizadas para o cartão
+• Personalize o fundo (cor sólida ou imagem)
+• Ajuste o estilo dos botões e links
+
+**Avatar/Foto de Perfil:**
+• Faça upload da sua foto de perfil
+• Escolha o formato: circular, quadrado grande ou quadrado pequeno
+• A foto aparece no topo do seu cartão
+
+**Organização:**
+• Organize os módulos na ordem que preferir
+• Arraste e solte para reorganizar
+• Adicione ou remova módulos quando quiser
+
+**Banners e Carrosséis:**
+• Adicione banners de imagem
+• Crie carrosséis com múltiplas imagens
+• Personalize cada elemento visual
+
+Todas as alterações podem ser feitas a qualquer momento e são aplicadas imediatamente ao seu cartão.`,
+            keywords: ['personalizar', 'personalização', 'cores', 'estilo', 'avatar', 'foto', 'design', 'customizar'],
+            category: 'Sistema'
+        });
+        
+        // 11. Informações sobre módulos específicos - WhatsApp
+        knowledgeEntries.push({
+            title: 'Módulo WhatsApp',
+            content: `O módulo WhatsApp permite adicionar um botão direto para conversa no WhatsApp.
+
+**Como usar:**
+1. Adicione o módulo WhatsApp ao seu cartão
+2. Insira seu número de WhatsApp (com código do país, ex: 5511999999999)
+3. Adicione uma mensagem pré-definida (opcional)
+4. Escolha uma imagem/ícone para o botão
+5. Salve e publique
+
+Quando alguém clicar no botão, será direcionado para uma conversa no WhatsApp com você, já com a mensagem pré-definida (se você configurou).
+
+É uma forma muito eficiente de receber contatos e leads!`,
+            keywords: ['whatsapp', 'contato', 'conversa', 'chat', 'zap', 'wpp'],
+            category: 'Módulos'
+        });
+        
+        // 12. Informações sobre módulos específicos - Instagram
+        knowledgeEntries.push({
+            title: 'Módulo Instagram',
+            content: `O módulo Instagram permite adicionar um link direto para seu perfil no Instagram.
+
+**Como usar:**
+1. Adicione o módulo Instagram ao seu cartão
+2. Insira seu @ do Instagram (ex: @seuperfil)
+3. Adicione uma imagem personalizada (opcional)
+4. Salve e publique
+
+Quando alguém clicar, será direcionado para seu perfil no Instagram. É uma forma fácil de aumentar seus seguidores e engajamento!`,
+            keywords: ['instagram', 'insta', '@', 'perfil', 'seguidores'],
+            category: 'Módulos'
+        });
+        
+        // 13. Informações sobre PIX
+        knowledgeEntries.push({
+            title: 'Módulos PIX e PIX QR Code',
+            content: `O Conecta King oferece dois módulos relacionados ao PIX:
+
+**Módulo PIX:**
+• Exibe suas informações de PIX (chave, nome, etc.)
+• Permite que clientes copiem facilmente
+• Ideal para receber pagamentos
+
+**Módulo PIX QR Code:**
+• Gera um QR Code do seu PIX automaticamente
+• Cliente escaneia e paga direto
+• Mais rápido e prático
+
+**Como usar:**
+1. Adicione o módulo PIX ou PIX QR Code
+2. Configure suas informações de pagamento
+3. O QR Code é gerado automaticamente
+4. Clientes podem pagar escaneando o código
+
+Ambos os módulos facilitam muito o recebimento de pagamentos pelos seus produtos ou serviços!`,
+            keywords: ['pix', 'pagamento', 'QR code', 'qrcode', 'receber', 'dinheiro', 'transferência'],
+            category: 'Módulos'
+        });
+        
+        // 14. Informações sobre suporte
+        knowledgeEntries.push({
+            title: 'Suporte e Ajuda',
+            content: `O Conecta King oferece várias formas de suporte:
+
+**IA King (Assistente Virtual):**
+• Estou aqui para responder suas dúvidas!
+• Pergunte sobre funcionalidades, planos, módulos, etc.
+• Estou disponível 24/7
+
+**Seção de Ajuda:**
+• Acesse "Ajuda e Configurações" no dashboard
+• Encontre respostas para dúvidas comuns
+• Tutoriais e guias passo a passo
+
+**Suporte Técnico:**
+• Entre em contato via WhatsApp (verifique nas informações do seu plano)
+• Nossa equipe está pronta para ajudar
+• Resposta rápida e eficiente
+
+**Documentação:**
+• Base de conhecimento completa
+• Perguntas frequentes (FAQ)
+• Exemplos e casos de uso
+
+Não hesite em perguntar! Estou aqui para ajudar você a aproveitar ao máximo o Conecta King! 😊`,
+            keywords: ['suporte', 'ajuda', 'dúvida', 'problema', 'erro', 'como fazer', 'tutorial'],
+            category: 'Suporte'
+        });
+        
+        // 15. Informações sobre criação de conta
+        knowledgeEntries.push({
+            title: 'Como criar uma conta no Conecta King?',
+            content: `Criar uma conta no Conecta King é muito simples:
+
+**Passo a Passo:**
+1. Acesse o site do Conecta King
+2. Clique em "Criar Conta" ou "Registrar"
+3. Preencha seus dados (nome, email, senha)
+4. Confirme seu email (se solicitado)
+5. Faça login e comece a usar!
+
+**Período de Teste:**
+• Todos os novos usuários têm um período de teste gratuito
+• Explore todas as funcionalidades
+• Crie seu primeiro cartão virtual
+• Veja como funciona antes de assinar um plano
+
+**Após o Teste:**
+• Escolha um plano que se adapte às suas necessidades
+• Continue usando todas as funcionalidades
+• Seu cartão permanece ativo
+
+É rápido, fácil e você pode começar a usar imediatamente!`,
+            keywords: ['criar conta', 'registrar', 'cadastro', 'cadastrar', 'nova conta', 'começar'],
+            category: 'Sistema'
+        });
+        
+        // 16. Informações sobre edição do cartão
+        knowledgeEntries.push({
+            title: 'Como editar meu cartão virtual?',
+            content: `Editar seu cartão virtual é muito fácil:
+
+**Informações Básicas:**
+1. Acesse seu dashboard
+2. Vá para a aba "Informações"
+3. Edite nome, bio, foto de perfil
+4. Configure seu @ do Instagram
+5. Escolha o formato do avatar
+
+**Adicionar/Editar Módulos:**
+1. Vá para a aba "Módulos"
+2. Clique em "Adicionar Módulo" ou no botão "+"
+3. Escolha o tipo de módulo
+4. Preencha as informações
+5. Organize na ordem desejada
+
+**Personalizar Visual:**
+1. Vá para a aba "Personalizar"
+2. Escolha cores e estilos
+3. Configure fundo e banners
+4. Ajuste conforme sua preferência
+
+**Salvar Alterações:**
+• Sempre clique em "Publicar alterações" após fazer mudanças
+• As alterações são aplicadas imediatamente
+• Você pode editar quantas vezes quiser
+
+Todas as edições são em tempo real e você vê o preview ao lado!`,
+            keywords: ['editar', 'edição', 'modificar', 'alterar', 'mudar', 'atualizar', 'configurar'],
+            category: 'Sistema'
+        });
+        
+        // 17. Informações sobre link personalizado
+        knowledgeEntries.push({
+            title: 'Link Personalizado do Cartão',
+            content: `Cada cartão virtual tem um link único e personalizado:
+
+**Formato do Link:**
+• tag.conectaking.com.br/seu-usuario
+• Ou um slug personalizado que você escolher
+
+**Como Personalizar:**
+1. Acesse "Informações" no dashboard
+2. Edite o campo "@ do Instagram" ou "Slug"
+3. Escolha um nome único e fácil de lembrar
+4. Salve as alterações
+
+**Características:**
+• Link permanente e único
+• Fácil de compartilhar
+• Funciona em qualquer dispositivo
+• Sempre atualizado com suas informações
+
+**Compartilhamento:**
+• Copie o link e compartilhe onde quiser
+• Use em assinaturas de email
+• Adicione em redes sociais
+• Imprima em cartões de visita físicos
+
+Seu link é sua identidade digital!`,
+            keywords: ['link', 'URL', 'endereço', 'slug', 'personalizado', 'compartilhar link'],
             category: 'Sistema'
         });
         
