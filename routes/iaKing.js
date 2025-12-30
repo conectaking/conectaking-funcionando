@@ -1967,142 +1967,28 @@ async function findBestAnswer(userMessage, userId) {
                     hasEntity: questionContext.entities.length > 0 ? kb.content.toLowerCase().includes(questionContext.entities[0]) : true
                 });
                 
-                // Remover código antigo que estava aqui
-                if (false) {
-                const bestCandidate = filteredCandidates[0];
-                const kb = bestCandidate.kb;
-                
-                console.log('🎯 [IA] Melhor conhecimento encontrado:', {
-                    title: kb.title.substring(0, 50),
-                    score: bestCandidate.score,
-                    intelligentScore: bestCandidate.intelligentScore,
-                    source_type: kb.source_type
-                });
-                
-                // VALIDAÇÃO CRÍTICA: Se a pergunta tem entidade, o conhecimento DEVE mencioná-la
-                if (questionContext.entities.length > 0) {
-                    const entity = questionContext.entities[0];
-                    const contentLower = kb.content.toLowerCase();
-                    const titleLower = kb.title.toLowerCase();
-                    
-                    // Se o conhecimento NÃO menciona a entidade, PULAR este candidato
-                    if (!contentLower.includes(entity) && !titleLower.includes(entity)) {
-                        console.log(`⚠️ [IA] Conhecimento "${kb.title.substring(0, 50)}" não menciona entidade "${entity}", pulando...`);
-                        continue; // Pular para próximo candidato
-                    }
-                }
-                
-                // ENCONTRAR TRECHO RELEVANTE que responde à pergunta
-                let relevantExcerpt = findRelevantExcerpt(kb.content, questionContext, 400);
-                
-                // VALIDAÇÃO: Se encontrou trecho, verificar se realmente menciona a entidade
-                if (relevantExcerpt && questionContext.entities.length > 0) {
-                    const entity = questionContext.entities[0];
-                    const excerptLower = relevantExcerpt.toLowerCase();
-                    
-                    // Se o trecho não menciona a entidade, tentar encontrar outro
-                    if (!excerptLower.includes(entity)) {
-                        console.log(`⚠️ [IA] Trecho encontrado não menciona entidade "${entity}", buscando outro...`);
-                        relevantExcerpt = null; // Forçar buscar outro trecho
-                    }
-                }
-                
-                // Se não encontrou trecho relevante, tentar extrair resposta direta
-                if (!relevantExcerpt) {
-                    relevantExcerpt = extractDirectAnswer(kb.content, userMessage);
-                    
-                    // Validar se resposta direta menciona entidade
-                    if (relevantExcerpt && questionContext.entities.length > 0) {
-                        const entity = questionContext.entities[0];
-                        if (!relevantExcerpt.toLowerCase().includes(entity)) {
-                            relevantExcerpt = null;
-                        }
-                    }
-                }
-                
-                // Se ainda não encontrou, buscar parágrafos que mencionam a entidade
-                if (!relevantExcerpt && questionContext.entities.length > 0) {
-                    const entity = questionContext.entities[0];
-                    const paragraphs = kb.content.split(/\n\n+/);
-                    
-                    for (const para of paragraphs) {
-                        const paraLower = para.toLowerCase();
-                        if (paraLower.includes(entity) && para.length > 50) {
-                            // Filtrar conteúdo acadêmico
-                            if (!filterAcademicContent(para)) {
-                                relevantExcerpt = para.substring(0, 400);
-                                console.log(`✅ [IA] Encontrado parágrafo que menciona "${entity}"`);
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                // Se ainda não encontrou, resumir APENAS se mencionar a entidade
-                if (!relevantExcerpt) {
-                    const contentLower = kb.content.toLowerCase();
+                // CAMADA 2: Sintetizar resposta de múltiplas fontes (se houver mais candidatos relevantes)
+                const topCandidates = filteredCandidates.filter(c => {
+                    // FILTRO RÍGIDO: Se pergunta tem entidade, só incluir candidatos que a mencionam
                     if (questionContext.entities.length > 0) {
                         const entity = questionContext.entities[0];
-                        // Só resumir se o conteúdo menciona a entidade
-                        if (contentLower.includes(entity)) {
-                            relevantExcerpt = summarizeAnswer(kb.content, 300);
-                            // Validar novamente
-                            if (relevantExcerpt && !relevantExcerpt.toLowerCase().includes(entity)) {
-                                relevantExcerpt = null;
-                            }
-                        }
-                    } else {
-                        // Se não tem entidade, pode resumir normalmente
-                        relevantExcerpt = summarizeAnswer(kb.content, 300);
+                        const titleLower = (c.kb.title || '').toLowerCase();
+                        const contentLower = (c.kb.content || '').toLowerCase();
+                        return (titleLower.includes(entity) || contentLower.includes(entity)) && c.score > 50;
                     }
-                }
+                    return c.score > 50;
+                }).slice(0, 3);
                 
-                // VALIDAÇÃO FINAL: Se ainda não tem trecho relevante que mencione a entidade, PULAR
-                if (!relevantExcerpt && questionContext.entities.length > 0) {
-                    const entity = questionContext.entities[0];
-                    console.log(`❌ [IA] Não foi possível encontrar trecho relevante sobre "${entity}" em "${kb.title.substring(0, 50)}", pulando...`);
-                    continue; // Pular para próximo candidato
-                }
-                
-                // Se ainda não tem, usar início do conteúdo APENAS se mencionar entidade
-                if (!relevantExcerpt) {
-                    if (questionContext.entities.length > 0) {
-                        const entity = questionContext.entities[0];
-                        const firstPart = kb.content.substring(0, 300);
-                        if (firstPart.toLowerCase().includes(entity)) {
-                            relevantExcerpt = firstPart;
-                        } else {
-                            // Não usar se não menciona a entidade
-                            console.log(`❌ [IA] Início do conteúdo não menciona "${entity}", pulando conhecimento...`);
-                            continue;
-                        }
-                    } else {
-                        relevantExcerpt = kb.content.substring(0, 300);
-                    }
-                }
-                
-                        // CAMADA 2: Sintetizar resposta de múltiplas fontes (se houver mais candidatos relevantes)
-                        const topCandidates = filteredCandidates.filter(c => {
-                            // FILTRO RÍGIDO: Se pergunta tem entidade, só incluir candidatos que a mencionam
-                            if (questionContext.entities.length > 0) {
-                                const entity = questionContext.entities[0];
-                                const titleLower = (c.kb.title || '').toLowerCase();
-                                const contentLower = (c.kb.content || '').toLowerCase();
-                                return (titleLower.includes(entity) || contentLower.includes(entity)) && c.score > 50;
-                            }
-                            return c.score > 50;
-                        }).slice(0, 3);
-                        
-                        const knowledgeSources = topCandidates.map(c => {
-                            const excerpt = findRelevantExcerpt(c.kb.content, questionContext, 300) || 
-                                          extractDirectAnswer(c.kb.content, userMessage) ||
-                                          summarizeAnswer(c.kb.content, 300);
-                            return {
-                                excerpt: excerpt,
-                                score: c.score,
-                                title: c.kb.title
-                            };
-                        }).filter(s => s.excerpt && s.excerpt.length > 20);
+                const knowledgeSources = topCandidates.map(c => {
+                    const excerpt = findRelevantExcerpt(c.kb.content, questionContext, 300) || 
+                                  extractDirectAnswer(c.kb.content, userMessage) ||
+                                  summarizeAnswer(c.kb.content, 300);
+                    return {
+                        excerpt: excerpt,
+                        score: c.score,
+                        title: c.kb.title
+                    };
+                }).filter(s => s.excerpt && s.excerpt.length > 20);
                 
                 // Sintetizar de múltiplas fontes se tiver mais de uma fonte relevante
                 let synthesizedAnswer = null;
@@ -2111,30 +1997,44 @@ async function findBestAnswer(userMessage, userId) {
                 }
                 
                 // Usar resposta sintetizada se disponível, senão usar a melhor única
-                bestAnswer = synthesizedAnswer || relevantExcerpt;
-                bestScore = bestCandidate.score;
-                bestSource = 'knowledge';
+                // VALIDAÇÃO FINAL: Garantir que a resposta menciona a entidade
+                let finalAnswer = synthesizedAnswer || relevantExcerpt;
                 
-                // CAMADA 3: Adicionar personalidade e emoção
-                bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
-                
-                // CAMADA 4: Raciocínio independente - adicionar sugestões e conexões
-                const independentThoughts = thinkIndependently(questionContext, knowledgeResult.rows, thoughts);
-                if (independentThoughts.connections.length > 0 && bestAnswer.length < 600) {
-                    bestAnswer += `\n\n🔗 Relacionado: Também tenho informações sobre ${independentThoughts.connections.slice(0, 2).join(' e ')}. Quer saber mais?`;
+                if (questionContext.entities.length > 0 && finalAnswer) {
+                    const entity = questionContext.entities[0];
+                    const answerLower = finalAnswer.toLowerCase();
+                    if (!answerLower.includes(entity)) {
+                        console.log('❌ [IA] Resposta final não menciona a entidade, rejeitando');
+                        finalAnswer = null; // Rejeitar esta resposta
+                    }
                 }
                 
-                // Log para debug
-                if (kb.source_type === 'book_training') {
-                    console.log('📚 [IA] Usando conhecimento de LIVRO (com sistema de pensamento):', kb.title.substring(0, 50));
+                if (finalAnswer) {
+                    bestAnswer = finalAnswer;
+                    bestScore = bestCandidate.score;
+                    bestSource = 'knowledge';
+                    
+                    // CAMADA 3: Adicionar personalidade e emoção
+                    bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
+                    
+                    // CAMADA 4: Raciocínio independente - adicionar sugestões e conexões
+                    const independentThoughts = thinkIndependently(questionContext, knowledgeResult.rows, thoughts);
+                    if (independentThoughts.connections.length > 0 && bestAnswer.length < 600) {
+                        bestAnswer += `\n\n🔗 Relacionado: Também tenho informações sobre ${independentThoughts.connections.slice(0, 2).join(' e ')}. Quer saber mais?`;
+                    }
+                    
+                    // Log para debug
+                    if (bestKb.source_type === 'book_training') {
+                        console.log('📚 [IA] Usando conhecimento de LIVRO (com sistema de pensamento):', bestKb.title.substring(0, 50));
+                    }
+                    
+                    console.log('🧠 [IA] Resposta processada com sistema de pensamento:', {
+                        intent: thoughts.intent,
+                        synthesized: !!synthesizedAnswer,
+                        sourcesUsed: knowledgeSources.length,
+                        hasConnections: independentThoughts.connections.length > 0
+                    });
                 }
-                
-                console.log('🧠 [IA] Resposta processada com sistema de pensamento:', {
-                    intent: thoughts.intent,
-                    synthesized: !!synthesizedAnswer,
-                    sourcesUsed: knowledgeSources.length,
-                    hasConnections: independentThoughts.connections.length > 0
-                });
             }
         } catch (error) {
             console.error('Erro ao buscar base de conhecimento:', error);
