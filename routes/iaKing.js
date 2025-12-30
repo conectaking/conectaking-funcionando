@@ -286,8 +286,12 @@ async function findBestAnswer(userMessage, userId) {
             
             // Buscar palavras-chave na base de conhecimento já carregada
             const words = extractKeywords(userMessage);
-            if (knowledgeResult && knowledgeResult.rows) {
+            
+            // Usar knowledgeResult que já foi carregado acima
+            if (knowledgeResult && knowledgeResult.rows && knowledgeResult.rows.length > 0) {
                 for (const kb of knowledgeResult.rows) {
+                    if (!kb.content || !kb.title) continue;
+                    
                     const contentLower = kb.content.toLowerCase();
                     const titleLower = kb.title.toLowerCase();
                     
@@ -301,10 +305,10 @@ async function findBestAnswer(userMessage, userId) {
                         let score = matchingWords.length;
                         
                         // Bonus se palavras importantes correspondem
-                        const importantMatches = words.filter(w => {
-                            const importantWords = ['problema', 'erro', 'não', 'consigo', 'como', 'quando', 'onde'];
-                            return importantWords.includes(w) && (contentLower.includes(w) || titleLower.includes(w));
-                        });
+                        const importantWords = ['problema', 'erro', 'não', 'consigo', 'como', 'quando', 'onde', 'valores', 'planos', 'preços'];
+                        const importantMatches = words.filter(w => 
+                            importantWords.includes(w) && (contentLower.includes(w) || titleLower.includes(w))
+                        );
                         score += importantMatches.length * 2;
                         
                         partialMatches.push({
@@ -358,7 +362,15 @@ router.post('/chat', protectUser, asyncHandler(async (req, res) => {
     }
     
     try {
+        console.log('📥 Mensagem recebida na IA KING:', message.substring(0, 100));
         const result = await findBestAnswer(message.trim(), userId || req.user.userId);
+        
+        console.log('✅ Resposta encontrada:', {
+            confidence: result.confidence,
+            source: result.source,
+            answerLength: result.answer?.length || 0
+        });
+        
         res.json({
             response: result.answer,
             confidence: result.confidence,
@@ -366,8 +378,16 @@ router.post('/chat', protectUser, asyncHandler(async (req, res) => {
             webResults: result.webResults || null
         });
     } catch (error) {
-        console.error('Erro no chat:', error);
-        res.status(500).json({ error: 'Erro ao processar mensagem' });
+        console.error('❌ Erro no chat da IA KING:', error);
+        console.error('Stack trace:', error.stack);
+        
+        // Retornar resposta padrão em caso de erro
+        res.status(500).json({ 
+            error: 'Erro ao processar mensagem',
+            response: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou reformule sua pergunta.',
+            confidence: 0,
+            source: 'error'
+        });
     }
 }));
 
