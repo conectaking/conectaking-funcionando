@@ -47,14 +47,27 @@ async function findBestAnswer(userMessage, userId) {
         const messageKeywords = extractKeywords(userMessage);
         
         // 1. Buscar em Q&A (perguntas e respostas)
-        const qaQuery = `
-            SELECT 
-                id, question, answer, question_variations, keywords, usage_count, success_rate, priority
-            FROM ia_qa
-            WHERE is_active = true
-            ORDER BY priority DESC, usage_count DESC, success_rate DESC
-        `;
-        const qaResult = await client.query(qaQuery);
+        let qaResult = { rows: [] };
+        try {
+            const qaQuery = `
+                SELECT 
+                    id, question, answer, question_variations, keywords, usage_count, success_rate, priority
+                FROM ia_qa
+                WHERE is_active = true
+                ORDER BY priority DESC, usage_count DESC, success_rate DESC
+            `;
+            qaResult = await client.query(qaQuery);
+        } catch (error) {
+            // Tabela não existe ainda, retornar resposta padrão
+            if (error.code === '42P01') { // relation does not exist
+                return {
+                    type: 'default',
+                    answer: 'Olá! 😊 A IA KING está sendo configurada. Para ativar todas as funcionalidades, é necessário executar a migration 023 no banco de dados.\n\nEnquanto isso, posso te ajudar com informações básicas:\n\n• O Conecta King é uma plataforma para criar cartões virtuais profissionais\n• Você pode adicionar módulos como WhatsApp, Instagram, TikTok, YouTube, etc.\n• Existem planos Individual, Individual com Logo e Empresarial\n\nExecute a migration e volte aqui para ter acesso completo à IA! 🚀',
+                    confidence: 0
+                };
+            }
+            throw error;
+        }
         
         let bestMatch = null;
         let bestScore = 0;
@@ -94,14 +107,20 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // 2. Buscar na base de conhecimento
-        const knowledgeQuery = `
-            SELECT 
-                id, title, content, keywords, priority, usage_count
-            FROM ia_knowledge_base
-            WHERE is_active = true
-            ORDER BY priority DESC, usage_count DESC
-        `;
-        const knowledgeResult = await client.query(knowledgeQuery);
+        let knowledgeResult = { rows: [] };
+        try {
+            const knowledgeQuery = `
+                SELECT 
+                    id, title, content, keywords, priority, usage_count
+                FROM ia_knowledge_base
+                WHERE is_active = true
+                ORDER BY priority DESC, usage_count DESC
+            `;
+            knowledgeResult = await client.query(knowledgeQuery);
+        } catch (error) {
+            // Tabela não existe ainda, continuar sem ela
+            console.warn('Tabela ia_knowledge_base não existe ainda');
+        }
         
         for (const kb of knowledgeResult.rows) {
             let score = calculateSimilarity(messageLower, kb.title + ' ' + kb.content);
@@ -128,13 +147,19 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // 3. Buscar em documentos processados (texto completo)
-        const documentsQuery = `
-            SELECT 
-                id, title, extracted_text
-            FROM ia_documents
-            WHERE processed = true AND extracted_text IS NOT NULL
-        `;
-        const documentsResult = await client.query(documentsQuery);
+        let documentsResult = { rows: [] };
+        try {
+            const documentsQuery = `
+                SELECT 
+                    id, title, extracted_text
+                FROM ia_documents
+                WHERE processed = true AND extracted_text IS NOT NULL
+            `;
+            documentsResult = await client.query(documentsQuery);
+        } catch (error) {
+            // Tabela não existe ainda, continuar sem ela
+            console.warn('Tabela ia_documents não existe ainda');
+        }
         
         for (const doc of documentsResult.rows) {
             const score = calculateSimilarity(messageLower, doc.extracted_text.substring(0, 1000));
@@ -210,37 +235,47 @@ router.post('/chat', protectUser, iaLimiter, asyncHandler(async (req, res) => {
         // Buscar melhor resposta
         const bestAnswer = await findBestAnswer(message, userId);
         
-        // Salvar conversa no histórico
-        await client.query(
-            `INSERT INTO ia_conversations (user_id, message, response, confidence_score, knowledge_used)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [
-                userId,
-                message,
-                bestAnswer.answer,
-                bestAnswer.confidence,
-                bestAnswer.id ? [bestAnswer.id] : []
-            ]
-        );
-        
-        // Se confiança baixa, criar sugestão de aprendizado
-        if (bestAnswer.confidence < 50 && bestAnswer.type === 'default') {
-            const lastConversation = await client.query(
-                'SELECT id FROM ia_conversations WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
-                [userId]
+        // Salvar conversa no histórico (se tabela existir)
+        try {
+            await client.query(
+                `INSERT INTO ia_conversations (user_id, message, response, confidence_score, knowledge_used)
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [
+                    userId,
+                    message,
+                    bestAnswer.answer,
+                    bestAnswer.confidence,
+                    bestAnswer.id ? [bestAnswer.id] : []
+                ]
             );
             
-            if (lastConversation.rows.length > 0) {
-                await client.query(
-                    `INSERT INTO ia_learning (question, suggested_answer, source_conversation_id, status)
-                     VALUES ($1, $2, $3, 'pending')`,
-                    [
-                        message,
-                        'Resposta sugerida pelo sistema - aguardando aprovação do administrador',
-                        lastConversation.rows[0].id
-                    ]
-                );
+            // Se confiança baixa, criar sugestão de aprendizado
+            if (bestAnswer.confidence < 50 && bestAnswer.type === 'default') {
+                try {
+                    const lastConversation = await client.query(
+                        'SELECT id FROM ia_conversations WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+                        [userId]
+                    );
+                    
+                    if (lastConversation.rows.length > 0) {
+                        await client.query(
+                            `INSERT INTO ia_learning (question, suggested_answer, source_conversation_id, status)
+                             VALUES ($1, $2, $3, 'pending')`,
+                            [
+                                message,
+                                'Resposta sugerida pelo sistema - aguardando aprovação do administrador',
+                                lastConversation.rows[0].id
+                            ]
+                        );
+                    }
+                } catch (error) {
+                    // Tabela não existe, ignorar
+                    console.warn('Tabela ia_learning não existe ainda');
+                }
             }
+        } catch (error) {
+            // Tabela não existe ainda, ignorar
+            console.warn('Tabela ia_conversations não existe ainda');
         }
         
         res.json({
