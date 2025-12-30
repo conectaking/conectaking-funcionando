@@ -524,28 +524,35 @@ async function findBestAnswer(userMessage, userId) {
         
         // LÓGICA MELHORADA: Buscar na web se:
         // 1. Tavily está configurado E habilitado
-        // 2. PRIORIDADE: Se pergunta NÃO é sobre sistema, SEMPRE buscar (mesmo com resposta na base)
+        // 2. PRIORIDADE ABSOLUTA: Se pergunta NÃO é sobre sistema, SEMPRE buscar (mesmo com resposta na base)
         // 3. Se é sobre sistema, buscar apenas se não tem resposta ou score baixo
-        const shouldSearchWeb = webSearchConfig && 
+        const hasTavilyConfig = webSearchConfig && 
                                 webSearchConfig.is_enabled && 
                                 webSearchConfig.api_provider === 'tavily' &&
-                                webSearchConfig.api_key &&
-                                (
-                                    !questionIsAboutSystem || // PRIORIDADE: Sempre buscar se não é sobre sistema
-                                    !bestAnswer || 
-                                    bestScore < 60 // Score mais alto para perguntas sobre sistema
-                                );
+                                webSearchConfig.api_key;
+        
+        // Para perguntas EXTERNAS (não sobre sistema), SEMPRE buscar no Tavily
+        // Para perguntas SOBRE SISTEMA, buscar apenas se não tem resposta ou score baixo
+        const shouldSearchWeb = hasTavilyConfig && (
+            !questionIsAboutSystem || // PRIORIDADE: Sempre buscar se não é sobre sistema (mesmo com resposta na base)
+            !bestAnswer || 
+            bestScore < 60 // Score mais alto para perguntas sobre sistema
+        );
         
         console.log('🤔 [IA] Decisão de buscar na web:', {
             shouldSearchWeb: shouldSearchWeb,
-            motivo: !webSearchConfig ? 'Sem configuração' :
-                    !webSearchConfig.is_enabled ? 'Desabilitado' :
-                    webSearchConfig.api_provider !== 'tavily' ? `Provider errado: ${webSearchConfig.api_provider}` :
-                    !webSearchConfig.api_key ? 'Sem API key' :
-                    !bestAnswer ? 'Sem resposta' :
-                    bestScore < 50 ? `Score baixo: ${bestScore}` :
-                    !questionIsAboutSystem ? 'Pergunta externa' :
-                    'Não deve buscar'
+            hasTavilyConfig: hasTavilyConfig,
+            questionIsAboutSystem: questionIsAboutSystem,
+            hasAnswer: !!bestAnswer,
+            bestScore: bestScore,
+            motivo: !webSearchConfig ? '❌ Sem configuração' :
+                    !webSearchConfig.is_enabled ? '❌ Desabilitado' :
+                    webSearchConfig.api_provider !== 'tavily' ? `❌ Provider errado: ${webSearchConfig.api_provider}` :
+                    !webSearchConfig.api_key ? '❌ Sem API key' :
+                    !questionIsAboutSystem ? '✅ PERGUNTA EXTERNA - Sempre buscar!' :
+                    !bestAnswer ? '✅ Sem resposta na base' :
+                    bestScore < 60 ? `✅ Score baixo: ${bestScore}` :
+                    '⏭️ Não deve buscar (pergunta sobre sistema com boa resposta)'
         });
         
         if (shouldSearchWeb) {
@@ -572,19 +579,39 @@ async function findBestAnswer(userMessage, userId) {
                         // APRENDER: Adicionar à base de conhecimento automaticamente
                         await learnFromTavily(userMessage, webResults.answer, client);
                     } else if (webResults.results.length > 0) {
-                        // Combinar os melhores resultados da web
-                        const topResults = webResults.results.slice(0, 3);
-                        const webAnswer = topResults.map((r, idx) => 
-                            `${idx + 1}. **${r.title}**\n${(r.snippet || r.content || '').substring(0, 250)}${(r.snippet || r.content || '').length > 250 ? '...' : ''}`
-                        ).join('\n\n');
-                        
-                        bestAnswer = webAnswer;
-                        bestScore = 60; // Score bom para resultados da web
-                        bestSource = `web_${webResults.provider}`;
-                        console.log('✅ [IA] USANDO RESULTADOS DA WEB:', webResults.provider);
-                        
-                        // APRENDER: Adicionar à base de conhecimento
-                        await learnFromTavily(userMessage, webAnswer, client);
+                        // Para perguntas externas, SEMPRE usar resultados da web (sobrescrever resposta da base)
+                        if (!questionIsAboutSystem) {
+                            const topResults = webResults.results.slice(0, 3);
+                            const webAnswer = topResults.map((r, idx) => 
+                                `${idx + 1}. **${r.title}**\n${(r.snippet || r.content || '').substring(0, 300)}${(r.snippet || r.content || '').length > 300 ? '...' : ''}`
+                            ).join('\n\n');
+                            
+                            bestAnswer = webAnswer;
+                            bestScore = 70; // Score alto para resultados da web em perguntas externas
+                            bestSource = `web_${webResults.provider}`;
+                            console.log('✅✅✅ [IA] USANDO RESULTADOS DA WEB (pergunta externa):', webResults.provider);
+                            
+                            // APRENDER: Adicionar à base de conhecimento
+                            await learnFromTavily(userMessage, webAnswer, client);
+                        } else {
+                            // Para perguntas sobre sistema, só usar se não tinha resposta ou score muito baixo
+                            if (!bestAnswer || bestScore < 40) {
+                                const topResults = webResults.results.slice(0, 3);
+                                const webAnswer = topResults.map((r, idx) => 
+                                    `${idx + 1}. **${r.title}**\n${(r.snippet || r.content || '').substring(0, 250)}${(r.snippet || r.content || '').length > 250 ? '...' : ''}`
+                                ).join('\n\n');
+                                
+                                bestAnswer = webAnswer;
+                                bestScore = 60;
+                                bestSource = `web_${webResults.provider}`;
+                                console.log('✅ [IA] USANDO RESULTADOS DA WEB (pergunta sobre sistema):', webResults.provider);
+                                
+                                // APRENDER: Adicionar à base de conhecimento
+                                await learnFromTavily(userMessage, webAnswer, client);
+                            } else {
+                                console.log('ℹ️ [IA] Mantendo resposta da base (melhor que web)');
+                            }
+                        }
                     }
                 } else if (webResults.error) {
                     console.error('❌ [IA] Erro na busca Tavily:', webResults.error);
