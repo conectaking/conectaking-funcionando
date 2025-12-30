@@ -415,13 +415,15 @@ async function findBestAnswer(userMessage, userId) {
             console.error('Erro ao buscar configuração de busca na web:', error);
         }
         
-        // Se não encontrou resposta satisfatória e busca na web está habilitada, buscar na web
-        if ((!bestAnswer || bestScore < 30) && webSearchConfig) {
+        // Buscar na web apenas se não encontrou resposta satisfatória (score < 30)
+        // Isso evita desperdiçar créditos da API quando já temos boa resposta
+        if ((!bestAnswer || bestScore < 30) && webSearchConfig && webSearchConfig.is_enabled) {
             console.log('🔍 [IA] Buscando na web porque:', {
                 hasAnswer: !!bestAnswer,
                 score: bestScore,
                 webSearchEnabled: webSearchConfig.is_enabled,
-                provider: webSearchConfig.api_provider
+                provider: webSearchConfig.api_provider,
+                reason: !bestAnswer ? 'Sem resposta' : 'Score baixo (< 30)'
             });
             try {
                 const webResults = await searchWeb(userMessage, webSearchConfig);
@@ -432,6 +434,7 @@ async function findBestAnswer(userMessage, userId) {
                         bestAnswer = webResults.answer;
                         bestScore = 50; // Score médio para respostas da web
                         bestSource = 'web_tavily';
+                        console.log('✅ [IA] Usando resposta direta do Tavily');
                     } else if (webResults.results.length > 0) {
                         // Combinar os melhores resultados da web
                         const topResults = webResults.results.slice(0, 3);
@@ -442,12 +445,23 @@ async function findBestAnswer(userMessage, userId) {
                         bestAnswer = `Encontrei algumas informações na internet que podem ajudar:\n\n${webAnswer}\n\n*Fonte: ${webResults.provider}*`;
                         bestScore = 40;
                         bestSource = `web_${webResults.provider}`;
+                        console.log('✅ [IA] Usando resultados da web:', webResults.provider);
                     }
+                } else {
+                    console.log('⚠️ [IA] Nenhum resultado encontrado na web');
                 }
             } catch (error) {
-                console.error('Erro ao buscar na web:', error);
+                console.error('❌ [IA] Erro ao buscar na web:', error.message);
                 // Continuar sem buscar na web se der erro
             }
+        } else if (webSearchConfig && webSearchConfig.is_enabled) {
+            console.log('ℹ️ [IA] Não buscando na web porque:', {
+                hasAnswer: !!bestAnswer,
+                score: bestScore,
+                reason: bestScore >= 30 ? 'Resposta encontrada na base (score >= 30)' : 'Busca desabilitada'
+            });
+        } else {
+            console.log('ℹ️ [IA] Busca na web não está habilitada');
         }
         
         // Salvar conversa
