@@ -73,11 +73,24 @@ BEGIN
     END IF;
 END $$;
 
--- Verificação final (descomente após executar a migration completa)
--- SELECT 
---     module_type,
---     plan_code,
---     is_available
--- FROM module_plan_availability
--- ORDER BY module_type, plan_code;
+-- ============================================
+-- VERIFICAÇÃO FINAL - Execute esta query para confirmar que tudo foi criado
+-- ============================================
+
+-- Verificar se a tabela existe e mostrar alguns dados
+SELECT 
+    '✅ Migration executada com sucesso!' as status,
+    COUNT(*) as total_registros,
+    COUNT(DISTINCT module_type) as total_modulos,
+    COUNT(DISTINCT plan_code) as total_planos
+FROM module_plan_availability;
+
+-- Mostrar alguns registros de exemplo
+SELECT 
+    module_type,
+    plan_code,
+    is_available
+FROM module_plan_availability
+ORDER BY module_type, plan_code
+LIMIT 10;
 
