@@ -39,6 +39,7 @@ const productRoutes = require('./modules/salesPage/products/product.routes');
 const analyticsRoutesSalesPage = require('./modules/salesPage/analytics/analytics.routes');
 const suggestionsRoutes = require('./routes/suggestions');
 const iaKingRoutes = require('./routes/iaKing');
+const iaKingTrainingRoutes = require('./routes/iaKingTraining');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize } = require('./middleware/security');
 
@@ -331,6 +332,7 @@ app.use('/api/business', apiLimiter, businessRoutes);
 app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/api/suggestions', apiLimiter, suggestionsRoutes);
 app.use('/api/ia-king', apiLimiter, iaKingRoutes);
+app.use('/api/ia-king', apiLimiter, iaKingTrainingRoutes);
 app.use('/vcard', vcardRoutes);
 
 // Rotas do módulo Sales Page
