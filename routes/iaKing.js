@@ -2012,21 +2012,42 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // 2. Buscar na base de conhecimento COM INTELIGÊNCIA CONTEXTUAL E SISTEMA DE PENSAMENTO
+        // PRIORIDADE: LIVROS PRIMEIRO!
         try {
+            // BUSCAR LIVROS PRIMEIRO (prioridade máxima)
+            const booksResult = await client.query(`
+                SELECT id, title, content, keywords, usage_count, source_type, category
+                FROM ia_knowledge_base
+                WHERE is_active = true
+                AND source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+                ORDER BY priority DESC, usage_count DESC
+            `);
+            
+            // Buscar conhecimento geral
             knowledgeResult = await client.query(`
                 SELECT id, title, content, keywords, usage_count, source_type, category
                 FROM ia_knowledge_base
                 WHERE is_active = true
+                AND source_type NOT IN ('book_training', 'tavily_book', 'tavily_book_trained')
             `);
             
+            // COMBINAR: Livros primeiro, depois conhecimento geral
+            const allKnowledge = [...booksResult.rows, ...knowledgeResult.rows];
+            
             // APLICAR FILTROS DE CATEGORIA ANTES DE BUSCAR
-            let filteredKnowledge = knowledgeResult.rows;
+            let filteredKnowledge = allKnowledge;
             if (categoryInfo && categoryInfo.primaryCategory !== 'general') {
-                filteredKnowledge = applyCategoryFilters(knowledgeResult.rows, categoryInfo, questionContext);
+                filteredKnowledge = applyCategoryFilters(allKnowledge, categoryInfo, questionContext);
                 console.log('🔍 [IA] Filtros aplicados:', {
                     categoria: categoryInfo.primaryCategory,
-                    totalAntes: knowledgeResult.rows.length,
-                    totalDepois: filteredKnowledge.length
+                    totalAntes: allKnowledge.length,
+                    totalDepois: filteredKnowledge.length,
+                    livros: booksResult.rows.length
+                });
+            } else {
+                console.log('📚 [IA] Buscando em livros primeiro:', {
+                    livros: booksResult.rows.length,
+                    conhecimento_geral: knowledgeResult.rows.length
                 });
             }
             
