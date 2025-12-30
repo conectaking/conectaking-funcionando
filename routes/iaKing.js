@@ -71,11 +71,93 @@ function extractKeywords(message) {
     return words;
 }
 
-// Função para buscar na web
-async function searchWeb(query) {
+// Função para buscar usando Tavily API
+async function searchWithTavily(query, apiKey) {
+    try {
+        if (!apiKey) {
+            throw new Error('API Key do Tavily não configurada');
+        }
+        
+        const tavilyUrl = 'https://api.tavily.com/search';
+        
+        // Criar promise com timeout
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout na requisição Tavily')), 10000)
+        );
+        
+        const fetchPromise = fetch(tavilyUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                api_key: apiKey,
+                query: query,
+                search_depth: 'basic',
+                max_results: 5,
+                include_answer: true,
+                include_raw_content: false
+            })
+        });
+        
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        if (!response.ok) {
+            throw new Error(`Tavily API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const results = [];
+        
+        // Processar resultados
+        if (data.results && Array.isArray(data.results)) {
+            data.results.forEach((result, index) => {
+                results.push({
+                    title: result.title || `Resultado ${index + 1}`,
+                    snippet: result.content || result.snippet || '',
+                    url: result.url || '',
+                    provider: 'tavily',
+                    score: result.score || 0
+                });
+            });
+        }
+        
+        // Se houver resposta direta do Tavily, adicionar como primeiro resultado
+        if (data.answer) {
+            results.unshift({
+                title: 'Resposta Direta',
+                snippet: data.answer,
+                url: '',
+                provider: 'tavily',
+                score: 100
+            });
+        }
+        
+        return {
+            results,
+            provider: 'tavily',
+            answer: data.answer || null
+        };
+    } catch (error) {
+        console.error('Erro ao buscar com Tavily:', error);
+        return { results: [], provider: 'tavily', error: error.message };
+    }
+}
+
+// Função para buscar na web (com suporte a Tavily)
+async function searchWeb(query, config = null) {
     try {
         const results = [];
         
+        // Se Tavily estiver configurado e habilitado, usar primeiro
+        if (config && config.is_enabled && config.api_provider === 'tavily' && config.api_key) {
+            const tavilyResult = await searchWithTavily(query, config.api_key);
+            if (tavilyResult.results && tavilyResult.results.length > 0) {
+                return tavilyResult;
+            }
+        }
+        
+        // Fallback para buscas gratuitas
         // Tentar DuckDuckGo Instant Answer API
         try {
             const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
@@ -303,8 +385,50 @@ async function findBestAnswer(userMessage, userId) {
             console.error('Erro ao buscar documentos:', error);
         }
         
-        // 4. Não buscar na web - focar apenas no conhecimento do sistema
-        // A IA deve ter todas as respostas na base de conhecimento
+        // 4. Buscar na web se necessário e configurado
+        // Verificar se busca na web está habilitada
+        let webSearchConfig = null;
+        try {
+            const configResult = await client.query(`
+                SELECT * FROM ia_web_search_config
+                ORDER BY id DESC
+                LIMIT 1
+            `);
+            if (configResult.rows.length > 0 && configResult.rows[0].is_enabled) {
+                webSearchConfig = configResult.rows[0];
+            }
+        } catch (error) {
+            console.error('Erro ao buscar configuração de busca na web:', error);
+        }
+        
+        // Se não encontrou resposta satisfatória e busca na web está habilitada, buscar na web
+        if ((!bestAnswer || bestScore < 30) && webSearchConfig) {
+            try {
+                const webResults = await searchWeb(userMessage, webSearchConfig);
+                
+                if (webResults.results && webResults.results.length > 0) {
+                    // Se Tavily retornou resposta direta, usar ela
+                    if (webResults.answer) {
+                        bestAnswer = webResults.answer;
+                        bestScore = 50; // Score médio para respostas da web
+                        bestSource = 'web_tavily';
+                    } else if (webResults.results.length > 0) {
+                        // Combinar os melhores resultados da web
+                        const topResults = webResults.results.slice(0, 3);
+                        const webAnswer = topResults.map((r, idx) => 
+                            `${idx + 1}. ${r.title}\n${r.snippet.substring(0, 200)}${r.snippet.length > 200 ? '...' : ''}`
+                        ).join('\n\n');
+                        
+                        bestAnswer = `Encontrei algumas informações na internet que podem ajudar:\n\n${webAnswer}\n\n*Fonte: ${webResults.provider}*`;
+                        bestScore = 40;
+                        bestSource = `web_${webResults.provider}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao buscar na web:', error);
+                // Continuar sem buscar na web se der erro
+            }
+        }
         
         // Salvar conversa
         try {
@@ -319,7 +443,7 @@ async function findBestAnswer(userMessage, userId) {
             // Não bloquear a resposta por erro ao salvar
         }
         
-        // Resposta padrão mais educada e útil - SEM buscar na internet
+        // Resposta padrão mais educada e útil - SEM buscar na internet (se busca na web não estiver habilitada)
         if (!bestAnswer || bestScore < 30) {
             // Tentar encontrar resposta parcial mesmo com baixa confiança
             const partialMatches = [];
@@ -1776,6 +1900,97 @@ Entre em contato para saber mais sobre o plano empresarial.`,
         await client.query('ROLLBACK');
         console.error('❌ Erro no treinamento avançado:', error);
         throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// ROTAS DE CONFIGURAÇÃO DE BUSCA NA WEB
+// ============================================
+
+// GET /api/ia-king/web-search/config
+router.get('/web-search/config', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT * FROM ia_web_search_config
+            ORDER BY id DESC
+            LIMIT 1
+        `);
+        
+        if (result.rows.length === 0) {
+            // Criar configuração padrão se não existir
+            await client.query(`
+                INSERT INTO ia_web_search_config (is_enabled, api_provider, max_results, use_cache)
+                VALUES (false, 'scraping', 5, true)
+                RETURNING *
+            `);
+            const newConfig = await client.query(`
+                SELECT * FROM ia_web_search_config ORDER BY id DESC LIMIT 1
+            `);
+            return res.json({ config: newConfig.rows[0] });
+        }
+        
+        res.json({ config: result.rows[0] });
+    } finally {
+        client.release();
+    }
+}));
+
+// PUT /api/ia-king/web-search/config
+router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => {
+    const { is_enabled, api_provider, api_key, max_results, use_cache } = req.body;
+    const adminId = req.user.userId;
+    
+    const client = await db.pool.connect();
+    try {
+        // Verificar se já existe configuração
+        const existing = await client.query(`
+            SELECT id FROM ia_web_search_config ORDER BY id DESC LIMIT 1
+        `);
+        
+        if (existing.rows.length === 0) {
+            // Criar nova configuração
+            const result = await client.query(`
+                INSERT INTO ia_web_search_config (is_enabled, api_provider, api_key, max_results, use_cache, updated_by)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING *
+            `, [
+                is_enabled || false,
+                api_provider || 'scraping',
+                api_key || null,
+                max_results || 5,
+                use_cache !== undefined ? use_cache : true,
+                adminId
+            ]);
+            
+            res.json({ config: result.rows[0], message: 'Configuração criada com sucesso' });
+        } else {
+            // Atualizar configuração existente
+            const result = await client.query(`
+                UPDATE ia_web_search_config
+                SET is_enabled = COALESCE($1, is_enabled),
+                    api_provider = COALESCE($2, api_provider),
+                    api_key = COALESCE($3, api_key),
+                    max_results = COALESCE($4, max_results),
+                    use_cache = COALESCE($5, use_cache),
+                    updated_by = $6,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $7
+                RETURNING *
+            `, [
+                is_enabled,
+                api_provider,
+                api_key,
+                max_results,
+                use_cache,
+                adminId,
+                existing.rows[0].id
+            ]);
+            
+            res.json({ config: result.rows[0], message: 'Configuração atualizada com sucesso' });
+        }
     } finally {
         client.release();
     }
