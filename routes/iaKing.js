@@ -51,10 +51,10 @@ async function findBestAnswer(userMessage, userId) {
         try {
             const qaQuery = `
                 SELECT 
-                    id, question, answer, question_variations, keywords, usage_count, success_rate, priority
+                    id, question, answer, question_variations, keywords, usage_count, success_rate
                 FROM ia_qa
                 WHERE is_active = true
-                ORDER BY priority DESC, usage_count DESC, success_rate DESC
+                ORDER BY usage_count DESC, success_rate DESC
             `;
             qaResult = await client.query(qaQuery);
         } catch (error) {
