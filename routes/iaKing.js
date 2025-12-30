@@ -297,8 +297,9 @@ async function findBestAnswer(userMessage, userId) {
             }
         }
         
-        // Se encontrou uma resposta boa (score > 40), retornar
-        if (bestMatch && bestScore > 40) {
+        // Se encontrou uma resposta boa (score > 25 para documentos, 40 para outros), retornar
+        const minScore = bestMatch?.type === 'document' ? 25 : 40;
+        if (bestMatch && bestScore > minScore) {
             // Atualizar contador de uso
             if (bestMatch.type === 'qa') {
                 await client.query(
@@ -310,6 +311,9 @@ async function findBestAnswer(userMessage, userId) {
                     'UPDATE ia_knowledge_base SET usage_count = usage_count + 1 WHERE id = $1',
                     [bestMatch.id]
                 );
+            } else if (bestMatch.type === 'document') {
+                // Log para debug
+                console.log(`✅ Resposta encontrada em documento com score ${bestScore.toFixed(2)}`);
             }
             
             return bestMatch;
