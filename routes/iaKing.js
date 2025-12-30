@@ -366,34 +366,56 @@ async function findBestAnswer(userMessage, userId) {
             console.warn('Tabela ia_mentorias não existe ainda');
         }
         
-        // 5. Se não encontrou e busca na web está habilitada, buscar na internet
-        if (!bestMatch || bestScore < 30) {
+        // 5. Se não encontrou resposta boa (score < 50), buscar automaticamente na internet
+        if (!bestMatch || bestScore < 50) {
             try {
-                const webConfig = await client.query('SELECT is_enabled FROM ia_web_search_config ORDER BY id DESC LIMIT 1');
+                console.log(`🔍 Confiança baixa (${bestScore.toFixed(2)}), buscando na internet...`);
                 
-                if (webConfig.rows.length > 0 && webConfig.rows[0].is_enabled) {
-                    const webResults = await searchWeb(userMessage, 3, client);
+                // Buscar na internet automaticamente (sempre habilitado agora)
+                const webResults = await searchWeb(userMessage, 5, client);
+                
+                if (webResults.results && webResults.results.length > 0) {
+                    console.log(`✅ Encontrados ${webResults.results.length} resultados na internet`);
                     
-                    if (webResults.results && webResults.results.length > 0) {
-                        const webAnswer = `Encontrei algumas informações na internet sobre isso:\n\n${webResults.results.map((r, i) => `${i + 1}. **${r.title}**\n${r.snippet}${r.url ? `\nFonte: ${r.url}` : ''}`).join('\n\n')}\n\n*Nota: Estas informações foram encontradas na internet e podem precisar de verificação.*`;
-                        
-                        return {
-                            type: 'web',
-                            answer: webAnswer,
-                            confidence: 50,
-                            webResults: webResults.results
-                        };
+                    // Formatar resposta com os resultados encontrados
+                    let webAnswer = '';
+                    
+                    // Se encontrou resultado direto (DuckDuckGo Instant Answer ou Wikipedia)
+                    if (webResults.results.length === 1 && webResults.provider !== 'fallback') {
+                        const result = webResults.results[0];
+                        webAnswer = `${result.snippet}\n\n${result.url ? `📚 Fonte: ${result.url}` : ''}`;
+                    } else {
+                        // Múltiplos resultados
+                        webAnswer = `Encontrei algumas informações atualizadas sobre isso:\n\n`;
+                        webResults.results.forEach((r, i) => {
+                            webAnswer += `${i + 1}. **${r.title}**\n${r.snippet}\n`;
+                            if (r.url) {
+                                webAnswer += `🔗 ${r.url}\n`;
+                            }
+                            webAnswer += '\n';
+                        });
+                        webAnswer += '*Estas informações foram encontradas na internet e são atualizadas.*';
                     }
+                    
+                    return {
+                        type: 'web',
+                        answer: webAnswer,
+                        confidence: 60,
+                        webResults: webResults.results,
+                        provider: webResults.provider
+                    };
+                } else {
+                    console.log('⚠️ Nenhum resultado encontrado na internet');
                 }
             } catch (error) {
-                console.warn('Erro ao buscar na web ou busca não habilitada:', error.message);
+                console.warn('⚠️ Erro ao buscar na web:', error.message);
             }
         }
         
-        // Se não encontrou, retornar resposta padrão
+        // Se não encontrou nada, retornar resposta padrão
         return {
             type: 'default',
-            answer: 'Desculpe, ainda não tenho uma resposta específica para isso. Mas estou aprendendo! Você pode reformular sua pergunta ou entrar em contato com o suporte.',
+            answer: 'Desculpe, não consegui encontrar informações específicas sobre isso. Tente reformular sua pergunta ou entrar em contato com o suporte.',
             confidence: 0
         };
         
@@ -1213,12 +1235,28 @@ async function searchWeb(query, maxResults = 5, client = null) {
         
         // Fallback: Buscar usando Wikipedia API (gratuito e confiável)
         try {
-            const wikiUrl = `https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
-            const wikiResponse = await fetch(wikiUrl);
+            // Tentar busca direta primeiro
+            let wikiUrl = `https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+            let wikiResponse = await fetch(wikiUrl);
+            
+            // Se não encontrou, tentar busca por pesquisa
+            if (!wikiResponse.ok || wikiResponse.status === 404) {
+                const searchUrl = `https://pt.wikipedia.org/api/rest_v1/page/search/${encodeURIComponent(query)}?limit=1`;
+                const searchResponse = await fetch(searchUrl);
+                
+                if (searchResponse.ok) {
+                    const searchData = await searchResponse.json();
+                    if (searchData.pages && searchData.pages.length > 0) {
+                        const pageTitle = searchData.pages[0].title;
+                        wikiUrl = `https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`;
+                        wikiResponse = await fetch(wikiUrl);
+                    }
+                }
+            }
             
             if (wikiResponse.ok) {
                 const wikiData = await wikiResponse.json();
-                if (wikiData.extract) {
+                if (wikiData.extract && !wikiData.type) { // type indica página de desambiguação
                     console.log(`✅ Encontrado resultado na Wikipedia`);
                     return {
                         results: [{
@@ -1236,7 +1274,8 @@ async function searchWeb(query, maxResults = 5, client = null) {
             console.warn('⚠️ Erro ao buscar na Wikipedia:', wikiError.message);
         }
         
-        // Fallback final: resultados básicos
+        // Fallback: Apenas para termos específicos do sistema Conecta King
+        const queryLower = query.toLowerCase();
         const commonAnswers = {
             'conecta king': {
                 title: 'Conecta King - Cartão Virtual Profissional',
@@ -1252,29 +1291,23 @@ async function searchWeb(query, maxResults = 5, client = null) {
             }
         };
         
-        const queryLower = query.toLowerCase();
-        let results = [];
-        
-        // Buscar correspondências parciais
+        // Verificar apenas termos específicos do sistema
         for (const [key, value] of Object.entries(commonAnswers)) {
             if (queryLower.includes(key)) {
-                results.push(value);
+                return {
+                    results: [value],
+                    provider: 'system',
+                    cached: false
+                };
             }
         }
         
-        // Se não encontrou, criar resultado genérico
-        if (results.length === 0) {
-            results.push({
-                title: `Informações sobre: ${query}`,
-                snippet: `Estou buscando informações atualizadas sobre "${query}" na internet. Por enquanto, recomendo verificar fontes confiáveis ou entrar em contato com o suporte para mais detalhes.`,
-                url: null,
-                source: 'Sistema'
-            });
-        }
-        
+        // Se não encontrou nada real na internet, retornar vazio
+        // O sistema vai retornar resposta padrão
+        console.log(`⚠️ Nenhum resultado encontrado na internet para: "${query}"`);
         return {
-            results: results.slice(0, maxResults),
-            provider: 'fallback',
+            results: [],
+            provider: 'none',
             cached: false
         };
     } catch (error) {
@@ -2064,3 +2097,4 @@ router.post('/web-search', protectUser, iaLimiter, asyncHandler(async (req, res)
 }));
 
 module.exports = router;
+
