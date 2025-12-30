@@ -48,15 +48,15 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 u.profile_slug,
                 p.*,
                 CASE
-                    WHEN u.account_type = 'business_owner' THEN u.company_logo_url
+                    WHEN u.account_type = 'business_owner' OR u.account_type = 'individual_com_logo' THEN u.company_logo_url
                     ELSE parent.company_logo_url
                 END AS company_logo_url,
                 CASE
-                    WHEN u.account_type = 'business_owner' THEN u.company_logo_size
+                    WHEN u.account_type = 'business_owner' OR u.account_type = 'individual_com_logo' THEN u.company_logo_size
                     ELSE parent.company_logo_size
                 END AS company_logo_size,
                 CASE
-                    WHEN u.account_type = 'business_owner' THEN u.company_logo_link
+                    WHEN u.account_type = 'business_owner' OR u.account_type = 'individual_com_logo' THEN u.company_logo_link
                     ELSE parent.company_logo_link
                 END AS company_logo_link,
                 p.share_image_url

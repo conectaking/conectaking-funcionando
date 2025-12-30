@@ -14,6 +14,15 @@ const protectBusinessOwner = (req, res, next) => {
     }
 };
 
+// Middleware para permitir business_owner e individual_com_logo (para personalização de logo)
+const protectBusinessOwnerOrLogo = (req, res, next) => {
+    if (req.user && (req.user.accountType === 'business_owner' || req.user.accountType === 'individual_com_logo')) {
+        next();
+    } else {
+        res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais ou individuais com logo.' });
+    }
+};
+
 router.get('/team', protectUser, protectBusinessOwner, async (req, res) => {
     try {
         const { rows } = await db.query(
@@ -67,7 +76,7 @@ router.post('/generate-code', protectUser, protectBusinessOwner, async (req, res
     }
 });
 
-router.put('/branding', protectUser, protectBusinessOwner, async (req, res) => {
+router.put('/branding', protectUser, protectBusinessOwnerOrLogo, async (req, res) => {
     const { logoUrl, logoSize, logoLink } = req.body;
     const ownerId = req.user.userId;
 
