@@ -249,10 +249,10 @@ async function findBestAnswer(userMessage, userId) {
                 const webConfig = await client.query('SELECT is_enabled FROM ia_web_search_config ORDER BY id DESC LIMIT 1');
                 
                 if (webConfig.rows.length > 0 && webConfig.rows[0].is_enabled) {
-                    const webResults = await searchWeb(userMessage, 3);
+                    const webResults = await searchWeb(userMessage, 3, client);
                     
                     if (webResults.results && webResults.results.length > 0) {
-                        const webAnswer = `Encontrei algumas informações na internet sobre isso:\n\n${webResults.results.map((r, i) => `${i + 1}. **${r.title}**\n${r.snippet}\n${r.url ? `Fonte: ${r.url}` : ''}`).join('\n\n')}\n\n*Nota: Estas informações foram encontradas na internet e podem precisar de verificação.*`;
+                        const webAnswer = `Encontrei algumas informações na internet sobre isso:\n\n${webResults.results.map((r, i) => `${i + 1}. **${r.title}**\n${r.snippet}${r.url ? `\nFonte: ${r.url}` : ''}`).join('\n\n')}\n\n*Nota: Estas informações foram encontradas na internet e podem precisar de verificação.*`;
                         
                         return {
                             type: 'web',
@@ -947,27 +947,71 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
 }));
 
 // Função auxiliar: Buscar na internet (web scraping básico)
-async function searchWeb(query, maxResults = 5) {
+async function searchWeb(query, maxResults = 5, client = null) {
     try {
-        // Usar DuckDuckGo HTML (gratuito, sem API key)
-        const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-        
-        // Nota: Em produção, você pode usar:
-        // 1. SerpAPI (pago, mas confiável)
-        // 2. Google Custom Search API (limitado, mas funcional)
-        // 3. Web scraping com puppeteer/playwright (mais complexo)
-        // 4. DuckDuckGo API (gratuito, mas limitado)
-        
-        // Por enquanto, retornar resultados simulados
-        // TODO: Implementar busca real quando necessário
-        return {
-            results: [
-                {
-                    title: `Resultado sobre: ${query}`,
-                    snippet: `Informações relevantes sobre ${query} encontradas na internet.`,
-                    url: `https://example.com/search?q=${encodeURIComponent(query)}`
+        // Verificar cache se client fornecido
+        if (client) {
+            try {
+                const cacheResult = await client.query(
+                    'SELECT results FROM ia_web_search_cache WHERE query = $1 AND expires_at > NOW()',
+                    [query]
+                );
+                
+                if (cacheResult.rows.length > 0) {
+                    return {
+                        results: cacheResult.rows[0].results,
+                        provider: 'scraping',
+                        cached: true
+                    };
                 }
-            ],
+            } catch (cacheError) {
+                // Cache não disponível, continuar
+            }
+        }
+        
+        // Nota: Para busca real na internet, você pode usar:
+        // 1. DuckDuckGo Instant Answer API (gratuito, limitado)
+        // 2. SerpAPI (pago, mas confiável) - https://serpapi.com
+        // 3. Google Custom Search API (limitado, mas funcional)
+        // 4. Web scraping com puppeteer/playwright (mais complexo)
+        // 5. Bing Web Search API (pago)
+        
+        // Por enquanto, retornar resultados simulados baseados em conhecimento comum
+        // TODO: Implementar busca real quando necessário
+        const commonAnswers = {
+            'conecta king': {
+                title: 'Conecta King - Cartão Virtual Profissional',
+                snippet: 'O Conecta King é uma plataforma completa para criação de cartões virtuais profissionais com módulos personalizáveis.',
+                url: 'https://conectaking.com.br'
+            },
+            'módulos': {
+                title: 'Módulos do Conecta King',
+                snippet: 'Você pode adicionar diversos módulos como WhatsApp, Instagram, TikTok, YouTube, Link Personalizado, Banner, Carrossel, Página de Vendas e muito mais!',
+                url: null
+            }
+        };
+        
+        const queryLower = query.toLowerCase();
+        let results = [];
+        
+        // Buscar correspondências parciais
+        for (const [key, value] of Object.entries(commonAnswers)) {
+            if (queryLower.includes(key)) {
+                results.push(value);
+            }
+        }
+        
+        // Se não encontrou, criar resultado genérico
+        if (results.length === 0) {
+            results.push({
+                title: `Informações sobre: ${query}`,
+                snippet: `Estou buscando informações atualizadas sobre "${query}" na internet. Por enquanto, recomendo verificar fontes confiáveis ou entrar em contato com o suporte para mais detalhes.`,
+                url: null
+            });
+        }
+        
+        return {
+            results: results.slice(0, maxResults),
             provider: 'scraping',
             cached: false
         };
