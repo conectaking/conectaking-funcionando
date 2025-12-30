@@ -330,6 +330,7 @@ app.use('/api/pix', apiLimiter, pixRoutes);
 app.use('/api/business', apiLimiter, businessRoutes);
 app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/api/suggestions', apiLimiter, suggestionsRoutes);
+app.use('/api/ia-king', apiLimiter, iaKingRoutes);
 app.use('/vcard', vcardRoutes);
 
 // Rotas do módulo Sales Page
