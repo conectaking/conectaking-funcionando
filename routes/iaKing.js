@@ -2749,8 +2749,19 @@ router.post('/import-book-tavily', protectAdmin, asyncHandler(async (req, res) =
     const { title, description, category_id } = req.body;
     const adminId = req.user.userId;
     
-    if (!title || !description) {
-        return res.status(400).json({ error: 'Título e descrição são obrigatórios' });
+    console.log('📥 [Import Book Tavily] Requisição recebida:', {
+        title: title?.substring(0, 50),
+        descriptionLength: description?.length || 0,
+        category_id: category_id,
+        adminId: adminId
+    });
+    
+    if (!title) {
+        return res.status(400).json({ error: 'Título é obrigatório' });
+    }
+    
+    if (!description || description.trim().length === 0) {
+        return res.status(400).json({ error: 'Descrição é obrigatória' });
     }
     
     const client = await db.pool.connect();
@@ -2759,12 +2770,42 @@ router.post('/import-book-tavily', protectAdmin, asyncHandler(async (req, res) =
         const existing = await client.query(`
             SELECT id FROM ia_knowledge_base 
             WHERE LOWER(title) = LOWER($1)
+            AND source_type = 'tavily_book'
             LIMIT 1
         `, [title]);
         
         if (existing.rows.length > 0) {
             return res.status(400).json({ error: 'Este livro já está na base de conhecimento' });
         }
+        
+        // Extrair palavras-chave
+        let keywords = [];
+        try {
+            keywords = extractKeywords(title + ' ' + description);
+            // Garantir que é um array
+            if (!Array.isArray(keywords)) {
+                keywords = [];
+            }
+        } catch (error) {
+            console.error('Erro ao extrair keywords:', error);
+            keywords = [];
+        }
+        
+        // Converter adminId para número se necessário (pode ser string)
+        let createdByValue = null;
+        if (adminId) {
+            const adminIdNum = parseInt(adminId);
+            createdByValue = isNaN(adminIdNum) ? null : adminIdNum;
+        }
+        
+        // Converter category_id para número se necessário
+        let categoryIdValue = null;
+        if (category_id) {
+            const categoryIdNum = parseInt(category_id);
+            categoryIdValue = isNaN(categoryIdNum) ? null : categoryIdNum;
+        }
+        
+        console.log('💾 [Import Book Tavily] Inserindo na base de conhecimento...');
         
         // Adicionar à base de conhecimento
         const result = await client.query(`
@@ -2773,16 +2814,22 @@ router.post('/import-book-tavily', protectAdmin, asyncHandler(async (req, res) =
             RETURNING *
         `, [
             title,
-            description,
-            extractKeywords(title + ' ' + description),
-            category_id || null,
-            adminId
+            description.substring(0, 10000), // Limitar tamanho
+            keywords,
+            categoryIdValue,
+            createdByValue
         ]);
+        
+        console.log('✅ [Import Book Tavily] Livro importado com sucesso! ID:', result.rows[0].id);
         
         res.json({
             message: 'Livro importado com sucesso!',
             knowledge: result.rows[0]
         });
+    } catch (error) {
+        console.error('❌ [Import Book Tavily] Erro:', error);
+        console.error('Stack:', error.stack);
+        throw error;
     } finally {
         client.release();
     }
