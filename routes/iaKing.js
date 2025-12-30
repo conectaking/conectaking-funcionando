@@ -625,6 +625,22 @@ router.put('/qa/:id', protectAdmin, asyncHandler(async (req, res) => {
     }
 }));
 
+// DELETE /api/ia-king/qa/:id - Deletar Q&A (ADM)
+router.delete('/qa/:id', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    
+    const client = await db.pool.connect();
+    try {
+        await client.query('DELETE FROM ia_qa WHERE id = $1', [id]);
+        res.json({ message: 'Q&A deletada com sucesso.' });
+    } catch (error) {
+        console.error('❌ Erro ao deletar Q&A:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
 // GET /api/ia-king/learning - Listar aprendizado pendente (ADM)
 router.get('/learning', protectAdmin, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
