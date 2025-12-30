@@ -88,10 +88,10 @@ async function searchWithTavily(query, apiKey) {
         const fetchPromise = fetch(tavilyUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                api_key: apiKey,
                 query: query,
                 search_depth: 'basic',
                 max_results: 5,
