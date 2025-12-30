@@ -58,7 +58,8 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 CASE
                     WHEN u.account_type = 'business_owner' THEN u.company_logo_link
                     ELSE parent.company_logo_link
-                END AS company_logo_link
+                END AS company_logo_link,
+                p.share_image_url
             FROM users u
             INNER JOIN user_profiles p ON u.id = p.user_id
             LEFT JOIN users parent ON u.parent_user_id = parent.id
@@ -359,13 +360,15 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         }
 
         // Preparar URL da imagem processada para og:image (se houver imagem)
+        // Priorizar share_image_url se existir, senão usar profile_image_url
         // Adicionar cache-busting baseado na URL da imagem para forçar atualização
         let ogImageUrl = null;
-        if (details.profile_image_url) {
+        const imageUrl = details.share_image_url || details.profile_image_url;
+        if (imageUrl) {
             // Extrair parte única da URL (ID do Cloudflare) para cache-busting
-            const urlParts = details.profile_image_url.match(/[a-zA-Z0-9_-]+/g);
+            const urlParts = imageUrl.match(/[a-zA-Z0-9_-]+/g);
             const cacheBuster = urlParts ? urlParts[urlParts.length - 1] : Date.now();
-            ogImageUrl = `${req.protocol}://${req.get('host')}/api/image/profile-image?url=${encodeURIComponent(details.profile_image_url)}&v=${cacheBuster}`;
+            ogImageUrl = `${req.protocol}://${req.get('host')}/api/image/profile-image?url=${encodeURIComponent(imageUrl)}&v=${cacheBuster}`;
         }
         
         // Buscar profile_slug do usuário para usar nas URLs

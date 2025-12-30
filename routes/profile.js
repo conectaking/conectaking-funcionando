@@ -30,7 +30,7 @@ router.get('/', protectUser, async (req, res) => {
                 p.background_type, p.background_image_url,
                 p.card_background_color, p.card_opacity,
                 p.button_font_size, p.background_image_opacity,
-                p.show_vcard_button
+                p.show_vcard_button, p.share_image_url
             FROM users u
             LEFT JOIN user_profiles p ON u.id = p.user_id
             WHERE u.id = $1;
@@ -1421,6 +1421,66 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
+// ============================================
+// ROTA: IMAGEM DE COMPARTILHAMENTO (deve vir antes das rotas genéricas)
+// ============================================
+
+// PUT /api/profile/share-image - Atualizar imagem de compartilhamento
+router.put('/share-image', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const { share_image_url } = req.body;
+
+        // Verificar se a coluna existe
+        const columnCheck = await client.query(`
+            SELECT EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name = 'user_profiles' 
+                AND column_name = 'share_image_url'
+            ) AS coluna_existe
+        `);
+
+        if (!columnCheck.rows[0].coluna_existe) {
+            return res.status(400).json({ 
+                message: 'Coluna share_image_url não existe. Execute a migration 019 primeiro.',
+                error: 'MIGRATION_REQUIRED'
+            });
+        }
+
+        // Verificar se perfil existe
+        const profileCheck = await client.query(
+            'SELECT user_id FROM user_profiles WHERE user_id = $1',
+            [userId]
+        );
+
+        if (profileCheck.rows.length === 0) {
+            // Criar perfil se não existir
+            await client.query(
+                'INSERT INTO user_profiles (user_id, share_image_url) VALUES ($1, $2)',
+                [userId, share_image_url || null]
+            );
+        } else {
+            // Atualizar perfil existente
+            await client.query(
+                'UPDATE user_profiles SET share_image_url = $1 WHERE user_id = $2',
+                [share_image_url || null, userId]
+            );
+        }
+
+        res.json({ 
+            message: 'Imagem de compartilhamento atualizada com sucesso.',
+            share_image_url: share_image_url || null
+        });
+    } catch (error) {
+        console.error('❌ Erro ao atualizar imagem de compartilhamento:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
 // PUT /api/profile/items/:id - Atualizar item
 router.put('/items/:id', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
@@ -1787,10 +1847,6 @@ router.post('/items/repair-sales-pages', protectUser, asyncHandler(async (req, r
         client.release();
     }
 }));
-
-// ============================================
-// ROTAS ESPECÍFICAS PARA CADA TIPO DE MÓDULO (REMOVIDAS - JÁ EXISTEM ACIMA)
-// ============================================
 
 module.exports = router;
 
