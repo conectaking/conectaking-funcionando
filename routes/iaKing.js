@@ -3099,7 +3099,7 @@ router.post('/train-with-book', protectAdmin, asyncHandler(async (req, res) => {
         for (let i = 0; i < sections.length; i++) {
             const section = sections[i];
             const sectionTitle = extractSectionTitle(section) || `${title} - Seção ${i + 1}`;
-            const sectionContent = section.substring(0, 5000); // Limitar tamanho
+            const sectionContent = section; // SEM LIMITE - conhecimento ilimitado!
             
             try {
                 // Extrair palavras-chave da seção
@@ -3132,7 +3132,7 @@ router.post('/train-with-book', protectAdmin, asyncHandler(async (req, res) => {
                         ? sectionTitle.substring(0, 100) + '...'
                         : sectionTitle;
                     
-                    const answer = sectionContent.substring(0, 2000);
+                    const answer = sectionContent; // SEM LIMITE - conhecimento completo!
                     
                     // Verificar se Q&A já existe
                     const existingQA = await client.query(`
@@ -3160,16 +3160,15 @@ router.post('/train-with-book', protectAdmin, asyncHandler(async (req, res) => {
             }
         }
         
-        // Criar entrada principal do livro (resumo)
-        const bookSummary = content.substring(0, 1000);
-        const bookKeywords = extractKeywords(title + ' ' + (author || '') + ' ' + bookSummary);
+        // Criar entrada principal do livro (CONTEÚDO COMPLETO - SEM LIMITE!)
+        const bookKeywords = extractKeywords(title + ' ' + (author || '') + ' ' + content);
         
         await client.query(`
             INSERT INTO ia_knowledge_base (title, content, keywords, category_id, source_type, source_reference, is_active, created_by, priority)
             VALUES ($1, $2, $3, $4, 'book_training', $5, true, $6, 100)
         `, [
             author ? `${title} - ${author}` : title,
-            `Livro completo: ${title}${author ? ` por ${author}` : ''}\n\n${bookSummary}...\n\nEste livro foi dividido em ${sections.length} seções para melhor compreensão.`,
+            `Livro completo: ${title}${author ? ` por ${author}` : ''}\n\n${content}\n\nEste livro foi dividido em ${sections.length} seções para melhor compreensão.`,
             bookKeywords,
             category_id || null,
             `book_${title}_main`,
