@@ -2399,6 +2399,16 @@ async function findBestAnswer(userMessage, userId) {
                     bestScore = bestCandidate.score;
                     bestSource = 'knowledge';
                     
+                    // GUARDAR INFORMAÇÃO: Esta resposta veio de um LIVRO?
+                    const isFromBook = bookSources.includes(bestKb.source_type);
+                    if (isFromBook) {
+                        console.log('📚 [IA] RESPOSTA ENCONTRADA EM LIVRO:', {
+                            livro: bestKb.title.substring(0, 50),
+                            score: bestScore,
+                            source_type: bestKb.source_type
+                        });
+                    }
+                    
                     // CAMADA 3: Adicionar personalidade e emoção
                     bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
                     
@@ -2409,7 +2419,7 @@ async function findBestAnswer(userMessage, userId) {
                     }
                     
                     // Log para debug
-                    if (bestKb.source_type === 'book_training') {
+                    if (bestKb.source_type === 'book_training' || bestKb.source_type === 'tavily_book' || bestKb.source_type === 'tavily_book_trained') {
                         console.log('📚 [IA] Usando conhecimento de LIVRO (com sistema de pensamento):', bestKb.title.substring(0, 50));
                     }
                     
@@ -2536,17 +2546,63 @@ async function findBestAnswer(userMessage, userId) {
                                 webSearchConfig.api_provider === 'tavily' &&
                                 webSearchConfig.api_key;
         
-        // Verificar se temos resposta de livro (prioridade máxima - não buscar na web)
-        // Livros têm score alto (50+ de bonus) então se bestScore > 50 e source é knowledge, provavelmente é livro
-        const hasBookKnowledge = bestAnswer && bestScore > 50 && bestSource === 'knowledge';
+        // VERIFICAR SE TEM RESPOSTA DE LIVRO (PRIORIDADE MÁXIMA)
+        // Verificar se a resposta veio de um livro processado
+        let hasBookKnowledge = false;
+        let bookAnswerScore = 0;
         
-        // Para perguntas EXTERNAS (não sobre sistema), buscar no Tavily APENAS se não tiver resposta de livro
-        // Para perguntas SOBRE SISTEMA, buscar apenas se não tem resposta ou score baixo
-        const shouldSearchWeb = hasTavilyConfig && !hasBookKnowledge && (
-            !questionIsAboutSystem || // PRIORIDADE: Sempre buscar se não é sobre sistema (mas não se tiver livro)
-            !bestAnswer || 
-            bestScore < 60 // Score mais alto para perguntas sobre sistema
-        );
+        if (bestAnswer && bestSource === 'knowledge') {
+            // Verificar se a resposta veio de um livro
+            const bookSources = ['book_training', 'tavily_book', 'tavily_book_trained'];
+            if (candidates && candidates.length > 0) {
+                const topCandidate = candidates[0];
+                if (topCandidate && topCandidate.kb && bookSources.includes(topCandidate.kb.source_type)) {
+                    hasBookKnowledge = true;
+                    bookAnswerScore = topCandidate.score;
+                    console.log('📚 [IA] RESPOSTA ENCONTRADA EM LIVRO:', {
+                        livro: topCandidate.kb.title.substring(0, 50),
+                        score: bookAnswerScore,
+                        source_type: topCandidate.kb.source_type
+                    });
+                }
+            }
+        }
+        
+        // REGRA CRÍTICA: SÓ BUSCAR NA WEB SE:
+        // 1. NÃO encontrou resposta nos livros OU
+        // 2. Resposta dos livros tem score MUITO baixo (< 100) OU
+        // 3. Resposta não menciona a entidade da pergunta (erro de busca)
+        let shouldSearchWeb = false;
+        
+        if (hasTavilyConfig) {
+            // Se encontrou resposta de livro com score bom, NÃO buscar na web
+            if (hasBookKnowledge && bookAnswerScore >= 100) {
+                shouldSearchWeb = false;
+                console.log('📚 [IA] RESPOSTA DE LIVRO ENCONTRADA - NÃO BUSCAR NA WEB! Score:', bookAnswerScore);
+            } 
+            // Se não encontrou resposta OU resposta tem score muito baixo
+            else if (!bestAnswer || bestScore < 80) {
+                // Validar se resposta menciona entidades da pergunta
+                if (bestAnswer && questionContext.entities.length > 0) {
+                    const answerLower = bestAnswer.toLowerCase();
+                    const hasEntity = questionContext.entities.some(entity => answerLower.includes(entity));
+                    
+                    if (!hasEntity) {
+                        console.log('⚠️ [IA] Resposta não menciona entidade da pergunta - Buscar na web');
+                        shouldSearchWeb = true;
+                    } else {
+                        console.log('✅ [IA] Resposta menciona entidade - Não buscar na web');
+                        shouldSearchWeb = false;
+                    }
+                } else {
+                    // Não tem resposta ou score baixo - buscar na web
+                    shouldSearchWeb = true;
+                }
+            } else {
+                // Tem resposta com score bom - não buscar na web
+                shouldSearchWeb = false;
+            }
+        }
         
         console.log('🤔 [IA] Decisão de buscar na web:', {
             shouldSearchWeb: shouldSearchWeb,
@@ -2579,56 +2635,87 @@ async function findBestAnswer(userMessage, userId) {
                 });
                 
                 if (webResults.results && webResults.results.length > 0) {
-                    // Se Tavily retornou resposta direta, usar ela (prioridade máxima)
-                    if (webResults.answer) {
-                        // Resumir resposta do Tavily se for muito longa
-                        let tavilyAnswer = summarizeAnswer(webResults.answer, 300);
-                        if (!tavilyAnswer) {
-                            tavilyAnswer = webResults.answer.substring(0, 300);
-                        }
+                    // VALIDAÇÃO CRÍTICA: Verificar se resultados da web são relevantes
+                    // Se pergunta tem entidade (ex: "Flamengo"), validar se resultados mencionam essa entidade
+                    let validWebResults = webResults.results;
+                    
+                    if (questionContext.entities.length > 0) {
+                        const entity = questionContext.entities[0].toLowerCase();
+                        validWebResults = webResults.results.filter(r => {
+                            const titleLower = (r.title || '').toLowerCase();
+                            const snippetLower = (r.snippet || r.content || '').toLowerCase();
+                            return titleLower.includes(entity) || snippetLower.includes(entity);
+                        });
                         
-                        bestAnswer = tavilyAnswer;
-                        bestScore = 70; // Score alto para respostas diretas do Tavily
-                        bestSource = 'web_tavily';
-                        console.log('✅ [IA] USANDO RESPOSTA DIRETA DO TAVILY!');
-                        
-                        // APRENDER: Adicionar à base de conhecimento automaticamente
-                        await learnFromTavily(userMessage, tavilyAnswer, client);
-                    } else if (webResults.results.length > 0) {
-                        // Para perguntas externas, SEMPRE usar resultados da web (sobrescrever resposta da base)
-                        if (!questionIsAboutSystem) {
-                            const topResults = webResults.results.slice(0, 2); // Reduzir para 2 resultados
-                            const webAnswer = topResults.map((r, idx) => {
-                                const snippet = (r.snippet || r.content || '').substring(0, 200); // Reduzir tamanho
-                                return `**${r.title}**\n${snippet}${(r.snippet || r.content || '').length > 200 ? '...' : ''}`;
-                            }).join('\n\n');
-                            
-                            bestAnswer = webAnswer;
-                            bestScore = 70; // Score alto para resultados da web em perguntas externas
-                            bestSource = `web_${webResults.provider}`;
-                            console.log('✅✅✅ [IA] USANDO RESULTADOS DA WEB (pergunta externa):', webResults.provider);
-                            
-                            // APRENDER: Adicionar à base de conhecimento
-                            await learnFromTavily(userMessage, webAnswer, client);
+                        if (validWebResults.length === 0) {
+                            console.log(`⚠️ [IA] Resultados da web NÃO mencionam "${entity}" - Rejeitando resultados da web`);
+                            console.log('📚 [IA] Mantendo resposta dos livros/base de conhecimento');
+                            // NÃO usar resultados da web se não mencionam a entidade
                         } else {
-                            // Para perguntas sobre sistema, só usar se não tinha resposta ou score muito baixo
-                            if (!bestAnswer || bestScore < 40) {
-                                const topResults = webResults.results.slice(0, 3);
-                                const webAnswer = topResults.map((r, idx) => 
-                                    `${idx + 1}. **${r.title}**\n${(r.snippet || r.content || '').substring(0, 250)}${(r.snippet || r.content || '').length > 250 ? '...' : ''}`
-                                ).join('\n\n');
+                            console.log(`✅ [IA] ${validWebResults.length} resultados da web são relevantes (mencionam "${entity}")`);
+                        }
+                    }
+                    
+                    // SÓ usar resultados da web se:
+                    // 1. NÃO tem resposta de livro OU
+                    // 2. Resultados da web são válidos e relevantes
+                    if ((!hasBookKnowledge || bookAnswerScore < 100) && validWebResults.length > 0) {
+                        // Se Tavily retornou resposta direta, usar ela
+                        if (webResults.answer) {
+                            // Validar se resposta menciona entidade
+                            if (questionContext.entities.length > 0) {
+                                const entity = questionContext.entities[0].toLowerCase();
+                                const answerLower = webResults.answer.toLowerCase();
+                                if (!answerLower.includes(entity)) {
+                                    console.log(`⚠️ [IA] Resposta do Tavily não menciona "${entity}" - Rejeitando`);
+                                    // Manter resposta dos livros se tiver
+                                } else {
+                                    let tavilyAnswer = summarizeAnswer(webResults.answer, 300);
+                                    if (!tavilyAnswer) {
+                                        tavilyAnswer = webResults.answer.substring(0, 300);
+                                    }
+                                    
+                                    bestAnswer = tavilyAnswer;
+                                    bestScore = 70;
+                                    bestSource = 'web_tavily';
+                                    console.log('✅ [IA] USANDO RESPOSTA DIRETA DO TAVILY (validada)!');
+                                    
+                                    await learnFromTavily(userMessage, tavilyAnswer, client);
+                                }
+                            } else {
+                                let tavilyAnswer = summarizeAnswer(webResults.answer, 300);
+                                if (!tavilyAnswer) {
+                                    tavilyAnswer = webResults.answer.substring(0, 300);
+                                }
+                                
+                                bestAnswer = tavilyAnswer;
+                                bestScore = 70;
+                                bestSource = 'web_tavily';
+                                console.log('✅ [IA] USANDO RESPOSTA DIRETA DO TAVILY!');
+                                
+                                await learnFromTavily(userMessage, tavilyAnswer, client);
+                            }
+                        } else if (validWebResults.length > 0) {
+                            // Usar resultados da web APENAS se não tem resposta de livro boa
+                            if (!hasBookKnowledge || bookAnswerScore < 100) {
+                                const topResults = validWebResults.slice(0, 2);
+                                const webAnswer = topResults.map((r, idx) => {
+                                    const snippet = (r.snippet || r.content || '').substring(0, 200);
+                                    return `**${r.title}**\n${snippet}${(r.snippet || r.content || '').length > 200 ? '...' : ''}`;
+                                }).join('\n\n');
                                 
                                 bestAnswer = webAnswer;
-                                bestScore = 60;
+                                bestScore = 65; // Score menor que livros
                                 bestSource = `web_${webResults.provider}`;
-                                console.log('✅ [IA] USANDO RESULTADOS DA WEB (pergunta sobre sistema):', webResults.provider);
+                                console.log('✅ [IA] USANDO RESULTADOS DA WEB (após validar relevância):', webResults.provider);
                                 
-                                // APRENDER: Adicionar à base de conhecimento
                                 await learnFromTavily(userMessage, webAnswer, client);
                             } else {
-                                console.log('ℹ️ [IA] Mantendo resposta da base (melhor que web)');
+                                console.log('📚 [IA] Mantendo resposta dos LIVROS (melhor que web)');
                             }
                         }
+                    } else {
+                        console.log('📚 [IA] Mantendo resposta dos LIVROS/BASE - Resultados da web não são relevantes');
                     }
                 } else if (webResults.error) {
                     console.error('❌ [IA] Erro na busca Tavily:', webResults.error);
