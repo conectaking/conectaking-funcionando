@@ -579,7 +579,9 @@ O Conecta King é ideal para profissionais, empresas e empreendedores que querem
                         features = plan.features;
                     }
                 }
-                plansContent += `**${plan.plan_name}** - R$ ${plan.price.toFixed(2)}/mês\n`;
+                // Converter price para número
+                const price = typeof plan.price === 'number' ? plan.price : parseFloat(plan.price) || 0;
+                plansContent += `**${plan.plan_name}** - R$ ${price.toFixed(2)}/mês\n`;
                 plansContent += `Código: ${plan.plan_code}\n`;
                 if (plan.description) {
                     plansContent += `${plan.description}\n`;
@@ -625,7 +627,10 @@ O Conecta King é ideal para profissionais, empresas e empreendedores que querem
             // Entrada específica sobre valores
             knowledgeEntries.push({
                 title: 'Quais são os valores dos planos?',
-                content: `Os valores dos planos do Conecta King são:\n\n${plansResult.rows.map(p => `• **${p.plan_name}**: R$ ${p.price.toFixed(2)} por mês`).join('\n')}\n\nCada plano oferece funcionalidades específicas. O Pacote 1 (R$ 480) inclui todas as funcionalidades mas não permite alterar a logomarca. O Pacote 2 (R$ 700) permite alterar a logomarca. O Pacote 3 (R$ 1.500) é empresarial e inclui 3 cartões com logomarcas personalizáveis.`,
+                content: `Os valores dos planos do Conecta King são:\n\n${plansResult.rows.map(p => {
+                    const price = typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0;
+                    return `• **${p.plan_name}**: R$ ${price.toFixed(2)} por mês`;
+                }).join('\n')}\n\nCada plano oferece funcionalidades específicas. O Pacote 1 (R$ 480) inclui todas as funcionalidades mas não permite alterar a logomarca. O Pacote 2 (R$ 700) permite alterar a logomarca. O Pacote 3 (R$ 1.500) é empresarial e inclui 3 cartões com logomarcas personalizáveis.`,
                 keywords: ['valores', 'preços', 'quanto custa', 'mensalidade', '480', '700', '1500', 'R$', 'reais'],
                 category: 'Assinatura'
             });
@@ -633,7 +638,10 @@ O Conecta King é ideal para profissionais, empresas e empreendedores que querem
             // Entrada sobre como assinar
             knowledgeEntries.push({
                 title: 'Como assinar um plano?',
-                content: `Para assinar um plano do Conecta King:\n\n1. Acesse a seção "Assinatura" no seu dashboard\n2. Escolha o plano que deseja (Pacote 1, 2 ou 3)\n3. Clique em "Assinar agora"\n4. Entre em contato via WhatsApp ou faça o pagamento via PIX\n5. Após a confirmação do pagamento, seu plano será ativado\n\nOs valores são:\n${plansResult.rows.map(p => `• ${p.plan_name}: R$ ${p.price.toFixed(2)}/mês`).join('\n')}`,
+                content: `Para assinar um plano do Conecta King:\n\n1. Acesse a seção "Assinatura" no seu dashboard\n2. Escolha o plano que deseja (Pacote 1, 2 ou 3)\n3. Clique em "Assinar agora"\n4. Entre em contato via WhatsApp ou faça o pagamento via PIX\n5. Após a confirmação do pagamento, seu plano será ativado\n\nOs valores são:\n${plansResult.rows.map(p => {
+                    const price = typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0;
+                    return `• ${p.plan_name}: R$ ${price.toFixed(2)}/mês`;
+                }).join('\n')}`,
                 keywords: ['como assinar', 'assinar', 'contratar', 'adquirir plano', 'pagamento'],
                 category: 'Assinatura'
             });
