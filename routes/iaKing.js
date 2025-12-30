@@ -2476,6 +2476,13 @@ router.post('/learning/:id/approve', protectAdmin, asyncHandler(async (req, res)
         
         const item = learning.rows[0];
         
+        // Converter adminId para número (created_by é INTEGER)
+        let createdByValue = null;
+        if (adminId) {
+            const adminIdNum = parseInt(adminId);
+            createdByValue = isNaN(adminIdNum) ? null : adminIdNum;
+        }
+        
         // Adicionar à base de conhecimento
         await client.query(`
             INSERT INTO ia_knowledge_base (title, content, keywords, source_type, is_active, created_by)
@@ -2484,7 +2491,7 @@ router.post('/learning/:id/approve', protectAdmin, asyncHandler(async (req, res)
             item.question,
             item.suggested_answer,
             extractKeywords(item.question),
-            adminId
+            createdByValue
         ]);
         
         // Marcar como aprovado
@@ -2588,6 +2595,13 @@ router.post('/train-with-tavily', protectAdmin, asyncHandler(async (req, res) =>
     const { query, max_results = 5, category_id } = req.body;
     const adminId = req.user.userId;
     
+    // Converter adminId para número (created_by é INTEGER)
+    let createdByValue = null;
+    if (adminId) {
+        const adminIdNum = parseInt(adminId);
+        createdByValue = isNaN(adminIdNum) ? null : adminIdNum;
+    }
+    
     if (!query || !query.trim()) {
         return res.status(400).json({ error: 'Query é obrigatória' });
     }
@@ -2638,7 +2652,7 @@ router.post('/train-with-tavily', protectAdmin, asyncHandler(async (req, res) =>
                         result.snippet || result.content || '',
                         extractKeywords(result.title + ' ' + (result.snippet || '')),
                         category_id || null,
-                        adminId
+                        createdByValue
                     ]);
                     insertedCount++;
                 }
@@ -2665,7 +2679,7 @@ router.post('/train-with-tavily', protectAdmin, asyncHandler(async (req, res) =>
                         tavilyResult.answer,
                         extractKeywords(query),
                         category_id || null,
-                        adminId
+                        createdByValue
                     ]);
                     insertedCount++;
                 }
@@ -3068,6 +3082,13 @@ router.post('/train-with-book', protectAdmin, asyncHandler(async (req, res) => {
     const { title, author, content, category_id, create_qa = true } = req.body;
     const adminId = req.user.userId;
     
+    // Converter adminId para número (created_by é INTEGER)
+    let createdByValue = null;
+    if (adminId) {
+        const adminIdNum = parseInt(adminId);
+        createdByValue = isNaN(adminIdNum) ? null : adminIdNum;
+    }
+    
     if (!title || !content) {
         return res.status(400).json({ error: 'Título e conteúdo são obrigatórios' });
     }
@@ -3130,7 +3151,7 @@ router.post('/train-with-book', protectAdmin, asyncHandler(async (req, res) => {
                     keywords,
                     category_id || null,
                     `book_${title}_section_${i + 1}`,
-                    adminId
+                    createdByValue
                 ]);
                 
                 knowledgeItemsCreated++;
@@ -3182,7 +3203,7 @@ router.post('/train-with-book', protectAdmin, asyncHandler(async (req, res) => {
             bookKeywords,
             category_id || null,
             `book_${title}_main`,
-            adminId
+            createdByValue
         ]);
         
         knowledgeItemsCreated++;
@@ -3219,6 +3240,13 @@ router.post('/train-with-database-book', protectAdmin, asyncHandler(async (req, 
     console.log('📥 Requisição recebida: POST /api/ia-king/train-with-database-book');
     const { book_id, create_qa = true } = req.body;
     const adminId = req.user.userId;
+    
+    // Converter adminId para número (created_by é INTEGER)
+    let createdByValue = null;
+    if (adminId) {
+        const adminIdNum = parseInt(adminId);
+        createdByValue = isNaN(adminIdNum) ? null : adminIdNum;
+    }
     
     if (!book_id) {
         return res.status(400).json({ error: 'ID do livro é obrigatório' });
@@ -3300,7 +3328,7 @@ router.post('/train-with-database-book', protectAdmin, asyncHandler(async (req, 
                     keywords,
                     book.category_id || null,
                     `book_${book.title}_section_${i + 1}`,
-                    adminId
+                    createdByValue
                 ]);
                 
                 knowledgeItemsCreated++;
@@ -3351,7 +3379,7 @@ router.post('/train-with-database-book', protectAdmin, asyncHandler(async (req, 
             bookKeywords,
             book.category_id || null,
             `book_${book.title}_main`,
-            adminId
+            createdByValue
         ]);
         
         knowledgeItemsCreated++;
