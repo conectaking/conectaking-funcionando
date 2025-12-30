@@ -2132,11 +2132,19 @@ async function findBestAnswer(userMessage, userId) {
                 const titleKeywordMatch = userKeywords.some(uk => kb.title.toLowerCase().includes(uk));
                 const titleBonus = titleKeywordMatch ? 30 : 0;
                 
+                // PRIORIDADE MÁXIMA: LIVROS têm score extra!
+                let bookBonus = 0;
+                if (kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained') {
+                    bookBonus = 200; // BONUS ENORME para livros!
+                    console.log(`📚 [IA] Livro encontrado: "${kb.title.substring(0, 50)}" - Bonus aplicado!`);
+                }
+                
                 // PRIORIDADE: Se temos match de entidade, usar ele (prioridade máxima)
                 // Senão, usar score inteligente se for alto, senão usar score tradicional
-                const totalScore = entityMatchScore > 0 ? entityMatchScore : 
+                // SEMPRE adicionar bonus de livro!
+                const totalScore = (entityMatchScore > 0 ? entityMatchScore : 
                                  (intelligentScore > 50 ? intelligentScore : 
-                                 (titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus));
+                                 (titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus))) + bookBonus;
                 
                 // Adicionar à lista de candidatos
                 candidates.push({
@@ -5565,6 +5573,82 @@ router.get('/books', protectAdmin, asyncHandler(async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Erro ao listar livros:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/books/:id/content - Ver conteúdo completo de um livro (como a IA vê)
+router.get('/books/:id/content', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+    try {
+        // Buscar o livro principal
+        const bookResult = await client.query(`
+            SELECT 
+                id,
+                title,
+                content,
+                source_type,
+                source_reference,
+                created_at
+            FROM ia_knowledge_base
+            WHERE id = $1
+            AND source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+        `, [id]);
+        
+        if (bookResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Livro não encontrado' });
+        }
+        
+        const book = bookResult.rows[0];
+        
+        // Buscar todas as seções deste livro
+        const sectionsResult = await client.query(`
+            SELECT 
+                id,
+                title,
+                content,
+                created_at
+            FROM ia_knowledge_base
+            WHERE source_type = 'book_training'
+            AND source_reference LIKE $1
+            ORDER BY id ASC
+        `, [`book_${book.title.replace(/'/g, "''")}_section_%`]);
+        
+        // Combinar conteúdo principal + todas as seções (como a IA vê)
+        let fullContent = book.content || '';
+        
+        if (sectionsResult.rows.length > 0) {
+            fullContent += '\n\n' + '='.repeat(80) + '\n';
+            fullContent += 'SEÇÕES DO LIVRO (Como a IA processa):\n';
+            fullContent += '='.repeat(80) + '\n\n';
+            
+            sectionsResult.rows.forEach((section, index) => {
+                fullContent += `\n--- SEÇÃO ${index + 1}: ${section.title || 'Sem título'} ---\n\n`;
+                fullContent += section.content + '\n\n';
+            });
+        }
+        
+        res.json({
+            book: {
+                id: book.id,
+                title: book.title,
+                source_type: book.source_type,
+                source_reference: book.source_reference,
+                created_at: book.created_at
+            },
+            content: fullContent,
+            stats: {
+                main_content_length: book.content ? book.content.length : 0,
+                sections_count: sectionsResult.rows.length,
+                total_length: fullContent.length,
+                total_words: fullContent.split(/\s+/).length
+            }
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar conteúdo do livro:', error);
         throw error;
     } finally {
         client.release();
