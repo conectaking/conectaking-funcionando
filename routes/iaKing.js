@@ -1,4 +1,10 @@
-// ... existing code ...
+const express = require('express');
+const db = require('../db');
+const { protectUser } = require('../middleware/protectUser');
+const { protectAdmin } = require('../middleware/protectAdmin');
+const { asyncHandler } = require('../middleware/errorHandler');
+
+const router = express.Router();
 
 // POST /api/ia-king/train-initial - Treinamento inicial completo do sistema (ADM)
 router.post('/train-initial', protectAdmin, asyncHandler(async (req, res) => {
@@ -89,7 +95,15 @@ O Conecta King é ideal para profissionais, empresas e empreendedores que querem
             knowledgeEntries.push({
                 title: 'Quais são os valores dos planos?',
                 content: `Os valores dos planos do Conecta King são:\n\n${plansResult.rows.map(p => `• **${p.plan_name}**: R$ ${p.price.toFixed(2)} por mês`).join('\n')}\n\nCada plano oferece funcionalidades específicas. O Pacote 1 (R$ 480) inclui todas as funcionalidades mas não permite alterar a logomarca. O Pacote 2 (R$ 700) permite alterar a logomarca. O Pacote 3 (R$ 1.500) é empresarial e inclui 3 cartões com logomarcas personalizáveis.`,
-                keywords: ['valores', 'preços', 'quanto custa', 'mensalidade', '480', '700', '1500'],
+                keywords: ['valores', 'preços', 'quanto custa', 'mensalidade', '480', '700', '1500', 'R$', 'reais'],
+                category: 'Assinatura'
+            });
+            
+            // Entrada sobre como assinar
+            knowledgeEntries.push({
+                title: 'Como assinar um plano?',
+                content: `Para assinar um plano do Conecta King:\n\n1. Acesse a seção "Assinatura" no seu dashboard\n2. Escolha o plano que deseja (Pacote 1, 2 ou 3)\n3. Clique em "Assinar agora"\n4. Entre em contato via WhatsApp ou faça o pagamento via PIX\n5. Após a confirmação do pagamento, seu plano será ativado\n\nOs valores são:\n${plansResult.rows.map(p => `• ${p.plan_name}: R$ ${p.price.toFixed(2)}/mês`).join('\n')}`,
+                keywords: ['como assinar', 'assinar', 'contratar', 'adquirir plano', 'pagamento'],
                 category: 'Assinatura'
             });
         }
@@ -174,6 +188,70 @@ O cartão funciona como um site pessoal, mas muito mais simples e focado em cone
             category: 'Assinatura'
         });
         
+        // 6. Informações sobre módulos específicos
+        knowledgeEntries.push({
+            title: 'Como adicionar módulos ao cartão?',
+            content: `Para adicionar módulos ao seu cartão virtual:
+
+1. Acesse seu dashboard
+2. Clique em "Adicionar Módulo" ou no botão "+"
+3. Escolha o tipo de módulo que deseja adicionar
+4. Preencha as informações solicitadas (links, números, textos, etc.)
+5. Adicione uma imagem se necessário
+6. Salve e publique as alterações
+
+Você pode adicionar múltiplos módulos e organizá-los na ordem que preferir usando os botões de mover ou arrastando e soltando.
+
+Os módulos disponíveis dependem do seu plano de assinatura.`,
+            keywords: ['adicionar módulo', 'como adicionar', 'módulos', 'adicionar', 'criar módulo'],
+            category: 'Módulos'
+        });
+        
+        // 7. Informações sobre página de vendas
+        knowledgeEntries.push({
+            title: 'Página de Vendas - Conecta King',
+            content: `A Página de Vendas é um módulo especial do Conecta King que permite criar uma página completa de vendas personalizada.
+
+Funcionalidades:
+• Design personalizado com cores e estilos
+• Banner principal com imagem
+• Logo personalizada (com sistema de corte)
+• Descrição completa do produto/serviço
+• Catálogo de produtos integrado
+• Botões de ação (WhatsApp, compra, etc.)
+• Analytics de visualizações e cliques
+
+Como usar:
+1. Adicione o módulo "Página de Vendas"
+2. Configure o banner, logo e descrição
+3. Adicione produtos ao catálogo se desejar
+4. Personalize cores e estilos
+5. Publique e compartilhe o link
+
+A página de vendas é ideal para profissionais que querem vender produtos ou serviços diretamente pelo cartão virtual.`,
+            keywords: ['página de vendas', 'sales page', 'vendas', 'produtos', 'catálogo'],
+            category: 'Módulos'
+        });
+        
+        // 8. Informações sobre compartilhamento
+        knowledgeEntries.push({
+            title: 'Como compartilhar meu cartão?',
+            content: `Compartilhar seu cartão virtual é muito simples:
+
+1. Acesse seu dashboard
+2. Clique em "Ver Cartão" ou "Compartilhar"
+3. Copie o link único do seu cartão
+4. Compartilhe onde quiser: WhatsApp, Instagram, email, etc.
+
+O link é único e permanente. Todas as pessoas que acessarem verão seu cartão atualizado com todas as informações e módulos que você configurou.
+
+Você também pode usar o QR Code para compartilhamento físico (impressão em cartões de visita, por exemplo).
+
+Todas as visualizações são registradas e você pode acompanhar nos relatórios.`,
+            keywords: ['compartilhar', 'link', 'QR code', 'como compartilhar', 'link único'],
+            category: 'Sistema'
+        });
+        
         // Inserir todas as entradas na base de conhecimento
         let insertedCount = 0;
         const categoryMap = {};
@@ -228,4 +306,4 @@ O cartão funciona como um site pessoal, mas muito mais simples e focado em cone
     }
 }));
 
-// ... existing code ...
+module.exports = router;
