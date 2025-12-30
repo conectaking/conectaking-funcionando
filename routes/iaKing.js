@@ -347,8 +347,6 @@ async function findBestAnswer(userMessage, userId) {
                     bestSource = 'knowledge';
                 }
             }
-        
-            }
         } catch (error) {
             console.error('Erro ao buscar base de conhecimento:', error);
         }
