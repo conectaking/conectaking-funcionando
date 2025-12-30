@@ -5479,6 +5479,341 @@ router.post('/train-with-book', protectAdmin, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/ia-king/train-with-database-book - Treinar IA com livro já existente no banco
+// GET /api/ia-king/books - Listar todos os livros processados com estatísticas
+router.get('/books', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Buscar todos os livros processados
+        const booksResult = await client.query(`
+            SELECT 
+                kb.id,
+                kb.title,
+                kb.content,
+                kb.source_type,
+                kb.source_reference,
+                kb.created_at,
+                kb.updated_at,
+                kb.usage_count,
+                kb.is_active,
+                LENGTH(kb.content) as content_length,
+                array_length(string_to_array(kb.content, ' '), 1) as word_count,
+                (SELECT COUNT(*) FROM ia_knowledge_base 
+                 WHERE source_type = 'book_training' 
+                 AND source_reference LIKE '%' || REPLACE(kb.title, ' ', '_') || '%') as sections_count,
+                (SELECT COUNT(*) FROM ia_qa 
+                 WHERE keywords && ARRAY(SELECT unnest(kb.keywords))
+                 OR question ILIKE '%' || kb.title || '%') as qa_count
+            FROM ia_knowledge_base kb
+            WHERE kb.source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+            ORDER BY kb.created_at DESC
+        `);
+        
+        const books = booksResult.rows.map(book => {
+            // Extrair título do livro (remover autor se houver)
+            const title = book.title.split(' - ')[0];
+            const author = book.title.includes(' - ') ? book.title.split(' - ')[1] : null;
+            
+            // Calcular estatísticas
+            const stats = {
+                content_length: parseInt(book.content_length) || 0,
+                word_count: parseInt(book.word_count) || 0,
+                sections_count: parseInt(book.sections_count) || 0,
+                qa_count: parseInt(book.qa_count) || 0,
+                usage_count: book.usage_count || 0,
+                is_complete: (parseInt(book.content_length) || 0) > 1000, // Considera completo se tem mais de 1000 caracteres
+                last_used: book.updated_at
+            };
+            
+            return {
+                id: book.id,
+                title: title,
+                author: author,
+                source_type: book.source_type,
+                source_reference: book.source_reference,
+                created_at: book.created_at,
+                is_active: book.is_active,
+                stats: stats
+            };
+        });
+        
+        res.json({
+            books: books,
+            total: books.length,
+            total_words: books.reduce((sum, book) => sum + book.stats.word_count, 0),
+            total_sections: books.reduce((sum, book) => sum + book.stats.sections_count, 0)
+        });
+    } catch (error) {
+        console.error('❌ Erro ao listar livros:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/books/:id - Ver detalhes completos de um livro específico
+router.get('/books/:id', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+    try {
+        // Buscar o livro principal
+        const bookResult = await client.query(`
+            SELECT 
+                kb.id,
+                kb.title,
+                kb.content,
+                kb.keywords,
+                kb.source_type,
+                kb.source_reference,
+                kb.created_at,
+                kb.updated_at,
+                kb.usage_count,
+                kb.is_active,
+                kb.priority,
+                LENGTH(kb.content) as content_length,
+                array_length(string_to_array(kb.content, ' '), 1) as word_count
+            FROM ia_knowledge_base kb
+            WHERE kb.id = $1
+            AND kb.source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+        `, [id]);
+        
+        if (bookResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Livro não encontrado' });
+        }
+        
+        const book = bookResult.rows[0];
+        
+        // Buscar todas as seções deste livro
+        const sectionsResult = await client.query(`
+            SELECT 
+                id,
+                title,
+                LENGTH(content) as content_length,
+                array_length(string_to_array(content, ' '), 1) as word_count,
+                usage_count,
+                created_at
+            FROM ia_knowledge_base
+            WHERE source_type = 'book_training'
+            AND source_reference LIKE $1
+            ORDER BY id ASC
+        `, [`book_${book.title.replace(/'/g, "''")}_section_%`]);
+        
+        // Buscar Q&As relacionados
+        const qaResult = await client.query(`
+            SELECT 
+                id,
+                question,
+                LENGTH(answer) as answer_length,
+                usage_count,
+                success_rate,
+                created_at
+            FROM ia_qa
+            WHERE keywords && ARRAY(SELECT unnest($1::TEXT[]))
+            OR question ILIKE '%' || $2 || '%'
+            ORDER BY usage_count DESC
+            LIMIT 20
+        `, [book.keywords || [], book.title]);
+        
+        // Extrair título e autor
+        const titleParts = book.title.split(' - ');
+        const title = titleParts[0];
+        const author = titleParts.length > 1 ? titleParts[1] : null;
+        
+        // Calcular estatísticas completas
+        const totalSections = sectionsResult.rows.length;
+        const totalSectionWords = sectionsResult.rows.reduce((sum, section) => sum + (parseInt(section.word_count) || 0), 0);
+        const totalSectionChars = sectionsResult.rows.reduce((sum, section) => sum + (parseInt(section.content_length) || 0), 0);
+        
+        const stats = {
+            main_content: {
+                length: parseInt(book.content_length) || 0,
+                words: parseInt(book.word_count) || 0,
+                preview: book.content.substring(0, 500) + (book.content.length > 500 ? '...' : '')
+            },
+            sections: {
+                count: totalSections,
+                total_words: totalSectionWords,
+                total_chars: totalSectionChars,
+                average_words_per_section: totalSections > 0 ? Math.round(totalSectionWords / totalSections) : 0,
+                list: sectionsResult.rows.map(s => ({
+                    id: s.id,
+                    title: s.title,
+                    words: parseInt(s.word_count) || 0,
+                    chars: parseInt(s.content_length) || 0,
+                    usage_count: s.usage_count || 0,
+                    created_at: s.created_at
+                }))
+            },
+            qa: {
+                count: qaResult.rows.length,
+                list: qaResult.rows.map(qa => ({
+                    id: qa.id,
+                    question: qa.question,
+                    answer_length: parseInt(qa.answer_length) || 0,
+                    usage_count: qa.usage_count || 0,
+                    success_rate: parseFloat(qa.success_rate) || 0,
+                    created_at: qa.created_at
+                }))
+            },
+            total: {
+                words: (parseInt(book.word_count) || 0) + totalSectionWords,
+                chars: (parseInt(book.content_length) || 0) + totalSectionChars,
+                knowledge_items: 1 + totalSections, // 1 principal + seções
+                qa_items: qaResult.rows.length
+            },
+            completeness: {
+                has_main_content: (parseInt(book.content_length) || 0) > 0,
+                has_sections: totalSections > 0,
+                has_qa: qaResult.rows.length > 0,
+                is_complete: (parseInt(book.content_length) || 0) > 1000 && totalSections > 0,
+                percentage: Math.min(100, Math.round(
+                    ((parseInt(book.content_length) > 0 ? 30 : 0) +
+                     (totalSections > 0 ? 50 : 0) +
+                     (qaResult.rows.length > 0 ? 20 : 0))
+                ))
+            }
+        };
+        
+        res.json({
+            book: {
+                id: book.id,
+                title: title,
+                author: author,
+                source_type: book.source_type,
+                source_reference: book.source_reference,
+                keywords: book.keywords,
+                priority: book.priority,
+                is_active: book.is_active,
+                created_at: book.created_at,
+                updated_at: book.updated_at,
+                usage_count: book.usage_count
+            },
+            stats: stats
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar detalhes do livro:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/books/:id/verify - Verificar se um livro está completo e processado corretamente
+router.get('/books/:id/verify', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+    try {
+        const bookResult = await client.query(`
+            SELECT 
+                id,
+                title,
+                content,
+                source_type,
+                source_reference,
+                LENGTH(content) as content_length
+            FROM ia_knowledge_base
+            WHERE id = $1
+        `, [id]);
+        
+        if (bookResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Livro não encontrado' });
+        }
+        
+        const book = bookResult.rows[0];
+        const issues = [];
+        const warnings = [];
+        const success = [];
+        
+        // Verificar conteúdo principal
+        if (!book.content || book.content.trim().length === 0) {
+            issues.push('❌ Livro não tem conteúdo');
+        } else if (book.content.length < 100) {
+            issues.push('⚠️ Conteúdo muito curto (menos de 100 caracteres)');
+        } else {
+            success.push(`✅ Conteúdo principal: ${book.content.length.toLocaleString()} caracteres`);
+        }
+        
+        // Verificar seções
+        const sectionsResult = await client.query(`
+            SELECT COUNT(*) as count
+            FROM ia_knowledge_base
+            WHERE source_type = 'book_training'
+            AND source_reference LIKE $1
+        `, [`book_${book.title.replace(/'/g, "''")}_section_%`]);
+        
+        const sectionsCount = parseInt(sectionsResult.rows[0].count) || 0;
+        if (sectionsCount === 0) {
+            warnings.push('⚠️ Nenhuma seção encontrada - livro pode não estar completamente processado');
+        } else {
+            success.push(`✅ ${sectionsCount} seções encontradas`);
+        }
+        
+        // Verificar Q&As
+        const qaResult = await client.query(`
+            SELECT COUNT(*) as count
+            FROM ia_qa
+            WHERE question ILIKE '%' || $1 || '%'
+        `, [book.title]);
+        
+        const qaCount = parseInt(qaResult.rows[0].count) || 0;
+        if (qaCount === 0) {
+            warnings.push('⚠️ Nenhum Q&A criado para este livro');
+        } else {
+            success.push(`✅ ${qaCount} Q&As relacionados encontrados`);
+        }
+        
+        // Verificar se está ativo
+        const activeResult = await client.query(`
+            SELECT is_active
+            FROM ia_knowledge_base
+            WHERE id = $1
+        `, [id]);
+        
+        if (!activeResult.rows[0].is_active) {
+            warnings.push('⚠️ Livro está inativo - não será usado nas respostas');
+        } else {
+            success.push('✅ Livro está ativo');
+        }
+        
+        // Calcular score de completude
+        let completenessScore = 0;
+        if (book.content && book.content.length > 1000) completenessScore += 40;
+        if (sectionsCount > 0) completenessScore += 30;
+        if (qaCount > 0) completenessScore += 20;
+        if (activeResult.rows[0].is_active) completenessScore += 10;
+        
+        const isComplete = completenessScore >= 70 && issues.length === 0;
+        
+        res.json({
+            book_id: id,
+            book_title: book.title,
+            verification: {
+                is_complete: isComplete,
+                completeness_score: completenessScore,
+                status: isComplete ? '✅ COMPLETO' : (issues.length > 0 ? '❌ INCOMPLETO' : '⚠️ PARCIAL'),
+                issues: issues,
+                warnings: warnings,
+                success: success,
+                recommendations: issues.length > 0 ? [
+                    'Re-processe o livro se necessário',
+                    'Verifique se todas as seções foram criadas',
+                    'Considere criar Q&As adicionais'
+                ] : []
+            },
+            stats: {
+                content_length: book.content ? book.content.length : 0,
+                sections_count: sectionsCount,
+                qa_count: qaCount,
+                is_active: activeResult.rows[0].is_active
+            }
+        });
+    } catch (error) {
+        console.error('❌ Erro ao verificar livro:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
 router.post('/train-with-database-book', protectAdmin, asyncHandler(async (req, res) => {
     console.log('📥 Requisição recebida: POST /api/ia-king/train-with-database-book');
     const { book_id, create_qa = true } = req.body;
