@@ -273,6 +273,183 @@ async function searchWeb(query, config = null) {
     }
 }
 
+// Função para detectar perguntas diretas (você sabe, você pode, etc.)
+function detectDirectQuestion(message) {
+    const lowerMessage = message.toLowerCase().trim();
+    const directQuestionPatterns = [
+        /você sabe/i,
+        /voce sabe/i,
+        /você pode/i,
+        /voce pode/i,
+        /você consegue/i,
+        /voce consegue/i,
+        /você é capaz/i,
+        /voce e capaz/i,
+        /você tem/i,
+        /voce tem/i,
+        /você conhece/i,
+        /voce conhece/i,
+        /você entende/i,
+        /voce entende/i
+    ];
+    
+    return directQuestionPatterns.some(pattern => pattern.test(lowerMessage));
+}
+
+// Função para filtrar conteúdo acadêmico (listas de nomes, referências)
+function filterAcademicContent(content) {
+    if (!content) return false;
+    
+    const contentLower = content.toLowerCase();
+    
+    // Detectar listas de nomes (Prof., Dr., etc.)
+    const namePatterns = [
+        /prof\.?\s+(dr\.?|dra\.?|ms\.?|me\.?)/gi,
+        /^[A-Z][a-z]+\s+[A-Z][a-z]+(\s+[A-Z][a-z]+)?$/gm, // Nomes próprios
+        /comissão científica/i,
+        /pareceres ad hoc/i,
+        /reitora|vice-reitora/i
+    ];
+    
+    const nameMatches = namePatterns.reduce((count, pattern) => {
+        const matches = contentLower.match(pattern);
+        return count + (matches ? matches.length : 0);
+    }, 0);
+    
+    // Se tiver mais de 3 referências a nomes/títulos, provavelmente é lista acadêmica
+    if (nameMatches > 3) {
+        return true; // Filtrar este conteúdo
+    }
+    
+    // Detectar se é principalmente uma lista (muitas linhas curtas)
+    const lines = content.split('\n').filter(l => l.trim().length > 0);
+    const shortLines = lines.filter(l => l.trim().length < 50).length;
+    
+    // Se mais de 50% das linhas são curtas, provavelmente é uma lista
+    if (lines.length > 5 && shortLines / lines.length > 0.5) {
+        return true;
+    }
+    
+    return false;
+}
+
+// Função para extrair resposta direta e objetiva do conteúdo
+function extractDirectAnswer(content, question) {
+    if (!content) return null;
+    
+    // Filtrar conteúdo acadêmico ANTES de processar
+    if (filterAcademicContent(content)) {
+        console.log('🚫 [IA] Conteúdo acadêmico filtrado (listas de nomes/referências)');
+        return null;
+    }
+    
+    const questionLower = question.toLowerCase();
+    const contentLower = content.toLowerCase();
+    
+    // Se a pergunta é direta (você sabe, você pode), procurar resposta direta
+    if (detectDirectQuestion(question)) {
+        // Procurar frases que respondem diretamente
+        const directAnswerPatterns = [
+            /sim[,.]?\s+(eu\s+)?(sei|posso|conheço|entendo|tenho)/i,
+            /claro[,.]?\s+(que\s+)?(sim|sei|posso)/i,
+            /é\s+possível/i,
+            /posso\s+ajudar/i,
+            /sei\s+ajudar/i,
+            /conheço\s+(sobre|como)/i,
+            /pode\s+ajudar/i,
+            /sabe\s+ajudar/i
+        ];
+        
+        // Procurar primeira frase que responde diretamente
+        const sentences = content.split(/[.!?]\s+/).filter(s => s.trim().length > 10);
+        
+        for (const sentence of sentences) {
+            // Filtrar frases que são apenas listas de nomes
+            if (filterAcademicContent(sentence)) continue;
+            
+            if (directAnswerPatterns.some(pattern => pattern.test(sentence))) {
+                // Encontrar contexto relevante (próximas 2-3 frases)
+                const sentenceIndex = sentences.indexOf(sentence);
+                const relevantSentences = sentences.slice(sentenceIndex, Math.min(sentenceIndex + 4, sentences.length));
+                const answer = relevantSentences.join('. ').substring(0, 400);
+                
+                // Verificar se a resposta não é apenas lista de nomes
+                if (!filterAcademicContent(answer)) {
+                    return answer;
+                }
+            }
+        }
+        
+        // Se não encontrou resposta direta, procurar por palavras-chave da pergunta
+        const questionWords = questionLower.split(/\s+/).filter(w => w.length > 3);
+        for (const sentence of sentences) {
+            // Filtrar frases acadêmicas
+            if (filterAcademicContent(sentence)) continue;
+            
+            const sentenceLower = sentence.toLowerCase();
+            const matches = questionWords.filter(w => sentenceLower.includes(w));
+            if (matches.length >= 2) {
+                // Encontrar contexto relevante
+                const sentenceIndex = sentences.indexOf(sentence);
+                const relevantSentences = sentences.slice(Math.max(0, sentenceIndex - 1), Math.min(sentenceIndex + 4, sentences.length));
+                const answer = relevantSentences.join('. ').substring(0, 400);
+                
+                // Verificar se não é conteúdo acadêmico
+                if (!filterAcademicContent(answer)) {
+                    return answer;
+                }
+            }
+        }
+        
+        // Se ainda não encontrou, procurar primeiro parágrafo útil (não acadêmico)
+        const paragraphs = content.split(/\n\n+/);
+        for (const para of paragraphs) {
+            if (para.trim().length > 50 && !filterAcademicContent(para)) {
+                return para.substring(0, 300);
+            }
+        }
+    }
+    
+    // Para outras perguntas, retornar início do conteúdo (mais relevante)
+    // Mas limitar a 300 caracteres para ser objetivo
+    const firstParagraph = content.split('\n\n')[0] || content.split('.')[0];
+    const answer = firstParagraph.substring(0, 300);
+    
+    // Verificar se não é conteúdo acadêmico
+    if (filterAcademicContent(answer)) {
+        return null;
+    }
+    
+    return answer;
+}
+
+// Função para resumir resposta muito longa
+function summarizeAnswer(content, maxLength = 300) {
+    if (!content || content.length <= maxLength) return content;
+    
+    // Filtrar conteúdo acadêmico
+    if (filterAcademicContent(content)) {
+        return null;
+    }
+    
+    // Tentar encontrar primeira frase completa
+    const sentences = content.split(/[.!?]\s+/);
+    let summary = '';
+    
+    for (const sentence of sentences) {
+        if ((summary + sentence).length > maxLength) break;
+        summary += sentence + '. ';
+    }
+    
+    // Se ainda não tem conteúdo suficiente, pegar primeiro parágrafo
+    if (summary.length < 50) {
+        const firstParagraph = content.split('\n\n')[0] || content.split('\n')[0];
+        summary = firstParagraph.substring(0, maxLength);
+    }
+    
+    return summary.trim() + (content.length > maxLength ? '...' : '');
+}
+
 // Função para detectar elogios/complimentos
 function detectCompliment(message) {
     const compliments = [
@@ -496,7 +673,21 @@ async function findBestAnswer(userMessage, userId) {
                 
                 if (totalScore > bestScore) {
                     bestScore = totalScore;
-                    bestAnswer = kb.content;
+                    
+                    // Extrair resposta direta e objetiva
+                    let extractedAnswer = extractDirectAnswer(kb.content, userMessage);
+                    
+                    // Se não conseguiu extrair resposta direta, resumir
+                    if (!extractedAnswer) {
+                        extractedAnswer = summarizeAnswer(kb.content, 300);
+                    }
+                    
+                    // Se ainda não tem resposta, usar conteúdo original (mas limitado)
+                    if (!extractedAnswer) {
+                        extractedAnswer = kb.content.substring(0, 300);
+                    }
+                    
+                    bestAnswer = extractedAnswer;
                     bestSource = 'knowledge';
                     
                     // Se for conhecimento de livro, marcar como prioridade máxima
@@ -527,13 +718,20 @@ async function findBestAnswer(userMessage, userId) {
                 
                 if (totalScore > bestScore) {
                     bestScore = totalScore;
-                    // Extrair trecho relevante
-                    const words = userMessage.toLowerCase().split(/\s+/);
-                    const relevantPart = text.split('\n').find(para => 
-                        words.some(w => para.toLowerCase().includes(w))
-                    ) || text.substring(0, 500);
                     
-                    bestAnswer = `Com base no documento "${doc.title}":\n\n${relevantPart}`;
+                    // Extrair resposta direta e objetiva
+                    let extractedAnswer = extractDirectAnswer(text, userMessage);
+                    
+                    // Se não conseguiu extrair, procurar trecho relevante
+                    if (!extractedAnswer) {
+                        const words = userMessage.toLowerCase().split(/\s+/);
+                        const relevantPart = text.split('\n').find(para => 
+                            words.some(w => para.toLowerCase().includes(w))
+                        ) || text.substring(0, 300);
+                        extractedAnswer = summarizeAnswer(relevantPart, 300);
+                    }
+                    
+                    bestAnswer = extractedAnswer ? `Com base no documento "${doc.title}":\n\n${extractedAnswer}` : `Com base no documento "${doc.title}":\n\n${text.substring(0, 300)}`;
                     bestSource = 'document';
                 }
             }
@@ -656,20 +854,27 @@ async function findBestAnswer(userMessage, userId) {
                 if (webResults.results && webResults.results.length > 0) {
                     // Se Tavily retornou resposta direta, usar ela (prioridade máxima)
                     if (webResults.answer) {
-                        bestAnswer = webResults.answer;
+                        // Resumir resposta do Tavily se for muito longa
+                        let tavilyAnswer = summarizeAnswer(webResults.answer, 300);
+                        if (!tavilyAnswer) {
+                            tavilyAnswer = webResults.answer.substring(0, 300);
+                        }
+                        
+                        bestAnswer = tavilyAnswer;
                         bestScore = 70; // Score alto para respostas diretas do Tavily
                         bestSource = 'web_tavily';
                         console.log('✅ [IA] USANDO RESPOSTA DIRETA DO TAVILY!');
                         
                         // APRENDER: Adicionar à base de conhecimento automaticamente
-                        await learnFromTavily(userMessage, webResults.answer, client);
+                        await learnFromTavily(userMessage, tavilyAnswer, client);
                     } else if (webResults.results.length > 0) {
                         // Para perguntas externas, SEMPRE usar resultados da web (sobrescrever resposta da base)
                         if (!questionIsAboutSystem) {
-                            const topResults = webResults.results.slice(0, 3);
-                            const webAnswer = topResults.map((r, idx) => 
-                                `${idx + 1}. **${r.title}**\n${(r.snippet || r.content || '').substring(0, 300)}${(r.snippet || r.content || '').length > 300 ? '...' : ''}`
-                            ).join('\n\n');
+                            const topResults = webResults.results.slice(0, 2); // Reduzir para 2 resultados
+                            const webAnswer = topResults.map((r, idx) => {
+                                const snippet = (r.snippet || r.content || '').substring(0, 200); // Reduzir tamanho
+                                return `**${r.title}**\n${snippet}${(r.snippet || r.content || '').length > 200 ? '...' : ''}`;
+                            }).join('\n\n');
                             
                             bestAnswer = webAnswer;
                             bestScore = 70; // Score alto para resultados da web em perguntas externas
@@ -731,6 +936,46 @@ async function findBestAnswer(userMessage, userId) {
         } catch (error) {
             console.error('Erro ao salvar conversa:', error);
             // Não bloquear a resposta por erro ao salvar
+        }
+        
+        // LÓGICA ESPECIAL: Para perguntas diretas, responder de forma objetiva primeiro
+        if (detectDirectQuestion(userMessage) && bestAnswer) {
+            const questionLower = userMessage.toLowerCase();
+            
+            // Se a pergunta é sobre capacidade (você sabe, você pode), responder diretamente
+            if (questionLower.includes('ajudar') || questionLower.includes('problema') || questionLower.includes('emocional')) {
+                // Verificar se a resposta encontrada é relevante
+                const answerLower = bestAnswer.toLowerCase();
+                const isRelevant = answerLower.includes('ajudar') || 
+                                 answerLower.includes('problema') || 
+                                 answerLower.includes('emocional') ||
+                                 answerLower.includes('psicologia') ||
+                                 answerLower.includes('terapia');
+                
+                if (isRelevant) {
+                    // Responder de forma direta e objetiva
+                    const directResponse = "Sim, sei! 😊 Você quer saber como?\n\n";
+                    
+                    // Extrair informações práticas da resposta encontrada
+                    const practicalInfo = summarizeAnswer(bestAnswer, 400);
+                    
+                    // Se não conseguiu extrair, criar resposta genérica mas útil
+                    if (!practicalInfo || practicalInfo.length < 50) {
+                        bestAnswer = directResponse + "Posso ajudar com orientações sobre:\n\n" +
+                                   "• Identificar e entender as emoções\n" +
+                                   "• Técnicas de respiração e relaxamento\n" +
+                                   "• Estratégias para lidar com ansiedade e estresse\n" +
+                                   "• Quando procurar ajuda profissional\n\n" +
+                                   "O que você gostaria de saber especificamente?";
+                    } else {
+                        // Combinar resposta direta com informações práticas
+                        bestAnswer = directResponse + practicalInfo;
+                    }
+                    
+                    bestScore = 85; // Score alto para respostas diretas e objetivas
+                    console.log('✅ [IA] Resposta direta e objetiva gerada para pergunta direta');
+                }
+            }
         }
         
         // Resposta padrão mais educada e útil - SEM buscar na internet (se busca na web não estiver habilitada)
