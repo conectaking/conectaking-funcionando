@@ -2807,14 +2807,14 @@ router.post('/import-book-tavily', protectAdmin, asyncHandler(async (req, res) =
         
         console.log('💾 [Import Book Tavily] Inserindo na base de conhecimento...');
         
-        // Adicionar à base de conhecimento
+        // Adicionar à base de conhecimento (SEM LIMITE de caracteres - conhecimento ilimitado!)
         const result = await client.query(`
             INSERT INTO ia_knowledge_base (title, content, keywords, category_id, source_type, is_active, created_by)
             VALUES ($1, $2, $3, $4, 'tavily_book', true, $5)
             RETURNING *
         `, [
             title,
-            description.substring(0, 10000), // Limitar tamanho
+            description, // SEM LIMITE - conhecimento ilimitado!
             keywords,
             categoryIdValue,
             createdByValue
