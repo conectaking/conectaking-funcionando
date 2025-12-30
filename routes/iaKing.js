@@ -207,6 +207,66 @@ async function findBestAnswer(userMessage, userId) {
             return bestMatch;
         }
         
+        // 4. Buscar em mentorias
+        let mentoriasResult = { rows: [] };
+        try {
+            const mentoriasQuery = `
+                SELECT 
+                    id, title, description, content, keywords, difficulty_level
+                FROM ia_mentorias
+                WHERE is_active = true
+                ORDER BY view_count DESC
+            `;
+            mentoriasResult = await client.query(mentoriasQuery);
+            
+            for (const mentoria of mentoriasResult.rows) {
+                let score = calculateSimilarity(messageLower, mentoria.title + ' ' + mentoria.description + ' ' + mentoria.content.substring(0, 500));
+                
+                if (mentoria.keywords && mentoria.keywords.length > 0) {
+                    const keywordMatches = mentoria.keywords.filter(kw => 
+                        messageKeywords.some(mk => mk.includes(kw) || kw.includes(mk))
+                    ).length;
+                    score += (keywordMatches / mentoria.keywords.length) * 25;
+                }
+                
+                if (score > bestScore && score > 40) {
+                    bestScore = score;
+                    bestMatch = {
+                        type: 'mentoria',
+                        id: mentoria.id,
+                        answer: `Encontrei uma mentoria que pode te ajudar: **${mentoria.title}**\n\n${mentoria.description || mentoria.content.substring(0, 300)}...\n\nDificuldade: ${mentoria.difficulty_level}`,
+                        confidence: Math.min(score, 100)
+                    };
+                }
+            }
+        } catch (error) {
+            console.warn('Tabela ia_mentorias não existe ainda');
+        }
+        
+        // 5. Se não encontrou e busca na web está habilitada, buscar na internet
+        if (!bestMatch || bestScore < 30) {
+            try {
+                const webConfig = await client.query('SELECT is_enabled FROM ia_web_search_config ORDER BY id DESC LIMIT 1');
+                
+                if (webConfig.rows.length > 0 && webConfig.rows[0].is_enabled) {
+                    const webResults = await searchWeb(userMessage, 3);
+                    
+                    if (webResults.results && webResults.results.length > 0) {
+                        const webAnswer = `Encontrei algumas informações na internet sobre isso:\n\n${webResults.results.map((r, i) => `${i + 1}. **${r.title}**\n${r.snippet}\n${r.url ? `Fonte: ${r.url}` : ''}`).join('\n\n')}\n\n*Nota: Estas informações foram encontradas na internet e podem precisar de verificação.*`;
+                        
+                        return {
+                            type: 'web',
+                            answer: webAnswer,
+                            confidence: 50,
+                            webResults: webResults.results
+                        };
+                    }
+                }
+            } catch (error) {
+                console.warn('Erro ao buscar na web ou busca não habilitada:', error.message);
+            }
+        }
+        
         // Se não encontrou, retornar resposta padrão
         return {
             type: 'default',
