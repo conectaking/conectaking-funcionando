@@ -118,14 +118,28 @@ async function searchWithTavily(query, apiKey) {
         
         const response = await Promise.race([fetchPromise, timeoutPromise]);
         
+        console.log('📡 [Tavily] Resposta HTTP recebida:', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok
+        });
+        
         if (!response.ok) {
-            throw new Error(`Tavily API error: ${response.status}`);
+            const errorText = await response.text().catch(() => 'Erro desconhecido');
+            console.error('❌ [Tavily] Erro HTTP:', {
+                status: response.status,
+                statusText: response.statusText,
+                body: errorText.substring(0, 200)
+            });
+            throw new Error(`Tavily API error: ${response.status} - ${errorText.substring(0, 100)}`);
         }
         
         const data = await response.json();
-        console.log('📥 [Tavily] Resposta recebida:', {
+        console.log('📦 [Tavily] Dados recebidos:', {
             hasAnswer: !!data.answer,
-            resultsCount: data.results?.length || 0
+            resultsCount: data.results?.length || 0,
+            answerLength: data.answer?.length || 0,
+            firstResultTitle: data.results?.[0]?.title || 'N/A'
         });
         
         const results = [];
@@ -172,19 +186,43 @@ async function searchWeb(query, config = null) {
         
         // Se Tavily estiver configurado e habilitado, usar primeiro
         if (config && config.is_enabled && config.api_provider === 'tavily' && config.api_key) {
-            console.log('🔍 [Tavily] Buscando na web usando Tavily API:', query.substring(0, 50));
-            const tavilyResult = await searchWithTavily(query, config.api_key);
-            if (tavilyResult.results && tavilyResult.results.length > 0) {
-                console.log('✅ [Tavily] Resultados encontrados:', tavilyResult.results.length, 'resultados');
-                return tavilyResult;
-            } else {
-                console.log('⚠️ [Tavily] Nenhum resultado encontrado, usando fallback');
+            console.log('🚀 [Tavily] INICIANDO BUSCA COM TAVILY!');
+            console.log('🔍 [Tavily] Query:', query.substring(0, 100));
+            console.log('🔑 [Tavily] API Key:', config.api_key.substring(0, 20) + '...');
+            
+            try {
+                const tavilyResult = await searchWithTavily(query, config.api_key);
+                
+                console.log('📊 [Tavily] Resultado da busca:', {
+                    hasResults: !!(tavilyResult.results && tavilyResult.results.length > 0),
+                    resultsCount: tavilyResult.results?.length || 0,
+                    hasAnswer: !!tavilyResult.answer,
+                    hasError: !!tavilyResult.error,
+                    error: tavilyResult.error
+                });
+                
+                if (tavilyResult.results && tavilyResult.results.length > 0) {
+                    console.log('✅ [Tavily] RESULTADOS ENCONTRADOS! Retornando resultados do Tavily.');
+                    return tavilyResult;
+                } else if (tavilyResult.error) {
+                    console.error('❌ [Tavily] ERRO na busca:', tavilyResult.error);
+                    // Continuar para fallback
+                } else {
+                    console.log('⚠️ [Tavily] Nenhum resultado encontrado, usando fallback');
+                }
+            } catch (error) {
+                console.error('❌ [Tavily] EXCEÇÃO ao buscar:', error);
+                console.error('Stack:', error.stack);
+                // Continuar para fallback
             }
         } else {
-            console.log('ℹ️ [Tavily] Não configurado ou desabilitado. Config:', {
+            console.log('⚠️ [Tavily] NÃO VAI USAR TAVILY. Verificando configuração...');
+            console.log('📋 [Tavily] Config recebida:', {
+                hasConfig: !!config,
                 is_enabled: config?.is_enabled,
                 api_provider: config?.api_provider,
-                has_api_key: !!config?.api_key
+                has_api_key: !!config?.api_key,
+                api_key_length: config?.api_key?.length || 0
             });
         }
         
@@ -464,34 +502,72 @@ async function findBestAnswer(userMessage, userId) {
         // Verificar se a pergunta é sobre o sistema ou sobre outras coisas
         const questionIsAboutSystem = isAboutSystem(userMessage);
         
-        // Buscar na web se:
-        // 1. Não encontrou resposta OU score baixo (< 40 para perguntas sobre sistema, < 50 para outras)
-        // 2. OU se a pergunta NÃO é sobre o sistema (sempre buscar na web para perguntas externas)
-        const shouldSearchWeb = webSearchConfig && webSearchConfig.is_enabled && (
-            !bestAnswer || 
-            bestScore < (questionIsAboutSystem ? 40 : 50) ||
-            !questionIsAboutSystem // Sempre buscar se não é sobre o sistema
-        );
+        console.log('🔍 [IA] Análise da pergunta:', {
+            pergunta: userMessage.substring(0, 50),
+            isAboutSystem: questionIsAboutSystem,
+            hasAnswer: !!bestAnswer,
+            bestScore: bestScore,
+            bestSource: bestSource
+        });
+        
+        // DEBUG: Verificar configuração do Tavily
+        if (webSearchConfig) {
+            console.log('📋 [IA] Configuração de busca na web:', {
+                is_enabled: webSearchConfig.is_enabled,
+                api_provider: webSearchConfig.api_provider,
+                has_api_key: !!webSearchConfig.api_key,
+                api_key_preview: webSearchConfig.api_key ? webSearchConfig.api_key.substring(0, 20) + '...' : 'N/A'
+            });
+        } else {
+            console.log('⚠️ [IA] Configuração de busca na web NÃO encontrada!');
+        }
+        
+        // LÓGICA MELHORADA: Buscar na web se:
+        // 1. Tavily está configurado E habilitado
+        // 2. PRIORIDADE: Se pergunta NÃO é sobre sistema, SEMPRE buscar (mesmo com resposta na base)
+        // 3. Se é sobre sistema, buscar apenas se não tem resposta ou score baixo
+        const shouldSearchWeb = webSearchConfig && 
+                                webSearchConfig.is_enabled && 
+                                webSearchConfig.api_provider === 'tavily' &&
+                                webSearchConfig.api_key &&
+                                (
+                                    !questionIsAboutSystem || // PRIORIDADE: Sempre buscar se não é sobre sistema
+                                    !bestAnswer || 
+                                    bestScore < 60 // Score mais alto para perguntas sobre sistema
+                                );
+        
+        console.log('🤔 [IA] Decisão de buscar na web:', {
+            shouldSearchWeb: shouldSearchWeb,
+            motivo: !webSearchConfig ? 'Sem configuração' :
+                    !webSearchConfig.is_enabled ? 'Desabilitado' :
+                    webSearchConfig.api_provider !== 'tavily' ? `Provider errado: ${webSearchConfig.api_provider}` :
+                    !webSearchConfig.api_key ? 'Sem API key' :
+                    !bestAnswer ? 'Sem resposta' :
+                    bestScore < 50 ? `Score baixo: ${bestScore}` :
+                    !questionIsAboutSystem ? 'Pergunta externa' :
+                    'Não deve buscar'
+        });
         
         if (shouldSearchWeb) {
-            console.log('🔍 [IA] Buscando na web porque:', {
-                hasAnswer: !!bestAnswer,
-                score: bestScore,
-                isAboutSystem: questionIsAboutSystem,
-                webSearchEnabled: webSearchConfig.is_enabled,
-                provider: webSearchConfig.api_provider,
-                reason: !questionIsAboutSystem ? 'Pergunta não é sobre o sistema' : (!bestAnswer ? 'Sem resposta' : 'Score baixo')
-            });
+            console.log('🚀 [IA] INICIANDO BUSCA NA WEB COM TAVILY!');
             try {
                 const webResults = await searchWeb(userMessage, webSearchConfig);
                 
+                console.log('📊 [IA] Resultados da busca na web:', {
+                    hasResults: !!(webResults.results && webResults.results.length > 0),
+                    resultsCount: webResults.results?.length || 0,
+                    hasAnswer: !!webResults.answer,
+                    provider: webResults.provider,
+                    hasError: !!webResults.error
+                });
+                
                 if (webResults.results && webResults.results.length > 0) {
-                    // Se Tavily retornou resposta direta, usar ela
+                    // Se Tavily retornou resposta direta, usar ela (prioridade máxima)
                     if (webResults.answer) {
                         bestAnswer = webResults.answer;
-                        bestScore = 60; // Score bom para respostas da web
+                        bestScore = 70; // Score alto para respostas diretas do Tavily
                         bestSource = 'web_tavily';
-                        console.log('✅ [IA] Usando resposta direta do Tavily');
+                        console.log('✅ [IA] USANDO RESPOSTA DIRETA DO TAVILY!');
                         
                         // APRENDER: Adicionar à base de conhecimento automaticamente
                         await learnFromTavily(userMessage, webResults.answer, client);
@@ -499,33 +575,37 @@ async function findBestAnswer(userMessage, userId) {
                         // Combinar os melhores resultados da web
                         const topResults = webResults.results.slice(0, 3);
                         const webAnswer = topResults.map((r, idx) => 
-                            `${idx + 1}. ${r.title}\n${r.snippet.substring(0, 200)}${r.snippet.length > 200 ? '...' : ''}`
+                            `${idx + 1}. **${r.title}**\n${(r.snippet || r.content || '').substring(0, 250)}${(r.snippet || r.content || '').length > 250 ? '...' : ''}`
                         ).join('\n\n');
                         
                         bestAnswer = webAnswer;
-                        bestScore = 50;
+                        bestScore = 60; // Score bom para resultados da web
                         bestSource = `web_${webResults.provider}`;
-                        console.log('✅ [IA] Usando resultados da web:', webResults.provider);
+                        console.log('✅ [IA] USANDO RESULTADOS DA WEB:', webResults.provider);
                         
                         // APRENDER: Adicionar à base de conhecimento
                         await learnFromTavily(userMessage, webAnswer, client);
                     }
+                } else if (webResults.error) {
+                    console.error('❌ [IA] Erro na busca Tavily:', webResults.error);
                 } else {
                     console.log('⚠️ [IA] Nenhum resultado encontrado na web');
                 }
             } catch (error) {
-                console.error('❌ [IA] Erro ao buscar na web:', error.message);
+                console.error('❌ [IA] ERRO CRÍTICO ao buscar na web:', error);
+                console.error('Stack trace:', error.stack);
                 // Continuar sem buscar na web se der erro
             }
-        } else if (webSearchConfig && webSearchConfig.is_enabled && questionIsAboutSystem) {
-            console.log('ℹ️ [IA] Não buscando na web porque:', {
+        } else {
+            console.log('⏭️ [IA] PULANDO busca na web:', {
+                hasConfig: !!webSearchConfig,
+                isEnabled: webSearchConfig?.is_enabled,
+                provider: webSearchConfig?.api_provider,
+                hasKey: !!webSearchConfig?.api_key,
                 hasAnswer: !!bestAnswer,
                 score: bestScore,
-                isAboutSystem: questionIsAboutSystem,
-                reason: 'Resposta encontrada na base sobre o sistema'
+                isAboutSystem: questionIsAboutSystem
             });
-        } else {
-            console.log('ℹ️ [IA] Busca na web não está habilitada');
         }
         
         // Salvar conversa
