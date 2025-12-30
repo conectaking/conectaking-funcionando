@@ -1111,6 +1111,150 @@ router.get('/stats', protectAdmin, asyncHandler(async (req, res) => {
     }
 }));
 
+// GET /api/ia-king/intelligence - Dados completos de inteligência da IA
+router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Estatísticas gerais
+        const [totalKnowledge, totalQA, totalDocs, totalConvs, totalLearning] = await Promise.all([
+            client.query('SELECT COUNT(*) as count FROM ia_knowledge_base WHERE is_active = true'),
+            client.query('SELECT COUNT(*) as count FROM ia_qa WHERE is_active = true'),
+            client.query('SELECT COUNT(*) as count FROM ia_documents'),
+            client.query('SELECT COUNT(*) as count FROM ia_conversations'),
+            client.query("SELECT COUNT(*) as count FROM ia_learning")
+        ]);
+        
+        // Conhecimento por fonte (source_type)
+        const knowledgeBySource = await client.query(`
+            SELECT 
+                source_type,
+                COUNT(*) as count,
+                SUM(LENGTH(content)) as total_chars,
+                AVG(LENGTH(content)) as avg_chars
+            FROM ia_knowledge_base
+            WHERE is_active = true
+            GROUP BY source_type
+            ORDER BY count DESC
+        `);
+        
+        // Livros lidos (tavily_book, book_training)
+        const booksRead = await client.query(`
+            SELECT 
+                id,
+                title,
+                source_type,
+                source_reference,
+                LENGTH(content) as content_length,
+                created_at,
+                updated_at
+            FROM ia_knowledge_base
+            WHERE source_type IN ('tavily_book', 'book_training', 'tavily_book_trained')
+            ORDER BY created_at DESC
+        `);
+        
+        // Conhecimento por categoria
+        const knowledgeByCategory = await client.query(`
+            SELECT 
+                c.name as category_name,
+                COUNT(kb.id) as count,
+                SUM(LENGTH(kb.content)) as total_chars
+            FROM ia_knowledge_base kb
+            LEFT JOIN ia_categories c ON kb.category_id = c.id
+            WHERE kb.is_active = true
+            GROUP BY c.name
+            ORDER BY count DESC
+        `);
+        
+        // Estatísticas de uso (conversas)
+        const conversationStats = await client.query(`
+            SELECT 
+                DATE(created_at) as date,
+                COUNT(*) as count,
+                AVG(confidence_score) as avg_confidence
+            FROM ia_conversations
+            WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+            GROUP BY DATE(created_at)
+            ORDER BY date DESC
+        `);
+        
+        // Fontes de conhecimento únicas
+        const uniqueSources = await client.query(`
+            SELECT DISTINCT source_type
+            FROM ia_knowledge_base
+            WHERE is_active = true
+            ORDER BY source_type
+        `);
+        
+        // Análise de palavras-chave mais usadas
+        const topKeywords = await client.query(`
+            SELECT 
+                unnest(keywords) as keyword,
+                COUNT(*) as usage_count
+            FROM ia_knowledge_base
+            WHERE keywords IS NOT NULL AND array_length(keywords, 1) > 0
+            GROUP BY keyword
+            ORDER BY usage_count DESC
+            LIMIT 20
+        `);
+        
+        // Total de palavras processadas (aproximado)
+        const totalWords = await client.query(`
+            SELECT 
+                SUM(array_length(string_to_array(content, ' '), 1)) as total_words
+            FROM ia_knowledge_base
+            WHERE is_active = true
+        `);
+        
+        res.json({
+            stats: {
+                total_knowledge: parseInt(totalKnowledge.rows[0].count),
+                total_qa: parseInt(totalQA.rows[0].count),
+                total_documents: parseInt(totalDocs.rows[0].count),
+                total_conversations: parseInt(totalConvs.rows[0].count),
+                total_learning_items: parseInt(totalLearning.rows[0].count),
+                total_words: parseInt(totalWords.rows[0].total_words || 0),
+                total_books: booksRead.rows.length
+            },
+            knowledge_by_source: knowledgeBySource.rows.map(row => ({
+                source: row.source_type || 'unknown',
+                count: parseInt(row.count),
+                total_chars: parseInt(row.total_chars || 0),
+                avg_chars: parseFloat(row.avg_chars || 0)
+            })),
+            books_read: booksRead.rows.map(book => ({
+                id: book.id,
+                title: book.title,
+                source_type: book.source_type,
+                source_reference: book.source_reference,
+                content_length: parseInt(book.content_length || 0),
+                words_approx: Math.floor(parseInt(book.content_length || 0) / 5),
+                created_at: book.created_at,
+                updated_at: book.updated_at
+            })),
+            knowledge_by_category: knowledgeByCategory.rows.map(row => ({
+                category: row.category_name || 'Sem categoria',
+                count: parseInt(row.count),
+                total_chars: parseInt(row.total_chars || 0)
+            })),
+            conversation_stats: conversationStats.rows.map(row => ({
+                date: row.date,
+                count: parseInt(row.count),
+                avg_confidence: parseFloat(row.avg_confidence || 0)
+            })),
+            unique_sources: uniqueSources.rows.map(row => row.source_type),
+            top_keywords: topKeywords.rows.map(row => ({
+                keyword: row.keyword,
+                usage_count: parseInt(row.usage_count)
+            }))
+        });
+    } catch (error) {
+        console.error('Erro ao buscar dados de inteligência:', error);
+        res.status(500).json({ error: 'Erro ao buscar dados de inteligência' });
+    } finally {
+        client.release();
+    }
+}));
+
 // ============================================
 // ROTAS DE DOCUMENTOS (ADMIN)
 // ============================================
