@@ -61,8 +61,10 @@ FROM (
         'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode',
         'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
         'spotify', 'linkedin', 'pinterest', 'reddit', 'twitch',
-        'link', 'portfolio', 'banner', 'carousel', 'pdf', 
-        'pdf_embed', 'youtube_embed', 'sales_page', 'product_catalog'
+        'link', 'portfolio', 'banner', 'banner_carousel', 'carousel', 'pdf', 
+        'pdf_embed', 'youtube_embed', 'instagram_embed', 'tiktok_embed',
+        'spotify_embed', 'linkedin_embed', 'pinterest_embed',
+        'sales_page', 'product_catalog'
     ]) as item_type
 ) modules
 CROSS JOIN (
