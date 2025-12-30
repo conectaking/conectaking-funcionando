@@ -25,9 +25,11 @@
     "express": "^5.1.0",
     "express-rate-limit": "^8.0.1",
     "express-validator": "^7.2.1",
+    "file-type": "^19.6.0",
     "form-data": "^4.0.4",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.11.0",
     "mercadopago": "^2.8.0",
     "multer": "^2.0.2",
     "multer-s3": "^3.0.1",
@@ -35,11 +37,9 @@
     "node-cron": "^4.2.1",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.5",
+    "pdf-parse": "^1.1.4",
     "pg": "^8.16.3",
     "qrcode-pix": "^5.0.0",
-    "file-type": "^19.6.0",
-    "sharp": "^0.34.5",
-    "pdf-parse": "^1.1.1",
-    "mammoth": "^1.6.0"
+    "sharp": "^0.34.5"
   }
 }
