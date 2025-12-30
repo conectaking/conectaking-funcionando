@@ -273,6 +273,47 @@ async function searchWeb(query, config = null) {
     }
 }
 
+// Função para detectar elogios/complimentos
+function detectCompliment(message) {
+    const compliments = [
+        'você é linda', 'voce e linda', 'você é lindo', 'voce e lindo',
+        'você é bonita', 'voce e bonita', 'você é bonito', 'voce e bonito',
+        'você é incrível', 'voce e incrivel', 'você é incrivel',
+        'você é demais', 'voce e demais', 'você é ótima', 'voce e otima',
+        'você é ótimo', 'voce e otimo', 'você é maravilhosa', 'voce e maravilhosa',
+        'você é maravilhoso', 'voce e maravilhoso', 'você é perfeita', 'voce e perfeita',
+        'você é perfeito', 'voce e perfeito', 'você é inteligente', 'voce e inteligente',
+        'você é legal', 'voce e legal', 'você é foda', 'voce e foda',
+        'você é top', 'voce e top', 'você é show', 'voce e show',
+        'gostei de você', 'gostei de voce', 'adorei você', 'adorei voce',
+        'você é fofa', 'voce e fofa', 'você é fofo', 'voce e fofo'
+    ];
+    
+    const lowerMessage = message.toLowerCase().trim();
+    
+    // Verificar se contém elogio
+    for (const compliment of compliments) {
+        if (lowerMessage.includes(compliment)) {
+            return true;
+        }
+    }
+    
+    // Padrões de elogio
+    const complimentPatterns = [
+        /você\s+é\s+(linda|lindo|bonita|bonito|incrível|incrivel|demais|ótima|otima|ótimo|otimo|maravilhosa|maravilhoso|perfeita|perfeito|inteligente|legal|foda|top|show|fofa|fofo)/i,
+        /(gostei|adorei|amo)\s+(de\s+)?você/i,
+        /você\s+(é|e)\s+(muito|super|mega)\s+(linda|lindo|bonita|bonito|incrível|incrivel|legal|foda|top)/i
+    ];
+    
+    for (const pattern of complimentPatterns) {
+        if (pattern.test(lowerMessage)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 // Função para detectar saudações
 function detectGreeting(message) {
     const greetings = [
@@ -358,7 +399,16 @@ async function findBestAnswer(userMessage, userId) {
     let knowledgeResult = null;
     
     try {
-        // Verificar se é uma saudação primeiro
+        // Verificar se é um elogio/complimento primeiro (antes de saudação)
+        if (detectCompliment(userMessage)) {
+            return {
+                answer: "Obrigada! 😊 Fico muito feliz em ajudar você! Se tiver alguma dúvida sobre o Conecta King, estou aqui para ajudar!",
+                confidence: 100,
+                source: 'compliment'
+            };
+        }
+        
+        // Verificar se é uma saudação
         if (detectGreeting(userMessage)) {
             return {
                 answer: generateGreetingResponse(),
@@ -1706,6 +1756,80 @@ router.post('/train-advanced', protectAdmin, asyncHandler(async (req, res) => {
         
         // Conhecimento avançado sobre problemas e soluções
         const advancedKnowledge = [
+            // SUPORTE E CONTATO
+            {
+                title: 'Número de suporte Conecta King',
+                content: `**Suporte Conecta King:**
+
+Para entrar em contato com o suporte do Conecta King, você pode falar diretamente com o **Adriano King**:
+
+📱 **WhatsApp:** +55 98 7894-17
+
+**Horário de atendimento:**
+• Segunda a Sexta: 9h às 18h
+• Sábado: 9h às 13h
+
+**Como podemos ajudar:**
+• Dúvidas sobre planos e assinaturas
+• Problemas técnicos
+• Suporte ao cliente
+• Negociações e parcerias
+• Qualquer questão relacionada ao sistema
+
+Entre em contato via WhatsApp e nossa equipe responderá o mais rápido possível! 😊`,
+                keywords: ['suporte', 'contato', 'telefone', 'whatsapp', 'número', 'numero', 'suporte conecta king', 'falar com suporte', 'adriano king', 'contato suporte', 'atendimento'],
+                category: 'Suporte'
+            },
+            {
+                title: 'Vale a pena usar o Conecta King?',
+                content: `**Sim! O Conecta King vale MUITO a pena!** 🚀
+
+Aqui estão os principais motivos:
+
+**1. Profissionalismo e Modernidade** 📱
+• Seu cartão virtual é moderno, interativo e profissional
+• Impressiona clientes e parceiros
+• Mostra que você está atualizado com as tendências
+
+**2. Praticidade e Conveniência** ⚡
+• Compartilhe seu cartão instantaneamente via link, QR Code ou WhatsApp
+• Sempre atualizado - você pode editar a qualquer momento
+• Não precisa imprimir novos cartões quando mudar informações
+
+**3. Múltiplos Módulos Integrados** 🎯
+• Redes sociais (Instagram, Facebook, LinkedIn, TikTok, YouTube)
+• Contatos (WhatsApp, telefone, email)
+• Links personalizados
+• PIX QR Code
+• E muito mais - tudo em um só lugar!
+
+**4. Custo-Benefício Excelente** 💰
+• Planos a partir de R$ 480/ano
+• Sem mensalidades ocultas
+• Economia com impressão de cartões físicos
+• ROI rápido para profissionais e empresas
+
+**5. Facilidade de Uso** ✨
+• Interface intuitiva e fácil de usar
+• Personalização completa do visual
+• Suporte dedicado quando precisar
+
+**6. Alcance e Compartilhamento** 🌐
+• Compartilhe em qualquer lugar, a qualquer hora
+• Funciona em qualquer dispositivo
+• Acessível 24/7 para quem recebe
+
+**7. Diferencial Competitivo** 🏆
+• Se destaque da concorrência
+• Mostre profissionalismo e inovação
+• Aumente suas oportunidades de negócio
+
+**Resultado:** Você terá um cartão profissional, moderno e completo que vai impressionar e facilitar seus contatos profissionais! 
+
+**Quer começar?** Escolha um plano e transforme sua presença digital hoje mesmo! 😊`,
+                keywords: ['vale a pena', 'vale apena', 'vale mesmo a pena', 'me convença', 'convença', 'por que usar', 'porque usar', 'benefícios', 'beneficios', 'vantagens', 'diferencial', 'por que escolher', 'porque escolher'],
+                category: 'Sistema'
+            },
             // PROBLEMAS COMUNS E SOLUÇÕES
             {
                 title: 'Não consigo fazer login',
