@@ -85,9 +85,10 @@ CREATE INDEX IF NOT EXISTS idx_ia_qa_question ON ia_qa USING GIN(to_tsvector('po
 -- ============================================
 -- PARTE 5: Histórico de Conversas
 -- ============================================
+-- Criar tabela primeiro sem foreign key
 CREATE TABLE IF NOT EXISTS ia_conversations (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL,
     message TEXT NOT NULL,
     response TEXT NOT NULL,
     knowledge_used INTEGER[], -- IDs do conhecimento usado
@@ -95,6 +96,25 @@ CREATE TABLE IF NOT EXISTS ia_conversations (
     user_feedback INTEGER, -- -1 (negativo), 0 (neutro), 1 (positivo)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Adicionar foreign key se a tabela users existir
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'users'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'ia_conversations_user_id_fkey'
+    ) THEN
+        ALTER TABLE ia_conversations 
+        ADD CONSTRAINT ia_conversations_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+        RAISE NOTICE 'Foreign key ia_conversations_user_id_fkey criada com sucesso';
+    ELSE
+        RAISE NOTICE 'Foreign key não criada (tabela users não existe ou constraint já existe)';
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_ia_conversations_user ON ia_conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_ia_conversations_created ON ia_conversations(created_at DESC);
