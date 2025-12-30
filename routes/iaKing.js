@@ -1969,6 +1969,27 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
     
     const client = await db.pool.connect();
     try {
+        // Verificar se a tabela existe, se não, criar
+        try {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS ia_web_search_config (
+                    id SERIAL PRIMARY KEY,
+                    is_enabled BOOLEAN DEFAULT false,
+                    api_provider VARCHAR(50) DEFAULT 'scraping',
+                    api_key TEXT,
+                    max_results INTEGER DEFAULT 5,
+                    search_domains TEXT[],
+                    blocked_domains TEXT[],
+                    use_cache BOOLEAN DEFAULT true,
+                    cache_duration_hours INTEGER DEFAULT 24,
+                    updated_by VARCHAR(255),
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+        } catch (tableError) {
+            console.log('Tabela já existe ou erro ao criar:', tableError.message);
+        }
+        
         // Verificar se já existe configuração
         const existing = await client.query(`
             SELECT id FROM ia_web_search_config ORDER BY id DESC LIMIT 1
@@ -1981,7 +2002,7 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
                 VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING *
             `, [
-                is_enabled || false,
+                is_enabled !== undefined ? is_enabled : false,
                 api_provider || 'scraping',
                 api_key || null,
                 max_results || 5,
@@ -2015,6 +2036,12 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
             
             res.json({ config: result.rows[0], message: 'Configuração atualizada com sucesso' });
         }
+    } catch (error) {
+        console.error('Erro ao salvar configuração de busca na web:', error);
+        res.status(500).json({ 
+            error: 'Erro ao salvar configuração',
+            message: error.message 
+        });
     } finally {
         client.release();
     }
