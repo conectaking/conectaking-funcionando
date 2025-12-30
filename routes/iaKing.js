@@ -2731,8 +2731,8 @@ async function findBestAnswer(userMessage, userId) {
                         console.log('🔍 [IA] Auto-pesquisa: Buscando automaticamente para melhorar...');
                         
                         // Buscar automaticamente
-                        if (webSearchConfig && webSearchConfig.is_enabled) {
-                            const autoSearchResult = await searchWithTavily(userMessage, webSearchConfig);
+                        if (webSearchConfig && webSearchConfig.is_enabled && webSearchConfig.api_provider === 'tavily' && webSearchConfig.api_key) {
+                            const autoSearchResult = await searchWithTavily(userMessage, webSearchConfig.api_key);
                             
                             if (autoSearchResult && autoSearchResult.results && autoSearchResult.results.length > 0) {
                                 const autoAnswer = autoSearchResult.results.slice(0, 3).map((r, idx) => 
