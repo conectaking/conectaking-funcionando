@@ -161,14 +161,25 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         for (const kb of knowledgeResult.rows) {
-            let score = calculateSimilarity(messageLower, kb.title + ' ' + kb.content);
+            // Buscar no título e conteúdo
+            const titleScore = calculateSimilarity(messageLower, kb.title.toLowerCase()) * 1.3;
+            const contentScore = calculateSimilarity(messageLower, kb.content.toLowerCase());
+            let score = Math.max(titleScore, contentScore);
             
             // Bônus por palavras-chave
             if (kb.keywords && kb.keywords.length > 0) {
                 const keywordMatches = kb.keywords.filter(kw => 
                     messageKeywords.some(mk => mk.includes(kw) || kw.includes(mk))
                 ).length;
-                score += (keywordMatches / kb.keywords.length) * 30;
+                score += (keywordMatches / Math.max(kb.keywords.length, 1)) * 30;
+            }
+            
+            // Bônus se palavras da mensagem aparecem no título
+            const messageWords = messageLower.split(/\W+/).filter(w => w.length > 2);
+            const titleWords = kb.title.toLowerCase().split(/\W+/);
+            const titleMatches = messageWords.filter(mw => titleWords.some(tw => tw.includes(mw) || mw.includes(tw))).length;
+            if (titleMatches > 0) {
+                score += (titleMatches / Math.max(messageWords.length, 1)) * 25;
             }
             
             score += (kb.usage_count * 0.1);
@@ -1469,6 +1480,39 @@ router.post('/documents/upload', protectAdmin, documentUpload.single('document')
                 details: error.$metadata
             } : undefined
         });
+    }
+}));
+
+// GET /api/ia-king/documents/debug - Debug: Verificar status dos documentos
+router.get('/documents/debug', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT 
+                id, title, file_name, file_type,
+                processed,
+                LENGTH(extracted_text) as text_length,
+                CASE 
+                    WHEN extracted_text IS NULL THEN 'NULL'
+                    WHEN LENGTH(extracted_text) = 0 THEN 'VAZIO'
+                    WHEN processed = false THEN 'NÃO PROCESSADO'
+                    ELSE 'OK'
+                END as status
+            FROM ia_documents
+            ORDER BY created_at DESC
+        `);
+        
+        res.json({ 
+            documents: result.rows,
+            total: result.rows.length,
+            processed: result.rows.filter(r => r.processed).length,
+            with_text: result.rows.filter(r => r.text_length > 0).length
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar documentos:', error);
+        throw error;
+    } finally {
+        client.release();
     }
 }));
 
