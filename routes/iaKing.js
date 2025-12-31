@@ -805,9 +805,9 @@ async function searchWithTavily(query, apiKey) {
             body: JSON.stringify({
                 query: query,
                 search_depth: 'basic',
-                max_results: 5,
+                max_results: 10, // Aumentar para ter mais opções após filtrar vídeos
                 include_answer: true,
-                include_raw_content: false
+                include_raw_content: true // Incluir conteúdo bruto para visualização
             })
         });
         
@@ -6875,8 +6875,8 @@ router.post('/search-books-tavily', protectAdmin, asyncHandler(async (req, res) 
         
         const config = configResult.rows[0];
         
-        // Buscar livros com Tavily (adicionar "livro" ou "book" à query)
-        const bookQuery = `${query} livro book`;
+        // Buscar livros com Tavily (focar em conteúdo textual, excluir vídeos)
+        const bookQuery = `${query} livro book texto pdf documento download ler`;
         console.log('📚 [Busca Livros Tavily] Buscando:', bookQuery);
         
         const tavilyResult = await searchWithTavily(bookQuery, config.api_key);
@@ -6889,20 +6889,57 @@ router.post('/search-books-tavily', protectAdmin, asyncHandler(async (req, res) 
         const books = tavilyResult.results
             .filter(r => {
                 const titleLower = (r.title || '').toLowerCase();
-                const contentLower = (r.snippet || '').toLowerCase();
-                return titleLower.includes('livro') || 
-                       titleLower.includes('book') ||
-                       contentLower.includes('livro') ||
-                       contentLower.includes('book') ||
-                       contentLower.includes('autor') ||
-                       contentLower.includes('author');
+                const contentLower = (r.snippet || r.content || '').toLowerCase();
+                const urlLower = (r.url || '').toLowerCase();
+                
+                // EXCLUIR vídeos e canais de vídeo
+                const isVideo = urlLower.includes('youtube.com') ||
+                               urlLower.includes('youtu.be') ||
+                               urlLower.includes('vimeo.com') ||
+                               urlLower.includes('dailymotion.com') ||
+                               urlLower.includes('twitch.tv') ||
+                               titleLower.includes('vídeo') ||
+                               titleLower.includes('video') ||
+                               titleLower.includes('watch') ||
+                               contentLower.includes('assista') ||
+                               contentLower.includes('watch now');
+                
+                if (isVideo) {
+                    console.log('🚫 [Busca Livros] Resultado filtrado (vídeo):', r.title);
+                    return false;
+                }
+                
+                // PRIORIZAR conteúdo textual (PDFs, textos, documentos)
+                const isTextContent = urlLower.includes('.pdf') ||
+                                     urlLower.includes('.txt') ||
+                                     urlLower.includes('.doc') ||
+                                     urlLower.includes('.epub') ||
+                                     urlLower.includes('read') ||
+                                     urlLower.includes('download') ||
+                                     urlLower.includes('book') ||
+                                     urlLower.includes('livro') ||
+                                     urlLower.includes('text') ||
+                                     urlLower.includes('document');
+                
+                // Aceitar se for conteúdo textual OU se mencionar livro/book/autor
+                const mentionsBook = titleLower.includes('livro') || 
+                                    titleLower.includes('book') ||
+                                    contentLower.includes('livro') ||
+                                    contentLower.includes('book') ||
+                                    contentLower.includes('autor') ||
+                                    contentLower.includes('author') ||
+                                    contentLower.includes('escritor') ||
+                                    contentLower.includes('writer');
+                
+                return isTextContent || mentionsBook;
             })
             .slice(0, max_results)
             .map(r => ({
                 title: r.title,
                 description: r.snippet || r.content || '',
                 url: r.url,
-                source: 'tavily'
+                source: 'tavily',
+                raw_content: r.content || r.snippet || '' // Incluir conteúdo bruto para visualização
             }));
         
         res.json({
