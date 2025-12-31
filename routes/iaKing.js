@@ -1303,6 +1303,320 @@ async function learnFromTavily(question, answer, client) {
 }
 
 // ============================================
+// SISTEMA DE AUTO-TREINAMENTO AUTÔNOMO "NAYA"
+// ============================================
+// Este sistema permite que a IA aprenda automaticamente quando não souber responder
+// Pesquisa na internet, em livros/documentos e salva o conhecimento automaticamente
+
+/**
+ * Função principal de auto-treinamento autônomo da Naya
+ * Pesquisa automaticamente quando não souber responder e salva o conhecimento aprendido
+ */
+async function autoTrainNaya(question, questionContext, client) {
+    try {
+        console.log('🧠 [NAYA] Sistema de auto-treinamento ativado para:', question.substring(0, 100));
+        
+        let learnedKnowledge = null;
+        let learnedAnswer = null;
+        
+        // 1. PRIMEIRO: Tentar buscar em livros/documentos existentes
+        try {
+            console.log('📖 [NAYA] Buscando em livros e documentos...');
+            
+            // Detectar categoria da pergunta para buscar livros específicos
+            const questionLower = question.toLowerCase();
+            let bookSearchQuery = '';
+            
+            // Se pergunta é sobre religião (Jesus, Bíblia, etc), buscar livros religiosos
+            if (questionLower.includes('jesus') || questionLower.includes('cristo') || 
+                questionLower.includes('bíblia') || questionLower.includes('biblia') ||
+                questionLower.includes('deus') || questionLower.includes('evangelho')) {
+                bookSearchQuery = `
+                    AND (LOWER(title) LIKE '%bíblia%' OR LOWER(title) LIKE '%biblia%' 
+                    OR LOWER(title) LIKE '%jesus%' OR LOWER(title) LIKE '%cristo%'
+                    OR LOWER(title) LIKE '%evangelho%' OR LOWER(title) LIKE '%religião%'
+                    OR LOWER(title) LIKE '%religiao%' OR LOWER(content) LIKE '%jesus%'
+                    OR LOWER(content) LIKE '%cristo%' OR LOWER(content) LIKE '%bíblia%')
+                `;
+                console.log('📖 [NAYA] Detectou pergunta religiosa - buscando em livros religiosos');
+            }
+            // Se pergunta é sobre história, buscar livros históricos
+            else if (questionLower.includes('história') || questionLower.includes('historia') ||
+                     questionLower.includes('guerra') || questionLower.includes('império') ||
+                     questionLower.includes('imperio') || questionLower.includes('revolução')) {
+                bookSearchQuery = `
+                    AND (LOWER(title) LIKE '%história%' OR LOWER(title) LIKE '%historia%'
+                    OR LOWER(title) LIKE '%guerra%' OR LOWER(title) LIKE '%histórico%')
+                `;
+                console.log('📖 [NAYA] Detectou pergunta histórica - buscando em livros históricos');
+            }
+            
+            // Buscar em documentos processados
+            const docsResult = await client.query(`
+                SELECT id, title, extracted_text
+                FROM ia_documents
+                WHERE processed = true 
+                AND extracted_text IS NOT NULL 
+                AND LENGTH(extracted_text) > 0
+                ${bookSearchQuery || ''}
+                ORDER BY created_at DESC
+                LIMIT 10
+            `);
+            
+            // Buscar em conhecimento de livros (com filtro de categoria se aplicável)
+            const booksResult = await client.query(`
+                SELECT id, title, content, keywords
+                FROM ia_knowledge_base
+                WHERE is_active = true
+                AND source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+                ${bookSearchQuery || ''}
+                ORDER BY priority DESC, usage_count DESC
+                LIMIT 20
+            `);
+            
+            // Combinar resultados de documentos e livros
+            const allSources = [
+                ...docsResult.rows.map(doc => ({
+                    id: doc.id,
+                    title: doc.title,
+                    content: doc.extracted_text,
+                    source: 'document'
+                })),
+                ...booksResult.rows.map(book => ({
+                    id: book.id,
+                    title: book.title,
+                    content: book.content,
+                    keywords: book.keywords,
+                    source: 'book'
+                }))
+            ];
+            
+            // Buscar conteúdo relevante nos livros/documentos
+            for (const source of allSources) {
+                if (!source.content) continue;
+                
+                const contentLower = source.content.toLowerCase();
+                const questionLower = question.toLowerCase();
+                
+                // Verificar se o conteúdo menciona palavras-chave da pergunta
+                const questionWords = questionLower.split(/\s+/).filter(w => w.length > 3);
+                const matches = questionWords.filter(word => contentLower.includes(word)).length;
+                
+                // Se encontrar menções relevantes, extrair trecho
+                if (matches > 0 || questionContext.entities.some(e => contentLower.includes(e.toLowerCase()))) {
+                    // Extrair trecho relevante
+                    let relevantExcerpt = null;
+                    
+                    // Tentar encontrar parágrafo que responde à pergunta
+                    const paragraphs = source.content.split(/\n\n|\n/).filter(p => p.trim().length > 50);
+                    for (const para of paragraphs) {
+                        const paraLower = para.toLowerCase();
+                        if (questionContext.entities.some(e => paraLower.includes(e.toLowerCase())) ||
+                            questionWords.some(w => paraLower.includes(w))) {
+                            relevantExcerpt = para.substring(0, 1000);
+                            break;
+                        }
+                    }
+                    
+                    // Se não encontrou parágrafo específico, pegar trecho que menciona entidades
+                    if (!relevantExcerpt && questionContext.entities.length > 0) {
+                        const entity = questionContext.entities[0].toLowerCase();
+                        const entityIndex = contentLower.indexOf(entity);
+                        if (entityIndex >= 0) {
+                            const start = Math.max(0, entityIndex - 200);
+                            const end = Math.min(source.content.length, entityIndex + 800);
+                            relevantExcerpt = source.content.substring(start, end);
+                        }
+                    }
+                    
+                    if (relevantExcerpt && relevantExcerpt.length > 100) {
+                        learnedAnswer = relevantExcerpt;
+                        learnedKnowledge = {
+                            title: question.substring(0, 255),
+                            content: relevantExcerpt,
+                            source: `naya_book_${source.source}`,
+                            source_reference: source.title
+                        };
+                        console.log('✅ [NAYA] Encontrou conhecimento em livro/documento:', source.title);
+                        break;
+                    }
+                }
+            }
+        } catch (bookError) {
+            console.error('❌ [NAYA] Erro ao buscar em livros:', bookError);
+        }
+        
+        // 2. SEGUNDO: Se não encontrou em livros, pesquisar na internet
+        if (!learnedKnowledge) {
+            try {
+                console.log('🌐 [NAYA] Pesquisando na internet...');
+                
+                // Buscar configuração de busca na web
+                const webConfigResult = await client.query(`
+                    SELECT * FROM ia_web_search_config
+                    WHERE is_enabled = true 
+                    AND api_provider = 'tavily' 
+                    AND api_key IS NOT NULL
+                    ORDER BY id DESC
+                    LIMIT 1
+                `);
+                
+                if (webConfigResult.rows.length > 0) {
+                    const webConfig = webConfigResult.rows[0];
+                    
+                    // Pesquisar com Tavily
+                    const webResults = await searchWithTavily(question, webConfig.api_key);
+                    
+                    if (webResults && webResults.results && webResults.results.length > 0) {
+                        // Se Tavily retornou resposta direta, usar ela
+                        if (webResults.answer) {
+                            learnedAnswer = webResults.answer;
+                            learnedKnowledge = {
+                                title: question.substring(0, 255),
+                                content: webResults.answer,
+                                source: 'naya_web_tavily',
+                                source_reference: 'Tavily API'
+                            };
+                            console.log('✅ [NAYA] Resposta encontrada na internet (Tavily direto)');
+                        } else {
+                            // Combinar os melhores resultados
+                            const topResults = webResults.results.slice(0, 3);
+                            const combinedAnswer = topResults.map((r, idx) => {
+                                const snippet = (r.snippet || r.content || '').substring(0, 400);
+                                return `**${r.title}**\n${snippet}${(r.snippet || r.content || '').length > 400 ? '...' : ''}`;
+                            }).join('\n\n');
+                            
+                            if (combinedAnswer.length > 100) {
+                                learnedAnswer = combinedAnswer;
+                                learnedKnowledge = {
+                                    title: question.substring(0, 255),
+                                    content: combinedAnswer,
+                                    source: 'naya_web_tavily',
+                                    source_reference: 'Tavily API - Múltiplas fontes'
+                                };
+                                console.log('✅ [NAYA] Conhecimento encontrado na internet (múltiplas fontes)');
+                            }
+                        }
+                    } else {
+                        console.log('⚠️ [NAYA] Nenhum resultado encontrado na internet');
+                    }
+                } else {
+                    console.log('⚠️ [NAYA] Busca na web não configurada ou desabilitada');
+                }
+            } catch (webError) {
+                console.error('❌ [NAYA] Erro ao pesquisar na internet:', webError);
+            }
+        }
+        
+        // 3. SALVAR conhecimento aprendido automaticamente
+        if (learnedKnowledge && learnedAnswer) {
+            try {
+                const keywords = extractKeywords(question + ' ' + learnedAnswer);
+                
+                // Verificar se já existe conhecimento similar
+                const existing = await client.query(`
+                    SELECT id, title, content FROM ia_knowledge_base 
+                    WHERE LOWER(title) = LOWER($1)
+                    OR (LENGTH(title) > 10 AND LOWER(title) LIKE LOWER($2))
+                    LIMIT 1
+                `, [question, `%${question.substring(0, Math.min(20, question.length))}%`]);
+                
+                if (existing.rows.length === 0) {
+                    // Salvar novo conhecimento
+                    await client.query(`
+                        INSERT INTO ia_knowledge_base 
+                        (title, content, keywords, source_type, source_reference, is_active, priority)
+                        VALUES ($1, $2, $3, $4, $5, true, 85)
+                    `, [
+                        learnedKnowledge.title,
+                        learnedKnowledge.content.substring(0, 15000),
+                        keywords,
+                        learnedKnowledge.source,
+                        learnedKnowledge.source_reference || null
+                    ]);
+                    
+                    // Criar Q&A também
+                    try {
+                        await client.query(`
+                            INSERT INTO ia_qa (question, answer, keywords, is_active)
+                            VALUES ($1, $2, $3, true)
+                        `, [
+                            question,
+                            learnedAnswer.substring(0, 2000),
+                            keywords
+                        ]);
+                    } catch (qaError) {
+                        // Ignorar erro de Q&A duplicado
+                    }
+                    
+                    console.log('💾 [NAYA] Conhecimento salvo automaticamente na base de dados!');
+                    
+                    // Registrar no histórico de auto-aprendizado
+                    try {
+                        await client.query(`
+                            INSERT INTO ia_auto_learning_history 
+                            (question, answer, source, confidence_score, keywords)
+                            VALUES ($1, $2, $3, 75, $4)
+                        `, [
+                            question,
+                            learnedAnswer.substring(0, 5000),
+                            learnedKnowledge.source,
+                            keywords
+                        ]);
+                    } catch (historyError) {
+                        // Ignorar se tabela não existir
+                    }
+                } else {
+                    // Atualizar conhecimento existente se o novo for melhor
+                    const existingContent = existing.rows[0].content || '';
+                    if (learnedAnswer.length > existingContent.length * 1.1) {
+                        await client.query(`
+                            UPDATE ia_knowledge_base
+                            SET content = $1, 
+                                updated_at = CURRENT_TIMESTAMP, 
+                                keywords = $2,
+                                source_type = $3
+                            WHERE id = $4
+                        `, [
+                            learnedAnswer.substring(0, 15000),
+                            keywords,
+                            learnedKnowledge.source,
+                            existing.rows[0].id
+                        ]);
+                        console.log('💾 [NAYA] Conhecimento existente atualizado com mais informações!');
+                    }
+                }
+                
+                return {
+                    success: true,
+                    answer: learnedAnswer,
+                    source: learnedKnowledge.source,
+                    learned: true
+                };
+            } catch (saveError) {
+                console.error('❌ [NAYA] Erro ao salvar conhecimento:', saveError);
+                return {
+                    success: false,
+                    error: saveError.message
+                };
+            }
+        } else {
+            console.log('⚠️ [NAYA] Não foi possível aprender sobre esta pergunta');
+            return {
+                success: false,
+                learned: false
+            };
+        }
+    } catch (error) {
+        console.error('❌ [NAYA] Erro no sistema de auto-treinamento:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+// ============================================
 // SISTEMA COGNITIVO AVANÇADO - NÚCLEO ABSOLUTO
 // ============================================
 
@@ -3156,60 +3470,86 @@ async function findBestAnswer(userMessage, userId) {
             // Não bloquear a resposta por erro ao salvar
         }
         
-        // AUTO-PESQUISA: Se não encontrou resposta e auto-pesquisa está habilitada
+        // ============================================
+        // SISTEMA DE AUTO-TREINAMENTO AUTÔNOMO "NAYA"
+        // ============================================
+        // Quando não souber responder, pesquisa automaticamente e aprende
         if (!bestAnswer || bestScore < 40) {
             try {
-                const autoLearnConfig = await client.query(`
-                    SELECT * FROM ia_auto_learning_config
-                    ORDER BY id DESC LIMIT 1
-                `);
+                console.log('🧠 [NAYA] Ativando sistema de auto-treinamento...');
                 
-                if (autoLearnConfig.rows.length > 0 && autoLearnConfig.rows[0].auto_search_enabled) {
-                    const config = autoLearnConfig.rows[0];
+                // Chamar sistema de auto-treinamento autônomo
+                const nayaResult = await autoTrainNaya(userMessage, questionContext, client);
+                
+                if (nayaResult && nayaResult.success && nayaResult.answer) {
+                    // Usar resposta aprendida
+                    bestAnswer = nayaResult.answer;
+                    bestScore = 75; // Score alto para conhecimento aprendido
+                    bestSource = nayaResult.source || 'naya_auto_learned';
                     
-                    // Verificar limite diário
-                    const today = new Date().toISOString().split('T')[0];
-                    const dailyCount = await client.query(`
-                        SELECT search_count FROM ia_daily_search_count
-                        WHERE search_date = $1
-                    `, [today]);
+                    console.log('✅ [NAYA] Resposta aprendida e pronta para uso!');
                     
-                    const currentCount = dailyCount.rows.length > 0 ? 
-                                       parseInt(dailyCount.rows[0].search_count) : 0;
-                    
-                    if (currentCount < config.max_searches_per_day) {
-                        console.log('🔍 [IA] Auto-pesquisa: Buscando automaticamente para melhorar...');
+                    // Aplicar prompt mestre e personalidade
+                    bestAnswer = applyGPTMasterPrompt(bestAnswer, null, questionContext);
+                    bestAnswer = addPersonalityAndEmotion(bestAnswer, thoughts, questionContext);
+                } else {
+                    // Se não conseguiu aprender, tentar sistema antigo de auto-pesquisa como fallback
+                    try {
+                        const autoLearnConfig = await client.query(`
+                            SELECT * FROM ia_auto_learning_config
+                            ORDER BY id DESC LIMIT 1
+                        `);
                         
-                        // Buscar automaticamente
-                        if (webSearchConfig && webSearchConfig.is_enabled && webSearchConfig.api_provider === 'tavily' && webSearchConfig.api_key) {
-                            const autoSearchResult = await searchWithTavily(userMessage, webSearchConfig.api_key);
+                        if (autoLearnConfig.rows.length > 0 && autoLearnConfig.rows[0].auto_search_enabled) {
+                            const config = autoLearnConfig.rows[0];
                             
-                            if (autoSearchResult && autoSearchResult.results && autoSearchResult.results.length > 0) {
-                                const autoAnswer = autoSearchResult.results.slice(0, 3).map((r, idx) => 
-                                    `${idx + 1}. **${r.title}**\n${(r.snippet || r.content || '').substring(0, 250)}${(r.snippet || r.content || '').length > 250 ? '...' : ''}`
-                                ).join('\n\n');
+                            // Verificar limite diário
+                            const today = new Date().toISOString().split('T')[0];
+                            const dailyCount = await client.query(`
+                                SELECT search_count FROM ia_daily_search_count
+                                WHERE search_date = $1
+                            `, [today]);
+                            
+                            const currentCount = dailyCount.rows.length > 0 ? 
+                                               parseInt(dailyCount.rows[0].search_count) : 0;
+                            
+                            if (currentCount < config.max_searches_per_day) {
+                                console.log('🔍 [IA] Fallback: Auto-pesquisa tradicional...');
                                 
-                                // Aprender automaticamente
-                                await learnFromTavily(userMessage, autoAnswer, client);
-                                
-                                // Atualizar contador diário
-                                await client.query(`
-                                    INSERT INTO ia_daily_search_count (search_date, search_count)
-                                    VALUES ($1, 1)
-                                    ON CONFLICT (search_date) 
-                                    DO UPDATE SET search_count = ia_daily_search_count.search_count + 1
-                                `, [today]);
-                                
-                                console.log('✅ [IA] Auto-pesquisa: Aprendeu e gravou automaticamente!');
+                                // Buscar automaticamente
+                                if (webSearchConfig && webSearchConfig.is_enabled && webSearchConfig.api_provider === 'tavily' && webSearchConfig.api_key) {
+                                    const autoSearchResult = await searchWithTavily(userMessage, webSearchConfig.api_key);
+                                    
+                                    if (autoSearchResult && autoSearchResult.results && autoSearchResult.results.length > 0) {
+                                        const autoAnswer = autoSearchResult.results.slice(0, 3).map((r, idx) => 
+                                            `${idx + 1}. **${r.title}**\n${(r.snippet || r.content || '').substring(0, 250)}${(r.snippet || r.content || '').length > 250 ? '...' : ''}`
+                                        ).join('\n\n');
+                                        
+                                        // Aprender automaticamente
+                                        await learnFromTavily(userMessage, autoAnswer, client);
+                                        
+                                        // Atualizar contador diário
+                                        await client.query(`
+                                            INSERT INTO ia_daily_search_count (search_date, search_count)
+                                            VALUES ($1, 1)
+                                            ON CONFLICT (search_date) 
+                                            DO UPDATE SET search_count = ia_daily_search_count.search_count + 1
+                                        `, [today]);
+                                        
+                                        console.log('✅ [IA] Auto-pesquisa: Aprendeu e gravou automaticamente!');
+                                    }
+                                }
+                            } else {
+                                console.log('⚠️ [IA] Auto-pesquisa: Limite diário atingido');
                             }
                         }
-                    } else {
-                        console.log('⚠️ [IA] Auto-pesquisa: Limite diário atingido');
+                    } catch (fallbackError) {
+                        console.error('Erro no fallback de auto-pesquisa:', fallbackError);
                     }
                 }
-            } catch (autoSearchError) {
-                console.error('Erro na auto-pesquisa:', autoSearchError);
-                // Não bloquear resposta por erro na auto-pesquisa
+            } catch (nayaError) {
+                console.error('❌ [NAYA] Erro no sistema de auto-treinamento:', nayaError);
+                // Não bloquear resposta por erro no auto-treinamento
             }
         }
         
