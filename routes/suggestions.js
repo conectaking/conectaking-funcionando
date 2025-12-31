@@ -10,6 +10,7 @@ const { protectUser } = require('../middleware/protectUser');
 /**
  * POST /api/suggestions/generate
  * Gera sugestões de texto baseadas em prompt
+ * MELHORADO: Para vendas, fornece análise profunda, não só sugestões simples
  */
 router.post('/generate', protectUser, async (req, res) => {
     try {
@@ -22,12 +23,53 @@ router.post('/generate', protectUser, async (req, res) => {
             });
         }
 
-        const suggestions = generateSuggestions(type, prompt, context);
-
-        res.json({
-            success: true,
-            suggestions: suggestions
-        });
+        // Se for tipo de venda, usar análise profunda
+        const isSalesType = type.includes('sales') || 
+                           type.includes('venda') || 
+                           type.includes('store') ||
+                           type.includes('product') ||
+                           prompt.toLowerCase().includes('venda') ||
+                           prompt.toLowerCase().includes('comercial');
+        
+        if (isSalesType) {
+            // Usar análise profunda da IA KING
+            try {
+                const db = require('../db');
+                const client = await db.pool.connect();
+                
+                try {
+                    const analise = await analisarVendasProfundo(prompt, type, req.user.id, client);
+                    
+                    // Retornar análise profunda + sugestões
+                    const suggestions = generateSuggestions(type, prompt, context);
+                    
+                    res.json({
+                        success: true,
+                        type: 'deep_analysis',
+                        analysis: analise,
+                        suggestions: suggestions,
+                        message: 'Análise profunda realizada! Veja a análise completa acima e as sugestões abaixo.'
+                    });
+                } finally {
+                    client.release();
+                }
+            } catch (analysisError) {
+                console.error('Erro na análise profunda, usando sugestões normais:', analysisError);
+                // Fallback para sugestões normais
+                const suggestions = generateSuggestions(type, prompt, context);
+                res.json({
+                    success: true,
+                    suggestions: suggestions
+                });
+            }
+        } else {
+            // Para outros tipos, usar sugestões normais
+            const suggestions = generateSuggestions(type, prompt, context);
+            res.json({
+                success: true,
+                suggestions: suggestions
+            });
+        }
 
     } catch (error) {
         console.error('Erro ao gerar sugestões:', error);
@@ -37,6 +79,101 @@ router.post('/generate', protectUser, async (req, res) => {
         });
     }
 });
+
+/**
+ * Função para análise profunda de vendas (importada do iaKing.js)
+ * Reutiliza a lógica de análise profunda
+ */
+async function analisarVendasProfundo(conteudo, tipo, userId, client) {
+    try {
+        // Buscar conhecimento sobre análise de vendas
+        const analysisKnowledge = await client.query(`
+            SELECT content, keywords
+            FROM ia_knowledge_base
+            WHERE is_active = true
+            AND (
+                LOWER(title) LIKE ANY(ARRAY['%análise%', '%análise de vendas%', '%copywriting%', '%otimização%', '%conversão%'])
+                OR keywords && ARRAY['análise', 'copywriting', 'otimização', 'conversão', 'vendas', 'marketing']
+            )
+            ORDER BY priority DESC
+            LIMIT 5
+        `);
+        
+        // Analisar o conteúdo
+        const analise = {
+            pontosFortes: [],
+            pontosFracos: [],
+            oportunidades: [],
+            recomendacoes: [],
+            score: 0
+        };
+        
+        // Análise de palavras-chave
+        const palavrasChave = conteudo.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+        const palavrasVendas = ['compre', 'agora', 'oferta', 'desconto', 'garantia', 'limitado', 'exclusivo', 'urgente'];
+        const temPalavrasVendas = palavrasVendas.some(p => palavrasChave.includes(p));
+        
+        // Análise de estrutura
+        const temTitulo = conteudo.length > 0 && conteudo.split('\n')[0].length < 100;
+        const temDescricao = conteudo.length > 50;
+        const temCallToAction = /(compre|adquira|garanta|clique|saiba mais)/i.test(conteudo);
+        
+        // Análise de persuasão
+        const temBeneficios = /(benefício|vantagem|resultado|transforma)/i.test(conteudo);
+        const temUrgencia = /(limitado|últimas|hoje|agora|urgente)/i.test(conteudo);
+        const temProvaSocial = /(testemunho|depoimento|cliente|resultado)/i.test(conteudo);
+        
+        // Construir análise
+        if (temTitulo) analise.pontosFortes.push('✅ Tem título claro e objetivo');
+        if (temDescricao) analise.pontosFortes.push('✅ Descrição presente e informativa');
+        if (temCallToAction) analise.pontosFortes.push('✅ Call-to-action identificado');
+        if (temBeneficios) analise.pontosFortes.push('✅ Menciona benefícios ao cliente');
+        
+        if (!temPalavrasVendas) analise.pontosFracos.push('⚠️ Falta palavras-chave de vendas (compre, agora, oferta)');
+        if (!temUrgencia) analise.oportunidades.push('💡 Adicionar urgência (limitado, últimas unidades)');
+        if (!temProvaSocial) analise.oportunidades.push('💡 Incluir prova social (depoimentos, resultados)');
+        
+        // Calcular score
+        let score = 50;
+        if (temTitulo) score += 10;
+        if (temDescricao) score += 10;
+        if (temCallToAction) score += 15;
+        if (temBeneficios) score += 10;
+        if (temPalavrasVendas) score += 5;
+        analise.score = Math.min(score, 100);
+        
+        // Formatar resposta completa
+        let resposta = `## 📊 **Análise Profunda de ${tipo}**\n\n`;
+        resposta += `**Score Geral: ${analise.score}/100**\n\n`;
+        
+        resposta += `### ✅ **Pontos Fortes:**\n`;
+        analise.pontosFortes.forEach(p => resposta += `${p}\n`);
+        if (analise.pontosFortes.length === 0) resposta += 'Nenhum ponto forte identificado.\n';
+        
+        resposta += `\n### ⚠️ **Pontos de Melhoria:**\n`;
+        analise.pontosFracos.forEach(p => resposta += `${p}\n`);
+        if (analise.pontosFracos.length === 0) resposta += 'Nenhum ponto fraco crítico identificado.\n';
+        
+        resposta += `\n### 💡 **Oportunidades:**\n`;
+        analise.oportunidades.forEach(p => resposta += `${p}\n`);
+        if (analise.oportunidades.length === 0) resposta += 'Oportunidades já exploradas.\n';
+        
+        resposta += `\n### 💼 **Minha Opinião Profissional:**\n\n`;
+        if (analise.score >= 80) {
+            resposta += `Este conteúdo está muito bem estruturado! Tem boa base para conversão. `;
+        } else if (analise.score >= 60) {
+            resposta += `Bom conteúdo, mas há espaço para melhorias significativas. `;
+        } else {
+            resposta += `Este conteúdo precisa de melhorias importantes para converter melhor. `;
+        }
+        resposta += `Recomendo focar nas oportunidades identificadas acima para aumentar a taxa de conversão.`;
+        
+        return resposta;
+    } catch (error) {
+        console.error('Erro na análise profunda:', error);
+        return `Erro ao analisar conteúdo: ${error.message}`;
+    }
+}
 
 /**
  * Função para gerar múltiplas sugestões

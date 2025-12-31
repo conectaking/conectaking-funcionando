@@ -6082,11 +6082,57 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
             'estratégias comerciais',
             'negociação e vendas',
             
+            // AUTO-MELHORIA E DESENVOLVIMENTO DA IA
+            'como melhorar inteligência artificial',
+            'auto-melhoria de sistemas de IA',
+            'desenvolvimento autônomo de IA',
+            'otimização de respostas de IA',
+            'como IAs se desenvolvem sozinhas',
+            'aprendizado contínuo de IA',
+            'auto-otimização de modelos de linguagem',
+            'melhorias contínuas em sistemas de IA',
+            'desenvolvimento autônomo de conhecimento',
+            'auto-aprendizado avançado de IA',
+            'como tornar IA mais inteligente',
+            'otimização de performance de IA',
+            'melhorias de precisão em IA',
+            'desenvolvimento de capacidades de IA',
+            
+            // ANÁLISE E OTIMIZAÇÃO DE SISTEMAS
+            'análise de sistemas e otimização',
+            'como analisar e melhorar sistemas',
+            'análise de cartões virtuais e otimização',
+            'análise de páginas de vendas',
+            'otimização de conversão em vendas',
+            'análise de palavras-chave e SEO',
+            'análise de conteúdo e melhorias',
+            'análise de textos e otimização',
+            'análise de estratégias de marketing',
+            'otimização de textos de vendas',
+            'análise de copywriting',
+            'melhorias em textos comerciais',
+            'análise de páginas de vendas online',
+            'otimização de landing pages',
+            
+            // CONHECIMENTO SOBRE O SISTEMA CONECTA KING
+            'análise de cartões virtuais profissionais',
+            'otimização de cartões de visita digitais',
+            'análise de módulos de cartão virtual',
+            'melhorias em cartões virtuais',
+            'análise de funcionalidades de cartão virtual',
+            'otimização de compartilhamento de cartões',
+            'análise de conversão de cartões virtuais',
+            'melhorias em páginas de vendas personalizadas',
+            'análise de módulos de vendas',
+            'otimização de catálogos de produtos',
+            
             // Conhecimento geral por categoria
             ...categories.map(cat => [
                 `conhecimento sobre ${cat}`,
                 `informações sobre ${cat}`,
-                `${cat} completo`
+                `${cat} completo`,
+                `análise e otimização de ${cat}`,
+                `melhorias em ${cat}`
             ]).flat()
         ];
         
@@ -9246,6 +9292,250 @@ router.post('/train-with-database-book', protectAdmin, asyncHandler(async (req, 
         await client.query('ROLLBACK');
         console.error('❌ Erro no treinamento com livro do banco:', error);
         throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// ANÁLISE PROFUNDA DE VENDAS E SISTEMA
+// ============================================
+
+/**
+ * Analisa profundamente uma página de vendas, texto ou conteúdo
+ * Fornece opiniões, análises e melhorias, não apenas sugestões simples
+ */
+async function analisarVendasProfundo(conteudo, tipo, userId, client) {
+    try {
+        // Buscar conhecimento sobre análise de vendas
+        const analysisKnowledge = await client.query(`
+            SELECT content, keywords
+            FROM ia_knowledge_base
+            WHERE is_active = true
+            AND (
+                LOWER(title) LIKE ANY(ARRAY['%análise%', '%análise de vendas%', '%copywriting%', '%otimização%', '%conversão%'])
+                OR keywords && ARRAY['análise', 'copywriting', 'otimização', 'conversão', 'vendas', 'marketing']
+            )
+            ORDER BY priority DESC
+            LIMIT 5
+        `);
+        
+        // Buscar histórico de análises similares
+        const similarAnalyses = await client.query(`
+            SELECT message, response
+            FROM ia_conversations
+            WHERE user_id = $1
+            AND LOWER(message) LIKE ANY(ARRAY['%análise%', '%analisar%', '%opinião%', '%melhorar%'])
+            ORDER BY created_at DESC
+            LIMIT 3
+        `, [userId]);
+        
+        // Analisar o conteúdo
+        const analise = {
+            pontosFortes: [],
+            pontosFracos: [],
+            oportunidades: [],
+            recomendacoes: [],
+            score: 0
+        };
+        
+        // Análise de palavras-chave
+        const palavrasChave = extractKeywords(conteudo);
+        const palavrasVendas = ['compre', 'agora', 'oferta', 'desconto', 'garantia', 'limitado', 'exclusivo', 'urgente'];
+        const temPalavrasVendas = palavrasVendas.some(p => palavrasChave.includes(p));
+        
+        // Análise de estrutura
+        const temTitulo = conteudo.length > 0 && conteudo.split('\n')[0].length < 100;
+        const temDescricao = conteudo.length > 50;
+        const temCallToAction = /(compre|adquira|garanta|clique|saiba mais)/i.test(conteudo);
+        
+        // Análise de persuasão
+        const temBeneficios = /(benefício|vantagem|resultado|transforma)/i.test(conteudo);
+        const temUrgencia = /(limitado|últimas|hoje|agora|urgente)/i.test(conteudo);
+        const temProvaSocial = /(testemunho|depoimento|cliente|resultado)/i.test(conteudo);
+        
+        // Construir análise
+        if (temTitulo) analise.pontosFortes.push('✅ Tem título claro e objetivo');
+        if (temDescricao) analise.pontosFortes.push('✅ Descrição presente e informativa');
+        if (temCallToAction) analise.pontosFortes.push('✅ Call-to-action identificado');
+        if (temBeneficios) analise.pontosFortes.push('✅ Menciona benefícios ao cliente');
+        
+        if (!temPalavrasVendas) analise.pontosFracos.push('⚠️ Falta palavras-chave de vendas (compre, agora, oferta)');
+        if (!temUrgencia) analise.oportunidades.push('💡 Adicionar urgência (limitado, últimas unidades)');
+        if (!temProvaSocial) analise.oportunidades.push('💡 Incluir prova social (depoimentos, resultados)');
+        
+        // Calcular score
+        let score = 50;
+        if (temTitulo) score += 10;
+        if (temDescricao) score += 10;
+        if (temCallToAction) score += 15;
+        if (temBeneficios) score += 10;
+        if (temPalavrasVendas) score += 5;
+        analise.score = Math.min(score, 100);
+        
+        // Recomendações baseadas em conhecimento
+        if (analysisKnowledge.rows.length > 0) {
+            const knowledge = analysisKnowledge.rows[0].content;
+            if (knowledge.includes('copywriting')) {
+                analise.recomendacoes.push('📝 Use técnicas de copywriting: foco em benefícios, não características');
+            }
+            if (knowledge.includes('conversão')) {
+                analise.recomendacoes.push('🎯 Otimize para conversão: CTAs claros e visíveis');
+            }
+        }
+        
+        // Formatar resposta completa
+        let resposta = `## 📊 **Análise Profunda de ${tipo}**\n\n`;
+        resposta += `**Score Geral: ${analise.score}/100**\n\n`;
+        
+        resposta += `### ✅ **Pontos Fortes:**\n`;
+        analise.pontosFortes.forEach(p => resposta += `${p}\n`);
+        if (analise.pontosFortes.length === 0) resposta += 'Nenhum ponto forte identificado.\n';
+        
+        resposta += `\n### ⚠️ **Pontos de Melhoria:**\n`;
+        analise.pontosFracos.forEach(p => resposta += `${p}\n`);
+        if (analise.pontosFracos.length === 0) resposta += 'Nenhum ponto fraco crítico identificado.\n';
+        
+        resposta += `\n### 💡 **Oportunidades:**\n`;
+        analise.oportunidades.forEach(p => resposta += `${p}\n`);
+        if (analise.oportunidades.length === 0) resposta += 'Oportunidades já exploradas.\n';
+        
+        resposta += `\n### 🎯 **Recomendações Específicas:**\n`;
+        analise.recomendacoes.forEach(p => resposta += `${p}\n`);
+        if (analise.recomendacoes.length === 0) {
+            resposta += '• Foque em benefícios, não características\n';
+            resposta += '• Use linguagem emocional quando apropriado\n';
+            resposta += '• Inclua prova social (depoimentos, resultados)\n';
+        }
+        
+        resposta += `\n### 💼 **Minha Opinião Profissional:**\n\n`;
+        if (analise.score >= 80) {
+            resposta += `Este conteúdo está muito bem estruturado! Tem boa base para conversão. `;
+        } else if (analise.score >= 60) {
+            resposta += `Bom conteúdo, mas há espaço para melhorias significativas. `;
+        } else {
+            resposta += `Este conteúdo precisa de melhorias importantes para converter melhor. `;
+        }
+        resposta += `Recomendo focar nas oportunidades identificadas acima para aumentar a taxa de conversão.`;
+        
+        return resposta;
+    } catch (error) {
+        console.error('Erro na análise profunda:', error);
+        return `Erro ao analisar conteúdo: ${error.message}`;
+    }
+}
+
+// POST /api/ia-king/analyze-sales - Análise profunda de vendas (não só sugestões)
+router.post('/analyze-sales', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const { content, type = 'texto' } = req.body;
+        const userId = req.user.id;
+        
+        if (!content || content.trim().length === 0) {
+            return res.status(400).json({ error: 'Conteúdo é obrigatório' });
+        }
+        
+        const analise = await analisarVendasProfundo(content, type, userId, client);
+        
+        res.json({
+            success: true,
+            analysis: analise,
+            type: 'deep_analysis'
+        });
+    } catch (error) {
+        console.error('Erro na análise de vendas:', error);
+        res.status(500).json({ error: 'Erro ao analisar conteúdo' });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/analyze-system - Analisar todo o sistema Conecta King
+router.post('/analyze-system', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.id;
+        
+        // Buscar todos os dados do usuário
+        const profileResult = await client.query(`
+            SELECT * FROM user_profiles WHERE user_id = $1
+        `, [userId]);
+        
+        const itemsResult = await client.query(`
+            SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order
+        `, [userId]);
+        
+        const salesPagesResult = await client.query(`
+            SELECT sp.*, pi.title as item_title
+            FROM sales_pages sp
+            JOIN profile_items pi ON sp.profile_item_id = pi.id
+            WHERE pi.user_id = $1
+        `, [userId]);
+        
+        // Analisar cartão virtual
+        let analiseCartao = `## 📱 **Análise do Seu Cartão Virtual**\n\n`;
+        
+        if (profileResult.rows.length === 0) {
+            analiseCartao += '⚠️ **Nenhum perfil encontrado.** Crie seu cartão virtual primeiro.\n';
+        } else {
+            const profile = profileResult.rows[0];
+            analiseCartao += `**Nome:** ${profile.name || 'Não definido'}\n`;
+            analiseCartao += `**Profissão:** ${profile.profession || 'Não definida'}\n`;
+            analiseCartao += `**Módulos:** ${itemsResult.rows.length} itens\n\n`;
+            
+            // Analisar módulos
+            analiseCartao += `### 📊 **Análise dos Módulos:**\n\n`;
+            const tiposModulos = {};
+            itemsResult.rows.forEach(item => {
+                tiposModulos[item.item_type] = (tiposModulos[item.item_type] || 0) + 1;
+            });
+            
+            Object.entries(tiposModulos).forEach(([tipo, count]) => {
+                analiseCartao += `• **${tipo}:** ${count} ${count > 1 ? 'itens' : 'item'}\n`;
+            });
+        }
+        
+        // Analisar páginas de vendas
+        let analiseVendas = `\n## 💼 **Análise das Páginas de Vendas**\n\n`;
+        if (salesPagesResult.rows.length === 0) {
+            analiseVendas += '⚠️ **Nenhuma página de vendas encontrada.**\n';
+            analiseVendas += '💡 **Recomendação:** Crie uma página de vendas para aumentar suas conversões!\n';
+        } else {
+            analiseVendas += `**Total de páginas:** ${salesPagesResult.rows.length}\n\n`;
+            salesPagesResult.rows.forEach((page, index) => {
+                analiseVendas += `### Página ${index + 1}: ${page.store_title || 'Sem título'}\n`;
+                analiseVendas += `• Status: ${page.status}\n`;
+                analiseVendas += `• Descrição: ${page.store_description ? 'Presente' : 'Faltando'}\n`;
+                analiseVendas += `• Produtos: ${page.product_count || 0}\n\n`;
+            });
+        }
+        
+        // Recomendações gerais
+        let recomendacoes = `\n## 🎯 **Recomendações Gerais:**\n\n`;
+        if (itemsResult.rows.length < 5) {
+            recomendacoes += '💡 Adicione mais módulos ao seu cartão para torná-lo mais completo\n';
+        }
+        if (salesPagesResult.rows.length === 0) {
+            recomendacoes += '💡 Crie uma página de vendas para aumentar suas conversões\n';
+        }
+        recomendacoes += '💡 Mantenha suas informações sempre atualizadas\n';
+        recomendacoes += '💡 Use imagens de qualidade nos módulos\n';
+        
+        const analiseCompleta = analiseCartao + analiseVendas + recomendacoes;
+        
+        res.json({
+            success: true,
+            analysis: analiseCompleta,
+            stats: {
+                total_items: itemsResult.rows.length,
+                total_sales_pages: salesPagesResult.rows.length,
+                profile_exists: profileResult.rows.length > 0
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao analisar sistema:', error);
+        res.status(500).json({ error: 'Erro ao analisar sistema' });
     } finally {
         client.release();
     }
