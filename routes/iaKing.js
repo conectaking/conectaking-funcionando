@@ -2590,14 +2590,24 @@ async function findBestAnswer(userMessage, userId) {
         // 2. Buscar na base de conhecimento COM INTELIGÊNCIA CONTEXTUAL E SISTEMA DE PENSAMENTO
         // PRIORIDADE: LIVROS PRIMEIRO!
         try {
-            // BUSCAR LIVROS PRIMEIRO (prioridade máxima)
+            // BUSCAR LIVROS PRIMEIRO (prioridade máxima) - INCLUIR LIVROS SEM CONTEÚDO PRINCIPAL
             const booksResult = await client.query(`
-                SELECT id, title, content, keywords, usage_count, source_type, category
+                SELECT id, title, content, keywords, usage_count, source_type, category, priority
                 FROM ia_knowledge_base
                 WHERE is_active = true
                 AND source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
-                ORDER BY priority DESC, usage_count DESC
+                ORDER BY priority DESC NULLS LAST, usage_count DESC
             `);
+            
+            console.log(`📚 [IA] Total de livros encontrados: ${booksResult.rows.length}`);
+            if (booksResult.rows.length > 0) {
+                console.log(`📚 [IA] Primeiros livros:`, booksResult.rows.slice(0, 5).map(b => ({
+                    title: b.title?.substring(0, 50),
+                    has_content: !!(b.content && b.content.length > 0),
+                    content_length: b.content ? b.content.length : 0,
+                    source_type: b.source_type
+                })));
+            }
             
             // Buscar conhecimento geral
             knowledgeResult = await client.query(`
@@ -2831,11 +2841,16 @@ async function findBestAnswer(userMessage, userId) {
             
             // Iterar pelos candidatos filtrados para encontrar um que realmente responda
             for (const candidate of filteredCandidates) {
-                if (candidate.score < 30) break; // Parar se score muito baixo
+                // REDUZIR LIMITE: Aceitar candidatos com score menor se for livro
+                const minScore = candidate.kb.source_type && candidate.kb.source_type.includes('book') ? 50 : 30;
+                if (candidate.score < minScore) {
+                    console.log(`⚠️ [IA] Score muito baixo (${candidate.score}) para "${candidate.kb.title?.substring(0, 50) || 'sem título'}", pulando...`);
+                    break; // Parar se score muito baixo
+                }
                 
                 const kb = candidate.kb;
                 
-                // VALIDAÇÃO CRÍTICA: Se a pergunta tem entidade, o conhecimento DEVE mencioná-la
+                // VALIDAÇÃO FLEXÍVEL: Se a pergunta tem entidade, verificar se conhecimento menciona
                 if (questionContext.entities.length > 0) {
                     const contentLower = kb.content.toLowerCase();
                     const titleLower = kb.title.toLowerCase();
@@ -2852,8 +2867,26 @@ async function findBestAnswer(userMessage, userId) {
                             contentLower.includes(entity) || 
                             titleLower.includes(entity)) {
                             entityFound = true;
-                            console.log(`✅ [IA] Entidade "${entity}" encontrada em "${kb.title.substring(0, 50)}"`);
+                            console.log(`✅ [IA] Entidade "${entity}" encontrada em "${kb.title?.substring(0, 50) || 'sem título'}"`);
                             break; // Encontrou, pode parar
+                        }
+                        
+                        // BUSCA ESPECIAL PARA JESUS: Procurar por variações (MELHORADA)
+                        if (entityLower === 'jesus' || entity === 'JESUS' || entityLower === 'jesus cristo') {
+                            const jesusVariations = [
+                                'jesus', 'cristo', 'jesus cristo', 'cristo jesus',
+                                'jesus de nazaré', 'jesus de nazare', 'cristo jesus',
+                                'filho de deus', 'messias', 'salvador', 'senhor jesus',
+                                'jesus, o cristo', 'cristo, o filho'
+                            ];
+                            for (const variation of jesusVariations) {
+                                if (contentLower.includes(variation) || titleLower.includes(variation)) {
+                                    entityFound = true;
+                                    console.log(`✅ [IA] Jesus encontrado por variação "${variation}" em "${kb.title?.substring(0, 50) || 'sem título'}"`);
+                                    break;
+                                }
+                            }
+                            if (entityFound) break;
                         }
                         
                         // Busca parcial: se entidade é "pnl", procurar por "pnl" ou "programação neurolinguística"
@@ -2863,23 +2896,29 @@ async function findBestAnswer(userMessage, userId) {
                                 contentLower.includes('neurolinguística') ||
                                 contentLower.includes('neurolinguistica')) {
                                 entityFound = true;
-                                console.log(`✅ [IA] PNL encontrado por variação em "${kb.title.substring(0, 50)}"`);
+                                console.log(`✅ [IA] PNL encontrado por variação em "${kb.title?.substring(0, 50) || 'sem título'}"`);
                                 break;
                             }
                         }
                     }
                     
-                    // Se NÃO encontrou nenhuma entidade, PULAR este candidato
+                    // Se NÃO encontrou nenhuma entidade, MAS é um livro, dar mais uma chance
                     if (!entityFound) {
-                        console.log(`⚠️ [IA] Conhecimento "${kb.title.substring(0, 50)}" não menciona nenhuma entidade "${questionContext.entities.join(', ')}", pulando...`);
-                        continue; // Pular para próximo candidato
+                        // Se é livro e tem score alto, pode ser relevante mesmo sem match exato
+                        if (kb.source_type && kb.source_type.includes('book') && candidate.score > 200) {
+                            console.log(`⚠️ [IA] Livro "${kb.title?.substring(0, 50) || 'sem título'}" não menciona entidade diretamente, mas score alto (${candidate.score}), continuando...`);
+                            // Continuar, mas marcar que precisa buscar melhor
+                        } else {
+                            console.log(`⚠️ [IA] Conhecimento "${kb.title?.substring(0, 50) || 'sem título'}" não menciona nenhuma entidade "${questionContext.entities.join(', ')}", pulando...`);
+                            continue; // Pular para próximo candidato
+                        }
                     }
                 }
                 
                 // ENCONTRAR TRECHO RELEVANTE que responde à pergunta
-                let excerpt = findRelevantExcerpt(kb.content, questionContext, 400);
+                let excerpt = findRelevantExcerpt(kb.content, questionContext, 500);
                 
-                // VALIDAÇÃO: Se encontrou trecho, verificar se realmente menciona a entidade
+                // VALIDAÇÃO FLEXÍVEL: Se encontrou trecho, verificar se realmente menciona a entidade
                 if (excerpt && questionContext.entities.length > 0) {
                     const excerptLower = excerpt.toLowerCase();
                     let entityFoundInExcerpt = false;
@@ -2905,15 +2944,23 @@ async function findBestAnswer(userMessage, userId) {
                             break;
                         }
                         
-                        // Busca parcial para Jesus (com variações)
-                        if ((entityLower === 'jesus' || entity === 'JESUS') && 
-                            (excerptLower.includes('jesus') ||
-                             excerptLower.includes('cristo') ||
-                             excerptLower.includes('jesus cristo') ||
-                             excerptLower.includes('cristo jesus'))) {
-                            entityFoundInExcerpt = true;
-                            console.log(`✅ [IA] Jesus encontrado no trecho por variação`);
-                            break;
+                        // BUSCA MELHORADA PARA JESUS: Procurar por todas as variações
+                        if (entityLower === 'jesus' || entity === 'JESUS' || entityLower === 'jesus cristo') {
+                            const jesusVariations = [
+                                'jesus', 'cristo', 'jesus cristo', 'cristo jesus',
+                                'jesus de nazaré', 'jesus de nazare', 'cristo jesus',
+                                'filho de deus', 'messias', 'salvador', 'senhor jesus',
+                                'jesus, o cristo', 'cristo, o filho', 'o cristo',
+                                'nosso senhor', 'senhor jesus cristo'
+                            ];
+                            for (const variation of jesusVariations) {
+                                if (excerptLower.includes(variation)) {
+                                    entityFoundInExcerpt = true;
+                                    console.log(`✅ [IA] Jesus encontrado no trecho por variação "${variation}"`);
+                                    break;
+                                }
+                            }
+                            if (entityFoundInExcerpt) break;
                         }
                     }
                     
@@ -2922,16 +2969,31 @@ async function findBestAnswer(userMessage, userId) {
                         console.log(`⚠️ [IA] Trecho encontrado não menciona entidades "${questionContext.entities.join(', ')}", buscando outro...`);
                         excerpt = null; // Forçar buscar outro trecho
                         
-                        // Tentar buscar manualmente parágrafos que mencionam a entidade
+                        // BUSCA MELHORADA: Tentar buscar manualmente parágrafos que mencionam a entidade
                         const paragraphs = kb.content.split(/\n\n+/);
                         for (const para of paragraphs) {
                             const paraLower = para.toLowerCase();
                             for (const entity of questionContext.entities) {
                                 const entityLower = entity.toLowerCase();
+                                
+                                // Busca direta
                                 if (paraLower.includes(entityLower) || paraLower.includes(entity)) {
-                                    excerpt = para.substring(0, 400);
+                                    excerpt = para.substring(0, 500);
                                     console.log(`✅ [IA] Trecho alternativo encontrado com entidade "${entity}"`);
                                     break;
+                                }
+                                
+                                // Busca especial para Jesus
+                                if (entityLower === 'jesus' || entityLower === 'jesus cristo') {
+                                    const jesusVariations = ['jesus', 'cristo', 'jesus cristo', 'cristo jesus', 'messias', 'salvador'];
+                                    for (const variation of jesusVariations) {
+                                        if (paraLower.includes(variation)) {
+                                            excerpt = para.substring(0, 500);
+                                            console.log(`✅ [IA] Trecho encontrado com variação "${variation}" de Jesus`);
+                                            break;
+                                        }
+                                    }
+                                    if (excerpt) break;
                                 }
                             }
                             if (excerpt) break;
@@ -2943,74 +3005,142 @@ async function findBestAnswer(userMessage, userId) {
                 if (!excerpt) {
                     excerpt = extractDirectAnswer(kb.content, userMessage);
                     
-                    // Validar se resposta direta menciona entidade
+                    // Validar se resposta direta menciona entidade (FLEXÍVEL)
                     if (excerpt && questionContext.entities.length > 0) {
                         const entity = questionContext.entities[0];
-                        if (!excerpt.toLowerCase().includes(entity)) {
+                        const entityLower = entity.toLowerCase();
+                        const excerptLower = excerpt.toLowerCase();
+                        
+                        // Verificar variações também
+                        let hasEntity = excerptLower.includes(entityLower);
+                        if (!hasEntity && entityLower === 'jesus') {
+                            hasEntity = excerptLower.includes('cristo') || excerptLower.includes('messias') || excerptLower.includes('salvador');
+                        }
+                        
+                        if (!hasEntity) {
                             excerpt = null;
                         }
-                    }
                 }
                 
-                // Se ainda não encontrou, buscar parágrafos que mencionam a entidade
+                // Se ainda não encontrou, buscar parágrafos que mencionam a entidade (BUSCA MELHORADA)
                 if (!excerpt && questionContext.entities.length > 0) {
                     const entity = questionContext.entities[0];
+                    const entityLower = entity.toLowerCase();
                     const paragraphs = kb.content.split(/\n\n+/);
                     
                     for (const para of paragraphs) {
                         const paraLower = para.toLowerCase();
-                        if (paraLower.includes(entity) && para.length > 50) {
+                        
+                        // Busca direta
+                        if ((paraLower.includes(entityLower) || paraLower.includes(entity)) && para.length > 50) {
                             // Filtrar conteúdo acadêmico
                             if (!filterAcademicContent(para)) {
-                                excerpt = para.substring(0, 400);
+                                excerpt = para.substring(0, 500);
                                 console.log(`✅ [IA] Encontrado parágrafo que menciona "${entity}"`);
                                 break;
                             }
                         }
+                        
+                        // Busca especial para Jesus
+                        if (entityLower === 'jesus' || entityLower === 'jesus cristo') {
+                            const jesusVariations = ['jesus', 'cristo', 'jesus cristo', 'cristo jesus', 'messias', 'salvador', 'filho de deus'];
+                            for (const variation of jesusVariations) {
+                                if (paraLower.includes(variation) && para.length > 50) {
+                                    if (!filterAcademicContent(para)) {
+                                        excerpt = para.substring(0, 500);
+                                        console.log(`✅ [IA] Encontrado parágrafo sobre Jesus por variação "${variation}"`);
+                                        break;
+                                    }
+                                }
+                            }
+                            if (excerpt) break;
+                        }
                     }
                 }
                 
-                // Se ainda não encontrou, resumir APENAS se mencionar a entidade
+                // Se ainda não encontrou, resumir APENAS se mencionar a entidade (FLEXÍVEL)
                 if (!excerpt) {
                     const contentLower = kb.content.toLowerCase();
                     if (questionContext.entities.length > 0) {
                         const entity = questionContext.entities[0];
-                        // Só resumir se o conteúdo menciona a entidade
-                        if (contentLower.includes(entity)) {
-                            excerpt = summarizeAnswer(kb.content, 300);
-                            // Validar novamente
-                            if (excerpt && !excerpt.toLowerCase().includes(entity)) {
-                                excerpt = null;
+                        const entityLower = entity.toLowerCase();
+                        
+                        // Verificar se conteúdo menciona a entidade ou variações
+                        let hasEntity = contentLower.includes(entityLower);
+                        if (!hasEntity && entityLower === 'jesus') {
+                            hasEntity = contentLower.includes('cristo') || contentLower.includes('messias') || contentLower.includes('salvador');
+                        }
+                        
+                        // Só resumir se tem a entidade
+                        if (hasEntity) {
+                            excerpt = summarizeAnswer(kb.content, 400);
+                            // Validar novamente (FLEXÍVEL)
+                            if (excerpt) {
+                                const excerptLower = excerpt.toLowerCase();
+                                let hasEntityInExcerpt = excerptLower.includes(entityLower);
+                                if (!hasEntityInExcerpt && entityLower === 'jesus') {
+                                    hasEntityInExcerpt = excerptLower.includes('cristo') || excerptLower.includes('messias');
+                                }
+                                if (!hasEntityInExcerpt) {
+                                    excerpt = null;
+                                }
                             }
                         }
                     } else {
                         // Se não tem entidade, pode resumir normalmente
-                        excerpt = summarizeAnswer(kb.content, 300);
+                        excerpt = summarizeAnswer(kb.content, 400);
                     }
                 }
                 
-                // VALIDAÇÃO FINAL: Se ainda não tem trecho relevante que mencione a entidade, PULAR
+                // VALIDAÇÃO FINAL FLEXÍVEL: Se ainda não tem trecho, tentar usar parte do conteúdo
                 if (!excerpt && questionContext.entities.length > 0) {
                     const entity = questionContext.entities[0];
-                    console.log(`❌ [IA] Não foi possível encontrar trecho relevante sobre "${entity}" em "${kb.title.substring(0, 50)}", pulando...`);
-                    continue; // Pular para próximo candidato
-                }
-                
-                // Se ainda não tem, usar início do conteúdo APENAS se mencionar entidade
-                if (!excerpt) {
-                    if (questionContext.entities.length > 0) {
-                        const entity = questionContext.entities[0];
-                        const firstPart = kb.content.substring(0, 300);
-                        if (firstPart.toLowerCase().includes(entity)) {
-                            excerpt = firstPart;
-                        } else {
-                            // Não usar se não menciona a entidade
-                            console.log(`❌ [IA] Início do conteúdo não menciona "${entity}", pulando conhecimento...`);
-                            continue;
-                        }
-                    } else {
-                        excerpt = kb.content.substring(0, 300);
+                    const entityLower = entity.toLowerCase();
+                    const contentLower = kb.content.toLowerCase();
+                    
+                    // Verificar se conteúdo menciona entidade
+                    let hasEntity = contentLower.includes(entityLower);
+                    if (!hasEntity && entityLower === 'jesus') {
+                        hasEntity = contentLower.includes('cristo') || contentLower.includes('messias') || contentLower.includes('salvador');
                     }
+                    
+                    if (hasEntity) {
+                        // Usar primeira parte que menciona a entidade
+                        const sentences = kb.content.split(/[.!?]+/);
+                        for (const sentence of sentences) {
+                            const sentLower = sentence.toLowerCase();
+                            if (sentLower.includes(entityLower) || (entityLower === 'jesus' && (sentLower.includes('cristo') || sentLower.includes('messias')))) {
+                                excerpt = sentence.substring(0, 500);
+                                console.log(`✅ [IA] Usando frase que menciona "${entity}"`);
+                                break;
+                            }
+                        }
+                        
+                        // Se ainda não encontrou, usar início do conteúdo se menciona entidade
+                        if (!excerpt) {
+                            const firstPart = kb.content.substring(0, 500);
+                            const firstPartLower = firstPart.toLowerCase();
+                            if (firstPartLower.includes(entityLower) || (entityLower === 'jesus' && (firstPartLower.includes('cristo') || firstPartLower.includes('messias')))) {
+                                excerpt = firstPart;
+                                console.log(`✅ [IA] Usando início do conteúdo que menciona "${entity}"`);
+                            }
+                        }
+                    }
+                    
+                    // Se ainda não tem, mas é livro com score alto, usar mesmo assim
+                    if (!excerpt && kb.source_type && kb.source_type.includes('book') && candidate.score > 200) {
+                        excerpt = kb.content.substring(0, 500);
+                        console.log(`⚠️ [IA] Usando conteúdo do livro mesmo sem match exato (score alto: ${candidate.score})`);
+                    }
+                    
+                    // Última tentativa: se ainda não tem, pular
+                    if (!excerpt) {
+                        console.log(`❌ [IA] Não foi possível encontrar trecho relevante sobre "${entity}" em "${kb.title?.substring(0, 50) || 'sem título'}", pulando...`);
+                        continue; // Pular para próximo candidato
+                    }
+                } else if (!excerpt) {
+                    // Se não tem entidade, usar início do conteúdo
+                    excerpt = kb.content.substring(0, 500);
                 }
                 
                 // Se chegou aqui, encontramos um candidato válido!
