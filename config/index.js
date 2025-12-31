@@ -75,7 +75,7 @@ const config = {
     
     // Upload
     upload: {
-        maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '52428800', 10), // 50MB em bytes (aumentado para permitir Bíblia completa)
+        maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '104857600', 10), // 100MB em bytes (aumentado para permitir Bíblia completa e livros grandes)
         allowedMimeTypes: {
             image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
             pdf: ['application/pdf']

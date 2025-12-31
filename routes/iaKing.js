@@ -46,8 +46,32 @@ function categorizeQuestion(question, questionContext) {
         educational: false,    // Educacional
         health: false,         // Saúde
         business: false,      // Negócios
+        sales: false,         // Vendas
+        strategy: false,      // Estratégias
         entertainment: false   // Entretenimento
     };
+    
+    // FILTRO DE VENDAS E ESTRATÉGIAS
+    const salesKeywords = [
+        'venda', 'vendas', 'vender', 'vendedor', 'vendedora', 'comercial', 'vendas',
+        'estratégia', 'estrategia', 'estratégias', 'estrategias', 'técnica de venda',
+        'técnicas de venda', 'como vender', 'fechar venda', 'prospecção', 'prospeccao',
+        'cliente', 'clientes', 'negociação', 'negociacao', 'objeção', 'objeções',
+        'pitch', 'apresentação', 'apresentacao', 'proposta', 'propostas', 'fechamento',
+        'conversão', 'conversao', 'conversão de vendas', 'funnel de vendas', 'pipeline',
+        'crm', 'relacionamento com cliente', 'atendimento', 'pós-venda', 'pos-venda',
+        'upsell', 'cross-sell', 'retenção', 'retencao', 'churn', 'lifetime value',
+        'métricas de venda', 'metricas de venda', 'kpi de venda', 'indicadores de venda'
+    ];
+    
+    for (const keyword of salesKeywords) {
+        if (lowerQuestion.includes(keyword) || questionContext.keywords.some(k => k.includes(keyword))) {
+            categories.sales = true;
+            categories.strategy = true;
+            categories.business = true;
+            break;
+        }
+    }
     
     // FILTRO RELIGIOSO
     const religiousKeywords = [
@@ -198,8 +222,9 @@ function categorizeQuestion(question, questionContext) {
     const activeCategories = Object.entries(categories).filter(([_, active]) => active);
     
     if (activeCategories.length > 0) {
-        // Priorizar: religioso > histórico > filosófico > científico > político
-        if (categories.religious) primaryCategory = 'religious';
+        // Priorizar: vendas/estratégias > religioso > histórico > filosófico > científico > político
+        if (categories.sales || categories.strategy) primaryCategory = 'sales';
+        else if (categories.religious) primaryCategory = 'religious';
         else if (categories.historical) primaryCategory = 'historical';
         else if (categories.philosophical) primaryCategory = 'philosophical';
         else if (categories.scientific) primaryCategory = 'scientific';
@@ -209,6 +234,7 @@ function categorizeQuestion(question, questionContext) {
         else if (categories.personal) primaryCategory = 'personal';
         else if (categories.educational) primaryCategory = 'educational';
         else if (categories.health) primaryCategory = 'health';
+        else if (categories.business) primaryCategory = 'business';
         else primaryCategory = activeCategories[0][0];
     }
     
@@ -2049,6 +2075,198 @@ function detectPromptInjection(message) {
     return false;
 }
 
+// Função para gerar estratégias de vendas
+function generateSalesStrategy(question, questionContext) {
+    const lowerQuestion = question.toLowerCase();
+    
+    // Estratégias base baseadas em melhores práticas de vendas
+    const strategies = [];
+    
+    // Estratégia 1: Prospecção e Qualificação
+    if (lowerQuestion.includes('prospecção') || lowerQuestion.includes('prospeccao') || 
+        lowerQuestion.includes('cliente') || lowerQuestion.includes('lead')) {
+        strategies.push({
+            title: "🎯 Prospecção e Qualificação de Clientes",
+            content: `**1. Identifique seu público-alvo ideal (ICP - Ideal Customer Profile)**
+• Defina características demográficas, psicográficas e comportamentais
+• Analise seus melhores clientes atuais para identificar padrões
+• Use dados para criar personas detalhadas
+
+**2. Utilize múltiplos canais de prospecção**
+• LinkedIn para B2B profissional
+• Email marketing com sequências automatizadas
+• Networking presencial e eventos do setor
+• Referências de clientes satisfeitos
+• Parcerias estratégicas
+
+**3. Qualifique antes de vender**
+• Use metodologias como BANT (Budget, Authority, Need, Timeline)
+• Faça perguntas abertas para entender necessidades reais
+• Identifique se o cliente tem poder de decisão
+• Verifique se há orçamento disponível`
+        });
+    }
+    
+    // Estratégia 2: Apresentação e Pitch
+    if (lowerQuestion.includes('apresentação') || lowerQuestion.includes('apresentacao') || 
+        lowerQuestion.includes('pitch') || lowerQuestion.includes('proposta')) {
+        strategies.push({
+            title: "📊 Estrutura de Apresentação Eficaz",
+            content: `**1. Abordagem AIDA (Atenção, Interesse, Desejo, Ação)**
+• **Atenção**: Comece com uma afirmação impactante ou pergunta provocativa
+• **Interesse**: Conte uma história relevante ou apresente dados surpreendentes
+• **Desejo**: Mostre benefícios claros e resultados tangíveis
+• **Ação**: Peça o fechamento de forma natural e confiante
+
+**2. Foque em benefícios, não em características**
+• Em vez de "Nosso produto tem 50 funcionalidades"
+• Diga "Você economizará 10 horas por semana automatizando tarefas repetitivas"
+
+**3. Use storytelling**
+• Compartilhe casos de sucesso de clientes similares
+• Crie conexão emocional através de narrativas
+• Mostre transformação antes/depois`
+        });
+    }
+    
+    // Estratégia 3: Objeções
+    if (lowerQuestion.includes('objeção') || lowerQuestion.includes('objeções') || 
+        lowerQuestion.includes('não') || lowerQuestion.includes('nao')) {
+        strategies.push({
+            title: "🛡️ Lidando com Objeções",
+            content: `**1. Técnica LAER (Listen, Acknowledge, Explore, Respond)**
+• **Listen**: Ouça completamente antes de responder
+• **Acknowledge**: Valide a preocupação do cliente ("Entendo sua preocupação...")
+• **Explore**: Faça perguntas para entender a raiz do problema
+• **Respond**: Apresente solução específica para aquela objeção
+
+**2. Objeções comuns e respostas:**
+• **"Está muito caro"**: Mostre ROI, compare custo vs. benefício, ofereça parcelamento
+• **"Preciso pensar"**: Descubra o que especificamente precisa pensar, ofereça trial
+• **"Já tenho fornecedor"**: Pergunte o que falta no atual, mostre diferenciais
+• **"Não é prioridade agora"**: Crie urgência mostrando custo da inação
+
+**3. Transforme objeções em oportunidades**
+• Cada objeção revela uma preocupação real
+• Use como chance de aprofundar relacionamento
+• Documente objeções para melhorar processo`
+        });
+    }
+    
+    // Estratégia 4: Fechamento
+    if (lowerQuestion.includes('fechar') || lowerQuestion.includes('fechamento') || 
+        lowerQuestion.includes('vender') || lowerQuestion.includes('conversão')) {
+        strategies.push({
+            title: "✅ Técnicas de Fechamento",
+            content: `**1. Fechamento por Assumir (Assumptive Close)**
+• "Qual forma de pagamento prefere: boleto ou cartão?"
+• Agir como se a venda já estivesse fechada
+
+**2. Fechamento por Alternativa (Alternative Close)**
+• "Prefere começar com o plano básico ou já quer o completo?"
+• Dá opções, ambas levam ao fechamento
+
+**3. Fechamento por Urgência (Urgency Close)**
+• "Essa promoção termina hoje, quer garantir?"
+• Cria senso de escassez (use com ética)
+
+**4. Fechamento por Resumo (Summary Close)**
+• Resuma todos os benefícios acordados
+• "Então, resumindo: você terá X, Y e Z. Podemos fechar?"
+
+**5. Fechamento por Pergunta Direta**
+• "O que precisa acontecer para fecharmos hoje?"
+• Descobre última barreira e resolve`
+        });
+    }
+    
+    // Estratégia 5: Relacionamento e Pós-Venda
+    if (lowerQuestion.includes('relacionamento') || lowerQuestion.includes('pós-venda') || 
+        lowerQuestion.includes('pos-venda') || lowerQuestion.includes('retenção')) {
+        strategies.push({
+            title: "🤝 Construção de Relacionamento Duradouro",
+            content: `**1. Follow-up consistente**
+• Agende contatos regulares (não apenas quando quer vender)
+• Envie conteúdo de valor: artigos, dicas, insights
+• Lembre-se de datas importantes (aniversário, contrato)
+
+**2. Exceda expectativas**
+• Entregue antes do prazo
+• Ofereça mais do que prometeu
+• Surpreenda com atenção personalizada
+
+**3. Upsell e Cross-sell estratégico**
+• Identifique necessidades adicionais naturalmente
+• Apresente soluções complementares que realmente ajudem
+• Não force, sugira baseado em valor
+
+**4. Transforme clientes em defensores**
+• Peça depoimentos e avaliações
+• Crie programa de indicação com benefícios
+• Compartilhe casos de sucesso (com permissão)`
+        });
+    }
+    
+    // Estratégia Geral (se não se encaixar em nenhuma categoria específica)
+    if (strategies.length === 0) {
+        strategies.push({
+            title: "🚀 Estratégias Gerais de Vendas",
+            content: `**1. Conheça profundamente seu produto/serviço**
+• Domine todos os detalhes técnicos
+• Entenda como resolve problemas reais
+• Prepare respostas para perguntas comuns
+
+**2. Desenvolva escuta ativa**
+• Faça mais perguntas do que afirmações
+• Entenda dor do cliente antes de apresentar solução
+• Use técnica SPIN (Situação, Problema, Implicação, Necessidade)
+
+**3. Crie valor em cada interação**
+• Não seja apenas um vendedor, seja um consultor
+• Ofereça insights e conhecimento
+• Construa confiança através de expertise
+
+**4. Use dados e métricas**
+• Acompanhe taxa de conversão por canal
+• Meça tempo médio de ciclo de vendas
+• Analise quais abordagens funcionam melhor
+• Ajuste estratégia baseado em dados
+
+**5. Invista em desenvolvimento contínuo**
+• Estude técnicas de vendas modernas
+• Participe de treinamentos e workshops
+• Aprenda com cada interação
+• Adapte-se às mudanças do mercado
+
+**6. Construa sua marca pessoal**
+• Seja ativo em redes sociais relevantes
+• Compartilhe conhecimento e insights
+• Crie autoridade no seu nicho
+• Seja lembrado como especialista
+
+**7. Automatize processos repetitivos**
+• Use CRM para gerenciar relacionamentos
+• Crie templates para comunicações comuns
+• Automatize follow-ups
+• Foque tempo em atividades de alto valor`
+        });
+    }
+    
+    // Montar resposta final
+    let response = `💼 **Estratégias de Vendas para Você:**\n\n`;
+    
+    strategies.forEach((strategy, index) => {
+        response += `${strategy.title}\n\n${strategy.content}\n\n`;
+        if (index < strategies.length - 1) {
+            response += `---\n\n`;
+        }
+    });
+    
+    response += `\n💡 **Dica Final:** Lembre-se que vendas eficazes são sobre resolver problemas e criar valor para o cliente. Foque em construir relacionamentos genuínos e entregar resultados excepcionais.`;
+    
+    return response;
+}
+
 // Ativar modo mental baseado na pergunta
 function activateMentalMode(question, questionContext, thoughts) {
     const lowerQuestion = question.toLowerCase();
@@ -2642,6 +2860,33 @@ async function findBestAnswer(userMessage, userId) {
         // CAMADA 1: Extrair contexto e raciocinar sobre a pergunta
         const questionContext = extractQuestionContext(userMessage);
         const thoughts = thinkAboutQuestion(userMessage, questionContext);
+        
+        // ============================================
+        // DETECÇÃO ESPECIAL: PERGUNTAS SOBRE VENDAS E ESTRATÉGIAS
+        // ============================================
+        const lowerMessage = userMessage.toLowerCase();
+        const isSalesQuestion = lowerMessage.includes('estratégia') || 
+                               lowerMessage.includes('estrategia') ||
+                               lowerMessage.includes('estratégias') ||
+                               lowerMessage.includes('estrategias') ||
+                               (lowerMessage.includes('venda') && (
+                                   lowerMessage.includes('qual') || 
+                                   lowerMessage.includes('que') ||
+                                   lowerMessage.includes('como') ||
+                                   lowerMessage.includes('técnica') ||
+                                   lowerMessage.includes('tecnica')
+                               ));
+        
+        if (isSalesQuestion && thoughts.intent === 'strategy') {
+            const salesStrategy = generateSalesStrategy(userMessage, questionContext);
+            if (salesStrategy) {
+                return {
+                    answer: salesStrategy,
+                    confidence: 90,
+                    source: 'sales_strategy'
+                };
+            }
+        }
         
         // ============================================
         // SISTEMA DE FILTROS E CATEGORIZAÇÃO
@@ -3260,13 +3505,11 @@ async function findBestAnswer(userMessage, userId) {
                         
                         if (foundSentences.length > 0) {
                             excerpt = foundSentences.join('. ').substring(0, contextLength);
-                                // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
-                                if (kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
-                                    excerpt = cleanBookContent(excerpt);
-                                }
-                                console.log(`✅ [IA] Usando frase que menciona "${entity}"`);
-                                break;
+                            // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
+                            if (kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
+                                excerpt = cleanBookContent(excerpt);
                             }
+                            console.log(`✅ [IA] Usando frase que menciona "${entity}"`);
                         }
                         
                         // Se ainda não encontrou, usar início do conteúdo se menciona entidade
@@ -3301,8 +3544,10 @@ async function findBestAnswer(userMessage, userId) {
                         console.log(`❌ [IA] Não foi possível encontrar trecho relevante sobre "${entity}" em "${kb.title?.substring(0, 50) || 'sem título'}", pulando...`);
                         continue; // Pular para próximo candidato
                     }
-                } else if (!excerpt) {
-                    // Se não tem entidade, usar início do conteúdo
+                }
+                
+                // Se não tem entidade, usar início do conteúdo
+                if (!excerpt && questionContext.entities.length === 0) {
                     // LÓGICA INTELIGENTE: Ajustar tamanho baseado no tipo de pergunta
                     const contextLength = questionContext.questionType === 'who' ? 1000 : 
                                         questionContext.questionType === 'what' ? 600 : 500;
