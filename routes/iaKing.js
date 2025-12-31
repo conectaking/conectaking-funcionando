@@ -845,6 +845,8 @@ async function searchWithTavily(query, apiKey) {
                 results.push({
                     title: result.title || `Resultado ${index + 1}`,
                     snippet: result.content || result.snippet || '',
+                    content: result.content || result.snippet || '', // Conteúdo principal
+                    raw_content: result.raw_content || result.content || result.snippet || '', // Conteúdo bruto completo
                     url: result.url || '',
                     provider: 'tavily',
                     score: result.score || 0
@@ -6934,13 +6936,19 @@ router.post('/search-books-tavily', protectAdmin, asyncHandler(async (req, res) 
                 return isTextContent || mentionsBook;
             })
             .slice(0, max_results)
-            .map(r => ({
-                title: r.title,
-                description: r.snippet || r.content || '',
-                url: r.url,
-                source: 'tavily',
-                raw_content: r.content || r.snippet || '' // Incluir conteúdo bruto para visualização
-            }));
+            .map(r => {
+                // Tavily retorna content ou raw_content quando include_raw_content: true
+                const rawContent = r.raw_content || r.content || r.snippet || '';
+                const description = r.snippet || r.content || '';
+                
+                return {
+                    title: r.title,
+                    description: description,
+                    url: r.url,
+                    source: 'tavily',
+                    raw_content: rawContent // Conteúdo bruto completo para visualização
+                };
+            });
         
         res.json({
             books: books,
