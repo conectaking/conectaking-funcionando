@@ -1303,25 +1303,25 @@ async function learnFromTavily(question, answer, client) {
 }
 
 // ============================================
-// SISTEMA DE AUTO-TREINAMENTO AUTÔNOMO "NAYA"
+// SISTEMA DE AUTO-TREINAMENTO AUTÔNOMO "IA KING"
 // ============================================
 // Este sistema permite que a IA aprenda automaticamente quando não souber responder
 // Pesquisa na internet, em livros/documentos e salva o conhecimento automaticamente
 
 /**
- * Função principal de auto-treinamento autônomo da Naya
+ * Função principal de auto-treinamento autônomo da IA King
  * Pesquisa automaticamente quando não souber responder e salva o conhecimento aprendido
  */
-async function autoTrainNaya(question, questionContext, client) {
+async function autoTrainIAKing(question, questionContext, client) {
     try {
-        console.log('🧠 [NAYA] Sistema de auto-treinamento ativado para:', question.substring(0, 100));
+        console.log('🧠 [IA KING] Sistema de auto-treinamento ativado para:', question.substring(0, 100));
         
         let learnedKnowledge = null;
         let learnedAnswer = null;
         
         // 1. PRIMEIRO: Tentar buscar em livros/documentos existentes
         try {
-            console.log('📖 [NAYA] Buscando em livros e documentos...');
+            console.log('📖 [IA KING] Buscando em livros e documentos...');
             
             // Detectar categoria da pergunta para buscar livros específicos
             const questionLower = question.toLowerCase();
@@ -1338,7 +1338,7 @@ async function autoTrainNaya(question, questionContext, client) {
                     OR LOWER(title) LIKE '%religiao%' OR LOWER(content) LIKE '%jesus%'
                     OR LOWER(content) LIKE '%cristo%' OR LOWER(content) LIKE '%bíblia%')
                 `;
-                console.log('📖 [NAYA] Detectou pergunta religiosa - buscando em livros religiosos');
+                console.log('📖 [IA KING] Detectou pergunta religiosa - buscando em livros religiosos');
             }
             // Se pergunta é sobre história, buscar livros históricos
             else if (questionLower.includes('história') || questionLower.includes('historia') ||
@@ -1348,7 +1348,7 @@ async function autoTrainNaya(question, questionContext, client) {
                     AND (LOWER(title) LIKE '%história%' OR LOWER(title) LIKE '%historia%'
                     OR LOWER(title) LIKE '%guerra%' OR LOWER(title) LIKE '%histórico%')
                 `;
-                console.log('📖 [NAYA] Detectou pergunta histórica - buscando em livros históricos');
+                console.log('📖 [IA KING] Detectou pergunta histórica - buscando em livros históricos');
             }
             
             // Buscar em documentos processados
@@ -1437,19 +1437,19 @@ async function autoTrainNaya(question, questionContext, client) {
                             source: `naya_book_${source.source}`,
                             source_reference: source.title
                         };
-                        console.log('✅ [NAYA] Encontrou conhecimento em livro/documento:', source.title);
+                        console.log('✅ [IA KING] Encontrou conhecimento em livro/documento:', source.title);
                         break;
                     }
                 }
             }
         } catch (bookError) {
-            console.error('❌ [NAYA] Erro ao buscar em livros:', bookError);
+            console.error('❌ [IA KING] Erro ao buscar em livros:', bookError);
         }
         
         // 2. SEGUNDO: Se não encontrou em livros, pesquisar na internet
         if (!learnedKnowledge) {
             try {
-                console.log('🌐 [NAYA] Pesquisando na internet...');
+                console.log('🌐 [IA KING] Pesquisando na internet...');
                 
                 // Buscar configuração de busca na web
                 const webConfigResult = await client.query(`
