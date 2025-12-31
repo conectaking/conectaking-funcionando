@@ -2075,7 +2075,317 @@ function detectPromptInjection(message) {
     return false;
 }
 
-// Função para gerar estratégias de vendas
+// ============================================
+// SISTEMA: "COMO O CHATGPT RESPONDERIA?"
+// ============================================
+/**
+ * Simula o pensamento do ChatGPT antes de responder
+ * Esta função sempre é chamada antes de gerar uma resposta
+ */
+async function comoChatGPTResponderia(userMessage, questionContext, client) {
+    try {
+        const lowerMessage = userMessage.toLowerCase();
+        
+        // Análise do ChatGPT sobre a pergunta
+        const chatGPTThoughts = {
+            intent: questionContext.intent || 'information',
+            complexity: questionContext.complexity || 'medium',
+            needsResearch: false,
+            needsBooks: false,
+            needsHistory: false,
+            suggestedApproach: 'direct',
+            keyPoints: []
+        };
+        
+        // Detectar se precisa de pesquisa
+        if (lowerMessage.includes('estratégia') || lowerMessage.includes('estrategia') ||
+            lowerMessage.includes('como fazer') || lowerMessage.includes('técnica') ||
+            lowerMessage.includes('melhor forma') || lowerMessage.includes('dicas')) {
+            chatGPTThoughts.needsResearch = true;
+            chatGPTThoughts.needsBooks = true;
+            chatGPTThoughts.suggestedApproach = 'comprehensive';
+        }
+        
+        // Detectar se precisa buscar em histórico
+        if (lowerMessage.includes('similar') || lowerMessage.includes('parecido') ||
+            lowerMessage.includes('outra vez') || lowerMessage.includes('novamente')) {
+            chatGPTThoughts.needsHistory = true;
+        }
+        
+        // Extrair pontos-chave da pergunta
+        const keywords = extractKeywords(userMessage);
+        chatGPTThoughts.keyPoints = keywords.slice(0, 5);
+        
+        console.log('🤖 [ChatGPT Mode] Pensamento:', chatGPTThoughts);
+        
+        return chatGPTThoughts;
+    } catch (error) {
+        console.error('Erro em comoChatGPTResponderia:', error);
+        return null;
+    }
+}
+
+// ============================================
+// BUSCAR EM CONVERSAS ANTERIORES SIMILARES
+// ============================================
+/**
+ * Busca em conversas anteriores para encontrar respostas similares
+ * Aprende com o histórico de interações
+ */
+async function buscarConversasAnteriores(userMessage, userId, client) {
+    try {
+        const keywords = extractKeywords(userMessage);
+        const lowerMessage = userMessage.toLowerCase();
+        
+        // Buscar conversas similares
+        const similarConversations = await client.query(`
+            SELECT 
+                message,
+                response,
+                confidence_score,
+                created_at,
+                -- Calcular similaridade usando palavras-chave
+                (
+                    SELECT COUNT(*) 
+                    FROM unnest(keywords) AS kw
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest($1::text[]) AS user_kw
+                        WHERE LOWER(kw) = LOWER(user_kw)
+                    )
+                ) as keyword_matches
+            FROM ia_conversations
+            WHERE user_id = $2
+            AND LOWER(message) LIKE ANY($3::text[])
+            AND confidence_score > 50
+            ORDER BY 
+                keyword_matches DESC,
+                confidence_score DESC,
+                created_at DESC
+            LIMIT 5
+        `, [
+            keywords,
+            userId,
+            keywords.map(k => `%${k}%`)
+        ]);
+        
+        if (similarConversations.rows.length > 0) {
+            console.log(`📚 [Histórico] Encontradas ${similarConversations.rows.length} conversas similares`);
+            
+            // Buscar também em auto-learning history
+            const learningHistory = await client.query(`
+                SELECT question, answer, confidence_score, source
+                FROM ia_auto_learning_history
+                WHERE (
+                    SELECT COUNT(*) 
+                    FROM unnest(keywords) AS kw
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest($1::text[]) AS user_kw
+                        WHERE LOWER(kw) = LOWER(user_kw)
+                    )
+                ) > 0
+                ORDER BY confidence_score DESC
+                LIMIT 3
+            `, [keywords]);
+            
+            return {
+                conversations: similarConversations.rows,
+                learnedKnowledge: learningHistory.rows,
+                hasResults: true
+            };
+        }
+        
+        return { conversations: [], learnedKnowledge: [], hasResults: false };
+    } catch (error) {
+        console.error('Erro ao buscar conversas anteriores:', error);
+        return { conversations: [], learnedKnowledge: [], hasResults: false };
+    }
+}
+
+// ============================================
+// FUNÇÃO MELHORADA: GERAR ESTRATÉGIAS DE VENDAS
+// ============================================
+/**
+ * Gera estratégias de vendas combinando:
+ * - Livros treinados
+ * - Busca na internet
+ * - Conversas anteriores
+ * - Conhecimento base
+ */
+async function generateSalesStrategyMelhorado(question, questionContext, client, userId = null) {
+    const lowerQuestion = question.toLowerCase();
+    let strategies = [];
+    let sources = [];
+    
+    // 1. BUSCAR EM LIVROS SOBRE VENDAS
+    try {
+        const salesBooks = await client.query(`
+            SELECT id, title, content, keywords
+            FROM ia_knowledge_base
+            WHERE is_active = true
+            AND (
+                source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+                OR LOWER(title) LIKE ANY(ARRAY['%venda%', '%vendas%', '%estratégia%', '%estrategia%', '%vender%', '%comercial%', '%negociação%', '%negociacao%'])
+                OR keywords && ARRAY['venda', 'vendas', 'estratégia', 'estrategia', 'vender', 'comercial', 'negociação', 'negociacao', 'sales', 'strategy']
+            )
+            AND content IS NOT NULL
+            AND content != ''
+            ORDER BY priority DESC NULLS LAST, usage_count DESC
+            LIMIT 5
+        `);
+        
+        if (salesBooks.rows.length > 0) {
+            console.log(`📚 [Estratégias] Encontrados ${salesBooks.rows.length} livros sobre vendas`);
+            
+            for (const book of salesBooks.rows) {
+                // Extrair trechos relevantes do livro
+                const content = book.content || '';
+                const relevantSections = extractRelevantSections(content, question, 3);
+                
+                if (relevantSections.length > 0) {
+                    strategies.push({
+                        title: `📖 De "${book.title}"`,
+                        content: relevantSections.join('\n\n'),
+                        source: 'book',
+                        confidence: 85
+                    });
+                    sources.push(`Livro: ${book.title}`);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao buscar livros de vendas:', error);
+    }
+    
+    // 2. BUSCAR EM CONVERSAS ANTERIORES (se tiver userId)
+    if (userId) {
+        try {
+            const historyResult = await buscarConversasAnteriores(question, userId, client);
+            
+            if (historyResult.hasResults && historyResult.conversations.length > 0) {
+                const bestMatch = historyResult.conversations[0];
+                if (bestMatch.confidence_score > 60) {
+                    strategies.push({
+                        title: '💡 Baseado em conversas anteriores',
+                        content: bestMatch.response,
+                        source: 'history',
+                        confidence: bestMatch.confidence_score
+                    });
+                    sources.push('Conversa anterior similar');
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao buscar histórico:', error);
+        }
+    }
+    
+    // 3. BUSCAR NA INTERNET (Tavily) - se não tiver estratégias suficientes
+    if (strategies.length < 2) {
+        try {
+            const webConfigResult = await client.query(`
+                SELECT * FROM ia_web_search_config
+                WHERE is_enabled = true 
+                AND api_provider = 'tavily' 
+                AND api_key IS NOT NULL
+                ORDER BY id DESC LIMIT 1
+            `);
+            
+            if (webConfigResult.rows.length > 0) {
+                const webConfig = webConfigResult.rows[0];
+                const searchQuery = `${question} estratégias de vendas técnicas dicas`;
+                
+                console.log('🌐 [Estratégias] Buscando na internet:', searchQuery);
+                
+                const webResults = await searchWithTavily(searchQuery, webConfig.api_key);
+                
+                if (webResults && webResults.results && webResults.results.length > 0) {
+                    // Combinar resultados da web
+                    const webContent = webResults.results
+                        .slice(0, 3)
+                        .map(r => `**${r.title}**\n${r.content?.substring(0, 500) || ''}`)
+                        .join('\n\n---\n\n');
+                    
+                    strategies.push({
+                        title: '🌐 Pesquisa na Internet',
+                        content: webContent,
+                        source: 'web',
+                        confidence: 75
+                    });
+                    sources.push('Busca na internet (Tavily)');
+                    
+                    // Aprender automaticamente
+                    await learnFromTavily(question, webContent, client);
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao buscar na internet:', error);
+        }
+    }
+    
+    // 4. ESTRATÉGIAS BASE (fallback se não encontrou nada)
+    if (strategies.length === 0) {
+        // Usar estratégias base da função original
+        const baseStrategy = generateSalesStrategy(question, questionContext);
+        if (baseStrategy) {
+            strategies.push({
+                title: '💼 Estratégias Base de Vendas',
+                content: baseStrategy,
+                source: 'base',
+                confidence: 70
+            });
+            sources.push('Conhecimento base');
+        }
+    }
+    
+    // 5. COMBINAR E FORMATAR RESPOSTA FINAL
+    let response = `💼 **Estratégias de Vendas Personalizadas para Você:**\n\n`;
+    
+    // Ordenar por confiança
+    strategies.sort((a, b) => b.confidence - a.confidence);
+    
+    strategies.forEach((strategy, index) => {
+        response += `${strategy.title}\n\n${strategy.content}\n\n`;
+        if (index < strategies.length - 1) {
+            response += `---\n\n`;
+        }
+    });
+    
+    if (sources.length > 0) {
+        response += `\n📚 **Fontes:** ${sources.join(', ')}\n\n`;
+    }
+    
+    response += `💡 **Dica:** Esta resposta foi criada combinando conhecimento de livros, histórico de conversas e pesquisa na internet para te dar a melhor estratégia possível!`;
+    
+    return response;
+}
+
+// Função auxiliar para extrair seções relevantes de um texto
+function extractRelevantSections(text, query, maxSections = 3) {
+    const sentences = text.split(/[.!?]\s+/);
+    const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    const relevantSentences = [];
+    
+    for (const sentence of sentences) {
+        const lowerSentence = sentence.toLowerCase();
+        const matchCount = queryWords.filter(word => lowerSentence.includes(word)).length;
+        
+        if (matchCount > 0 && sentence.length > 50) {
+            relevantSentences.push({
+                text: sentence.trim(),
+                score: matchCount
+            });
+        }
+    }
+    
+    // Ordenar por score e pegar os melhores
+    relevantSentences.sort((a, b) => b.score - a.score);
+    
+    return relevantSentences
+        .slice(0, maxSections)
+        .map(s => s.text)
+        .filter(s => s.length > 0);
+}
+
+// Função para gerar estratégias de vendas (versão original mantida para compatibilidade)
 function generateSalesStrategy(question, questionContext) {
     const lowerQuestion = question.toLowerCase();
     
@@ -2862,6 +3172,15 @@ async function findBestAnswer(userMessage, userId) {
         const thoughts = thinkAboutQuestion(userMessage, questionContext);
         
         // ============================================
+        // SISTEMA: "COMO O CHATGPT RESPONDERIA?"
+        // ============================================
+        // Sempre se perguntar como o ChatGPT responderia antes de responder
+        const chatGPTThoughts = await comoChatGPTResponderia(userMessage, questionContext, client);
+        if (chatGPTThoughts) {
+            console.log('🤖 [ChatGPT Mode] Abordagem sugerida:', chatGPTThoughts.suggestedApproach);
+        }
+        
+        // ============================================
         // DETECÇÃO ESPECIAL: PERGUNTAS SOBRE VENDAS E ESTRATÉGIAS
         // ============================================
         const lowerMessage = userMessage.toLowerCase();
@@ -2877,13 +3196,19 @@ async function findBestAnswer(userMessage, userId) {
                                    lowerMessage.includes('tecnica')
                                ));
         
-        if (isSalesQuestion && thoughts.intent === 'strategy') {
-            const salesStrategy = generateSalesStrategy(userMessage, questionContext);
+        if (isSalesQuestion && (thoughts.intent === 'strategy' || chatGPTThoughts?.needsResearch)) {
+            console.log('💼 [Vendas] Detectada pergunta sobre estratégias de vendas - usando sistema melhorado');
+            
+            // Usar a versão melhorada que combina múltiplas fontes
+            const salesStrategy = await generateSalesStrategyMelhorado(userMessage, questionContext, client, userId);
             if (salesStrategy) {
+                // Aplicar personalidade e emoção
+                const finalAnswer = addPersonalityAndEmotion(salesStrategy, thoughts, questionContext);
+                
                 return {
-                    answer: salesStrategy,
+                    answer: finalAnswer,
                     confidence: 90,
-                    source: 'sales_strategy'
+                    source: 'sales_strategy_enhanced'
                 };
             }
         }
@@ -2914,6 +3239,43 @@ async function findBestAnswer(userMessage, userId) {
         let bestAnswer = null;
         let bestScore = 0;
         let bestSource = null;
+        
+        // 0. BUSCAR EM CONVERSAS ANTERIORES (aprender com histórico)
+        if (userId && chatGPTThoughts?.needsHistory) {
+            try {
+                const historyResult = await buscarConversasAnteriores(userMessage, userId, client);
+                
+                if (historyResult.hasResults) {
+                    // Verificar conversas similares
+                    for (const conv of historyResult.conversations) {
+                        const similarity = calculateSimilarity(userMessage, conv.message);
+                        const historyScore = (similarity * 0.7) + (conv.confidence_score * 0.3);
+                        
+                        if (historyScore > bestScore) {
+                            bestScore = historyScore;
+                            bestAnswer = conv.response;
+                            bestSource = 'conversation_history';
+                            console.log('📚 [Histórico] Usando resposta de conversa anterior (score:', historyScore.toFixed(2), ')');
+                        }
+                    }
+                    
+                    // Verificar conhecimento aprendido
+                    for (const learned of historyResult.learnedKnowledge) {
+                        const similarity = calculateSimilarity(userMessage, learned.question);
+                        const learnedScore = (similarity * 0.6) + (learned.confidence_score * 0.4);
+                        
+                        if (learnedScore > bestScore) {
+                            bestScore = learnedScore;
+                            bestAnswer = learned.answer;
+                            bestSource = 'learned_knowledge';
+                            console.log('🧠 [Aprendizado] Usando conhecimento aprendido (score:', learnedScore.toFixed(2), ')');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao buscar conversas anteriores:', error);
+            }
+        }
         
         // 1. Buscar em Q&A
         try {
@@ -4031,6 +4393,12 @@ async function findBestAnswer(userMessage, userId) {
                         const shouldLearn = autoLearnConfig.rows.length === 0 || 
                                           autoLearnConfig.rows[0].is_enabled === true;
                         
+                        // Detectar se é sobre estratégias de vendas (prioridade alta para aprender)
+                        const isSalesStrategy = bestSource === 'sales_strategy_enhanced' || 
+                                               bestSource === 'sales_strategy' ||
+                                               userMessage.toLowerCase().includes('estratégia') ||
+                                               userMessage.toLowerCase().includes('venda');
+                        
                         if (shouldLearn && bestSource && bestSource.includes('web')) {
                             // Aprender de resposta da web
                             await learnFromTavily(userMessage, bestAnswer, client);
@@ -4039,20 +4407,68 @@ async function findBestAnswer(userMessage, userId) {
                             const keywords = extractKeywords(userMessage);
                             await client.query(`
                                 INSERT INTO ia_auto_learning_history 
-                                (question, answer, source, confidence_score, keywords)
-                                VALUES ($1, $2, 'tavily', $3, $4)
-                            `, [userMessage, bestAnswer.substring(0, 5000), bestScore, keywords]);
+                                (question, answer, source, confidence_score, keywords, topic_category)
+                                VALUES ($1, $2, 'tavily', $3, $4, $5)
+                            `, [
+                                userMessage, 
+                                bestAnswer.substring(0, 5000), 
+                                bestScore, 
+                                keywords,
+                                isSalesStrategy ? 'sales_strategy' : null
+                            ]);
                             
                             console.log('🧠 [IA] Auto-aprendizado: Resposta gravada na memória!');
                         } else if (shouldLearn && bestAnswer) {
                             // Gravar qualquer resposta útil (mesmo que não seja da web)
                             const keywords = extractKeywords(userMessage);
+                            
+                            // Se for estratégia de vendas, também salvar na base de conhecimento
+                            if (isSalesStrategy) {
+                                try {
+                                    // Buscar categoria de Vendas
+                                    const salesCategory = await client.query(`
+                                        SELECT id FROM ia_categories 
+                                        WHERE LOWER(name) IN ('vendas', 'negócios', 'estratégias')
+                                        ORDER BY priority DESC LIMIT 1
+                                    `);
+                                    
+                                    const categoryId = salesCategory.rows.length > 0 ? salesCategory.rows[0].id : null;
+                                    
+                                    // Salvar como conhecimento na base
+                                    await client.query(`
+                                        INSERT INTO ia_knowledge_base 
+                                        (category_id, title, content, keywords, source_type, priority)
+                                        VALUES ($1, $2, $3, $4, 'auto_learned', 80)
+                                        ON CONFLICT DO NOTHING
+                                    `, [
+                                        categoryId,
+                                        `Estratégia de Vendas: ${userMessage.substring(0, 100)}`,
+                                        bestAnswer,
+                                        keywords
+                                    ]);
+                                    
+                                    console.log('💼 [Vendas] Estratégia salva na base de conhecimento!');
+                                } catch (saveError) {
+                                    console.error('Erro ao salvar estratégia na base:', saveError);
+                                }
+                            }
+                            
                             await client.query(`
                                 INSERT INTO ia_auto_learning_history 
-                                (question, answer, source, confidence_score, keywords)
-                                VALUES ($1, $2, 'conversation', $3, $4)
+                                (question, answer, source, confidence_score, keywords, topic_category)
+                                VALUES ($1, $2, 'conversation', $3, $4, $5)
                                 ON CONFLICT DO NOTHING
-                            `, [userMessage, bestAnswer.substring(0, 5000), bestScore, keywords]);
+                            `, [
+                                userMessage, 
+                                bestAnswer.substring(0, 5000), 
+                                bestScore, 
+                                keywords,
+                                isSalesStrategy ? 'sales_strategy' : null
+                            ]);
+                            
+                            if (isSalesStrategy) {
+                                console.log('💼 [Vendas] Estratégia aprendida e salva para uso futuro!');
+                            }
                         }
                     } catch (learnError) {
                         console.error('Erro no auto-aprendizado:', learnError);
