@@ -2592,7 +2592,7 @@ async function findBestAnswer(userMessage, userId) {
         try {
             // BUSCAR LIVROS PRIMEIRO (prioridade máxima) - INCLUIR LIVROS SEM CONTEÚDO PRINCIPAL
             const booksResult = await client.query(`
-                SELECT id, title, content, keywords, usage_count, source_type, category, priority
+                SELECT id, title, content, keywords, usage_count, source_type, category_id, priority
                 FROM ia_knowledge_base
                 WHERE is_active = true
                 AND source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
@@ -2611,7 +2611,7 @@ async function findBestAnswer(userMessage, userId) {
             
             // Buscar conhecimento geral
             knowledgeResult = await client.query(`
-                SELECT id, title, content, keywords, usage_count, source_type, category
+                SELECT id, title, content, keywords, usage_count, source_type, category_id
                 FROM ia_knowledge_base
                 WHERE is_active = true
                 AND source_type NOT IN ('book_training', 'tavily_book', 'tavily_book_trained')
