@@ -3981,6 +3981,146 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
     }
 }));
 
+// POST /api/ia-king/auto-train-mind - Treinamento automático da mentalidade na internet
+router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        console.log('🚀 [IA] Iniciando treinamento automático da mentalidade na internet...');
+        
+        // Verificar se Tavily está configurado
+        const tavilyConfig = await client.query(`
+            SELECT api_key, is_enabled 
+            FROM ia_web_search_config 
+            WHERE provider = 'tavily' 
+            LIMIT 1
+        `);
+        
+        if (!tavilyConfig.rows.length || !tavilyConfig.rows[0].api_key) {
+            return res.status(400).json({ 
+                error: 'Tavily não está configurado. Configure a API key em "Busca na Web" primeiro.' 
+            });
+        }
+        
+        const tavilyApiKey = tavilyConfig.rows[0].api_key;
+        
+        // Tópicos para treinar a IA (mentalidade, cognição, resposta, entendimento)
+        const trainingTopics = [
+            'inteligência artificial mentalidade e cognição',
+            'como IAs pensam e raciocinam',
+            'sistemas de resposta inteligente',
+            'processamento de linguagem natural avançado',
+            'arquitetura cognitiva de IAs',
+            'raciocínio lógico em inteligência artificial',
+            'sistemas de conhecimento e memória',
+            'aprendizado de máquina para IAs conversacionais',
+            'síntese de informação e geração de respostas',
+            'anti-alucinação em IAs',
+            'validação de conhecimento em sistemas de IA',
+            'contexto e memória em conversas com IA',
+            'extração de entidades e palavras-chave',
+            'classificação de intenções em IAs',
+            'sistemas de busca semântica'
+        ];
+        
+        let knowledgeAdded = 0;
+        let topicsSearched = 0;
+        
+        // Buscar e aprender com cada tópico
+        for (const topic of trainingTopics) {
+            try {
+                console.log(`📚 [IA] Buscando conhecimento sobre: ${topic}`);
+                
+                // Buscar com Tavily
+                const tavilyResponse = await fetch('https://api.tavily.com/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        api_key: tavilyApiKey,
+                        query: topic,
+                        search_depth: 'advanced',
+                        max_results: 5
+                    })
+                });
+                
+                if (!tavilyResponse.ok) {
+                    console.error(`❌ [IA] Erro ao buscar com Tavily para: ${topic}`);
+                    continue;
+                }
+                
+                const tavilyData = await tavilyResponse.json();
+                
+                if (!tavilyData.results || tavilyData.results.length === 0) {
+                    console.log(`⚠️ [IA] Nenhum resultado encontrado para: ${topic}`);
+                    continue;
+                }
+                
+                // Processar cada resultado
+                for (const result of tavilyData.results) {
+                    if (!result.content || result.content.length < 100) continue;
+                    
+                    // Verificar se já existe conhecimento similar
+                    const existingCheck = await client.query(`
+                        SELECT id FROM ia_knowledge_base 
+                        WHERE title = $1 OR content LIKE $2 
+                        LIMIT 1
+                    `, [result.title || topic, `%${result.content.substring(0, 50)}%`]);
+                    
+                    if (existingCheck.rows.length > 0) {
+                        console.log(`⏭️ [IA] Conhecimento já existe para: ${result.title}`);
+                        continue;
+                    }
+                    
+                    // Adicionar à base de conhecimento
+                    const content = (result.content || '').substring(0, 10000); // Limitar tamanho
+                    const keywords = extractKeywords(topic + ' ' + content);
+                    
+                    await client.query(`
+                        INSERT INTO ia_knowledge_base 
+                        (title, content, keywords, source_type, source_reference, is_active, created_at, updated_at)
+                        VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW())
+                    `, [
+                        result.title || topic,
+                        content,
+                        keywords,
+                        'tavily_training',
+                        result.url || 'auto-training'
+                    ]);
+                    
+                    knowledgeAdded++;
+                    console.log(`✅ [IA] Conhecimento adicionado: ${result.title?.substring(0, 50)}`);
+                }
+                
+                topicsSearched++;
+                
+                // Pequeno delay para não sobrecarregar a API
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+            } catch (error) {
+                console.error(`❌ [IA] Erro ao processar tópico "${topic}":`, error);
+                continue;
+            }
+        }
+        
+        console.log(`✅ [IA] Treinamento automático concluído! ${knowledgeAdded} itens adicionados de ${topicsSearched} tópicos.`);
+        
+        res.json({
+            success: true,
+            topics_searched: topicsSearched,
+            knowledge_added: knowledgeAdded,
+            estimated_time: `${Math.ceil(topicsSearched * 2)} segundos`,
+            message: `Treinamento concluído! ${knowledgeAdded} novos itens de conhecimento adicionados.`
+        });
+        
+    } catch (error) {
+        console.error('❌ [IA] Erro no treinamento automático:', error);
+        res.status(500).json({ error: 'Erro ao executar treinamento automático: ' + error.message });
+    } finally {
+        client.release();
+    }
+}));
+
 // ============================================
 // ROTAS DE DOCUMENTOS (ADMIN)
 // ============================================
