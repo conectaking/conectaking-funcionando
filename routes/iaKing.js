@@ -4937,7 +4937,7 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
         const tavilyConfig = await client.query(`
             SELECT api_key, is_enabled 
             FROM ia_web_search_config 
-            WHERE provider = 'tavily' 
+            WHERE api_provider = 'tavily' 
             LIMIT 1
         `);
         
