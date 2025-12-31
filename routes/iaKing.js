@@ -500,6 +500,15 @@ function extractQuestionContext(question) {
 function findRelevantExcerpt(content, questionContext, maxLength = 400) {
     if (!content || !questionContext) return null;
     
+    // LÓGICA INTELIGENTE: Ajustar maxLength baseado no tipo de pergunta
+    // Perguntas sobre pessoas ("quem é X") precisam de respostas mais completas
+    if (questionContext.questionType === 'who') {
+        maxLength = 1200; // Aumentar significativamente para perguntas sobre pessoas
+        console.log('👤 [IA] Pergunta sobre pessoa detectada - aumentando tamanho da resposta para', maxLength);
+    } else if (questionContext.questionType === 'what') {
+        maxLength = 600; // Perguntas "o que é" também precisam de mais contexto
+    }
+    
     // Filtrar conteúdo acadêmico primeiro
     if (filterAcademicContent(content)) {
         console.log('🚫 [IA] Conteúdo acadêmico filtrado ao buscar trecho relevante');
@@ -562,8 +571,9 @@ function findRelevantExcerpt(content, questionContext, maxLength = 400) {
     
     // Se encontrou sentenças relevantes, construir resposta
     if (relevantSentences.length > 0) {
-        // Pegar sentenças com maior score (priorizar as que têm entidades)
-        const topSentences = relevantSentences.slice(0, 6); // Top 6 sentenças
+        // LÓGICA INTELIGENTE: Para perguntas sobre pessoas, pegar mais sentenças
+        const maxSentences = questionContext.questionType === 'who' ? 15 : 6;
+        const topSentences = relevantSentences.slice(0, maxSentences);
         
         // Construir resposta começando pelas sentenças mais relevantes
         let excerpt = '';
@@ -574,11 +584,19 @@ function findRelevantExcerpt(content, questionContext, maxLength = 400) {
         }
         
         // Se ainda tem espaço, adicionar contexto (sentenças próximas)
-        if (excerpt.length < maxLength * 0.7 && relevantSentences.length > topSentences.length) {
+        // Para perguntas sobre pessoas, adicionar mais contexto
+        const minFillRatio = questionContext.questionType === 'who' ? 0.5 : 0.7;
+        if (excerpt.length < maxLength * minFillRatio && relevantSentences.length > topSentences.length) {
             const remaining = maxLength - excerpt.length;
-            const nextSentence = relevantSentences[topSentences.length];
-            if (nextSentence && nextSentence.sentence.length <= remaining) {
-                excerpt += '. ' + nextSentence.sentence;
+            // Para perguntas sobre pessoas, adicionar múltiplas sentenças se couber
+            const sentencesToAdd = questionContext.questionType === 'who' ? 5 : 1;
+            for (let i = 0; i < sentencesToAdd && (topSentences.length + i) < relevantSentences.length; i++) {
+                const nextSentence = relevantSentences[topSentences.length + i];
+                if (nextSentence && (excerpt.length + nextSentence.sentence.length + 2) <= maxLength) {
+                    excerpt += '. ' + nextSentence.sentence;
+                } else {
+                    break;
+                }
             }
         }
         
@@ -639,7 +657,10 @@ function findRelevantExcerpt(content, questionContext, maxLength = 400) {
     }
     
     // Fallback: primeiro parágrafo que contém entidade ou palavra-chave principal
+    // LÓGICA INTELIGENTE: Para perguntas sobre pessoas, buscar múltiplos parágrafos
     const paragraphs = content.split(/\n\n+/);
+    let relevantParagraphs = [];
+    
     for (const para of paragraphs) {
         // Filtrar parágrafos acadêmicos
         if (filterAcademicContent(para)) continue;
@@ -650,11 +671,28 @@ function findRelevantExcerpt(content, questionContext, maxLength = 400) {
                               questionContext.keywords.slice(0, 2).some(kw => paraLower.includes(kw));
         
         if (hasEntity || hasMainKeyword) {
-            const excerpt = para.substring(0, maxLength);
-            if (excerpt.length > 50) {
-                console.log('✅ [IA] Parágrafo relevante encontrado (fallback)');
-                return excerpt;
+            relevantParagraphs.push(para);
+            
+            // Para perguntas sobre pessoas, coletar múltiplos parágrafos
+            if (questionContext.questionType === 'who') {
+                // Continuar coletando até atingir o limite ou encontrar 5 parágrafos
+                if (relevantParagraphs.join('\n\n').length < maxLength && relevantParagraphs.length < 5) {
+                    continue;
+                } else {
+                    break;
+                }
+            } else {
+                // Para outras perguntas, usar apenas o primeiro parágrafo relevante
+                break;
             }
+        }
+    }
+    
+    if (relevantParagraphs.length > 0) {
+        const excerpt = relevantParagraphs.join('\n\n').substring(0, maxLength);
+        if (excerpt.length > 50) {
+            console.log(`✅ [IA] ${relevantParagraphs.length} parágrafo(s) relevante(s) encontrado(s) (fallback)`);
+            return excerpt;
         }
     }
     
@@ -1164,6 +1202,21 @@ function extractDirectAnswer(content, question) {
 // Função para resumir resposta muito longa
 function summarizeAnswer(content, maxLength = 300) {
     if (!content || content.length <= maxLength) return content;
+    
+    // LÓGICA INTELIGENTE: Para respostas maiores, incluir mais parágrafos
+    if (maxLength > 800) {
+        // Para respostas grandes (perguntas sobre pessoas), incluir múltiplos parágrafos
+        const paragraphs = content.split(/\n\n+/);
+        let summary = '';
+        for (const para of paragraphs) {
+            if ((summary + para).length > maxLength) break;
+            if (summary) summary += '\n\n';
+            summary += para;
+        }
+        if (summary.length > 50) {
+            return summary.trim();
+        }
+    }
     
     // Filtrar conteúdo acadêmico
     if (filterAcademicContent(content)) {
@@ -2343,11 +2396,9 @@ function applyMentalMode(answer, mode, thoughts) {
             
         case 'analitico':
         default:
-            // Estrutura lógica
-            if (answer.length > 300 && !answer.includes('\n\n')) {
-                const sentences = answer.split(/[.!?]\s+/);
-                enhancedAnswer = sentences.slice(0, 3).join('. ') + '.';
-            }
+            // Estrutura lógica - mas não cortar se for pergunta sobre pessoa
+            // (a lógica acima já deve ter garantido tamanho adequado)
+            // Não fazer nada aqui para manter resposta completa
             break;
     }
     
@@ -2419,13 +2470,23 @@ function thinkAboutQuestion(question, questionContext) {
 function synthesizeAnswer(knowledgeSources, questionContext, thoughts) {
     if (!knowledgeSources || knowledgeSources.length === 0) return null;
     
+    // LÓGICA INTELIGENTE: Ajustar limite baseado no tipo de pergunta
+    const maxLength = questionContext.questionType === 'who' ? 1500 : 
+                     questionContext.questionType === 'what' ? 800 : 500;
+    
     // Ordenar por relevância
     const sortedSources = knowledgeSources.sort((a, b) => b.score - a.score);
     const topSources = sortedSources.slice(0, 3); // Top 3 fontes
     
-    // Se temos apenas uma fonte muito relevante, usar ela
+    // Se temos apenas uma fonte muito relevante, usar ela (mas garantir tamanho adequado)
     if (topSources.length === 1 && topSources[0].score > 80) {
-        return topSources[0].excerpt;
+        const excerpt = topSources[0].excerpt;
+        // Se for pergunta sobre pessoa e a resposta for muito curta, tentar expandir
+        if (questionContext.questionType === 'who' && excerpt && excerpt.length < 300) {
+            // Tentar buscar mais conteúdo da mesma fonte
+            return excerpt; // Por enquanto retornar, mas a lógica acima já deve ter pego mais
+        }
+        return excerpt;
     }
     
     // Sintetizar de múltiplas fontes
@@ -2451,18 +2512,22 @@ function synthesizeAnswer(knowledgeSources, questionContext, thoughts) {
                     sentence.toLowerCase().includes(kw)
                 );
                 
-                if (hasEntity || hasKeyword) {
+                // Para perguntas sobre pessoas, ser mais flexível (aceitar mais sentenças)
+                const isRelevant = hasEntity || hasKeyword || 
+                                 (questionContext.questionType === 'who' && sentence.length > 30);
+                
+                if (isRelevant) {
                     if (synthesized) synthesized += ' ';
                     synthesized += sentence.trim();
                     if (!sentence.match(/[.!?]$/)) synthesized += '.';
                     
-                    // Limitar tamanho
-                    if (synthesized.length > 500) break;
+                    // Limitar tamanho baseado no tipo de pergunta
+                    if (synthesized.length > maxLength) break;
                 }
             }
         }
         
-        if (synthesized.length > 500) break;
+        if (synthesized.length > maxLength) break;
     }
     
     return synthesized || (topSources[0]?.excerpt || null);
@@ -3123,8 +3188,10 @@ async function findBestAnswer(userMessage, userId) {
                         }
                         
                         // Só resumir se tem a entidade
+                        // LÓGICA INTELIGENTE: Para perguntas sobre pessoas, usar mais conteúdo
                         if (hasEntity) {
-                            excerpt = summarizeAnswer(kb.content, 400);
+                            const summaryLength = questionContext.questionType === 'who' ? 1000 : 400;
+                            excerpt = summarizeAnswer(kb.content, summaryLength);
                             // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
                             if (excerpt && kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
                                 excerpt = cleanBookContent(excerpt);
@@ -3143,7 +3210,10 @@ async function findBestAnswer(userMessage, userId) {
                         }
                     } else {
                         // Se não tem entidade, pode resumir normalmente
-                        excerpt = summarizeAnswer(kb.content, 400);
+                        // LÓGICA INTELIGENTE: Ajustar tamanho baseado no tipo de pergunta
+                        const summaryLength = questionContext.questionType === 'who' ? 800 : 
+                                            questionContext.questionType === 'what' ? 500 : 400;
+                        excerpt = summarizeAnswer(kb.content, summaryLength);
                         // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
                         if (excerpt && kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
                             excerpt = cleanBookContent(excerpt);
@@ -3164,12 +3234,32 @@ async function findBestAnswer(userMessage, userId) {
                     }
                     
                     if (hasEntity) {
+                        // LÓGICA INTELIGENTE: Para perguntas sobre pessoas, buscar mais contexto
+                        const contextLength = questionContext.questionType === 'who' ? 1200 : 500;
+                        
                         // Usar primeira parte que menciona a entidade
                         const sentences = kb.content.split(/[.!?]+/);
+                        let foundSentences = [];
                         for (const sentence of sentences) {
                             const sentLower = sentence.toLowerCase();
                             if (sentLower.includes(entityLower) || (entityLower === 'jesus' && (sentLower.includes('cristo') || sentLower.includes('messias')))) {
-                                excerpt = sentence.substring(0, 500);
+                                foundSentences.push(sentence);
+                                // Para perguntas sobre pessoas, coletar múltiplas sentenças
+                                if (questionContext.questionType === 'who') {
+                                    // Continuar coletando até atingir o limite
+                                    if (foundSentences.join('. ').length < contextLength) {
+                                        continue;
+                                    } else {
+                                        break;
+                                    }
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (foundSentences.length > 0) {
+                            excerpt = foundSentences.join('. ').substring(0, contextLength);
                                 // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
                                 if (kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
                                     excerpt = cleanBookContent(excerpt);
@@ -3181,7 +3271,9 @@ async function findBestAnswer(userMessage, userId) {
                         
                         // Se ainda não encontrou, usar início do conteúdo se menciona entidade
                         if (!excerpt) {
-                            const firstPart = kb.content.substring(0, 500);
+                            // LÓGICA INTELIGENTE: Para perguntas sobre pessoas, usar mais conteúdo
+                            const contextLength = questionContext.questionType === 'who' ? 1200 : 500;
+                            const firstPart = kb.content.substring(0, contextLength);
                             const firstPartLower = firstPart.toLowerCase();
                             if (firstPartLower.includes(entityLower) || (entityLower === 'jesus' && (firstPartLower.includes('cristo') || firstPartLower.includes('messias')))) {
                                 excerpt = firstPart;
@@ -3196,7 +3288,9 @@ async function findBestAnswer(userMessage, userId) {
                     
                     // Se ainda não tem, mas é livro com score alto, usar mesmo assim
                     if (!excerpt && kb.source_type && kb.source_type.includes('book') && candidate.score > 200) {
-                        excerpt = kb.content.substring(0, 500);
+                        // LÓGICA INTELIGENTE: Para perguntas sobre pessoas, usar mais conteúdo
+                        const contextLength = questionContext.questionType === 'who' ? 1200 : 500;
+                        excerpt = kb.content.substring(0, contextLength);
                         // LIMPAR CONTEÚDO: Remover referências estruturais
                         excerpt = cleanBookContent(excerpt);
                         console.log(`⚠️ [IA] Usando conteúdo do livro mesmo sem match exato (score alto: ${candidate.score})`);
@@ -3209,7 +3303,10 @@ async function findBestAnswer(userMessage, userId) {
                     }
                 } else if (!excerpt) {
                     // Se não tem entidade, usar início do conteúdo
-                    excerpt = kb.content.substring(0, 500);
+                    // LÓGICA INTELIGENTE: Ajustar tamanho baseado no tipo de pergunta
+                    const contextLength = questionContext.questionType === 'who' ? 1000 : 
+                                        questionContext.questionType === 'what' ? 600 : 500;
+                    excerpt = kb.content.substring(0, contextLength);
                     // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
                     if (kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
                         excerpt = cleanBookContent(excerpt);
@@ -3254,9 +3351,13 @@ async function findBestAnswer(userMessage, userId) {
                 }).slice(0, 3);
                 
                 const knowledgeSources = topCandidates.map(c => {
-                    let excerpt = findRelevantExcerpt(c.kb.content, questionContext, 300) || 
+                    // LÓGICA INTELIGENTE: Ajustar tamanho baseado no tipo de pergunta
+                    const excerptLength = questionContext.questionType === 'who' ? 800 : 
+                                       questionContext.questionType === 'what' ? 500 : 300;
+                    
+                    let excerpt = findRelevantExcerpt(c.kb.content, questionContext, excerptLength) || 
                                   extractDirectAnswer(c.kb.content, userMessage) ||
-                                  summarizeAnswer(c.kb.content, 300);
+                                  summarizeAnswer(c.kb.content, excerptLength);
                     
                     // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
                     if (c.kb.source_type && (c.kb.source_type.includes('book') || c.kb.source_type === 'book_training' || c.kb.source_type === 'tavily_book' || c.kb.source_type === 'tavily_book_trained')) {
