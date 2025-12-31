@@ -2443,13 +2443,41 @@ async function findBestAnswer(userMessage, userId) {
                 
                 // VALIDAÇÃO CRÍTICA: Se a pergunta tem entidade, o conhecimento DEVE mencioná-la
                 if (questionContext.entities.length > 0) {
-                    const entity = questionContext.entities[0];
                     const contentLower = kb.content.toLowerCase();
                     const titleLower = kb.title.toLowerCase();
+                    let entityFound = false;
                     
-                    // Se o conhecimento NÃO menciona a entidade, PULAR este candidato
-                    if (!contentLower.includes(entity) && !titleLower.includes(entity)) {
-                        console.log(`⚠️ [IA] Conhecimento "${kb.title.substring(0, 50)}" não menciona entidade "${entity}", pulando...`);
+                    // Verificar TODAS as entidades (não apenas a primeira)
+                    for (const entity of questionContext.entities) {
+                        const entityLower = entity.toLowerCase();
+                        
+                        // Busca flexível: verificar se entidade aparece no conteúdo ou título
+                        // Também verificar variações (com/sem espaços, maiúsculas/minúsculas)
+                        if (contentLower.includes(entityLower) || 
+                            titleLower.includes(entityLower) ||
+                            contentLower.includes(entity) || 
+                            titleLower.includes(entity)) {
+                            entityFound = true;
+                            console.log(`✅ [IA] Entidade "${entity}" encontrada em "${kb.title.substring(0, 50)}"`);
+                            break; // Encontrou, pode parar
+                        }
+                        
+                        // Busca parcial: se entidade é "pnl", procurar por "pnl" ou "programação neurolinguística"
+                        if (entityLower === 'pnl' || entityLower === 'p.n.l') {
+                            if (contentLower.includes('programação neurolinguística') ||
+                                contentLower.includes('programacao neurolinguistica') ||
+                                contentLower.includes('neurolinguística') ||
+                                contentLower.includes('neurolinguistica')) {
+                                entityFound = true;
+                                console.log(`✅ [IA] PNL encontrado por variação em "${kb.title.substring(0, 50)}"`);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Se NÃO encontrou nenhuma entidade, PULAR este candidato
+                    if (!entityFound) {
+                        console.log(`⚠️ [IA] Conhecimento "${kb.title.substring(0, 50)}" não menciona nenhuma entidade "${questionContext.entities.join(', ')}", pulando...`);
                         continue; // Pular para próximo candidato
                     }
                 }
@@ -2459,13 +2487,48 @@ async function findBestAnswer(userMessage, userId) {
                 
                 // VALIDAÇÃO: Se encontrou trecho, verificar se realmente menciona a entidade
                 if (excerpt && questionContext.entities.length > 0) {
-                    const entity = questionContext.entities[0];
                     const excerptLower = excerpt.toLowerCase();
+                    let entityFoundInExcerpt = false;
                     
-                    // Se o trecho não menciona a entidade, tentar encontrar outro
-                    if (!excerptLower.includes(entity)) {
-                        console.log(`⚠️ [IA] Trecho encontrado não menciona entidade "${entity}", buscando outro...`);
+                    // Verificar TODAS as entidades
+                    for (const entity of questionContext.entities) {
+                        const entityLower = entity.toLowerCase();
+                        
+                        if (excerptLower.includes(entityLower) || excerptLower.includes(entity)) {
+                            entityFoundInExcerpt = true;
+                            break;
+                        }
+                        
+                        // Busca parcial para PNL
+                        if ((entityLower === 'pnl' || entityLower === 'p.n.l') && 
+                            (excerptLower.includes('programação neurolinguística') ||
+                             excerptLower.includes('programacao neurolinguistica') ||
+                             excerptLower.includes('neurolinguística') ||
+                             excerptLower.includes('neurolinguistica'))) {
+                            entityFoundInExcerpt = true;
+                            break;
+                        }
+                    }
+                    
+                    // Se o trecho não menciona nenhuma entidade, tentar encontrar outro
+                    if (!entityFoundInExcerpt) {
+                        console.log(`⚠️ [IA] Trecho encontrado não menciona entidades "${questionContext.entities.join(', ')}", buscando outro...`);
                         excerpt = null; // Forçar buscar outro trecho
+                        
+                        // Tentar buscar manualmente parágrafos que mencionam a entidade
+                        const paragraphs = kb.content.split(/\n\n+/);
+                        for (const para of paragraphs) {
+                            const paraLower = para.toLowerCase();
+                            for (const entity of questionContext.entities) {
+                                const entityLower = entity.toLowerCase();
+                                if (paraLower.includes(entityLower) || paraLower.includes(entity)) {
+                                    excerpt = para.substring(0, 400);
+                                    console.log(`✅ [IA] Trecho alternativo encontrado com entidade "${entity}"`);
+                                    break;
+                                }
+                            }
+                            if (excerpt) break;
+                        }
                     }
                 }
                 
