@@ -596,6 +596,8 @@ function findRelevantExcerpt(content, questionContext, maxLength = 400) {
         
         if (excerpt.length > 50) {
             console.log('✅ [IA] Trecho relevante encontrado:', excerpt.substring(0, 100) + '...');
+            // LIMPAR CONTEÚDO: Remover referências estruturais antes de retornar
+            excerpt = cleanBookContent(excerpt);
             return excerpt;
         }
     }
@@ -990,6 +992,47 @@ function detectDirectQuestion(message) {
 }
 
 // Função para filtrar conteúdo acadêmico (listas de nomes, referências)
+// Função para limpar conteúdo de livros, removendo referências estruturais (capítulos, páginas, etc.)
+function cleanBookContent(content) {
+    if (!content) return content;
+    
+    let cleaned = content;
+    
+    // 1. Remover padrões como "138 Capítulo 6 Excesso de Características:" no início
+    cleaned = cleaned.replace(/^\d+\s+(?:Capítulo|Chapter|CAPÍTULO|CHAPTER)\s+\d+\s+[A-ZÁÊÔÇ][^:]+:\s*/i, '');
+    
+    // 2. Remover números de página no início seguidos de texto (ex: "138 Capítulo 6" ou "138 ")
+    cleaned = cleaned.replace(/^\d+\s+(?=(?:Capítulo|Chapter|PARTE|PART|SEÇÃO|SECTION|[A-Z]))/i, '');
+    
+    // 3. Remover referências a capítulos no início da linha (ex: "Capítulo 6", "Chapter 6", "PARTE 2")
+    cleaned = cleaned.replace(/(?:^|\n)\s*(?:CAPÍTULO|Capítulo|CHAPTER|Chapter|PARTE|PART|SEÇÃO|SECTION)\s+\d+[:\-]?\s*/gi, '');
+    
+    // 4. Remover números de página (ex: "Página 138", "Page 138", "p. 138", "pg. 138")
+    cleaned = cleaned.replace(/(?:^|\n)\s*(?:Página|Página|Page|p\.|pg\.)\s*\d+\s*/gi, '');
+    
+    // 5. Remover números soltos no início de linha seguidos de letra maiúscula (provavelmente número de página)
+    cleaned = cleaned.replace(/(?:^|\n)\s*\d{2,}\s+(?=[A-ZÁÊÔÇ])/g, '');
+    
+    // 6. Remover títulos de seção estruturados no início (ex: "Excesso de Características: Estudo de Caso")
+    // Padrão: palavras capitalizadas seguidas de dois pontos e texto
+    cleaned = cleaned.replace(/^(?:[A-ZÁÊÔÇ][a-záêôç]+\s+){1,5}:\s*(?=[A-ZÁÊÔÇ])/m, '');
+    
+    // 7. Remover padrões como "Capítulo X - Título:" ou "Chapter X - Title:"
+    cleaned = cleaned.replace(/(?:^|\n)\s*(?:Capítulo|Chapter)\s+\d+\s*[-\–]\s*[A-ZÁÊÔÇ][^:]+:\s*/gi, '');
+    
+    // 8. Limpar espaços múltiplos e quebras de linha extras
+    cleaned = cleaned.replace(/\s{3,}/g, ' ');
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    
+    // 9. Remover espaços no início e fim
+    cleaned = cleaned.trim();
+    
+    // 10. Se ainda começar com padrão de número seguido de texto, tentar remover
+    cleaned = cleaned.replace(/^\d+\s+(?=[A-ZÁÊÔÇ])/, '');
+    
+    return cleaned;
+}
+
 function filterAcademicContent(content) {
     if (!content) return false;
     
@@ -3005,6 +3048,11 @@ async function findBestAnswer(userMessage, userId) {
                 if (!excerpt) {
                     excerpt = extractDirectAnswer(kb.content, userMessage);
                     
+                    // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
+                    if (excerpt && kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
+                        excerpt = cleanBookContent(excerpt);
+                    }
+                    
                     // Validar se resposta direta menciona entidade (FLEXÍVEL)
                     if (excerpt && questionContext.entities.length > 0) {
                         const entity = questionContext.entities[0];
@@ -3075,6 +3123,10 @@ async function findBestAnswer(userMessage, userId) {
                         // Só resumir se tem a entidade
                         if (hasEntity) {
                             excerpt = summarizeAnswer(kb.content, 400);
+                            // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
+                            if (excerpt && kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
+                                excerpt = cleanBookContent(excerpt);
+                            }
                             // Validar novamente (FLEXÍVEL)
                             if (excerpt) {
                                 const excerptLower = excerpt.toLowerCase();
@@ -3090,6 +3142,10 @@ async function findBestAnswer(userMessage, userId) {
                     } else {
                         // Se não tem entidade, pode resumir normalmente
                         excerpt = summarizeAnswer(kb.content, 400);
+                        // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
+                        if (excerpt && kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
+                            excerpt = cleanBookContent(excerpt);
+                        }
                     }
                 }
                 
@@ -3112,6 +3168,10 @@ async function findBestAnswer(userMessage, userId) {
                             const sentLower = sentence.toLowerCase();
                             if (sentLower.includes(entityLower) || (entityLower === 'jesus' && (sentLower.includes('cristo') || sentLower.includes('messias')))) {
                                 excerpt = sentence.substring(0, 500);
+                                // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
+                                if (kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
+                                    excerpt = cleanBookContent(excerpt);
+                                }
                                 console.log(`✅ [IA] Usando frase que menciona "${entity}"`);
                                 break;
                             }
@@ -3123,6 +3183,10 @@ async function findBestAnswer(userMessage, userId) {
                             const firstPartLower = firstPart.toLowerCase();
                             if (firstPartLower.includes(entityLower) || (entityLower === 'jesus' && (firstPartLower.includes('cristo') || firstPartLower.includes('messias')))) {
                                 excerpt = firstPart;
+                                // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
+                                if (kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
+                                    excerpt = cleanBookContent(excerpt);
+                                }
                                 console.log(`✅ [IA] Usando início do conteúdo que menciona "${entity}"`);
                             }
                         }
@@ -3131,6 +3195,8 @@ async function findBestAnswer(userMessage, userId) {
                     // Se ainda não tem, mas é livro com score alto, usar mesmo assim
                     if (!excerpt && kb.source_type && kb.source_type.includes('book') && candidate.score > 200) {
                         excerpt = kb.content.substring(0, 500);
+                        // LIMPAR CONTEÚDO: Remover referências estruturais
+                        excerpt = cleanBookContent(excerpt);
                         console.log(`⚠️ [IA] Usando conteúdo do livro mesmo sem match exato (score alto: ${candidate.score})`);
                     }
                     
@@ -3142,9 +3208,19 @@ async function findBestAnswer(userMessage, userId) {
                 } else if (!excerpt) {
                     // Se não tem entidade, usar início do conteúdo
                     excerpt = kb.content.substring(0, 500);
+                    // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
+                    if (kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
+                        excerpt = cleanBookContent(excerpt);
+                    }
                 }
                 
                 // Se chegou aqui, encontramos um candidato válido!
+                // LIMPAR CONTEÚDO: Remover referências a capítulos, páginas e estrutura do livro
+                if (kb.source_type && (kb.source_type.includes('book') || kb.source_type === 'book_training' || kb.source_type === 'tavily_book' || kb.source_type === 'tavily_book_trained')) {
+                    excerpt = cleanBookContent(excerpt);
+                    console.log('🧹 [IA] Conteúdo do livro limpo (removidas referências estruturais)');
+                }
+                
                 bestCandidate = candidate;
                 bestKb = kb;
                 relevantExcerpt = excerpt;
@@ -3176,9 +3252,15 @@ async function findBestAnswer(userMessage, userId) {
                 }).slice(0, 3);
                 
                 const knowledgeSources = topCandidates.map(c => {
-                    const excerpt = findRelevantExcerpt(c.kb.content, questionContext, 300) || 
+                    let excerpt = findRelevantExcerpt(c.kb.content, questionContext, 300) || 
                                   extractDirectAnswer(c.kb.content, userMessage) ||
                                   summarizeAnswer(c.kb.content, 300);
+                    
+                    // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
+                    if (c.kb.source_type && (c.kb.source_type.includes('book') || c.kb.source_type === 'book_training' || c.kb.source_type === 'tavily_book' || c.kb.source_type === 'tavily_book_trained')) {
+                        excerpt = cleanBookContent(excerpt);
+                    }
+                    
                     return {
                         excerpt: excerpt,
                         score: c.score,
@@ -3193,8 +3275,11 @@ async function findBestAnswer(userMessage, userId) {
                 }
                 
                 // Usar resposta sintetizada se disponível, senão usar a melhor única
-                // VALIDAÇÃO FINAL: Garantir que a resposta menciona a entidade
+                // LIMPAR CONTEÚDO: Remover referências estruturais se for de livro
                 let finalAnswer = synthesizedAnswer || relevantExcerpt;
+                if (bestKb && bestKb.source_type && (bestKb.source_type.includes('book') || bestKb.source_type === 'book_training' || bestKb.source_type === 'tavily_book' || bestKb.source_type === 'tavily_book_trained')) {
+                    finalAnswer = cleanBookContent(finalAnswer);
+                }
                 
                 if (questionContext.entities.length > 0 && finalAnswer) {
                     const entity = questionContext.entities[0];
