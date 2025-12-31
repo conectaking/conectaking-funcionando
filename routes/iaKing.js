@@ -3020,6 +3020,7 @@ async function findBestAnswer(userMessage, userId) {
                         if (!hasEntity) {
                             excerpt = null;
                         }
+                    }
                 }
                 
                 // Se ainda não encontrou, buscar parágrafos que mencionam a entidade (BUSCA MELHORADA)
