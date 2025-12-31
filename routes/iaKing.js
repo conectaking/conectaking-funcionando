@@ -369,20 +369,33 @@ function extractQuestionContext(question) {
         }
     }
     
-    // EXTRAÇÃO ESPECIAL PARA "JESUS": Garantir que seja capturado mesmo com variações
+    // EXTRAÇÃO ESPECIAL PARA "JESUS" E "PNL": Garantir que sejam capturados mesmo com variações
     // Detectar "jesus" mesmo com erros de digitação como "quen e jesus"
-    if (lowerQuestion.includes('jesus') || lowerQuestion.includes('cristo')) {
-        if (lowerQuestion.includes('jesus')) {
-            if (!entities.includes('jesus')) {
+    if (lowerQuestion.includes('jesus') || lowerQuestion.includes('cristo') || originalQuestion.includes('JESUS') || originalQuestion.includes('CRISTO')) {
+        if (lowerQuestion.includes('jesus') || originalQuestion.includes('JESUS')) {
+            if (!entities.includes('jesus') && !entities.includes('JESUS')) {
                 entities.push('jesus');
+                entities.push('JESUS');
                 console.log('✅ [IA] Entidade "jesus" detectada e adicionada');
             }
         }
-        if (lowerQuestion.includes('cristo')) {
-            if (!entities.includes('cristo')) {
+        if (lowerQuestion.includes('cristo') || originalQuestion.includes('CRISTO')) {
+            if (!entities.includes('cristo') && !entities.includes('CRISTO')) {
                 entities.push('cristo');
+                entities.push('CRISTO');
                 console.log('✅ [IA] Entidade "cristo" detectada e adicionada');
             }
+        }
+    }
+    
+    // EXTRAÇÃO ESPECIAL PARA "PNL": Garantir que seja capturado mesmo escrito diferente
+    if (lowerQuestion.includes('pnl') || originalQuestion.includes('PNL') || originalQuestion.includes('P.N.L')) {
+        if (!entities.includes('pnl') && !entities.includes('PNL')) {
+            entities.push('pnl');
+            entities.push('PNL');
+            entities.push('programação neurolinguística');
+            entities.push('programacao neurolinguistica');
+            console.log('✅ [IA] Entidade "PNL" detectada e adicionada com variações');
         }
     }
     
@@ -2316,26 +2329,62 @@ async function findBestAnswer(userMessage, userId) {
                     const titleLower = kb.title.toLowerCase();
                     
                     for (const entity of questionContext.entities) {
-                        // Verificar se entidade aparece no conteúdo ou título
-                        if (contentLower.includes(entity) || titleLower.includes(entity)) {
+                        const entityLower = entity.toLowerCase();
+                        
+                        // Verificar se entidade aparece no conteúdo ou título (case-insensitive)
+                        if (contentLower.includes(entityLower) || titleLower.includes(entityLower) ||
+                            contentLower.includes(entity) || titleLower.includes(entity)) {
                             entityMatchScore += 100; // Score muito alto para match de entidade
                             
                             // Bonus se está no título
-                            if (titleLower.includes(entity)) {
+                            if (titleLower.includes(entityLower) || titleLower.includes(entity)) {
                                 entityMatchScore += 50;
                             }
                             
                             // Bonus se aparece múltiplas vezes no conteúdo
-                            const entityCount = (contentLower.match(new RegExp(entity, 'g')) || []).length;
+                            const entityEscaped = entityLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const entityRegex = new RegExp(entityEscaped, 'gi');
+                            const entityCount = (contentLower.match(entityRegex) || []).length;
                             entityMatchScore += Math.min(entityCount * 10, 50);
+                        }
+                        
+                        // BUSCA ESPECIAL PARA PNL: Procurar por sinônimos
+                        if (entityLower === 'pnl' || entity === 'PNL') {
+                            const pnlSynonyms = [
+                                'programação neurolinguística',
+                                'programacao neurolinguistica',
+                                'neurolinguística',
+                                'neurolinguistica',
+                                'programação neurolinguística',
+                                'pnl'
+                            ];
+                            for (const synonym of pnlSynonyms) {
+                                if (contentLower.includes(synonym) || titleLower.includes(synonym)) {
+                                    entityMatchScore += 150; // Score ainda maior para sinônimos
+                                    console.log(`✅ [IA] PNL encontrado por sinônimo "${synonym}" em "${kb.title.substring(0, 50)}"`);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // BUSCA ESPECIAL PARA JESUS: Procurar por variações
+                        if (entityLower === 'jesus' || entity === 'JESUS') {
+                            const jesusVariations = ['jesus', 'cristo', 'jesus cristo', 'cristo jesus'];
+                            for (const variation of jesusVariations) {
+                                if (contentLower.includes(variation) || titleLower.includes(variation)) {
+                                    entityMatchScore += 150;
+                                    console.log(`✅ [IA] Jesus encontrado por variação "${variation}" em "${kb.title.substring(0, 50)}"`);
+                                    break;
+                                }
+                            }
                         }
                         
                         // Busca flexível: variações da entidade
                         const entityVariations = [
-                            entity + 's', // plural
-                            entity.substring(0, entity.length - 1), // sem última letra
-                            entity + ' ', // com espaço
-                            ' ' + entity + ' ' // com espaços
+                            entityLower + 's', // plural
+                            entityLower.substring(0, Math.max(1, entityLower.length - 1)), // sem última letra
+                            entityLower + ' ', // com espaço
+                            ' ' + entityLower + ' ' // com espaços
                         ];
                         
                         for (const variation of entityVariations) {
