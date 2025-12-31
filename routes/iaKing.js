@@ -2216,39 +2216,64 @@ async function generateSalesStrategyMelhorado(question, questionContext, client,
     let strategies = [];
     let sources = [];
     
-    // 1. BUSCAR EM LIVROS SOBRE VENDAS
+    // 1. BUSCAR EM LIVROS SOBRE VENDAS (FILTRO MELHORADO)
     try {
+        // Palavras-chave que indicam livros sobre vendas (excluir livros sobre o sistema)
+        const salesKeywords = ['venda', 'vendas', 'vender', 'comercial', 'negociação', 'negociacao', 
+                              'sales', 'strategy', 'estratégia', 'estrategia', 'fechamento', 
+                              'prospecção', 'prospeccao', 'cliente', 'lead', 'pitch', 'objeção'];
+        
         const salesBooks = await client.query(`
             SELECT id, title, content, keywords
             FROM ia_knowledge_base
             WHERE is_active = true
-            AND (
-                source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
-                OR LOWER(title) LIKE ANY(ARRAY['%venda%', '%vendas%', '%estratégia%', '%estrategia%', '%vender%', '%comercial%', '%negociação%', '%negociacao%'])
-                OR keywords && ARRAY['venda', 'vendas', 'estratégia', 'estrategia', 'vender', 'comercial', 'negociação', 'negociacao', 'sales', 'strategy']
-            )
+            AND source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
             AND content IS NOT NULL
             AND content != ''
-            ORDER BY priority DESC NULLS LAST, usage_count DESC
-            LIMIT 5
-        `);
+            AND (
+                -- Filtrar por título (excluir livros sobre o sistema Conecta King)
+                (LOWER(title) LIKE ANY(ARRAY['%venda%', '%vendas%', '%vender%', '%comercial%', '%negociação%', '%negociacao%', '%sales%', '%strategy%', '%spin%', '%persuasão%', '%persuasao%'])
+                AND LOWER(title) NOT LIKE '%conecta%'
+                AND LOWER(title) NOT LIKE '%king%')
+                OR
+                -- Filtrar por keywords
+                (keywords && ARRAY['venda', 'vendas', 'estratégia', 'estrategia', 'vender', 'comercial', 'negociação', 'negociacao', 'sales', 'strategy', 'spin', 'persuasão', 'persuasao'])
+                OR
+                -- Filtrar por conteúdo (deve ter pelo menos 3 palavras-chave de vendas no conteúdo)
+                (
+                    SELECT COUNT(*) FROM unnest($1::text[]) AS kw
+                    WHERE LOWER(content) LIKE '%' || LOWER(kw) || '%'
+                ) >= 3
+            )
+            ORDER BY 
+                -- Priorizar livros com título sobre vendas
+                CASE WHEN LOWER(title) LIKE ANY(ARRAY['%venda%', '%vendas%', '%sales%', '%strategy%']) THEN 1 ELSE 2 END,
+                priority DESC NULLS LAST, 
+                usage_count DESC
+            LIMIT 3
+        `, [salesKeywords]);
         
         if (salesBooks.rows.length > 0) {
             console.log(`📚 [Estratégias] Encontrados ${salesBooks.rows.length} livros sobre vendas`);
             
             for (const book of salesBooks.rows) {
-                // Extrair trechos relevantes do livro
+                // Extrair trechos relevantes e contextualizados do livro
                 const content = book.content || '';
-                const relevantSections = extractRelevantSections(content, question, 3);
+                const relevantSections = extractRelevantSectionsMelhorado(content, question, lowerQuestion, 2);
                 
                 if (relevantSections.length > 0) {
-                    strategies.push({
-                        title: `📖 De "${book.title}"`,
-                        content: relevantSections.join('\n\n'),
-                        source: 'book',
-                        confidence: 85
-                    });
-                    sources.push(`Livro: ${book.title}`);
+                    // Sintetizar os trechos em uma resposta mais coerente
+                    const synthesizedContent = synthesizeSalesContent(relevantSections, question);
+                    
+                    if (synthesizedContent && synthesizedContent.length > 100) {
+                        strategies.push({
+                            title: `📖 Estratégias de "${book.title}"`,
+                            content: synthesizedContent,
+                            source: 'book',
+                            confidence: 90
+                        });
+                        sources.push(`Livro: ${book.title}`);
+                    }
                 }
             }
         }
@@ -2336,53 +2361,179 @@ async function generateSalesStrategyMelhorado(question, questionContext, client,
         }
     }
     
-    // 5. COMBINAR E FORMATAR RESPOSTA FINAL
-    let response = `💼 **Estratégias de Vendas Personalizadas para Você:**\n\n`;
-    
-    // Ordenar por confiança
-    strategies.sort((a, b) => b.confidence - a.confidence);
-    
-    strategies.forEach((strategy, index) => {
-        response += `${strategy.title}\n\n${strategy.content}\n\n`;
-        if (index < strategies.length - 1) {
-            response += `---\n\n`;
+    // 5. COMBINAR E FORMATAR RESPOSTA FINAL (MELHORADO)
+    // Se não encontrou estratégias suficientes, usar estratégias base
+    if (strategies.length === 0) {
+        const baseStrategy = generateSalesStrategy(question, questionContext);
+        if (baseStrategy) {
+            return baseStrategy;
         }
-    });
-    
-    if (sources.length > 0) {
-        response += `\n📚 **Fontes:** ${sources.join(', ')}\n\n`;
+        return `💼 **Estratégias de Vendas:**\n\nDesculpe, não encontrei conteúdo específico sobre estratégias de vendas nos livros treinados. Mas posso te ajudar com estratégias gerais de vendas baseadas em melhores práticas do mercado.`;
     }
     
-    response += `💡 **Dica:** Esta resposta foi criada combinando conhecimento de livros, histórico de conversas e pesquisa na internet para te dar a melhor estratégia possível!`;
+    // Ordenar por confiança (melhores primeiro)
+    strategies.sort((a, b) => b.confidence - a.confidence);
+    
+    // Priorizar estratégias de livros e web, depois histórico
+    const bookStrategies = strategies.filter(s => s.source === 'book');
+    const webStrategies = strategies.filter(s => s.source === 'web');
+    const historyStrategies = strategies.filter(s => s.source === 'history');
+    const baseStrategies = strategies.filter(s => s.source === 'base');
+    
+    // Montar resposta estruturada
+    let response = `💼 **Estratégias de Vendas Personalizadas:**\n\n`;
+    
+    // 1. Estratégias de livros (prioridade máxima)
+    if (bookStrategies.length > 0) {
+        response += `## 📚 **Conhecimento de Livros Especializados**\n\n`;
+        
+        for (const strategy of bookStrategies.slice(0, 2)) { // Máximo 2 livros
+            // Extrair apenas o conteúdo relevante (sem título repetido)
+            let content = strategy.content;
+            // Remover referências a URLs e sites
+            content = content.replace(/www\.[^\s]+/g, '').replace(/http[^\s]+/g, '');
+            // Limitar tamanho
+            if (content.length > 600) {
+                content = content.substring(0, 600) + '...';
+            }
+            
+            response += `${strategy.title}\n\n${content}\n\n`;
+        }
+    }
+    
+    // 2. Estratégias da web (se não tiver livros suficientes)
+    if (webStrategies.length > 0 && bookStrategies.length < 2) {
+        response += `## 🌐 **Pesquisa Atualizada**\n\n`;
+        const webContent = webStrategies[0].content;
+        // Limitar e limpar
+        let cleanedWeb = webContent.replace(/www\.[^\s]+/g, '').replace(/http[^\s]+/g, '');
+        if (cleanedWeb.length > 500) {
+            cleanedWeb = cleanedWeb.substring(0, 500) + '...';
+        }
+        response += `${cleanedWeb}\n\n`;
+    }
+    
+    // 3. Estratégias base (se não tiver outras)
+    if (bookStrategies.length === 0 && webStrategies.length === 0 && baseStrategies.length > 0) {
+        response += `## 💡 **Estratégias Fundamentais**\n\n`;
+        response += baseStrategies[0].content + '\n\n';
+    }
+    
+    // Remover fontes duplicadas e formatar
+    const uniqueSources = [...new Set(sources)];
+    if (uniqueSources.length > 0 && uniqueSources.length <= 3) {
+        response += `\n📚 *Baseado em: ${uniqueSources.slice(0, 3).join(', ')}*\n`;
+    }
+    
+    response += `\n💡 **Dica:** Estas estratégias foram extraídas de livros especializados e conhecimento atualizado para te dar a melhor orientação possível!`;
     
     return response;
 }
 
-// Função auxiliar para extrair seções relevantes de um texto
-function extractRelevantSections(text, query, maxSections = 3) {
-    const sentences = text.split(/[.!?]\s+/);
-    const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-    const relevantSentences = [];
+// Função auxiliar melhorada para extrair seções relevantes de um texto
+function extractRelevantSectionsMelhorado(text, query, lowerQuery, maxSections = 2) {
+    // Palavras-chave de vendas para priorizar
+    const salesKeywords = ['venda', 'vendas', 'vender', 'cliente', 'prospecção', 'prospeccao', 
+                          'fechamento', 'objeção', 'objeções', 'negociação', 'negociacao',
+                          'estratégia', 'estrategia', 'técnica', 'tecnica', 'pitch', 
+                          'apresentação', 'apresentacao', 'comercial', 'lead', 'qualificação'];
     
-    for (const sentence of sentences) {
-        const lowerSentence = sentence.toLowerCase();
-        const matchCount = queryWords.filter(word => lowerSentence.includes(word)).length;
+    // Dividir em parágrafos (mais contexto que frases)
+    const paragraphs = text.split(/\n\n+|\.\s+(?=[A-Z])/).filter(p => p.trim().length > 100);
+    const relevantParagraphs = [];
+    
+    const queryWords = lowerQuery.split(/\s+/).filter(w => w.length > 2);
+    
+    for (const paragraph of paragraphs) {
+        const lowerParagraph = paragraph.toLowerCase();
         
-        if (matchCount > 0 && sentence.length > 50) {
-            relevantSentences.push({
-                text: sentence.trim(),
-                score: matchCount
-            });
+        // Contar matches de palavras da query
+        const queryMatches = queryWords.filter(word => lowerParagraph.includes(word)).length;
+        
+        // Contar matches de palavras-chave de vendas
+        const salesMatches = salesKeywords.filter(kw => lowerParagraph.includes(kw)).length;
+        
+        // Score combinado (query tem peso maior)
+        const score = (queryMatches * 3) + (salesMatches * 1);
+        
+        // Só incluir se:
+        // 1. Tem pelo menos 1 match da query OU 2+ matches de vendas
+        // 2. Parágrafo tem tamanho razoável (100-2000 caracteres)
+        // 3. Não é apenas uma citação ou referência
+        if (score > 0 && paragraph.length >= 100 && paragraph.length <= 2000) {
+            // Filtrar parágrafos que são apenas referências ou citações
+            if (!lowerParagraph.match(/^(www\.|http|@|capítulo|capitulo|página|pagina \d+)/i)) {
+                relevantParagraphs.push({
+                    text: paragraph.trim(),
+                    score: score
+                });
+            }
         }
     }
     
     // Ordenar por score e pegar os melhores
-    relevantSentences.sort((a, b) => b.score - a.score);
+    relevantParagraphs.sort((a, b) => b.score - a.score);
     
-    return relevantSentences
+    return relevantParagraphs
         .slice(0, maxSections)
-        .map(s => s.text)
-        .filter(s => s.length > 0);
+        .map(p => p.text)
+        .filter(p => p.length > 0);
+}
+
+// Função para sintetizar conteúdo de vendas em uma resposta coerente
+function synthesizeSalesContent(sections, question) {
+    if (!sections || sections.length === 0) return '';
+    
+    // Se só tem uma seção, retornar ela formatada
+    if (sections.length === 1) {
+        return formatSalesParagraph(sections[0]);
+    }
+    
+    // Combinar múltiplas seções de forma coerente
+    let synthesized = '';
+    
+    // Primeira seção (mais relevante)
+    synthesized += formatSalesParagraph(sections[0]);
+    
+    // Seções adicionais (adicionar contexto)
+    for (let i = 1; i < sections.length; i++) {
+        const formatted = formatSalesParagraph(sections[i]);
+        if (formatted && !synthesized.includes(formatted.substring(0, 50))) {
+            synthesized += '\n\n' + formatted;
+        }
+    }
+    
+    return synthesized;
+}
+
+// Formatar parágrafo de vendas de forma mais legível
+function formatSalesParagraph(paragraph) {
+    if (!paragraph) return '';
+    
+    // Limpar quebras de linha excessivas
+    let cleaned = paragraph.replace(/\n{3,}/g, '\n\n').trim();
+    
+    // Garantir que termina com pontuação
+    if (!cleaned.match(/[.!?]$/)) {
+        cleaned += '.';
+    }
+    
+    // Limitar tamanho (máximo 800 caracteres por parágrafo)
+    if (cleaned.length > 800) {
+        // Tentar cortar em uma frase completa
+        const sentences = cleaned.split(/(?<=[.!?])\s+/);
+        let truncated = '';
+        for (const sentence of sentences) {
+            if (truncated.length + sentence.length <= 800) {
+                truncated += (truncated ? ' ' : '') + sentence;
+            } else {
+                break;
+            }
+        }
+        cleaned = truncated || cleaned.substring(0, 800) + '...';
+    }
+    
+    return cleaned;
 }
 
 // Função para gerar estratégias de vendas (versão original mantida para compatibilidade)
