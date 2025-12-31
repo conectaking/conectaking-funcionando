@@ -4366,7 +4366,7 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
             ORDER BY count DESC
         `);
         
-        // Livros lidos (tavily_book, book_training) - apenas com conteúdo
+        // Livros lidos (tavily_book, book_training) - BUSCAR TODOS, mesmo sem conteúdo principal
         const booksRead = await client.query(`
             SELECT 
                 id,
@@ -4375,12 +4375,46 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
                 source_reference,
                 COALESCE(LENGTH(content), 0) as content_length,
                 created_at,
-                updated_at
+                updated_at,
+                is_active
             FROM ia_knowledge_base
             WHERE source_type IN ('tavily_book', 'book_training', 'tavily_book_trained')
-            AND (content IS NOT NULL AND content != '')
+            AND is_active = true
             ORDER BY created_at DESC
         `);
+        
+        // Para cada livro, verificar se tem seções (mesmo que não tenha conteúdo principal)
+        const booksWithSections = await Promise.all(
+            booksRead.rows.map(async (book) => {
+                // Buscar seções deste livro
+                const sectionsCheck = await client.query(`
+                    SELECT COUNT(*) as count, SUM(LENGTH(content)) as total_chars
+                    FROM ia_knowledge_base
+                    WHERE source_type = 'book_training'
+                    AND (
+                        source_reference LIKE $1 
+                        OR source_reference LIKE $2
+                        OR title LIKE $3
+                    )
+                    AND content IS NOT NULL
+                    AND content != ''
+                `, [
+                    `%${book.source_reference || ''}%`,
+                    `book_${(book.title || '').replace(/'/g, "''")}_section_%`,
+                    `%${book.title || ''}%`
+                ]);
+                
+                const sectionsCount = parseInt(sectionsCheck.rows[0].count || 0);
+                const sectionsChars = parseInt(sectionsCheck.rows[0].total_chars || 0);
+                
+                return {
+                    ...book,
+                    content_length: parseInt(book.content_length || 0) + sectionsChars,
+                    has_sections: sectionsCount > 0,
+                    sections_count: sectionsCount
+                };
+            })
+        );
         
         // Conhecimento por categoria
         const knowledgeByCategory = await client.query(`
@@ -4428,7 +4462,7 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
         `);
         
         // Total de palavras processadas (aproximado) - corrigido para evitar NULL
-        const totalWords = await client.query(`
+        const totalWordsResult = await client.query(`
             SELECT 
                 COALESCE(SUM(array_length(string_to_array(content, ' '), 1)), 0) as total_words
             FROM ia_knowledge_base
@@ -4437,6 +4471,8 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
             AND content != ''
         `);
         
+        const totalWords = totalWordsResult;
+        
         res.json({
             stats: {
                 total_knowledge: parseInt(totalKnowledge.rows[0].count),
@@ -4444,8 +4480,10 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
                 total_documents: parseInt(totalDocs.rows[0].count),
                 total_conversations: parseInt(totalConvs.rows[0].count),
                 total_learning_items: parseInt(totalLearning.rows[0].count),
-                total_words: parseInt(totalWords.rows[0].total_words || 0),
-                total_books: booksRead.rows.length
+                total_words: parseInt(totalWords.rows?.[0]?.total_words || 0),
+                total_books: booksWithSections.length,
+                books_with_content: booksWithSections.filter(b => b.content_length > 0).length,
+                books_with_sections: booksWithSections.filter(b => b.has_sections).length
             },
             knowledge_by_source: knowledgeBySource.rows.map(row => ({
                 source: row.source_type || 'desconhecido',
@@ -4453,13 +4491,16 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
                 total_chars: parseInt(row.total_chars || 0),
                 avg_chars: parseFloat(row.avg_chars || 0)
             })),
-            books_read: booksRead.rows.map(book => ({
+            books_read: booksWithSections.map(book => ({
                 id: book.id,
-                title: book.title,
+                title: book.title || 'Livro sem título',
                 source_type: book.source_type,
                 source_reference: book.source_reference,
-                content_length: parseInt(book.content_length || 0),
-                words_approx: Math.floor(parseInt(book.content_length || 0) / 5),
+                content_length: book.content_length,
+                words_approx: Math.floor(book.content_length / 5),
+                has_sections: book.has_sections,
+                sections_count: book.sections_count,
+                has_content: book.content_length > 0,
                 created_at: book.created_at,
                 updated_at: book.updated_at
             })),
@@ -4477,11 +4518,172 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
             top_keywords: topKeywords.rows.map(row => ({
                 keyword: row.keyword,
                 usage_count: parseInt(row.usage_count)
-            }))
+            })),
+            // NOVAS INFORMAÇÕES PARA ABA INTELIGÊNCIA
+            performance: {
+                avg_confidence: conversationStats.rows.length > 0 
+                    ? parseFloat(conversationStats.rows.reduce((sum, r) => sum + (parseFloat(r.avg_confidence) || 0), 0) / conversationStats.rows.length).toFixed(2)
+                    : 0,
+                total_conversations_today: conversationStats.rows.filter(r => {
+                    const date = new Date(r.date);
+                    const today = new Date();
+                    return date.toDateString() === today.toDateString();
+                }).reduce((sum, r) => sum + parseInt(r.count), 0),
+                knowledge_usage_rate: booksWithSections.length > 0
+                    ? ((booksWithSections.filter(b => b.content_length > 0).length / booksWithSections.length) * 100).toFixed(1)
+                    : 0
+            },
+            diagnostics: {
+                books_without_content: booksWithSections.filter(b => b.content_length === 0 && !b.has_sections).length,
+                books_with_content_only: booksWithSections.filter(b => b.content_length > 0 && !b.has_sections).length,
+                books_with_sections_only: booksWithSections.filter(b => b.content_length === 0 && b.has_sections).length,
+                books_complete: booksWithSections.filter(b => b.content_length > 0 && b.has_sections).length,
+                total_sections: booksWithSections.reduce((sum, b) => sum + (b.sections_count || 0), 0)
+            }
         });
     } catch (error) {
         console.error('Erro ao buscar dados de inteligência:', error);
         res.status(500).json({ error: 'Erro ao buscar dados de inteligência' });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/intelligence/diagnostic - Diagnóstico completo de por que IA não usa livros
+router.get('/intelligence/diagnostic', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // 1. Verificar livros no banco
+        const allBooks = await client.query(`
+            SELECT 
+                id,
+                title,
+                source_type,
+                LENGTH(content) as content_length,
+                is_active,
+                priority,
+                usage_count,
+                source_reference
+            FROM ia_knowledge_base
+            WHERE source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+            ORDER BY created_at DESC
+        `);
+        
+        // 2. Verificar seções de cada livro
+        const booksWithDetails = await Promise.all(
+            allBooks.rows.map(async (book) => {
+                const sections = await client.query(`
+                    SELECT COUNT(*) as count, SUM(LENGTH(content)) as total_chars
+                    FROM ia_knowledge_base
+                    WHERE source_type = 'book_training'
+                    AND (
+                        source_reference LIKE $1
+                        OR source_reference LIKE $2
+                        OR title LIKE $3
+                    )
+                    AND content IS NOT NULL
+                    AND content != ''
+                `, [
+                    `%${book.source_reference || ''}%`,
+                    `book_${(book.title || '').replace(/'/g, "''")}_section_%`,
+                    `%${book.title || ''}%`
+                ]);
+                
+                return {
+                    id: book.id,
+                    title: book.title || 'Livro sem título',
+                    source_type: book.source_type,
+                    content_length: parseInt(book.content_length || 0),
+                    sections_count: parseInt(sections.rows[0].count || 0),
+                    sections_chars: parseInt(sections.rows[0].total_chars || 0),
+                    total_content: parseInt(book.content_length || 0) + parseInt(sections.rows[0].total_chars || 0),
+                    is_active: book.is_active,
+                    priority: book.priority,
+                    usage_count: book.usage_count || 0,
+                    has_content: (parseInt(book.content_length || 0) + parseInt(sections.rows[0].total_chars || 0)) > 0,
+                    status: (parseInt(book.content_length || 0) + parseInt(sections.rows[0].total_chars || 0)) > 0 
+                        ? '✅ Tem conteúdo' 
+                        : '❌ Sem conteúdo'
+                };
+            })
+        );
+        
+        // 3. Verificar última vez que livros foram usados
+        const lastUsage = await client.query(`
+            SELECT 
+                kb.id,
+                kb.title,
+                MAX(ic.created_at) as last_used
+            FROM ia_knowledge_base kb
+            LEFT JOIN ia_conversations ic ON kb.id = ANY(ic.knowledge_used)
+            WHERE kb.source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+            GROUP BY kb.id, kb.title
+            ORDER BY last_used DESC NULLS LAST
+        `);
+        
+        // 4. Estatísticas gerais
+        const stats = {
+            total_books: allBooks.rows.length,
+            books_with_content: booksWithDetails.filter(b => b.has_content).length,
+            books_without_content: booksWithDetails.filter(b => !b.has_content).length,
+            books_active: booksWithDetails.filter(b => b.is_active).length,
+            books_inactive: booksWithDetails.filter(b => !b.is_active).length,
+            total_content_chars: booksWithDetails.reduce((sum, b) => sum + b.total_content, 0),
+            total_sections: booksWithDetails.reduce((sum, b) => sum + b.sections_count, 0),
+            books_never_used: booksWithDetails.filter(b => b.usage_count === 0).length,
+            books_used: booksWithDetails.filter(b => b.usage_count > 0).length
+        };
+        
+        // 5. Problemas identificados
+        const issues = [];
+        if (stats.books_without_content > 0) {
+            issues.push({
+                type: 'warning',
+                message: `${stats.books_without_content} livro(s) sem conteúdo - precisam ser retreinados`,
+                books: booksWithDetails.filter(b => !b.has_content).map(b => b.title)
+            });
+        }
+        
+        if (stats.books_never_used > 0) {
+            issues.push({
+                type: 'info',
+                message: `${stats.books_never_used} livro(s) nunca foram usados - podem não estar sendo encontrados pela IA`,
+                books: booksWithDetails.filter(b => b.usage_count === 0).slice(0, 5).map(b => b.title)
+            });
+        }
+        
+        if (stats.books_inactive > 0) {
+            issues.push({
+                type: 'error',
+                message: `${stats.books_inactive} livro(s) estão inativos - não serão usados pela IA`,
+                books: booksWithDetails.filter(b => !b.is_active).map(b => b.title)
+            });
+        }
+        
+        res.json({
+            stats: stats,
+            books: booksWithDetails,
+            last_usage: lastUsage.rows.map(r => ({
+                id: r.id,
+                title: r.title,
+                last_used: r.last_used
+            })),
+            issues: issues,
+            recommendations: [
+                stats.books_without_content > 0 
+                    ? 'Retreinar livros sem conteúdo usando a função "Treinar com Livro"'
+                    : null,
+                stats.books_inactive > 0
+                    ? 'Ativar livros inativos para que a IA possa usá-los'
+                    : null,
+                stats.books_never_used > 0
+                    ? 'Verificar se os livros têm palavras-chave relevantes e conteúdo indexável'
+                    : null
+            ].filter(r => r !== null)
+        });
+    } catch (error) {
+        console.error('❌ Erro ao gerar diagnóstico:', error);
+        throw error;
     } finally {
         client.release();
     }
@@ -7172,7 +7374,7 @@ router.get('/books/:id/content', protectAdmin, asyncHandler(async (req, res) => 
     const { id } = req.params;
     const client = await db.pool.connect();
     try {
-        // Buscar o livro principal
+        // Buscar o livro principal (SEM FILTRO DE CONTEÚDO - buscar todos)
         const bookResult = await client.query(`
             SELECT 
                 id,
@@ -7181,7 +7383,8 @@ router.get('/books/:id/content', protectAdmin, asyncHandler(async (req, res) => 
                 source_type,
                 source_reference,
                 created_at,
-                updated_at
+                updated_at,
+                is_active
             FROM ia_knowledge_base
             WHERE id = $1
             AND source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
@@ -7196,50 +7399,101 @@ router.get('/books/:id/content', protectAdmin, asyncHandler(async (req, res) => 
         // Garantir que o título não seja vazio
         const bookTitle = book.title || 'Livro sem título';
         
-        // Buscar todas as seções deste livro (usar diferentes padrões de busca)
-        let sectionsResult;
+        // BUSCA MELHORADA: Tentar múltiplos padrões para encontrar seções
+        let allSections = [];
+        
+        // Padrão 1: Por source_reference
         if (book.source_reference) {
-            // Tentar buscar por source_reference primeiro
-            sectionsResult = await client.query(`
-                SELECT 
-                    id,
-                    title,
-                    content,
-                    created_at
+            const sections1 = await client.query(`
+                SELECT id, title, content, created_at
                 FROM ia_knowledge_base
                 WHERE source_type = 'book_training'
                 AND source_reference LIKE $1
+                AND content IS NOT NULL
+                AND content != ''
                 ORDER BY id ASC
             `, [`%${book.source_reference}%`]);
+            allSections = [...allSections, ...sections1.rows];
         }
         
-        // Se não encontrou, tentar buscar por título
-        if (!sectionsResult || sectionsResult.rows.length === 0) {
-            sectionsResult = await client.query(`
-                SELECT 
-                    id,
-                    title,
-                    content,
-                    created_at
-                FROM ia_knowledge_base
-                WHERE source_type = 'book_training'
-                AND (source_reference LIKE $1 OR title LIKE $2)
-                ORDER BY id ASC
-            `, [`book_${bookTitle.replace(/'/g, "''")}_section_%`, `%${bookTitle}%`]);
-        }
+        // Padrão 2: Por título do livro
+        const sections2 = await client.query(`
+            SELECT id, title, content, created_at
+            FROM ia_knowledge_base
+            WHERE source_type = 'book_training'
+            AND (
+                source_reference LIKE $1 
+                OR source_reference LIKE $2
+                OR title LIKE $3
+            )
+            AND content IS NOT NULL
+            AND content != ''
+            AND id != $4
+            ORDER BY id ASC
+        `, [
+            `book_${bookTitle.replace(/'/g, "''")}_section_%`,
+            `%${book.source_reference || ''}%`,
+            `%${bookTitle}%`,
+            book.id
+        ]);
+        
+        // Remover duplicatas (por ID)
+        const uniqueSections = [];
+        const seenIds = new Set();
+        [...allSections, ...sections2.rows].forEach(section => {
+            if (!seenIds.has(section.id)) {
+                seenIds.add(section.id);
+                uniqueSections.push(section);
+            }
+        });
         
         // Combinar conteúdo principal + todas as seções (como a IA vê)
         let fullContent = book.content || '';
         
-        if (sectionsResult.rows.length > 0) {
-            fullContent += '\n\n' + '='.repeat(80) + '\n';
+        if (uniqueSections.length > 0) {
+            if (fullContent) {
+                fullContent += '\n\n' + '='.repeat(80) + '\n';
+            }
             fullContent += 'SEÇÕES DO LIVRO (Como a IA processa):\n';
             fullContent += '='.repeat(80) + '\n\n';
             
-            sectionsResult.rows.forEach((section, index) => {
+            uniqueSections.forEach((section, index) => {
                 fullContent += `\n--- SEÇÃO ${index + 1}: ${section.title || 'Sem título'} ---\n\n`;
                 fullContent += (section.content || '') + '\n\n';
             });
+        }
+        
+        // Se ainda não tem conteúdo, buscar em TODOS os registros relacionados
+        if (!fullContent || fullContent.trim().length === 0) {
+            const allRelated = await client.query(`
+                SELECT id, title, content, source_type, source_reference
+                FROM ia_knowledge_base
+                WHERE (
+                    source_reference LIKE $1
+                    OR source_reference LIKE $2
+                    OR title LIKE $3
+                    OR (source_type = 'book_training' AND title LIKE $4)
+                )
+                AND content IS NOT NULL
+                AND content != ''
+                AND id != $5
+                ORDER BY id ASC
+                LIMIT 50
+            `, [
+                `%${book.source_reference || ''}%`,
+                `book_${bookTitle.replace(/'/g, "''")}_%`,
+                `%${bookTitle}%`,
+                `%${bookTitle.split(' - ')[0]}%`,
+                book.id
+            ]);
+            
+            if (allRelated.rows.length > 0) {
+                fullContent = 'CONTEÚDO DO LIVRO ENCONTRADO EM SEÇÕES:\n\n';
+                allRelated.rows.forEach((item, index) => {
+                    fullContent += `\n--- ${item.title || `Item ${index + 1}`} ---\n\n`;
+                    fullContent += (item.content || '') + '\n\n';
+                });
+            }
         }
         
         // Calcular estatísticas
@@ -7254,17 +7508,21 @@ router.get('/books/:id/content', protectAdmin, asyncHandler(async (req, res) => 
                 source_type: book.source_type,
                 source_reference: book.source_reference,
                 created_at: book.created_at,
-                updated_at: book.updated_at
+                updated_at: book.updated_at,
+                is_active: book.is_active
             },
-            content: fullContent || 'Conteúdo não disponível',
+            content: fullContent || 'Conteúdo não disponível - Este livro pode não ter sido processado corretamente. Verifique se o livro foi treinado com conteúdo.',
             stats: {
                 main_content_length: mainContentLength,
-                sections_count: sectionsResult.rows.length,
+                sections_count: uniqueSections.length,
                 total_length: totalChars,
                 total_words: totalWords,
                 characters: totalChars,
                 words: totalWords,
-                date: book.created_at ? new Date(book.created_at).toLocaleDateString('pt-BR') : 'Data inválida'
+                date: book.created_at ? new Date(book.created_at).toLocaleDateString('pt-BR') : 'Data inválida',
+                has_content: totalChars > 0,
+                has_main_content: mainContentLength > 0,
+                has_sections: uniqueSections.length > 0
             }
         });
     } catch (error) {
