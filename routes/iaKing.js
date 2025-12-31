@@ -4024,11 +4024,32 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
         
         let knowledgeAdded = 0;
         let topicsSearched = 0;
+        const startTime = Date.now();
+        
+        // Criar registro de treinamento
+        const trainingRecord = await client.query(`
+            INSERT INTO ia_auto_train_mind_history 
+            (started_by, status, training_topics, tavily_api_used)
+            VALUES ($1, 'running', $2, true)
+            RETURNING id
+        `, [req.user.id, trainingTopics]);
+        
+        const trainingId = trainingRecord.rows[0].id;
         
         // Buscar e aprender com cada tópico
         for (const topic of trainingTopics) {
             try {
                 console.log(`📚 [IA] Buscando conhecimento sobre: ${topic}`);
+                
+                // Criar registro de detalhe do tópico
+                const topicDetail = await client.query(`
+                    INSERT INTO ia_auto_train_mind_details 
+                    (training_id, topic, search_status)
+                    VALUES ($1, $2, 'searching')
+                    RETURNING id
+                `, [trainingId, topic]);
+                
+                const topicDetailId = topicDetail.rows[0].id;
                 
                 // Buscar com Tavily
                 const tavilyResponse = await fetch('https://api.tavily.com/search', {
@@ -4053,8 +4074,20 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
                 
                 if (!tavilyData.results || tavilyData.results.length === 0) {
                     console.log(`⚠️ [IA] Nenhum resultado encontrado para: ${topic}`);
+                    
+                    // Atualizar detalhe do tópico
+                    await client.query(`
+                        UPDATE ia_auto_train_mind_details 
+                        SET search_status = 'completed', 
+                            results_found = 0,
+                            completed_at = NOW()
+                        WHERE id = $1
+                    `, [topicDetailId]);
+                    
                     continue;
                 }
+                
+                let topicKnowledgeAdded = 0;
                 
                 // Processar cada resultado
                 for (const result of tavilyData.results) {
@@ -4089,8 +4122,19 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
                     ]);
                     
                     knowledgeAdded++;
+                    topicKnowledgeAdded++;
                     console.log(`✅ [IA] Conhecimento adicionado: ${result.title?.substring(0, 50)}`);
                 }
+                
+                // Atualizar detalhe do tópico
+                await client.query(`
+                    UPDATE ia_auto_train_mind_details 
+                    SET search_status = 'completed',
+                        results_found = $1,
+                        knowledge_added = $2,
+                        completed_at = NOW()
+                    WHERE id = $3
+                `, [tavilyData.results.length, topicKnowledgeAdded, topicDetailId]);
                 
                 topicsSearched++;
                 
@@ -4099,22 +4143,84 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
                 
             } catch (error) {
                 console.error(`❌ [IA] Erro ao processar tópico "${topic}":`, error);
+                
+                // Atualizar detalhe do tópico com erro
+                await client.query(`
+                    UPDATE ia_auto_train_mind_details 
+                    SET search_status = 'failed',
+                        error_message = $1,
+                        completed_at = NOW()
+                    WHERE training_id = $2 AND topic = $3
+                `, [error.message.substring(0, 500), trainingId, topic]);
+                
                 continue;
             }
         }
         
-        console.log(`✅ [IA] Treinamento automático concluído! ${knowledgeAdded} itens adicionados de ${topicsSearched} tópicos.`);
+        const endTime = Date.now();
+        const executionTime = Math.floor((endTime - startTime) / 1000);
+        
+        // Atualizar registro de treinamento
+        await client.query(`
+            UPDATE ia_auto_train_mind_history 
+            SET status = 'completed',
+                completed_at = NOW(),
+                topics_searched = $1,
+                knowledge_added = $2,
+                total_searches = $3,
+                execution_time_seconds = $4
+            WHERE id = $5
+        `, [topicsSearched, knowledgeAdded, topicsSearched * 5, executionTime, trainingId]);
+        
+        // Atualizar estatísticas
+        await client.query(`
+            UPDATE ia_auto_train_mind_stats 
+            SET total_trainings = total_trainings + 1,
+                total_knowledge_added = total_knowledge_added + $1,
+                total_topics_searched = total_topics_searched + $2,
+                avg_knowledge_per_training = (total_knowledge_added + $1)::DECIMAL / NULLIF(total_trainings + 1, 0),
+                last_training_at = NOW(),
+                updated_at = NOW()
+            WHERE id = 1
+        `, [knowledgeAdded, topicsSearched]);
+        
+        console.log(`✅ [IA] Treinamento automático concluído! ${knowledgeAdded} itens adicionados de ${topicsSearched} tópicos em ${executionTime}s.`);
         
         res.json({
             success: true,
+            training_id: trainingId,
             topics_searched: topicsSearched,
             knowledge_added: knowledgeAdded,
-            estimated_time: `${Math.ceil(topicsSearched * 2)} segundos`,
+            execution_time_seconds: executionTime,
+            estimated_time: `${executionTime} segundos`,
             message: `Treinamento concluído! ${knowledgeAdded} novos itens de conhecimento adicionados.`
         });
         
     } catch (error) {
         console.error('❌ [IA] Erro no treinamento automático:', error);
+        
+        // Atualizar registro de treinamento com erro (se existir)
+        try {
+            const lastTraining = await client.query(`
+                SELECT id FROM ia_auto_train_mind_history 
+                WHERE status = 'running' 
+                ORDER BY started_at DESC 
+                LIMIT 1
+            `);
+            
+            if (lastTraining.rows.length > 0) {
+                await client.query(`
+                    UPDATE ia_auto_train_mind_history 
+                    SET status = 'failed',
+                        error_message = $1,
+                        completed_at = NOW()
+                    WHERE id = $2
+                `, [error.message.substring(0, 500), lastTraining.rows[0].id]);
+            }
+        } catch (updateError) {
+            console.error('❌ [IA] Erro ao atualizar registro de treinamento:', updateError);
+        }
+        
         res.status(500).json({ error: 'Erro ao executar treinamento automático: ' + error.message });
     } finally {
         client.release();
