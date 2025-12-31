@@ -267,14 +267,14 @@ function extractQuestionContext(question) {
     
     // Padrões para extrair entidades (melhorados e mais robustos)
     const entityPatterns = [
-        // Padrão: "quem é X" ou "quem foi X" ou "quem e X" (com ou sem acento)
-        /(?:quem\s+(?:é|e|foi|era))\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi,
-        // Padrão: "o que é X"
-        /(?:o\s+que\s+(?:é|e|foi|era))\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi,
-        // Padrão: "X é" ou "X foi" (com maiúscula)
-        /([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+)*)\s+(?:é|e|foi|era|nasceu)/gi,
+        // Padrão: "quem é X" ou "quem foi X" ou "quem e X" (com ou sem acento) - CAPTURA TUDO APÓS
+        /(?:quem\s+(?:é|e|foi|era))\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇa-záàâãéêíóôõúç0-9]+(?:\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇa-záàâãéêíóôõúç0-9]+)*)/gi,
+        // Padrão: "o que é X" ou "oque e X" (sem espaço) - CAPTURA TUDO APÓS
+        /(?:o\s*que\s+(?:é|e|foi|era)|oque\s+(?:é|e|foi|era))\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇa-záàâãéêíóôõúç0-9]+(?:\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇa-záàâãéêíóôõúç0-9]+)*)/gi,
+        // Padrão: "X é" ou "X foi" (com maiúscula no início)
+        /([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç0-9]+(?:\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç0-9]+)*)\s+(?:é|e|foi|era|nasceu)/gi,
         // Padrão: Nomes próprios no final da pergunta (após "quem é", "o que é", etc.)
-        /(?:quem|o\s+que)\s+(?:é|e|foi|era)\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi
+        /(?:quem|o\s*que|oque)\s+(?:é|e|foi|era)\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇa-záàâãéêíóôõúç0-9]+(?:\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇa-záàâãéêíóôõúç0-9]+)*)/gi
     ];
     
     // Extrair entidades dos padrões
@@ -283,19 +283,43 @@ function extractQuestionContext(question) {
         if (matches && matches.length > 0) {
             for (const match of matches) {
                 if (match[1]) {
-                    const entity = match[1].toLowerCase().trim();
+                    let entity = match[1].trim();
+                    // Manter maiúsculas se houver (ex: "PNL", "Jesus")
+                    const hasUpperCase = /[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(entity);
+                    const entityLower = entity.toLowerCase();
+                    
                     // Filtrar palavras muito comuns
-                    const commonWords = ['o', 'a', 'um', 'uma', 'de', 'do', 'da', 'que', 'você', 'voce', 'sabe', 'conhece', 'você', 'voce'];
-                    if (entity.length > 2 && !commonWords.includes(entity)) {
-                        entities.push(entity);
+                    const commonWords = ['o', 'a', 'um', 'uma', 'de', 'do', 'da', 'que', 'você', 'voce', 'sabe', 'conhece', 'você', 'voce', 'quem', 'oque', 'oque'];
+                    
+                    // Se tem maiúscula, provavelmente é uma entidade importante (ex: PNL, Jesus)
+                    if (hasUpperCase && entity.length > 1) {
+                        entities.push(entity); // Manter original com maiúscula
+                        entities.push(entityLower); // Também adicionar lowercase para busca
+                    } else if (entityLower.length > 2 && !commonWords.includes(entityLower)) {
+                        entities.push(entityLower);
                     }
                 }
             }
         }
     }
     
-    // EXTRAÇÃO DIRETA: Procurar palavras que aparecem após "quem é", "quem e", etc.
-    const directPattern = /(?:quem\s+(?:é|e|foi|era)|o\s+que\s+(?:é|e|foi|era))\s+([a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi;
+    // EXTRAÇÃO DIRETA MELHORADA: Procurar palavras que aparecem após "quem é", "quem e", "oque e", etc.
+    // Padrão melhorado para capturar "OQUE E PNL" ou "QUEM E JESUS" (tudo maiúsculo)
+    const directPatternUpper = /(?:QUEM\s+E|OQUE\s+E|O\s+QUE\s+E)\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ0-9]+(?:\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ0-9]+)*)/g;
+    const directMatchesUpper = [...originalQuestion.matchAll(directPatternUpper)];
+    for (const match of directMatchesUpper) {
+        if (match[1]) {
+            const entity = match[1].trim();
+            if (entity.length > 1) {
+                entities.push(entity); // Manter maiúscula (ex: "PNL", "JESUS")
+                entities.push(entity.toLowerCase()); // Também adicionar lowercase
+                console.log(`✅ [IA] Entidade maiúscula extraída: "${entity}"`);
+            }
+        }
+    }
+    
+    // Padrão para minúsculo também
+    const directPattern = /(?:quem\s+(?:é|e|foi|era)|o\s*que\s+(?:é|e|foi|era)|oque\s+(?:é|e|foi|era))\s+([a-záàâãéêíóôõúç0-9]+(?:\s+[a-záàâãéêíóôõúç0-9]+)*)/gi;
     const directMatches = [...lowerQuestion.matchAll(directPattern)];
     for (const match of directMatches) {
         if (match[1]) {
@@ -303,6 +327,7 @@ function extractQuestionContext(question) {
             const commonWords = ['o', 'a', 'um', 'uma', 'de', 'do', 'da', 'que', 'você', 'voce', 'sabe', 'conhece'];
             if (entity.length > 2 && !commonWords.includes(entity) && !entities.includes(entity)) {
                 entities.push(entity);
+                console.log(`✅ [IA] Entidade minúscula extraída: "${entity}"`);
             }
         }
     }
