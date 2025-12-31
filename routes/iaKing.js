@@ -5927,11 +5927,87 @@ router.get('/intelligence/book-training', protectAdmin, asyncHandler(async (req,
     }
 }));
 
-// POST /api/ia-king/auto-train-mind - Treinamento automático da mentalidade na internet
+// ============================================
+// FUNÇÃO PARA BUSCAR LIVROS COMPLETOS
+// ============================================
+/**
+ * Busca livros completos na internet usando Tavily
+ * Tenta encontrar o livro completo, não apenas resumos
+ */
+async function buscarLivroCompleto(titulo, autor, apiKey) {
+    try {
+        // Queries otimizadas para encontrar livros completos
+        const queries = [
+            `${titulo} ${autor} livro completo pdf texto`,
+            `${titulo} ${autor} livro completo online ler`,
+            `${titulo} ${autor} livro completo download`,
+            `"${titulo}" "${autor}" livro completo texto`,
+            `${titulo} ${autor} livro completo site:pdf site:doc site:txt`
+        ];
+        
+        let melhorResultado = null;
+        let maiorConteudo = 0;
+        
+        for (const query of queries) {
+            const result = await fetch('https://api.tavily.com/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    query: query,
+                    search_depth: 'advanced', // Busca profunda
+                    max_results: 10,
+                    include_raw_content: true, // Incluir conteúdo bruto completo
+                    include_answer: false
+                })
+            });
+            
+            if (!result.ok) continue;
+            
+            const data = await result.json();
+            
+            if (data.results && data.results.length > 0) {
+                // Procurar resultado com mais conteúdo (provavelmente livro completo)
+                for (const r of data.results) {
+                    const contentLength = (r.raw_content || r.content || '').length;
+                    
+                    // Filtrar apenas resultados com muito conteúdo (livro completo)
+                    if (contentLength > 10000 && contentLength > maiorConteudo) {
+                        // Verificar se parece ser um livro (não vídeo, não resumo curto)
+                        if (!r.url?.includes('youtube.com') && 
+                            !r.url?.includes('youtu.be') &&
+                            !r.title?.toLowerCase().includes('vídeo') &&
+                            !r.title?.toLowerCase().includes('video')) {
+                            maiorConteudo = contentLength;
+                            melhorResultado = {
+                                title: r.title,
+                                content: r.raw_content || r.content,
+                                url: r.url,
+                                contentLength: contentLength
+                            };
+                        }
+                    }
+                }
+            }
+            
+            // Pequeno delay entre buscas
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        return melhorResultado;
+    } catch (error) {
+        console.error('Erro ao buscar livro completo:', error);
+        return null;
+    }
+}
+
+// POST /api/ia-king/auto-train-mind - Treinamento automático da mentalidade na internet (MELHORADO)
 router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
-        console.log('🚀 [IA] Iniciando treinamento automático da mentalidade na internet...');
+        console.log('🚀 [IA] Iniciando treinamento automático da mentalidade na internet (MELHORADO)...');
         
         // Verificar se Tavily está configurado
         const tavilyConfig = await client.query(`
@@ -5949,8 +6025,20 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
         
         const tavilyApiKey = tavilyConfig.rows[0].api_key;
         
-        // Tópicos para treinar a IA (mentalidade, cognição, resposta, entendimento)
+        // Buscar todas as categorias disponíveis
+        const categoriesResult = await client.query(`
+            SELECT id, name, description 
+            FROM ia_categories 
+            WHERE is_active = true
+            ORDER BY priority DESC, name ASC
+        `);
+        
+        const categories = categoriesResult.rows.map(c => c.name);
+        console.log(`📚 [IA] Categorias encontradas: ${categories.length} - ${categories.join(', ')}`);
+        
+        // TÓPICOS EXPANDIDOS: Mentalidade, estratégias do ChatGPT, como pensar, etc.
         const trainingTopics = [
+            // Mentalidades e Cognição
             'inteligência artificial mentalidade e cognição',
             'como IAs pensam e raciocinam',
             'sistemas de resposta inteligente',
@@ -5965,11 +6053,58 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
             'contexto e memória em conversas com IA',
             'extração de entidades e palavras-chave',
             'classificação de intenções em IAs',
-            'sistemas de busca semântica'
+            'sistemas de busca semântica',
+            
+            // Estratégias do ChatGPT e como ele pensa
+            'como ChatGPT pensa e raciocina',
+            'estratégias de pensamento do ChatGPT',
+            'métodos de raciocínio de inteligência artificial',
+            'chain of thought reasoning IA',
+            'como ChatGPT busca conhecimento',
+            'arquitetura de pensamento GPT',
+            'sistemas de raciocínio em IAs conversacionais',
+            'prompt engineering e raciocínio',
+            'técnicas de pensamento de modelos de linguagem',
+            
+            // Mentalidades e desenvolvimento pessoal
+            'mentalidade de crescimento',
+            'mentalidade empreendedora',
+            'mentalidade vencedora',
+            'desenvolvimento de mentalidade',
+            'mudança de mentalidade',
+            'mentalidade positiva',
+            'mentalidade estratégica',
+            
+            // Estratégias de vendas e negócios
+            'estratégias de vendas avançadas',
+            'técnicas de vendas e persuasão',
+            'mentalidade de vendas',
+            'estratégias comerciais',
+            'negociação e vendas',
+            
+            // Conhecimento geral por categoria
+            ...categories.map(cat => [
+                `conhecimento sobre ${cat}`,
+                `informações sobre ${cat}`,
+                `${cat} completo`
+            ]).flat()
+        ];
+        
+        // LIVROS ESPECÍFICOS PARA BUSCAR COMPLETOS
+        const livrosParaBuscar = [
+            { titulo: 'Tiago Brunet', autor: 'mentalidade', categorias: ['Autoajuda', 'Motivação', 'Negócios'] },
+            { titulo: 'Pai Rico Pai Pobre', autor: 'Robert Kiyosaki', categorias: ['Negócios', 'Educação Financeira'] },
+            { titulo: 'O Poder do Hábito', autor: 'Charles Duhigg', categorias: ['Psicologia', 'Autoajuda'] },
+            { titulo: 'Mindset', autor: 'Carol Dweck', categorias: ['Psicologia', 'Autoajuda'] },
+            { titulo: 'Como Fazer Amigos e Influenciar Pessoas', autor: 'Dale Carnegie', categorias: ['Negócios', 'Autoajuda'] },
+            { titulo: 'A Arte da Guerra', autor: 'Sun Tzu', categorias: ['Estratégias', 'Negócios'] },
+            { titulo: 'O Monge e o Executivo', autor: 'James Hunter', categorias: ['Liderança', 'Negócios'] },
+            { titulo: 'Rápido e Devagar', autor: 'Daniel Kahneman', categorias: ['Psicologia', 'Ciência'] }
         ];
         
         let knowledgeAdded = 0;
         let topicsSearched = 0;
+        let livrosCompletosAdicionados = 0;
         const startTime = Date.now();
         
         // Criar registro de treinamento
@@ -5982,7 +6117,70 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
         
         const trainingId = trainingRecord.rows[0].id;
         
-        // Buscar e aprender com cada tópico
+        // FASE 1: BUSCAR LIVROS COMPLETOS ESPECÍFICOS
+        console.log('📚 [IA] FASE 1: Buscando livros completos específicos...');
+        for (const livro of livrosParaBuscar) {
+            try {
+                console.log(`📖 [IA] Buscando livro completo: "${livro.titulo}" - ${livro.autor}`);
+                
+                const livroCompleto = await buscarLivroCompleto(livro.titulo, livro.autor, tavilyApiKey);
+                
+                if (livroCompleto && livroCompleto.content && livroCompleto.contentLength > 10000) {
+                    // Verificar se já existe
+                    const existingCheck = await client.query(`
+                        SELECT id FROM ia_knowledge_base 
+                        WHERE LOWER(title) LIKE $1
+                        LIMIT 1
+                    `, [`%${livro.titulo.toLowerCase()}%`]);
+                    
+                    if (existingCheck.rows.length === 0) {
+                        // Buscar categoria do livro
+                        let categoryId = null;
+                        if (livro.categorias && livro.categorias.length > 0) {
+                            const catResult = await client.query(`
+                                SELECT id FROM ia_categories 
+                                WHERE LOWER(name) = ANY($1::text[])
+                                ORDER BY priority DESC LIMIT 1
+                            `, [livro.categorias.map(c => c.toLowerCase())]);
+                            if (catResult.rows.length > 0) {
+                                categoryId = catResult.rows[0].id;
+                            }
+                        }
+                        
+                        // Adicionar livro completo à base de conhecimento
+                        const keywords = extractKeywords(livroCompleto.title + ' ' + livroCompleto.content.substring(0, 1000));
+                        
+                        await client.query(`
+                            INSERT INTO ia_knowledge_base 
+                            (category_id, title, content, keywords, source_type, source_reference, is_active, priority, created_at, updated_at)
+                            VALUES ($1, $2, $3, $4, 'tavily_book_complete', $5, true, 90, NOW(), NOW())
+                        `, [
+                            categoryId,
+                            livroCompleto.title || `${livro.titulo} - ${livro.autor}`,
+                            livroCompleto.content.substring(0, 500000), // Limitar a 500KB
+                            keywords,
+                            livroCompleto.url || 'auto-training'
+                        ]);
+                        
+                        knowledgeAdded++;
+                        livrosCompletosAdicionados++;
+                        console.log(`✅ [IA] Livro completo adicionado: "${livro.titulo}" (${Math.floor(livroCompleto.contentLength / 1000)}KB)`);
+                    } else {
+                        console.log(`⏭️ [IA] Livro já existe: "${livro.titulo}"`);
+                    }
+                } else {
+                    console.log(`⚠️ [IA] Livro completo não encontrado ou muito curto: "${livro.titulo}"`);
+                }
+                
+                // Delay para não sobrecarregar
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (error) {
+                console.error(`❌ [IA] Erro ao buscar livro "${livro.titulo}":`, error);
+            }
+        }
+        
+        // FASE 2: BUSCAR E APRENDER COM CADA TÓPICO (MELHORADO)
+        console.log('🧠 [IA] FASE 2: Buscando conhecimento sobre mentalidades e estratégias...');
         for (const topic of trainingTopics) {
             try {
                 console.log(`📚 [IA] Buscando conhecimento sobre: ${topic}`);
@@ -5997,17 +6195,19 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
                 
                 const topicDetailId = topicDetail.rows[0].id;
                 
-                // Buscar com Tavily
+                // Buscar com Tavily (MELHORADO - busca profunda com conteúdo completo)
                 const tavilyResponse = await fetch('https://api.tavily.com/search', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${tavilyApiKey}`
                     },
                     body: JSON.stringify({
-                        api_key: tavilyApiKey,
                         query: topic,
-                        search_depth: 'advanced',
-                        max_results: 5
+                        search_depth: 'advanced', // Busca profunda
+                        max_results: 10, // Mais resultados
+                        include_raw_content: true, // Incluir conteúdo bruto completo
+                        include_answer: true
                     })
                 });
                 
@@ -6035,31 +6235,57 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
                 
                 let topicKnowledgeAdded = 0;
                 
-                // Processar cada resultado
+                // Processar cada resultado (MELHORADO - priorizar conteúdo completo)
                 for (const result of tavilyData.results) {
-                    if (!result.content || result.content.length < 100) continue;
+                    // Usar raw_content se disponível (conteúdo completo), senão usar content
+                    const fullContent = result.raw_content || result.content || '';
+                    
+                    if (!fullContent || fullContent.length < 200) continue;
+                    
+                    // Filtrar vídeos
+                    if (result.url?.includes('youtube.com') || 
+                        result.url?.includes('youtu.be') ||
+                        result.title?.toLowerCase().includes('vídeo') ||
+                        result.title?.toLowerCase().includes('video')) {
+                        continue;
+                    }
                     
                     // Verificar se já existe conhecimento similar
                     const existingCheck = await client.query(`
                         SELECT id FROM ia_knowledge_base 
                         WHERE title = $1 OR content LIKE $2 
                         LIMIT 1
-                    `, [result.title || topic, `%${result.content.substring(0, 50)}%`]);
+                    `, [result.title || topic, `%${fullContent.substring(0, 100)}%`]);
                     
                     if (existingCheck.rows.length > 0) {
                         console.log(`⏭️ [IA] Conhecimento já existe para: ${result.title}`);
                         continue;
                     }
                     
-                    // Adicionar à base de conhecimento
-                    const content = (result.content || '').substring(0, 10000); // Limitar tamanho
-                    const keywords = extractKeywords(topic + ' ' + content);
+                    // Identificar categoria baseada no tópico
+                    let categoryId = null;
+                    const lowerTopic = topic.toLowerCase();
+                    if (lowerTopic.includes('venda') || lowerTopic.includes('comercial')) {
+                        const catResult = await client.query(`SELECT id FROM ia_categories WHERE LOWER(name) IN ('vendas', 'negócios') LIMIT 1`);
+                        if (catResult.rows.length > 0) categoryId = catResult.rows[0].id;
+                    } else if (lowerTopic.includes('mentalidade') || lowerTopic.includes('psicologia')) {
+                        const catResult = await client.query(`SELECT id FROM ia_categories WHERE LOWER(name) IN ('psicologia', 'autoajuda', 'motivação') LIMIT 1`);
+                        if (catResult.rows.length > 0) categoryId = catResult.rows[0].id;
+                    } else if (lowerTopic.includes('ciência') || lowerTopic.includes('científico')) {
+                        const catResult = await client.query(`SELECT id FROM ia_categories WHERE LOWER(name) = 'ciência' LIMIT 1`);
+                        if (catResult.rows.length > 0) categoryId = catResult.rows[0].id;
+                    }
+                    
+                    // Adicionar à base de conhecimento (MELHORADO - mais conteúdo)
+                    const content = fullContent.substring(0, 200000); // Até 200KB (muito mais conteúdo)
+                    const keywords = extractKeywords(topic + ' ' + content.substring(0, 2000));
                     
                     await client.query(`
                         INSERT INTO ia_knowledge_base 
-                        (title, content, keywords, source_type, source_reference, is_active, created_at, updated_at)
-                        VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW())
+                        (category_id, title, content, keywords, source_type, source_reference, is_active, priority, created_at, updated_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, true, 80, NOW(), NOW())
                     `, [
+                        categoryId,
                         result.title || topic,
                         content,
                         keywords,
@@ -6069,7 +6295,7 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
                     
                     knowledgeAdded++;
                     topicKnowledgeAdded++;
-                    console.log(`✅ [IA] Conhecimento adicionado: ${result.title?.substring(0, 50)}`);
+                    console.log(`✅ [IA] Conhecimento adicionado: ${result.title?.substring(0, 50)} (${Math.floor(content.length / 1000)}KB)`);
                 }
                 
                 // Atualizar detalhe do tópico
@@ -6116,7 +6342,7 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
                 total_searches = $3,
                 execution_time_seconds = $4
             WHERE id = $5
-        `, [topicsSearched, knowledgeAdded, topicsSearched * 5, executionTime, trainingId]);
+        `, [topicsSearched, knowledgeAdded, topicsSearched * 10, executionTime, trainingId]);
         
         // Atualizar estatísticas
         await client.query(`
@@ -6130,16 +6356,18 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
             WHERE id = 1
         `, [knowledgeAdded, topicsSearched]);
         
-        console.log(`✅ [IA] Treinamento automático concluído! ${knowledgeAdded} itens adicionados de ${topicsSearched} tópicos em ${executionTime}s.`);
+        console.log(`✅ [IA] Treinamento automático concluído! ${knowledgeAdded} itens adicionados (${livrosCompletosAdicionados} livros completos) de ${topicsSearched} tópicos em ${executionTime}s.`);
         
         res.json({
             success: true,
             training_id: trainingId,
             topics_searched: topicsSearched,
             knowledge_added: knowledgeAdded,
+            livros_completos: livrosCompletosAdicionados,
+            categories_used: categories.length,
             execution_time_seconds: executionTime,
             estimated_time: `${executionTime} segundos`,
-            message: `Treinamento concluído! ${knowledgeAdded} novos itens de conhecimento adicionados.`
+            message: `Treinamento concluído! ${knowledgeAdded} novos itens de conhecimento adicionados (${livrosCompletosAdicionados} livros completos). ${categories.length} categorias incluídas.`
         });
         
     } catch (error) {
