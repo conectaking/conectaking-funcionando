@@ -2548,13 +2548,26 @@ async function findBestAnswer(userMessage, userId) {
                             break;
                         }
                         
-                        // Busca parcial para PNL
-                        if ((entityLower === 'pnl' || entityLower === 'p.n.l') && 
+                        // Busca parcial para PNL (com sinônimos)
+                        if ((entityLower === 'pnl' || entity === 'PNL' || entityLower === 'p.n.l') && 
                             (excerptLower.includes('programação neurolinguística') ||
                              excerptLower.includes('programacao neurolinguistica') ||
                              excerptLower.includes('neurolinguística') ||
-                             excerptLower.includes('neurolinguistica'))) {
+                             excerptLower.includes('neurolinguistica') ||
+                             excerptLower.includes('pnl'))) {
                             entityFoundInExcerpt = true;
+                            console.log(`✅ [IA] PNL encontrado no trecho por sinônimo`);
+                            break;
+                        }
+                        
+                        // Busca parcial para Jesus (com variações)
+                        if ((entityLower === 'jesus' || entity === 'JESUS') && 
+                            (excerptLower.includes('jesus') ||
+                             excerptLower.includes('cristo') ||
+                             excerptLower.includes('jesus cristo') ||
+                             excerptLower.includes('cristo jesus'))) {
+                            entityFoundInExcerpt = true;
+                            console.log(`✅ [IA] Jesus encontrado no trecho por variação`);
                             break;
                         }
                     }
