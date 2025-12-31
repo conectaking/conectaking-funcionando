@@ -791,7 +791,7 @@ async function searchWithTavily(query, apiKey) {
         
         // Criar promise com timeout
         const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout na requisição Tavily')), 10000)
+            setTimeout(() => reject(new Error('Tempo esgotado na requisição Tavily')), 10000)
         );
         
         const fetchPromise = fetch(tavilyUrl, {
@@ -824,7 +824,7 @@ async function searchWithTavily(query, apiKey) {
                 statusText: response.statusText,
                 body: errorText.substring(0, 200)
             });
-            throw new Error(`Tavily API error: ${response.status} - ${errorText.substring(0, 100)}`);
+            throw new Error(`Erro na API Tavily: ${response.status} - ${errorText.substring(0, 100)}`);
         }
         
         const data = await response.json();
@@ -1434,7 +1434,7 @@ async function autoTrainIAKing(question, questionContext, client) {
                         learnedKnowledge = {
                             title: question.substring(0, 255),
                             content: relevantExcerpt,
-                            source: `naya_book_${source.source}`,
+                            source: `ia_king_book_${source.source}`,
                             source_reference: source.title
                         };
                         console.log('✅ [IA KING] Encontrou conhecimento em livro/documento:', source.title);
@@ -1474,10 +1474,10 @@ async function autoTrainIAKing(question, questionContext, client) {
                             learnedKnowledge = {
                                 title: question.substring(0, 255),
                                 content: webResults.answer,
-                                source: 'naya_web_tavily',
+                                source: 'ia_king_web_tavily',
                                 source_reference: 'Tavily API'
                             };
-                            console.log('✅ [NAYA] Resposta encontrada na internet (Tavily direto)');
+                            console.log('✅ [IA KING] Resposta encontrada na internet (Tavily direto)');
                         } else {
                             // Combinar os melhores resultados
                             const topResults = webResults.results.slice(0, 3);
@@ -1491,20 +1491,20 @@ async function autoTrainIAKing(question, questionContext, client) {
                                 learnedKnowledge = {
                                     title: question.substring(0, 255),
                                     content: combinedAnswer,
-                                    source: 'naya_web_tavily',
+                                    source: 'ia_king_web_tavily',
                                     source_reference: 'Tavily API - Múltiplas fontes'
                                 };
-                                console.log('✅ [NAYA] Conhecimento encontrado na internet (múltiplas fontes)');
+                                console.log('✅ [IA KING] Conhecimento encontrado na internet (múltiplas fontes)');
                             }
                         }
                     } else {
-                        console.log('⚠️ [NAYA] Nenhum resultado encontrado na internet');
+                        console.log('⚠️ [IA KING] Nenhum resultado encontrado na internet');
                     }
                 } else {
-                    console.log('⚠️ [NAYA] Busca na web não configurada ou desabilitada');
+                    console.log('⚠️ [IA KING] Busca na web não configurada ou desabilitada');
                 }
             } catch (webError) {
-                console.error('❌ [NAYA] Erro ao pesquisar na internet:', webError);
+                console.error('❌ [IA KING] Erro ao pesquisar na internet:', webError);
             }
         }
         
@@ -1549,7 +1549,7 @@ async function autoTrainIAKing(question, questionContext, client) {
                         // Ignorar erro de Q&A duplicado
                     }
                     
-                    console.log('💾 [NAYA] Conhecimento salvo automaticamente na base de dados!');
+                    console.log('💾 [IA KING] Conhecimento salvo automaticamente na base de dados!');
                     
                     // Registrar no histórico de auto-aprendizado
                     try {
@@ -1583,7 +1583,7 @@ async function autoTrainIAKing(question, questionContext, client) {
                             learnedKnowledge.source,
                             existing.rows[0].id
                         ]);
-                        console.log('💾 [NAYA] Conhecimento existente atualizado com mais informações!');
+                        console.log('💾 [IA KING] Conhecimento existente atualizado com mais informações!');
                     }
                 }
                 
@@ -1594,21 +1594,21 @@ async function autoTrainIAKing(question, questionContext, client) {
                     learned: true
                 };
             } catch (saveError) {
-                console.error('❌ [NAYA] Erro ao salvar conhecimento:', saveError);
+                console.error('❌ [IA KING] Erro ao salvar conhecimento:', saveError);
                 return {
                     success: false,
                     error: saveError.message
                 };
             }
         } else {
-            console.log('⚠️ [NAYA] Não foi possível aprender sobre esta pergunta');
+            console.log('⚠️ [IA KING] Não foi possível aprender sobre esta pergunta');
             return {
                 success: false,
                 learned: false
             };
         }
     } catch (error) {
-        console.error('❌ [NAYA] Erro no sistema de auto-treinamento:', error);
+        console.error('❌ [IA KING] Erro no sistema de auto-treinamento:', error);
         return {
             success: false,
             error: error.message
@@ -2634,12 +2634,43 @@ async function findBestAnswer(userMessage, userId) {
             const candidates = [];
             
             for (const kb of filteredKnowledge) {
-                if (!kb.title || !kb.content) continue;
+                // Se não tem título, pular
+                if (!kb.title) continue;
+                
+                // Se não tem conteúdo principal, tentar buscar seções do livro
+                let bookContent = kb.content || '';
+                if (!bookContent && kb.source_type && kb.source_type.includes('book')) {
+                    // Buscar seções deste livro
+                    try {
+                        const sectionsResult = await client.query(`
+                            SELECT content
+                            FROM ia_knowledge_base
+                            WHERE source_type = 'book_training'
+                            AND source_reference LIKE $1
+                            AND content IS NOT NULL
+                            AND content != ''
+                            LIMIT 10
+                        `, [`%${kb.title.replace(/'/g, "''")}%`]);
+                        
+                        if (sectionsResult.rows.length > 0) {
+                            bookContent = sectionsResult.rows.map(s => s.content).join('\n\n');
+                            console.log(`📖 [IA] Livro "${kb.title}" sem conteúdo principal, usando ${sectionsResult.rows.length} seções`);
+                        }
+                    } catch (sectionError) {
+                        console.error('❌ [IA] Erro ao buscar seções do livro:', sectionError);
+                    }
+                }
+                
+                // Se ainda não tem conteúdo, pular
+                if (!bookContent) {
+                    console.log(`⚠️ [IA] Livro "${kb.title}" sem conteúdo (source_type: ${kb.source_type})`);
+                    continue;
+                }
                 
                 // BUSCA FLEXÍVEL: Se temos entidades, verificar se aparecem no conhecimento
                 let entityMatchScore = 0;
                 if (questionContext.entities.length > 0) {
-                    const contentLower = kb.content.toLowerCase();
+                    const contentLower = bookContent.toLowerCase();
                     const titleLower = kb.title.toLowerCase();
                     
                     for (const entity of questionContext.entities) {
@@ -2712,14 +2743,14 @@ async function findBestAnswer(userMessage, userId) {
                 // CALCULAR RELEVÂNCIA INTELIGENTE (novo sistema)
                 const intelligentScore = calculateIntelligentRelevance(questionContext, {
                     title: kb.title,
-                    content: kb.content,
+                    content: bookContent,
                     keywords: kb.keywords,
                     source_type: kb.source_type
                 });
                 
                 // Calcular scores tradicionais (para compatibilidade)
                 const titleScore = calculateSimilarity(userMessage, kb.title) * 2.0;
-                const contentScore = calculateSimilarity(userMessage, kb.content) * 0.8;
+                const contentScore = calculateSimilarity(userMessage, bookContent) * 0.8;
                 
                 // Score por palavras-chave cadastradas
                 let keywordScore = 0;
@@ -2734,8 +2765,8 @@ async function findBestAnswer(userMessage, userId) {
                 
                 // Score por palavras-chave extraídas da mensagem
                 let extractedKeywordScore = 0;
-                if (kb.content) {
-                    const contentLower = kb.content.toLowerCase();
+                if (bookContent) {
+                    const contentLower = bookContent.toLowerCase();
                     const matchingExtracted = userKeywords.filter(uk => contentLower.includes(uk));
                     extractedKeywordScore = matchingExtracted.length * 10;
                 }
@@ -2758,9 +2789,9 @@ async function findBestAnswer(userMessage, userId) {
                                  (intelligentScore > 50 ? intelligentScore : 
                                  (titleScore + contentScore + keywordScore + extractedKeywordScore + titleBonus))) + bookBonus;
                 
-                // Adicionar à lista de candidatos
+                // Adicionar à lista de candidatos (incluir conteúdo processado)
                 candidates.push({
-                    kb: kb,
+                    kb: { ...kb, content: bookContent }, // Usar conteúdo processado (pode incluir seções)
                     score: totalScore,
                     intelligentScore: intelligentScore
                 });
@@ -3471,23 +3502,23 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // ============================================
-        // SISTEMA DE AUTO-TREINAMENTO AUTÔNOMO "NAYA"
+        // SISTEMA DE AUTO-TREINAMENTO AUTÔNOMO "IA KING"
         // ============================================
         // Quando não souber responder, pesquisa automaticamente e aprende
         if (!bestAnswer || bestScore < 40) {
             try {
-                console.log('🧠 [NAYA] Ativando sistema de auto-treinamento...');
+                console.log('🧠 [IA KING] Ativando sistema de auto-treinamento...');
                 
                 // Chamar sistema de auto-treinamento autônomo
-                const nayaResult = await autoTrainNaya(userMessage, questionContext, client);
+                const iaKingResult = await autoTrainIAKing(userMessage, questionContext, client);
                 
-                if (nayaResult && nayaResult.success && nayaResult.answer) {
+                if (iaKingResult && iaKingResult.success && iaKingResult.answer) {
                     // Usar resposta aprendida
-                    bestAnswer = nayaResult.answer;
+                    bestAnswer = iaKingResult.answer;
                     bestScore = 75; // Score alto para conhecimento aprendido
-                    bestSource = nayaResult.source || 'naya_auto_learned';
+                    bestSource = iaKingResult.source || 'ia_king_auto_learned';
                     
-                    console.log('✅ [NAYA] Resposta aprendida e pronta para uso!');
+                    console.log('✅ [IA KING] Resposta aprendida e pronta para uso!');
                     
                     // Aplicar prompt mestre e personalidade
                     bestAnswer = applyGPTMasterPrompt(bestAnswer, null, questionContext);
@@ -3547,8 +3578,8 @@ async function findBestAnswer(userMessage, userId) {
                         console.error('Erro no fallback de auto-pesquisa:', fallbackError);
                     }
                 }
-            } catch (nayaError) {
-                console.error('❌ [NAYA] Erro no sistema de auto-treinamento:', nayaError);
+            } catch (iaKingError) {
+                console.error('❌ [IA KING] Erro no sistema de auto-treinamento:', iaKingError);
                 // Não bloquear resposta por erro no auto-treinamento
             }
         }
@@ -4190,31 +4221,33 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
             client.query("SELECT COUNT(*) as count FROM ia_learning")
         ]);
         
-        // Conhecimento por fonte (source_type)
+        // Conhecimento por fonte (source_type) - corrigido para evitar NULL
         const knowledgeBySource = await client.query(`
             SELECT 
                 source_type,
                 COUNT(*) as count,
-                SUM(LENGTH(content)) as total_chars,
-                AVG(LENGTH(content)) as avg_chars
+                COALESCE(SUM(LENGTH(content)), 0) as total_chars,
+                COALESCE(AVG(LENGTH(content)), 0) as avg_chars
             FROM ia_knowledge_base
             WHERE is_active = true
+            AND content IS NOT NULL
             GROUP BY source_type
             ORDER BY count DESC
         `);
         
-        // Livros lidos (tavily_book, book_training)
+        // Livros lidos (tavily_book, book_training) - apenas com conteúdo
         const booksRead = await client.query(`
             SELECT 
                 id,
                 title,
                 source_type,
                 source_reference,
-                LENGTH(content) as content_length,
+                COALESCE(LENGTH(content), 0) as content_length,
                 created_at,
                 updated_at
             FROM ia_knowledge_base
             WHERE source_type IN ('tavily_book', 'book_training', 'tavily_book_trained')
+            AND (content IS NOT NULL AND content != '')
             ORDER BY created_at DESC
         `);
         
@@ -4263,12 +4296,14 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
             LIMIT 20
         `);
         
-        // Total de palavras processadas (aproximado)
+        // Total de palavras processadas (aproximado) - corrigido para evitar NULL
         const totalWords = await client.query(`
             SELECT 
-                SUM(array_length(string_to_array(content, ' '), 1)) as total_words
+                COALESCE(SUM(array_length(string_to_array(content, ' '), 1)), 0) as total_words
             FROM ia_knowledge_base
             WHERE is_active = true
+            AND content IS NOT NULL
+            AND content != ''
         `);
         
         res.json({
@@ -4282,7 +4317,7 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
                 total_books: booksRead.rows.length
             },
             knowledge_by_source: knowledgeBySource.rows.map(row => ({
-                source: row.source_type || 'unknown',
+                source: row.source_type || 'desconhecido',
                 count: parseInt(row.count),
                 total_chars: parseInt(row.total_chars || 0),
                 avg_chars: parseFloat(row.avg_chars || 0)
@@ -4316,6 +4351,244 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
     } catch (error) {
         console.error('Erro ao buscar dados de inteligência:', error);
         res.status(500).json({ error: 'Erro ao buscar dados de inteligência' });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/intelligence/knowledge-items - Detalhes dos itens de conhecimento
+router.get('/intelligence/knowledge-items', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const { page = 1, limit = 50, source_type, category } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        
+        let whereClause = 'WHERE is_active = true';
+        const params = [];
+        let paramIndex = 1;
+        
+        if (source_type) {
+            whereClause += ` AND source_type = $${paramIndex}`;
+            params.push(source_type);
+            paramIndex++;
+        }
+        
+        if (category) {
+            whereClause += ` AND category_id = (SELECT id FROM ia_categories WHERE name = $${paramIndex})`;
+            params.push(category);
+            paramIndex++;
+        }
+        
+        // Buscar itens de conhecimento
+        const knowledgeItems = await client.query(`
+            SELECT 
+                id,
+                title,
+                content,
+                keywords,
+                source_type,
+                category_id,
+                priority,
+                usage_count,
+                LENGTH(content) as content_length,
+                array_length(string_to_array(content, ' '), 1) as word_count,
+                created_at,
+                updated_at
+            FROM ia_knowledge_base
+            ${whereClause}
+            ORDER BY priority DESC, usage_count DESC, created_at DESC
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `, [...params, parseInt(limit), offset]);
+        
+        // Contar total
+        const totalResult = await client.query(`
+            SELECT COUNT(*) as count
+            FROM ia_knowledge_base
+            ${whereClause}
+        `, params);
+        
+        res.json({
+            items: knowledgeItems.rows.map(item => ({
+                id: item.id,
+                title: item.title || 'Sem título',
+                content_preview: item.content ? item.content.substring(0, 200) + '...' : 'Sem conteúdo',
+                keywords: item.keywords || [],
+                source_type: item.source_type,
+                category_id: item.category_id,
+                priority: item.priority,
+                usage_count: item.usage_count || 0,
+                content_length: parseInt(item.content_length || 0),
+                word_count: parseInt(item.word_count || 0),
+                created_at: item.created_at,
+                updated_at: item.updated_at
+            })),
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total: parseInt(totalResult.rows[0].count),
+                total_pages: Math.ceil(parseInt(totalResult.rows[0].count) / parseInt(limit))
+            }
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar itens de conhecimento:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/intelligence/knowledge-sources - Detalhes das fontes de conhecimento
+router.get('/intelligence/knowledge-sources', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const { source_type } = req.query;
+        
+        let query = `
+            SELECT 
+                source_type,
+                COUNT(*) as count,
+                SUM(LENGTH(content)) as total_chars,
+                AVG(LENGTH(content)) as avg_chars,
+                SUM(array_length(string_to_array(content, ' '), 1)) as total_words,
+                MIN(created_at) as first_added,
+                MAX(created_at) as last_added,
+                SUM(usage_count) as total_usage
+            FROM ia_knowledge_base
+            WHERE is_active = true
+        `;
+        
+        const params = [];
+        if (source_type) {
+            query += ' AND source_type = $1';
+            params.push(source_type);
+        }
+        
+        query += ' GROUP BY source_type ORDER BY count DESC';
+        
+        const sourcesResult = await source_type 
+            ? client.query(query, params)
+            : client.query(query);
+        
+        // Buscar exemplos de cada fonte
+        const sourcesWithExamples = await Promise.all(
+            sourcesResult.rows.map(async (source) => {
+                const examplesResult = await client.query(`
+                    SELECT id, title, LENGTH(content) as content_length, created_at
+                    FROM ia_knowledge_base
+                    WHERE source_type = $1 AND is_active = true
+                    ORDER BY usage_count DESC, created_at DESC
+                    LIMIT 5
+                `, [source.source_type]);
+                
+                return {
+                    source_type: source.source_type,
+                    count: parseInt(source.count),
+                    total_chars: parseInt(source.total_chars || 0),
+                    avg_chars: parseFloat(source.avg_chars || 0),
+                    total_words: parseInt(source.total_words || 0),
+                    first_added: source.first_added,
+                    last_added: source.last_added,
+                    total_usage: parseInt(source.total_usage || 0),
+                    examples: examplesResult.rows.map(ex => ({
+                        id: ex.id,
+                        title: ex.title || 'Sem título',
+                        content_length: parseInt(ex.content_length || 0),
+                        created_at: ex.created_at
+                    }))
+                };
+            })
+        );
+        
+        res.json({
+            sources: sourcesWithExamples,
+            total_sources: sourcesWithExamples.length
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar fontes de conhecimento:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/intelligence/book-training - Detalhes do treinamento de livros
+router.get('/intelligence/book-training', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Buscar todos os livros com estatísticas detalhadas
+        const booksResult = await client.query(`
+            SELECT 
+                kb.id,
+                kb.title,
+                kb.content,
+                kb.source_type,
+                kb.source_reference,
+                kb.created_at,
+                kb.updated_at,
+                kb.usage_count,
+                LENGTH(kb.content) as content_length,
+                array_length(string_to_array(kb.content, ' '), 1) as word_count,
+                (SELECT COUNT(*) FROM ia_knowledge_base 
+                 WHERE source_type = 'book_training' 
+                 AND source_reference LIKE '%' || REPLACE(kb.title, ' ', '_') || '%') as sections_count,
+                (SELECT COUNT(*) FROM ia_qa 
+                 WHERE keywords && ARRAY(SELECT unnest(kb.keywords))
+                 OR question ILIKE '%' || kb.title || '%') as qa_count
+            FROM ia_knowledge_base kb
+            WHERE kb.source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+            ORDER BY kb.created_at DESC
+        `);
+        
+        // Estatísticas gerais de treinamento
+        const trainingStats = await client.query(`
+            SELECT 
+                COUNT(DISTINCT kb.id) as total_books,
+                SUM(LENGTH(kb.content)) as total_chars,
+                SUM(array_length(string_to_array(kb.content, ' '), 1)) as total_words,
+                COUNT(DISTINCT kb2.id) as total_sections,
+                SUM(kb.usage_count) as total_usage
+            FROM ia_knowledge_base kb
+            LEFT JOIN ia_knowledge_base kb2 ON kb2.source_type = 'book_training' 
+                AND kb2.source_reference LIKE '%' || REPLACE(kb.title, ' ', '_') || '%'
+            WHERE kb.source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+        `);
+        
+        const stats = trainingStats.rows[0];
+        
+        res.json({
+            books: booksResult.rows.map(book => {
+                const title = book.title || 'Livro sem título';
+                const titleParts = title.split(' - ');
+                return {
+                    id: book.id,
+                    title: titleParts[0],
+                    author: titleParts.length > 1 ? titleParts[1] : null,
+                    source_type: book.source_type,
+                    source_reference: book.source_reference,
+                    content_length: parseInt(book.content_length || 0),
+                    word_count: parseInt(book.word_count || 0),
+                    sections_count: parseInt(book.sections_count || 0),
+                    qa_count: parseInt(book.qa_count || 0),
+                    usage_count: book.usage_count || 0,
+                    created_at: book.created_at,
+                    updated_at: book.updated_at,
+                    is_complete: (parseInt(book.content_length || 0) > 1000 && parseInt(book.sections_count || 0) > 0)
+                };
+            }),
+            stats: {
+                total_books: parseInt(stats.total_books || 0),
+                total_chars: parseInt(stats.total_chars || 0),
+                total_words: parseInt(stats.total_words || 0),
+                total_sections: parseInt(stats.total_sections || 0),
+                total_usage: parseInt(stats.total_usage || 0),
+                avg_words_per_book: booksResult.rows.length > 0 
+                    ? Math.floor(parseInt(stats.total_words || 0) / booksResult.rows.length)
+                    : 0
+            }
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar detalhes de treinamento de livros:', error);
+        throw error;
     } finally {
         client.release();
     }
@@ -6776,7 +7049,8 @@ router.get('/books/:id/content', protectAdmin, asyncHandler(async (req, res) => 
                 content,
                 source_type,
                 source_reference,
-                created_at
+                created_at,
+                updated_at
             FROM ia_knowledge_base
             WHERE id = $1
             AND source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
@@ -6788,18 +7062,40 @@ router.get('/books/:id/content', protectAdmin, asyncHandler(async (req, res) => 
         
         const book = bookResult.rows[0];
         
-        // Buscar todas as seções deste livro
-        const sectionsResult = await client.query(`
-            SELECT 
-                id,
-                title,
-                content,
-                created_at
-            FROM ia_knowledge_base
-            WHERE source_type = 'book_training'
-            AND source_reference LIKE $1
-            ORDER BY id ASC
-        `, [`book_${book.title.replace(/'/g, "''")}_section_%`]);
+        // Garantir que o título não seja vazio
+        const bookTitle = book.title || 'Livro sem título';
+        
+        // Buscar todas as seções deste livro (usar diferentes padrões de busca)
+        let sectionsResult;
+        if (book.source_reference) {
+            // Tentar buscar por source_reference primeiro
+            sectionsResult = await client.query(`
+                SELECT 
+                    id,
+                    title,
+                    content,
+                    created_at
+                FROM ia_knowledge_base
+                WHERE source_type = 'book_training'
+                AND source_reference LIKE $1
+                ORDER BY id ASC
+            `, [`%${book.source_reference}%`]);
+        }
+        
+        // Se não encontrou, tentar buscar por título
+        if (!sectionsResult || sectionsResult.rows.length === 0) {
+            sectionsResult = await client.query(`
+                SELECT 
+                    id,
+                    title,
+                    content,
+                    created_at
+                FROM ia_knowledge_base
+                WHERE source_type = 'book_training'
+                AND (source_reference LIKE $1 OR title LIKE $2)
+                ORDER BY id ASC
+            `, [`book_${bookTitle.replace(/'/g, "''")}_section_%`, `%${bookTitle}%`]);
+        }
         
         // Combinar conteúdo principal + todas as seções (como a IA vê)
         let fullContent = book.content || '';
@@ -6811,24 +7107,33 @@ router.get('/books/:id/content', protectAdmin, asyncHandler(async (req, res) => 
             
             sectionsResult.rows.forEach((section, index) => {
                 fullContent += `\n--- SEÇÃO ${index + 1}: ${section.title || 'Sem título'} ---\n\n`;
-                fullContent += section.content + '\n\n';
+                fullContent += (section.content || '') + '\n\n';
             });
         }
+        
+        // Calcular estatísticas
+        const totalWords = fullContent.trim() ? fullContent.trim().split(/\s+/).filter(w => w.length > 0).length : 0;
+        const totalChars = fullContent.length;
+        const mainContentLength = book.content ? book.content.length : 0;
         
         res.json({
             book: {
                 id: book.id,
-                title: book.title,
+                title: bookTitle,
                 source_type: book.source_type,
                 source_reference: book.source_reference,
-                created_at: book.created_at
+                created_at: book.created_at,
+                updated_at: book.updated_at
             },
-            content: fullContent,
+            content: fullContent || 'Conteúdo não disponível',
             stats: {
-                main_content_length: book.content ? book.content.length : 0,
+                main_content_length: mainContentLength,
                 sections_count: sectionsResult.rows.length,
-                total_length: fullContent.length,
-                total_words: fullContent.split(/\s+/).length
+                total_length: totalChars,
+                total_words: totalWords,
+                characters: totalChars,
+                words: totalWords,
+                date: book.created_at ? new Date(book.created_at).toLocaleDateString('pt-BR') : 'Data inválida'
             }
         });
     } catch (error) {
