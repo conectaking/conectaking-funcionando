@@ -6,6 +6,14 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const fetch = require('node-fetch');
 const embeddings = require('./embeddings');
 
+// Sistema avançado de entendimento (similar ao ChatGPT)
+let advancedUnderstanding = null;
+try {
+    advancedUnderstanding = require('./iaKingAdvancedUnderstanding');
+} catch (error) {
+    console.warn('⚠️ Sistema avançado de entendimento não disponível:', error.message);
+}
+
 const router = express.Router();
 
 console.log('✅ Rotas IA KING carregadas');
@@ -5168,7 +5176,16 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // CAMADA 1: Extrair contexto e raciocinar sobre a pergunta
+        // NOVO: Usar sistema avançado de entendimento (similar ao ChatGPT)
+        const deepSemantic = extractDeepSemanticMeaning(userMessage, { userId });
         const questionContext = extractQuestionContext(userMessage);
+        
+        // Enriquecer questionContext com análise semântica profunda
+        questionContext.deepSemantic = deepSemantic;
+        questionContext.intent = deepSemantic.intent || questionContext.intent;
+        questionContext.entities = [...new Set([...questionContext.entities, ...deepSemantic.entities])];
+        questionContext.concepts = deepSemantic.concepts || questionContext.keywords;
+        
         const thoughts = thinkAboutQuestion(userMessage, questionContext);
         
         // Enriquecer contexto com memória episódica
@@ -17745,6 +17762,66 @@ async function findBestAnswerWithSystemContext(userMessage, userId, systemContex
     // Chamar função original com mensagem aprimorada
     return await findBestAnswer(enhancedMessage, userId);
 }
+
+// ============================================
+// NOVO: ANÁLISE E ESTRATÉGIAS DO CARTÃO VIRTUAL
+// ============================================
+
+// Analisar cartão virtual do usuário e sugerir melhorias
+router.get('/analyze-card', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        if (!advancedUnderstanding) {
+            return res.status(500).json({ success: false, error: 'Sistema avançado não disponível' });
+        }
+        const analysis = await advancedUnderstanding.analyzeVirtualCard(req.user.userId || req.user.id, client);
+        res.json({ success: true, analysis });
+    } catch (error) {
+        console.error('Erro ao analisar cartão:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// Gerar estratégias para melhorar cartão
+router.post('/card-strategies', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        if (!advancedUnderstanding) {
+            return res.status(500).json({ success: false, error: 'Sistema avançado não disponível' });
+        }
+        const analysis = await advancedUnderstanding.analyzeVirtualCard(req.user.userId || req.user.id, client);
+        
+        // Se não tem cartão, retornar estratégias iniciais
+        if (!analysis.hasCard) {
+            return res.json({
+                success: true,
+                strategies: [
+                    {
+                        name: 'Criar Primeiro Cartão',
+                        description: 'Passo a passo para criar seu primeiro cartão virtual',
+                        steps: [
+                            '1. Preencha suas informações básicas (nome, profissão)',
+                            '2. Adicione uma foto de perfil profissional',
+                            '3. Escreva uma descrição clara sobre você ou seu negócio',
+                            '4. Adicione módulos de contato (WhatsApp, Email)',
+                            '5. Personalize cores e layout',
+                            '6. Compartilhe seu link único'
+                        ]
+                    }
+                ]
+            });
+        }
+        
+        res.json({ success: true, strategies: analysis.strategies || [] });
+    } catch (error) {
+        console.error('Erro ao gerar estratégias:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
 
 // Endpoint especializado para ajuda no sistema
 router.post('/system-help', protectUser, asyncHandler(async (req, res) => {
