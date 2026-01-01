@@ -3208,7 +3208,127 @@ function applyMentalMode(answer, mode, thoughts) {
 // SISTEMA DE PENSAMENTO E RACIOCÍNIO (Como ChatGPT/Gemini)
 // ============================================
 
-// Função para raciocinar sobre a pergunta (CAMADA 1: Análise Profunda)
+// ============================================
+// SISTEMA DE RACIOCÍNIO PROFUNDO AVANÇADO
+// ============================================
+
+// Análise semântica profunda (melhorada)
+function deepSemanticAnalysis(question, questionContext) {
+    const analysis = {
+        semanticIntent: null,
+        implicitQuestions: [],
+        emotionalDepth: 'surface', // surface, moderate, deep
+        sentiment: 'neutral', // positive, negative, neutral, mixed
+        sarcasmDetected: false,
+        urgencyLevel: 0, // 0-10
+        complexityScore: 0, // 0-100
+        requiresMultiStepReasoning: false,
+        domain: 'general' // general, technical, personal, business, etc.
+    };
+    
+    const lowerQuestion = question.toLowerCase();
+    const questionLength = question.length;
+    const wordCount = question.split(/\s+/).length;
+    
+    // Análise de complexidade mais sofisticada
+    analysis.complexityScore = calculateComplexityScore(question, wordCount, questionContext);
+    
+    // Detecção de sarcasmo e ironia
+    const sarcasmPatterns = [
+        /\b(claro|óbvio|realmente|com certeza)\b.*[!?]{2,}/i,
+        /\b(ótimo|maravilhoso|perfeito)\b.*(problema|erro|falha)/i,
+        /\?{2,}/, // Múltiplas interrogações
+        /(não|nem)\s+(sei|entendo|faz sentido)/i
+    ];
+    
+    for (const pattern of sarcasmPatterns) {
+        if (pattern.test(question)) {
+            analysis.sarcasmDetected = true;
+            analysis.sentiment = 'negative';
+            break;
+        }
+    }
+    
+    // Análise de sentimento profunda
+    const positiveWords = ['obrigado', 'obrigada', 'gratidão', 'perfeito', 'ótimo', 'excelente', 'ajuda', 'por favor'];
+    const negativeWords = ['problema', 'erro', 'falha', 'não funciona', 'ruim', 'péssimo', 'urgente', 'preciso'];
+    
+    const positiveCount = positiveWords.filter(w => lowerQuestion.includes(w)).length;
+    const negativeCount = negativeWords.filter(w => lowerQuestion.includes(w)).length;
+    
+    if (positiveCount > negativeCount && positiveCount > 0) {
+        analysis.sentiment = 'positive';
+        analysis.emotionalDepth = 'moderate';
+    } else if (negativeCount > positiveCount && negativeCount > 0) {
+        analysis.sentiment = 'negative';
+        analysis.emotionalDepth = negativeCount > 2 ? 'deep' : 'moderate';
+        analysis.urgencyLevel = Math.min(10, negativeCount * 2);
+    }
+    
+    // Detecção de perguntas implícitas
+    if (lowerQuestion.includes('mas') || lowerQuestion.includes('porém') || lowerQuestion.includes('contudo')) {
+        analysis.implicitQuestions.push('Há uma contradição ou objeção implícita');
+    }
+    
+    if (lowerQuestion.includes('e se') || lowerQuestion.includes('caso')) {
+        analysis.implicitQuestions.push('Pergunta hipotética ou condicional');
+        analysis.requiresMultiStepReasoning = true;
+    }
+    
+    // Detecção de domínio
+    const domainKeywords = {
+        technical: ['código', 'programação', 'api', 'banco de dados', 'servidor', 'erro', 'bug'],
+        business: ['venda', 'cliente', 'negócio', 'estratégia', 'marketing', 'lucro'],
+        personal: ['como me sinto', 'minha vida', 'pessoal', 'privado'],
+        educational: ['explicar', 'ensinar', 'aprender', 'entender', 'conceito']
+    };
+    
+    for (const [domain, keywords] of Object.entries(domainKeywords)) {
+        if (keywords.some(kw => lowerQuestion.includes(kw))) {
+            analysis.domain = domain;
+            break;
+        }
+    }
+    
+    // Detecção de necessidade de raciocínio multi-passo
+    if (analysis.complexityScore > 70 || 
+        lowerQuestion.includes('por que') || 
+        lowerQuestion.includes('como funciona') ||
+        wordCount > 15) {
+        analysis.requiresMultiStepReasoning = true;
+    }
+    
+    return analysis;
+}
+
+// Calcular score de complexidade
+function calculateComplexityScore(question, wordCount, questionContext) {
+    let score = 0;
+    
+    // Baseado no número de palavras
+    score += Math.min(30, wordCount * 2);
+    
+    // Baseado no tipo de pergunta
+    if (questionContext.questionType === 'why' || questionContext.questionType === 'how') {
+        score += 30;
+    } else if (questionContext.questionType === 'what' || questionContext.questionType === 'who') {
+        score += 15;
+    }
+    
+    // Baseado em conectores complexos
+    const complexConnectors = ['porque', 'portanto', 'consequentemente', 'além disso', 'no entanto', 'mas', 'porém'];
+    const connectorCount = complexConnectors.filter(c => question.toLowerCase().includes(c)).length;
+    score += connectorCount * 10;
+    
+    // Baseado em múltiplas entidades
+    if (questionContext.entities && questionContext.entities.length > 1) {
+        score += questionContext.entities.length * 5;
+    }
+    
+    return Math.min(100, score);
+}
+
+// Função para raciocinar sobre a pergunta (CAMADA 1: Análise Profunda - MELHORADA)
 function thinkAboutQuestion(question, questionContext) {
     const thoughts = {
         intent: null, // O que o usuário realmente quer saber
@@ -3218,79 +3338,247 @@ function thinkAboutQuestion(question, questionContext) {
         emotionalTone: 'neutral', // neutral, curious, urgent, friendly
         complexity: 'simple', // simple, medium, complex
         needsContext: false,
-        relatedTopics: []
+        relatedTopics: [],
+        // NOVOS CAMPOS
+        semanticAnalysis: null,
+        implicitQuestions: [],
+        requiresExpansion: false,
+        responseStructure: 'simple', // simple, structured, hierarchical, narrative
+        estimatedResponseLength: 'medium' // short, medium, long, very_long
     };
     
     const lowerQuestion = question.toLowerCase();
     
-    // Detectar intenção
+    // Análise semântica profunda
+    thoughts.semanticAnalysis = deepSemanticAnalysis(question, questionContext);
+    thoughts.implicitQuestions = thoughts.semanticAnalysis.implicitQuestions;
+    
+    // Detectar intenção (melhorado)
     if (lowerQuestion.includes('quem') || lowerQuestion.includes('o que') || lowerQuestion.includes('que é')) {
         thoughts.intent = 'definition';
-        thoughts.complexity = 'medium';
+        thoughts.complexity = thoughts.semanticAnalysis.complexityScore > 60 ? 'complex' : 'medium';
+        thoughts.requiresExpansion = thoughts.semanticAnalysis.complexityScore > 50;
     } else if (lowerQuestion.includes('como') || lowerQuestion.includes('fazer')) {
         thoughts.intent = 'how_to';
         thoughts.complexity = 'medium';
         thoughts.needsContext = true;
+        thoughts.responseStructure = 'structured';
+        thoughts.requiresExpansion = true;
     } else if (lowerQuestion.includes('por que') || lowerQuestion.includes('porque')) {
         thoughts.intent = 'explanation';
         thoughts.complexity = 'complex';
         thoughts.needsContext = true;
+        thoughts.responseStructure = 'hierarchical';
+        thoughts.requiresExpansion = true;
+        thoughts.estimatedResponseLength = 'long';
     } else if (lowerQuestion.includes('quando') || lowerQuestion.includes('onde')) {
         thoughts.intent = 'factual';
         thoughts.complexity = 'simple';
+        thoughts.estimatedResponseLength = 'short';
     } else {
         thoughts.intent = 'general';
+        thoughts.complexity = thoughts.semanticAnalysis.complexityScore > 50 ? 'medium' : 'simple';
     }
     
-    // Detectar tom emocional
-    if (lowerQuestion.includes('!') || lowerQuestion.includes('urgente') || lowerQuestion.includes('preciso')) {
+    // Detectar tom emocional (melhorado)
+    if (thoughts.semanticAnalysis.urgencyLevel > 5) {
+        thoughts.emotionalTone = 'urgent';
+    } else if (lowerQuestion.includes('!') || lowerQuestion.includes('urgente') || lowerQuestion.includes('preciso')) {
         thoughts.emotionalTone = 'urgent';
     } else if (lowerQuestion.includes('?') && lowerQuestion.length > 20) {
         thoughts.emotionalTone = 'curious';
     } else if (lowerQuestion.includes('obrigad') || lowerQuestion.includes('por favor')) {
         thoughts.emotionalTone = 'friendly';
+    } else if (thoughts.semanticAnalysis.sentiment === 'positive') {
+        thoughts.emotionalTone = 'friendly';
+    } else if (thoughts.semanticAnalysis.sentiment === 'negative') {
+        thoughts.emotionalTone = 'concerned';
     }
     
-    // Identificar tópicos relacionados
+    // Identificar tópicos relacionados (expandido)
     if (thoughts.entities.length > 0) {
-        const mainEntity = thoughts.entities[0];
-        // Adicionar tópicos relacionados baseados na entidade
-        if (mainEntity.includes('jesus') || mainEntity.includes('cristo')) {
-            thoughts.relatedTopics = ['bíblia', 'cristianismo', 'fé', 'religião', 'evangelho'];
-        } else if (mainEntity.includes('psicologia') || mainEntity.includes('emocional')) {
-            thoughts.relatedTopics = ['terapia', 'saúde mental', 'bem-estar', 'ansiedade'];
+        const mainEntity = thoughts.entities[0].toLowerCase();
+        
+        // Mapeamento expandido de tópicos relacionados
+        const topicMap = {
+            'jesus': ['bíblia', 'cristianismo', 'fé', 'religião', 'evangelho', 'cristo', 'salvação'],
+            'cristo': ['jesus', 'bíblia', 'cristianismo', 'fé', 'religião', 'evangelho'],
+            'psicologia': ['terapia', 'saúde mental', 'bem-estar', 'ansiedade', 'depressão', 'emoções'],
+            'venda': ['marketing', 'negócio', 'cliente', 'estratégia', 'conversão', 'vendedor'],
+            'estratégia': ['venda', 'marketing', 'negócio', 'plano', 'tática', 'objetivo'],
+            'programação': ['código', 'desenvolvimento', 'software', 'aplicativo', 'tecnologia'],
+            'negócio': ['venda', 'marketing', 'cliente', 'lucro', 'empresa', 'empreendedorismo']
+        };
+        
+        for (const [key, topics] of Object.entries(topicMap)) {
+            if (mainEntity.includes(key)) {
+                thoughts.relatedTopics = topics;
+                break;
+            }
         }
+        
+        // Se não encontrou mapeamento, gerar tópicos relacionados baseados em similaridade
+        if (thoughts.relatedTopics.length === 0) {
+            thoughts.relatedTopics = generateRelatedTopics(mainEntity, thoughts.intent);
+        }
+    }
+    
+    // Determinar estrutura de resposta baseada na complexidade
+    if (thoughts.complexity === 'complex' || thoughts.requiresExpansion) {
+        thoughts.responseStructure = 'hierarchical';
+        thoughts.estimatedResponseLength = 'long';
+    } else if (thoughts.complexity === 'medium') {
+        thoughts.responseStructure = 'structured';
+        thoughts.estimatedResponseLength = 'medium';
     }
     
     return thoughts;
 }
 
-// Função para sintetizar resposta de múltiplas fontes (CAMADA 2: Síntese)
+// Gerar tópicos relacionados baseados em similaridade
+function generateRelatedTopics(entity, intent) {
+    const topics = [];
+    
+    // Para definições, adicionar tópicos relacionados
+    if (intent === 'definition') {
+        topics.push('conceito', 'definição', 'significado');
+    }
+    
+    // Para "como fazer", adicionar tópicos práticos
+    if (intent === 'how_to') {
+        topics.push('tutorial', 'passo a passo', 'guia');
+    }
+    
+    return topics;
+}
+
+// ============================================
+// SÍNTESE DE RESPOSTAS MELHORADA - COERÊNCIA NARRATIVA
+// ============================================
+
+// Verificar coerência entre sentenças
+function checkCoherence(sentence1, sentence2) {
+    // Verificar se há contradições diretas
+    const contradictions = [
+        ['não', 'sim'],
+        ['nunca', 'sempre'],
+        ['impossível', 'possível'],
+        ['falso', 'verdadeiro']
+    ];
+    
+    const s1Lower = sentence1.toLowerCase();
+    const s2Lower = sentence2.toLowerCase();
+    
+    for (const [word1, word2] of contradictions) {
+        if ((s1Lower.includes(word1) && s2Lower.includes(word2)) ||
+            (s1Lower.includes(word2) && s2Lower.includes(word1))) {
+            return false;
+        }
+    }
+    
+    // Verificar se há referências que fazem sentido
+    const pronouns = ['ele', 'ela', 'eles', 'elas', 'isso', 'isto', 'aquilo'];
+    const hasPronoun = pronouns.some(p => s2Lower.includes(p));
+    
+    if (hasPronoun && !s1Lower.includes(sentence2.split(/\s+/)[0]?.toLowerCase())) {
+        // Pode ser uma referência, mas não é necessariamente incoerente
+        return true;
+    }
+    
+    return true;
+}
+
+// Estruturar resposta hierarquicamente
+function structureHierarchicalAnswer(sentences, questionContext, thoughts) {
+    if (!sentences || sentences.length === 0) return null;
+    
+    const structure = {
+        introduction: '',
+        mainContent: [],
+        details: [],
+        conclusion: ''
+    };
+    
+    // Para respostas complexas, criar estrutura
+    if (thoughts.responseStructure === 'hierarchical' || thoughts.complexity === 'complex') {
+        // Primeira sentença = introdução
+        if (sentences.length > 0) {
+            structure.introduction = sentences[0];
+        }
+        
+        // Sentenças do meio = conteúdo principal
+        if (sentences.length > 1) {
+            const middleSentences = sentences.slice(1, Math.max(2, sentences.length - 1));
+            structure.mainContent = middleSentences;
+        }
+        
+        // Última sentença = conclusão
+        if (sentences.length > 1) {
+            structure.conclusion = sentences[sentences.length - 1];
+        }
+        
+        // Montar resposta estruturada
+        let structuredAnswer = structure.introduction;
+        
+        if (structure.mainContent.length > 0) {
+            structuredAnswer += '\n\n' + structure.mainContent.join(' ');
+        }
+        
+        if (structure.conclusion && structure.conclusion !== structure.introduction) {
+            structuredAnswer += '\n\n' + structure.conclusion;
+        }
+        
+        return structuredAnswer;
+    }
+    
+    // Para respostas simples, apenas juntar
+    return sentences.join(' ');
+}
+
+// Função para sintetizar resposta de múltiplas fontes (CAMADA 2: Síntese - MELHORADA)
 function synthesizeAnswer(knowledgeSources, questionContext, thoughts) {
     if (!knowledgeSources || knowledgeSources.length === 0) return null;
     
-    // LÓGICA INTELIGENTE: Ajustar limite baseado no tipo de pergunta
-    const maxLength = questionContext.questionType === 'who' ? 1500 : 
-                     questionContext.questionType === 'what' ? 800 : 500;
+    // LÓGICA INTELIGENTE: Ajustar limite baseado no tipo de pergunta e complexidade
+    let maxLength = 500;
+    
+    if (thoughts.estimatedResponseLength === 'very_long') {
+        maxLength = 2500;
+    } else if (thoughts.estimatedResponseLength === 'long') {
+        maxLength = 1500;
+    } else if (thoughts.estimatedResponseLength === 'medium') {
+        maxLength = 800;
+    } else {
+        maxLength = 500;
+    }
+    
+    // Ajustar baseado no tipo de pergunta também
+    if (questionContext.questionType === 'who') {
+        maxLength = Math.max(maxLength, 1500);
+    } else if (questionContext.questionType === 'what') {
+        maxLength = Math.max(maxLength, 800);
+    }
     
     // Ordenar por relevância
     const sortedSources = knowledgeSources.sort((a, b) => b.score - a.score);
-    const topSources = sortedSources.slice(0, 3); // Top 3 fontes
+    const topSources = sortedSources.slice(0, Math.min(5, sortedSources.length)); // Top 5 fontes (aumentado)
     
     // Se temos apenas uma fonte muito relevante, usar ela (mas garantir tamanho adequado)
     if (topSources.length === 1 && topSources[0].score > 80) {
         const excerpt = topSources[0].excerpt;
-        // Se for pergunta sobre pessoa e a resposta for muito curta, tentar expandir
-        if (questionContext.questionType === 'who' && excerpt && excerpt.length < 300) {
-            // Tentar buscar mais conteúdo da mesma fonte
-            return excerpt; // Por enquanto retornar, mas a lógica acima já deve ter pego mais
+        // Se for pergunta complexa e a resposta for curta, tentar expandir
+        if (thoughts.requiresExpansion && excerpt && excerpt.length < 300) {
+            // Retornar mas marcar que precisa expansão
+            return excerpt;
         }
         return excerpt;
     }
     
-    // Sintetizar de múltiplas fontes
+    // Sintetizar de múltiplas fontes com coerência
     let synthesized = '';
     const usedSentences = new Set();
+    const sentenceList = [];
+    let lastSentence = '';
     
     for (const source of topSources) {
         if (!source.excerpt) continue;
@@ -3305,31 +3593,52 @@ function synthesizeAnswer(knowledgeSources, questionContext, thoughts) {
                 
                 // Verificar se a sentença é relevante
                 const hasEntity = questionContext.entities.some(ent => 
-                    sentence.toLowerCase().includes(ent)
+                    sentence.toLowerCase().includes(ent.toLowerCase())
                 );
                 const hasKeyword = questionContext.keywords.some(kw => 
-                    sentence.toLowerCase().includes(kw)
+                    sentence.toLowerCase().includes(kw.toLowerCase())
                 );
                 
-                // Para perguntas sobre pessoas, ser mais flexível (aceitar mais sentenças)
+                // Para perguntas sobre pessoas ou complexas, ser mais flexível
                 const isRelevant = hasEntity || hasKeyword || 
-                                 (questionContext.questionType === 'who' && sentence.length > 30);
+                                 (questionContext.questionType === 'who' && sentence.length > 30) ||
+                                 (thoughts.complexity === 'complex' && sentence.length > 40);
                 
                 if (isRelevant) {
-                    if (synthesized) synthesized += ' ';
-                    synthesized += sentence.trim();
-                    if (!sentence.match(/[.!?]$/)) synthesized += '.';
+                    // Verificar coerência com última sentença
+                    if (lastSentence && !checkCoherence(lastSentence, sentence)) {
+                        // Pular se houver contradição
+                        continue;
+                    }
+                    
+                    sentenceList.push(sentence.trim());
+                    lastSentence = sentence;
                     
                     // Limitar tamanho baseado no tipo de pergunta
-                    if (synthesized.length > maxLength) break;
+                    const currentLength = sentenceList.join(' ').length;
+                    if (currentLength > maxLength) break;
                 }
             }
         }
         
-        if (synthesized.length > maxLength) break;
+        if (sentenceList.join(' ').length > maxLength) break;
     }
     
-    return synthesized || (topSources[0]?.excerpt || null);
+    // Estruturar resposta baseado no tipo
+    if (sentenceList.length > 0) {
+        if (thoughts.responseStructure === 'hierarchical' || thoughts.complexity === 'complex') {
+            return structureHierarchicalAnswer(sentenceList, questionContext, thoughts);
+        } else {
+            // Juntar sentenças de forma coerente
+            synthesized = sentenceList.join('. ');
+            if (!synthesized.endsWith('.') && !synthesized.endsWith('!') && !synthesized.endsWith('?')) {
+                synthesized += '.';
+            }
+            return synthesized;
+        }
+    }
+    
+    return topSources[0]?.excerpt || null;
 }
 
 // Função para adicionar personalidade e emoção (CAMADA 3: Personalidade)
@@ -3467,6 +3776,169 @@ async function saveToCache(client, query, response, knowledgeIds, confidence, ca
 }
 
 // Obter contexto do usuário (memória de longo prazo)
+// ============================================
+// MEMÓRIA CONVERSACIONAL AVANÇADA
+// ============================================
+
+// Memória Episódica - Armazenar conversas importantes
+async function storeEpisodicMemory(client, userId, conversationId, keyPoints, topics) {
+    try {
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS ia_episodic_memory (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(255) NOT NULL,
+                conversation_id INTEGER,
+                key_points JSONB,
+                topics TEXT[],
+                importance_score INTEGER DEFAULT 50,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        // Calcular score de importância
+        const importanceScore = calculateImportanceScore(keyPoints, topics);
+        
+        await client.query(`
+            INSERT INTO ia_episodic_memory
+            (user_id, conversation_id, key_points, topics, importance_score)
+            VALUES ($1, $2, $3, $4, $5)
+        `, [userId, conversationId, JSON.stringify(keyPoints), topics, importanceScore]);
+        
+        console.log('✅ [Memória] Memória episódica armazenada');
+    } catch (error) {
+        console.error('Erro ao armazenar memória episódica:', error);
+    }
+}
+
+// Calcular score de importância
+function calculateImportanceScore(keyPoints, topics) {
+    let score = 50; // Base
+    
+    // Mais pontos = mais importante
+    score += keyPoints.length * 5;
+    
+    // Tópicos importantes aumentam score
+    const importantTopics = ['venda', 'estratégia', 'problema', 'erro', 'ajuda', 'importante'];
+    const importantCount = topics.filter(t => 
+        importantTopics.some(it => t.toLowerCase().includes(it))
+    ).length;
+    score += importantCount * 10;
+    
+    return Math.min(100, score);
+}
+
+// Recuperar memória episódica relevante
+async function retrieveEpisodicMemory(client, userId, currentQuestion, limit = 5) {
+    try {
+        const result = await client.query(`
+            SELECT * FROM ia_episodic_memory
+            WHERE user_id = $1
+            ORDER BY importance_score DESC, last_accessed_at DESC
+            LIMIT $2
+        `, [userId, limit]);
+        
+        // Filtrar memórias relevantes à pergunta atual
+        const relevantMemories = result.rows.filter(memory => {
+            const topics = memory.topics || [];
+            const questionLower = currentQuestion.toLowerCase();
+            
+            // Verificar se algum tópico da memória está na pergunta
+            return topics.some(topic => questionLower.includes(topic.toLowerCase()));
+        });
+        
+        // Atualizar last_accessed_at para memórias recuperadas
+        for (const memory of relevantMemories) {
+            await client.query(`
+                UPDATE ia_episodic_memory
+                SET last_accessed_at = NOW()
+                WHERE id = $1
+            `, [memory.id]);
+        }
+        
+        return relevantMemories;
+    } catch (error) {
+        console.error('Erro ao recuperar memória episódica:', error);
+        return [];
+    }
+}
+
+// Rastreamento de Contexto Multi-Turn
+async function trackMultiTurnContext(client, userId, conversationId, message, response, questionContext) {
+    try {
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS ia_multi_turn_context (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(255) NOT NULL,
+                conversation_id INTEGER,
+                turn_number INTEGER,
+                user_message TEXT,
+                ai_response TEXT,
+                entities TEXT[],
+                topics TEXT[],
+                context_summary TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        // Buscar último turno
+        const lastTurn = await client.query(`
+            SELECT turn_number FROM ia_multi_turn_context
+            WHERE user_id = $1 AND conversation_id = $2
+            ORDER BY turn_number DESC
+            LIMIT 1
+        `, [userId, conversationId]);
+        
+        const turnNumber = lastTurn.rows.length > 0 ? lastTurn.rows[0].turn_number + 1 : 1;
+        
+        // Criar resumo de contexto
+        const contextSummary = createContextSummary(message, response, questionContext);
+        
+        await client.query(`
+            INSERT INTO ia_multi_turn_context
+            (user_id, conversation_id, turn_number, user_message, ai_response, entities, topics, context_summary)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `, [
+            userId,
+            conversationId,
+            turnNumber,
+            message,
+            response,
+            questionContext.entities || [],
+            questionContext.keywords || [],
+            contextSummary
+        ]);
+        
+        console.log(`✅ [Contexto] Turno ${turnNumber} rastreado`);
+    } catch (error) {
+        console.error('Erro ao rastrear contexto multi-turn:', error);
+    }
+}
+
+// Criar resumo de contexto
+function createContextSummary(message, response, questionContext) {
+    const entities = questionContext.entities?.join(', ') || 'nenhuma';
+    const topics = questionContext.keywords?.join(', ') || 'geral';
+    return `Pergunta sobre: ${topics}. Entidades: ${entities}.`;
+}
+
+// Recuperar contexto de turnos anteriores
+async function retrieveMultiTurnContext(client, userId, conversationId, limit = 3) {
+    try {
+        const result = await client.query(`
+            SELECT * FROM ia_multi_turn_context
+            WHERE user_id = $1 AND conversation_id = $2
+            ORDER BY turn_number DESC
+            LIMIT $3
+        `, [userId, conversationId, limit]);
+        
+        return result.rows.reverse(); // Ordem cronológica
+    } catch (error) {
+        console.error('Erro ao recuperar contexto multi-turn:', error);
+        return [];
+    }
+}
+
 async function getUserContext(client, userId) {
     try {
         const result = await client.query(`
@@ -3879,9 +4351,25 @@ async function findBestAnswer(userMessage, userId) {
         const userContext = await getUserContext(client, userId);
         const preferences = await getUserPreferences(client, userId);
         
+        // Recuperar contexto multi-turn se houver conversationId
+        let multiTurnContext = [];
+        if (req.body.conversationId) {
+            multiTurnContext = await retrieveMultiTurnContext(client, userId, req.body.conversationId, 3);
+            if (multiTurnContext.length > 0) {
+                console.log(`📚 [Contexto] Recuperados ${multiTurnContext.length} turnos anteriores`);
+            }
+        }
+        
         // CAMADA 1: Extrair contexto e raciocinar sobre a pergunta
         const questionContext = extractQuestionContext(userMessage);
         const thoughts = thinkAboutQuestion(userMessage, questionContext);
+        
+        // Enriquecer contexto com memória episódica
+        const episodicMemories = await retrieveEpisodicMemory(client, userId, userMessage, 3);
+        if (episodicMemories.length > 0) {
+            questionContext.episodic_memories = episodicMemories;
+            console.log(`🧠 [Memória] ${episodicMemories.length} memórias episódicas recuperadas`);
+        }
         
         // Aplicar preferências do usuário ao contexto
         if (preferences) {
@@ -5707,6 +6195,29 @@ router.post('/chat', protectUser, asyncHandler(async (req, res) => {
         // Salvar contexto na memória
         if (conversationId && result.answer) {
             const questionContext = extractQuestionContext(message);
+            
+            // NOVO: Rastrear contexto multi-turn
+            await trackMultiTurnContext(
+                client,
+                actualUserId,
+                conversationId,
+                message.trim(),
+                result.answer,
+                questionContext
+            );
+            
+            // NOVO: Armazenar memória episódica se for conversa importante
+            if (result.confidence >= 70 && questionContext.entities.length > 0) {
+                const keyPoints = questionContext.entities.slice(0, 3);
+                const topics = questionContext.keywords || [];
+                await storeEpisodicMemory(
+                    client,
+                    actualUserId,
+                    conversationId,
+                    keyPoints,
+                    topics
+                );
+            }
             
             // Salvar entidades mencionadas
             if (questionContext.entities.length > 0) {
@@ -13396,3 +13907,4 @@ function generateSystemRecommendations(analysis) {
 }
 
 module.exports = router;
+
