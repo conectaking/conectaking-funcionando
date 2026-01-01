@@ -3289,6 +3289,399 @@ function thinkIndependently(questionContext, knowledgeBase, thoughts) {
     return independentThoughts;
 }
 
+// ============================================
+// FUNÇÕES AUXILIARES PARA MELHORIAS AVANÇADAS
+// ============================================
+
+// Verificar cache de respostas
+async function checkResponseCache(client, query, userId) {
+    try {
+        const crypto = require('crypto');
+        const queryHash = crypto.createHash('sha256').update(query.toLowerCase().trim()).digest('hex');
+        
+        const result = await client.query(`
+            SELECT * FROM ia_response_cache
+            WHERE query_hash = $1
+            AND expires_at > NOW()
+            ORDER BY hit_count DESC, last_hit_at DESC
+            LIMIT 1
+        `, [queryHash]);
+        
+        if (result.rows.length > 0) {
+            return result.rows[0];
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Erro ao verificar cache:', error);
+        return null;
+    }
+}
+
+// Salvar resposta no cache
+async function saveToCache(client, query, response, knowledgeIds, confidence, categoryId) {
+    try {
+        const crypto = require('crypto');
+        const queryHash = crypto.createHash('sha256').update(query.toLowerCase().trim()).digest('hex');
+        
+        // TTL baseado em frequência: perguntas frequentes ficam mais tempo
+        const ttlHours = confidence >= 80 ? 168 : confidence >= 60 ? 72 : 24; // 7 dias, 3 dias, 1 dia
+        const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000);
+        
+        await client.query(`
+            INSERT INTO ia_response_cache
+            (query_hash, query_text, response_text, knowledge_used_ids, confidence_score, category_id, expires_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (query_hash) DO UPDATE SET
+                response_text = EXCLUDED.response_text,
+                knowledge_used_ids = EXCLUDED.knowledge_used_ids,
+                confidence_score = EXCLUDED.confidence_score,
+                hit_count = ia_response_cache.hit_count + 1,
+                last_hit_at = NOW(),
+                expires_at = EXCLUDED.expires_at,
+                updated_at = NOW()
+        `, [queryHash, query.substring(0, 500), response.substring(0, 10000), knowledgeIds, confidence, categoryId, expiresAt]);
+    } catch (error) {
+        console.error('Erro ao salvar no cache:', error);
+    }
+}
+
+// Obter contexto do usuário (memória de longo prazo)
+async function getUserContext(client, userId) {
+    try {
+        const result = await client.query(`
+            SELECT * FROM ia_conversation_context
+            WHERE user_id = $1
+            AND (expires_at IS NULL OR expires_at > NOW())
+            ORDER BY importance_score DESC, updated_at DESC
+            LIMIT 20
+        `, [userId]);
+        
+        return result.rows;
+    } catch (error) {
+        console.error('Erro ao buscar contexto do usuário:', error);
+        return [];
+    }
+}
+
+// Obter preferências do usuário
+async function getUserPreferences(client, userId) {
+    try {
+        const result = await client.query(
+            'SELECT * FROM ia_user_preferences WHERE user_id = $1',
+            [userId]
+        );
+        
+        return result.rows.length > 0 ? result.rows[0] : null;
+    } catch (error) {
+        console.error('Erro ao buscar preferências:', error);
+        return null;
+    }
+}
+
+// Salvar contexto na memória
+async function saveContext(client, userId, conversationId, contextType, contextKey, contextValue, importance = 50, expiresAt = null) {
+    try {
+        await client.query(`
+            INSERT INTO ia_conversation_context
+            (user_id, conversation_id, context_type, context_key, context_value, importance_score, expires_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT DO NOTHING
+        `, [userId, conversationId, contextType, contextKey, contextValue, importance, expiresAt]);
+    } catch (error) {
+        console.error('Erro ao salvar contexto:', error);
+    }
+}
+
+// Detectar ambiguidade na pergunta
+function detectAmbiguity(message, questionContext) {
+    const ambiguousPatterns = [
+        { pattern: /\b(ele|ela|eles|elas|isso|aquilo)\b/gi, type: 'pronoun' },
+        { pattern: /\b(este|esse|aquele|isto|isso|aquilo)\b/gi, type: 'demonstrative' },
+        { pattern: /\b(mais|melhor|pior|maior|menor)\b/gi, type: 'comparative' }
+    ];
+    
+    let ambiguityScore = 0;
+    const interpretations = [];
+    
+    // Verificar padrões ambíguos
+    for (const { pattern, type } of ambiguousPatterns) {
+        const matches = message.match(pattern);
+        if (matches && matches.length > 0) {
+            ambiguityScore += 20;
+            interpretations.push({
+                type: type,
+                interpretation: `A pergunta usa ${type === 'pronoun' ? 'pronomes' : type === 'demonstrative' ? 'demonstrativos' : 'comparativos'} que podem ser ambíguos sem contexto.`
+            });
+        }
+    }
+    
+    // Verificar se pergunta é muito curta
+    if (message.split(/\s+/).length < 4) {
+        ambiguityScore += 15;
+        interpretations.push({
+            type: 'short',
+            interpretation: 'A pergunta é muito curta e pode ter múltiplos significados.'
+        });
+    }
+    
+    // Verificar se não há entidades claras
+    if (questionContext.entities.length === 0 && questionContext.questionType === 'what') {
+        ambiguityScore += 10;
+    }
+    
+    return {
+        isAmbiguous: ambiguityScore >= 30,
+        score: ambiguityScore,
+        confidence: 100 - ambiguityScore,
+        interpretations: interpretations
+    };
+}
+
+// Verificar fatos em tempo real (validação cruzada)
+async function verifyFacts(client, answer, knowledgeIds) {
+    try {
+        if (!knowledgeIds || knowledgeIds.length === 0) {
+            return { verified: false, confidence: 0, conflicts: [] };
+        }
+        
+        // Buscar conhecimento usado
+        const knowledgeResult = await client.query(`
+            SELECT id, title, content, category_id
+            FROM ia_knowledge_base
+            WHERE id = ANY($1)
+            AND is_active = true
+        `, [knowledgeIds]);
+        
+        if (knowledgeResult.rows.length === 0) {
+            return { verified: false, confidence: 0, conflicts: [] };
+        }
+        
+        // Verificar se há correções verificadas
+        const correctionsResult = await client.query(`
+            SELECT knowledge_id, corrected_content
+            FROM ia_knowledge_corrections
+            WHERE knowledge_id = ANY($1)
+            AND verified = true
+        `, [knowledgeIds]);
+        
+        const corrections = {};
+        correctionsResult.rows.forEach(c => {
+            corrections[c.knowledge_id] = c.corrected_content;
+        });
+        
+        // Verificar se há contradições entre fontes
+        const conflicts = [];
+        const sources = knowledgeResult.rows;
+        
+        for (let i = 0; i < sources.length; i++) {
+            for (let j = i + 1; j < sources.length; j++) {
+                // Verificação básica de contradição (pode ser melhorada)
+                const content1 = corrections[sources[i].id] || sources[i].content;
+                const content2 = corrections[sources[j].id] || sources[j].content;
+                
+                // Detectar contradições simples (ex: números diferentes, afirmações opostas)
+                if (content1 && content2) {
+                    // Verificar números contraditórios
+                    const numbers1 = content1.match(/\d+/g) || [];
+                    const numbers2 = content2.match(/\d+/g) || [];
+                    
+                    // Verificar afirmações opostas (sim/não, verdadeiro/falso)
+                    const negations = ['não', 'nunca', 'jamais', 'falso', 'errado'];
+                    const affirmations = ['sim', 'sempre', 'verdadeiro', 'correto'];
+                    
+                    const hasNegation1 = negations.some(n => content1.toLowerCase().includes(n));
+                    const hasAffirmation1 = affirmations.some(a => content1.toLowerCase().includes(a));
+                    const hasNegation2 = negations.some(n => content2.toLowerCase().includes(n));
+                    const hasAffirmation2 = affirmations.some(a => content2.toLowerCase().includes(a));
+                    
+                    if ((hasNegation1 && hasAffirmation2) || (hasAffirmation1 && hasNegation2)) {
+                        conflicts.push({
+                            source1: sources[i].title,
+                            source2: sources[j].title,
+                            type: 'contradiction'
+                        });
+                    }
+                }
+            }
+        }
+        
+        const confidence = conflicts.length === 0 ? 90 : Math.max(50, 90 - (conflicts.length * 10));
+        
+        return {
+            verified: true,
+            confidence: confidence,
+            conflicts: conflicts,
+            sources_count: sources.length,
+            has_corrections: correctionsResult.rows.length > 0
+        };
+    } catch (error) {
+        console.error('Erro ao verificar fatos:', error);
+        return { verified: false, confidence: 0, conflicts: [] };
+    }
+}
+
+// Melhorar síntese de múltiplas fontes
+function improveSynthesis(sources, questionContext) {
+    if (!sources || sources.length === 0) return null;
+    if (sources.length === 1) return sources[0].excerpt;
+    
+    // Agrupar por tópico
+    const topics = {};
+    sources.forEach((source, idx) => {
+        const topic = extractMainTopic(source.excerpt);
+        if (!topics[topic]) {
+            topics[topic] = [];
+        }
+        topics[topic].push({ ...source, index: idx });
+    });
+    
+    // Sintetizar por tópico
+    const synthesizedParts = [];
+    Object.keys(topics).forEach(topic => {
+        const topicSources = topics[topic];
+        if (topicSources.length === 1) {
+            synthesizedParts.push(topicSources[0].excerpt);
+        } else {
+            // Combinar fontes do mesmo tópico
+            const combined = topicSources
+                .map(s => s.excerpt)
+                .join('\n\n')
+                .replace(/\n{3,}/g, '\n\n'); // Remover quebras múltiplas
+            
+            synthesizedParts.push(combined);
+        }
+    });
+    
+    // Combinar tópicos
+    let final = synthesizedParts.join('\n\n');
+    
+    // Remover duplicatas
+    const sentences = final.split(/[.!?]\s+/);
+    const uniqueSentences = [];
+    const seen = new Set();
+    
+    sentences.forEach(sentence => {
+        const normalized = sentence.toLowerCase().trim();
+        if (!seen.has(normalized) && sentence.length > 20) {
+            seen.add(normalized);
+            uniqueSentences.push(sentence);
+        }
+    });
+    
+    final = uniqueSentences.join('. ') + (final.endsWith('.') ? '' : '.');
+    
+    // Limitar tamanho baseado em preferências
+    const maxLength = questionContext.response_length === 'short' ? 300 :
+                      questionContext.response_length === 'long' ? 1500 : 800;
+    
+    if (final.length > maxLength) {
+        final = final.substring(0, maxLength) + '...';
+    }
+    
+    return final;
+}
+
+// Extrair tópico principal de um texto
+function extractMainTopic(text) {
+    if (!text || text.length < 50) return 'general';
+    
+    const keywords = ['venda', 'estratégia', 'marketing', 'negócio', 'cliente', 'produto', 'serviço'];
+    const lowerText = text.toLowerCase();
+    
+    for (const keyword of keywords) {
+        if (lowerText.includes(keyword)) {
+            return keyword;
+        }
+    }
+    
+    return 'general';
+}
+
+// Gerar sugestões de perguntas
+async function generateQuestionSuggestions(client, userId, conversationId, questionContext, knowledgeIds) {
+    try {
+        const suggestions = [];
+        
+        // 1. Perguntas relacionadas ao conhecimento usado
+        if (knowledgeIds && knowledgeIds.length > 0) {
+            const relatedKnowledge = await client.query(`
+                SELECT DISTINCT kb.title, kb.category_id, c.name as category_name
+                FROM ia_knowledge_base kb
+                LEFT JOIN ia_categories c ON kb.category_id = c.id
+                WHERE kb.category_id IN (
+                    SELECT DISTINCT category_id FROM ia_knowledge_base
+                    WHERE id = ANY($1) AND category_id IS NOT NULL
+                )
+                AND kb.id != ALL($1)
+                AND kb.is_active = true
+                LIMIT 5
+            `, [knowledgeIds]);
+            
+            relatedKnowledge.rows.forEach(kb => {
+                suggestions.push({
+                    question: `Me fale mais sobre ${kb.title || kb.category_name}`,
+                    type: 'related',
+                    category_id: kb.category_id
+                });
+            });
+        }
+        
+        // 2. Perguntas populares da categoria
+        if (questionContext.category) {
+            const popularQuestions = await client.query(`
+                SELECT q.question, COUNT(*) as usage_count
+                FROM ia_qa q
+                LEFT JOIN ia_categories c ON q.category_id = c.id
+                WHERE LOWER(c.name) = LOWER($1)
+                AND q.is_active = true
+                GROUP BY q.question
+                ORDER BY usage_count DESC
+                LIMIT 3
+            `, [questionContext.category]);
+            
+            popularQuestions.rows.forEach(q => {
+                suggestions.push({
+                    question: q.question,
+                    type: 'popular',
+                    category_id: questionContext.categoryId
+                });
+            });
+        }
+        
+        // 3. Perguntas contextuais baseadas na pergunta atual
+        if (questionContext.entities.length > 0) {
+            const entity = questionContext.entities[0];
+            suggestions.push({
+                question: `O que mais você sabe sobre ${entity}?`,
+                type: 'contextual'
+            });
+        }
+        
+        // Salvar sugestões
+        if (suggestions.length > 0) {
+            const values = suggestions.map((s, idx) => 
+                `($1, $2, $3, $4, $5)`
+            ).join(', ');
+            
+            await client.query(`
+                INSERT INTO ia_question_suggestions
+                (user_id, conversation_id, suggested_question, suggestion_type, category_id)
+                VALUES ${values}
+            `, [
+                userId,
+                conversationId,
+                ...suggestions.flatMap(s => [s.question, s.type, s.category_id || null])
+            ]);
+        }
+        
+        return suggestions.slice(0, 5); // Retornar até 5 sugestões
+    } catch (error) {
+        console.error('Erro ao gerar sugestões:', error);
+        return [];
+    }
+}
+
 // Função para encontrar melhor resposta
 async function findBestAnswer(userMessage, userId) {
     const client = await db.pool.connect();
@@ -3318,9 +3711,58 @@ async function findBestAnswer(userMessage, userId) {
         // SISTEMA DE PENSAMENTO (Como ChatGPT/Gemini)
         // ============================================
         
+        // ============================================
+        // NOVO: CACHE INTELIGENTE
+        // ============================================
+        const cacheResult = await checkResponseCache(client, userMessage, userId);
+        if (cacheResult) {
+            console.log('⚡ [Cache] Resposta encontrada no cache');
+            // Atualizar hit count
+            await client.query(`
+                UPDATE ia_response_cache
+                SET hit_count = hit_count + 1, last_hit_at = NOW()
+                WHERE id = $1
+            `, [cacheResult.id]);
+            
+            return {
+                answer: cacheResult.response_text,
+                confidence: cacheResult.confidence_score,
+                source: 'cache',
+                knowledge_used_ids: cacheResult.knowledge_used_ids
+            };
+        }
+        
+        // ============================================
+        // NOVO: MEMÓRIA CONTEXTUAL DE LONGO PRAZO
+        // ============================================
+        const userContext = await getUserContext(client, userId);
+        const preferences = await getUserPreferences(client, userId);
+        
         // CAMADA 1: Extrair contexto e raciocinar sobre a pergunta
         const questionContext = extractQuestionContext(userMessage);
         const thoughts = thinkAboutQuestion(userMessage, questionContext);
+        
+        // Aplicar preferências do usuário ao contexto
+        if (preferences) {
+            questionContext.preferred_style = preferences.preferred_style;
+            questionContext.knowledge_level = preferences.knowledge_level;
+            questionContext.language_preference = preferences.language_preference;
+            questionContext.response_length = preferences.response_length_preference;
+        }
+        
+        // ============================================
+        // NOVO: TRATAMENTO DE AMBIGUIDADE
+        // ============================================
+        const ambiguityCheck = detectAmbiguity(userMessage, questionContext);
+        if (ambiguityCheck.isAmbiguous && ambiguityCheck.confidence < 70) {
+            return {
+                answer: `Desculpe, sua pergunta pode ter mais de um significado. Você está perguntando sobre:\n\n${ambiguityCheck.interpretations.map((i, idx) => `${idx + 1}. ${i.interpretation}`).join('\n')}\n\nPor favor, especifique qual delas você quer que eu responda.`,
+                confidence: 50,
+                source: 'ambiguity_detection',
+                needs_clarification: true,
+                interpretations: ambiguityCheck.interpretations
+            };
+        }
         
         // ============================================
         // SISTEMA: "COMO O CHATGPT RESPONDERIA?"
@@ -5049,26 +5491,128 @@ async function findBestAnswer(userMessage, userId) {
 // POST /api/ia-king/chat
 router.post('/chat', protectUser, asyncHandler(async (req, res) => {
     const { message, userId } = req.body;
+    const actualUserId = userId || req.user.userId;
     
     if (!message || !message.trim()) {
         return res.status(400).json({ error: 'Mensagem é obrigatória' });
     }
     
+    const startTime = Date.now();
+    const client = await db.pool.connect();
+    let conversationId = null;
+    let knowledgeUsedIds = [];
+    
     try {
         console.log('📥 Mensagem recebida na IA KING:', message.substring(0, 100));
-        const result = await findBestAnswer(message.trim(), userId || req.user.userId);
+        
+        // Buscar resposta
+        const result = await findBestAnswer(message.trim(), actualUserId);
+        
+        const responseTime = Date.now() - startTime;
         
         console.log('✅ Resposta encontrada:', {
             confidence: result.confidence,
             source: result.source,
-            answerLength: result.answer?.length || 0
+            answerLength: result.answer?.length || 0,
+            responseTime: responseTime + 'ms'
         });
+        
+        // Extrair knowledge_used_ids se disponível
+        if (result.knowledge_used_ids) {
+            knowledgeUsedIds = result.knowledge_used_ids;
+        }
+        
+        // Salvar conversa no banco
+        const convResult = await client.query(`
+            INSERT INTO ia_conversations 
+            (user_id, message, response, confidence_score, knowledge_used_ids, response_time_ms)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
+        `, [
+            actualUserId,
+            message.trim(),
+            result.answer || '',
+            result.confidence || 0,
+            knowledgeUsedIds.length > 0 ? knowledgeUsedIds : null,
+            responseTime
+        ]);
+        
+        conversationId = convResult.rows[0].id;
+        
+        // Verificar fatos se tiver conhecimento usado
+        let factVerification = null;
+        if (knowledgeUsedIds.length > 0 && result.confidence >= 70) {
+            factVerification = await verifyFacts(client, result.answer, knowledgeUsedIds);
+        }
+        
+        // Salvar no cache se resposta tem boa confiança
+        if (result.confidence >= 60 && result.answer) {
+            const questionContext = extractQuestionContext(message);
+            const categoryId = questionContext.categoryId || null;
+            await saveToCache(client, message.trim(), result.answer, knowledgeUsedIds, result.confidence, categoryId);
+        }
+        
+        // Salvar contexto na memória
+        if (conversationId && result.answer) {
+            const questionContext = extractQuestionContext(message);
+            
+            // Salvar entidades mencionadas
+            if (questionContext.entities.length > 0) {
+                for (const entity of questionContext.entities.slice(0, 3)) {
+                    await saveContext(
+                        client,
+                        actualUserId,
+                        conversationId,
+                        'entity',
+                        `entity_${entity.toLowerCase()}`,
+                        entity,
+                        60,
+                        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dias
+                    );
+                }
+            }
+            
+            // Salvar categoria
+            if (questionContext.category) {
+                await saveContext(
+                    client,
+                    actualUserId,
+                    conversationId,
+                    'topic',
+                    `topic_${questionContext.category.toLowerCase()}`,
+                    questionContext.category,
+                    50,
+                    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 dias
+                );
+            }
+        }
+        
+        // Gerar sugestões de perguntas
+        let suggestions = [];
+        if (conversationId && result.confidence >= 50) {
+            const questionContext = extractQuestionContext(message);
+            suggestions = await generateQuestionSuggestions(
+                client,
+                actualUserId,
+                conversationId,
+                questionContext,
+                knowledgeUsedIds
+            );
+        }
+        
+        // Atualizar métricas de satisfação
+        await updateSatisfactionMetrics(client);
         
         res.json({
             response: result.answer,
             confidence: result.confidence,
             source: result.source,
-            webResults: result.webResults || null
+            webResults: result.webResults || null,
+            conversation_id: conversationId,
+            response_time_ms: responseTime,
+            fact_verification: factVerification,
+            suggestions: suggestions.slice(0, 3), // Retornar até 3 sugestões
+            knowledge_used_ids: knowledgeUsedIds
         });
     } catch (error) {
         console.error('❌ Erro no chat da IA KING:', error);
@@ -5081,6 +5625,8 @@ router.post('/chat', protectUser, asyncHandler(async (req, res) => {
             confidence: 0,
             source: 'error'
         });
+    } finally {
+        client.release();
     }
 }));
 
@@ -10004,5 +10550,361 @@ router.post('/analyze-system', protectUser, asyncHandler(async (req, res) => {
         client.release();
     }
 }));
+
+// ============================================
+// SISTEMA DE FEEDBACK DO USUÁRIO
+// ============================================
+
+// POST /api/ia-king/feedback - Enviar feedback sobre uma resposta
+router.post('/feedback', protectUser, asyncHandler(async (req, res) => {
+    const { conversation_id, feedback_type, feedback_text, quality_score } = req.body;
+    const userId = req.user.id;
+    
+    if (!conversation_id || !feedback_type) {
+        return res.status(400).json({ error: 'conversation_id e feedback_type são obrigatórios' });
+    }
+    
+    if (!['positive', 'negative', 'correction', 'neutral'].includes(feedback_type)) {
+        return res.status(400).json({ error: 'feedback_type inválido' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        // Buscar conhecimento usado na conversa
+        const convResult = await client.query(
+            'SELECT knowledge_used_ids FROM ia_conversations WHERE id = $1 AND user_id = $2',
+            [conversation_id, userId]
+        );
+        
+        const knowledge_used_ids = convResult.rows[0]?.knowledge_used_ids || [];
+        
+        // Inserir feedback
+        const feedbackResult = await client.query(`
+            INSERT INTO ia_user_feedback 
+            (conversation_id, user_id, feedback_type, feedback_text, knowledge_used_ids, response_quality_score)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *
+        `, [conversation_id, userId, feedback_type, feedback_text || null, knowledge_used_ids, quality_score || null]);
+        
+        // Atualizar métricas de satisfação
+        await updateSatisfactionMetrics(client);
+        
+        // Se feedback negativo, aprender com ele
+        if (feedback_type === 'negative' || feedback_type === 'correction') {
+            await learnFromNegativeFeedback(client, conversation_id, feedback_text, knowledge_used_ids);
+        }
+        
+        res.json({
+            success: true,
+            feedback: feedbackResult.rows[0],
+            message: 'Feedback registrado com sucesso!'
+        });
+    } catch (error) {
+        console.error('Erro ao registrar feedback:', error);
+        res.status(500).json({ error: 'Erro ao registrar feedback' });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/feedback/stats - Estatísticas de feedback
+router.get('/feedback/stats', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const stats = await client.query(`
+            SELECT 
+                feedback_type,
+                COUNT(*) as count,
+                AVG(response_quality_score) as avg_quality_score
+            FROM ia_user_feedback
+            WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+            GROUP BY feedback_type
+        `);
+        
+        const total = await client.query('SELECT COUNT(*) as count FROM ia_user_feedback');
+        
+        res.json({
+            total: parseInt(total.rows[0].count),
+            by_type: stats.rows.map(row => ({
+                type: row.feedback_type,
+                count: parseInt(row.count),
+                avg_quality: parseFloat(row.avg_quality_score || 0)
+            })),
+            satisfaction_rate: stats.rows.length > 0 
+                ? (stats.rows.find(r => r.feedback_type === 'positive')?.count || 0) / 
+                  stats.rows.reduce((sum, r) => sum + parseInt(r.count), 0) * 100
+                : 0
+        });
+    } catch (error) {
+        console.error('Erro ao buscar estatísticas de feedback:', error);
+        res.status(500).json({ error: 'Erro ao buscar estatísticas' });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// SISTEMA DE PREFERÊNCIAS DO USUÁRIO
+// ============================================
+
+// GET /api/ia-king/preferences - Obter preferências do usuário
+router.get('/preferences', protectUser, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT * FROM ia_user_preferences WHERE user_id = $1',
+            [userId]
+        );
+        
+        if (result.rows.length === 0) {
+            // Criar preferências padrão
+            const defaultPrefs = await client.query(`
+                INSERT INTO ia_user_preferences (user_id)
+                VALUES ($1)
+                RETURNING *
+            `, [userId]);
+            return res.json({ preferences: defaultPrefs.rows[0] });
+        }
+        
+        res.json({ preferences: result.rows[0] });
+    } catch (error) {
+        console.error('Erro ao buscar preferências:', error);
+        res.status(500).json({ error: 'Erro ao buscar preferências' });
+    } finally {
+        client.release();
+    }
+}));
+
+// PUT /api/ia-king/preferences - Atualizar preferências
+router.put('/preferences', protectUser, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { preferred_style, knowledge_level, interests, language_preference, response_length_preference, topics_blacklist, topics_whitelist } = req.body;
+    
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            INSERT INTO ia_user_preferences 
+            (user_id, preferred_style, knowledge_level, interests, language_preference, response_length_preference, topics_blacklist, topics_whitelist, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            ON CONFLICT (user_id) DO UPDATE SET
+                preferred_style = COALESCE(EXCLUDED.preferred_style, ia_user_preferences.preferred_style),
+                knowledge_level = COALESCE(EXCLUDED.knowledge_level, ia_user_preferences.knowledge_level),
+                interests = COALESCE(EXCLUDED.interests, ia_user_preferences.interests),
+                language_preference = COALESCE(EXCLUDED.language_preference, ia_user_preferences.language_preference),
+                response_length_preference = COALESCE(EXCLUDED.response_length_preference, ia_user_preferences.response_length_preference),
+                topics_blacklist = COALESCE(EXCLUDED.topics_blacklist, ia_user_preferences.topics_blacklist),
+                topics_whitelist = COALESCE(EXCLUDED.topics_whitelist, ia_user_preferences.topics_whitelist),
+                updated_at = NOW()
+            RETURNING *
+        `, [userId, preferred_style, knowledge_level, interests, language_preference, response_length_preference, topics_blacklist, topics_whitelist]);
+        
+        res.json({
+            success: true,
+            preferences: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Erro ao atualizar preferências:', error);
+        res.status(500).json({ error: 'Erro ao atualizar preferências' });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// SISTEMA DE CORREÇÕES
+// ============================================
+
+// POST /api/ia-king/corrections - Enviar correção
+router.post('/corrections', protectUser, asyncHandler(async (req, res) => {
+    const { knowledge_id, conversation_id, original_content, corrected_content, correction_reason } = req.body;
+    const userId = req.user.id;
+    
+    if (!knowledge_id || !original_content || !corrected_content) {
+        return res.status(400).json({ error: 'knowledge_id, original_content e corrected_content são obrigatórios' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            INSERT INTO ia_knowledge_corrections
+            (knowledge_id, user_id, conversation_id, original_content, corrected_content, correction_reason)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *
+        `, [knowledge_id, userId, conversation_id || null, original_content, corrected_content, correction_reason || null]);
+        
+        // Se já existe correção verificada, incrementar contador
+        const existingVerified = await client.query(`
+            SELECT id FROM ia_knowledge_corrections
+            WHERE knowledge_id = $1 AND verified = true
+            LIMIT 1
+        `, [knowledge_id]);
+        
+        if (existingVerified.rows.length > 0) {
+            await client.query(`
+                UPDATE ia_knowledge_corrections
+                SET verification_count = verification_count + 1
+                WHERE id = $1
+            `, [existingVerified.rows[0].id]);
+        }
+        
+        res.json({
+            success: true,
+            correction: result.rows[0],
+            message: 'Correção registrada! Será revisada e aplicada.'
+        });
+    } catch (error) {
+        console.error('Erro ao registrar correção:', error);
+        res.status(500).json({ error: 'Erro ao registrar correção' });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/corrections - Listar correções
+router.get('/corrections', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT 
+                kc.*,
+                kb.title as knowledge_title,
+                u.name as user_name
+            FROM ia_knowledge_corrections kc
+            LEFT JOIN ia_knowledge_base kb ON kc.knowledge_id = kb.id
+            LEFT JOIN users u ON kc.user_id = u.id
+            ORDER BY kc.created_at DESC
+            LIMIT 100
+        `);
+        
+        res.json({ corrections: result.rows });
+    } catch (error) {
+        console.error('Erro ao buscar correções:', error);
+        res.status(500).json({ error: 'Erro ao buscar correções' });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/corrections/:id/verify - Verificar correção
+router.post('/corrections/:id/verify', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+    try {
+        // Marcar como verificada
+        await client.query(`
+            UPDATE ia_knowledge_corrections
+            SET verified = true, verification_count = verification_count + 1
+            WHERE id = $1
+        `, [id]);
+        
+        // Buscar correção
+        const correction = await client.query(
+            'SELECT * FROM ia_knowledge_corrections WHERE id = $1',
+            [id]
+        );
+        
+        if (correction.rows.length > 0 && correction.rows[0].knowledge_id) {
+            // Atualizar conhecimento base com correção
+            await client.query(`
+                UPDATE ia_knowledge_base
+                SET content = $1, updated_at = NOW()
+                WHERE id = $2
+            `, [correction.rows[0].corrected_content, correction.rows[0].knowledge_id]);
+        }
+        
+        res.json({ success: true, message: 'Correção verificada e aplicada!' });
+    } catch (error) {
+        console.error('Erro ao verificar correção:', error);
+        res.status(500).json({ error: 'Erro ao verificar correção' });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// FUNÇÕES AUXILIARES
+// ============================================
+
+// Aprender com feedback negativo
+async function learnFromNegativeFeedback(client, conversationId, feedbackText, knowledgeIds) {
+    try {
+        // Buscar conversa
+        const conv = await client.query(
+            'SELECT message, response FROM ia_conversations WHERE id = $1',
+            [conversationId]
+        );
+        
+        if (conv.rows.length === 0) return;
+        
+        const { message, response } = conv.rows[0];
+        
+        // Criar registro de aprendizado negativo
+        await client.query(`
+            INSERT INTO ia_auto_learning_history
+            (user_id, question, answer, source_type, learned_from, is_negative_example)
+            VALUES ($1, $2, $3, 'feedback', $4, true)
+        `, [null, message, response, feedbackText || 'Feedback negativo']);
+        
+        // Reduzir prioridade do conhecimento usado se feedback negativo
+        if (knowledgeIds && knowledgeIds.length > 0) {
+            await client.query(`
+                UPDATE ia_knowledge_base
+                SET priority = GREATEST(priority - 10, 0)
+                WHERE id = ANY($1)
+            `, [knowledgeIds]);
+        }
+    } catch (error) {
+        console.error('Erro ao aprender com feedback negativo:', error);
+    }
+}
+
+// Atualizar métricas de satisfação
+async function updateSatisfactionMetrics(client) {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Buscar métricas do dia
+        const metrics = await client.query(`
+            SELECT 
+                COUNT(DISTINCT c.id) as total_conversations,
+                COUNT(CASE WHEN f.feedback_type = 'positive' THEN 1 END) as positive_feedback,
+                COUNT(CASE WHEN f.feedback_type = 'negative' THEN 1 END) as negative_feedback,
+                COUNT(CASE WHEN f.feedback_type = 'neutral' THEN 1 END) as neutral_feedback,
+                AVG(f.response_quality_score) as avg_quality_score,
+                AVG(c.response_time_ms) as avg_response_time
+            FROM ia_conversations c
+            LEFT JOIN ia_user_feedback f ON c.id = f.conversation_id
+            WHERE DATE(c.created_at) = $1
+        `, [today]);
+        
+        const stats = metrics.rows[0];
+        
+        // Atualizar ou inserir métricas
+        await client.query(`
+            INSERT INTO ia_satisfaction_metrics
+            (date, total_conversations, positive_feedback_count, negative_feedback_count, neutral_feedback_count, average_quality_score, average_response_time)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (date) DO UPDATE SET
+                total_conversations = EXCLUDED.total_conversations,
+                positive_feedback_count = EXCLUDED.positive_feedback_count,
+                negative_feedback_count = EXCLUDED.negative_feedback_count,
+                neutral_feedback_count = EXCLUDED.neutral_feedback_count,
+                average_quality_score = EXCLUDED.average_quality_score,
+                average_response_time = EXCLUDED.average_response_time,
+                updated_at = NOW()
+        `, [
+            today,
+            parseInt(stats.total_conversations || 0),
+            parseInt(stats.positive_feedback || 0),
+            parseInt(stats.negative_feedback || 0),
+            parseInt(stats.neutral_feedback || 0),
+            parseFloat(stats.avg_quality_score || 0),
+            parseFloat(stats.avg_response_time || 0)
+        ]);
+    } catch (error) {
+        console.error('Erro ao atualizar métricas de satisfação:', error);
+    }
+}
 
 module.exports = router;
