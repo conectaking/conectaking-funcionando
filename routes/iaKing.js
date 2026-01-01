@@ -11000,4 +11000,899 @@ async function updateSatisfactionMetrics(client) {
     }
 }
 
+// ============================================
+// SISTEMA DE MONITORAMENTO E AUTO-CORREÇÃO
+// ============================================
+
+// GET /api/ia-king/system/analyze - Análise completa do sistema
+router.get('/system/analyze', protectAdmin, asyncHandler(async (req, res) => {
+    const { type = 'full' } = req.query; // 'full', 'database', 'api', 'performance', 'security', 'code'
+    const client = await db.pool.connect();
+    
+    try {
+        console.log(`🔍 [IA] Iniciando análise do sistema (tipo: ${type})...`);
+        
+        const analysis = {
+            type: type,
+            timestamp: new Date().toISOString(),
+            database: null,
+            api: null,
+            performance: null,
+            errors: null,
+            security: null,
+            code: null,
+            issues: [],
+            recommendations: [],
+            overall_status: 'healthy'
+        };
+        
+        // Análise do Banco de Dados
+        if (type === 'full' || type === 'database') {
+            analysis.database = await analyzeDatabase(client);
+            analysis.issues.push(...(analysis.database.issues || []));
+        }
+        
+        // Análise de APIs
+        if (type === 'full' || type === 'api') {
+            analysis.api = await analyzeAPIs(client);
+            analysis.issues.push(...(analysis.api.issues || []));
+        }
+        
+        // Análise de Performance
+        if (type === 'full' || type === 'performance') {
+            analysis.performance = await analyzePerformance(client);
+            analysis.issues.push(...(analysis.performance.issues || []));
+        }
+        
+        // Análise de Erros
+        if (type === 'full' || type === 'error') {
+            analysis.errors = await analyzeErrors(client);
+            analysis.issues.push(...(analysis.errors.issues || []));
+        }
+        
+        // Análise de Segurança
+        if (type === 'full' || type === 'security') {
+            analysis.security = await analyzeSecurity(client);
+            analysis.issues.push(...(analysis.security.issues || []));
+        }
+        
+        // Análise de Código (básica)
+        if (type === 'full' || type === 'code') {
+            analysis.code = await analyzeCode();
+            analysis.issues.push(...(analysis.code.issues || []));
+        }
+        
+        // Calcular status geral
+        const criticalIssues = analysis.issues.filter(i => i.severity === 'critical').length;
+        const errorIssues = analysis.issues.filter(i => i.severity === 'high').length;
+        
+        if (criticalIssues > 0) {
+            analysis.overall_status = 'critical';
+        } else if (errorIssues > 0) {
+            analysis.overall_status = 'error';
+        } else if (analysis.issues.length > 0) {
+            analysis.overall_status = 'warning';
+        }
+        
+        // Gerar recomendações
+        analysis.recommendations = generateRecommendations(analysis.issues);
+        
+        // Salvar análise no banco
+        await client.query(`
+            INSERT INTO ia_system_analyses
+            (analysis_type, analysis_result, issues_found, issues_critical, issues_warning, recommendations)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [
+            type,
+            JSON.stringify(analysis),
+            analysis.issues.length,
+            criticalIssues,
+            analysis.issues.filter(i => i.severity === 'warning').length,
+            analysis.recommendations
+        ]);
+        
+        res.json({
+            success: true,
+            analysis: analysis,
+            summary: {
+                total_issues: analysis.issues.length,
+                critical: criticalIssues,
+                errors: errorIssues,
+                warnings: analysis.issues.filter(i => i.severity === 'warning').length,
+                status: analysis.overall_status
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao analisar sistema:', error);
+        res.status(500).json({ error: 'Erro ao analisar sistema', details: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/system/monitoring - Status atual do monitoramento
+router.get('/system/monitoring', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const monitoring = await client.query(`
+            SELECT * FROM ia_system_monitoring
+            WHERE resolved_at IS NULL
+            ORDER BY severity DESC, checked_at DESC
+            LIMIT 50
+        `);
+        
+        const errors = await client.query(`
+            SELECT * FROM ia_system_errors
+            WHERE resolved = false
+            ORDER BY severity DESC, last_occurred_at DESC
+            LIMIT 50
+        `);
+        
+        const pendingFixes = await client.query(`
+            SELECT f.*, e.error_message, e.error_type
+            FROM ia_system_fixes f
+            LEFT JOIN ia_system_errors e ON f.error_id = e.id
+            WHERE f.status = 'pending'
+            ORDER BY f.created_at DESC
+        `);
+        
+        res.json({
+            monitoring: monitoring.rows,
+            errors: errors.rows,
+            pending_fixes: pendingFixes.rows,
+            summary: {
+                total_monitoring_issues: monitoring.rows.length,
+                total_errors: errors.rows.length,
+                pending_fixes: pendingFixes.rows.length
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao buscar monitoramento:', error);
+        res.status(500).json({ error: 'Erro ao buscar monitoramento' });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/system/fixes/:id/approve - Aprovar correção
+router.post('/system/fixes/:id/approve', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const client = await db.pool.connect();
+    
+    try {
+        // Buscar correção
+        const fix = await client.query('SELECT * FROM ia_system_fixes WHERE id = $1', [id]);
+        
+        if (fix.rows.length === 0) {
+            return res.status(404).json({ error: 'Correção não encontrada' });
+        }
+        
+        // Aprovar
+        await client.query(`
+            UPDATE ia_system_fixes
+            SET status = 'approved',
+                approved_by = $1,
+                approved_at = NOW(),
+                updated_at = NOW()
+            WHERE id = $2
+        `, [userId, id]);
+        
+        // Registrar no histórico
+        await client.query(`
+            INSERT INTO ia_system_fix_history (fix_id, action, action_by)
+            VALUES ($1, 'approved', $2)
+        `, [id, userId]);
+        
+        res.json({ success: true, message: 'Correção aprovada! Agora você pode aplicá-la.' });
+    } catch (error) {
+        console.error('Erro ao aprovar correção:', error);
+        res.status(500).json({ error: 'Erro ao aprovar correção' });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/system/fixes/:id/apply - Aplicar correção
+router.post('/system/fixes/:id/apply', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const client = await db.pool.connect();
+    
+    try {
+        // Buscar correção
+        const fix = await client.query('SELECT * FROM ia_system_fixes WHERE id = $1', [id]);
+        
+        if (fix.rows.length === 0) {
+            return res.status(404).json({ error: 'Correção não encontrada' });
+        }
+        
+        const fixData = fix.rows[0];
+        
+        if (fixData.status !== 'approved') {
+            return res.status(400).json({ error: 'Correção precisa ser aprovada antes de ser aplicada' });
+        }
+        
+        // Aplicar correção baseado no tipo
+        const result = await applyFix(fixData, client);
+        
+        // Atualizar status
+        await client.query(`
+            UPDATE ia_system_fixes
+            SET status = $1,
+                applied_at = NOW(),
+                applied_by = $2,
+                test_result = $3,
+                updated_at = NOW()
+            WHERE id = $4
+        `, [result.success ? 'applied' : 'failed', userId, JSON.stringify(result), id]);
+        
+        // Registrar no histórico
+        await client.query(`
+            INSERT INTO ia_system_fix_history (fix_id, action, action_by, action_details)
+            VALUES ($1, 'applied', $2, $3)
+        `, [id, userId, JSON.stringify(result)]);
+        
+        // Se aplicou com sucesso e tinha erro associado, marcar como resolvido
+        if (result.success && fixData.error_id) {
+            await client.query(`
+                UPDATE ia_system_errors
+                SET resolved = true,
+                    resolved_at = NOW(),
+                    resolved_by = $1,
+                    resolution_method = 'auto'
+                WHERE id = $2
+            `, [userId, fixData.error_id]);
+        }
+        
+        res.json({
+            success: result.success,
+            message: result.success ? 'Correção aplicada com sucesso!' : 'Erro ao aplicar correção',
+            details: result
+        });
+    } catch (error) {
+        console.error('Erro ao aplicar correção:', error);
+        res.status(500).json({ error: 'Erro ao aplicar correção', details: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/system/fixes/:id/reject - Rejeitar correção
+router.post('/system/fixes/:id/reject', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { reason } = req.body;
+    const client = await db.pool.connect();
+    
+    try {
+        await client.query(`
+            UPDATE ia_system_fixes
+            SET status = 'rejected',
+                updated_at = NOW()
+            WHERE id = $1
+        `, [id]);
+        
+        // Registrar no histórico
+        await client.query(`
+            INSERT INTO ia_system_fix_history (fix_id, action, action_by, action_details)
+            VALUES ($1, 'rejected', $2, $3)
+        `, [id, userId, JSON.stringify({ reason: reason || 'Rejeitado pelo usuário' })]);
+        
+        res.json({ success: true, message: 'Correção rejeitada' });
+    } catch (error) {
+        console.error('Erro ao rejeitar correção:', error);
+        res.status(500).json({ error: 'Erro ao rejeitar correção' });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// FUNÇÕES DE ANÁLISE DO SISTEMA
+// ============================================
+
+// Analisar Banco de Dados
+async function analyzeDatabase(client) {
+    const issues = [];
+    const checks = [];
+    
+    try {
+        // 1. Verificar conexão
+        try {
+            await client.query('SELECT 1');
+            checks.push({ name: 'Conexão com Banco', status: 'healthy', message: 'Conexão ativa' });
+        } catch (error) {
+            issues.push({
+                type: 'database',
+                category: 'connection',
+                severity: 'critical',
+                message: 'Falha na conexão com banco de dados',
+                details: error.message
+            });
+            checks.push({ name: 'Conexão com Banco', status: 'error', message: error.message });
+        }
+        
+        // 2. Verificar pool de conexões
+        const poolStats = db.pool.totalCount || 0;
+        const poolIdle = db.pool.idleCount || 0;
+        const poolWaiting = db.pool.waitingCount || 0;
+        
+        if (poolStats > 15) {
+            issues.push({
+                type: 'database',
+                category: 'performance',
+                severity: 'warning',
+                message: `Pool de conexões alto: ${poolStats} conexões ativas`,
+                details: { total: poolStats, idle: poolIdle, waiting: poolWaiting }
+            });
+        }
+        
+        checks.push({
+            name: 'Pool de Conexões',
+            status: poolStats > 15 ? 'warning' : 'healthy',
+            message: `${poolStats} conexões (${poolIdle} idle, ${poolWaiting} waiting)`
+        });
+        
+        // 3. Verificar tabelas críticas
+        const criticalTables = ['users', 'ia_knowledge_base', 'ia_conversations', 'ia_categories'];
+        for (const table of criticalTables) {
+            try {
+                const result = await client.query(`SELECT COUNT(*) as count FROM ${table}`);
+                const count = parseInt(result.rows[0].count);
+                checks.push({
+                    name: `Tabela ${table}`,
+                    status: 'healthy',
+                    message: `${count} registros`
+                });
+            } catch (error) {
+                issues.push({
+                    type: 'database',
+                    category: 'table',
+                    severity: 'critical',
+                    message: `Tabela ${table} não encontrada ou inacessível`,
+                    details: error.message
+                });
+            }
+        }
+        
+        // 4. Verificar índices faltantes
+        const tablesWithoutIndexes = await client.query(`
+            SELECT t.table_name
+            FROM information_schema.tables t
+            LEFT JOIN information_schema.indexes i ON t.table_name = i.table_name
+            WHERE t.table_schema = 'public'
+            AND t.table_type = 'BASE TABLE'
+            AND i.index_name IS NULL
+            AND t.table_name LIKE 'ia_%'
+            LIMIT 10
+        `);
+        
+        if (tablesWithoutIndexes.rows.length > 0) {
+            issues.push({
+                type: 'database',
+                category: 'performance',
+                severity: 'warning',
+                message: `${tablesWithoutIndexes.rows.length} tabelas sem índices podem ter performance ruim`,
+                details: { tables: tablesWithoutIndexes.rows.map(r => r.table_name) }
+            });
+        }
+        
+        // 5. Verificar queries lentas (últimas 24h)
+        const slowQueries = await client.query(`
+            SELECT COUNT(*) as count
+            FROM ia_system_metrics
+            WHERE metric_type = 'database_query_time'
+            AND metric_value > 1000
+            AND recorded_at >= NOW() - INTERVAL '24 hours'
+        `);
+        
+        if (parseInt(slowQueries.rows[0].count) > 10) {
+            issues.push({
+                type: 'database',
+                category: 'performance',
+                severity: 'warning',
+                message: `${slowQueries.rows[0].count} queries lentas (>1s) nas últimas 24h`,
+                details: { count: slowQueries.rows[0].count }
+            });
+        }
+        
+    } catch (error) {
+        issues.push({
+            type: 'database',
+            category: 'unknown',
+            severity: 'error',
+            message: 'Erro ao analisar banco de dados',
+            details: error.message
+        });
+    }
+    
+    return {
+        status: issues.filter(i => i.severity === 'critical' || i.severity === 'high').length > 0 ? 'error' : 'healthy',
+        checks: checks,
+        issues: issues,
+        summary: {
+            total_checks: checks.length,
+            healthy: checks.filter(c => c.status === 'healthy').length,
+            warnings: checks.filter(c => c.status === 'warning').length,
+            errors: checks.filter(c => c.status === 'error').length
+        }
+    };
+}
+
+// Analisar APIs
+async function analyzeAPIs(client) {
+    const issues = [];
+    const checks = [];
+    
+    try {
+        // 1. Verificar endpoints críticos
+        const criticalEndpoints = [
+            { path: '/api/ia-king/chat', method: 'POST' },
+            { path: '/api/ia-king/knowledge', method: 'GET' },
+            { path: '/api/auth/login', method: 'POST' }
+        ];
+        
+        // 2. Verificar taxa de erro nas APIs
+        const errorRate = await client.query(`
+            SELECT 
+                COUNT(CASE WHEN status = 'error' THEN 1 END) as errors,
+                COUNT(*) as total
+            FROM ia_system_monitoring
+            WHERE check_type = 'api'
+            AND checked_at >= NOW() - INTERVAL '24 hours'
+        `);
+        
+        if (errorRate.rows.length > 0) {
+            const errors = parseInt(errorRate.rows[0].errors || 0);
+            const total = parseInt(errorRate.rows[0].total || 1);
+            const rate = (errors / total) * 100;
+            
+            if (rate > 10) {
+                issues.push({
+                    type: 'api',
+                    category: 'error_rate',
+                    severity: 'high',
+                    message: `Taxa de erro alta nas APIs: ${rate.toFixed(2)}%`,
+                    details: { error_rate: rate, errors: errors, total: total }
+                });
+            }
+        }
+        
+        // 3. Verificar tempo de resposta
+        const avgResponseTime = await client.query(`
+            SELECT AVG(metric_value) as avg_time
+            FROM ia_system_metrics
+            WHERE metric_type = 'api_response_time'
+            AND recorded_at >= NOW() - INTERVAL '1 hour'
+        `);
+        
+        if (avgResponseTime.rows.length > 0 && avgResponseTime.rows[0].avg_time) {
+            const avgTime = parseFloat(avgResponseTime.rows[0].avg_time);
+            if (avgTime > 2000) {
+                issues.push({
+                    type: 'api',
+                    category: 'performance',
+                    severity: 'warning',
+                    message: `Tempo médio de resposta alto: ${avgTime.toFixed(2)}ms`,
+                    details: { avg_response_time: avgTime }
+                });
+            }
+        }
+        
+        checks.push({
+            name: 'APIs Principais',
+            status: issues.length > 0 ? 'warning' : 'healthy',
+            message: `${issues.length} problemas detectados`
+        });
+        
+    } catch (error) {
+        issues.push({
+            type: 'api',
+            category: 'unknown',
+            severity: 'error',
+            message: 'Erro ao analisar APIs',
+            details: error.message
+        });
+    }
+    
+    return {
+        status: issues.filter(i => i.severity === 'critical' || i.severity === 'high').length > 0 ? 'error' : 'healthy',
+        checks: checks,
+        issues: issues
+    };
+}
+
+// Analisar Performance
+async function analyzePerformance(client) {
+    const issues = [];
+    const checks = [];
+    
+    try {
+        // 1. Verificar uso de memória
+        const memUsage = process.memoryUsage();
+        const memUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
+        const memTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
+        const memPercent = (memUsedMB / memTotalMB) * 100;
+        
+        if (memPercent > 80) {
+            issues.push({
+                type: 'performance',
+                category: 'memory',
+                severity: 'warning',
+                message: `Uso de memória alto: ${memPercent.toFixed(2)}%`,
+                details: { used: memUsedMB, total: memTotalMB, percent: memPercent }
+            });
+        }
+        
+        checks.push({
+            name: 'Uso de Memória',
+            status: memPercent > 80 ? 'warning' : 'healthy',
+            message: `${memUsedMB}MB / ${memTotalMB}MB (${memPercent.toFixed(2)}%)`
+        });
+        
+        // 2. Verificar CPU (aproximado via uptime)
+        const uptime = process.uptime();
+        checks.push({
+            name: 'Uptime do Servidor',
+            status: 'healthy',
+            message: `${Math.round(uptime / 3600)} horas`
+        });
+        
+        // 3. Verificar cache hit rate
+        const cacheStats = await client.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN last_hit_at IS NOT NULL THEN 1 END) as hits
+            FROM ia_response_cache
+            WHERE expires_at > NOW()
+        `);
+        
+        if (cacheStats.rows.length > 0) {
+            const total = parseInt(cacheStats.rows[0].total || 0);
+            const hits = parseInt(cacheStats.rows[0].hits || 0);
+            const hitRate = total > 0 ? (hits / total) * 100 : 0;
+            
+            checks.push({
+                name: 'Cache Hit Rate',
+                status: hitRate < 30 ? 'warning' : 'healthy',
+                message: `${hitRate.toFixed(2)}% (${hits}/${total})`
+            });
+        }
+        
+    } catch (error) {
+        issues.push({
+            type: 'performance',
+            category: 'unknown',
+            severity: 'error',
+            message: 'Erro ao analisar performance',
+            details: error.message
+        });
+    }
+    
+    return {
+        status: issues.filter(i => i.severity === 'critical' || i.severity === 'high').length > 0 ? 'error' : 'healthy',
+        checks: checks,
+        issues: issues
+    };
+}
+
+// Analisar Erros
+async function analyzeErrors(client) {
+    const issues = [];
+    
+    try {
+        // Buscar erros recentes não resolvidos
+        const recentErrors = await client.query(`
+            SELECT * FROM ia_system_errors
+            WHERE resolved = false
+            AND last_occurred_at >= NOW() - INTERVAL '24 hours'
+            ORDER BY severity DESC, frequency DESC
+            LIMIT 20
+        `);
+        
+        for (const error of recentErrors.rows) {
+            issues.push({
+                type: 'error',
+                category: error.error_category,
+                severity: error.severity,
+                message: error.error_message,
+                details: {
+                    location: error.error_location,
+                    frequency: error.frequency,
+                    first_occurred: error.first_occurred_at,
+                    last_occurred: error.last_occurred_at
+                }
+            });
+        }
+        
+    } catch (error) {
+        issues.push({
+            type: 'error',
+            category: 'unknown',
+            severity: 'error',
+            message: 'Erro ao analisar erros',
+            details: error.message
+        });
+    }
+    
+    return {
+        status: issues.filter(i => i.severity === 'critical' || i.severity === 'high').length > 0 ? 'error' : 'healthy',
+        issues: issues,
+        total_unresolved: issues.length
+    };
+}
+
+// Analisar Segurança
+async function analyzeSecurity(client) {
+    const issues = [];
+    const checks = [];
+    
+    try {
+        // 1. Verificar JWT secret
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret || jwtSecret.length < 32) {
+            issues.push({
+                type: 'security',
+                category: 'configuration',
+                severity: 'high',
+                message: 'JWT_SECRET muito curto ou não configurado',
+                details: { length: jwtSecret ? jwtSecret.length : 0 }
+            });
+        }
+        
+        // 2. Verificar senhas fracas (se houver acesso)
+        // 3. Verificar rate limiting
+        checks.push({
+            name: 'Configuração de Segurança',
+            status: issues.length > 0 ? 'warning' : 'healthy',
+            message: `${issues.length} problemas de segurança`
+        });
+        
+    } catch (error) {
+        issues.push({
+            type: 'security',
+            category: 'unknown',
+            severity: 'error',
+            message: 'Erro ao analisar segurança',
+            details: error.message
+        });
+    }
+    
+    return {
+        status: issues.filter(i => i.severity === 'critical' || i.severity === 'high').length > 0 ? 'error' : 'healthy',
+        checks: checks,
+        issues: issues
+    };
+}
+
+// Analisar Código (básico)
+async function analyzeCode() {
+    const issues = [];
+    
+    // Análise básica - pode ser expandida
+    // Por enquanto, apenas estrutura básica
+    
+    return {
+        status: 'healthy',
+        issues: issues,
+        note: 'Análise de código básica - pode ser expandida com ferramentas de linting'
+    };
+}
+
+// Gerar Recomendações
+function generateRecommendations(issues) {
+    const recommendations = [];
+    
+    // Agrupar por tipo
+    const byType = {};
+    issues.forEach(issue => {
+        if (!byType[issue.type]) {
+            byType[issue.type] = [];
+        }
+        byType[issue.type].push(issue);
+    });
+    
+    // Recomendações por tipo
+    if (byType.database) {
+        const dbIssues = byType.database;
+        if (dbIssues.some(i => i.category === 'connection')) {
+            recommendations.push('Verificar configuração de conexão com banco de dados');
+        }
+        if (dbIssues.some(i => i.category === 'performance')) {
+            recommendations.push('Otimizar queries e adicionar índices onde necessário');
+        }
+    }
+    
+    if (byType.api) {
+        const apiIssues = byType.api;
+        if (apiIssues.some(i => i.category === 'error_rate')) {
+            recommendations.push('Investigar causas dos erros nas APIs');
+        }
+        if (apiIssues.some(i => i.category === 'performance')) {
+            recommendations.push('Otimizar endpoints com tempo de resposta alto');
+        }
+    }
+    
+    if (byType.performance) {
+        recommendations.push('Considerar aumentar recursos do servidor ou otimizar código');
+    }
+    
+    if (byType.security) {
+        recommendations.push('Revisar configurações de segurança urgentemente');
+    }
+    
+    return recommendations;
+}
+
+// Aplicar Correção
+async function applyFix(fixData, client) {
+    try {
+        const result = {
+            success: false,
+            message: '',
+            details: {}
+        };
+        
+        switch (fixData.fix_type) {
+            case 'database':
+                // Aplicar correção SQL
+                if (fixData.fix_code) {
+                    try {
+                        await client.query(fixData.fix_code);
+                        result.success = true;
+                        result.message = 'Correção SQL aplicada com sucesso';
+                    } catch (error) {
+                        result.success = false;
+                        result.message = `Erro ao aplicar correção SQL: ${error.message}`;
+                        result.details = { error: error.message };
+                    }
+                }
+                break;
+                
+            case 'configuration':
+                // Correções de configuração geralmente requerem reinicialização
+                result.success = true;
+                result.message = 'Correção de configuração registrada - requer reinicialização do servidor';
+                result.details = { requires_restart: true };
+                break;
+                
+            case 'code':
+                // Correções de código requerem acesso ao sistema de arquivos
+                // Por segurança, apenas registrar
+                result.success = false;
+                result.message = 'Correções de código requerem intervenção manual por segurança';
+                result.details = { requires_manual: true, fix_code: fixData.fix_code };
+                break;
+                
+            default:
+                result.success = false;
+                result.message = `Tipo de correção não suportado: ${fixData.fix_type}`;
+        }
+        
+        return result;
+    } catch (error) {
+        return {
+            success: false,
+            message: `Erro ao aplicar correção: ${error.message}`,
+            details: { error: error.message }
+        };
+    }
+}
+
+// Detectar e Propor Correções Automaticamente
+async function detectAndProposeFixes(client) {
+    try {
+        // Buscar erros não resolvidos
+        const errors = await client.query(`
+            SELECT * FROM ia_system_errors
+            WHERE resolved = false
+            AND severity IN ('high', 'critical')
+            ORDER BY severity DESC, frequency DESC
+            LIMIT 10
+        `);
+        
+        const proposedFixes = [];
+        
+        for (const error of errors.rows) {
+            // Analisar erro e propor correção
+            const fix = await proposeFixForError(error, client);
+            if (fix) {
+                // Verificar se já existe proposta similar
+                const existing = await client.query(`
+                    SELECT id FROM ia_system_fixes
+                    WHERE error_id = $1
+                    AND status = 'pending'
+                `, [error.id]);
+                
+                if (existing.rows.length === 0) {
+                    // Criar proposta de correção
+                    const fixResult = await client.query(`
+                        INSERT INTO ia_system_fixes
+                        (error_id, fix_type, fix_description, fix_code, fix_file_path, proposed_by, status, approval_required)
+                        VALUES ($1, $2, $3, $4, $5, 'ia', 'pending', true)
+                        RETURNING *
+                    `, [
+                        error.id,
+                        fix.fix_type,
+                        fix.description,
+                        fix.code || null,
+                        fix.file_path || null
+                    ]);
+                    
+                    proposedFixes.push(fixResult.rows[0]);
+                }
+            }
+        }
+        
+        return proposedFixes;
+    } catch (error) {
+        console.error('Erro ao detectar e propor correções:', error);
+        return [];
+    }
+}
+
+// Propor Correção para um Erro
+async function proposeFixForError(error, client) {
+    try {
+        // Analisar tipo de erro e propor correção apropriada
+        let fix = null;
+        
+        if (error.error_type === 'database') {
+            if (error.error_category === 'connection') {
+                fix = {
+                    fix_type: 'database',
+                    description: 'Verificar e corrigir configuração de conexão com banco de dados',
+                    code: null, // Requer análise manual
+                    file_path: '.env'
+                };
+            } else if (error.error_category === 'query') {
+                // Tentar identificar problema na query
+                if (error.error_message.includes('syntax')) {
+                    fix = {
+                        fix_type: 'database',
+                        description: 'Corrigir sintaxe SQL na query',
+                        code: null, // Requer análise do código
+                        file_path: error.error_location || null
+                    };
+                }
+            }
+        } else if (error.error_type === 'api') {
+            if (error.error_category === 'timeout') {
+                fix = {
+                    fix_type: 'performance',
+                    description: 'Otimizar endpoint para reduzir tempo de resposta',
+                    code: null,
+                    file_path: error.error_location || null
+                };
+            }
+        }
+        
+        return fix;
+    } catch (error) {
+        console.error('Erro ao propor correção:', error);
+        return null;
+    }
+}
+
+// POST /api/ia-king/system/detect-fixes - Detectar e propor correções automaticamente
+router.post('/system/detect-fixes', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const proposedFixes = await detectAndProposeFixes(client);
+        
+        res.json({
+            success: true,
+            fixes_proposed: proposedFixes.length,
+            fixes: proposedFixes,
+            message: `${proposedFixes.length} correção(ões) proposta(s)`
+        });
+    } catch (error) {
+        console.error('Erro ao detectar correções:', error);
+        res.status(500).json({ error: 'Erro ao detectar correções' });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
