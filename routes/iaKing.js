@@ -15611,5 +15611,97 @@ function applyMetacognitiveImprovements(answer, evaluation) {
     return improvedAnswer;
 }
 
+// ============================================
+// ROTAS DE PERGUNTAS NÃO RESPONDIDAS
+// ============================================
+
+// GET /api/ia-king/unanswered-questions - Listar perguntas não respondidas
+router.get('/unanswered-questions', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Verificar se a tabela existe
+        const tableCheck = await client.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'ia_unanswered_questions'
+            ) as exists
+        `);
+        
+        if (!tableCheck.rows[0].exists) {
+            return res.json({
+                questions: [],
+                total: 0,
+                message: 'Tabela de perguntas não respondidas não encontrada. Execute a migration 034.'
+            });
+        }
+        
+        const result = await client.query(`
+            SELECT * FROM ia_unanswered_questions
+            WHERE improved = false
+            ORDER BY ask_count DESC, last_asked_at DESC
+            LIMIT 100
+        `);
+        
+        res.json({
+            questions: result.rows,
+            total: result.rows.length
+        });
+    } catch (error) {
+        console.error('Erro ao buscar perguntas não respondidas:', error);
+        res.status(500).json({ error: 'Erro ao buscar perguntas não respondidas', details: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/improve-question - Melhorar IA com pergunta não respondida
+router.post('/improve-question', protectAdmin, asyncHandler(async (req, res) => {
+    const { question_id } = req.body;
+    const userId = req.user.userId;
+    const client = await db.pool.connect();
+    
+    try {
+        if (!question_id) {
+            return res.status(400).json({ error: 'question_id é obrigatório' });
+        }
+        
+        // Buscar pergunta
+        const questionResult = await client.query(`
+            SELECT * FROM ia_unanswered_questions
+            WHERE id = $1
+        `, [question_id]);
+        
+        if (questionResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Pergunta não encontrada' });
+        }
+        
+        const question = questionResult.rows[0];
+        
+        // Usar autoTrainIAKing para aprender sobre a pergunta
+        const questionContext = question.question_context || {};
+        await autoTrainIAKing(question.question, questionContext, client);
+        
+        // Marcar como melhorada
+        await client.query(`
+            UPDATE ia_unanswered_questions
+            SET improved = true,
+                improved_at = NOW(),
+                improved_by = $1
+            WHERE id = $2
+        `, [userId, question_id]);
+        
+        res.json({
+            success: true,
+            message: `IA melhorada com conhecimento sobre: "${question.question.substring(0, 50)}..."`
+        });
+    } catch (error) {
+        console.error('Erro ao melhorar IA:', error);
+        res.status(500).json({ error: 'Erro ao melhorar IA', details: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
 
