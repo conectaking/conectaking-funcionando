@@ -16371,13 +16371,34 @@ router.get('/stats', protectAdmin, asyncHandler(async (req, res) => {
         const knowledgeStats = await client.query(`
             SELECT COUNT(*) as total_knowledge
             FROM ia_knowledge_base
+            WHERE is_active = true
+        `);
+        
+        // Taxa de sucesso média do conhecimento
+        const avgSuccessRate = await client.query(`
+            SELECT AVG(success_rate) as avg_rate FROM ia_knowledge_stats
+        `);
+        
+        // Conversas hoje
+        const conversationsToday = await client.query(`
+            SELECT COUNT(*) as total FROM ia_conversations 
+            WHERE DATE(created_at) = CURRENT_DATE
+        `);
+        
+        // Conhecimento otimizado (com estatísticas e taxa de sucesso > 70)
+        const optimizedKnowledge = await client.query(`
+            SELECT COUNT(*) as total FROM ia_knowledge_stats 
+            WHERE success_rate > 70
         `);
         
         const stats = {
             total_responses: parseInt(convStats.rows[0]?.total_responses || 0),
             avg_response_time: parseFloat(convStats.rows[0]?.avg_response_time || 0),
             success_rate: parseFloat(convStats.rows[0]?.success_rate || 0),
-            total_knowledge: parseInt(knowledgeStats.rows[0]?.total_knowledge || 0)
+            total_knowledge: parseInt(knowledgeStats.rows[0]?.total_knowledge || 0),
+            avg_success_rate: parseFloat(avgSuccessRate.rows[0]?.avg_rate || 0),
+            conversations_today: parseInt(conversationsToday.rows[0]?.total || 0),
+            optimized_knowledge: parseInt(optimizedKnowledge.rows[0]?.total || 0)
         };
         
         res.json({ success: true, stats });
@@ -16390,7 +16411,10 @@ router.get('/stats', protectAdmin, asyncHandler(async (req, res) => {
                 total_responses: 0,
                 avg_response_time: 0,
                 success_rate: 0,
-                total_knowledge: 0
+                total_knowledge: 0,
+                avg_success_rate: 0,
+                conversations_today: 0,
+                optimized_knowledge: 0
             }
         });
     } finally {
