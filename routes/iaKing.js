@@ -11438,17 +11438,18 @@ router.post('/system/fixes/:id/apply', protectAdmin, asyncHandler(async (req, re
             VALUES ($1, 'applied', $2, $3)
         `, [id, userId, JSON.stringify(result)]);
         
-        // Se aplicou com sucesso e tinha erro associado, marcar como resolvido
-        if (result.success && fixData.error_id) {
-            await client.query(`
-                UPDATE ia_system_errors
-                SET resolved = true,
-                    resolved_at = NOW(),
-                    resolved_by = $1,
-                    resolution_method = 'auto'
-                WHERE id = $2
-            `, [userId, fixData.error_id]);
-        }
+        // NÃO marcar erro como resolvido automaticamente
+        // O usuário deve aprovar manualmente na aba de análise de erros
+        // if (result.success && fixData.error_id) {
+        //     await client.query(`
+        //         UPDATE ia_system_errors
+        //         SET resolved = true,
+        //             resolved_at = NOW(),
+        //             resolved_by = $1,
+        //             resolution_method = 'auto'
+        //         WHERE id = $2
+        //     `, [userId, fixData.error_id]);
+        // }
         
         res.json({
             success: result.success,
@@ -11458,6 +11459,194 @@ router.post('/system/fixes/:id/apply', protectAdmin, asyncHandler(async (req, re
     } catch (error) {
         console.error('Erro ao aplicar correção:', error);
         res.status(500).json({ error: 'Erro ao aplicar correção', details: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/system/errors - Listar todos os erros para análise
+router.get('/system/errors', protectAdmin, asyncHandler(async (req, res) => {
+    const { resolved, severity, limit = 100 } = req.query;
+    const client = await db.pool.connect();
+    try {
+        let query = 'SELECT * FROM ia_system_errors WHERE 1=1';
+        const params = [];
+        let paramIndex = 1;
+        
+        if (resolved !== undefined) {
+            query += ` AND resolved = $${paramIndex}`;
+            params.push(resolved === 'true');
+            paramIndex++;
+        }
+        
+        if (severity) {
+            query += ` AND severity = $${paramIndex}`;
+            params.push(severity);
+            paramIndex++;
+        }
+        
+        query += ` ORDER BY 
+            CASE severity 
+                WHEN 'critical' THEN 1
+                WHEN 'high' THEN 2
+                WHEN 'medium' THEN 3
+                WHEN 'low' THEN 4
+                ELSE 5
+            END,
+            resolved ASC,
+            last_occurred_at DESC
+            LIMIT $${paramIndex}`;
+        params.push(parseInt(limit));
+        
+        const result = await client.query(query, params);
+        
+        res.json({
+            errors: result.rows,
+            total: result.rows.length,
+            summary: {
+                total: result.rows.length,
+                resolved: result.rows.filter(e => e.resolved).length,
+                unresolved: result.rows.filter(e => !e.resolved).length,
+                by_severity: {
+                    critical: result.rows.filter(e => e.severity === 'critical').length,
+                    high: result.rows.filter(e => e.severity === 'high').length,
+                    medium: result.rows.filter(e => e.severity === 'medium').length,
+                    low: result.rows.filter(e => e.severity === 'low').length
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao buscar erros:', error);
+        res.status(500).json({ error: 'Erro ao buscar erros' });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/system/errors/:id/resolve - Marcar erro como resolvido (COM APROVAÇÃO)
+router.post('/system/errors/:id/resolve', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { resolution_method = 'manual', resolution_note } = req.body;
+    const client = await db.pool.connect();
+    
+    try {
+        // Verificar se erro existe
+        const errorCheck = await client.query('SELECT * FROM ia_system_errors WHERE id = $1', [id]);
+        
+        if (errorCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Erro não encontrado' });
+        }
+        
+        const error = errorCheck.rows[0];
+        
+        if (error.resolved) {
+            return res.status(400).json({ error: 'Erro já está marcado como resolvido' });
+        }
+        
+        // Marcar como resolvido (APENAS COM APROVAÇÃO DO USUÁRIO)
+        await client.query(`
+            UPDATE ia_system_errors
+            SET resolved = true,
+                resolved_at = NOW(),
+                resolved_by = $1,
+                resolution_method = $2,
+                updated_at = NOW()
+            WHERE id = $3
+        `, [userId, resolution_method, id]);
+        
+        // Registrar no histórico se houver nota
+        if (resolution_note) {
+            // Criar tabela de histórico de resolução se não existir
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS ia_error_resolution_history (
+                    id SERIAL PRIMARY KEY,
+                    error_id INTEGER,
+                    resolved_by VARCHAR(255),
+                    resolution_method VARCHAR(50),
+                    resolution_note TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            
+            await client.query(`
+                INSERT INTO ia_error_resolution_history
+                (error_id, resolved_by, resolution_method, resolution_note)
+                VALUES ($1, $2, $3, $4)
+            `, [id, userId, resolution_method, resolution_note]);
+        }
+        
+        res.json({
+            success: true,
+            message: 'Erro marcado como resolvido com sucesso'
+        });
+    } catch (error) {
+        console.error('Erro ao marcar erro como resolvido:', error);
+        res.status(500).json({ error: 'Erro ao marcar erro como resolvido', details: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/system/errors/:id/unresolve - Desmarcar erro como resolvido
+router.post('/system/errors/:id/unresolve', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const client = await db.pool.connect();
+    
+    try {
+        const errorCheck = await client.query('SELECT * FROM ia_system_errors WHERE id = $1', [id]);
+        
+        if (errorCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Erro não encontrado' });
+        }
+        
+        // Desmarcar como resolvido
+        await client.query(`
+            UPDATE ia_system_errors
+            SET resolved = false,
+                resolved_at = NULL,
+                resolved_by = NULL,
+                resolution_method = NULL,
+                updated_at = NOW()
+            WHERE id = $1
+        `, [id]);
+        
+        res.json({
+            success: true,
+            message: 'Erro desmarcado como resolvido'
+        });
+    } catch (error) {
+        console.error('Erro ao desmarcar erro:', error);
+        res.status(500).json({ error: 'Erro ao desmarcar erro', details: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// DELETE /api/ia-king/system/errors/:id - Deletar erro (COM APROVAÇÃO)
+router.delete('/system/errors/:id', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+    
+    try {
+        // Verificar se erro existe
+        const errorCheck = await client.query('SELECT * FROM ia_system_errors WHERE id = $1', [id]);
+        
+        if (errorCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Erro não encontrado' });
+        }
+        
+        // Deletar erro (APENAS COM APROVAÇÃO DO USUÁRIO)
+        await client.query('DELETE FROM ia_system_errors WHERE id = $1', [id]);
+        
+        res.json({
+            success: true,
+            message: 'Erro deletado com sucesso'
+        });
+    } catch (error) {
+        console.error('Erro ao deletar erro:', error);
+        res.status(500).json({ error: 'Erro ao deletar erro', details: error.message });
     } finally {
         client.release();
     }
