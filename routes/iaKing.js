@@ -11114,6 +11114,43 @@ router.get('/system/analyze', protectAdmin, asyncHandler(async (req, res) => {
 router.get('/system/monitoring', protectAdmin, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
+        // Verificar se as tabelas existem
+        const tableCheck = await client.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'ia_system_monitoring'
+            ) as monitoring_exists,
+            EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'ia_system_errors'
+            ) as errors_exists,
+            EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'ia_system_fixes'
+            ) as fixes_exists
+        `);
+        
+        const tablesExist = tableCheck.rows[0];
+        
+        // Se as tabelas não existem, retornar estrutura vazia
+        if (!tablesExist.monitoring_exists || !tablesExist.errors_exists || !tablesExist.fixes_exists) {
+            console.warn('⚠️ Tabelas de monitoramento não existem. Execute a migration 034.');
+            return res.json({
+                monitoring: [],
+                errors: [],
+                pending_fixes: [],
+                summary: {
+                    total_monitoring_issues: 0,
+                    total_errors: 0,
+                    pending_fixes: 0
+                },
+                warning: 'Tabelas de monitoramento não encontradas. Execute a migration 034_IA_SYSTEM_MONITORING.sql'
+            });
+        }
+        
         const monitoring = await client.query(`
             SELECT * FROM ia_system_monitoring
             WHERE resolved_at IS NULL
@@ -11148,7 +11185,23 @@ router.get('/system/monitoring', protectAdmin, asyncHandler(async (req, res) => 
         });
     } catch (error) {
         console.error('Erro ao buscar monitoramento:', error);
-        res.status(500).json({ error: 'Erro ao buscar monitoramento' });
+        
+        // Se for erro de tabela não existe, retornar estrutura vazia
+        if (error.message && (error.message.includes('does not exist') || error.message.includes('não existe'))) {
+            return res.json({
+                monitoring: [],
+                errors: [],
+                pending_fixes: [],
+                summary: {
+                    total_monitoring_issues: 0,
+                    total_errors: 0,
+                    pending_fixes: 0
+                },
+                warning: 'Tabelas de monitoramento não encontradas. Execute a migration 034_IA_SYSTEM_MONITORING.sql'
+            });
+        }
+        
+        res.status(500).json({ error: 'Erro ao buscar monitoramento', details: error.message });
     } finally {
         client.release();
     }
