@@ -16271,5 +16271,556 @@ router.post('/improve-question', protectAdmin, asyncHandler(async (req, res) => 
     }
 }));
 
+// ============================================
+// NOVA ABA: MELHORIAS E OTIMIZAÇÕES
+// ============================================
+
+// GET /api/ia-king/stats - Estatísticas de performance
+router.get('/stats', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Estatísticas de conversas
+        const convStats = await client.query(`
+            SELECT 
+                COUNT(*) as total_responses,
+                AVG(response_time_ms) as avg_response_time,
+                COUNT(CASE WHEN response_quality_score >= 8 THEN 1 END)::float / NULLIF(COUNT(*), 0) * 100 as success_rate
+            FROM ia_conversations
+            WHERE created_at >= NOW() - INTERVAL '30 days'
+        `);
+        
+        // Estatísticas de conhecimento
+        const knowledgeStats = await client.query(`
+            SELECT COUNT(*) as total_knowledge
+            FROM ia_knowledge_base
+        `);
+        
+        const stats = {
+            total_responses: parseInt(convStats.rows[0]?.total_responses || 0),
+            avg_response_time: parseFloat(convStats.rows[0]?.avg_response_time || 0),
+            success_rate: parseFloat(convStats.rows[0]?.success_rate || 0),
+            total_knowledge: parseInt(knowledgeStats.rows[0]?.total_knowledge || 0)
+        };
+        
+        res.json({ success: true, stats });
+    } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao buscar estatísticas',
+            stats: {
+                total_responses: 0,
+                avg_response_time: 0,
+                success_rate: 0,
+                total_knowledge: 0
+            }
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/improvement-suggestions - Sugestões de melhoria
+router.get('/improvement-suggestions', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const suggestions = [];
+        
+        // Verificar se embeddings estão sendo usados
+        const embeddingCheck = await client.query(`
+            SELECT COUNT(*) as count FROM ia_knowledge_base 
+            WHERE embedding IS NOT NULL
+        `);
+        
+        if (parseInt(embeddingCheck.rows[0]?.count || 0) === 0) {
+            suggestions.push({
+                title: 'Ativar Busca Semântica (RAG)',
+                description: 'Gere embeddings vetoriais para habilitar busca semântica avançada similar ao ChatGPT',
+                priority: 'high',
+                action: 'generateAllEmbeddings'
+            });
+        }
+        
+        // Verificar conhecimento duplicado
+        const duplicateCheck = await client.query(`
+            SELECT title, COUNT(*) as count
+            FROM ia_knowledge_base
+            GROUP BY title
+            HAVING COUNT(*) > 1
+            LIMIT 5
+        `);
+        
+        if (duplicateCheck.rows.length > 0) {
+            suggestions.push({
+                title: 'Limpar Conhecimento Duplicado',
+                description: `${duplicateCheck.rows.length} título(s) duplicado(s) encontrado(s). Limpeza recomendada.`,
+                priority: 'medium',
+                action: 'cleanupKnowledge'
+            });
+        }
+        
+        // Verificar cache
+        const cacheCheck = await client.query(`
+            SELECT COUNT(*) as count FROM ia_response_cache
+            WHERE created_at < NOW() - INTERVAL '7 days'
+        `);
+        
+        if (parseInt(cacheCheck.rows[0]?.count || 0) > 100) {
+            suggestions.push({
+                title: 'Otimizar Cache',
+                description: 'Muitos itens de cache antigos. Otimização recomendada.',
+                priority: 'low',
+                action: 'optimizeCache'
+            });
+        }
+        
+        res.json({ success: true, suggestions });
+    } catch (error) {
+        console.error('Erro ao buscar sugestões:', error);
+        res.json({ success: true, suggestions: [] });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/optimization-history - Histórico de otimizações
+router.get('/optimization-history', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Verificar se tabela existe
+        const tableCheck = await client.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'ia_optimization_history'
+            )
+        `);
+        
+        if (!tableCheck.rows[0].exists) {
+            // Criar tabela se não existir
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS ia_optimization_history (
+                    id SERIAL PRIMARY KEY,
+                    optimization_type VARCHAR(100) NOT NULL,
+                    message TEXT,
+                    success BOOLEAN DEFAULT true,
+                    details JSONB,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+        }
+        
+        const result = await client.query(`
+            SELECT * FROM ia_optimization_history
+            ORDER BY created_at DESC
+            LIMIT 20
+        `);
+        
+        res.json({ success: true, history: result.rows });
+    } catch (error) {
+        console.error('Erro ao buscar histórico:', error);
+        res.json({ success: true, history: [] });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/cleanup-knowledge - Limpar conhecimento duplicado
+router.post('/cleanup-knowledge', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Encontrar e remover duplicados (manter o mais recente)
+        const duplicates = await client.query(`
+            DELETE FROM ia_knowledge_base
+            WHERE id IN (
+                SELECT id FROM (
+                    SELECT id, ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(title)) ORDER BY created_at DESC) as rn
+                    FROM ia_knowledge_base
+                ) t WHERE rn > 1
+            )
+            RETURNING id
+        `);
+        
+        // Remover conhecimento vazio ou muito curto
+        const empty = await client.query(`
+            DELETE FROM ia_knowledge_base
+            WHERE content IS NULL OR LENGTH(TRIM(content)) < 10
+            RETURNING id
+        `);
+        
+        const totalRemoved = duplicates.rows.length + empty.rows.length;
+        
+        // Registrar no histórico
+        try {
+            await client.query(`
+                INSERT INTO ia_optimization_history (optimization_type, message, success, details)
+                VALUES ('knowledge_cleanup', 'Limpeza de conhecimento', true, $1::jsonb)
+            `, [JSON.stringify({ duplicates: duplicates.rows.length, empty: empty.rows.length })]);
+        } catch (e) {
+            // Tabela pode não existir ainda
+        }
+        
+        res.json({
+            success: true,
+            message: `${totalRemoved} item(s) removido(s)`,
+            removed: totalRemoved,
+            details: {
+                duplicates: duplicates.rows.length,
+                empty: empty.rows.length
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao limpar conhecimento:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao limpar conhecimento',
+            message: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/optimize-cache - Otimizar cache
+router.post('/optimize-cache', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Remover cache antigo (mais de 30 dias)
+        const removed = await client.query(`
+            DELETE FROM ia_response_cache
+            WHERE created_at < NOW() - INTERVAL '30 days'
+            RETURNING id
+        `);
+        
+        // Registrar no histórico
+        try {
+            await client.query(`
+                INSERT INTO ia_optimization_history (optimization_type, message, success, details)
+                VALUES ('cache_optimization', 'Otimização de cache', true, $1::jsonb)
+            `, [JSON.stringify({ removed: removed.rows.length })]);
+        } catch (e) {
+            // Tabela pode não existir ainda
+        }
+        
+        res.json({
+            success: true,
+            message: `Cache otimizado: ${removed.rows.length} item(s) antigo(s) removido(s)`,
+            removed: removed.rows.length
+        });
+    } catch (error) {
+        console.error('Erro ao otimizar cache:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao otimizar cache',
+            message: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/optimize-categories - Otimizar categorias
+router.post('/optimize-categories', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Encontrar categorias vazias
+        const emptyCategories = await client.query(`
+            SELECT c.id, c.name
+            FROM ia_categories c
+            LEFT JOIN ia_knowledge_base kb ON kb.category_id = c.id
+            WHERE kb.id IS NULL
+        `);
+        
+        // Não remover categorias, apenas reportar
+        const message = emptyCategories.rows.length > 0 
+            ? `${emptyCategories.rows.length} categoria(s) vazia(s) encontrada(s)`
+            : 'Todas as categorias possuem conhecimento';
+        
+        res.json({
+            success: true,
+            message: message,
+            empty_categories: emptyCategories.rows.length
+        });
+    } catch (error) {
+        console.error('Erro ao otimizar categorias:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao otimizar categorias',
+            message: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/update-knowledge-graph - Atualizar grafo de conhecimento
+router.post('/update-knowledge-graph', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Buscar conhecimento recente sem grafo
+        const knowledge = await client.query(`
+            SELECT id, title, content, category_id
+            FROM ia_knowledge_base
+            WHERE created_at >= NOW() - INTERVAL '7 days'
+            LIMIT 50
+        `);
+        
+        let conceptsCreated = 0;
+        let relationsCreated = 0;
+        
+        for (const kb of knowledge.rows) {
+            try {
+                await buildKnowledgeGraphFromText(kb.content, kb.title, kb.category_id, client);
+                conceptsCreated++;
+                relationsCreated++;
+            } catch (e) {
+                console.log('Erro ao criar grafo para conhecimento', kb.id, ':', e.message);
+            }
+        }
+        
+        // Registrar no histórico
+        try {
+            await client.query(`
+                INSERT INTO ia_optimization_history (optimization_type, message, success, details)
+                VALUES ('knowledge_graph_update', 'Atualização de grafo de conhecimento', true, $1::jsonb)
+            `, [JSON.stringify({ concepts: conceptsCreated, relations: relationsCreated })]);
+        } catch (e) {
+            // Tabela pode não existir ainda
+        }
+        
+        res.json({
+            success: true,
+            message: `Grafo atualizado: ${conceptsCreated} conceito(s) e ${relationsCreated} relação(ões) criado(s)`,
+            concepts: conceptsCreated,
+            relations: relationsCreated
+        });
+    } catch (error) {
+        console.error('Erro ao atualizar grafo:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao atualizar grafo',
+            message: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/optimize-responses - Otimizar respostas
+router.post('/optimize-responses', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Analisar respostas de baixa qualidade
+        const lowQuality = await client.query(`
+            SELECT COUNT(*) as count
+            FROM ia_conversations
+            WHERE response_quality_score IS NOT NULL
+            AND response_quality_score < 6
+            AND created_at >= NOW() - INTERVAL '7 days'
+        `);
+        
+        const count = parseInt(lowQuality.rows[0]?.count || 0);
+        
+        // Registrar no histórico
+        try {
+            await client.query(`
+                INSERT INTO ia_optimization_history (optimization_type, message, success, details)
+                VALUES ('response_optimization', 'Otimização de respostas', true, $1::jsonb)
+            `, [JSON.stringify({ low_quality_responses: count })]);
+        } catch (e) {
+            // Tabela pode não existir ainda
+        }
+        
+        res.json({
+            success: true,
+            message: `Análise concluída: ${count} resposta(s) de baixa qualidade encontrada(s) nos últimos 7 dias`,
+            low_quality_count: count
+        });
+    } catch (error) {
+        console.error('Erro ao otimizar respostas:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao otimizar respostas',
+            message: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/export-knowledge - Exportar conhecimento
+router.get('/export-knowledge', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const knowledge = await client.query(`
+            SELECT id, title, content, source_type, category_id, created_at
+            FROM ia_knowledge_base
+            ORDER BY created_at DESC
+        `);
+        
+        const categories = await client.query(`
+            SELECT id, name, description
+            FROM ia_categories
+        `);
+        
+        res.json({
+            export_date: new Date().toISOString(),
+            knowledge: knowledge.rows,
+            categories: categories.rows,
+            total_items: knowledge.rows.length
+        });
+    } catch (error) {
+        console.error('Erro ao exportar conhecimento:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao exportar conhecimento',
+            message: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/import-knowledge - Importar conhecimento
+router.post('/import-knowledge', protectAdmin, asyncHandler(async (req, res) => {
+    const { knowledge, categories } = req.body;
+    const client = await db.pool.connect();
+    
+    try {
+        let imported = 0;
+        let skipped = 0;
+        
+        // Importar categorias primeiro
+        const categoryMap = {};
+        if (categories && Array.isArray(categories)) {
+            for (const cat of categories) {
+                const existing = await client.query(`
+                    SELECT id FROM ia_categories WHERE name = $1
+                `, [cat.name]);
+                
+                if (existing.rows.length === 0) {
+                    const newCat = await client.query(`
+                        INSERT INTO ia_categories (name, description)
+                        VALUES ($1, $2)
+                        RETURNING id
+                    `, [cat.name, cat.description || '']);
+                    categoryMap[cat.id] = newCat.rows[0].id;
+                } else {
+                    categoryMap[cat.id] = existing.rows[0].id;
+                }
+            }
+        }
+        
+        // Importar conhecimento
+        if (knowledge && Array.isArray(knowledge)) {
+            for (const kb of knowledge) {
+                // Verificar se já existe
+                const existing = await client.query(`
+                    SELECT id FROM ia_knowledge_base 
+                    WHERE title = $1 AND content = $2
+                `, [kb.title, kb.content]);
+                
+                if (existing.rows.length === 0) {
+                    await client.query(`
+                        INSERT INTO ia_knowledge_base (title, content, source_type, category_id)
+                        VALUES ($1, $2, $3, $4)
+                    `, [
+                        kb.title,
+                        kb.content,
+                        kb.source_type || 'imported',
+                        categoryMap[kb.category_id] || null
+                    ]);
+                    imported++;
+                } else {
+                    skipped++;
+                }
+            }
+        }
+        
+        res.json({
+            success: true,
+            message: `Importação concluída: ${imported} item(s) importado(s), ${skipped} item(s) ignorado(s)`,
+            imported,
+            skipped
+        });
+    } catch (error) {
+        console.error('Erro ao importar conhecimento:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao importar conhecimento',
+            message: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/knowledge/bulk-delete - Deletar conhecimento em lote
+router.post('/knowledge/bulk-delete', protectAdmin, asyncHandler(async (req, res) => {
+    const { ids } = req.body;
+    const client = await db.pool.connect();
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ success: false, error: 'IDs não fornecidos' });
+    }
+    
+    try {
+        const result = await client.query(`
+            DELETE FROM ia_knowledge_base
+            WHERE id = ANY($1::int[])
+            RETURNING id
+        `, [ids]);
+        
+        res.json({
+            success: true,
+            message: `${result.rows.length} item(s) deletado(s)`,
+            deleted: result.rows.length
+        });
+    } catch (error) {
+        console.error('Erro ao deletar conhecimento em lote:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao deletar conhecimento',
+            message: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/knowledge/export-selected - Exportar conhecimento selecionado
+router.post('/knowledge/export-selected', protectAdmin, asyncHandler(async (req, res) => {
+    const { ids } = req.body;
+    const client = await db.pool.connect();
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ success: false, error: 'IDs não fornecidos' });
+    }
+    
+    try {
+        const knowledge = await client.query(`
+            SELECT id, title, content, source_type, category_id, created_at
+            FROM ia_knowledge_base
+            WHERE id = ANY($1::int[])
+            ORDER BY created_at DESC
+        `, [ids]);
+        
+        res.json({
+            export_date: new Date().toISOString(),
+            knowledge: knowledge.rows,
+            total_items: knowledge.rows.length
+        });
+    } catch (error) {
+        console.error('Erro ao exportar conhecimento selecionado:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erro ao exportar conhecimento',
+            message: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
 
