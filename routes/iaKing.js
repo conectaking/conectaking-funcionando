@@ -5306,6 +5306,39 @@ async function findBestAnswer(userMessage, userId) {
             }
         }
         
+        // ============================================
+        // FASE 2: GRAFO DE CONHECIMENTO E RACIOCÍNIO CAUSAL
+        // ============================================
+        let knowledgeGraphResult = null;
+        let causalReasoningResult = null;
+        
+        // Buscar no grafo de conhecimento se houver entidades
+        if (questionContext.entities && questionContext.entities.length > 0) {
+            try {
+            console.log('🕸️ [Grafo de Conhecimento] Buscando conhecimento relacionado...');
+            knowledgeGraphResult = await searchKnowledgeGraph(userMessage, questionContext, client);
+            
+            if (knowledgeGraphResult && knowledgeGraphResult.length > 0) {
+                console.log(`✅ [Grafo] Encontrados ${knowledgeGraphResult.length} conhecimentos relacionados`);
+            }
+            
+            // Tentar raciocínio causal se a pergunta contém "por que", "causa", "efeito", etc.
+            const causalKeywords = ['por que', 'porque', 'causa', 'efeito', 'resultado', 'consequência', 'consequencia', 'leva a', 'resulta em'];
+            const hasCausalIntent = causalKeywords.some(kw => userMessage.toLowerCase().includes(kw));
+            
+            if (hasCausalIntent && questionContext.entities.length > 0) {
+                console.log('⚡ [Raciocínio Causal] Identificando causas e efeitos...');
+                causalReasoningResult = await causalReasoning(userMessage, questionContext, client);
+                
+                if (causalReasoningResult && causalReasoningResult.explanation) {
+                    console.log('✅ [Causal] Explicação causal gerada');
+                }
+            }
+        } catch (error) {
+            console.error('Erro no Grafo de Conhecimento/Raciocínio Causal:', error);
+        }
+        }
+        
         let bestAnswer = null;
         let bestScore = 0;
         let bestSource = null;
@@ -6047,6 +6080,36 @@ async function findBestAnswer(userMessage, userId) {
                         title: c.kb.title
                     };
                 }).filter(s => s.excerpt && s.excerpt.length > 20);
+                
+                // ============================================
+                // FASE 2: INTEGRAR CONHECIMENTO DO GRAFO E RACIOCÍNIO CAUSAL
+                // ============================================
+                // Adicionar conhecimento relacionado do grafo se disponível
+                if (knowledgeGraphResult && knowledgeGraphResult.length > 0) {
+                    console.log(`🕸️ [Grafo] Adicionando ${knowledgeGraphResult.length} conhecimentos relacionados do grafo`);
+                    // Adicionar ao knowledgeSources para síntese
+                    for (const kgKnowledge of knowledgeGraphResult.slice(0, 2)) {
+                        const excerpt = findRelevantExcerpt(kgKnowledge.content || kgKnowledge.title, questionContext, 300);
+                        if (excerpt) {
+                            knowledgeSources.push({
+                                excerpt: excerpt,
+                                score: 60, // Score médio para conhecimento do grafo
+                                title: kgKnowledge.title || 'Conhecimento Relacionado'
+                            });
+                        }
+                    }
+                }
+                
+                // Adicionar explicação causal se disponível
+                if (causalReasoningResult && causalReasoningResult.explanation) {
+                    console.log('⚡ [Causal] Adicionando explicação causal à resposta');
+                    // Adicionar explicação causal como fonte adicional
+                    knowledgeSources.push({
+                        excerpt: causalReasoningResult.explanation,
+                        score: 70, // Score bom para raciocínio causal
+                        title: 'Análise Causal'
+                    });
+                }
                 
                 // Sintetizar de múltiplas fontes se tiver mais de uma fonte relevante
                 let synthesizedAnswer = null;
@@ -7044,6 +7107,42 @@ async function findBestAnswer(userMessage, userId) {
                 }
             } catch (error) {
                 console.error('Erro ao validar fontes:', error);
+            }
+        }
+        
+        // ============================================
+        // FASE 2: META-COGNIÇÃO (Avaliar e melhorar resposta)
+        // ============================================
+        let metacognitiveEval = null;
+        if (bestAnswer) {
+            try {
+                console.log('🧠 [Meta-Cognição] Avaliando qualidade da resposta...');
+                metacognitiveEval = await metacognitiveEvaluation(
+                    userMessage,
+                    bestAnswer,
+                    finalConfidence,
+                    knowledgeUsedIds,
+                    client
+                );
+                
+                if (metacognitiveEval) {
+                    console.log('✅ [Meta-Cognição] Avaliação concluída:', {
+                        quality_score: metacognitiveEval.quality_score,
+                        gaps: metacognitiveEval.knowledge_gaps.length,
+                        improvements: metacognitiveEval.improvements_suggested.length
+                    });
+                    
+                    // Aplicar melhorias sugeridas
+                    if (metacognitiveEval.improvements_suggested.length > 0) {
+                        const improvedAnswer = applyMetacognitiveImprovements(bestAnswer, metacognitiveEval);
+                        if (improvedAnswer !== bestAnswer) {
+                            console.log('✨ [Meta-Cognição] Melhorias aplicadas à resposta');
+                            bestAnswer = improvedAnswer;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Erro na meta-cognição:', error);
             }
         }
         
@@ -15014,6 +15113,502 @@ function generateSystemRecommendations(analysis) {
     }
     
     return recommendations;
+}
+
+// ============================================
+// FASE 2: GRAFO DE CONHECIMENTO, RACIOCÍNIO CAUSAL E META-COGNIÇÃO
+// ============================================
+
+// ============================================
+// 1. GRAFO DE CONHECIMENTO (Knowledge Graph)
+// ============================================
+
+/**
+ * Adicionar ou atualizar conceito no grafo de conhecimento
+ */
+async function addOrUpdateConcept(conceptName, conceptType, description, categoryId, properties, client) {
+    try {
+        const result = await client.query(`
+            INSERT INTO ia_knowledge_graph_concepts 
+            (concept_name, concept_type, description, category_id, properties, importance_score)
+            VALUES ($1, $2, $3, $4, $5, 1.0)
+            ON CONFLICT (concept_name) 
+            DO UPDATE SET 
+                concept_type = EXCLUDED.concept_type,
+                description = EXCLUDED.description,
+                category_id = EXCLUDED.category_id,
+                properties = EXCLUDED.properties,
+                updated_at = CURRENT_TIMESTAMP,
+                usage_count = ia_knowledge_graph_concepts.usage_count + 1
+            RETURNING id
+        `, [conceptName, conceptType, description, categoryId, JSON.stringify(properties || {})]);
+        
+        return result.rows[0]?.id;
+    } catch (error) {
+        console.error('Erro ao adicionar conceito ao grafo:', error);
+        return null;
+    }
+}
+
+/**
+ * Adicionar relação entre conceitos
+ */
+async function addRelation(fromConceptId, toConceptId, relationType, strength, confidence, description, client) {
+    try {
+        const result = await client.query(`
+            INSERT INTO ia_knowledge_graph_relations 
+            (from_concept_id, to_concept_id, relation_type, strength, confidence, description, evidence_count)
+            VALUES ($1, $2, $3, $4, $5, $6, 1)
+            ON CONFLICT (from_concept_id, to_concept_id, relation_type)
+            DO UPDATE SET 
+                strength = (ia_knowledge_graph_relations.strength + EXCLUDED.strength) / 2,
+                confidence = GREATEST(ia_knowledge_graph_relations.confidence, EXCLUDED.confidence),
+                evidence_count = ia_knowledge_graph_relations.evidence_count + 1,
+                updated_at = CURRENT_TIMESTAMP
+            RETURNING id
+        `, [fromConceptId, toConceptId, relationType, strength, confidence, description]);
+        
+        return result.rows[0]?.id;
+    } catch (error) {
+        console.error('Erro ao adicionar relação:', error);
+        return null;
+    }
+}
+
+/**
+ * Buscar conceitos relacionados
+ */
+async function findRelatedConcepts(conceptName, relationType, maxDepth, client) {
+    try {
+        const result = await client.query(`
+            WITH RECURSIVE related_concepts AS (
+                -- Conceito inicial
+                SELECT c.id, c.concept_name, c.concept_type, c.description, 0 as depth
+                FROM ia_knowledge_graph_concepts c
+                WHERE LOWER(c.concept_name) = LOWER($1)
+                
+                UNION
+                
+                -- Conceitos relacionados
+                SELECT 
+                    c2.id, 
+                    c2.concept_name, 
+                    c2.concept_type, 
+                    c2.description,
+                    rc.depth + 1 as depth
+                FROM related_concepts rc
+                JOIN ia_knowledge_graph_relations r ON (
+                    (r.from_concept_id = rc.id AND r.to_concept_id != rc.id) OR
+                    (r.to_concept_id = rc.id AND r.from_concept_id != rc.id)
+                )
+                JOIN ia_knowledge_graph_concepts c2 ON (
+                    (r.to_concept_id = c2.id AND r.from_concept_id = rc.id) OR
+                    (r.from_concept_id = c2.id AND r.to_concept_id = rc.id)
+                )
+                WHERE rc.depth < $3
+                AND ($2 IS NULL OR r.relation_type = $2)
+            )
+            SELECT DISTINCT * FROM related_concepts
+            WHERE depth > 0
+            ORDER BY depth, concept_name
+            LIMIT 20
+        `, [conceptName, relationType, maxDepth]);
+        
+        return result.rows;
+    } catch (error) {
+        console.error('Erro ao buscar conceitos relacionados:', error);
+        return [];
+    }
+}
+
+/**
+ * Construir grafo de conhecimento a partir de texto
+ */
+async function buildKnowledgeGraphFromText(text, title, categoryId, client) {
+    try {
+        // Extrair entidades e conceitos do texto
+        const entities = extractKeywords(text);
+        const concepts = [];
+        
+        // Identificar conceitos principais (palavras com maiúscula, substantivos)
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+        for (const sentence of sentences.slice(0, 20)) {
+            const words = sentence.split(/\s+/).filter(w => w.length > 3);
+            for (const word of words) {
+                if (word[0] === word[0].toUpperCase() && !concepts.includes(word.toLowerCase())) {
+                    concepts.push(word.toLowerCase());
+                }
+            }
+        }
+        
+        // Adicionar conceitos principais
+        const conceptIds = {};
+        for (const concept of [...entities.slice(0, 10), ...concepts.slice(0, 10)]) {
+            const conceptId = await addOrUpdateConcept(
+                concept,
+                'entity',
+                `Conceito extraído de: ${title}`,
+                categoryId,
+                { source: title },
+                client
+            );
+            if (conceptId) {
+                conceptIds[concept] = conceptId;
+            }
+        }
+        
+        // Identificar relações (padrões como "A é B", "A causa B", "A parte de B")
+        const relationPatterns = [
+            { pattern: /([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)\s+(é|foi|era|torna-se)\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi, type: 'is_a' },
+            { pattern: /([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)\s+(causa|leva a|resulta em)\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi, type: 'causes' },
+            { pattern: /([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)\s+(é parte de|faz parte de|pertence a)\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi, type: 'part_of' }
+        ];
+        
+        for (const { pattern, type } of relationPatterns) {
+            const matches = [...text.matchAll(pattern)];
+            for (const match of matches) {
+                const fromConcept = match[1].toLowerCase();
+                const toConcept = match[3]?.toLowerCase() || match[2]?.toLowerCase();
+                
+                if (conceptIds[fromConcept] && conceptIds[toConcept]) {
+                    await addRelation(
+                        conceptIds[fromConcept],
+                        conceptIds[toConcept],
+                        type,
+                        0.8,
+                        0.7,
+                        `Relação extraída de: ${title}`,
+                        client
+                    );
+                }
+            }
+        }
+        
+        return { conceptsAdded: Object.keys(conceptIds).length, relationsAdded: matches?.length || 0 };
+    } catch (error) {
+        console.error('Erro ao construir grafo de conhecimento:', error);
+        return { conceptsAdded: 0, relationsAdded: 0 };
+    }
+}
+
+/**
+ * Buscar conhecimento usando grafo (busca por caminho)
+ */
+async function searchKnowledgeGraph(question, questionContext, client) {
+    try {
+        const entities = questionContext.entities || [];
+        if (entities.length === 0) return [];
+        
+        const relatedConcepts = [];
+        
+        // Para cada entidade, buscar conceitos relacionados
+        for (const entity of entities.slice(0, 5)) {
+            const related = await findRelatedConcepts(entity, null, 2, client);
+            relatedConcepts.push(...related);
+        }
+        
+        // Buscar conhecimento baseado nos conceitos relacionados
+        if (relatedConcepts.length > 0) {
+            const conceptNames = relatedConcepts.map(c => c.concept_name);
+            const result = await client.query(`
+                SELECT DISTINCT kb.*
+                FROM ia_knowledge_base kb
+                WHERE kb.is_active = true
+                AND (
+                    ${conceptNames.map((_, i) => `LOWER(kb.title) LIKE $${i + 1} OR LOWER(kb.content) LIKE $${i + 1}`).join(' OR ')}
+                )
+                LIMIT 10
+            `, conceptNames.map(c => `%${c}%`));
+            
+            return result.rows;
+        }
+        
+        return [];
+    } catch (error) {
+        console.error('Erro ao buscar no grafo de conhecimento:', error);
+        return [];
+    }
+}
+
+// ============================================
+// 2. RACIOCÍNIO CAUSAL
+// ============================================
+
+/**
+ * Identificar causas de um evento/conceito
+ */
+async function identifyCauses(conceptName, client) {
+    try {
+        const result = await client.query(`
+            SELECT DISTINCT c1.*, r.strength, r.confidence
+            FROM ia_knowledge_graph_concepts c1
+            JOIN ia_knowledge_graph_relations r ON r.from_concept_id = c1.id
+            JOIN ia_knowledge_graph_concepts c2 ON r.to_concept_id = c2.id
+            WHERE LOWER(c2.concept_name) = LOWER($1)
+            AND r.relation_type = 'causes'
+            ORDER BY r.strength DESC, r.confidence DESC
+            LIMIT 10
+        `, [conceptName]);
+        
+        return result.rows;
+    } catch (error) {
+        console.error('Erro ao identificar causas:', error);
+        return [];
+    }
+}
+
+/**
+ * Identificar efeitos de um evento/conceito
+ */
+async function identifyEffects(conceptName, client) {
+    try {
+        const result = await client.query(`
+            SELECT DISTINCT c2.*, r.strength, r.confidence
+            FROM ia_knowledge_graph_concepts c1
+            JOIN ia_knowledge_graph_relations r ON r.from_concept_id = c1.id
+            JOIN ia_knowledge_graph_concepts c2 ON r.to_concept_id = c2.id
+            WHERE LOWER(c1.concept_name) = LOWER($1)
+            AND r.relation_type = 'causes'
+            ORDER BY r.strength DESC, r.confidence DESC
+            LIMIT 10
+        `, [conceptName]);
+        
+        return result.rows;
+    } catch (error) {
+        console.error('Erro ao identificar efeitos:', error);
+        return [];
+    }
+}
+
+/**
+ * Construir cadeia causal
+ */
+async function buildCausalChain(causeName, effectName, client) {
+    try {
+        // Buscar caminho no grafo
+        const result = await client.query(`
+            WITH RECURSIVE causal_path AS (
+                SELECT 
+                    c1.id as from_id,
+                    c1.concept_name as from_name,
+                    c2.id as to_id,
+                    c2.concept_name as to_name,
+                    r.relation_type,
+                    r.strength,
+                    ARRAY[c1.id] as path,
+                    1 as depth
+                FROM ia_knowledge_graph_concepts c1
+                JOIN ia_knowledge_graph_relations r ON r.from_concept_id = c1.id
+                JOIN ia_knowledge_graph_concepts c2 ON r.to_concept_id = c2.id
+                WHERE LOWER(c1.concept_name) = LOWER($1)
+                AND r.relation_type = 'causes'
+                
+                UNION
+                
+                SELECT 
+                    cp.from_id,
+                    cp.from_name,
+                    c2.id as to_id,
+                    c2.concept_name as to_name,
+                    r.relation_type,
+                    r.strength,
+                    cp.path || c2.id,
+                    cp.depth + 1
+                FROM causal_path cp
+                JOIN ia_knowledge_graph_relations r ON r.from_concept_id = cp.to_id
+                JOIN ia_knowledge_graph_concepts c2 ON r.to_concept_id = c2.id
+                WHERE r.relation_type = 'causes'
+                AND NOT (c2.id = ANY(cp.path))
+                AND cp.depth < 5
+            )
+            SELECT * FROM causal_path
+            WHERE LOWER(to_name) = LOWER($2)
+            ORDER BY depth, strength DESC
+            LIMIT 1
+        `, [causeName, effectName]);
+        
+        if (result.rows.length > 0) {
+            return {
+                chain: result.rows[0].path,
+                steps: result.rows[0].path.map((id, idx) => ({
+                    step_order: idx + 1,
+                    concept_id: id
+                })),
+                confidence: result.rows[0].strength
+            };
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Erro ao construir cadeia causal:', error);
+        return null;
+    }
+}
+
+/**
+ * Raciocínio causal completo
+ */
+async function causalReasoning(question, questionContext, client) {
+    try {
+        const entities = questionContext.entities || [];
+        if (entities.length === 0) return null;
+        
+        const mainEntity = entities[0];
+        
+        // Identificar causas e efeitos
+        const causes = await identifyCauses(mainEntity, client);
+        const effects = await identifyEffects(mainEntity, client);
+        
+        if (causes.length === 0 && effects.length === 0) return null;
+        
+        // Construir explicação causal
+        let explanation = '';
+        if (causes.length > 0) {
+            explanation += `**Causas de "${mainEntity}":**\n`;
+            causes.slice(0, 3).forEach((cause, idx) => {
+                explanation += `${idx + 1}. ${cause.concept_name} (confiança: ${(cause.confidence * 100).toFixed(0)}%)\n`;
+            });
+        }
+        
+        if (effects.length > 0) {
+            explanation += `\n**Efeitos de "${mainEntity}":**\n`;
+            effects.slice(0, 3).forEach((effect, idx) => {
+                explanation += `${idx + 1}. ${effect.concept_name} (confiança: ${(effect.confidence * 100).toFixed(0)}%)\n`;
+            });
+        }
+        
+        return {
+            causes: causes,
+            effects: effects,
+            explanation: explanation,
+            confidence: causes.length > 0 || effects.length > 0 ? 0.7 : 0
+        };
+    } catch (error) {
+        console.error('Erro no raciocínio causal:', error);
+        return null;
+    }
+}
+
+// ============================================
+// 3. META-COGNIÇÃO
+// ============================================
+
+/**
+ * Avaliar qualidade da resposta meta-cognitivamente
+ */
+async function metacognitiveEvaluation(question, answer, confidence, knowledgeUsed, client) {
+    try {
+        const evaluation = {
+            quality_score: 0,
+            confidence_assessment: confidence,
+            knowledge_gaps: [],
+            improvements_suggested: [],
+            lessons_learned: []
+        };
+        
+        // Avaliar qualidade da resposta
+        const answerLength = answer?.length || 0;
+        const hasStructure = answer?.includes('**') || answer?.includes('\n');
+        const hasExamples = answer?.includes('exemplo') || answer?.includes('Exemplo');
+        const completeness = answerLength > 100 ? 0.8 : answerLength > 50 ? 0.6 : 0.4;
+        
+        evaluation.quality_score = (
+            (completeness * 0.4) +
+            (hasStructure ? 0.3 : 0) +
+            (hasExamples ? 0.3 : 0)
+        );
+        
+        // Identificar lacunas de conhecimento
+        if (confidence < 70) {
+            evaluation.knowledge_gaps.push({
+                type: 'low_confidence',
+                description: 'Confiança baixa na resposta',
+                suggestion: 'Buscar mais conhecimento sobre o tópico'
+            });
+        }
+        
+        if (answerLength < 100) {
+            evaluation.knowledge_gaps.push({
+                type: 'short_answer',
+                description: 'Resposta muito curta',
+                suggestion: 'Expandir resposta com mais detalhes e exemplos'
+            });
+        }
+        
+        // Sugerir melhorias
+        if (!hasStructure) {
+            evaluation.improvements_suggested.push({
+                type: 'structure',
+                description: 'Adicionar estrutura (títulos, listas)',
+                priority: 'medium'
+            });
+        }
+        
+        if (!hasExamples && answerLength > 50) {
+            evaluation.improvements_suggested.push({
+                type: 'examples',
+                description: 'Adicionar exemplos práticos',
+                priority: 'high'
+            });
+        }
+        
+        // Extrair lições aprendidas
+        if (knowledgeUsed && knowledgeUsed.length > 0) {
+            evaluation.lessons_learned.push({
+                lesson: 'Conhecimento de múltiplas fontes melhora a qualidade',
+                knowledge_sources: knowledgeUsed.length
+            });
+        }
+        
+        // Salvar avaliação
+        await client.query(`
+            INSERT INTO ia_metacognitive_evaluations 
+            (question, answer, quality_score, confidence_score, knowledge_gaps, improvements_suggested, lessons_learned)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `, [
+            question,
+            answer,
+            evaluation.quality_score,
+            confidence,
+            JSON.stringify(evaluation.knowledge_gaps),
+            JSON.stringify(evaluation.improvements_suggested),
+            JSON.stringify(evaluation.lessons_learned)
+        ]);
+        
+        return evaluation;
+    } catch (error) {
+        console.error('Erro na avaliação meta-cognitiva:', error);
+        return null;
+    }
+}
+
+/**
+ * Aplicar melhorias sugeridas pela meta-cognição
+ */
+function applyMetacognitiveImprovements(answer, evaluation) {
+    if (!evaluation || !evaluation.improvements_suggested) return answer;
+    
+    let improvedAnswer = answer;
+    
+    // Adicionar estrutura se sugerido
+    if (evaluation.improvements_suggested.some(i => i.type === 'structure')) {
+        if (!improvedAnswer.includes('**')) {
+            // Tentar adicionar estrutura básica
+            const lines = improvedAnswer.split('\n');
+            if (lines.length > 3) {
+                improvedAnswer = `**Resposta:**\n\n${improvedAnswer}`;
+            }
+        }
+    }
+    
+    // Adicionar exemplos se sugerido
+    if (evaluation.improvements_suggested.some(i => i.type === 'examples' && i.priority === 'high')) {
+        if (!improvedAnswer.toLowerCase().includes('exemplo')) {
+            improvedAnswer += '\n\n**Exemplo prático:** (Adicione um exemplo relevante aqui)';
+        }
+    }
+    
+    return improvedAnswer;
 }
 
 module.exports = router;
