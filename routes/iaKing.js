@@ -3708,6 +3708,27 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // ============================================
+        // DETECÇÃO: PERGUNTAS SOBRE O NOME DA IA
+        // ============================================
+        const lowerMessage = userMessage.toLowerCase();
+        const nameQuestions = [
+            'qual seu nome', 'qual é seu nome', 'qual o seu nome',
+            'como você se chama', 'quem é você', 'quem voce e',
+            'qual seu nome?', 'qual é seu nome?', 'qual o seu nome?',
+            'me diga seu nome', 'diga seu nome', 'fale seu nome',
+            'você tem nome', 'tem nome', 'seu nome é', 'você se chama'
+        ];
+        
+        if (nameQuestions.some(q => lowerMessage.includes(q))) {
+            return {
+                answer: "Olá! 😊 Meu nome é **Ia King** (ou **IA King**). Sou a assistente virtual inteligente do Conecta King, criada para ajudar você com suas dúvidas sobre o sistema, estratégias de vendas, conhecimento geral e muito mais!\n\nEstou sempre aprendendo e melhorando para te dar as melhores respostas possíveis. Como posso te ajudar hoje? 😊",
+                confidence: 100,
+                source: 'ia_identity',
+                mentalMode: 'friendly'
+            };
+        }
+        
+        // ============================================
         // SISTEMA DE PENSAMENTO (Como ChatGPT/Gemini)
         // ============================================
         
@@ -5402,6 +5423,15 @@ async function findBestAnswer(userMessage, userId) {
         
         // Se AINDA não encontrou resposta relevante, retornar resposta educada
         if (!bestAnswer || bestScore < 30) {
+            // ============================================
+            // REGISTRAR PERGUNTA NÃO RESPONDIDA NO MONITORAMENTO
+            // ============================================
+            try {
+                await registerUnansweredQuestion(userMessage, userId, questionContext, client);
+            } catch (regError) {
+                console.error('Erro ao registrar pergunta não respondida:', regError);
+            }
+            
             // Se a pergunta tem entidades mas não encontramos conhecimento, ser específico
             if (questionContext.entities.length > 0) {
                 const entity = questionContext.entities[0];
@@ -5410,7 +5440,8 @@ async function findBestAnswer(userMessage, userId) {
                     confidence: 0,
                     source: 'no_knowledge',
                     mentalMode: mentalMode,
-                    category: categoryInfo ? categoryInfo.primaryCategory : 'general'
+                    category: categoryInfo ? categoryInfo.primaryCategory : 'general',
+                    needs_improvement: true
                 };
             }
             
@@ -5423,7 +5454,8 @@ async function findBestAnswer(userMessage, userId) {
                     confidence: 0,
                     source: 'no_knowledge',
                     mentalMode: mentalMode,
-                    category: categoryInfo ? categoryInfo.primaryCategory : 'general'
+                    category: categoryInfo ? categoryInfo.primaryCategory : 'general',
+                    needs_improvement: true
                 };
             }
             
@@ -12384,6 +12416,86 @@ function generateTestRecommendations(issues) {
     }
     
     return recommendations;
+}
+
+// ============================================
+// FUNÇÃO: REGISTRAR PERGUNTA NÃO RESPONDIDA
+// ============================================
+async function registerUnansweredQuestion(question, userId, questionContext, client) {
+    try {
+        // Verificar se a tabela existe
+        const tableCheck = await client.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'ia_unanswered_questions'
+            ) as exists
+        `);
+        
+        if (!tableCheck.rows[0].exists) {
+            // Criar tabela se não existir
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS ia_unanswered_questions (
+                    id SERIAL PRIMARY KEY,
+                    question TEXT NOT NULL,
+                    user_id VARCHAR(255),
+                    question_context JSONB,
+                    category VARCHAR(100),
+                    entities TEXT[],
+                    first_asked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_asked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    ask_count INTEGER DEFAULT 1,
+                    improved BOOLEAN DEFAULT false,
+                    improved_at TIMESTAMP,
+                    improved_by VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+        }
+        
+        // Verificar se já existe pergunta similar
+        const existing = await client.query(`
+            SELECT id, ask_count FROM ia_unanswered_questions
+            WHERE LOWER(question) = LOWER($1)
+            LIMIT 1
+        `, [question]);
+        
+        if (existing.rows.length > 0) {
+            // Atualizar contador
+            await client.query(`
+                UPDATE ia_unanswered_questions
+                SET ask_count = ask_count + 1,
+                    last_asked_at = NOW(),
+                    question_context = $1,
+                    entities = $2,
+                    category = $3
+                WHERE id = $4
+            `, [
+                JSON.stringify(questionContext),
+                questionContext.entities || [],
+                questionContext.primaryCategory || 'general',
+                existing.rows[0].id
+            ]);
+        } else {
+            // Inserir nova pergunta
+            await client.query(`
+                INSERT INTO ia_unanswered_questions
+                (question, user_id, question_context, category, entities, ask_count)
+                VALUES ($1, $2, $3, $4, $5, 1)
+            `, [
+                question,
+                userId,
+                JSON.stringify(questionContext),
+                questionContext.primaryCategory || 'general',
+                questionContext.entities || []
+            ]);
+        }
+        
+        console.log('📝 Pergunta não respondida registrada:', question.substring(0, 50));
+    } catch (error) {
+        console.error('Erro ao registrar pergunta não respondida:', error);
+        // Não bloquear resposta por erro no registro
+    }
 }
 
 module.exports = router;
