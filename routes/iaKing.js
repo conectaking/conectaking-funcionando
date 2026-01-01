@@ -10634,6 +10634,82 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
     }
 }));
 
+// GET /api/ia-king/web-search/free-apis - Buscar APIs gratuitas disponíveis
+router.get('/web-search/free-apis', protectAdmin, asyncHandler(async (req, res) => {
+    try {
+        // Lista de APIs gratuitas conhecidas
+        const freeAPIs = [
+            {
+                name: 'DuckDuckGo Instant Answer API',
+                provider: 'duckduckgo',
+                description: 'API gratuita e sem necessidade de chave. Retorna respostas instantâneas para consultas.',
+                url: 'https://api.duckduckgo.com/',
+                requires_key: false,
+                rate_limit: 'Sem limite conhecido',
+                quality: 'Média',
+                status: 'disponivel'
+            },
+            {
+                name: 'Wikipedia REST API',
+                provider: 'wikipedia',
+                description: 'API gratuita da Wikipedia. Acesso a resumos e artigos completos.',
+                url: 'https://www.mediawiki.org/wiki/API:REST_API',
+                requires_key: false,
+                rate_limit: 'Sem limite conhecido',
+                quality: 'Alta',
+                status: 'disponivel'
+            },
+            {
+                name: 'Tavily API',
+                provider: 'tavily',
+                description: 'API de busca avançada com plano gratuito (1.000 créditos/mês). Melhor qualidade de resultados.',
+                url: 'https://tavily.com',
+                requires_key: true,
+                rate_limit: '1.000 créditos/mês (plano gratuito)',
+                quality: 'Muito Alta',
+                status: 'disponivel',
+                signup_url: 'https://tavily.com'
+            },
+            {
+                name: 'SerpAPI (Plano Gratuito)',
+                provider: 'serpapi',
+                description: 'API de busca com plano gratuito limitado. Requer cadastro.',
+                url: 'https://serpapi.com',
+                requires_key: true,
+                rate_limit: '100 buscas/mês (plano gratuito)',
+                quality: 'Alta',
+                status: 'disponivel',
+                signup_url: 'https://serpapi.com'
+            },
+            {
+                name: 'SearxNG (Self-hosted)',
+                provider: 'searxng',
+                description: 'Meta-buscador de código aberto. Pode ser auto-hospedado gratuitamente.',
+                url: 'https://github.com/searxng/searxng',
+                requires_key: false,
+                rate_limit: 'Depende da instalação',
+                quality: 'Média',
+                status: 'disponivel'
+            }
+        ];
+        
+        res.json({
+            success: true,
+            apis: freeAPIs,
+            total: freeAPIs.length,
+            message: `${freeAPIs.length} APIs gratuitas encontradas`
+        });
+    } catch (error) {
+        console.error('Erro ao buscar APIs gratuitas:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Erro ao buscar APIs gratuitas',
+            details: error.message,
+            apis: []
+        });
+    }
+}));
+
 // ============================================
 // ROTAS DE APRENDIZADO PENDENTE (ADMIN)
 // ============================================
