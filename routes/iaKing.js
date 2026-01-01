@@ -3660,19 +3660,19 @@ async function generateQuestionSuggestions(client, userId, conversationId, quest
         
         // Salvar sugestões
         if (suggestions.length > 0) {
-            const values = suggestions.map((s, idx) => 
-                `($1, $2, $3, $4, $5)`
-            ).join(', ');
-            
-            await client.query(`
-                INSERT INTO ia_question_suggestions
-                (user_id, conversation_id, suggested_question, suggestion_type, category_id)
-                VALUES ${values}
-            `, [
-                userId,
-                conversationId,
-                ...suggestions.flatMap(s => [s.question, s.type, s.category_id || null])
-            ]);
+            for (const suggestion of suggestions) {
+                await client.query(`
+                    INSERT INTO ia_question_suggestions
+                    (user_id, conversation_id, suggested_question, suggestion_type, category_id)
+                    VALUES ($1, $2, $3, $4, $5)
+                `, [
+                    userId,
+                    conversationId,
+                    suggestion.question,
+                    suggestion.type,
+                    suggestion.category_id || null
+                ]);
+            }
         }
         
         return suggestions.slice(0, 5); // Retornar até 5 sugestões
@@ -10817,6 +10817,99 @@ router.post('/corrections/:id/verify', protectAdmin, asyncHandler(async (req, re
     } catch (error) {
         console.error('Erro ao verificar correção:', error);
         res.status(500).json({ error: 'Erro ao verificar correção' });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// SISTEMA DE SUGESTÕES DE PERGUNTAS
+// ============================================
+
+// GET /api/ia-king/suggestions/:conversation_id - Obter sugestões de perguntas
+router.get('/suggestions/:conversation_id', protectUser, asyncHandler(async (req, res) => {
+    const { conversation_id } = req.params;
+    const userId = req.user.id;
+    
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT * FROM ia_question_suggestions
+            WHERE conversation_id = $1 AND user_id = $2
+            ORDER BY created_at DESC
+            LIMIT 5
+        `, [conversation_id, userId]);
+        
+        res.json({ suggestions: result.rows });
+    } catch (error) {
+        console.error('Erro ao buscar sugestões:', error);
+        res.status(500).json({ error: 'Erro ao buscar sugestões' });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/suggestions/:id/click - Marcar sugestão como clicada
+router.post('/suggestions/:id/click', protectUser, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+    try {
+        await client.query(`
+            UPDATE ia_question_suggestions
+            SET clicked = true
+            WHERE id = $1
+        `, [id]);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro ao marcar sugestão:', error);
+        res.status(500).json({ error: 'Erro ao marcar sugestão' });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// SISTEMA DE MÉTRICAS DE SATISFAÇÃO
+// ============================================
+
+// GET /api/ia-king/metrics/satisfaction - Obter métricas de satisfação
+router.get('/metrics/satisfaction', protectAdmin, asyncHandler(async (req, res) => {
+    const { days = 30 } = req.query;
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT * FROM ia_satisfaction_metrics
+            WHERE date >= CURRENT_DATE - INTERVAL '${parseInt(days)} days'
+            ORDER BY date DESC
+        `);
+        
+        // Calcular totais
+        const totals = result.rows.reduce((acc, row) => ({
+            total_conversations: acc.total_conversations + parseInt(row.total_conversations || 0),
+            positive_feedback: acc.positive_feedback + parseInt(row.positive_feedback_count || 0),
+            negative_feedback: acc.negative_feedback + parseInt(row.negative_feedback_count || 0),
+            neutral_feedback: acc.neutral_feedback + parseInt(row.neutral_feedback_count || 0)
+        }), {
+            total_conversations: 0,
+            positive_feedback: 0,
+            negative_feedback: 0,
+            neutral_feedback: 0
+        });
+        
+        const satisfactionRate = totals.total_conversations > 0
+            ? (totals.positive_feedback / totals.total_conversations) * 100
+            : 0;
+        
+        res.json({
+            metrics: result.rows,
+            totals: totals,
+            satisfaction_rate: Math.round(satisfactionRate * 100) / 100,
+            period_days: parseInt(days)
+        });
+    } catch (error) {
+        console.error('Erro ao buscar métricas:', error);
+        res.status(500).json({ error: 'Erro ao buscar métricas' });
     } finally {
         client.release();
     }
