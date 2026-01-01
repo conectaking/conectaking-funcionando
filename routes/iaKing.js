@@ -4030,6 +4030,802 @@ function detectAmbiguity(message, questionContext) {
     };
 }
 
+// ============================================
+// FASE 1: MELHORIAS CRÍTICAS PROFUNDAS
+// ============================================
+
+// 1. CHAIN OF THOUGHT REASONING (Raciocínio Passo a Passo)
+async function chainOfThoughtReasoning(question, questionContext, knowledge, client) {
+    const steps = [];
+    let finalAnswer = null;
+    let chainConfidence = 0;
+    
+    try {
+        // Passo 1: Decompor pergunta
+        const decomposition = decomposeQuestion(question, questionContext);
+        steps.push({
+            step: 1,
+            action: 'decompose',
+            reasoning: 'Quebrando pergunta em componentes principais...',
+            result: decomposition,
+            confidence: 90
+        });
+        
+        // Passo 2: Identificar conhecimento necessário
+        const requiredKnowledge = identifyRequiredKnowledge(decomposition, questionContext);
+        steps.push({
+            step: 2,
+            action: 'identify_knowledge',
+            reasoning: `Identificando conhecimento necessário: ${requiredKnowledge.entities.join(', ')}`,
+            result: requiredKnowledge,
+            confidence: 85
+        });
+        
+        // Passo 3: Buscar e validar conhecimento
+        const retrievedKnowledge = await retrieveAndValidateKnowledge(requiredKnowledge, knowledge, client);
+        steps.push({
+            step: 3,
+            action: 'retrieve_validate',
+            reasoning: `Buscando e validando conhecimento de ${retrievedKnowledge.sources.length} fontes...`,
+            result: retrievedKnowledge,
+            confidence: retrievedKnowledge.confidence
+        });
+        
+        // Passo 4: Fazer inferências lógicas
+        const inferences = await makeLogicalInferences(retrievedKnowledge, questionContext, question);
+        steps.push({
+            step: 4,
+            action: 'infer',
+            reasoning: `Fazendo inferências lógicas (${inferences.inferences.length} inferências encontradas)...`,
+            result: inferences,
+            confidence: inferences.confidence
+        });
+        
+        // Passo 5: Sintetizar resposta
+        const synthesis = synthesizeFromChainSteps(steps, questionContext);
+        steps.push({
+            step: 5,
+            action: 'synthesize',
+            reasoning: 'Sintetizando resposta final a partir de todos os passos...',
+            result: synthesis,
+            confidence: synthesis.confidence
+        });
+        
+        finalAnswer = synthesis.answer;
+        chainConfidence = calculateChainConfidence(steps);
+        
+        console.log('🧠 [Chain of Thought] Raciocínio completo:', {
+            steps: steps.length,
+            confidence: chainConfidence,
+            finalAnswerLength: finalAnswer?.length || 0
+        });
+        
+    } catch (error) {
+        console.error('Erro no Chain of Thought Reasoning:', error);
+    }
+    
+    return {
+        finalAnswer: finalAnswer,
+        reasoningChain: steps,
+        confidence: chainConfidence,
+        used: steps.length > 0
+    };
+}
+
+// Decompor pergunta em componentes
+function decomposeQuestion(question, questionContext) {
+    return {
+        mainQuestion: question,
+        entities: questionContext.entities || [],
+        keywords: questionContext.keywords || [],
+        questionType: questionContext.questionType || 'general',
+        intent: questionContext.intent || 'information',
+        subQuestions: generateSubQuestions(question, questionContext)
+    };
+}
+
+// Gerar sub-perguntas
+function generateSubQuestions(question, questionContext) {
+    const subQuestions = [];
+    
+    if (questionContext.questionType === 'why') {
+        subQuestions.push('Quais são as causas?');
+        subQuestions.push('Quais são os efeitos?');
+    } else if (questionContext.questionType === 'how') {
+        subQuestions.push('Quais são os passos?');
+        subQuestions.push('Quais são os requisitos?');
+    } else if (questionContext.questionType === 'who') {
+        subQuestions.push('Quem é essa pessoa?');
+        subQuestions.push('O que essa pessoa fez?');
+        subQuestions.push('Qual a importância dessa pessoa?');
+    }
+    
+    return subQuestions;
+}
+
+// Identificar conhecimento necessário
+function identifyRequiredKnowledge(decomposition, questionContext) {
+    return {
+        entities: decomposition.entities,
+        keywords: decomposition.keywords,
+        topics: extractTopics(decomposition),
+        requiredTypes: identifyRequiredTypes(decomposition.questionType),
+        priority: calculateKnowledgePriority(decomposition)
+    };
+}
+
+// Extrair tópicos
+function extractTopics(decomposition) {
+    const topics = [...decomposition.entities];
+    
+    // Adicionar tópicos relacionados
+    if (decomposition.entities.includes('jesus')) {
+        topics.push('cristianismo', 'bíblia', 'fé');
+    }
+    
+    return topics;
+}
+
+// Identificar tipos necessários
+function identifyRequiredTypes(questionType) {
+    const typeMap = {
+        'who': ['biography', 'definition', 'history'],
+        'what': ['definition', 'explanation'],
+        'why': ['explanation', 'causality'],
+        'how': ['procedure', 'steps', 'method']
+    };
+    
+    return typeMap[questionType] || ['general'];
+}
+
+// Calcular prioridade
+function calculateKnowledgePriority(decomposition) {
+    let priority = 50;
+    
+    if (decomposition.entities.length > 0) priority += 20;
+    if (decomposition.keywords.length > 2) priority += 15;
+    if (decomposition.questionType === 'why') priority += 10;
+    
+    return Math.min(100, priority);
+}
+
+// Buscar e validar conhecimento
+async function retrieveAndValidateKnowledge(requiredKnowledge, existingKnowledge, client) {
+    const sources = [];
+    let confidence = 0;
+    
+    // Buscar conhecimento existente
+    if (existingKnowledge && existingKnowledge.length > 0) {
+        for (const kb of existingKnowledge) {
+            // Verificar relevância
+            const relevance = calculateRelevance(kb, requiredKnowledge);
+            if (relevance > 30) {
+                sources.push({
+                    ...kb,
+                    relevance: relevance
+                });
+            }
+        }
+    }
+    
+    // Se não encontrou suficiente, buscar no banco
+    if (sources.length < 2 && requiredKnowledge.entities.length > 0) {
+        try {
+            const dbKnowledge = await client.query(`
+                SELECT * FROM ia_knowledge_base
+                WHERE is_active = true
+                AND (
+                    ${requiredKnowledge.entities.map((_, i) => `LOWER(content) LIKE $${i + 1}`).join(' OR ')}
+                )
+                LIMIT 5
+            `, requiredKnowledge.entities.map(e => `%${e.toLowerCase()}%`));
+            
+            for (const kb of dbKnowledge.rows) {
+                const relevance = calculateRelevance(kb, requiredKnowledge);
+                if (relevance > 30) {
+                    sources.push({
+                        ...kb,
+                        relevance: relevance
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao buscar conhecimento no banco:', error);
+        }
+    }
+    
+    // Ordenar por relevância
+    sources.sort((a, b) => b.relevance - a.relevance);
+    
+    // Calcular confiança
+    if (sources.length > 2) {
+        confidence = 85;
+    } else if (sources.length > 0) {
+        confidence = 70;
+    } else {
+        confidence = 30;
+    }
+    
+    return {
+        sources: sources.slice(0, 5),
+        confidence: confidence,
+        totalFound: sources.length
+    };
+}
+
+// Calcular relevância
+function calculateRelevance(kb, requiredKnowledge) {
+    let score = 0;
+    const contentLower = (kb.content || '').toLowerCase();
+    const titleLower = (kb.title || '').toLowerCase();
+    
+    // Entidades
+    for (const entity of requiredKnowledge.entities) {
+        if (contentLower.includes(entity.toLowerCase())) score += 50;
+        if (titleLower.includes(entity.toLowerCase())) score += 30;
+    }
+    
+    // Palavras-chave
+    for (const keyword of requiredKnowledge.keywords) {
+        if (contentLower.includes(keyword.toLowerCase())) score += 20;
+    }
+    
+    return score;
+}
+
+// 2. SISTEMA DE INFERÊNCIA LÓGICA AVANÇADA
+async function makeLogicalInferences(retrievedKnowledge, questionContext, question) {
+    const inferences = [];
+    let bestInference = null;
+    
+    if (!retrievedKnowledge || retrievedKnowledge.sources.length === 0) {
+        return {
+            inferences: [],
+            bestInference: null,
+            confidence: 0
+        };
+    }
+    
+    const sources = retrievedKnowledge.sources;
+    
+    // Inferência Dedutiva (Se A então B, A é verdade, então B é verdade)
+    const deductive = applyDeductiveReasoning(sources, questionContext);
+    if (deductive) {
+        inferences.push({
+            type: 'deductive',
+            result: deductive,
+            confidence: 85
+        });
+    }
+    
+    // Inferência Indutiva (Padrões observados → Generalização)
+    const inductive = applyInductiveReasoning(sources, questionContext);
+    if (inductive) {
+        inferences.push({
+            type: 'inductive',
+            result: inductive,
+            confidence: 70
+        });
+    }
+    
+    // Inferência Abductiva (Melhor explicação)
+    const abductive = applyAbductiveReasoning(sources, questionContext, question);
+    if (abductive) {
+        inferences.push({
+            type: 'abductive',
+            result: abductive,
+            confidence: 75
+        });
+    }
+    
+    // Inferência Transitiva (Se A→B e B→C, então A→C)
+    const transitive = applyTransitiveReasoning(sources, questionContext);
+    if (transitive) {
+        inferences.push({
+            type: 'transitive',
+            result: transitive,
+            confidence: 80
+        });
+    }
+    
+    // Selecionar melhor inferência
+    if (inferences.length > 0) {
+        bestInference = inferences.reduce((best, current) => 
+            current.confidence > best.confidence ? current : best
+        );
+    }
+    
+    const confidence = bestInference ? bestInference.confidence : 0;
+    
+    return {
+        inferences: inferences,
+        bestInference: bestInference,
+        confidence: confidence
+    };
+}
+
+// Aplicar raciocínio dedutivo
+function applyDeductiveReasoning(sources, questionContext) {
+    // Buscar padrões "Se... então..."
+    for (const source of sources) {
+        const content = source.content || '';
+        
+        // Padrão: "Se X então Y"
+        const ifThenPattern = /se\s+([^,]+?)\s+então\s+([^.!?]+)/gi;
+        const matches = [...content.matchAll(ifThenPattern)];
+        
+        if (matches.length > 0) {
+            // Verificar se condição é verdadeira
+            for (const match of matches) {
+                const condition = match[1].toLowerCase();
+                const conclusion = match[2].toLowerCase();
+                
+                // Verificar se condição está presente no contexto
+                const conditionMet = questionContext.entities.some(e => 
+                    condition.includes(e.toLowerCase())
+                ) || questionContext.keywords.some(k => 
+                    condition.includes(k.toLowerCase())
+                );
+                
+                if (conditionMet) {
+                    return {
+                        premise: condition,
+                        conclusion: conclusion,
+                        reasoning: `Se ${condition} então ${conclusion}. A condição é verdadeira, portanto a conclusão é verdadeira.`
+                    };
+                }
+            }
+        }
+    }
+    
+    return null;
+}
+
+// Aplicar raciocínio indutivo
+function applyInductiveReasoning(sources, questionContext) {
+    // Buscar padrões repetidos
+    const patterns = {};
+    
+    for (const source of sources) {
+        const content = source.content || '';
+        const sentences = content.split(/[.!?]\s+/);
+        
+        for (const sentence of sentences) {
+            // Extrair padrões (ex: "X é Y", "X faz Y")
+            const pattern = sentence.match(/([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)\s+(é|faz|tem|foi|era)\s+([^.!?]+)/i);
+            
+            if (pattern) {
+                const key = `${pattern[1]}_${pattern[2]}`;
+                if (!patterns[key]) {
+                    patterns[key] = [];
+                }
+                patterns[key].push(pattern[3]);
+            }
+        }
+    }
+    
+    // Encontrar padrões que aparecem múltiplas vezes
+    for (const [key, values] of Object.entries(patterns)) {
+        if (values.length >= 2) {
+            const [entity, verb] = key.split('_');
+            return {
+                pattern: `${entity} ${verb}`,
+                observations: values,
+                generalization: `Com base em múltiplas observações, ${entity} ${verb} ${values[0]}`
+            };
+        }
+    }
+    
+    return null;
+}
+
+// Aplicar raciocínio abductivo
+function applyAbductiveReasoning(sources, questionContext, question) {
+    // Buscar melhor explicação para a pergunta
+    const explanations = [];
+    
+    for (const source of sources) {
+        const content = source.content || '';
+        
+        // Buscar explicações (ex: "porque", "devido a", "causado por")
+        const explanationPatterns = [
+            /porque\s+([^.!?]+)/gi,
+            /devido\s+a\s+([^.!?]+)/gi,
+            /causado\s+por\s+([^.!?]+)/gi,
+            /resultado\s+de\s+([^.!?]+)/gi
+        ];
+        
+        for (const pattern of explanationPatterns) {
+            const matches = [...content.matchAll(pattern)];
+            for (const match of matches) {
+                explanations.push({
+                    explanation: match[1],
+                    source: source.title,
+                    relevance: calculateExplanationRelevance(match[1], questionContext)
+                });
+            }
+        }
+    }
+    
+    if (explanations.length > 0) {
+        // Selecionar explicação mais relevante
+        const best = explanations.reduce((best, current) => 
+            current.relevance > best.relevance ? current : best
+        );
+        
+        return {
+            explanation: best.explanation,
+            source: best.source,
+            reasoning: `A melhor explicação é: ${best.explanation}`
+        };
+    }
+    
+    return null;
+}
+
+// Calcular relevância da explicação
+function calculateExplanationRelevance(explanation, questionContext) {
+    let score = 0;
+    const explanationLower = explanation.toLowerCase();
+    
+    for (const entity of questionContext.entities) {
+        if (explanationLower.includes(entity.toLowerCase())) score += 30;
+    }
+    
+    for (const keyword of questionContext.keywords) {
+        if (explanationLower.includes(keyword.toLowerCase())) score += 15;
+    }
+    
+    return score;
+}
+
+// Aplicar raciocínio transitivo
+function applyTransitiveReasoning(sources, questionContext) {
+    // Buscar relações transitivas (A→B, B→C, então A→C)
+    const relations = [];
+    
+    for (const source of sources) {
+        const content = source.content || '';
+        
+        // Padrões de relação
+        const relationPatterns = [
+            /([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)\s+(é|foi|era|torna-se)\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi,
+            /([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)\s+leva\s+a\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(?:\s+[a-záàâãéêíóôõúç]+)*)/gi
+        ];
+        
+        for (const pattern of relationPatterns) {
+            const matches = [...content.matchAll(pattern)];
+            for (const match of matches) {
+                relations.push({
+                    from: match[1],
+                    to: match[3] || match[2],
+                    type: 'transitive'
+                });
+            }
+        }
+    }
+    
+    // Verificar transitividade
+    if (relations.length >= 2) {
+        for (let i = 0; i < relations.length; i++) {
+            for (let j = i + 1; j < relations.length; j++) {
+                if (relations[i].to === relations[j].from) {
+                    return {
+                        chain: [relations[i].from, relations[i].to, relations[j].to],
+                        reasoning: `Se ${relations[i].from} → ${relations[i].to} e ${relations[j].from} → ${relations[j].to}, então ${relations[i].from} → ${relations[j].to}`
+                    };
+                }
+            }
+        }
+    }
+    
+    return null;
+}
+
+// Sintetizar resposta a partir dos passos
+function synthesizeFromChainSteps(steps, questionContext) {
+    if (steps.length === 0) {
+        return {
+            answer: null,
+            confidence: 0
+        };
+    }
+    
+    // Pegar conhecimento do passo 3
+    const knowledgeStep = steps.find(s => s.action === 'retrieve_validate');
+    const inferenceStep = steps.find(s => s.action === 'infer');
+    
+    let answer = '';
+    let confidence = 0;
+    
+    if (knowledgeStep && knowledgeStep.result.sources.length > 0) {
+        // Usar fontes encontradas
+        const sources = knowledgeStep.result.sources;
+        const excerpts = sources.map(s => {
+            const excerpt = findRelevantExcerpt(s.content, questionContext, 300);
+            return excerpt || s.content.substring(0, 300);
+        });
+        
+        answer = excerpts.join('. ');
+        confidence = knowledgeStep.result.confidence;
+    }
+    
+    // Adicionar inferências se houver
+    if (inferenceStep && inferenceStep.result.bestInference) {
+        const inference = inferenceStep.result.bestInference;
+        if (inference.result && inference.result.reasoning) {
+            answer += '\n\n' + inference.result.reasoning;
+            confidence = Math.max(confidence, inference.confidence);
+        }
+    }
+    
+    return {
+        answer: answer || null,
+        confidence: confidence
+    };
+}
+
+// Calcular confiança da cadeia
+function calculateChainConfidence(steps) {
+    if (steps.length === 0) return 0;
+    
+    const confidences = steps.map(s => s.confidence || 0);
+    const avgConfidence = confidences.reduce((a, b) => a + b, 0) / confidences.length;
+    
+    // Bonus se todos os passos foram completos
+    const completenessBonus = steps.length === 5 ? 10 : 0;
+    
+    return Math.min(100, avgConfidence + completenessBonus);
+}
+
+// 3. VALIDAÇÃO AVANÇADA DE FONTES
+async function advancedSourceValidation(sources, answer, client) {
+    const validations = [];
+    
+    for (const source of sources) {
+        const validation = {
+            source: source,
+            quality: assessSourceQuality(source),
+            recency: assessRecency(source),
+            authority: assessAuthority(source),
+            bias: detectBias(source),
+            consistency: checkConsistency(source, sources),
+            score: 0
+        };
+        
+        // Calcular score final
+        validation.score = calculateSourceScore(validation);
+        validations.push(validation);
+    }
+    
+    // Filtrar fontes confiáveis (score >= 70)
+    const reliable = validations.filter(v => v.score >= 70);
+    
+    // Detectar contradições
+    const contradictions = detectContradictions(reliable);
+    
+    // Gerar recomendação
+    const recommendation = generateSourceRecommendation(validations, contradictions);
+    
+    return {
+        validations: validations,
+        reliable: reliable,
+        contradictions: contradictions,
+        recommendation: recommendation
+    };
+}
+
+// Avaliar qualidade da fonte
+function assessSourceQuality(source) {
+    let score = 50; // Base
+    
+    // Bonus por tipo de fonte
+    if (source.source_type === 'book_training' || source.source_type === 'tavily_book') {
+        score += 30; // Livros são mais confiáveis
+    } else if (source.source_type === 'tavily') {
+        score += 15; // Web search
+    }
+    
+    // Bonus por tamanho do conteúdo (mais conteúdo = mais completo)
+    const contentLength = (source.content || '').length;
+    if (contentLength > 1000) score += 10;
+    if (contentLength > 5000) score += 10;
+    
+    // Penalidade por conteúdo muito curto
+    if (contentLength < 100) score -= 20;
+    
+    return Math.min(100, Math.max(0, score));
+}
+
+// Avaliar atualidade
+function assessRecency(source) {
+    if (!source.created_at) return 50; // Neutro se não tem data
+    
+    const created = new Date(source.created_at);
+    const now = new Date();
+    const daysDiff = (now - created) / (1000 * 60 * 60 * 24);
+    
+    // Mais recente = melhor
+    if (daysDiff < 30) return 100;
+    if (daysDiff < 90) return 80;
+    if (daysDiff < 365) return 60;
+    return 40;
+}
+
+// Avaliar autoridade
+function assessAuthority(source) {
+    let score = 50; // Base
+    
+    // Bonus por título que indica autoridade
+    const title = (source.title || '').toLowerCase();
+    const authorityIndicators = ['livro', 'bíblia', 'evangelho', 'estudo', 'pesquisa', 'científico'];
+    
+    for (const indicator of authorityIndicators) {
+        if (title.includes(indicator)) {
+            score += 20;
+            break;
+        }
+    }
+    
+    // Bonus por ser livro
+    if (source.source_type && source.source_type.includes('book')) {
+        score += 30;
+    }
+    
+    return Math.min(100, score);
+}
+
+// Detectar viés
+function detectBias(source) {
+    const content = (source.content || '').toLowerCase();
+    const biasIndicators = {
+        positive: ['excelente', 'perfeito', 'melhor', 'superior', 'incrível'],
+        negative: ['ruim', 'péssimo', 'terrível', 'horrível', 'fracasso'],
+        extreme: ['sempre', 'nunca', 'todos', 'ninguém', 'absoluto']
+    };
+    
+    let biasScore = 0;
+    
+    // Detectar linguagem extremamente positiva ou negativa
+    const positiveCount = biasIndicators.positive.filter(w => content.includes(w)).length;
+    const negativeCount = biasIndicators.negative.filter(w => content.includes(w)).length;
+    const extremeCount = biasIndicators.extreme.filter(w => content.includes(w)).length;
+    
+    if (positiveCount > 3 || negativeCount > 3) {
+        biasScore += 30; // Viés detectado
+    }
+    
+    if (extremeCount > 5) {
+        biasScore += 20; // Linguagem extrema
+    }
+    
+    return {
+        detected: biasScore > 20,
+        score: biasScore,
+        type: positiveCount > negativeCount ? 'positive' : negativeCount > 0 ? 'negative' : 'neutral'
+    };
+}
+
+// Verificar consistência
+function checkConsistency(source, allSources) {
+    if (allSources.length < 2) return { consistent: true, score: 100 };
+    
+    const sourceContent = (source.content || '').toLowerCase();
+    let consistentCount = 0;
+    let totalComparisons = 0;
+    
+    for (const otherSource of allSources) {
+        if (otherSource.id === source.id) continue;
+        
+        const otherContent = (otherSource.content || '').toLowerCase();
+        totalComparisons++;
+        
+        // Verificar se há informações similares
+        const similarity = calculateContentSimilarity(sourceContent, otherContent);
+        if (similarity > 0.3) {
+            consistentCount++;
+        }
+    }
+    
+    const consistencyScore = totalComparisons > 0 ? 
+        (consistentCount / totalComparisons) * 100 : 100;
+    
+    return {
+        consistent: consistencyScore > 50,
+        score: consistencyScore
+    };
+}
+
+// Calcular similaridade de conteúdo
+function calculateContentSimilarity(content1, content2) {
+    const words1 = new Set(content1.split(/\s+/));
+    const words2 = new Set(content2.split(/\s+/));
+    
+    const intersection = new Set([...words1].filter(w => words2.has(w)));
+    const union = new Set([...words1, ...words2]);
+    
+    return intersection.size / union.size;
+}
+
+// Calcular score da fonte
+function calculateSourceScore(validation) {
+    let score = 0;
+    
+    // Pesos
+    score += validation.quality * 0.3;
+    score += validation.recency * 0.2;
+    score += validation.authority * 0.3;
+    score += validation.consistency.score * 0.2;
+    
+    // Penalidade por viés
+    if (validation.bias.detected) {
+        score -= validation.bias.score * 0.1;
+    }
+    
+    return Math.min(100, Math.max(0, score));
+}
+
+// Detectar contradições
+function detectContradictions(reliableSources) {
+    const contradictions = [];
+    
+    for (let i = 0; i < reliableSources.length; i++) {
+        for (let j = i + 1; j < reliableSources.length; j++) {
+            const source1 = reliableSources[i].source;
+            const source2 = reliableSources[j].source;
+            
+            const content1 = (source1.content || '').toLowerCase();
+            const content2 = (source2.content || '').toLowerCase();
+            
+            // Verificar contradições
+            const negations = ['não', 'nunca', 'jamais', 'falso'];
+            const affirmations = ['sim', 'sempre', 'verdadeiro'];
+            
+            const hasNegation1 = negations.some(n => content1.includes(n));
+            const hasAffirmation1 = affirmations.some(a => content1.includes(a));
+            const hasNegation2 = negations.some(n => content2.includes(n));
+            const hasAffirmation2 = affirmations.some(a => content2.includes(a));
+            
+            if ((hasNegation1 && hasAffirmation2) || (hasAffirmation1 && hasNegation2)) {
+                contradictions.push({
+                    source1: source1.title,
+                    source2: source2.title,
+                    type: 'contradiction',
+                    severity: 'medium'
+                });
+            }
+        }
+    }
+    
+    return contradictions;
+}
+
+// Gerar recomendação de fontes
+function generateSourceRecommendation(validations, contradictions) {
+    const avgScore = validations.reduce((sum, v) => sum + v.score, 0) / validations.length;
+    const reliableCount = validations.filter(v => v.score >= 70).length;
+    
+    let confidence = avgScore;
+    let recommendation = 'use_all';
+    
+    if (contradictions.length > 0) {
+        confidence -= contradictions.length * 10;
+        recommendation = 'review_conflicts';
+    }
+    
+    if (reliableCount < validations.length / 2) {
+        confidence -= 20;
+        recommendation = 'use_caution';
+    }
+    
+    return {
+        confidence: Math.max(50, Math.min(100, confidence)),
+        recommendation: recommendation,
+        reliableCount: reliableCount,
+        totalCount: validations.length
+    };
+}
+
 // Verificar fatos em tempo real (validação cruzada) - MELHORADA
 async function verifyFacts(client, answer, knowledgeIds) {
     try {
@@ -4312,7 +5108,7 @@ async function findBestAnswer(userMessage, userId) {
         // ============================================
         // DETECÇÃO: PERGUNTAS SOBRE O NOME DA IA
         // ============================================
-        const lowerMessage = userMessage.toLowerCase();
+        let lowerMessage = userMessage.toLowerCase();
         const nameQuestions = [
             'qual seu nome', 'qual é seu nome', 'qual o seu nome',
             'como você se chama', 'quem é você', 'quem voce e',
@@ -4415,7 +5211,7 @@ async function findBestAnswer(userMessage, userId) {
         // ============================================
         // DETECÇÃO ESPECIAL: PERGUNTAS SOBRE VENDAS E ESTRATÉGIAS
         // ============================================
-        const lowerMessage = userMessage.toLowerCase();
+        lowerMessage = userMessage.toLowerCase(); // Reutilizar variável já declarada
         const isSalesQuestion = lowerMessage.includes('estratégia') || 
                                lowerMessage.includes('estrategia') ||
                                lowerMessage.includes('estratégias') ||
@@ -4467,6 +5263,48 @@ async function findBestAnswer(userMessage, userId) {
         
         // Ativar modo mental
         const mentalMode = activateMentalMode(userMessage, questionContext, thoughts);
+        
+        // ============================================
+        // NOVO: CHAIN OF THOUGHT REASONING (Para perguntas complexas)
+        // ============================================
+        let chainOfThoughtResult = null;
+        if (thoughts.complexity === 'complex' || thoughts.semanticAnalysis?.requiresMultiStepReasoning) {
+            console.log('🧠 [Chain of Thought] Ativando raciocínio passo a passo para pergunta complexa...');
+            
+            // Buscar conhecimento primeiro para usar no Chain of Thought
+            try {
+                const preliminaryKnowledge = await client.query(`
+                    SELECT * FROM ia_knowledge_base
+                    WHERE is_active = true
+                    AND (
+                        ${questionContext.entities.length > 0 ? 
+                            questionContext.entities.map((_, i) => `LOWER(content) LIKE $${i + 1} OR LOWER(title) LIKE $${i + 1}`).join(' OR ') :
+                            questionContext.keywords.map((_, i) => `LOWER(content) LIKE $${i + 1} OR LOWER(title) LIKE $${i + 1})`).join(' OR ')
+                        }
+                    )
+                    LIMIT 10
+                `, questionContext.entities.length > 0 ? 
+                    questionContext.entities.map(e => `%${e.toLowerCase()}%`) :
+                    questionContext.keywords.map(k => `%${k.toLowerCase()}%`)
+                );
+                
+                chainOfThoughtResult = await chainOfThoughtReasoning(
+                    userMessage,
+                    questionContext,
+                    preliminaryKnowledge.rows,
+                    client
+                );
+                
+                if (chainOfThoughtResult.used && chainOfThoughtResult.finalAnswer) {
+                    console.log('✅ [Chain of Thought] Resposta gerada com raciocínio passo a passo');
+                    bestAnswer = chainOfThoughtResult.finalAnswer;
+                    bestScore = chainOfThoughtResult.confidence;
+                    bestSource = 'chain_of_thought';
+                }
+            } catch (error) {
+                console.error('Erro no Chain of Thought Reasoning:', error);
+            }
+        }
         
         let bestAnswer = null;
         let bestScore = 0;
@@ -5233,9 +6071,41 @@ async function findBestAnswer(userMessage, userId) {
                 }
                 
                 if (finalAnswer) {
+                    // ============================================
+                    // NOVO: APLICAR CHAIN OF THOUGHT SE NÃO FOI USADO ANTES
+                    // ============================================
+                    if (!chainOfThoughtResult || !chainOfThoughtResult.used) {
+                        // Se pergunta é complexa, tentar Chain of Thought
+                        if (thoughts.complexity === 'complex' || thoughts.semanticAnalysis?.requiresMultiStepReasoning) {
+                            try {
+                                const knowledgeForChain = topCandidates.map(c => c.kb);
+                                chainOfThoughtResult = await chainOfThoughtReasoning(
+                                    userMessage,
+                                    questionContext,
+                                    knowledgeForChain,
+                                    client
+                                );
+                                
+                                // Se Chain of Thought gerou resposta melhor, usar ela
+                                if (chainOfThoughtResult.used && 
+                                    chainOfThoughtResult.finalAnswer && 
+                                    chainOfThoughtResult.confidence > bestScore) {
+                                    console.log('✅ [Chain of Thought] Usando resposta do raciocínio passo a passo');
+                                    finalAnswer = chainOfThoughtResult.finalAnswer;
+                                    bestScore = chainOfThoughtResult.confidence;
+                                    bestSource = 'chain_of_thought';
+                                }
+                            } catch (error) {
+                                console.error('Erro ao aplicar Chain of Thought:', error);
+                            }
+                        }
+                    }
+                    
                     bestAnswer = finalAnswer;
-                    bestScore = bestCandidate.score;
-                    bestSource = 'knowledge';
+                    if (bestSource !== 'chain_of_thought') {
+                        bestScore = bestCandidate.score;
+                        bestSource = 'knowledge';
+                    }
                     
                     // GUARDAR INFORMAÇÃO: Esta resposta veio de um LIVRO?
                     const isFromBook = bookSources.includes(bestKb.source_type);
@@ -6099,9 +6969,82 @@ async function findBestAnswer(userMessage, userId) {
             finalConfidence = Math.min(finalConfidence, 40);
         }
         
-        // APLICAR PROMPT MESTRE FINAL antes de retornar (garantia final)
+                    // APLICAR PROMPT MESTRE FINAL antes de retornar (garantia final)
         if (bestAnswer) {
             bestAnswer = applyGPTMasterPrompt(bestAnswer, null, questionContext);
+        }
+        
+        // ============================================
+        // NOVO: COLETAR KNOWLEDGE_USED_IDS
+        // ============================================
+        let knowledgeUsedIds = [];
+        if (bestSource === 'knowledge' || bestSource === 'chain_of_thought') {
+            // Coletar IDs do conhecimento usado
+            if (bestCandidate && bestKb) {
+                knowledgeUsedIds.push(bestKb.id);
+            }
+            
+            // Adicionar IDs de outras fontes usadas na síntese
+            if (knowledgeSources && knowledgeSources.length > 0) {
+                for (const source of knowledgeSources) {
+                    // Tentar encontrar ID do conhecimento pelo título
+                    try {
+                        const kbResult = await client.query(`
+                            SELECT id FROM ia_knowledge_base
+                            WHERE title = $1 AND is_active = true
+                            LIMIT 1
+                        `, [source.title]);
+                        if (kbResult.rows.length > 0 && !knowledgeUsedIds.includes(kbResult.rows[0].id)) {
+                            knowledgeUsedIds.push(kbResult.rows[0].id);
+                        }
+                    } catch (error) {
+                        // Ignorar erro
+                    }
+                }
+            }
+            
+            // Se Chain of Thought foi usado, adicionar IDs do conhecimento usado lá
+            if (chainOfThoughtResult && chainOfThoughtResult.reasoningChain) {
+                const knowledgeStep = chainOfThoughtResult.reasoningChain.find(s => s.action === 'retrieve_validate');
+                if (knowledgeStep && knowledgeStep.result && knowledgeStep.result.sources) {
+                    for (const source of knowledgeStep.result.sources) {
+                        if (source.id && !knowledgeUsedIds.includes(source.id)) {
+                            knowledgeUsedIds.push(source.id);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // ============================================
+        // NOVO: APLICAR VALIDAÇÃO AVANÇADA DE FONTES
+        // ============================================
+        let sourceValidation = null;
+        if (knowledgeUsedIds.length > 0 && bestAnswer) {
+            try {
+                const sourcesForValidation = await client.query(`
+                    SELECT * FROM ia_knowledge_base
+                    WHERE id = ANY($1)
+                    AND is_active = true
+                `, [knowledgeUsedIds]);
+                
+                if (sourcesForValidation.rows.length > 0) {
+                    sourceValidation = await advancedSourceValidation(sourcesForValidation.rows, bestAnswer, client);
+                    
+                    // Ajustar confiança baseado na validação
+                    if (sourceValidation.recommendation.confidence < finalConfidence) {
+                        finalConfidence = Math.max(50, sourceValidation.recommendation.confidence);
+                        console.log('⚠️ [Validação] Confiança ajustada baseada em validação de fontes:', finalConfidence);
+                    }
+                    
+                    // Adicionar nota se houver contradições
+                    if (sourceValidation.contradictions.length > 0) {
+                        bestAnswer += `\n\n⚠️ Nota: Encontrei algumas contradições entre as fontes. A resposta pode não ser completamente precisa.`;
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao validar fontes:', error);
+            }
         }
         
         return {
@@ -6111,8 +7054,27 @@ async function findBestAnswer(userMessage, userId) {
             mentalMode: mentalMode,
             auditPassed: auditResult ? auditResult.passed : null,
             hallucinationRisk: validation ? validation.hallucinationRisk : null,
-            cognitiveVersion: '2.0',
-            category: categoryInfo ? categoryInfo.primaryCategory : 'general'
+            cognitiveVersion: '3.0', // Atualizado para versão 3.0 com melhorias profundas
+            category: categoryInfo ? categoryInfo.primaryCategory : 'general',
+            knowledge_used_ids: knowledgeUsedIds.length > 0 ? knowledgeUsedIds : null,
+            chain_of_thought: chainOfThoughtResult && chainOfThoughtResult.used ? {
+                steps: chainOfThoughtResult.reasoningChain.length,
+                confidence: chainOfThoughtResult.confidence,
+                reasoning: chainOfThoughtResult.reasoningChain.map(s => ({
+                    step: s.step,
+                    action: s.action,
+                    reasoning: s.reasoning
+                }))
+            } : null,
+            source_validation: sourceValidation ? {
+                reliable_sources: sourceValidation.reliable.length,
+                total_sources: sourceValidation.validations.length,
+                contradictions: sourceValidation.contradictions.length,
+                recommendation: sourceValidation.recommendation.recommendation,
+                confidence: sourceValidation.recommendation.confidence
+            } : null,
+            logical_inferences: chainOfThoughtResult && chainOfThoughtResult.reasoningChain ? 
+                (chainOfThoughtResult.reasoningChain.find(s => s.action === 'infer')?.result?.inferences || []) : []
         };
     } catch (error) {
         console.error('❌ [IA] ERRO em findBestAnswer:', error);
