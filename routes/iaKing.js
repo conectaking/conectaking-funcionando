@@ -4030,7 +4030,7 @@ function detectAmbiguity(message, questionContext) {
     };
 }
 
-// Verificar fatos em tempo real (validação cruzada)
+// Verificar fatos em tempo real (validação cruzada) - MELHORADA
 async function verifyFacts(client, answer, knowledgeIds) {
     try {
         if (!knowledgeIds || knowledgeIds.length === 0) {
@@ -4039,7 +4039,7 @@ async function verifyFacts(client, answer, knowledgeIds) {
         
         // Buscar conhecimento usado
         const knowledgeResult = await client.query(`
-            SELECT id, title, content, category_id
+            SELECT id, title, content, category_id, source_type, created_at
             FROM ia_knowledge_base
             WHERE id = ANY($1)
             AND is_active = true
@@ -4048,6 +4048,9 @@ async function verifyFacts(client, answer, knowledgeIds) {
         if (knowledgeResult.rows.length === 0) {
             return { verified: false, confidence: 0, conflicts: [] };
         }
+        
+        // NOVO: Validação avançada de fontes
+        const sourceValidation = await advancedSourceValidation(knowledgeResult.rows, answer, client);
         
         // Verificar se há correções verificadas
         const correctionsResult = await client.query(`
@@ -4062,23 +4065,21 @@ async function verifyFacts(client, answer, knowledgeIds) {
             corrections[c.knowledge_id] = c.corrected_content;
         });
         
-        // Verificar se há contradições entre fontes
+        // Verificar se há contradições entre fontes (melhorado)
         const conflicts = [];
         const sources = knowledgeResult.rows;
         
         for (let i = 0; i < sources.length; i++) {
             for (let j = i + 1; j < sources.length; j++) {
-                // Verificação básica de contradição (pode ser melhorada)
                 const content1 = corrections[sources[i].id] || sources[i].content;
                 const content2 = corrections[sources[j].id] || sources[j].content;
                 
-                // Detectar contradições simples (ex: números diferentes, afirmações opostas)
                 if (content1 && content2) {
                     // Verificar números contraditórios
-                    const numbers1 = content1.match(/\d+/g) || [];
-                    const numbers2 = content2.match(/\d+/g) || [];
+                    const numbers1 = content1.match(/\d{4}|\d+%/g) || [];
+                    const numbers2 = content2.match(/\d{4}|\d+%/g) || [];
                     
-                    // Verificar afirmações opostas (sim/não, verdadeiro/falso)
+                    // Verificar afirmações opostas
                     const negations = ['não', 'nunca', 'jamais', 'falso', 'errado'];
                     const affirmations = ['sim', 'sempre', 'verdadeiro', 'correto'];
                     
@@ -4098,11 +4099,20 @@ async function verifyFacts(client, answer, knowledgeIds) {
             }
         }
         
-        const confidence = conflicts.length === 0 ? 90 : Math.max(50, 90 - (conflicts.length * 10));
+        // Adicionar contradições da validação avançada
+        conflicts.push(...sourceValidation.contradictions);
+        
+        // Calcular confiança baseada em validação avançada
+        const baseConfidence = sourceValidation.recommendation.confidence;
+        const conflictPenalty = conflicts.length * 10;
+        const confidence = Math.max(50, baseConfidence - conflictPenalty);
         
         return {
             verified: true,
             confidence: confidence,
+            conflicts: conflicts,
+            sourceValidation: sourceValidation,
+            reliableSources: sourceValidation.reliable.length,
             conflicts: conflicts,
             sources_count: sources.length,
             has_corrections: correctionsResult.rows.length > 0
