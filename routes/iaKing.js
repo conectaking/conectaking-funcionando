@@ -8601,7 +8601,39 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
         console.log(`📚 [IA] Categorias encontradas: ${categories.length} - ${categories.join(', ')}`);
         
         // TÓPICOS EXPANDIDOS: Mentalidade, estratégias do ChatGPT, como pensar, etc.
+        // NOVO: Tópicos expandidos para melhorar mentalidade, cognição e raciocínio
         const trainingTopics = [
+            // MENTALIDADE E COGNIÇÃO (EXPANDIDO)
+            'como ChatGPT pensa e raciocina',
+            'como melhorar raciocínio lógico',
+            'pensamento crítico e análise',
+            'resolução de problemas complexos',
+            'criatividade e inovação',
+            'mentalidade vencedora',
+            'desenvolvimento de mentalidade',
+            'mudança de mentalidade',
+            'mentalidade positiva',
+            'mentalidade estratégica',
+            'raciocínio dedutivo e indutivo',
+            'pensamento sistêmico',
+            'análise de causa e efeito',
+            'raciocínio abstrato',
+            'lógica formal e informal',
+            'meta-cognição e auto-reflexão',
+            'aprendizado profundo e significativo',
+            'compreensão contextual',
+            'síntese de informações',
+            'análise de padrões',
+            'inferência e dedução',
+            'raciocínio probabilístico',
+            'pensamento contrafactual',
+            'analogias e metáforas',
+            'raciocínio causal',
+            'grafo de conhecimento',
+            'memória episódica e semântica',
+            'chain of thought reasoning',
+            'pensamento passo a passo',
+            'validação de fontes e fact-checking',
             // Mentalidades e Cognição
             'inteligência artificial mentalidade e cognição',
             'como IAs pensam e raciocinam',
@@ -10719,11 +10751,12 @@ router.post('/search-books-tavily', protectAdmin, asyncHandler(async (req, res) 
             return res.json({ books: [], message: 'Nenhum livro encontrado' });
         }
         
-        // Filtrar e formatar resultados de livros
+        // Filtrar e formatar resultados de livros - APENAS LIVROS COMPLETOS
         const books = tavilyResult.results
             .filter(r => {
                 const titleLower = (r.title || '').toLowerCase();
                 const contentLower = (r.snippet || r.content || '').toLowerCase();
+                const rawContentLower = (r.raw_content || '').toLowerCase();
                 const urlLower = (r.url || '').toLowerCase();
                 
                 // EXCLUIR vídeos e canais de vídeo
@@ -10740,6 +10773,19 @@ router.post('/search-books-tavily', protectAdmin, asyncHandler(async (req, res) 
                 
                 if (isVideo) {
                     console.log('🚫 [Busca Livros] Resultado filtrado (vídeo):', r.title);
+                    return false;
+                }
+                
+                // NOVO: Verificar se é um livro COMPLETO (não apenas trecho ou resumo)
+                const rawContent = r.raw_content || r.content || r.snippet || '';
+                const contentLength = rawContent.length;
+                
+                // Filtrar apenas livros completos (mínimo 5000 caracteres = ~1000 palavras)
+                // Isso garante que não sejam apenas trechos ou resumos
+                const isCompleteBook = contentLength >= 5000;
+                
+                if (!isCompleteBook) {
+                    console.log('🚫 [Busca Livros] Resultado filtrado (livro incompleto, apenas', contentLength, 'caracteres):', r.title);
                     return false;
                 }
                 
@@ -10765,7 +10811,17 @@ router.post('/search-books-tavily', protectAdmin, asyncHandler(async (req, res) 
                                     contentLower.includes('escritor') ||
                                     contentLower.includes('writer');
                 
-                return isTextContent || mentionsBook;
+                // NOVO: Verificar se tem estrutura de livro (capítulos, seções, etc.)
+                const hasBookStructure = rawContentLower.includes('capítulo') ||
+                                        rawContentLower.includes('chapter') ||
+                                        rawContentLower.includes('índice') ||
+                                        rawContentLower.includes('index') ||
+                                        rawContentLower.includes('introdução') ||
+                                        rawContentLower.includes('introduction') ||
+                                        (rawContentLower.split('\n').length > 50); // Múltiplas linhas/parágrafos
+                
+                // Aceitar apenas se for livro completo E (conteúdo textual OU menciona livro OU tem estrutura de livro)
+                return isCompleteBook && (isTextContent || mentionsBook || hasBookStructure);
             })
             .slice(0, max_results)
             .map(r => {
@@ -14294,6 +14350,88 @@ async function registerUnansweredQuestion(question, userId, questionContext, cli
 // SISTEMA DE ANÁLISE COMPLETA DO CONECTA KING
 // ============================================
 
+// GET /api/ia-king/system/analyses/latest - Buscar última análise completa
+router.get('/system/analyses/latest', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Verificar se a tabela existe
+        const tableCheck = await client.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'ia_system_analyses'
+            ) as table_exists
+        `);
+        
+        if (!tableCheck.rows[0].table_exists) {
+            return res.status(404).json({ 
+                error: 'Tabela de análises não encontrada. Execute a migration 034.',
+                analysis: null 
+            });
+        }
+        
+        const result = await client.query(`
+            SELECT * FROM ia_system_analyses
+            WHERE analysis_type = 'full'
+            ORDER BY created_at DESC
+            LIMIT 1
+        `);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ 
+                error: 'Nenhuma análise encontrada',
+                analysis: null 
+            });
+        }
+        
+        const analysis = result.rows[0];
+        let analysisResult = {};
+        
+        // Tentar parsear o JSON se for string
+        if (typeof analysis.analysis_result === 'string') {
+            try {
+                analysisResult = JSON.parse(analysis.analysis_result);
+            } catch (e) {
+                console.error('Erro ao parsear analysis_result:', e);
+                analysisResult = {};
+            }
+        } else {
+            analysisResult = analysis.analysis_result || {};
+        }
+        
+        // Extrair summary do resultado
+        const summary = {
+            overall_score: analysisResult.overall_score || 0,
+            total_errors: analysis.issues_critical || analysisResult.errors?.length || 0,
+            total_warnings: analysis.issues_warning || analysisResult.warnings?.length || 0,
+            total_recommendations: (Array.isArray(analysis.recommendations) ? analysis.recommendations.length : 0) || analysisResult.recommendations?.length || 0
+        };
+        
+        res.json({
+            analysis: analysisResult,
+            summary: summary,
+            created_at: analysis.created_at
+        });
+    } catch (error) {
+        console.error('Erro ao buscar última análise:', error);
+        
+        // Se for erro de tabela não existe, retornar 404
+        if (error.message && (error.message.includes('does not exist') || error.message.includes('não existe'))) {
+            return res.status(404).json({ 
+                error: 'Tabela de análises não encontrada. Execute a migration 034.',
+                analysis: null 
+            });
+        }
+        
+        res.status(500).json({ 
+            error: 'Erro ao buscar análise',
+            message: error.message 
+        });
+    } finally {
+        client.release();
+    }
+}));
+
 // POST /api/ia-king/analyze-complete-system - Análise completa de TODO o sistema
 router.post('/analyze-complete-system', protectAdmin, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
@@ -14361,13 +14499,13 @@ router.post('/analyze-complete-system', protectAdmin, asyncHandler(async (req, r
         await client.query(`
             INSERT INTO ia_system_analyses
             (analysis_type, analysis_result, issues_found, issues_critical, issues_warning, recommendations)
-            VALUES ('complete_system', $1, $2, $3, $4, $5)
+            VALUES ('full', $1, $2, $3, $4, $5)
         `, [
             JSON.stringify(analysis),
             analysis.errors.length + analysis.warnings.length,
             analysis.errors.length,
             analysis.warnings.length,
-            analysis.recommendations
+            analysis.recommendations || []
         ]);
         
         res.json({
