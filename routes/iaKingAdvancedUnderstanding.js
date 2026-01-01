@@ -560,40 +560,58 @@ const VIRTUAL_CARD_KNOWLEDGE = {
  */
 async function analyzeVirtualCard(userId, client) {
     try {
-        // Buscar dados do cartão
-        const cardResult = await client.query(`
+        // Buscar dados do perfil (cartão virtual)
+        const profileResult = await client.query(`
             SELECT 
-                c.*,
-                COUNT(DISTINCT m.id) as module_count,
+                p.*,
+                COUNT(DISTINCT pi.id) as module_count,
                 COUNT(DISTINCT sp.id) as sales_page_count
-            FROM virtual_cards c
-            LEFT JOIN card_modules m ON m.card_id = c.id
-            LEFT JOIN sales_pages sp ON sp.card_id = c.id
-            WHERE c.user_id = $1
-            GROUP BY c.id
+            FROM user_profiles p
+            LEFT JOIN profile_items pi ON pi.user_id = p.user_id
+            LEFT JOIN sales_pages sp ON sp.profile_item_id = pi.id
+            WHERE p.user_id = $1
+            GROUP BY p.id
             LIMIT 1
         `, [userId]);
         
-        if (cardResult.rows.length === 0) {
+        if (profileResult.rows.length === 0) {
             return {
                 hasCard: false,
                 suggestions: [
-                    'Crie seu primeiro cartão virtual',
-                    'Adicione uma foto de perfil',
-                    'Preencha suas informações básicas'
+                    {
+                        priority: 'high',
+                        category: 'setup',
+                        title: 'Crie seu primeiro cartão virtual',
+                        description: 'Configure seu perfil e comece a usar o Conecta King',
+                        action: 'create_profile'
+                    },
+                    {
+                        priority: 'high',
+                        category: 'profile',
+                        title: 'Adicione uma foto de perfil',
+                        description: 'Cartões com foto têm 3x mais engajamento',
+                        action: 'add_profile_photo'
+                    },
+                    {
+                        priority: 'high',
+                        category: 'content',
+                        title: 'Preencha suas informações básicas',
+                        description: 'Nome, profissão e descrição são essenciais',
+                        action: 'fill_basic_info'
+                    }
                 ]
             };
         }
         
-        const card = cardResult.rows[0];
+        const profile = profileResult.rows[0];
         
-        // Buscar módulos
+        // Buscar módulos (profile_items)
         const modulesResult = await client.query(`
-            SELECT module_type, COUNT(*) as count
-            FROM card_modules
-            WHERE card_id = $1
-            GROUP BY module_type
-        `, [card.id]);
+            SELECT item_type as module_type, COUNT(*) as count
+            FROM profile_items
+            WHERE user_id = $1
+            GROUP BY item_type
+        `, [userId]);
         
         const modules = modulesResult.rows;
         
@@ -601,19 +619,19 @@ async function analyzeVirtualCard(userId, client) {
         const analysis = {
             hasCard: true,
             card: {
-                name: card.name,
-                profession: card.profession,
-                hasPhoto: !!card.profile_photo,
-                hasDescription: !!card.description && card.description.length > 50,
-                moduleCount: parseInt(card.module_count) || 0,
-                salesPageCount: parseInt(card.sales_page_count) || 0
+                name: profile.name,
+                profession: profile.profession,
+                hasPhoto: !!profile.profile_photo,
+                hasDescription: !!profile.description && profile.description.length > 50,
+                moduleCount: parseInt(profile.module_count) || 0,
+                salesPageCount: parseInt(profile.sales_page_count) || 0
             },
             modules: modules.map(m => ({
                 type: m.module_type,
                 count: parseInt(m.count)
             })),
-            suggestions: generateCardSuggestions(card, modules),
-            strategies: generateCardStrategies(card, modules)
+            suggestions: generateCardSuggestions(profile, modules),
+            strategies: generateCardStrategies(profile, modules)
         };
         
         return analysis;
@@ -691,8 +709,9 @@ function generateCardSuggestions(card, modules) {
 /**
  * Gerar estratégias para melhorar o cartão
  */
-function generateCardStrategies(card, modules) {
+function generateCardStrategies(profile, modules) {
     const strategies = [];
+    const moduleCount = parseInt(profile.module_count) || 0;
     
     // Estratégia 1: Otimização de conversão
     strategies.push({
