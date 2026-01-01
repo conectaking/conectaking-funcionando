@@ -1317,30 +1317,47 @@ function detectCompliment(message) {
     return false;
 }
 
-// Função para detectar saudações
+// Função para detectar saudações - MELHORADA
 function detectGreeting(message) {
+    if (!message || typeof message !== 'string') return false;
+    
     const greetings = [
         'oi', 'olá', 'ola', 'hey', 'eae', 'e aí', 'eai', 'opa', 'fala', 'fala aí',
-        'bom dia', 'boa tarde', 'boa noite', 'bom dia', 'good morning', 'hello',
+        'bom dia', 'boa tarde', 'boa noite', 'good morning', 'hello',
         'hi', 'tudo bem', 'td bem', 'como vai', 'como está', 'como esta',
         'tudo bom', 'td bom', 'beleza', 'salve', 'e aí', 'eai'
     ];
     
     const lowerMessage = message.toLowerCase().trim();
     
-    // Verificar se é uma saudação simples
+    // Verificar se é exatamente uma saudação (mais comum: "oi", "olá")
+    if (greetings.includes(lowerMessage)) {
+        return true;
+    }
+    
+    // Verificar se começa com saudação seguida de espaço ou pontuação
     for (const greeting of greetings) {
-        if (lowerMessage === greeting || lowerMessage.startsWith(greeting + ' ') || lowerMessage.endsWith(' ' + greeting)) {
+        if (lowerMessage === greeting || 
+            lowerMessage.startsWith(greeting + ' ') || 
+            lowerMessage.startsWith(greeting + '!') ||
+            lowerMessage.startsWith(greeting + '.') ||
+            lowerMessage.startsWith(greeting + ',') ||
+            lowerMessage.endsWith(' ' + greeting) ||
+            lowerMessage.endsWith('!' + greeting) ||
+            lowerMessage.endsWith('.' + greeting)) {
             return true;
         }
     }
     
-    // Verificar padrões de saudação
+    // Verificar padrões de saudação (regex melhorados)
     const greetingPatterns = [
         /^(oi|olá|ola|hey|eae|opa|fala|salve)[\s!.,]*$/i,
         /^(bom\s+dia|boa\s+tarde|boa\s+noite)[\s!.,]*$/i,
         /^(tudo\s+bem|td\s+bem|tudo\s+bom|td\s+bom)[\s!?.,]*$/i,
-        /^(como\s+(vai|está|esta|vcs|vocês))[\s!?.,]*$/i
+        /^(como\s+(vai|está|esta|vcs|vocês))[\s!?.,]*$/i,
+        /^oi[\s!.,]*$/i,  // Específico para "oi" sozinho
+        /^olá[\s!.,]*$/i, // Específico para "olá" sozinho
+        /^ola[\s!.,]*$/i  // Específico para "ola" sem acento
     ];
     
     for (const pattern of greetingPatterns) {
@@ -1352,14 +1369,16 @@ function detectGreeting(message) {
     return false;
 }
 
-// Função para gerar resposta de saudação educada
+// Função para gerar resposta de saudação educada - MELHORADA
 function generateGreetingResponse() {
     const greetings = [
         "Olá! 😊 Tudo bem? Como posso te ajudar hoje?",
         "Oi! Tudo bem? Estou aqui para tirar todas as suas dúvidas sobre o Conecta King! 😊",
         "Olá! Como vai? Fico feliz em ajudar você com qualquer dúvida sobre o sistema! 😊",
         "Oi! Tudo bem? Estou pronta para responder suas perguntas sobre o Conecta King! 😊",
-        "Olá! Como posso te ajudar hoje? Tenho todas as informações sobre o Conecta King! 😊"
+        "Olá! Como posso te ajudar hoje? Tenho todas as informações sobre o Conecta King! 😊",
+        "Oi! 😊 Bem-vindo ao Conecta King! Estou aqui para te ajudar com tudo que você precisar!",
+        "Olá! Tudo bem? Sou a IA King e estou aqui para te ajudar a configurar e usar seu cartão digital! 😊"
     ];
     
     return greetings[Math.floor(Math.random() * greetings.length)];
