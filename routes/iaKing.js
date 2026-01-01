@@ -17685,9 +17685,8 @@ router.get('/contextual-help', protectUser, asyncHandler(async (req, res) => {
 // EXPANSÃO DA IA PARA TODAS AS ÁREAS DO SISTEMA
 // ============================================
 
-// Modificar findBestAnswer para incluir contexto do sistema
-const originalFindBestAnswer = findBestAnswer;
-findBestAnswer = async function(userMessage, userId, systemContext = {}) {
+// Função wrapper para adicionar contexto do sistema
+async function findBestAnswerWithSystemContext(userMessage, userId, systemContext = {}) {
     // Adicionar contexto do sistema à mensagem
     let enhancedMessage = userMessage;
     
@@ -17720,8 +17719,8 @@ findBestAnswer = async function(userMessage, userId, systemContext = {}) {
     enhancedMessage = systemKnowledge + '\n\n' + enhancedMessage;
     
     // Chamar função original com mensagem aprimorada
-    return await originalFindBestAnswer(enhancedMessage, userId);
-};
+    return await findBestAnswer(enhancedMessage, userId);
+}
 
 // Endpoint especializado para ajuda no sistema
 router.post('/system-help', protectUser, asyncHandler(async (req, res) => {
@@ -17730,7 +17729,7 @@ router.post('/system-help', protectUser, asyncHandler(async (req, res) => {
     
     try {
         const systemContext = { page, action, element };
-        const result = await findBestAnswer(message, req.user.userId, systemContext);
+        const result = await findBestAnswerWithSystemContext(message, req.user.userId, systemContext);
         
         // Verificar se há ações sugeridas
         const suggestedActions = await getSuggestedActions(message, page, client);
