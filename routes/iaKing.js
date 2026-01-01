@@ -11073,12 +11073,18 @@ router.post('/search-books-tavily', protectAdmin, asyncHandler(async (req, res) 
         // Buscar configuração do Tavily
         const configResult = await client.query(`
             SELECT * FROM ia_web_search_config
-            WHERE is_enabled = true AND api_provider = 'tavily' AND api_key IS NOT NULL
+            WHERE is_enabled = true AND api_provider = 'tavily' AND api_key IS NOT NULL AND api_key != ''
             ORDER BY id DESC LIMIT 1
         `);
         
         if (configResult.rows.length === 0) {
-            return res.status(400).json({ error: 'Tavily não está configurado ou habilitado' });
+            client.release();
+            return res.status(400).json({ 
+                error: 'Tavily não está configurado ou habilitado',
+                message: 'Para buscar livros online, você precisa configurar a API do Tavily na aba "Busca na Web" primeiro.',
+                requires_config: true,
+                config_tab: 'web-search'
+            });
         }
         
         const config = configResult.rows[0];
