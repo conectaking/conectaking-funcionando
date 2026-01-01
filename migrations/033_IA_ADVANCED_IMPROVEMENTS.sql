@@ -7,8 +7,8 @@
 -- ============================================
 CREATE TABLE IF NOT EXISTS ia_user_feedback (
     id SERIAL PRIMARY KEY,
-    conversation_id INTEGER REFERENCES ia_conversations(id) ON DELETE CASCADE,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    conversation_id INTEGER,
+    user_id VARCHAR(255) NOT NULL,
     feedback_type VARCHAR(20) NOT NULL CHECK (feedback_type IN ('positive', 'negative', 'correction', 'neutral')),
     feedback_text TEXT,
     knowledge_used_ids INTEGER[], -- IDs do conhecimento usado na resposta
@@ -17,17 +17,35 @@ CREATE TABLE IF NOT EXISTS ia_user_feedback (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_ia_user_feedback_user_id ON ia_user_feedback(user_id);
-CREATE INDEX idx_ia_user_feedback_conversation_id ON ia_user_feedback(conversation_id);
-CREATE INDEX idx_ia_user_feedback_type ON ia_user_feedback(feedback_type);
-CREATE INDEX idx_ia_user_feedback_created_at ON ia_user_feedback(created_at);
+-- Adicionar foreign keys se as tabelas existirem
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ia_conversations') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_user_feedback_conversation_id_fkey') THEN
+        ALTER TABLE ia_user_feedback 
+        ADD CONSTRAINT ia_user_feedback_conversation_id_fkey 
+        FOREIGN KEY (conversation_id) REFERENCES ia_conversations(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_user_feedback_user_id_fkey') THEN
+        ALTER TABLE ia_user_feedback 
+        ADD CONSTRAINT ia_user_feedback_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_ia_user_feedback_user_id ON ia_user_feedback(user_id);
+CREATE INDEX IF NOT EXISTS idx_ia_user_feedback_conversation_id ON ia_user_feedback(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_ia_user_feedback_type ON ia_user_feedback(feedback_type);
+CREATE INDEX IF NOT EXISTS idx_ia_user_feedback_created_at ON ia_user_feedback(created_at);
 
 -- ============================================
 -- TABELA: PREFERÊNCIAS DO USUÁRIO
 -- ============================================
 CREATE TABLE IF NOT EXISTS ia_user_preferences (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+    user_id VARCHAR(255) NOT NULL UNIQUE,
     preferred_style VARCHAR(50) DEFAULT 'balanced' CHECK (preferred_style IN ('technical', 'simple', 'detailed', 'balanced')),
     knowledge_level VARCHAR(50) DEFAULT 'intermediate' CHECK (knowledge_level IN ('beginner', 'intermediate', 'advanced')),
     interests TEXT[], -- Array de categorias de interesse
@@ -39,16 +57,27 @@ CREATE TABLE IF NOT EXISTS ia_user_preferences (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_ia_user_preferences_user_id ON ia_user_preferences(user_id);
+-- Adicionar foreign key se a tabela users existir
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_user_preferences_user_id_fkey') THEN
+        ALTER TABLE ia_user_preferences 
+        ADD CONSTRAINT ia_user_preferences_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_ia_user_preferences_user_id ON ia_user_preferences(user_id);
 
 -- ============================================
 -- TABELA: CORREÇÕES DE CONHECIMENTO
 -- ============================================
 CREATE TABLE IF NOT EXISTS ia_knowledge_corrections (
     id SERIAL PRIMARY KEY,
-    knowledge_id INTEGER REFERENCES ia_knowledge_base(id) ON DELETE CASCADE,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    conversation_id INTEGER REFERENCES ia_conversations(id) ON DELETE SET NULL,
+    knowledge_id INTEGER,
+    user_id VARCHAR(255) NOT NULL,
+    conversation_id INTEGER,
     original_content TEXT NOT NULL,
     corrected_content TEXT NOT NULL,
     correction_reason TEXT,
@@ -58,9 +87,34 @@ CREATE TABLE IF NOT EXISTS ia_knowledge_corrections (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_ia_knowledge_corrections_knowledge_id ON ia_knowledge_corrections(knowledge_id);
-CREATE INDEX idx_ia_knowledge_corrections_user_id ON ia_knowledge_corrections(user_id);
-CREATE INDEX idx_ia_knowledge_corrections_verified ON ia_knowledge_corrections(verified);
+-- Adicionar foreign keys se as tabelas existirem
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ia_knowledge_base') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_knowledge_corrections_knowledge_id_fkey') THEN
+        ALTER TABLE ia_knowledge_corrections 
+        ADD CONSTRAINT ia_knowledge_corrections_knowledge_id_fkey 
+        FOREIGN KEY (knowledge_id) REFERENCES ia_knowledge_base(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_knowledge_corrections_user_id_fkey') THEN
+        ALTER TABLE ia_knowledge_corrections 
+        ADD CONSTRAINT ia_knowledge_corrections_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ia_conversations') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_knowledge_corrections_conversation_id_fkey') THEN
+        ALTER TABLE ia_knowledge_corrections 
+        ADD CONSTRAINT ia_knowledge_corrections_conversation_id_fkey 
+        FOREIGN KEY (conversation_id) REFERENCES ia_conversations(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_ia_knowledge_corrections_knowledge_id ON ia_knowledge_corrections(knowledge_id);
+CREATE INDEX IF NOT EXISTS idx_ia_knowledge_corrections_user_id ON ia_knowledge_corrections(user_id);
+CREATE INDEX IF NOT EXISTS idx_ia_knowledge_corrections_verified ON ia_knowledge_corrections(verified);
 
 -- ============================================
 -- TABELA: CACHE DE RESPOSTAS
@@ -72,7 +126,7 @@ CREATE TABLE IF NOT EXISTS ia_response_cache (
     response_text TEXT NOT NULL,
     knowledge_used_ids INTEGER[], -- IDs do conhecimento usado
     confidence_score INTEGER CHECK (confidence_score >= 0 AND confidence_score <= 100),
-    category_id INTEGER REFERENCES ia_categories(id) ON DELETE SET NULL,
+    category_id INTEGER,
     hit_count INTEGER DEFAULT 0, -- Quantas vezes foi usado
     last_hit_at TIMESTAMP,
     expires_at TIMESTAMP NOT NULL, -- TTL baseado em frequência
@@ -80,18 +134,29 @@ CREATE TABLE IF NOT EXISTS ia_response_cache (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_ia_response_cache_query_hash ON ia_response_cache(query_hash);
-CREATE INDEX idx_ia_response_cache_expires_at ON ia_response_cache(expires_at);
-CREATE INDEX idx_ia_response_cache_category_id ON ia_response_cache(category_id);
-CREATE INDEX idx_ia_response_cache_last_hit_at ON ia_response_cache(last_hit_at);
+-- Adicionar foreign key se a tabela ia_categories existir
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ia_categories') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_response_cache_category_id_fkey') THEN
+        ALTER TABLE ia_response_cache 
+        ADD CONSTRAINT ia_response_cache_category_id_fkey 
+        FOREIGN KEY (category_id) REFERENCES ia_categories(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_ia_response_cache_query_hash ON ia_response_cache(query_hash);
+CREATE INDEX IF NOT EXISTS idx_ia_response_cache_expires_at ON ia_response_cache(expires_at);
+CREATE INDEX IF NOT EXISTS idx_ia_response_cache_category_id ON ia_response_cache(category_id);
+CREATE INDEX IF NOT EXISTS idx_ia_response_cache_last_hit_at ON ia_response_cache(last_hit_at);
 
 -- ============================================
 -- TABELA: CONTEXTO DE CONVERSA (MEMÓRIA)
 -- ============================================
 CREATE TABLE IF NOT EXISTS ia_conversation_context (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    conversation_id INTEGER REFERENCES ia_conversations(id) ON DELETE CASCADE,
+    user_id VARCHAR(255) NOT NULL,
+    conversation_id INTEGER,
     context_type VARCHAR(50) NOT NULL CHECK (context_type IN ('preference', 'fact', 'correction', 'topic', 'entity')),
     context_key VARCHAR(255) NOT NULL, -- Chave do contexto (ex: "preferência_estilo", "fato_sobre_X")
     context_value TEXT NOT NULL, -- Valor do contexto
@@ -101,31 +166,74 @@ CREATE TABLE IF NOT EXISTS ia_conversation_context (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_ia_conversation_context_user_id ON ia_conversation_context(user_id);
-CREATE INDEX idx_ia_conversation_context_conversation_id ON ia_conversation_context(conversation_id);
-CREATE INDEX idx_ia_conversation_context_type ON ia_conversation_context(context_type);
-CREATE INDEX idx_ia_conversation_context_key ON ia_conversation_context(context_key);
-CREATE INDEX idx_ia_conversation_context_expires_at ON ia_conversation_context(expires_at);
+-- Adicionar foreign keys se as tabelas existirem
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_conversation_context_user_id_fkey') THEN
+        ALTER TABLE ia_conversation_context 
+        ADD CONSTRAINT ia_conversation_context_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ia_conversations') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_conversation_context_conversation_id_fkey') THEN
+        ALTER TABLE ia_conversation_context 
+        ADD CONSTRAINT ia_conversation_context_conversation_id_fkey 
+        FOREIGN KEY (conversation_id) REFERENCES ia_conversations(id) ON DELETE CASCADE;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_ia_conversation_context_user_id ON ia_conversation_context(user_id);
+CREATE INDEX IF NOT EXISTS idx_ia_conversation_context_conversation_id ON ia_conversation_context(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_ia_conversation_context_type ON ia_conversation_context(context_type);
+CREATE INDEX IF NOT EXISTS idx_ia_conversation_context_key ON ia_conversation_context(context_key);
+CREATE INDEX IF NOT EXISTS idx_ia_conversation_context_expires_at ON ia_conversation_context(expires_at);
 
 -- ============================================
 -- TABELA: SUGESTÕES DE PERGUNTAS
 -- ============================================
 CREATE TABLE IF NOT EXISTS ia_question_suggestions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    conversation_id INTEGER REFERENCES ia_conversations(id) ON DELETE CASCADE,
+    user_id VARCHAR(255) NOT NULL,
+    conversation_id INTEGER,
     suggested_question TEXT NOT NULL,
     suggestion_type VARCHAR(50) DEFAULT 'related' CHECK (suggestion_type IN ('related', 'category', 'popular', 'contextual')),
-    category_id INTEGER REFERENCES ia_categories(id) ON DELETE SET NULL,
+    category_id INTEGER,
     knowledge_ids INTEGER[], -- IDs do conhecimento relacionado
     clicked BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_ia_question_suggestions_user_id ON ia_question_suggestions(user_id);
-CREATE INDEX idx_ia_question_suggestions_conversation_id ON ia_question_suggestions(conversation_id);
-CREATE INDEX idx_ia_question_suggestions_type ON ia_question_suggestions(suggestion_type);
-CREATE INDEX idx_ia_question_suggestions_clicked ON ia_question_suggestions(clicked);
+-- Adicionar foreign keys se as tabelas existirem
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_question_suggestions_user_id_fkey') THEN
+        ALTER TABLE ia_question_suggestions 
+        ADD CONSTRAINT ia_question_suggestions_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ia_conversations') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_question_suggestions_conversation_id_fkey') THEN
+        ALTER TABLE ia_question_suggestions 
+        ADD CONSTRAINT ia_question_suggestions_conversation_id_fkey 
+        FOREIGN KEY (conversation_id) REFERENCES ia_conversations(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ia_categories') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ia_question_suggestions_category_id_fkey') THEN
+        ALTER TABLE ia_question_suggestions 
+        ADD CONSTRAINT ia_question_suggestions_category_id_fkey 
+        FOREIGN KEY (category_id) REFERENCES ia_categories(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_ia_question_suggestions_user_id ON ia_question_suggestions(user_id);
+CREATE INDEX IF NOT EXISTS idx_ia_question_suggestions_conversation_id ON ia_question_suggestions(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_ia_question_suggestions_type ON ia_question_suggestions(suggestion_type);
+CREATE INDEX IF NOT EXISTS idx_ia_question_suggestions_clicked ON ia_question_suggestions(clicked);
 
 -- ============================================
 -- TABELA: MÉTRICAS DE SATISFAÇÃO
@@ -145,7 +253,7 @@ CREATE TABLE IF NOT EXISTS ia_satisfaction_metrics (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_ia_satisfaction_metrics_date ON ia_satisfaction_metrics(date);
+CREATE INDEX IF NOT EXISTS idx_ia_satisfaction_metrics_date ON ia_satisfaction_metrics(date);
 
 -- ============================================
 -- ADICIONAR COLUNAS EXISTENTES SE NECESSÁRIO
