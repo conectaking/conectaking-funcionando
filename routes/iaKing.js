@@ -5191,13 +5191,25 @@ async function findBestAnswer(userMessage, userId) {
         // ============================================
         const ambiguityCheck = detectAmbiguity(userMessage, questionContext);
         if (ambiguityCheck.isAmbiguous && ambiguityCheck.confidence < 70) {
+            // Gerar perguntas de esclarecimento inteligentes
+            const clarificationQuestions = generateIntelligentClarificationQuestions(userMessage, questionContext, ambiguityCheck, client, userId);
+            
             return {
-                answer: `Desculpe, sua pergunta pode ter mais de um significado. Você está perguntando sobre:\n\n${ambiguityCheck.interpretations.map((i, idx) => `${idx + 1}. ${i.interpretation}`).join('\n')}\n\nPor favor, especifique qual delas você quer que eu responda.`,
+                answer: `Desculpe, sua pergunta pode ter mais de um significado. Você está perguntando sobre:\n\n${ambiguityCheck.interpretations.map((i, idx) => `${idx + 1}. ${i.interpretation}`).join('\n')}\n\n${clarificationQuestions.length > 0 ? `**Para te ajudar melhor, você poderia esclarecer:**\n\n${clarificationQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}\n\n` : ''}Por favor, especifique qual delas você quer que eu responda.`,
                 confidence: 50,
                 source: 'ambiguity_detection',
                 needs_clarification: true,
-                interpretations: ambiguityCheck.interpretations
+                interpretations: ambiguityCheck.interpretations,
+                clarification_questions: clarificationQuestions
             };
+        }
+        
+        // Verificar se confiança é baixa e gerar perguntas de esclarecimento
+        if (bestAnswer && finalConfidence < 50 && !bestAnswer.includes('não encontrei')) {
+            const lowConfidenceQuestions = generateLowConfidenceClarificationQuestions(userMessage, questionContext, client, userId);
+            if (lowConfidenceQuestions.length > 0) {
+                bestAnswer += `\n\n**Para te dar uma resposta mais precisa, você poderia esclarecer:**\n\n${lowConfidenceQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}`;
+            }
         }
         
         // ============================================
@@ -5430,13 +5442,25 @@ async function findBestAnswer(userMessage, userId) {
                 })));
             }
             
-            // Buscar conhecimento geral
-            knowledgeResult = await client.query(`
-                SELECT id, title, content, keywords, usage_count, source_type, category_id
-                FROM ia_knowledge_base
-                WHERE is_active = true
-                AND source_type NOT IN ('book_training', 'tavily_book', 'tavily_book_trained')
-            `);
+            // Buscar conhecimento geral COM PRIORIZAÇÃO DINÂMICA
+            const searchTerms = questionContext.keywords.length > 0 
+                ? questionContext.keywords.join(' ') 
+                : userMessage.substring(0, 100);
+            
+            knowledgeResult = await getPrioritizedKnowledge(searchTerms, questionContext, 50, client);
+            
+            // Se não encontrou com priorização, fazer busca normal
+            if (!knowledgeResult || knowledgeResult.length === 0) {
+                knowledgeResult = await client.query(`
+                    SELECT id, title, content, keywords, usage_count, source_type, category_id,
+                           COALESCE(dynamic_priority, priority, 0) as final_priority
+                    FROM ia_knowledge_base
+                    WHERE is_active = true
+                    AND source_type NOT IN ('book_training', 'tavily_book', 'tavily_book_trained')
+                    ORDER BY final_priority DESC, priority DESC, created_at DESC
+                    LIMIT 50
+                `);
+            }
             
             // COMBINAR: Livros primeiro, depois conhecimento geral
             const allKnowledge = [...booksResult.rows, ...knowledgeResult.rows];
@@ -7253,6 +7277,30 @@ router.post('/chat', protectUser, asyncHandler(async (req, res) => {
             knowledgeUsedIds = result.knowledge_used_ids;
         }
         
+        // ============================================
+        // FASE 1: VERIFICAR ERROS REPETITIVOS
+        // ============================================
+        const errorCheck = await checkForRepetitiveError(message.trim(), result.answer || '', client);
+        if (errorCheck.isBlocked) {
+            console.log('⚠️ [Erro Repetitivo] Resposta bloqueada - erro conhecido detectado');
+            // Tentar gerar resposta alternativa
+            result.answer = `Desculpe, identifiquei que minha resposta anterior pode ter sido incorreta. Deixe-me buscar uma resposta mais precisa para você.`;
+            result.confidence = Math.max(30, result.confidence - 20);
+        }
+        
+        // ============================================
+        // FASE 1: RASTREAR USO DE CONHECIMENTO
+        // ============================================
+        if (knowledgeUsedIds && knowledgeUsedIds.length > 0) {
+            // Rastrear uso de cada conhecimento (assumir sucesso inicial, será ajustado com feedback)
+            for (const kid of knowledgeUsedIds) {
+                await trackKnowledgeUsage(kid, true, result.confidence || 0, client);
+            }
+            
+            // Ajustar estratégias baseado no sucesso
+            await adjustResponseStrategies('knowledge_search', true, result.confidence || 0, null, client);
+        }
+        
         // Salvar conversa no banco
         const convResult = await client.query(`
             INSERT INTO ia_conversations 
@@ -7356,6 +7404,18 @@ router.post('/chat', protectUser, asyncHandler(async (req, res) => {
         
         // Atualizar métricas de satisfação
         await updateSatisfactionMetrics(client);
+        
+        // ============================================
+        // FASE 1: ATUALIZAR PRIORIDADES DINÂMICAS (em background)
+        // ============================================
+        // Executar em background para não bloquear resposta
+        setImmediate(async () => {
+            try {
+                await updateDynamicPriorities(client);
+            } catch (error) {
+                console.error('Erro ao atualizar prioridades em background:', error);
+            }
+        });
         
         res.json({
             response: result.answer,
@@ -12545,9 +12605,27 @@ router.post('/feedback', protectUser, asyncHandler(async (req, res) => {
         // Atualizar métricas de satisfação
         await updateSatisfactionMetrics(client);
         
-        // Se feedback negativo, aprender com ele
+        // Se feedback negativo, aprender com ele (usando sistema avançado)
         if (feedback_type === 'negative' || feedback_type === 'correction') {
-            await learnFromNegativeFeedback(client, conversation_id, feedback_text, knowledge_used_ids);
+            await learnFromNegativeFeedbackAdvanced(client, conversation_id, feedback_text, knowledge_used_ids);
+            
+            // Buscar conversa para detectar erro repetitivo
+            const conv = await client.query(`
+                SELECT message, response FROM ia_conversations WHERE id = $1
+            `, [conversation_id]);
+            
+            if (conv.rows.length > 0) {
+                await detectRepetitiveError(conv.rows[0].message, conv.rows[0].response, knowledge_used_ids, client);
+            }
+        }
+        
+        // Se feedback positivo, atualizar estatísticas de sucesso
+        if (feedback_type === 'positive' && knowledge_used_ids && knowledge_used_ids.length > 0) {
+            for (const kid of knowledge_used_ids) {
+                await trackKnowledgeUsage(kid, true, quality_score || 80, client);
+            }
+            // Ajustar estratégias positivamente
+            await adjustResponseStrategies('knowledge_search', true, quality_score || 80, quality_score || 80, client);
         }
         
         res.json({
@@ -16821,6 +16899,894 @@ router.post('/knowledge/export-selected', protectAdmin, asyncHandler(async (req,
         client.release();
     }
 }));
+
+// ============================================
+// FASE 1: MELHORIAS CRÍTICAS - APRENDIZADO ADAPTATIVO
+// ============================================
+
+// ============================================
+// 1. SISTEMA DE APRENDIZADO ADAPTATIVO AVANÇADO
+// ============================================
+
+// Rastrear uso de conhecimento e atualizar estatísticas
+async function trackKnowledgeUsage(knowledgeId, success, confidence, client) {
+    try {
+        // Verificar se estatísticas existem
+        const statsCheck = await client.query(`
+            SELECT id FROM ia_knowledge_stats WHERE knowledge_id = $1
+        `, [knowledgeId]);
+        
+        if (statsCheck.rows.length === 0) {
+            // Criar estatísticas iniciais
+            await client.query(`
+                INSERT INTO ia_knowledge_stats 
+                (knowledge_id, total_uses, successful_uses, failed_uses, average_confidence, last_used_at, success_rate, dynamic_priority)
+                VALUES ($1, 1, $2, $3, $4, NOW(), $5, $6)
+            `, [
+                knowledgeId,
+                success ? 1 : 0,
+                success ? 0 : 1,
+                confidence || 0,
+                success ? 100 : 0,
+                calculateDynamicPriority(1, success ? 1 : 0, confidence || 0, 0)
+            ]);
+        } else {
+            // Atualizar estatísticas existentes
+            const stats = await client.query(`
+                SELECT total_uses, successful_uses, failed_uses, average_confidence 
+                FROM ia_knowledge_stats WHERE knowledge_id = $1
+            `, [knowledgeId]);
+            
+            const current = stats.rows[0];
+            const newTotal = current.total_uses + 1;
+            const newSuccessful = current.successful_uses + (success ? 1 : 0);
+            const newFailed = current.failed_uses + (success ? 0 : 1);
+            const newAvgConfidence = ((current.average_confidence * current.total_uses) + (confidence || 0)) / newTotal;
+            const newSuccessRate = (newSuccessful / newTotal) * 100;
+            const newDynamicPriority = calculateDynamicPriority(newTotal, newSuccessful, newAvgConfidence, newSuccessRate);
+            
+            await client.query(`
+                UPDATE ia_knowledge_stats
+                SET total_uses = $1,
+                    successful_uses = $2,
+                    failed_uses = $3,
+                    average_confidence = $4,
+                    success_rate = $5,
+                    dynamic_priority = $6,
+                    last_used_at = NOW(),
+                    updated_at = NOW()
+                WHERE knowledge_id = $7
+            `, [newTotal, newSuccessful, newFailed, newAvgConfidence, newSuccessRate, newDynamicPriority, knowledgeId]);
+        }
+        
+        // Atualizar também na tabela principal
+        await client.query(`
+            UPDATE ia_knowledge_base
+            SET use_count = COALESCE(use_count, 0) + 1,
+                last_used_at = NOW(),
+                success_rate = (
+                    SELECT success_rate FROM ia_knowledge_stats WHERE knowledge_id = $1
+                ),
+                dynamic_priority = (
+                    SELECT dynamic_priority FROM ia_knowledge_stats WHERE knowledge_id = $1
+                )
+            WHERE id = $1
+        `, [knowledgeId]);
+        
+    } catch (error) {
+        console.error('Erro ao rastrear uso de conhecimento:', error);
+        // Não bloquear o fluxo principal
+    }
+}
+
+// Calcular prioridade dinâmica baseada em múltiplos fatores
+function calculateDynamicPriority(totalUses, successfulUses, avgConfidence, successRate) {
+    // Fator 1: Taxa de sucesso (0-40 pontos)
+    const successFactor = (successRate / 100) * 40;
+    
+    // Fator 2: Confiança média (0-30 pontos)
+    const confidenceFactor = (avgConfidence / 100) * 30;
+    
+    // Fator 3: Volume de uso (0-20 pontos) - mais uso = mais confiável
+    const volumeFactor = Math.min((totalUses / 100) * 20, 20);
+    
+    // Fator 4: Recência (0-10 pontos) - conhecimento usado recentemente tem prioridade
+    // Este será ajustado no banco de dados baseado em last_used_at
+    
+    return successFactor + confidenceFactor + volumeFactor;
+}
+
+// Ajustar estratégias de resposta baseado em feedback
+async function adjustResponseStrategies(strategyType, success, confidence, feedbackScore, client) {
+    try {
+        // Buscar ou criar estratégia
+        const strategyCheck = await client.query(`
+            SELECT id, success_count, failure_count, average_confidence, average_feedback_score
+            FROM ia_response_strategies 
+            WHERE strategy_type = $1
+            LIMIT 1
+        `, [strategyType]);
+        
+        if (strategyCheck.rows.length === 0) {
+            // Criar nova estratégia
+            await client.query(`
+                INSERT INTO ia_response_strategies 
+                (strategy_type, success_count, failure_count, average_confidence, average_feedback_score, priority, last_used_at)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW())
+            `, [
+                strategyType,
+                success ? 1 : 0,
+                success ? 0 : 1,
+                confidence || 0,
+                feedbackScore || 0,
+                50 // Prioridade inicial
+            ]);
+        } else {
+            const current = strategyCheck.rows[0];
+            const newSuccess = current.success_count + (success ? 1 : 0);
+            const newFailure = current.failure_count + (success ? 0 : 1);
+            const newAvgConfidence = ((current.average_confidence * (current.success_count + current.failure_count)) + (confidence || 0)) / (newSuccess + newFailure);
+            const newAvgFeedback = ((current.average_feedback_score * (current.success_count + current.failure_count)) + (feedbackScore || 0)) / (newSuccess + newFailure);
+            
+            // Calcular nova prioridade baseada em sucesso
+            const successRate = (newSuccess / (newSuccess + newFailure)) * 100;
+            const newPriority = Math.min(100, Math.max(0, 50 + (successRate - 50)));
+            
+            await client.query(`
+                UPDATE ia_response_strategies
+                SET success_count = $1,
+                    failure_count = $2,
+                    average_confidence = $3,
+                    average_feedback_score = $4,
+                    priority = $5,
+                    last_used_at = NOW(),
+                    updated_at = NOW()
+                WHERE id = $6
+            `, [newSuccess, newFailure, newAvgConfidence, newAvgFeedback, newPriority, current.id]);
+            
+            // Registrar no histórico
+            await client.query(`
+                INSERT INTO ia_adaptive_learning_history
+                (learning_type, description, old_value, new_value, impact_score)
+                VALUES ('strategy_adjustment', $1, $2, $3, $4)
+            `, [
+                `Ajuste de estratégia ${strategyType}`,
+                JSON.stringify({ priority: current.priority, success_rate: (current.success_count / (current.success_count + current.failure_count)) * 100 }),
+                JSON.stringify({ priority: newPriority, success_rate: successRate }),
+                Math.abs(newPriority - current.priority)
+            ]);
+        }
+    } catch (error) {
+        console.error('Erro ao ajustar estratégias:', error);
+    }
+}
+
+// ============================================
+// 2. SISTEMA DE PRIORIZAÇÃO DINÂMICA
+// ============================================
+
+// Atualizar prioridades dinâmicas de todo conhecimento
+async function updateDynamicPriorities(client) {
+    try {
+        // Atualizar prioridades baseadas em estatísticas
+        await client.query(`
+            UPDATE ia_knowledge_base kb
+            SET dynamic_priority = COALESCE(
+                (
+                    SELECT 
+                        (ks.success_rate * 0.4) + 
+                        (ks.average_confidence * 0.3) + 
+                        (LEAST(ks.total_uses::decimal / 100, 1) * 20) +
+                        CASE 
+                            WHEN ks.last_used_at > NOW() - INTERVAL '7 days' THEN 10
+                            WHEN ks.last_used_at > NOW() - INTERVAL '30 days' THEN 5
+                            ELSE 0
+                        END
+                    FROM ia_knowledge_stats ks
+                    WHERE ks.knowledge_id = kb.id
+                ),
+                kb.priority
+            ),
+            success_rate = COALESCE(
+                (SELECT success_rate FROM ia_knowledge_stats WHERE knowledge_id = kb.id),
+                0
+            )
+            WHERE EXISTS (SELECT 1 FROM ia_knowledge_stats WHERE knowledge_id = kb.id)
+        `);
+        
+        console.log('✅ Prioridades dinâmicas atualizadas');
+    } catch (error) {
+        console.error('Erro ao atualizar prioridades dinâmicas:', error);
+    }
+}
+
+// Buscar conhecimento priorizado dinamicamente
+async function getPrioritizedKnowledge(question, questionContext, limit, client) {
+    try {
+        // Primeiro, tentar buscar por prioridade dinâmica
+        const prioritizedResult = await client.query(`
+            SELECT kb.*, 
+                   COALESCE(ks.dynamic_priority, kb.priority, 0) as final_priority,
+                   COALESCE(ks.success_rate, 0) as success_rate,
+                   COALESCE(ks.total_uses, 0) as total_uses
+            FROM ia_knowledge_base kb
+            LEFT JOIN ia_knowledge_stats ks ON ks.knowledge_id = kb.id
+            WHERE kb.is_active = true
+            AND (
+                LOWER(kb.title) LIKE LOWER($1) OR
+                LOWER(kb.content) LIKE LOWER($1) OR
+                LOWER(kb.keywords) LIKE LOWER($1)
+            )
+            ORDER BY 
+                final_priority DESC,
+                success_rate DESC,
+                kb.priority DESC,
+                kb.created_at DESC
+            LIMIT $2
+        `, [`%${question}%`, limit]);
+        
+        return prioritizedResult.rows;
+    } catch (error) {
+        console.error('Erro ao buscar conhecimento priorizado:', error);
+        // Fallback para busca normal
+        return await client.query(`
+            SELECT * FROM ia_knowledge_base
+            WHERE is_active = true
+            AND (
+                LOWER(title) LIKE LOWER($1) OR
+                LOWER(content) LIKE LOWER($1) OR
+                LOWER(keywords) LIKE LOWER($1)
+            )
+            ORDER BY priority DESC, created_at DESC
+            LIMIT $2
+        `, [`%${question}%`, limit]);
+    }
+}
+
+// ============================================
+// 3. SISTEMA DE DETECÇÃO DE ERROS REPETITIVOS
+// ============================================
+
+// Detectar e registrar erro repetitivo
+async function detectRepetitiveError(question, response, knowledgeIds, client) {
+    try {
+        // Criar padrão do erro baseado na pergunta e resposta
+        const errorPattern = generateErrorPattern(question, response);
+        
+        // Verificar se erro similar já existe
+        const existingError = await client.query(`
+            SELECT id, occurrence_count, is_blocked
+            FROM ia_repetitive_errors
+            WHERE error_pattern = $1
+            LIMIT 1
+        `, [errorPattern]);
+        
+        if (existingError.rows.length > 0) {
+            // Incrementar contador
+            const newCount = existingError.rows[0].occurrence_count + 1;
+            await client.query(`
+                UPDATE ia_repetitive_errors
+                SET occurrence_count = $1,
+                    last_occurred_at = NOW(),
+                    updated_at = NOW(),
+                    is_blocked = CASE WHEN $1 >= 3 THEN true ELSE is_blocked END
+                WHERE id = $2
+            `, [newCount, existingError.rows[0].id]);
+            
+            // Se ocorreu 3+ vezes, bloquear conhecimento relacionado
+            if (newCount >= 3 && !existingError.rows[0].is_blocked) {
+                await blockKnowledgeForError(knowledgeIds, existingError.rows[0].id, client);
+            }
+        } else {
+            // Criar novo registro de erro
+            await client.query(`
+                INSERT INTO ia_repetitive_errors
+                (error_pattern, error_message, error_response, knowledge_ids, occurrence_count)
+                VALUES ($1, $2, $3, $4, 1)
+            `, [errorPattern, question, response, knowledgeIds || []]);
+        }
+    } catch (error) {
+        console.error('Erro ao detectar erro repetitivo:', error);
+    }
+}
+
+// Gerar padrão de erro para comparação
+function generateErrorPattern(question, response) {
+    // Normalizar: remover espaços extras, converter para minúsculas, remover pontuação
+    const normalizedQuestion = question.toLowerCase()
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 100); // Limitar tamanho
+    
+    const normalizedResponse = response.toLowerCase()
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 100);
+    
+    return `${normalizedQuestion}||${normalizedResponse}`;
+}
+
+// Bloquear conhecimento relacionado a erro
+async function blockKnowledgeForError(knowledgeIds, errorId, client) {
+    try {
+        if (!knowledgeIds || knowledgeIds.length === 0) return;
+        
+        // Reduzir drasticamente a prioridade do conhecimento problemático
+        await client.query(`
+            UPDATE ia_knowledge_base
+            SET priority = GREATEST(priority - 50, 0),
+                is_active = CASE WHEN priority - 50 < 10 THEN false ELSE is_active END
+            WHERE id = ANY($1)
+        `, [knowledgeIds]);
+        
+        // Atualizar estatísticas
+        await client.query(`
+            UPDATE ia_knowledge_stats
+            SET failed_uses = failed_uses + 1,
+                success_rate = (successful_uses::decimal / GREATEST(total_uses + 1, 1)) * 100,
+                dynamic_priority = GREATEST(dynamic_priority - 30, 0)
+            WHERE knowledge_id = ANY($1)
+        `, [knowledgeIds]);
+        
+        console.log(`⚠️ Conhecimento bloqueado devido a erro repetitivo: ${knowledgeIds.length} item(s)`);
+    } catch (error) {
+        console.error('Erro ao bloquear conhecimento:', error);
+    }
+}
+
+// Verificar se resposta é similar a erro conhecido
+async function checkForRepetitiveError(question, response, client) {
+    try {
+        const errorPattern = generateErrorPattern(question, response);
+        
+        const blockedError = await client.query(`
+            SELECT id, error_pattern, correction_suggested
+            FROM ia_repetitive_errors
+            WHERE error_pattern = $1
+            AND is_blocked = true
+            LIMIT 1
+        `, [errorPattern]);
+        
+        if (blockedError.rows.length > 0) {
+            return {
+                isBlocked: true,
+                errorId: blockedError.rows[0].id,
+                correction: blockedError.rows[0].correction_suggested
+            };
+        }
+        
+        return { isBlocked: false };
+    } catch (error) {
+        console.error('Erro ao verificar erro repetitivo:', error);
+        return { isBlocked: false };
+    }
+}
+
+// Integrar feedback negativo com detecção de erros
+async function learnFromNegativeFeedbackAdvanced(client, conversationId, feedbackText, knowledgeIds) {
+    try {
+        // Buscar conversa
+        const conv = await client.query(`
+            SELECT message, response FROM ia_conversations WHERE id = $1
+        `, [conversationId]);
+        
+        if (conv.rows.length === 0) return;
+        
+        const { message, response } = conv.rows[0];
+        
+        // Registrar como erro repetitivo
+        await detectRepetitiveError(message, response, knowledgeIds, client);
+        
+        // Atualizar estatísticas de conhecimento usado
+        if (knowledgeIds && knowledgeIds.length > 0) {
+            for (const kid of knowledgeIds) {
+                await trackKnowledgeUsage(kid, false, 0, client);
+            }
+        }
+        
+        // Ajustar estratégias
+        await adjustResponseStrategies('knowledge_search', false, 0, 0, client);
+        
+    } catch (error) {
+        console.error('Erro ao aprender com feedback negativo avançado:', error);
+    }
+}
+
+// Função wrapper para manter compatibilidade (substitui a função original)
+async function learnFromNegativeFeedbackWrapper(client, conversationId, feedbackText, knowledgeIds) {
+    // Chamar função original se ainda existir
+    try {
+        // A função original já faz parte do código, então chamamos a avançada diretamente
+        await learnFromNegativeFeedbackAdvanced(client, conversationId, feedbackText, knowledgeIds);
+    } catch (error) {
+        console.error('Erro no wrapper de feedback negativo:', error);
+    }
+}
+
+// Endpoint para atualizar prioridades dinâmicas manualmente
+router.post('/system/update-dynamic-priorities', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        await updateDynamicPriorities(client);
+        res.json({ success: true, message: 'Prioridades dinâmicas atualizadas com sucesso' });
+    } catch (error) {
+        console.error('Erro ao atualizar prioridades:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// Endpoint para obter estatísticas de conhecimento
+router.get('/knowledge/:id/stats', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+    try {
+        const stats = await client.query(`
+            SELECT * FROM ia_knowledge_stats WHERE knowledge_id = $1
+        `, [id]);
+        
+        if (stats.rows.length === 0) {
+            return res.json({ success: true, stats: null, message: 'Nenhuma estatística encontrada' });
+        }
+        
+        res.json({ success: true, stats: stats.rows[0] });
+    } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// FASE 2: MELHORIAS ADICIONAIS - GERAÇÃO DE PERGUNTAS INTELIGENTES
+// ============================================
+
+// Gerar perguntas de esclarecimento inteligentes
+async function generateIntelligentClarificationQuestions(message, questionContext, ambiguityCheck, client, userId) {
+    const questions = [];
+    try {
+        const userContext = userId ? await getUserContext(client, userId) : null;
+        const recentTopics = userContext?.recent_topics || [];
+        
+        for (const interpretation of ambiguityCheck.interpretations || []) {
+            if (interpretation.type === 'pronoun') {
+                questions.push('Sobre quem ou o que você está perguntando?');
+            } else if (interpretation.type === 'demonstrative') {
+                questions.push('Você poderia especificar o que é "isso" ou "aquilo"?');
+            } else if (interpretation.type === 'comparative') {
+                questions.push('Você está comparando com o quê especificamente?');
+            } else if (interpretation.type === 'short' && recentTopics.length > 0) {
+                questions.push(`Você está perguntando sobre ${recentTopics[0]} ou outro tópico?`);
+            }
+        }
+        
+        if (questionContext.entities && questionContext.entities.length > 0) {
+            questions.push(`Você está se referindo a "${questionContext.entities[0]}" especificamente?`);
+        }
+        
+        return questions.slice(0, 3);
+    } catch (error) {
+        console.error('Erro ao gerar perguntas:', error);
+        return ['Você poderia fornecer mais detalhes?'];
+    }
+}
+
+// Gerar perguntas quando confiança é baixa
+async function generateLowConfidenceClarificationQuestions(message, questionContext, client, userId) {
+    const questions = [];
+    try {
+        if (!questionContext.entities || questionContext.entities.length === 0) {
+            questions.push('Sobre qual tópico específico você gostaria de saber mais?');
+        }
+        
+        if (questionContext.questionType === 'what' && !message.toLowerCase().includes('como') && !message.toLowerCase().includes('por que')) {
+            questions.push('Você quer saber "como funciona" ou "por que acontece"?');
+        }
+        
+        return questions.slice(0, 2);
+    } catch (error) {
+        return [];
+    }
+}
+
+// ============================================
+// FASE 2: VALIDAÇÃO DE FONTES EXPANDIDA
+// ============================================
+
+// Marcar fontes obsoletas
+async function markOutdatedSources(client) {
+    try {
+        const result = await client.query(`
+            UPDATE ia_knowledge_base
+            SET is_active = false, priority = GREATEST(priority - 20, 0)
+            WHERE created_at < NOW() - INTERVAL '365 days'
+            AND source_type IN ('tavily', 'web_search')
+            AND is_active = true
+            RETURNING id
+        `);
+        return result.rows.length;
+    } catch (error) {
+        console.error('Erro ao marcar fontes obsoletas:', error);
+        return 0;
+    }
+}
+
+// ============================================
+// FASE 2: PERSONALIZAÇÃO AVANÇADA
+// ============================================
+
+// Aprender estilo do usuário
+async function learnUserCommunicationStyle(client, userId, message, response, feedback) {
+    try {
+        const messageLength = message.split(/\s+/).length;
+        const usesFormalLanguage = /você|senhor|senhora/i.test(message);
+        
+        const preferences = await client.query(`SELECT * FROM ia_user_preferences WHERE user_id = $1`, [userId]);
+        
+        if (preferences.rows.length === 0) {
+            await client.query(`
+                INSERT INTO ia_user_preferences (user_id, preferred_style, knowledge_level, response_length_preference)
+                VALUES ($1, $2, $3, $4)
+            `, [userId, usesFormalLanguage ? 'detailed' : 'balanced', messageLength > 20 ? 'advanced' : 'intermediate', messageLength > 15 ? 'long' : 'medium']);
+        }
+    } catch (error) {
+        console.error('Erro ao aprender estilo:', error);
+    }
+}
+
+// Adaptar resposta ao estilo
+function adaptResponseToUserStyle(answer, preferences) {
+    if (!preferences) return answer;
+    let adapted = answer;
+    
+    if (preferences.knowledge_level === 'beginner') {
+        adapted = adapted.replace(/\b(implementar|otimizar)\b/gi, (m) => m === 'implementar' ? 'fazer' : 'melhorar');
+    }
+    
+    if (preferences.response_length_preference === 'short' && adapted.split(/[.!?]+/).length > 5) {
+        adapted = adapted.split(/[.!?]+/).slice(0, 5).join('. ') + '.';
+    }
+    
+    return adapted;
+}
+
+// ============================================
+// SISTEMA DE DESCOBERTA DE LACUNAS
+// ============================================
+
+async function identifyKnowledgeGaps(client) {
+    try {
+        const gaps = [];
+        const categoryStats = await client.query(`
+            SELECT c.id, c.name, COUNT(kb.id) as knowledge_count
+            FROM ia_categories c
+            LEFT JOIN ia_knowledge_base kb ON kb.category_id = c.id AND kb.is_active = true
+            GROUP BY c.id, c.name
+            HAVING COUNT(kb.id) < 5
+            ORDER BY knowledge_count ASC
+            LIMIT 10
+        `);
+        
+        for (const cat of categoryStats.rows) {
+            gaps.push({
+                type: 'category',
+                category_id: cat.id,
+                category_name: cat.name,
+                knowledge_count: parseInt(cat.knowledge_count),
+                priority: 'high',
+                suggestion: `Categoria "${cat.name}" tem apenas ${cat.knowledge_count} item(s). Considere adicionar mais conteúdo.`
+            });
+        }
+        
+        return gaps;
+    } catch (error) {
+        return [];
+    }
+}
+
+// ============================================
+// ENDPOINTS ADICIONAIS
+// ============================================
+
+router.get('/knowledge-gaps', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const gaps = await identifyKnowledgeGaps(client);
+        res.json({ success: true, gaps, total: gaps.length });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+router.get('/trends', protectAdmin, asyncHandler(async (req, res) => {
+    const { days = 30 } = req.query;
+    const client = await db.pool.connect();
+    try {
+        const categoryTrends = await client.query(`
+            SELECT COALESCE(c.name, 'Geral') as category_name, COUNT(*) as question_count
+            FROM ia_conversations conv
+            LEFT JOIN ia_knowledge_base kb ON kb.id = ANY(conv.knowledge_used_ids)
+            LEFT JOIN ia_categories c ON c.id = kb.category_id
+            WHERE conv.created_at >= NOW() - INTERVAL '${parseInt(days)} days'
+            GROUP BY c.name
+            ORDER BY question_count DESC
+            LIMIT 10
+        `);
+        
+        res.json({ success: true, trends: { most_asked_categories: categoryTrends.rows } });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// SISTEMA DE TUTORIAIS E ASSISTENTE VIRTUAL
+// ============================================
+
+// GET /api/ia-king/tutorials - Listar tutoriais disponíveis
+router.get('/tutorials', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const tutorials = await client.query(`
+            SELECT t.*, 
+                   COALESCE(utp.is_completed, false) as is_completed,
+                   utp.current_step,
+                   utp.completed_steps
+            FROM ia_tutorials t
+            LEFT JOIN ia_user_tutorial_progress utp ON utp.tutorial_id = t.id AND utp.user_id = $1
+            WHERE t.is_active = true
+            ORDER BY t.order_index ASC, t.created_at ASC
+        `, [req.user.userId]);
+        
+        res.json({ success: true, tutorials: tutorials.rows });
+    } catch (error) {
+        console.error('Erro ao buscar tutoriais:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/tutorials/:id/start - Iniciar tutorial
+router.post('/tutorials/:id/start', protectUser, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+    try {
+        // Buscar tutorial
+        const tutorial = await client.query(`
+            SELECT * FROM ia_tutorials WHERE id = $1 AND is_active = true
+        `, [id]);
+        
+        if (tutorial.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Tutorial não encontrado' });
+        }
+        
+        // Buscar ou criar progresso
+        let progress = await client.query(`
+            SELECT * FROM ia_user_tutorial_progress
+            WHERE user_id = $1 AND tutorial_id = $2
+        `, [req.user.userId, id]);
+        
+        if (progress.rows.length === 0) {
+            // Criar novo progresso
+            const newProgress = await client.query(`
+                INSERT INTO ia_user_tutorial_progress (user_id, tutorial_id, current_step, completed_steps)
+                VALUES ($1, $2, 0, ARRAY[]::INTEGER[])
+                RETURNING *
+            `, [req.user.userId, id]);
+            progress = newProgress;
+        }
+        
+        // Atualizar último acesso
+        await client.query(`
+            UPDATE ia_user_tutorial_progress
+            SET last_accessed_at = NOW()
+            WHERE user_id = $1 AND tutorial_id = $2
+        `, [req.user.userId, id]);
+        
+        res.json({
+            success: true,
+            tutorial: {
+                ...tutorial.rows[0],
+                steps: typeof tutorial.rows[0].steps === 'string' 
+                    ? JSON.parse(tutorial.rows[0].steps) 
+                    : tutorial.rows[0].steps
+            },
+            progress: progress.rows[0]
+        });
+    } catch (error) {
+        console.error('Erro ao iniciar tutorial:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/tutorials/:id/progress - Salvar progresso
+router.post('/tutorials/:id/progress', protectUser, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { current_step, completed_steps } = req.body;
+    const client = await db.pool.connect();
+    try {
+        await client.query(`
+            UPDATE ia_user_tutorial_progress
+            SET current_step = $1,
+                completed_steps = $2,
+                last_accessed_at = NOW()
+            WHERE user_id = $3 AND tutorial_id = $4
+        `, [current_step, completed_steps || [], req.user.userId, id]);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro ao salvar progresso:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/tutorials/:id/complete - Completar tutorial
+router.post('/tutorials/:id/complete', protectUser, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+    try {
+        await client.query(`
+            UPDATE ia_user_tutorial_progress
+            SET is_completed = true,
+                completed_at = NOW(),
+                last_accessed_at = NOW()
+            WHERE user_id = $1 AND tutorial_id = $2
+        `, [req.user.userId, id]);
+        
+        // Registrar no histórico
+        await client.query(`
+            INSERT INTO ia_assistant_help_history (user_id, help_type, help_content, page_path, was_helpful)
+            VALUES ($1, 'tutorial', $2, '/dashboard', true)
+        `, [req.user.userId, `Tutorial completado: ${id}`]);
+        
+        res.json({ success: true, message: 'Tutorial completado com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao completar tutorial:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/contextual-help - Buscar ajuda contextual
+router.get('/contextual-help', protectUser, asyncHandler(async (req, res) => {
+    const { page } = req.query;
+    const client = await db.pool.connect();
+    try {
+        const help = await client.query(`
+            SELECT * FROM ia_contextual_help
+            WHERE page_path = $1 AND is_active = true
+            ORDER BY priority DESC
+        `, [page || '/dashboard']);
+        
+        res.json({ success: true, help: help.rows });
+    } catch (error) {
+        console.error('Erro ao buscar ajuda contextual:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// EXPANSÃO DA IA PARA TODAS AS ÁREAS DO SISTEMA
+// ============================================
+
+// Modificar findBestAnswer para incluir contexto do sistema
+const originalFindBestAnswer = findBestAnswer;
+findBestAnswer = async function(userMessage, userId, systemContext = {}) {
+    // Adicionar contexto do sistema à mensagem
+    let enhancedMessage = userMessage;
+    
+    if (systemContext.page) {
+        enhancedMessage = `[PÁGINA: ${systemContext.page}] ${enhancedMessage}`;
+    }
+    
+    if (systemContext.action) {
+        enhancedMessage = `[AÇÃO: ${systemContext.action}] ${enhancedMessage}`;
+    }
+    
+    if (systemContext.element) {
+        enhancedMessage = `[ELEMENTO: ${systemContext.element}] ${enhancedMessage}`;
+    }
+    
+    // Adicionar conhecimento sobre o sistema Conecta King
+    const systemKnowledge = `
+    [CONHECIMENTO DO SISTEMA CONECTA KING]
+    - O Conecta King é uma plataforma de cartões digitais
+    - Usuários podem criar cartões virtuais com módulos (links, contatos, produtos, serviços)
+    - Existe sistema de páginas de vendas
+    - Existe sistema de personalização (cores, fontes, layout)
+    - Existe sistema de compartilhamento (link único, QR code)
+    - Existe sistema de relatórios e analytics
+    - A IA King deve ajudar usuários em TODAS as áreas do sistema
+    - A IA King pode executar ações para ajudar usuários (criar cartão, adicionar módulo, etc.)
+    - A IA King deve ser proativa e oferecer ajuda
+    `;
+    
+    enhancedMessage = systemKnowledge + '\n\n' + enhancedMessage;
+    
+    // Chamar função original com mensagem aprimorada
+    return await originalFindBestAnswer(enhancedMessage, userId);
+};
+
+// Endpoint especializado para ajuda no sistema
+router.post('/system-help', protectUser, asyncHandler(async (req, res) => {
+    const { message, page, action, element } = req.body;
+    const client = await db.pool.connect();
+    
+    try {
+        const systemContext = { page, action, element };
+        const result = await findBestAnswer(message, req.user.userId, systemContext);
+        
+        // Verificar se há ações sugeridas
+        const suggestedActions = await getSuggestedActions(message, page, client);
+        
+        res.json({
+            response: result.answer,
+            confidence: result.confidence,
+            suggested_actions: suggestedActions,
+            contextual_help: await getContextualHelpForPage(page, client)
+        });
+    } catch (error) {
+        console.error('Erro no sistema de ajuda:', error);
+        res.status(500).json({ error: 'Erro ao processar ajuda' });
+    } finally {
+        client.release();
+    }
+}));
+
+// Buscar ações sugeridas baseadas no contexto
+async function getSuggestedActions(message, page, client) {
+    try {
+        const actions = await client.query(`
+            SELECT * FROM ia_assistant_actions
+            WHERE is_active = true
+            AND (category = $1 OR category IS NULL)
+            ORDER BY priority DESC
+            LIMIT 5
+        `, [page || 'dashboard']);
+        
+        return actions.rows.map(a => ({
+            type: a.action_type,
+            name: a.action_name,
+            description: a.description,
+            endpoint: a.api_endpoint
+        }));
+    } catch (error) {
+        console.error('Erro ao buscar ações sugeridas:', error);
+        return [];
+    }
+}
+
+// Buscar ajuda contextual para página
+async function getContextualHelpForPage(page, client) {
+    try {
+        const help = await client.query(`
+            SELECT * FROM ia_contextual_help
+            WHERE page_path = $1 AND is_active = true
+            ORDER BY priority DESC
+            LIMIT 3
+        `, [page || '/dashboard']);
+        
+        return help.rows;
+    } catch (error) {
+        return [];
+    }
+}
 
 module.exports = router;
 
