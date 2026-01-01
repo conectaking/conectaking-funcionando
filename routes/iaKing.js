@@ -17752,8 +17752,21 @@ router.post('/system-help', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     
     try {
+        const userId = req.user?.userId || req.user?.id || req.body.userId || null;
         const systemContext = { page, action, element };
-        const result = await findBestAnswerWithSystemContext(message, req.user.userId, systemContext);
+        
+        if (!userId) {
+            // Se não tiver userId, ainda assim tentar responder
+            const result = await findBestAnswer(message, null);
+            return res.json({
+                response: result.answer,
+                confidence: result.confidence,
+                suggested_actions: [],
+                contextual_help: []
+            });
+        }
+        
+        const result = await findBestAnswerWithSystemContext(message, userId, systemContext);
         
         // Verificar se há ações sugeridas
         const suggestedActions = await getSuggestedActions(message, page, client);
@@ -17766,7 +17779,13 @@ router.post('/system-help', protectUser, asyncHandler(async (req, res) => {
         });
     } catch (error) {
         console.error('Erro no sistema de ajuda:', error);
-        res.status(500).json({ error: 'Erro ao processar ajuda' });
+        // Retornar resposta básica mesmo em caso de erro
+        res.json({
+            response: 'Olá! Como posso te ajudar hoje? Estou aqui para te guiar na configuração do seu cartão Conecta King!',
+            confidence: 50,
+            suggested_actions: [],
+            contextual_help: []
+        });
     } finally {
         client.release();
     }
