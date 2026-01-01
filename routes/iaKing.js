@@ -5339,6 +5339,336 @@ router.get('/stats', protectAdmin, asyncHandler(async (req, res) => {
     }
 }));
 
+// ============================================
+// FUNÇÕES AUXILIARES PARA ANÁLISE DE INTELIGÊNCIA
+// ============================================
+
+// Calcular Score de Inteligência Geral (0-100)
+function calculateIntelligenceScore(metrics) {
+    let score = 0;
+    let maxScore = 0;
+    
+    // Conhecimento base (0-30 pontos)
+    maxScore += 30;
+    if (metrics.totalKnowledge > 0) {
+        score += Math.min(30, (metrics.totalKnowledge / 1000) * 30);
+    }
+    
+    // Livros (0-25 pontos)
+    maxScore += 25;
+    if (metrics.totalBooks > 0) {
+        score += Math.min(25, (metrics.totalBooks / 50) * 25);
+    }
+    
+    // Q&A (0-15 pontos)
+    maxScore += 15;
+    if (metrics.totalQA > 0) {
+        score += Math.min(15, (metrics.totalQA / 100) * 15);
+    }
+    
+    // Conversas (0-10 pontos)
+    maxScore += 10;
+    if (metrics.totalConversations > 0) {
+        score += Math.min(10, (metrics.totalConversations / 500) * 10);
+    }
+    
+    // Palavras processadas (0-10 pontos)
+    maxScore += 10;
+    if (metrics.totalWords > 0) {
+        score += Math.min(10, (metrics.totalWords / 1000000) * 10);
+    }
+    
+    // Fontes diversas (0-5 pontos)
+    maxScore += 5;
+    if (metrics.uniqueSources > 0) {
+        score += Math.min(5, (metrics.uniqueSources / 5) * 5);
+    }
+    
+    // Categorias (0-5 pontos)
+    maxScore += 5;
+    if (metrics.categories > 0) {
+        score += Math.min(5, (metrics.categories / 20) * 5);
+    }
+    
+    return Math.round((score / maxScore) * 100);
+}
+
+// Analisar Qualidade do Conhecimento
+async function analyzeKnowledgeQuality(client) {
+    try {
+        // Verificar completude (conteúdo não vazio)
+        const completenessCheck = await client.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN content IS NOT NULL AND LENGTH(content) > 100 THEN 1 END) as with_content,
+                COUNT(CASE WHEN keywords IS NOT NULL AND array_length(keywords, 1) > 0 THEN 1 END) as with_keywords,
+                COUNT(CASE WHEN category_id IS NOT NULL THEN 1 END) as categorized
+            FROM ia_knowledge_base
+            WHERE is_active = true
+        `);
+        
+        const total = parseInt(completenessCheck.rows[0].total || 0);
+        const withContent = parseInt(completenessCheck.rows[0].with_content || 0);
+        const withKeywords = parseInt(completenessCheck.rows[0].with_keywords || 0);
+        const categorized = parseInt(completenessCheck.rows[0].categorized || 0);
+        
+        const completenessScore = total > 0 ? (withContent / total) * 100 : 0;
+        const keywordsScore = total > 0 ? (withKeywords / total) * 100 : 0;
+        const categorizationScore = total > 0 ? (categorized / total) * 100 : 0;
+        
+        // Verificar atualidade (últimos 30 dias)
+        const recencyCheck = await client.query(`
+            SELECT COUNT(*) as recent
+            FROM ia_knowledge_base
+            WHERE is_active = true
+            AND created_at >= CURRENT_DATE - INTERVAL '30 days'
+        `);
+        
+        const recent = parseInt(recencyCheck.rows[0].recent || 0);
+        const recencyScore = total > 0 ? (recent / total) * 100 : 0;
+        
+        // Score geral de qualidade
+        const overallScore = Math.round(
+            (completenessScore * 0.4) +
+            (keywordsScore * 0.2) +
+            (categorizationScore * 0.2) +
+            (recencyScore * 0.2)
+        );
+        
+        return {
+            completeness: Math.round(completenessScore),
+            keywords: Math.round(keywordsScore),
+            categorization: Math.round(categorizationScore),
+            recency: Math.round(recencyScore),
+            overallScore: overallScore,
+            total: total,
+            withContent: withContent,
+            withKeywords: withKeywords,
+            categorized: categorized,
+            recent: recent
+        };
+    } catch (error) {
+        console.error('Erro ao analisar qualidade:', error);
+        return {
+            completeness: 0,
+            keywords: 0,
+            categorization: 0,
+            recency: 0,
+            overallScore: 0,
+            total: 0,
+            withContent: 0,
+            withKeywords: 0,
+            categorized: 0,
+            recent: 0
+        };
+    }
+}
+
+// Calcular Taxa de Uso do Conhecimento
+async function calculateKnowledgeUsageRate(client) {
+    try {
+        // Conhecimento usado em conversas
+        const usageCheck = await client.query(`
+            SELECT 
+                COUNT(DISTINCT kb.id) as used_knowledge,
+                COUNT(*) as total_knowledge
+            FROM ia_knowledge_base kb
+            LEFT JOIN ia_conversations c ON 
+                LOWER(c.user_message) LIKE '%' || LOWER(kb.title) || '%'
+                OR LOWER(c.ai_response) LIKE '%' || LOWER(SUBSTRING(kb.content, 1, 100)) || '%'
+            WHERE kb.is_active = true
+        `);
+        
+        const totalKnowledge = parseInt(usageCheck.rows[0].total_knowledge || 0);
+        const usedKnowledge = parseInt(usageCheck.rows[0].used_knowledge || 0);
+        
+        // Livros usados
+        const booksUsageCheck = await client.query(`
+            SELECT 
+                COUNT(*) as total_books,
+                COUNT(CASE WHEN usage_count > 0 THEN 1 END) as used_books
+            FROM ia_knowledge_base
+            WHERE is_active = true
+            AND source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
+        `);
+        
+        const totalBooks = parseInt(booksUsageCheck.rows[0].total_books || 0);
+        const usedBooks = parseInt(booksUsageCheck.rows[0].used_books || 0);
+        
+        const knowledgeRate = totalKnowledge > 0 ? (usedKnowledge / totalKnowledge) * 100 : 0;
+        const booksRate = totalBooks > 0 ? (usedBooks / totalBooks) * 100 : 0;
+        const overallRate = Math.round((knowledgeRate + booksRate) / 2);
+        
+        return {
+            knowledgeRate: Math.round(knowledgeRate),
+            booksRate: Math.round(booksRate),
+            overallRate: overallRate,
+            usedKnowledge: usedKnowledge,
+            totalKnowledge: totalKnowledge,
+            usedBooks: usedBooks,
+            totalBooks: totalBooks
+        };
+    } catch (error) {
+        console.error('Erro ao calcular taxa de uso:', error);
+        return {
+            knowledgeRate: 0,
+            booksRate: 0,
+            overallRate: 0,
+            usedKnowledge: 0,
+            totalKnowledge: 0,
+            usedBooks: 0,
+            totalBooks: 0
+        };
+    }
+}
+
+// Obter Evolução Temporal
+async function getTemporalEvolution(client) {
+    try {
+        const evolution = await client.query(`
+            SELECT 
+                DATE(created_at) as date,
+                COUNT(*) as knowledge_added,
+                SUM(LENGTH(content)) as chars_added
+            FROM ia_knowledge_base
+            WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+            AND is_active = true
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        `);
+        
+        return evolution.rows.map(row => ({
+            date: row.date,
+            knowledge_added: parseInt(row.knowledge_added || 0),
+            chars_added: parseInt(row.chars_added || 0)
+        }));
+    } catch (error) {
+        console.error('Erro ao obter evolução temporal:', error);
+        return [];
+    }
+}
+
+// Gerar Recomendações Inteligentes
+function generateIntelligentRecommendations(data) {
+    const recommendations = [];
+    
+    // Recomendação 1: Mais conhecimento
+    if (data.stats.total_knowledge < 1000) {
+        recommendations.push({
+            priority: 'high',
+            title: 'Expandir Base de Conhecimento',
+            description: `Você tem ${data.stats.total_knowledge} itens de conhecimento. Recomendamos ter pelo menos 1.000 itens para uma IA robusta.`,
+            action: 'Use "Treinar Mentalidade na Internet" para adicionar mais conhecimento automaticamente.',
+            impact: 'Alto - Melhora significativamente a capacidade de resposta da IA'
+        });
+    }
+    
+    // Recomendação 2: Mais livros
+    if (data.stats.total_books < 20) {
+        recommendations.push({
+            priority: 'high',
+            title: 'Adicionar Mais Livros',
+            description: `Você tem ${data.stats.total_books} livros. Recomendamos pelo menos 20 livros para conhecimento profundo.`,
+            action: 'Use "Buscar Livros Online" ou "Treinar com Livros" para adicionar mais livros.',
+            impact: 'Alto - Livros fornecem conhecimento estruturado e confiável'
+        });
+    }
+    
+    // Recomendação 3: Melhorar qualidade
+    if (data.quality.overallScore < 70) {
+        recommendations.push({
+            priority: 'medium',
+            title: 'Melhorar Qualidade do Conhecimento',
+            description: `Score de qualidade atual: ${data.quality.overallScore}%. Foque em adicionar conteúdo completo e categorizado.`,
+            action: 'Revise itens de conhecimento sem conteúdo completo e adicione mais detalhes.',
+            impact: 'Médio - Melhora a precisão e relevância das respostas'
+        });
+    }
+    
+    // Recomendação 4: Aumentar uso
+    if (data.usage.overallRate < 30) {
+        recommendations.push({
+            priority: 'medium',
+            title: 'Aumentar Uso do Conhecimento',
+            description: `Taxa de uso atual: ${data.usage.overallRate}%. Muito conhecimento não está sendo utilizado.`,
+            action: 'Revise palavras-chave e categorias para melhorar a busca e recuperação.',
+            impact: 'Médio - Aproveita melhor o conhecimento existente'
+        });
+    }
+    
+    // Recomendação 5: Mais Q&A
+    if (data.stats.total_qa < 50) {
+        recommendations.push({
+            priority: 'low',
+            title: 'Adicionar Mais Perguntas e Respostas',
+            description: `Você tem ${data.stats.total_qa} Q&As. Recomendamos pelo menos 50 para respostas rápidas.`,
+            action: 'Adicione Q&As frequentes na aba "Perguntas e Respostas".',
+            impact: 'Baixo - Melhora respostas para perguntas comuns'
+        });
+    }
+    
+    return recommendations;
+}
+
+// Comparar com Benchmarks de IAs Líderes
+function compareWithBenchmarks(score, metrics) {
+    // Benchmarks baseados em IAs líderes (ChatGPT, Claude, Gemini)
+    const benchmarks = {
+        chatgpt: {
+            name: 'ChatGPT',
+            knowledgeItems: 1000000, // Estimativa
+            books: 1000, // Estimativa
+            words: 1000000000, // Estimativa
+            score: 95
+        },
+        claude: {
+            name: 'Claude',
+            knowledgeItems: 800000,
+            books: 800,
+            words: 800000000,
+            score: 93
+        },
+        gemini: {
+            name: 'Gemini',
+            knowledgeItems: 900000,
+            books: 900,
+            words: 900000000,
+            score: 94
+        }
+    };
+    
+    const current = {
+        knowledgeItems: metrics.totalKnowledge,
+        books: metrics.totalBooks,
+        words: metrics.totalWords,
+        score: score
+    };
+    
+    const comparisons = Object.keys(benchmarks).map(key => {
+        const benchmark = benchmarks[key];
+        return {
+            ia: benchmark.name,
+            knowledgeProgress: Math.min(100, (current.knowledgeItems / benchmark.knowledgeItems) * 100),
+            booksProgress: Math.min(100, (current.books / benchmark.books) * 100),
+            wordsProgress: Math.min(100, (current.words / benchmark.words) * 100),
+            scoreProgress: Math.min(100, (current.score / benchmark.score) * 100),
+            overallProgress: Math.min(100, (
+                (current.knowledgeItems / benchmark.knowledgeItems) * 25 +
+                (current.books / benchmark.books) * 25 +
+                (current.words / benchmark.words) * 25 +
+                (current.score / benchmark.score) * 25
+            ))
+        };
+    });
+    
+    return {
+        current: current,
+        benchmarks: benchmarks,
+        comparisons: comparisons,
+        averageProgress: Math.round(comparisons.reduce((sum, c) => sum + c.overallProgress, 0) / comparisons.length)
+    };
+}
+
 // GET /api/ia-king/intelligence - Dados completos de inteligência da IA
 router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
@@ -5473,6 +5803,47 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
         
         const totalWords = totalWordsResult;
         
+        // NOVAS MÉTRICAS AVANÇADAS
+        // Score de Inteligência Geral (0-100)
+        const intelligenceScore = calculateIntelligenceScore({
+            totalKnowledge: parseInt(totalKnowledge.rows[0].count),
+            totalBooks: booksWithSections.length,
+            totalQA: parseInt(totalQA.rows[0].count),
+            totalConversations: parseInt(totalConvs.rows[0].count),
+            totalWords: parseInt(totalWords.rows?.[0]?.total_words || 0),
+            uniqueSources: uniqueSources.rows.length,
+            categories: knowledgeByCategory.rows.length
+        });
+        
+        // Análise de Qualidade do Conhecimento
+        const qualityAnalysis = await analyzeKnowledgeQuality(client);
+        
+        // Taxa de Uso do Conhecimento
+        const knowledgeUsageRate = await calculateKnowledgeUsageRate(client);
+        
+        // Evolução Temporal (últimos 30 dias)
+        const temporalEvolution = await getTemporalEvolution(client);
+        
+        // Recomendações Inteligentes
+        const recommendations = generateIntelligentRecommendations({
+            stats: {
+                total_knowledge: parseInt(totalKnowledge.rows[0].count),
+                total_books: booksWithSections.length,
+                total_qa: parseInt(totalQA.rows[0].count),
+                total_conversations: parseInt(totalConvs.rows[0].count)
+            },
+            quality: qualityAnalysis,
+            usage: knowledgeUsageRate,
+            categories: knowledgeByCategory.rows.length
+        });
+        
+        // Comparação com Benchmarks de IAs Líderes
+        const benchmarkComparison = compareWithBenchmarks(intelligenceScore, {
+            totalKnowledge: parseInt(totalKnowledge.rows[0].count),
+            totalBooks: booksWithSections.length,
+            totalWords: parseInt(totalWords.rows?.[0]?.total_words || 0)
+        });
+        
         res.json({
             stats: {
                 total_knowledge: parseInt(totalKnowledge.rows[0].count),
@@ -5483,7 +5854,13 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
                 total_words: parseInt(totalWords.rows?.[0]?.total_words || 0),
                 total_books: booksWithSections.length,
                 books_with_content: booksWithSections.filter(b => b.content_length > 0).length,
-                books_with_sections: booksWithSections.filter(b => b.has_sections).length
+                books_with_sections: booksWithSections.filter(b => b.has_sections).length,
+                // NOVAS MÉTRICAS
+                intelligence_score: intelligenceScore,
+                knowledge_quality_score: qualityAnalysis.overallScore,
+                knowledge_usage_rate: knowledgeUsageRate.overallRate,
+                categories_count: knowledgeByCategory.rows.length,
+                sources_count: uniqueSources.rows.length
             },
             knowledge_by_source: knowledgeBySource.rows.map(row => ({
                 source: row.source_type || 'desconhecido',
@@ -5539,7 +5916,13 @@ router.get('/intelligence', protectAdmin, asyncHandler(async (req, res) => {
                 books_with_sections_only: booksWithSections.filter(b => b.content_length === 0 && b.has_sections).length,
                 books_complete: booksWithSections.filter(b => b.content_length > 0 && b.has_sections).length,
                 total_sections: booksWithSections.reduce((sum, b) => sum + (b.sections_count || 0), 0)
-            }
+            },
+            // NOVOS DADOS AVANÇADOS
+            quality_analysis: qualityAnalysis,
+            knowledge_usage: knowledgeUsageRate,
+            temporal_evolution: temporalEvolution,
+            recommendations: recommendations,
+            benchmark_comparison: benchmarkComparison
         });
     } catch (error) {
         console.error('Erro ao buscar dados de inteligência:', error);
@@ -6066,6 +6449,70 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
             'prompt engineering e raciocínio',
             'técnicas de pensamento de modelos de linguagem',
             
+            // MELHORES IAs DO MUNDO - ChatGPT
+            'ChatGPT arquitetura e funcionamento',
+            'ChatGPT técnicas avançadas de resposta',
+            'ChatGPT sistema de conhecimento',
+            'ChatGPT como funciona internamente',
+            'ChatGPT melhorias e atualizações',
+            'ChatGPT técnicas de prompt engineering',
+            'ChatGPT raciocínio e lógica',
+            'ChatGPT processamento de linguagem natural',
+            
+            // MELHORES IAs DO MUNDO - Claude
+            'Claude AI arquitetura e funcionamento',
+            'Claude AI técnicas avançadas',
+            'Claude AI sistema de conhecimento',
+            'Claude AI como funciona',
+            'Claude AI melhorias e capacidades',
+            'Claude AI raciocínio avançado',
+            'Claude AI processamento de texto',
+            'Claude AI técnicas de resposta',
+            
+            // MELHORES IAs DO MUNDO - Gemini
+            'Google Gemini arquitetura',
+            'Gemini AI funcionamento',
+            'Gemini AI técnicas avançadas',
+            'Gemini AI sistema de conhecimento',
+            'Gemini AI melhorias',
+            'Gemini AI raciocínio',
+            'Gemini AI processamento multimodal',
+            'Gemini AI capacidades avançadas',
+            
+            // TÉCNICAS AVANÇADAS DE IAs LÍDERES
+            'técnicas de fine-tuning de modelos de linguagem',
+            'RAG retrieval augmented generation',
+            'few-shot learning em IAs',
+            'zero-shot learning inteligência artificial',
+            'transfer learning em modelos de linguagem',
+            'técnicas de atenção em transformers',
+            'arquitetura transformer avançada',
+            'técnicas de otimização de prompts',
+            'técnicas de geração de texto avançadas',
+            'técnicas de validação de respostas de IA',
+            'técnicas anti-alucinação em IAs',
+            'técnicas de contexto e memória em IAs',
+            'técnicas de síntese de informação',
+            'técnicas de busca semântica avançada',
+            'técnicas de classificação de intenções',
+            'técnicas de extração de entidades',
+            'técnicas de análise de sentimento',
+            'técnicas de geração de respostas personalizadas',
+            'técnicas de otimização de performance de IA',
+            'técnicas de escalabilidade de sistemas de IA',
+            
+            // BENCHMARKS E COMPARAÇÕES
+            'benchmarks de inteligência artificial',
+            'comparação de modelos de linguagem',
+            'métricas de qualidade de IAs',
+            'avaliação de performance de IAs',
+            'testes de capacidade de IAs',
+            'rankings de inteligência artificial',
+            'comparação ChatGPT vs Claude vs Gemini',
+            'métricas de precisão de IAs',
+            'avaliação de conhecimento de IAs',
+            'benchmarks de raciocínio de IAs',
+            
             // Mentalidades e desenvolvimento pessoal
             'mentalidade de crescimento',
             'mentalidade empreendedora',
@@ -6136,8 +6583,9 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
             ]).flat()
         ];
         
-        // LIVROS ESPECÍFICOS PARA BUSCAR COMPLETOS
+        // LIVROS ESPECÍFICOS PARA BUSCAR COMPLETOS (EXPANDIDO)
         const livrosParaBuscar = [
+            // Desenvolvimento Pessoal e Mentalidade
             { titulo: 'Tiago Brunet', autor: 'mentalidade', categorias: ['Autoajuda', 'Motivação', 'Negócios'] },
             { titulo: 'Pai Rico Pai Pobre', autor: 'Robert Kiyosaki', categorias: ['Negócios', 'Educação Financeira'] },
             { titulo: 'O Poder do Hábito', autor: 'Charles Duhigg', categorias: ['Psicologia', 'Autoajuda'] },
@@ -6145,7 +6593,23 @@ router.post('/auto-train-mind', protectAdmin, asyncHandler(async (req, res) => {
             { titulo: 'Como Fazer Amigos e Influenciar Pessoas', autor: 'Dale Carnegie', categorias: ['Negócios', 'Autoajuda'] },
             { titulo: 'A Arte da Guerra', autor: 'Sun Tzu', categorias: ['Estratégias', 'Negócios'] },
             { titulo: 'O Monge e o Executivo', autor: 'James Hunter', categorias: ['Liderança', 'Negócios'] },
-            { titulo: 'Rápido e Devagar', autor: 'Daniel Kahneman', categorias: ['Psicologia', 'Ciência'] }
+            { titulo: 'Rápido e Devagar', autor: 'Daniel Kahneman', categorias: ['Psicologia', 'Ciência'] },
+            
+            // Vendas e Negócios
+            { titulo: 'Vendas', autor: 'Brian Tracy', categorias: ['Vendas', 'Negócios'] },
+            { titulo: 'Spin Selling', autor: 'Neil Rackham', categorias: ['Vendas', 'Negócios'] },
+            { titulo: 'Influência', autor: 'Robert Cialdini', categorias: ['Psicologia', 'Vendas'] },
+            { titulo: 'O Vendedor Mais Rico do Mundo', autor: 'Og Mandino', categorias: ['Vendas', 'Motivação'] },
+            
+            // Tecnologia e IA
+            { titulo: 'Inteligência Artificial', autor: 'Stuart Russell', categorias: ['Tecnologia', 'Ciência'] },
+            { titulo: 'Superinteligência', autor: 'Nick Bostrom', categorias: ['Tecnologia', 'Ciência'] },
+            { titulo: 'A Era da Inteligência Artificial', autor: 'Kai-Fu Lee', categorias: ['Tecnologia', 'Negócios'] },
+            
+            // Marketing e Copywriting
+            { titulo: 'Copywriting', autor: 'Robert Bly', categorias: ['Marketing', 'Vendas'] },
+            { titulo: 'A Bíblia do Marketing Digital', autor: 'Martha Gabriel', categorias: ['Marketing', 'Tecnologia'] },
+            { titulo: 'Tudo é Marketing', autor: 'Philip Kotler', categorias: ['Marketing', 'Negócios'] }
         ];
         
         let knowledgeAdded = 0;
