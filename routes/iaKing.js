@@ -15206,6 +15206,313 @@ function generateSystemRecommendations(analysis) {
 }
 
 // ============================================
+// SISTEMA DE CORREÇÃO AUTOMÁTICA
+// ============================================
+
+// POST /api/ia-king/system/fix-error - Corrigir erro específico
+router.post('/system/fix-error', protectAdmin, asyncHandler(async (req, res) => {
+    const { error_type, error_category, error_location, error_message, error_details } = req.body;
+    const client = await db.pool.connect();
+    
+    try {
+        console.log(`🔧 [CORREÇÃO] Tentando corrigir erro: ${error_type}/${error_category} em ${error_location}`);
+        
+        let fixResult = {
+            success: false,
+            message: '',
+            fix_applied: null,
+            requires_manual_intervention: false
+        };
+        
+        // Correções por tipo de erro
+        if (error_type === 'database' && error_category === 'table_missing') {
+            // Tentar criar tabela se não existir
+            const tableName = error_location.split('.').pop();
+            fixResult = await fixMissingTable(client, tableName);
+        } else if (error_type === 'database' && error_category === 'performance') {
+            // Criar índices faltantes
+            fixResult = await fixMissingIndexes(client, error_details);
+        } else if (error_type === 'backend' && error_category === 'error_handling') {
+            // Adicionar tratamento de erro (requer intervenção manual)
+            fixResult = {
+                success: false,
+                message: 'Correção requer edição manual do código',
+                requires_manual_intervention: true,
+                suggestion: 'Adicionar try-catch blocks nas rotas principais'
+            };
+        } else if (error_type === 'modules' && error_category === 'content_quality') {
+            // Corrigir conteúdo faltante
+            fixResult = await fixMissingContent(client, error_location, error_details);
+        } else if (error_type === 'content' && error_category === 'text_quality') {
+            // Corrigir textos curtos ou vazios
+            fixResult = await fixTextQuality(client, error_location, error_details);
+        } else {
+            fixResult = {
+                success: false,
+                message: 'Tipo de erro não suporta correção automática',
+                requires_manual_intervention: true
+            };
+        }
+        
+        // Registrar tentativa de correção
+        await client.query(`
+            INSERT INTO ia_system_fixes
+            (error_type, error_category, error_location, fix_applied, fix_status, fix_result)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [
+            error_type,
+            error_category,
+            error_location,
+            JSON.stringify(fixResult.fix_applied),
+            fixResult.success ? 'applied' : 'failed',
+            JSON.stringify(fixResult)
+        ]);
+        
+        res.json({
+            success: fixResult.success,
+            message: fixResult.message,
+            fix_result: fixResult
+        });
+        
+    } catch (error) {
+        console.error('Erro ao corrigir erro:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Erro ao aplicar correção', 
+            details: error.message 
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/system/fix-recommendation - Aplicar recomendação
+router.post('/system/fix-recommendation', protectAdmin, asyncHandler(async (req, res) => {
+    const { recommendation, recommendation_type } = req.body;
+    const client = await db.pool.connect();
+    
+    try {
+        console.log(`🔧 [CORREÇÃO] Aplicando recomendação: ${recommendation}`);
+        
+        let fixResult = {
+            success: false,
+            message: '',
+            fix_applied: null
+        };
+        
+        // Aplicar recomendações comuns
+        if (recommendation.includes('índices')) {
+            fixResult = await applyIndexRecommendations(client);
+        } else if (recommendation.includes('tratamento de erros')) {
+            fixResult = {
+                success: false,
+                message: 'Recomendação requer revisão manual do código',
+                requires_manual_intervention: true
+            };
+        } else if (recommendation.includes('conteúdo')) {
+            fixResult = await applyContentRecommendations(client);
+        } else {
+            fixResult = {
+                success: false,
+                message: 'Recomendação não suporta aplicação automática',
+                requires_manual_intervention: true
+            };
+        }
+        
+        res.json({
+            success: fixResult.success,
+            message: fixResult.message,
+            fix_result: fixResult
+        });
+        
+    } catch (error) {
+        console.error('Erro ao aplicar recomendação:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Erro ao aplicar recomendação', 
+            details: error.message 
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// Funções auxiliares de correção
+async function fixMissingTable(client, tableName) {
+    try {
+        // Verificar se tabela realmente não existe
+        const check = await client.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = $1
+            )
+        `, [tableName]);
+        
+        if (check.rows[0].exists) {
+            return {
+                success: true,
+                message: `Tabela ${tableName} já existe`,
+                fix_applied: { action: 'none', reason: 'table_exists' }
+            };
+        }
+        
+        // Não criar tabelas automaticamente por segurança
+        return {
+            success: false,
+            message: `Tabela ${tableName} não encontrada. Criação requer intervenção manual.`,
+            requires_manual_intervention: true,
+            suggestion: `Execute a migration apropriada para criar a tabela ${tableName}`
+        };
+    } catch (error) {
+        return {
+            success: false,
+            message: `Erro ao verificar tabela: ${error.message}`,
+            requires_manual_intervention: true
+        };
+    }
+}
+
+async function fixMissingIndexes(client, details) {
+    try {
+        if (!details || !details.tables) {
+            return {
+                success: false,
+                message: 'Detalhes de índices não fornecidos'
+            };
+        }
+        
+        const indexesCreated = [];
+        for (const tableName of details.tables) {
+            // Criar índice básico em colunas comuns
+            const commonIndexColumns = {
+                'profile_items': ['user_id', 'item_type'],
+                'ia_conversations': ['user_id', 'created_at'],
+                'ia_knowledge_base': ['category_id', 'created_at']
+            };
+            
+            if (commonIndexColumns[tableName]) {
+                for (const column of commonIndexColumns[tableName]) {
+                    try {
+                        const indexName = `idx_${tableName}_${column}`;
+                        await client.query(`
+                            CREATE INDEX IF NOT EXISTS ${indexName} 
+                            ON ${tableName} (${column})
+                        `);
+                        indexesCreated.push(`${tableName}.${column}`);
+                    } catch (err) {
+                        // Índice pode já existir
+                        console.log(`Índice ${tableName}.${column} pode já existir:`, err.message);
+                    }
+                }
+            }
+        }
+        
+        if (indexesCreated.length > 0) {
+            return {
+                success: true,
+                message: `${indexesCreated.length} índice(s) criado(s) com sucesso`,
+                fix_applied: { indexes_created: indexesCreated }
+            };
+        }
+        
+        return {
+            success: false,
+            message: 'Nenhum índice foi criado. Verifique os detalhes do erro.'
+        };
+    } catch (error) {
+        return {
+            success: false,
+            message: `Erro ao criar índices: ${error.message}`
+        };
+    }
+}
+
+async function fixMissingContent(client, location, details) {
+    try {
+        // Corrigir títulos vazios
+        if (location.includes('profile_items.title')) {
+            const result = await client.query(`
+                UPDATE profile_items
+                SET title = COALESCE(NULLIF(title, ''), 'Item sem título')
+                WHERE title IS NULL OR title = ''
+                RETURNING id
+            `);
+            
+            return {
+                success: true,
+                message: `${result.rows.length} título(s) corrigido(s)`,
+                fix_applied: { items_updated: result.rows.length }
+            };
+        }
+        
+        return {
+            success: false,
+            message: 'Localização de conteúdo não suporta correção automática'
+        };
+    } catch (error) {
+        return {
+            success: false,
+            message: `Erro ao corrigir conteúdo: ${error.message}`
+        };
+    }
+}
+
+async function fixTextQuality(client, location, details) {
+    try {
+        // Similar a fixMissingContent
+        if (location.includes('profile_items.title')) {
+            const result = await client.query(`
+                UPDATE profile_items
+                SET title = CASE 
+                    WHEN title IS NULL OR title = '' THEN 'Item sem título'
+                    WHEN LENGTH(title) < 3 THEN title || '...'
+                    ELSE title
+                END
+                WHERE title IS NULL OR title = '' OR LENGTH(title) < 3
+                RETURNING id
+            `);
+            
+            return {
+                success: true,
+                message: `${result.rows.length} título(s) melhorado(s)`,
+                fix_applied: { items_updated: result.rows.length }
+            };
+        }
+        
+        return {
+            success: false,
+            message: 'Localização de texto não suporta correção automática'
+        };
+    } catch (error) {
+        return {
+            success: false,
+            message: `Erro ao corrigir qualidade de texto: ${error.message}`
+        };
+    }
+}
+
+async function applyIndexRecommendations(client) {
+    return await fixMissingIndexes(client, {
+        tables: ['profile_items', 'ia_conversations', 'ia_knowledge_base']
+    });
+}
+
+async function applyContentRecommendations(client) {
+    const results = [];
+    
+    // Corrigir títulos vazios
+    const titleFix = await fixMissingContent(client, 'profile_items.title', null);
+    results.push(titleFix);
+    
+    return {
+        success: results.some(r => r.success),
+        message: results.map(r => r.message).join('; '),
+        fix_applied: results
+    };
+}
+
+// ============================================
 // FASE 2: GRAFO DE CONHECIMENTO, RACIOCÍNIO CAUSAL E META-COGNIÇÃO
 // ============================================
 
