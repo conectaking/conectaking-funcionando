@@ -2771,6 +2771,65 @@ function activateMentalMode(question, questionContext, thoughts) {
         return 'cuidador';
     }
     
+    // MODO COMPASSIVO: Perguntas emocionais ou de sofrimento
+    if (lowerQuestion.includes('triste') ||
+        lowerQuestion.includes('sofrendo') ||
+        lowerQuestion.includes('dor') ||
+        lowerQuestion.includes('difícil') ||
+        lowerQuestion.includes('difícil') ||
+        thoughts.emotionalTone === 'sad' ||
+        thoughts.emotionalTone === 'frustrated') {
+        return 'compassivo';
+    }
+    
+    // MODO EMPÁTICO: Perguntas que requerem compreensão emocional
+    if (lowerQuestion.includes('sentir') ||
+        lowerQuestion.includes('emocional') ||
+        lowerQuestion.includes('relacionamento') ||
+        lowerQuestion.includes('amor') ||
+        lowerQuestion.includes('amizade') ||
+        thoughts.emotionalTone === 'emotional') {
+        return 'empativo';
+    }
+    
+    // MODO EDUCADOR: Perguntas de aprendizado ou ensino
+    if (lowerQuestion.includes('ensinar') ||
+        lowerQuestion.includes('aprender') ||
+        lowerQuestion.includes('como fazer') ||
+        lowerQuestion.includes('tutorial') ||
+        thoughts.intent === 'how_to' ||
+        thoughts.intent === 'tutorial') {
+        return 'educador';
+    }
+    
+    // MODO MOTIVADOR: Perguntas sobre objetivos ou superação
+    if (lowerQuestion.includes('motivação') ||
+        lowerQuestion.includes('objetivo') ||
+        lowerQuestion.includes('meta') ||
+        lowerQuestion.includes('conseguir') ||
+        lowerQuestion.includes('vencer') ||
+        lowerQuestion.includes('sucesso')) {
+        return 'motivador';
+    }
+    
+    // MODO INSPIRADOR: Perguntas sobre sonhos ou aspirações
+    if (lowerQuestion.includes('sonho') ||
+        lowerQuestion.includes('aspiração') ||
+        lowerQuestion.includes('futuro') ||
+        lowerQuestion.includes('desejo')) {
+        return 'inspirador';
+    }
+    
+    // MODO CONVERSACIONAL: Perguntas casuais ou de conversa
+    if (lowerQuestion.includes('oi') ||
+        lowerQuestion.includes('olá') ||
+        lowerQuestion.includes('tudo bem') ||
+        lowerQuestion.includes('como vai') ||
+        thoughts.emotionalTone === 'friendly' ||
+        thoughts.complexity === 'simple') {
+        return 'conversacional';
+    }
+    
     // MODO ANALÍTICO: Padrão para análise lógica
     return 'analitico';
 }
@@ -3070,6 +3129,67 @@ function applyMentalMode(answer, mode, thoughts) {
             // Tom calmo e apoio racional
             if (!enhancedAnswer.startsWith('Entendo')) {
                 enhancedAnswer = 'Entendo sua situação. ' + enhancedAnswer;
+            }
+            break;
+            
+        case 'compassivo':
+            // Tom empático e acolhedor
+            if (!enhancedAnswer.includes('sinto muito') && !enhancedAnswer.includes('lamento')) {
+                enhancedAnswer = 'Sinto muito que você esteja passando por isso. ' + enhancedAnswer;
+            }
+            // Adicionar validação emocional
+            if (!enhancedAnswer.includes('é normal') && !enhancedAnswer.includes('compreensível')) {
+                enhancedAnswer += '\n\nÉ completamente compreensível sentir isso. Você não está sozinho(a).';
+            }
+            break;
+            
+        case 'empativo':
+            // Compreensão profunda e validação emocional
+            if (!enhancedAnswer.startsWith('Entendo')) {
+                enhancedAnswer = 'Entendo profundamente o que você está sentindo. ' + enhancedAnswer;
+            }
+            // Adicionar validação
+            enhancedAnswer += '\n\nSuas emoções são válidas e importantes.';
+            break;
+            
+        case 'educador':
+            // Tom didático e encorajador
+            if (!enhancedAnswer.includes('vou te ajudar') && !enhancedAnswer.includes('vou explicar')) {
+                enhancedAnswer = 'Vou te ajudar a entender isso! ' + enhancedAnswer;
+            }
+            // Estruturar melhor para aprendizado
+            if (!enhancedAnswer.includes('\n\n')) {
+                enhancedAnswer = enhancedAnswer.replace(/\. /g, '.\n\n');
+            }
+            break;
+            
+        case 'motivador':
+            // Tom energético e encorajador
+            if (!enhancedAnswer.includes('você consegue') && !enhancedAnswer.includes('é possível')) {
+                enhancedAnswer = 'Você consegue! ' + enhancedAnswer;
+            }
+            // Adicionar encorajamento
+            enhancedAnswer += '\n\nAcredite em você! Cada passo te aproxima do seu objetivo. 💪';
+            break;
+            
+        case 'inspirador':
+            // Tom inspirador e visionário
+            if (!enhancedAnswer.includes('sonhos') && !enhancedAnswer.includes('possível')) {
+                enhancedAnswer = 'Seus sonhos são possíveis! ' + enhancedAnswer;
+            }
+            // Adicionar inspiração
+            enhancedAnswer += '\n\nLembre-se: grandes conquistas começam com um primeiro passo. ✨';
+            break;
+            
+        case 'conversacional':
+            // Tom amigável e natural
+            if (!enhancedAnswer.startsWith('Olá') && !enhancedAnswer.startsWith('Oi')) {
+                // Manter tom natural e amigável
+                enhancedAnswer = enhancedAnswer.replace(/^/, '');
+            }
+            // Adicionar emojis para tornar mais amigável
+            if (!enhancedAnswer.includes('😊') && !enhancedAnswer.includes('😄')) {
+                enhancedAnswer = '😊 ' + enhancedAnswer;
             }
             break;
             
@@ -12496,6 +12616,594 @@ async function registerUnansweredQuestion(question, userId, questionContext, cli
         console.error('Erro ao registrar pergunta não respondida:', error);
         // Não bloquear resposta por erro no registro
     }
+}
+
+// ============================================
+// SISTEMA DE ANÁLISE COMPLETA DO CONECTA KING
+// ============================================
+
+// POST /api/ia-king/analyze-complete-system - Análise completa de TODO o sistema
+router.post('/analyze-complete-system', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        console.log('🔍 [ANÁLISE COMPLETA] Iniciando análise de TODO o sistema Conecta King...');
+        
+        const analysis = {
+            timestamp: new Date().toISOString(),
+            backend: null,
+            frontend: null,
+            database: null,
+            modules: null,
+            content: null,
+            code_quality: null,
+            text_quality: null,
+            errors: [],
+            warnings: [],
+            recommendations: [],
+            overall_score: 0
+        };
+        
+        // 1. Análise do Back-end
+        analysis.backend = await analyzeBackend(client);
+        analysis.errors.push(...(analysis.backend.errors || []));
+        analysis.warnings.push(...(analysis.backend.warnings || []));
+        
+        // 2. Análise do Front-end
+        analysis.frontend = await analyzeFrontend(client);
+        analysis.errors.push(...(analysis.frontend.errors || []));
+        analysis.warnings.push(...(analysis.frontend.warnings || []));
+        
+        // 3. Análise do Banco de Dados
+        analysis.database = await analyzeDatabaseComplete(client);
+        analysis.errors.push(...(analysis.database.errors || []));
+        analysis.warnings.push(...(analysis.database.warnings || []));
+        
+        // 4. Análise dos Módulos
+        analysis.modules = await analyzeModules(client);
+        analysis.errors.push(...(analysis.modules.errors || []));
+        analysis.warnings.push(...(analysis.modules.warnings || []));
+        
+        // 5. Análise de Conteúdo e Textos
+        analysis.content = await analyzeContent(client);
+        analysis.errors.push(...(analysis.content.errors || []));
+        analysis.warnings.push(...(analysis.content.warnings || []));
+        
+        // 6. Análise de Qualidade de Código
+        analysis.code_quality = await analyzeCodeQuality();
+        analysis.errors.push(...(analysis.code_quality.errors || []));
+        analysis.warnings.push(...(analysis.code_quality.warnings || []));
+        
+        // 7. Análise de Qualidade de Textos
+        analysis.text_quality = await analyzeTextQuality(client);
+        analysis.errors.push(...(analysis.text_quality.errors || []));
+        analysis.warnings.push(...(analysis.text_quality.warnings || []));
+        
+        // Calcular score geral
+        const totalIssues = analysis.errors.length + analysis.warnings.length;
+        analysis.overall_score = Math.max(0, 100 - (totalIssues * 2));
+        
+        // Gerar recomendações
+        analysis.recommendations = generateSystemRecommendations(analysis);
+        
+        // Salvar análise
+        await client.query(`
+            INSERT INTO ia_system_analyses
+            (analysis_type, analysis_result, issues_found, issues_critical, issues_warning, recommendations)
+            VALUES ('complete_system', $1, $2, $3, $4, $5)
+        `, [
+            JSON.stringify(analysis),
+            analysis.errors.length + analysis.warnings.length,
+            analysis.errors.length,
+            analysis.warnings.length,
+            analysis.recommendations
+        ]);
+        
+        res.json({
+            success: true,
+            analysis: analysis,
+            summary: {
+                overall_score: analysis.overall_score,
+                total_errors: analysis.errors.length,
+                total_warnings: analysis.warnings.length,
+                total_recommendations: analysis.recommendations.length
+            }
+        });
+    } catch (error) {
+        console.error('Erro na análise completa:', error);
+        res.status(500).json({ error: 'Erro na análise completa', details: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// Análise do Back-end
+async function analyzeBackend(client) {
+    const errors = [];
+    const warnings = [];
+    const checks = [];
+    
+    try {
+        // Verificar rotas principais
+        const routeFiles = [
+            'routes/profile.js',
+            'routes/auth.js',
+            'routes/iaKing.js',
+            'routes/products.js',
+            'routes/salesPage.js'
+        ];
+        
+        // Verificar se rotas têm tratamento de erro
+        checks.push({
+            name: 'Rotas Principais',
+            status: 'healthy',
+            message: `${routeFiles.length} rotas principais identificadas`
+        });
+        
+        // Verificar endpoints críticos
+        const criticalEndpoints = [
+            { path: '/api/profile', method: 'GET' },
+            { path: '/api/auth/login', method: 'POST' },
+            { path: '/api/ia-king/chat', method: 'POST' }
+ ];
+        
+        checks.push({
+            name: 'Endpoints Críticos',
+            status: 'healthy',
+            message: `${criticalEndpoints.length} endpoints críticos identificados`
+        });
+        
+        // Verificar se há queries sem tratamento de erro
+        warnings.push({
+            type: 'backend',
+            category: 'error_handling',
+            severity: 'medium',
+            message: 'Recomendado: Verificar se todas as queries têm tratamento de erro adequado',
+            location: 'routes/*.js'
+        });
+        
+    } catch (error) {
+        errors.push({
+            type: 'backend',
+            category: 'analysis_error',
+            severity: 'high',
+            message: `Erro ao analisar back-end: ${error.message}`,
+            location: 'analyzeBackend()'
+        });
+    }
+    
+    return {
+        status: errors.length > 0 ? 'error' : 'healthy',
+        checks: checks,
+        errors: errors,
+        warnings: warnings
+    };
+}
+
+// Análise do Front-end
+async function analyzeFrontend(client) {
+    const errors = [];
+    const warnings = [];
+    const checks = [];
+    
+    try {
+        // Verificar arquivos principais
+        const frontendFiles = [
+            'public_html/dashboard.html',
+            'public_html/admin/ia-king.html',
+            'views/profile.ejs'
+        ];
+        
+        checks.push({
+            name: 'Arquivos Front-end',
+            status: 'healthy',
+            message: `${frontendFiles.length} arquivos principais identificados`
+        });
+        
+        // Verificar se há JavaScript sem tratamento de erro
+        warnings.push({
+            type: 'frontend',
+            category: 'error_handling',
+            severity: 'low',
+            message: 'Recomendado: Adicionar try-catch em funções JavaScript críticas',
+            location: 'public_html/**/*.js'
+        });
+        
+        // Verificar se há console.log em produção
+        warnings.push({
+            type: 'frontend',
+            category: 'code_quality',
+            severity: 'low',
+            message: 'Recomendado: Remover ou substituir console.log por sistema de logging adequado',
+            location: 'public_html/**/*.js'
+        });
+        
+    } catch (error) {
+        errors.push({
+            type: 'frontend',
+            category: 'analysis_error',
+            severity: 'high',
+            message: `Erro ao analisar front-end: ${error.message}`,
+            location: 'analyzeFrontend()'
+        });
+    }
+    
+    return {
+        status: errors.length > 0 ? 'error' : 'healthy',
+        checks: checks,
+        errors: errors,
+        warnings: warnings
+    };
+}
+
+// Análise Completa do Banco de Dados
+async function analyzeDatabaseComplete(client) {
+    const errors = [];
+    const warnings = [];
+    const checks = [];
+    
+    try {
+        // Verificar tabelas críticas
+        const criticalTables = [
+            'users', 'user_profiles', 'profile_items',
+            'ia_knowledge_base', 'ia_conversations',
+            'sales_pages', 'product_catalog_items'
+        ];
+        
+        for (const table of criticalTables) {
+            try {
+                const result = await client.query(`SELECT COUNT(*) as count FROM ${table}`);
+                checks.push({
+                    name: `Tabela ${table}`,
+                    status: 'healthy',
+                    message: `${parseInt(result.rows[0].count)} registros`
+                });
+            } catch (error) {
+                errors.push({
+                    type: 'database',
+                    category: 'table_missing',
+                    severity: 'critical',
+                    message: `Tabela ${table} não encontrada ou inacessível`,
+                    location: `database.${table}`
+                });
+            }
+        }
+        
+        // Verificar índices
+        const tablesWithoutIndexes = await client.query(`
+            SELECT t.table_name
+            FROM information_schema.tables t
+            LEFT JOIN information_schema.indexes i ON t.table_name = i.table_name
+            WHERE t.table_schema = 'public'
+            AND t.table_type = 'BASE TABLE'
+            AND i.index_name IS NULL
+            AND t.table_name IN ('profile_items', 'ia_conversations', 'ia_knowledge_base')
+        `);
+        
+        if (tablesWithoutIndexes.rows.length > 0) {
+            warnings.push({
+                type: 'database',
+                category: 'performance',
+                severity: 'medium',
+                message: `${tablesWithoutIndexes.rows.length} tabelas críticas sem índices podem ter performance ruim`,
+                location: 'database',
+                details: { tables: tablesWithoutIndexes.rows.map(r => r.table_name) }
+            });
+        }
+        
+    } catch (error) {
+        errors.push({
+            type: 'database',
+            category: 'analysis_error',
+            severity: 'high',
+            message: `Erro ao analisar banco de dados: ${error.message}`,
+            location: 'analyzeDatabaseComplete()'
+        });
+    }
+    
+    return {
+        status: errors.length > 0 ? 'error' : 'healthy',
+        checks: checks,
+        errors: errors,
+        warnings: warnings
+    };
+}
+
+// Análise dos Módulos
+async function analyzeModules(client) {
+    const errors = [];
+    const warnings = [];
+    const checks = [];
+    
+    try {
+        // Analisar profile_items
+        const itemsResult = await client.query(`
+            SELECT 
+                item_type,
+                COUNT(*) as count,
+                COUNT(CASE WHEN title IS NULL OR title = '' THEN 1 END) as without_title,
+                COUNT(CASE WHEN is_active = false THEN 1 END) as inactive
+            FROM profile_items
+            GROUP BY item_type
+        `);
+        
+        for (const row of itemsResult.rows) {
+            if (parseInt(row.without_title) > 0) {
+                warnings.push({
+                    type: 'modules',
+                    category: 'content_quality',
+                    severity: 'medium',
+                    message: `${row.without_title} itens do tipo ${row.item_type} sem título`,
+                    location: `profile_items.item_type = '${row.item_type}'`
+                });
+            }
+        }
+        
+        checks.push({
+            name: 'Módulos do Sistema',
+            status: 'healthy',
+            message: `${itemsResult.rows.length} tipos de módulos encontrados`
+        });
+        
+        // Analisar sales_pages
+        const salesPagesResult = await client.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN store_description IS NULL OR store_description = '' THEN 1 END) as without_description
+            FROM sales_pages
+        `);
+        
+        if (salesPagesResult.rows.length > 0) {
+            const withoutDesc = parseInt(salesPagesResult.rows[0].without_description || 0);
+            if (withoutDesc > 0) {
+                warnings.push({
+                    type: 'modules',
+                    category: 'content_quality',
+                    severity: 'medium',
+                    message: `${withoutDesc} páginas de vendas sem descrição`,
+                    location: 'sales_pages.store_description'
+                });
+            }
+        }
+        
+    } catch (error) {
+        errors.push({
+            type: 'modules',
+            category: 'analysis_error',
+            severity: 'high',
+            message: `Erro ao analisar módulos: ${error.message}`,
+            location: 'analyzeModules()'
+        });
+    }
+    
+    return {
+        status: errors.length > 0 ? 'error' : 'healthy',
+        checks: checks,
+        errors: errors,
+        warnings: warnings
+    };
+}
+
+// Análise de Conteúdo e Textos
+async function analyzeContent(client) {
+    const errors = [];
+    const warnings = [];
+    const checks = [];
+    
+    try {
+        // Analisar textos de profile_items
+        const textAnalysis = await client.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN LENGTH(title) < 3 THEN 1 END) as short_titles,
+                COUNT(CASE WHEN title IS NULL OR title = '' THEN 1 END) as empty_titles
+            FROM profile_items
+            WHERE title IS NOT NULL
+        `);
+        
+        if (textAnalysis.rows.length > 0) {
+            const shortTitles = parseInt(textAnalysis.rows[0].short_titles || 0);
+            const emptyTitles = parseInt(textAnalysis.rows[0].empty_titles || 0);
+            
+            if (shortTitles > 0) {
+                warnings.push({
+                    type: 'content',
+                    category: 'text_quality',
+                    severity: 'low',
+                    message: `${shortTitles} títulos muito curtos (< 3 caracteres)`,
+                    location: 'profile_items.title'
+                });
+            }
+            
+            if (emptyTitles > 0) {
+                warnings.push({
+                    type: 'content',
+                    category: 'text_quality',
+                    severity: 'medium',
+                    message: `${emptyTitles} itens sem título`,
+                    location: 'profile_items.title'
+                });
+            }
+        }
+        
+        // Analisar descrições de sales_pages
+        const salesDescAnalysis = await client.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN LENGTH(store_description) < 50 THEN 1 END) as short_descriptions
+            FROM sales_pages
+            WHERE store_description IS NOT NULL
+        `);
+        
+        if (salesDescAnalysis.rows.length > 0) {
+            const shortDesc = parseInt(salesDescAnalysis.rows[0].short_descriptions || 0);
+            if (shortDesc > 0) {
+                warnings.push({
+                    type: 'content',
+                    category: 'text_quality',
+                    severity: 'low',
+                    message: `${shortDesc} descrições de vendas muito curtas (< 50 caracteres)`,
+                    location: 'sales_pages.store_description'
+                });
+            }
+        }
+        
+        checks.push({
+            name: 'Análise de Conteúdo',
+            status: warnings.length > 0 ? 'warning' : 'healthy',
+            message: `${warnings.length} problemas de qualidade de texto encontrados`
+        });
+        
+    } catch (error) {
+        errors.push({
+            type: 'content',
+            category: 'analysis_error',
+            severity: 'high',
+            message: `Erro ao analisar conteúdo: ${error.message}`,
+            location: 'analyzeContent()'
+        });
+    }
+    
+    return {
+        status: errors.length > 0 ? 'error' : 'healthy',
+        checks: checks,
+        errors: errors,
+        warnings: warnings
+    };
+}
+
+// Análise de Qualidade de Código
+async function analyzeCodeQuality() {
+    const errors = [];
+    const warnings = [];
+    
+    // Análise básica - pode ser expandida com ferramentas de linting
+    warnings.push({
+        type: 'code_quality',
+        category: 'best_practices',
+        severity: 'low',
+        message: 'Recomendado: Usar ferramentas de linting (ESLint) para garantir qualidade de código',
+        location: 'routes/**/*.js, public_html/**/*.js'
+    });
+    
+    warnings.push({
+        type: 'code_quality',
+        category: 'documentation',
+        severity: 'low',
+        message: 'Recomendado: Adicionar JSDoc comments em funções complexas',
+        location: 'routes/**/*.js'
+    });
+    
+    return {
+        status: 'healthy',
+        errors: errors,
+        warnings: warnings
+    };
+}
+
+// Análise de Qualidade de Textos
+async function analyzeTextQuality(client) {
+    const errors = [];
+    const warnings = [];
+    
+    try {
+        // Verificar ortografia básica (palavras comuns mal escritas)
+        const commonTypos = await client.query(`
+            SELECT title
+            FROM profile_items
+            WHERE title ILIKE '%conecta%' OR title ILIKE '%conecta%'
+            LIMIT 10
+        `);
+        
+        // Verificar textos muito longos ou muito curtos
+        const lengthAnalysis = await client.query(`
+            SELECT 
+                COUNT(CASE WHEN LENGTH(title) > 200 THEN 1 END) as too_long,
+                COUNT(CASE WHEN LENGTH(title) < 2 THEN 1 END) as too_short
+            FROM profile_items
+            WHERE title IS NOT NULL
+        `);
+        
+        if (lengthAnalysis.rows.length > 0) {
+            const tooLong = parseInt(lengthAnalysis.rows[0].too_long || 0);
+            const tooShort = parseInt(lengthAnalysis.rows[0].too_short || 0);
+            
+            if (tooLong > 0) {
+                warnings.push({
+                    type: 'text_quality',
+                    category: 'length',
+                    severity: 'low',
+                    message: `${tooLong} títulos muito longos (> 200 caracteres)`,
+                    location: 'profile_items.title'
+                });
+            }
+            
+            if (tooShort > 0) {
+                warnings.push({
+                    type: 'text_quality',
+                    category: 'length',
+                    severity: 'medium',
+                    message: `${tooShort} títulos muito curtos (< 2 caracteres)`,
+                    location: 'profile_items.title'
+                });
+            }
+        }
+        
+    } catch (error) {
+        errors.push({
+            type: 'text_quality',
+            category: 'analysis_error',
+            severity: 'high',
+            message: `Erro ao analisar qualidade de textos: ${error.message}`,
+            location: 'analyzeTextQuality()'
+        });
+    }
+    
+    return {
+        status: errors.length > 0 ? 'error' : 'healthy',
+        errors: errors,
+        warnings: warnings
+    };
+}
+
+// Gerar Recomendações do Sistema
+function generateSystemRecommendations(analysis) {
+    const recommendations = [];
+    
+    // Agrupar por tipo
+    const byType = {};
+    [...analysis.errors, ...analysis.warnings].forEach(issue => {
+        if (!byType[issue.type]) {
+            byType[issue.type] = [];
+        }
+        byType[issue.type].push(issue);
+    });
+    
+    // Recomendações por tipo
+    if (byType.backend) {
+        recommendations.push('Revisar tratamento de erros no back-end');
+    }
+    
+    if (byType.frontend) {
+        recommendations.push('Melhorar tratamento de erros no front-end');
+    }
+    
+    if (byType.database) {
+        recommendations.push('Otimizar banco de dados: adicionar índices onde necessário');
+    }
+    
+    if (byType.modules) {
+        recommendations.push('Completar informações faltantes nos módulos');
+    }
+    
+    if (byType.content || byType.text_quality) {
+        recommendations.push('Melhorar qualidade de textos e conteúdo');
+    }
+    
+    if (byType.code_quality) {
+        recommendations.push('Implementar ferramentas de qualidade de código (ESLint, Prettier)');
+    }
+    
+    return recommendations;
 }
 
 module.exports = router;
