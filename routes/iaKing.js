@@ -4,6 +4,7 @@ const { protectUser } = require('../middleware/protectUser');
 const { protectAdmin } = require('../middleware/protectAdmin');
 const { asyncHandler } = require('../middleware/errorHandler');
 const fetch = require('node-fetch');
+const embeddings = require('./embeddings');
 
 const router = express.Router();
 
@@ -5460,8 +5461,27 @@ async function findBestAnswer(userMessage, userId) {
             // Extrair palavras-chave da mensagem do usuário
             const userKeywords = extractKeywords(userMessage);
             
+            // BUSCA VETORIAL (RAG) - Tentar buscar por similaridade semântica primeiro
+            let vectorResults = [];
+            try {
+                vectorResults = await embeddings.searchByVectorSimilarity(userMessage, 10, client);
+                console.log(`🔍 [RAG] Busca vetorial encontrou ${vectorResults.length} resultados`);
+            } catch (error) {
+                console.warn('⚠️ [RAG] Busca vetorial não disponível (pgvector pode não estar instalado):', error.message);
+            }
+            
             // Array para armazenar todos os candidatos com scores
             const candidates = [];
+            
+            // Adicionar resultados vetoriais com prioridade alta
+            for (const vr of vectorResults) {
+                candidates.push({
+                    ...vr,
+                    score: (vr.similarity || 0) * 100, // Converter similaridade (0-1) para score (0-100)
+                    source: 'vector_search',
+                    relevance: vr.similarity || 0
+                });
+            }
             
             for (const kb of filteredKnowledge) {
                 // Se não tem título, pular
@@ -7586,6 +7606,76 @@ router.get('/categories', protectUser, asyncHandler(async (req, res) => {
             ORDER BY priority DESC, name ASC
         `);
         res.json({ categories: result.rows });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// ROTAS DE EMBEDDINGS VETORIAIS (RAG)
+// ============================================
+
+// POST /api/ia-king/generate-embeddings - Gerar embeddings para todo conhecimento
+router.post('/generate-embeddings', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        console.log('🔢 [EMBEDDINGS] Iniciando geração de embeddings...');
+        
+        const generated = await embeddings.generateEmbeddingsForAllKnowledge(client);
+        
+        res.json({
+            success: true,
+            message: `${generated} embeddings gerados com sucesso!`,
+            generated: generated
+        });
+    } catch (error) {
+        console.error('Erro ao gerar embeddings:', error);
+        res.status(500).json({ 
+            error: 'Erro ao gerar embeddings', 
+            details: error.message 
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/ia-king/knowledge/:id/generate-embedding - Gerar embedding para conhecimento específico
+router.post('/knowledge/:id/generate-embedding', protectAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+    try {
+        // Buscar conhecimento
+        const kbResult = await client.query(`
+            SELECT id, title, content
+            FROM ia_knowledge_base
+            WHERE id = $1
+        `, [id]);
+        
+        if (kbResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Conhecimento não encontrado' });
+        }
+        
+        const kb = kbResult.rows[0];
+        const text = `${kb.title || ''} ${kb.content || ''}`.trim();
+        
+        if (!text || text.length < 10) {
+            return res.status(400).json({ error: 'Conhecimento sem conteúdo suficiente' });
+        }
+        
+        // Gerar e salvar embedding
+        const embedding = await embeddings.generateAndSaveEmbedding(id, text, client);
+        
+        res.json({
+            success: true,
+            message: 'Embedding gerado com sucesso!',
+            embedding_length: embedding ? embedding.length : 0
+        });
+    } catch (error) {
+        console.error('Erro ao gerar embedding:', error);
+        res.status(500).json({ 
+            error: 'Erro ao gerar embedding', 
+            details: error.message 
+        });
     } finally {
         client.release();
     }
