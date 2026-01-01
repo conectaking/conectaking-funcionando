@@ -104,14 +104,31 @@ async function getCachedEmbedding(textHash) {
         `, [textHash]);
         
         if (result.rows.length > 0) {
-            // Atualizar last_used_at
-            await client.query(`
-                UPDATE ia_embedding_cache
-                SET last_used_at = CURRENT_TIMESTAMP
-                WHERE text_hash = $1
-            `, [textHash]);
+            // Atualizar last_used_at usando a função
+            try {
+                await client.query(`
+                    SELECT update_embedding_cache_used($1)
+                `, [textHash]);
+            } catch (error) {
+                // Se a função não existir, usar UPDATE direto
+                await client.query(`
+                    UPDATE ia_embedding_cache
+                    SET last_used_at = CURRENT_TIMESTAMP
+                    WHERE text_hash = $1
+                `, [textHash]);
+            }
             
-            return result.rows[0].embedding;
+            // Converter embedding de string JSON para array se necessário
+            let embedding = result.rows[0].embedding;
+            if (typeof embedding === 'string') {
+                try {
+                    embedding = JSON.parse(embedding);
+                } catch (e) {
+                    // Se não for JSON, pode ser que seja um array já
+                }
+            }
+            
+            return embedding;
         }
         
         return null;

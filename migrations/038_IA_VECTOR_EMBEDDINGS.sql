@@ -141,8 +141,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Comentários
-COMMENT ON COLUMN ia_knowledge_base.embedding IS 'Embedding vetorial do conteúdo para busca semântica';
-COMMENT ON TABLE ia_embedding_cache IS 'Cache de embeddings para evitar recalcular textos similares';
-COMMENT ON TABLE ia_vector_search_metrics IS 'Métricas de performance das buscas vetoriais';
+-- Comentários (apenas se as colunas/tabelas existirem)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns 
+               WHERE table_name = 'ia_knowledge_base' AND column_name = 'embedding') THEN
+        COMMENT ON COLUMN ia_knowledge_base.embedding IS 'Embedding vetorial do conteúdo para busca semântica';
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ia_embedding_cache') THEN
+        COMMENT ON TABLE ia_embedding_cache IS 'Cache de embeddings para evitar recalcular textos similares';
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ia_vector_search_metrics') THEN
+        COMMENT ON TABLE ia_vector_search_metrics IS 'Métricas de performance das buscas vetoriais';
+    END IF;
+END $$;
 
