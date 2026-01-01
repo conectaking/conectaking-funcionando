@@ -15225,48 +15225,83 @@ router.post('/system/fix-error', protectAdmin, asyncHandler(async (req, res) => 
         };
         
         // Correções por tipo de erro
-        if (error_type === 'database' && error_category === 'table_missing') {
-            // Tentar criar tabela se não existir
-            const tableName = error_location.split('.').pop();
-            fixResult = await fixMissingTable(client, tableName);
-        } else if (error_type === 'database' && error_category === 'performance') {
-            // Criar índices faltantes
-            fixResult = await fixMissingIndexes(client, error_details);
-        } else if (error_type === 'backend' && error_category === 'error_handling') {
-            // Adicionar tratamento de erro (requer intervenção manual)
+        try {
+            if (error_type === 'database' && error_category === 'table_missing') {
+                // Tentar criar tabela se não existir
+                const tableName = error_location ? error_location.split('.').pop() : 'unknown';
+                fixResult = await fixMissingTable(client, tableName);
+            } else if (error_type === 'database' && error_category === 'performance') {
+                // Criar índices faltantes
+                fixResult = await fixMissingIndexes(client, error_details);
+            } else if (error_type === 'backend' && error_category === 'error_handling') {
+                // Adicionar tratamento de erro (requer intervenção manual)
+                fixResult = {
+                    success: false,
+                    message: 'Correção requer edição manual do código. Esta recomendação precisa ser implementada manualmente no código-fonte.',
+                    requires_manual_intervention: true,
+                    suggestion: 'Adicionar try-catch blocks nas rotas principais em routes/*.js'
+                };
+            } else if (error_type === 'modules' && error_category === 'content_quality') {
+                // Corrigir conteúdo faltante
+                fixResult = await fixMissingContent(client, error_location, error_details);
+            } else if (error_type === 'content' && error_category === 'text_quality') {
+                // Corrigir textos curtos ou vazios
+                fixResult = await fixTextQuality(client, error_location, error_details);
+            } else if (error_type === 'database' && error_category === 'analysis_error') {
+                // Erro de análise do banco (como information_schema.indexes não existe)
+                fixResult = {
+                    success: false,
+                    message: 'Este é um erro de análise do banco de dados. O sistema está funcionando corretamente, mas a análise encontrou uma limitação na consulta.',
+                    requires_manual_intervention: false,
+                    suggestion: 'Este erro pode ser ignorado se o sistema estiver funcionando normalmente.'
+                };
+            } else {
+                fixResult = {
+                    success: false,
+                    message: `Tipo de erro (${error_type}/${error_category}) não suporta correção automática no momento.`,
+                    requires_manual_intervention: true
+                };
+            }
+        } catch (fixError) {
+            console.error('Erro ao executar correção:', fixError);
             fixResult = {
                 success: false,
-                message: 'Correção requer edição manual do código',
-                requires_manual_intervention: true,
-                suggestion: 'Adicionar try-catch blocks nas rotas principais'
-            };
-        } else if (error_type === 'modules' && error_category === 'content_quality') {
-            // Corrigir conteúdo faltante
-            fixResult = await fixMissingContent(client, error_location, error_details);
-        } else if (error_type === 'content' && error_category === 'text_quality') {
-            // Corrigir textos curtos ou vazios
-            fixResult = await fixTextQuality(client, error_location, error_details);
-        } else {
-            fixResult = {
-                success: false,
-                message: 'Tipo de erro não suporta correção automática',
+                message: `Erro ao tentar corrigir: ${fixError.message}`,
                 requires_manual_intervention: true
             };
         }
         
-        // Registrar tentativa de correção
-        await client.query(`
-            INSERT INTO ia_system_fixes
-            (error_type, error_category, error_location, fix_applied, fix_status, fix_result)
-            VALUES ($1, $2, $3, $4, $5, $6)
-        `, [
-            error_type,
-            error_category,
-            error_location,
-            JSON.stringify(fixResult.fix_applied),
-            fixResult.success ? 'applied' : 'failed',
-            JSON.stringify(fixResult)
-        ]);
+        // Registrar tentativa de correção (verificar se tabela existe)
+        try {
+            // Verificar se tabela existe
+            const tableCheck = await client.query(`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'ia_system_fixes'
+                );
+            `);
+            
+            if (tableCheck.rows[0].exists) {
+                await client.query(`
+                    INSERT INTO ia_system_fixes
+                    (error_type, error_category, error_location, fix_applied, fix_status, fix_result)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                `, [
+                    error_type,
+                    error_category,
+                    error_location || '',
+                    JSON.stringify(fixResult.fix_applied || null),
+                    fixResult.success ? 'applied' : 'failed',
+                    JSON.stringify(fixResult)
+                ]);
+            } else {
+                console.warn('⚠️ [CORREÇÃO] Tabela ia_system_fixes não existe. Pulando registro.');
+            }
+        } catch (tableError) {
+            console.warn('⚠️ [CORREÇÃO] Erro ao registrar correção na tabela:', tableError.message);
+            // Continuar mesmo se não conseguir registrar na tabela
+        }
         
         res.json({
             success: fixResult.success,
