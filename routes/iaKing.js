@@ -11895,4 +11895,442 @@ router.post('/system/detect-fixes', protectAdmin, asyncHandler(async (req, res) 
     }
 }));
 
+// ============================================
+// SISTEMA DE TESTES DA IA
+// ============================================
+
+// POST /api/ia-king/system/test-ia - Testar IA e identificar brechas
+router.post('/system/test-ia', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        console.log('🧪 [IA] Iniciando testes da IA...');
+        
+        const testResults = {
+            timestamp: new Date().toISOString(),
+            tests_run: 0,
+            tests_passed: 0,
+            tests_failed: 0,
+            issues_found: [],
+            recommendations: []
+        };
+        
+        // Teste 1: Respostas básicas
+        const basicTests = await testBasicResponses(client);
+        testResults.tests_run += basicTests.tests_run;
+        testResults.tests_passed += basicTests.tests_passed;
+        testResults.tests_failed += basicTests.tests_failed;
+        testResults.issues_found.push(...basicTests.issues);
+        
+        // Teste 2: Validação de entidades
+        const entityTests = await testEntityValidation(client);
+        testResults.tests_run += entityTests.tests_run;
+        testResults.tests_passed += entityTests.tests_passed;
+        testResults.tests_failed += entityTests.tests_failed;
+        testResults.issues_found.push(...entityTests.issues);
+        
+        // Teste 3: Performance de resposta
+        const performanceTests = await testResponsePerformance(client);
+        testResults.tests_run += performanceTests.tests_run;
+        testResults.tests_passed += performanceTests.tests_passed;
+        testResults.tests_failed += performanceTests.tests_failed;
+        testResults.issues_found.push(...performanceTests.issues);
+        
+        // Teste 4: Cache e memória
+        const cacheTests = await testCacheAndMemory(client);
+        testResults.tests_run += cacheTests.tests_run;
+        testResults.tests_passed += cacheTests.tests_passed;
+        testResults.tests_failed += cacheTests.tests_failed;
+        testResults.issues_found.push(...cacheTests.issues);
+        
+        // Teste 5: Validação de conhecimento
+        const knowledgeTests = await testKnowledgeValidation(client);
+        testResults.tests_run += knowledgeTests.tests_run;
+        testResults.tests_passed += knowledgeTests.tests_passed;
+        testResults.tests_failed += knowledgeTests.tests_failed;
+        testResults.issues_found.push(...knowledgeTests.issues);
+        
+        // Gerar recomendações baseadas nos testes
+        testResults.recommendations = generateTestRecommendations(testResults.issues_found);
+        
+        // Salvar resultados no banco
+        await client.query(`
+            INSERT INTO ia_system_analyses
+            (analysis_type, analysis_result, issues_found, issues_critical, issues_warning, recommendations)
+            VALUES ('code', $1, $2, $3, $4, $5)
+        `, [
+            JSON.stringify(testResults),
+            testResults.issues_found.length,
+            testResults.issues_found.filter(i => i.severity === 'critical' || i.severity === 'high').length,
+            testResults.issues_found.filter(i => i.severity === 'warning').length,
+            testResults.recommendations
+        ]);
+        
+        res.json({
+            success: true,
+            test_results: testResults,
+            summary: {
+                total_tests: testResults.tests_run,
+                passed: testResults.tests_passed,
+                failed: testResults.tests_failed,
+                pass_rate: testResults.tests_run > 0 
+                    ? ((testResults.tests_passed / testResults.tests_run) * 100).toFixed(2) + '%'
+                    : '0%',
+                issues_found: testResults.issues_found.length
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao testar IA:', error);
+        res.status(500).json({ error: 'Erro ao testar IA', details: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// Testar Respostas Básicas
+async function testBasicResponses(client) {
+    const tests = [
+        { question: 'Olá', expected: 'greeting', category: 'greeting' },
+        { question: 'O que é o Conecta King?', expected: 'system', category: 'system' },
+        { question: 'Como funciona?', expected: 'system', category: 'system' }
+    ];
+    
+    let tests_run = 0;
+    let tests_passed = 0;
+    let tests_failed = 0;
+    const issues = [];
+    
+    for (const test of tests) {
+        tests_run++;
+        try {
+            const result = await findBestAnswer(test.question, null);
+            
+            if (result.answer && result.answer.length > 0) {
+                if (test.expected === 'greeting' && result.source === 'greeting') {
+                    tests_passed++;
+                } else if (test.expected === 'system' && result.confidence > 50) {
+                    tests_passed++;
+                } else {
+                    tests_failed++;
+                    issues.push({
+                        type: 'ia_test',
+                        category: 'basic_response',
+                        severity: 'medium',
+                        message: `Resposta não atendeu expectativa para: "${test.question}"`,
+                        details: {
+                            expected: test.expected,
+                            got: result.source,
+                            confidence: result.confidence
+                        }
+                    });
+                }
+            } else {
+                tests_failed++;
+                issues.push({
+                    type: 'ia_test',
+                    category: 'empty_response',
+                    severity: 'high',
+                    message: `IA retornou resposta vazia para: "${test.question}"`,
+                    details: { question: test.question }
+                });
+            }
+        } catch (error) {
+            tests_failed++;
+            issues.push({
+                type: 'ia_test',
+                category: 'error',
+                severity: 'high',
+                message: `Erro ao processar pergunta: "${test.question}"`,
+                details: { error: error.message }
+            });
+        }
+    }
+    
+    return { tests_run, tests_passed, tests_failed, issues };
+}
+
+// Testar Validação de Entidades
+async function testEntityValidation(client) {
+    const tests = [
+        { question: 'Quem é Jesus?', entity: 'jesus', should_mention: true },
+        { question: 'Fale sobre vendas', entity: 'vendas', should_mention: true },
+        { question: 'O que é estratégia?', entity: 'estratégia', should_mention: true }
+    ];
+    
+    let tests_run = 0;
+    let tests_passed = 0;
+    let tests_failed = 0;
+    const issues = [];
+    
+    for (const test of tests) {
+        tests_run++;
+        try {
+            const result = await findBestAnswer(test.question, null);
+            
+            if (result.answer) {
+                const answerLower = result.answer.toLowerCase();
+                const entityLower = test.entity.toLowerCase();
+                
+                if (test.should_mention && answerLower.includes(entityLower)) {
+                    tests_passed++;
+                } else if (!test.should_mention && !answerLower.includes(entityLower)) {
+                    tests_passed++;
+                } else {
+                    tests_failed++;
+                    issues.push({
+                        type: 'ia_test',
+                        category: 'entity_validation',
+                        severity: 'medium',
+                        message: `Resposta não menciona entidade "${test.entity}" quando deveria`,
+                        details: {
+                            question: test.question,
+                            entity: test.entity,
+                            answer_preview: result.answer.substring(0, 200)
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            tests_failed++;
+            issues.push({
+                type: 'ia_test',
+                category: 'error',
+                severity: 'high',
+                message: `Erro ao testar validação de entidade: "${test.question}"`,
+                details: { error: error.message }
+            });
+        }
+    }
+    
+    return { tests_run, tests_passed, tests_failed, issues };
+}
+
+// Testar Performance de Resposta
+async function testResponsePerformance(client) {
+    const tests = [
+        { question: 'Teste de performance 1', max_time: 3000 },
+        { question: 'Teste de performance 2', max_time: 3000 },
+        { question: 'Teste de performance 3', max_time: 3000 }
+    ];
+    
+    let tests_run = 0;
+    let tests_passed = 0;
+    let tests_failed = 0;
+    const issues = [];
+    const responseTimes = [];
+    
+    for (const test of tests) {
+        tests_run++;
+        try {
+            const startTime = Date.now();
+            await findBestAnswer(test.question, null);
+            const responseTime = Date.now() - startTime;
+            responseTimes.push(responseTime);
+            
+            if (responseTime <= test.max_time) {
+                tests_passed++;
+            } else {
+                tests_failed++;
+                issues.push({
+                    type: 'ia_test',
+                    category: 'performance',
+                    severity: 'warning',
+                    message: `Resposta muito lenta: ${responseTime}ms (máx: ${test.max_time}ms)`,
+                    details: {
+                        question: test.question,
+                        response_time: responseTime,
+                        max_allowed: test.max_time
+                    }
+                });
+            }
+        } catch (error) {
+            tests_failed++;
+            issues.push({
+                type: 'ia_test',
+                category: 'error',
+                severity: 'high',
+                message: `Erro no teste de performance: "${test.question}"`,
+                details: { error: error.message }
+            });
+        }
+    }
+    
+    // Calcular média
+    if (responseTimes.length > 0) {
+        const avgTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+        if (avgTime > 2000) {
+            issues.push({
+                type: 'ia_test',
+                category: 'performance',
+                severity: 'warning',
+                message: `Tempo médio de resposta alto: ${avgTime.toFixed(2)}ms`,
+                details: { average_response_time: avgTime }
+            });
+        }
+    }
+    
+    return { tests_run, tests_passed, tests_failed, issues };
+}
+
+// Testar Cache e Memória
+async function testCacheAndMemory(client) {
+    let tests_run = 0;
+    let tests_passed = 0;
+    let tests_failed = 0;
+    const issues = [];
+    
+    try {
+        // Teste 1: Verificar se cache está funcionando
+        tests_run++;
+        const cacheCheck = await client.query(`
+            SELECT COUNT(*) as count FROM ia_response_cache
+            WHERE expires_at > NOW()
+        `);
+        
+        const cacheCount = parseInt(cacheCheck.rows[0].count || 0);
+        if (cacheCount > 0) {
+            tests_passed++;
+        } else {
+            tests_failed++;
+            issues.push({
+                type: 'ia_test',
+                category: 'cache',
+                severity: 'low',
+                message: 'Cache está vazio - pode indicar que não está sendo usado',
+                details: { cache_count: cacheCount }
+            });
+        }
+        
+        // Teste 2: Verificar memória contextual
+        tests_run++;
+        const contextCheck = await client.query(`
+            SELECT COUNT(*) as count FROM ia_conversation_context
+            WHERE expires_at IS NULL OR expires_at > NOW()
+        `);
+        
+        const contextCount = parseInt(contextCheck.rows[0].count || 0);
+        if (contextCount >= 0) {
+            tests_passed++;
+        } else {
+            tests_failed++;
+        }
+        
+    } catch (error) {
+        tests_failed++;
+        issues.push({
+            type: 'ia_test',
+            category: 'error',
+            severity: 'high',
+            message: 'Erro ao testar cache e memória',
+            details: { error: error.message }
+        });
+    }
+    
+    return { tests_run, tests_passed, tests_failed, issues };
+}
+
+// Testar Validação de Conhecimento
+async function testKnowledgeValidation(client) {
+    let tests_run = 0;
+    let tests_passed = 0;
+    let tests_failed = 0;
+    const issues = [];
+    
+    try {
+        // Teste 1: Verificar se há conhecimento suficiente
+        tests_run++;
+        const knowledgeCheck = await client.query(`
+            SELECT COUNT(*) as count FROM ia_knowledge_base
+            WHERE is_active = true
+        `);
+        
+        const knowledgeCount = parseInt(knowledgeCheck.rows[0].count || 0);
+        if (knowledgeCount > 100) {
+            tests_passed++;
+        } else {
+            tests_failed++;
+            issues.push({
+                type: 'ia_test',
+                category: 'knowledge',
+                severity: 'medium',
+                message: `Pouco conhecimento na base: ${knowledgeCount} itens (recomendado: >100)`,
+                details: { knowledge_count: knowledgeCount }
+            });
+        }
+        
+        // Teste 2: Verificar qualidade do conhecimento
+        tests_run++;
+        const qualityCheck = await client.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN LENGTH(content) > 100 THEN 1 END) as with_content
+            FROM ia_knowledge_base
+            WHERE is_active = true
+        `);
+        
+        const total = parseInt(qualityCheck.rows[0].total || 0);
+        const withContent = parseInt(qualityCheck.rows[0].with_content || 0);
+        const qualityRate = total > 0 ? (withContent / total) * 100 : 0;
+        
+        if (qualityRate >= 70) {
+            tests_passed++;
+        } else {
+            tests_failed++;
+            issues.push({
+                type: 'ia_test',
+                category: 'knowledge_quality',
+                severity: 'medium',
+                message: `Qualidade do conhecimento baixa: ${qualityRate.toFixed(2)}% com conteúdo completo`,
+                details: { quality_rate: qualityRate, total: total, with_content: withContent }
+            });
+        }
+        
+    } catch (error) {
+        tests_failed++;
+        issues.push({
+            type: 'ia_test',
+            category: 'error',
+            severity: 'high',
+            message: 'Erro ao testar validação de conhecimento',
+            details: { error: error.message }
+        });
+    }
+    
+    return { tests_run, tests_passed, tests_failed, issues };
+}
+
+// Gerar Recomendações Baseadas em Testes
+function generateTestRecommendations(issues) {
+    const recommendations = [];
+    
+    const byCategory = {};
+    issues.forEach(issue => {
+        if (!byCategory[issue.category]) {
+            byCategory[issue.category] = [];
+        }
+        byCategory[issue.category].push(issue);
+    });
+    
+    if (byCategory.empty_response) {
+        recommendations.push('IA está retornando respostas vazias - verificar lógica de busca de conhecimento');
+    }
+    
+    if (byCategory.entity_validation) {
+        recommendations.push('Melhorar validação de entidades nas respostas');
+    }
+    
+    if (byCategory.performance) {
+        recommendations.push('Otimizar performance das respostas - considerar cache mais agressivo');
+    }
+    
+    if (byCategory.knowledge) {
+        recommendations.push('Adicionar mais conhecimento à base de dados');
+    }
+    
+    if (byCategory.knowledge_quality) {
+        recommendations.push('Melhorar qualidade do conhecimento existente - adicionar conteúdo completo');
+    }
+    
+    return recommendations;
+}
+
 module.exports = router;
