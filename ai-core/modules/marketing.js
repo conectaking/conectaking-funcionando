@@ -9,7 +9,7 @@
  */
 
 const db = require('../../db');
-const { getSystemPrompt } = require('../../systemPrompt');
+const { getSystemPrompt } = require('../systemPrompt');
 
 /**
  * Processa uma solicitação de marketing
