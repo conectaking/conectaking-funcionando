@@ -343,6 +343,15 @@ app.use('/api/v1/sales-pages', apiLimiter, analyticsRoutesSalesPage);
 app.use('/api/v1/sales-pages', apiLimiter, productRoutes);
 app.use('/api/v1/sales-pages', apiLimiter, salesPageRoutes);
 
+// Rota de redirecionamento CNKING/:slug -> /:slug (formato curto para Instagram)
+// Deve vir ANTES de todas as outras rotas públicas
+app.get('/CNKING/:slug', (req, res) => {
+    const { slug } = req.params;
+    // Redirecionar para tag.conectaking.com.br/:slug
+    const redirectUrl = `https://tag.conectaking.com.br/${slug}`;
+    res.redirect(301, redirectUrl);
+});
+
 // Rota pública de página de vendas (deve vir ANTES de produto para evitar conflitos)
 // Ela verifica se não é "produto" e passa para próxima rota se necessário
 app.use('/', publicSalesPageRoutes);
