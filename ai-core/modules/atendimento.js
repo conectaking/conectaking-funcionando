@@ -8,8 +8,8 @@
  * - Suporte técnico básico
  */
 
-const db = require('../db');
-const { getSystemPrompt } = require('../systemPrompt');
+const db = require('../../db');
+const { getSystemPrompt } = require('../../systemPrompt');
 
 /**
  * Processa uma solicitação de atendimento

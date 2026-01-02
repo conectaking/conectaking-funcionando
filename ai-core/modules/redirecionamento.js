@@ -7,7 +7,7 @@
  * - Oferecer ajuda relevante ao invés de ignorar
  */
 
-const { getSystemPrompt } = require('../systemPrompt');
+const { getSystemPrompt } = require('../../systemPrompt');
 
 /**
  * Processa uma mensagem fora do foco

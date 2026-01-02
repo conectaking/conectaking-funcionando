@@ -8,8 +8,8 @@
  * - Gerar alertas para admin quando necessário
  */
 
-const db = require('../db');
-const { getSystemPrompt } = require('../systemPrompt');
+const db = require('../../db');
+const { getSystemPrompt } = require('../../systemPrompt');
 
 /**
  * Processa uma solicitação de diagnóstico
