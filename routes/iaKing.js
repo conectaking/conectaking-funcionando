@@ -16,12 +16,15 @@ try {
 
 const router = express.Router();
 
-// Tratar requisições OPTIONS (preflight CORS)
-router.options('*', (req, res) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.sendStatus(200);
+// Tratar requisições OPTIONS (preflight CORS) - Middleware para todas as rotas
+router.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        return res.sendStatus(200);
+    }
+    next();
 });
 
 console.log('✅ Rotas IA KING carregadas');
