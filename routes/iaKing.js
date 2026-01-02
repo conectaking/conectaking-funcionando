@@ -8018,14 +8018,15 @@ async function analyzeKnowledgeQuality(client) {
 async function calculateKnowledgeUsageRate(client) {
     try {
         // Conhecimento usado em conversas
+        // Usar as colunas corretas: message e response (não user_message e ai_response)
         const usageCheck = await client.query(`
             SELECT 
                 COUNT(DISTINCT kb.id) as used_knowledge,
                 COUNT(*) as total_knowledge
             FROM ia_knowledge_base kb
             LEFT JOIN ia_conversations c ON 
-                LOWER(c.user_message) LIKE '%' || LOWER(kb.title) || '%'
-                OR LOWER(c.ai_response) LIKE '%' || LOWER(SUBSTRING(kb.content, 1, 100)) || '%'
+                LOWER(c.message) LIKE '%' || LOWER(kb.title) || '%'
+                OR LOWER(c.response) LIKE '%' || LOWER(SUBSTRING(kb.content, 1, 100)) || '%'
             WHERE kb.is_active = true
         `);
         
