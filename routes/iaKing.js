@@ -5235,6 +5235,42 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // ============================================
+        // DETECÇÃO: PERGUNTAS SOBRE COMO FUNCIONA O SISTEMA
+        // ============================================
+        const systemHowQuestions = [
+            'como funciona', 'como funciona o sistema', 'como funciona o conecta king',
+            'como funciona conecta king', 'como o sistema funciona', 'como usar',
+            'como usar o sistema', 'como usar conecta king', 'o que é conecta king',
+            'o que é o conecta king', 'o que é o sistema', 'explique o sistema',
+            'explique conecta king', 'me explique', 'como é', 'como é o sistema'
+        ];
+        
+        if (systemHowQuestions.some(q => lowerMessage.includes(q))) {
+            return {
+                answer: "🚀 **COMO FUNCIONA O CONECTA KING**\n\n" +
+                       "O Conecta King é uma plataforma completa para criação de **cartões virtuais profissionais** que funcionam como um hub central para todas as suas informações de contato e negócios.\n\n" +
+                       "**📋 PASSO A PASSO:**\n\n" +
+                       "1️⃣ **Criação do Cartão**: Você cria seu cartão virtual personalizado com suas informações (nome, foto, biografia)\n\n" +
+                       "2️⃣ **Adição de Módulos**: Adicione os módulos que deseja:\n" +
+                       "   • WhatsApp, Instagram, TikTok, YouTube\n" +
+                       "   • Links personalizados\n" +
+                       "   • PIX e QR Code para pagamentos\n" +
+                       "   • Página de vendas completa\n" +
+                       "   • Banner e carrossel de imagens\n" +
+                       "   • E muito mais!\n\n" +
+                       "3️⃣ **Personalização**: Organize os módulos na ordem que preferir, escolha cores, fontes e layout\n\n" +
+                       "4️⃣ **Compartilhamento**: Compartilhe seu link único do cartão ou use o QR Code\n\n" +
+                       "5️⃣ **Acompanhamento**: Veja quantas pessoas visualizaram seu cartão através dos relatórios\n\n" +
+                       "**💡 RESULTADO:**\n" +
+                       "Seu cartão funciona como um site pessoal, mas muito mais simples e focado em conectar você com seus contatos e clientes de forma profissional! 😊\n\n" +
+                       "Quer ajuda para criar ou configurar seu cartão? Posso te guiar passo a passo!",
+                confidence: 100,
+                source: 'system_info',
+                mentalMode: 'educative'
+            };
+        }
+        
+        // ============================================
         // DETECÇÃO: PERGUNTAS SOBRE O NOME DA IA
         // ============================================
         const nameQuestions = [
@@ -7359,10 +7395,12 @@ async function findBestAnswer(userMessage, userId) {
         console.error('❌ [IA] ERRO em findBestAnswer:', error);
         console.error('Stack:', error.stack);
         
-        // Se a pergunta for sobre valores e der erro, retornar valores padrão
+        // Se a pergunta for sobre valores ou sistema e der erro, retornar resposta padrão
         const lowerMessage = (userMessage || '').toLowerCase();
         const pricingKeywords = ['valores', 'preços', 'preço', 'quanto custa', 'planos', 'pacotes', 'assinatura'];
+        const systemKeywords = ['como funciona', 'como funciona o sistema', 'como usar', 'o que é conecta king', 'explique o sistema'];
         const isPricingQuestion = pricingKeywords.some(keyword => lowerMessage.includes(keyword));
+        const isSystemQuestion = systemKeywords.some(keyword => lowerMessage.includes(keyword));
         
         if (isPricingQuestion) {
             return {
@@ -7393,6 +7431,28 @@ async function findBestAnswer(userMessage, userId) {
                 hallucinationRisk: 'low',
                 cognitiveVersion: '2.0',
                 category: 'pricing'
+            };
+        }
+        
+        if (isSystemQuestion) {
+            return {
+                answer: "🚀 **COMO FUNCIONA O CONECTA KING**\n\n" +
+                       "O Conecta King é uma plataforma completa para criação de **cartões virtuais profissionais** que funcionam como um hub central para todas as suas informações de contato e negócios.\n\n" +
+                       "**📋 PASSO A PASSO:**\n\n" +
+                       "1️⃣ **Criação do Cartão**: Você cria seu cartão virtual personalizado com suas informações (nome, foto, biografia)\n\n" +
+                       "2️⃣ **Adição de Módulos**: Adicione os módulos que deseja (WhatsApp, Instagram, links, PIX, etc.)\n\n" +
+                       "3️⃣ **Personalização**: Organize os módulos, escolha cores, fontes e layout\n\n" +
+                       "4️⃣ **Compartilhamento**: Compartilhe seu link único ou use o QR Code\n\n" +
+                       "5️⃣ **Acompanhamento**: Veja quantas pessoas visualizaram seu cartão através dos relatórios\n\n" +
+                       "**💡 RESULTADO:**\n" +
+                       "Seu cartão funciona como um site pessoal, mas muito mais simples e focado em conectar você com seus contatos e clientes! 😊",
+                confidence: 95,
+                source: 'system_info_error_fallback',
+                mentalMode: 'educative',
+                auditPassed: true,
+                hallucinationRisk: 'low',
+                cognitiveVersion: '2.0',
+                category: 'system'
             };
         }
         
