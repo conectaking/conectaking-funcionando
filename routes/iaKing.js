@@ -16,6 +16,14 @@ try {
 
 const router = express.Router();
 
+// Tratar requisições OPTIONS (preflight CORS)
+router.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.sendStatus(200);
+});
+
 console.log('✅ Rotas IA KING carregadas');
 
 // ============================================
@@ -7281,10 +7289,18 @@ async function findBestAnswer(userMessage, userId) {
 
 // POST /api/ia-king/chat
 router.post('/chat', protectUser, asyncHandler(async (req, res) => {
+    console.log('📥 [IA KING CHAT] Requisição recebida:', {
+        method: req.method,
+        path: req.path,
+        hasMessage: !!req.body.message,
+        userId: req.body.userId || req.user?.userId
+    });
+    
     const { message, userId } = req.body;
-    const actualUserId = userId || req.user.userId;
+    const actualUserId = userId || req.user?.userId;
     
     if (!message || !message.trim()) {
+        console.warn('⚠️ [IA KING CHAT] Mensagem vazia recebida');
         return res.status(400).json({ error: 'Mensagem é obrigatória' });
     }
     
