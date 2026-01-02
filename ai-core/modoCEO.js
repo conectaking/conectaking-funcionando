@@ -8,7 +8,7 @@
  * - Evolução do conhecimento
  */
 
-const db = require('../../db');
+const db = require('../db');
 const memoryStore = require('./memory/memoryStore');
 
 /**

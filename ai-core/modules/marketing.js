@@ -8,7 +8,7 @@
  * - ATIVADO APENAS quando o usuário solicitar explicitamente
  */
 
-const db = require('../../db');
+const db = require('../db');
 const { getSystemPrompt } = require('../systemPrompt');
 
 /**
