@@ -7483,16 +7483,41 @@ router.post('/chat', protectUser, asyncHandler(async (req, res) => {
     } catch (error) {
         console.error('❌ Erro no chat da IA KING:', error);
         console.error('Stack trace:', error.stack);
+        console.error('Detalhes do erro:', {
+            message: error.message,
+            name: error.name,
+            code: error.code
+        });
+        
+        // Garantir que o client seja liberado em caso de erro
+        if (client) {
+            try {
+                client.release();
+            } catch (releaseError) {
+                console.error('Erro ao liberar client:', releaseError);
+            }
+        }
         
         // Retornar resposta padrão em caso de erro
-        res.status(500).json({ 
-            error: 'Erro ao processar mensagem',
-            response: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou reformule sua pergunta.',
-            confidence: 0,
-            source: 'error'
-        });
+        // Garantir que sempre retorne uma resposta válida
+        if (!res.headersSent) {
+            res.status(500).json({ 
+                error: 'Erro ao processar mensagem',
+                message: error.message || 'Erro desconhecido',
+                response: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou reformule sua pergunta.',
+                confidence: 0,
+                source: 'error'
+            });
+        }
     } finally {
-        client.release();
+        // Garantir que o client seja sempre liberado
+        if (client) {
+            try {
+                client.release();
+            } catch (releaseError) {
+                console.error('Erro ao liberar client no finally:', releaseError);
+            }
+        }
     }
 }));
 
