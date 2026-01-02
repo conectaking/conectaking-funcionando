@@ -7305,11 +7305,14 @@ router.post('/chat', protectUser, asyncHandler(async (req, res) => {
     }
     
     const startTime = Date.now();
-    const client = await db.pool.connect();
+    let client = null;
     let conversationId = null;
     let knowledgeUsedIds = [];
     
     try {
+        // Conectar ao banco de dados
+        client = await db.pool.connect();
+        
         console.log('📥 Mensagem recebida na IA KING:', message.substring(0, 100));
         
         // Buscar resposta
