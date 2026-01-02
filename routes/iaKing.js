@@ -17730,6 +17730,21 @@ router.get('/trends', protectAdmin, asyncHandler(async (req, res) => {
 router.get('/tutorials', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
+        // Verificar se a tabela existe
+        const tableCheck = await client.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'ia_tutorials'
+            ) as table_exists
+        `);
+        
+        if (!tableCheck.rows[0].table_exists) {
+            // Se a tabela não existe, retornar array vazio (frontend usará tutoriais locais)
+            console.log('⚠️ Tabela ia_tutorials não existe, retornando array vazio');
+            return res.json({ success: true, tutorials: [] });
+        }
+        
         const tutorials = await client.query(`
             SELECT t.*, 
                    COALESCE(utp.is_completed, false) as is_completed,
@@ -17739,12 +17754,13 @@ router.get('/tutorials', protectUser, asyncHandler(async (req, res) => {
             LEFT JOIN ia_user_tutorial_progress utp ON utp.tutorial_id = t.id AND utp.user_id = $1
             WHERE t.is_active = true
             ORDER BY t.order_index ASC, t.created_at ASC
-        `, [req.user.userId]);
+        `, [req.user?.userId || req.user?.id]);
         
         res.json({ success: true, tutorials: tutorials.rows });
     } catch (error) {
         console.error('Erro ao buscar tutoriais:', error);
-        res.status(500).json({ success: false, error: error.message });
+        // Em caso de erro, retornar array vazio para que o frontend use tutoriais locais
+        res.json({ success: true, tutorials: [] });
     } finally {
         client.release();
     }
