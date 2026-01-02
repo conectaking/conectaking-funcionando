@@ -11,8 +11,22 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <% 
+    // SEMPRE usar slug - se não existir, gerar um baseado no título
+    let storeSlug = salesPage.slug;
+    if (!storeSlug && salesPage.store_title) {
+        // Gerar slug simples do título (sem caracteres especiais)
+        storeSlug = salesPage.store_title.toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, 50);
+    }
+    if (!storeSlug) {
+        storeSlug = 'loja';
+    }
     const currentUrl = typeof profileSlug !== 'undefined' && profileSlug 
-        ? `https://tag.conectaking.com.br/${profileSlug}/loja/${salesPage.slug || salesPage.id}` 
+        ? `https://tag.conectaking.com.br/${profileSlug}/loja/${storeSlug}` 
         : '';
     %>
     <% if (currentUrl) { %>
@@ -125,7 +139,7 @@
                 </button>
             </div>
             <div class="share-url-container">
-                <input type="text" id="share-url-input" class="share-url-input" readonly value="<%= typeof profileSlug !== 'undefined' && profileSlug ? `https://tag.conectaking.com.br/${profileSlug}/loja/${salesPage.slug || salesPage.id}` : '' %>">
+                <input type="text" id="share-url-input" class="share-url-input" readonly value="<%= typeof profileSlug !== 'undefined' && profileSlug ? `https://tag.conectaking.com.br/${profileSlug}/loja/${storeSlug}` : '' %>">
                 <button class="copy-url-btn" id="copy-url-btn" title="Copiar URL">
                     <i class="fas fa-copy"></i>
                 </button>

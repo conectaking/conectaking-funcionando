@@ -31,9 +31,14 @@ class SalesPageService {
             sanitized.whatsapp_number = '';
         }
 
-        // Gerar slug se não fornecido (pular se estiver em transação para evitar deadlock)
-        if (!sanitized.slug && sanitized.store_title && !existingClient) {
+        // SEMPRE gerar slug se não fornecido (baseado no título da loja)
+        if (!sanitized.slug && sanitized.store_title) {
             sanitized.slug = await slugify.generateUnique(sanitized.store_title, (slug) => 
+                repository.slugExists(slug)
+            );
+        } else if (!sanitized.slug) {
+            // Se não tem título, gerar slug genérico único
+            sanitized.slug = await slugify.generateUnique('loja', (slug) => 
                 repository.slugExists(slug)
             );
         }
@@ -146,11 +151,27 @@ class SalesPageService {
         // Sanitizar dados
         const sanitized = validators.sanitize(data);
 
-        // Gerar slug se título mudou e slug não foi fornecido
-        if (sanitized.store_title && sanitized.store_title !== currentPage.store_title && !sanitized.slug) {
-            sanitized.slug = await slugify.generateUnique(sanitized.store_title, (slug) => 
-                repository.slugExists(slug, id)
-            );
+        // SEMPRE garantir que tem slug - gerar se não existir ou se título mudou
+        if (!currentPage.slug || (sanitized.store_title && sanitized.store_title !== currentPage.store_title)) {
+            if (!sanitized.slug) {
+                const titleToUse = sanitized.store_title || currentPage.store_title || 'loja';
+                sanitized.slug = await slugify.generateUnique(
+                    titleToUse, 
+                    (slug) => repository.slugExists(slug, id)
+                );
+            }
+        } else if (!sanitized.slug) {
+            // Se não tem slug na página atual, gerar um agora
+            if (!currentPage.slug) {
+                const titleToUse = sanitized.store_title || currentPage.store_title || 'loja';
+                sanitized.slug = await slugify.generateUnique(
+                    titleToUse,
+                    (slug) => repository.slugExists(slug, id)
+                );
+            } else {
+                // Manter slug existente se não foi alterado
+                sanitized.slug = currentPage.slug;
+            }
         }
 
         // Atualizar página

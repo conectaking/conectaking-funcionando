@@ -132,8 +132,9 @@ router.get('/:slug/produto/:productId', asyncHandler(async (req, res) => {
             );
             if (salesPageRes.rows.length > 0) {
                 salesPageData = salesPageRes.rows[0];
-                // URL para voltar à loja (sales page)
-                backUrl = `/${slug}/loja/${salesPageData.profile_item_id}`;
+                // URL para voltar à loja (sales page) - usar slug ao invés do ID
+                const storeSlug = salesPageData.slug || 'loja';
+                backUrl = `/${slug}/loja/${storeSlug}`;
             }
         }
         
