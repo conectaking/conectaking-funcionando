@@ -43,9 +43,13 @@ class SalesPageService {
             sanitized.preview_token = crypto.randomBytes(32).toString('hex');
         }
 
+        // Sempre publicar automaticamente
+        sanitized.status = 'PUBLISHED';
+        sanitized.published_at = new Date();
+
         // Criar página (passar client se existir)
         const salesPage = await repository.create(sanitized, existingClient);
-        logger.info(`Página de vendas criada: ${salesPage.id}`);
+        logger.info(`Página de vendas criada e publicada: ${salesPage.id}`);
         
         return salesPage;
     }

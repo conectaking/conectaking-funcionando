@@ -73,7 +73,9 @@ router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
         }
         
-        if (salesPage.status !== 'PUBLISHED') {
+        // Sempre permitir acesso - status sempre será PUBLISHED
+        // Mantido apenas para compatibilidade com preview token se necessário
+        if (salesPage.status !== 'PUBLISHED' && salesPage.status !== 'DRAFT') {
             if (!token || token !== salesPage.preview_token) {
                 return res.status(404).send('<h1>404 - Página não encontrada ou não publicada</h1>');
             }

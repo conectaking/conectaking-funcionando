@@ -25,7 +25,9 @@ class SalesPageRepository {
             meta_title,
             meta_description,
             meta_image_url,
-            preview_token
+            preview_token,
+            status = 'PUBLISHED',
+            published_at
         } = data;
 
         const client = existingClient || await db.pool.connect();
@@ -44,8 +46,8 @@ class SalesPageRepository {
                     button_text, button_logo_url, theme, background_color,
                     text_color, button_color, button_text_color,
                     background_image_url, whatsapp_number, meta_title,
-                    meta_description, meta_image_url, preview_token, status
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'DRAFT')
+                    meta_description, meta_image_url, preview_token, status, published_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
                 ON CONFLICT (profile_item_id) DO UPDATE SET
                     updated_at = NOW()
                 RETURNING *`,
@@ -54,7 +56,7 @@ class SalesPageRepository {
                     button_text, button_logo_url, theme || 'dark', background_color,
                     text_color, button_color, button_text_color,
                     background_image_url, whatsapp_number, meta_title,
-                    meta_description, meta_image_url, preview_token
+                    meta_description, meta_image_url, preview_token, status, published_at || new Date()
                 ]
             );
             return result.rows[0];
