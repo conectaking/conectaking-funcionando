@@ -559,7 +559,7 @@
             return metaSlug;
         }
         
-        // Terceiro: tentar extrair da URL atual (ex: /ADRIANO-KING/loja/2060)
+        // Terceiro: tentar extrair da URL atual (ex: /ADRIANO-KING/tr ou /ADRIANO-KING/loja/2060 para compatibilidade)
         const pathParts = window.location.pathname.split('/').filter(p => p);
         if (pathParts.length > 0) {
             return pathParts[0];

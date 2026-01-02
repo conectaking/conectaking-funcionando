@@ -8,10 +8,19 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
 
 /**
- * Rota pública: /:slug/loja/:itemId ou /:slug/loja/:slug
+ * Rota pública: /:slug/:storeSlug (sem /loja/ no meio)
+ * IMPORTANTE: Esta rota deve vir ANTES de /:slug/produto/:productId para evitar conflitos
+ * Verifica se não é "produto" e se existe uma sales page com o slug
  */
-router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
-    const { slug, identifier } = req.params;
+router.get('/:slug/:storeSlug', asyncHandler(async (req, res, next) => {
+    const { slug, storeSlug } = req.params;
+    
+    // Se for "produto", deixar passar para a rota de produto
+    if (storeSlug === 'produto') {
+        return next();
+    }
+    
+    const identifier = storeSlug;
     const { token } = req.query; // Para preview seguro
 
     const client = await db.pool.connect();
@@ -40,7 +49,8 @@ router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
             );
 
             if (itemRes.rows.length === 0) {
-                return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
+                // Se não encontrou, passar para próxima rota (pode ser outra rota)
+                return next();
             }
 
             salesPage = await salesPageService.findByProfileItemId(itemRes.rows[0].id, userId);
@@ -50,7 +60,8 @@ router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
                 salesPage = await salesPageService.findBySlug(identifier);
                 
                 if (!salesPage) {
-                    return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
+                    // Se não encontrou, passar para próxima rota
+                    return next();
                 }
                 
                 // Verificar se pertence ao usuário
@@ -60,17 +71,20 @@ router.get('/:slug/loja/:identifier', asyncHandler(async (req, res) => {
                 );
 
                 if (itemRes.rows.length === 0) {
-                    return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
+                    // Se não pertence ao usuário, passar para próxima rota
+                    return next();
                 }
             } catch (error) {
                 logger.error('Erro ao buscar sales page por slug:', error);
-                return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
+                // Se erro, passar para próxima rota
+                return next();
             }
         }
 
         // Verificar se está publicada ou se tem token de preview
         if (!salesPage) {
-            return res.status(404).send('<h1>404 - Página de vendas não encontrada</h1>');
+            // Se não encontrou sales page, passar para próxima rota
+            return next();
         }
         
         // Sempre permitir acesso - status sempre será PUBLISHED

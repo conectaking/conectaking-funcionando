@@ -1494,10 +1494,10 @@
                                 profileSlug = identifier;
                             }
                             
-                            // Usar slug da sales page ao invés do ID - se não tiver slug, não mostrar link
+                            // Usar slug da sales page ao invés do ID - formato: /:slug/:storeSlug
                             const salesPageSlug = item.sales_page_slug;
                             const salesPageUrl = salesPageSlug && item.sales_page_status === 'PUBLISHED' && profileSlug
-                                ? `/${profileSlug}/loja/${salesPageSlug}` 
+                                ? `/${profileSlug}/${salesPageSlug}` 
                                 : '#';
                         %>
                         <a href="<%= salesPageUrl %>" class="profile-link" <%= salesPageUrl !== '#' ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;" style="opacity: 0.5; cursor: not-allowed;" title="Página não publicada"' %> data-item-id="<%= item.id %>">

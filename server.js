@@ -343,12 +343,13 @@ app.use('/api/v1/sales-pages', apiLimiter, analyticsRoutesSalesPage);
 app.use('/api/v1/sales-pages', apiLimiter, productRoutes);
 app.use('/api/v1/sales-pages', apiLimiter, salesPageRoutes);
 
+// Rota pública de página de vendas (deve vir ANTES de produto para evitar conflitos)
+// Ela verifica se não é "produto" e passa para próxima rota se necessário
+app.use('/', publicSalesPageRoutes);
+
 // Rota pública de produto individual (deve vir antes de publicProfileRoutes)
 const publicProductRoutes = require('./routes/publicProduct');
 app.use('/', publicProductRoutes);
-
-// Rota pública de página de vendas (deve vir antes de publicProfileRoutes)
-app.use('/', publicSalesPageRoutes);
 
 // Perfis públicos (sem rate limiting)
 app.use('/', publicProfileRoutes);
