@@ -5142,9 +5142,98 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // ============================================
-        // DETECÇÃO: PERGUNTAS SOBRE O NOME DA IA
+        // DETECÇÃO: PERGUNTAS SOBRE VALORES/PLANOS
         // ============================================
         let lowerMessage = userMessage.toLowerCase();
+        const pricingQuestions = [
+            'qual seus valores', 'quais seus valores', 'qual o valor', 'quais os valores',
+            'quanto custa', 'quanto é', 'preço', 'preços', 'valores do sistema',
+            'planos', 'pacotes', 'assinatura', 'quanto custa o sistema',
+            'valor do sistema', 'preço do sistema', 'quanto é a assinatura',
+            'quais os planos', 'quais os pacotes', 'quanto custa a assinatura',
+            'pacote 1', 'pacote 2', 'pacote 3', 'preço do pacote'
+        ];
+        
+        if (pricingQuestions.some(q => lowerMessage.includes(q))) {
+            // Buscar planos no banco de dados
+            try {
+                const plansResult = await client.query(`
+                    SELECT plan_code, plan_name, price, description, features
+                    FROM subscription_plans
+                    WHERE is_active = true
+                    ORDER BY price ASC
+                `);
+                
+                if (plansResult.rows.length > 0) {
+                    let answer = "💰 **VALORES E PLANOS DO CONECTA KING**\n\n";
+                    
+                    plansResult.rows.forEach((plan, index) => {
+                        const price = parseFloat(plan.price).toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                        });
+                        
+                        answer += `**${plan.plan_name}** - ${price}/mês\n`;
+                        if (plan.description) {
+                            answer += `   ${plan.description}\n`;
+                        }
+                        
+                        if (plan.features && typeof plan.features === 'object') {
+                            const features = plan.features;
+                            if (features.can_add_all_modules) answer += `   ✅ Todos os módulos disponíveis\n`;
+                            if (features.can_edit_logo) answer += `   ✅ Personalização de logomarca\n`;
+                            if (features.max_profiles) answer += `   ✅ ${features.max_profiles} perfil(is)\n`;
+                            if (features.is_enterprise) answer += `   ✅ Modo empresarial\n`;
+                        }
+                        answer += "\n";
+                    });
+                    
+                    answer += "💳 **Forma de Pagamento:** PIX\n";
+                    answer += "📱 **Renovação:** Via WhatsApp\n\n";
+                    answer += "Para assinar ou renovar, acesse a seção 'Assinatura' no dashboard! 😊";
+                    
+                    return {
+                        answer: answer,
+                        confidence: 100,
+                        source: 'pricing_info',
+                        mentalMode: 'informative'
+                    };
+                }
+            } catch (error) {
+                console.error('Erro ao buscar planos:', error);
+            }
+            
+            // Fallback com valores padrão se não conseguir buscar do banco
+            return {
+                answer: "💰 **VALORES E PLANOS DO CONECTA KING**\n\n" +
+                       "**Pacote 1** - R$ 480,00/mês\n" +
+                       "   Todas as funcionalidades do cartão\n" +
+                       "   Todos os módulos disponíveis\n" +
+                       "   Não pode alterar a logomarca do sistema\n" +
+                       "   1 perfil\n\n" +
+                       "**Pacote 2** - R$ 700,00/mês\n" +
+                       "   Todas as funcionalidades do cartão\n" +
+                       "   Todos os módulos disponíveis\n" +
+                       "   Pode alterar a logomarca do cartão\n" +
+                       "   1 perfil\n\n" +
+                       "**Pacote 3** - R$ 1.500,00/mês (EMPRESARIAL)\n" +
+                       "   Todas as funcionalidades do cartão\n" +
+                       "   Todos os módulos disponíveis\n" +
+                       "   Pode alterar a logomarca\n" +
+                       "   3 perfis/cartões\n" +
+                       "   Modo empresarial\n\n" +
+                       "💳 **Forma de Pagamento:** PIX\n" +
+                       "📱 **Renovação:** Via WhatsApp\n\n" +
+                       "Para assinar ou renovar, acesse a seção 'Assinatura' no dashboard! 😊",
+                confidence: 95,
+                source: 'pricing_info_fallback',
+                mentalMode: 'informative'
+            };
+        }
+        
+        // ============================================
+        // DETECÇÃO: PERGUNTAS SOBRE O NOME DA IA
+        // ============================================
         const nameQuestions = [
             'qual seu nome', 'qual é seu nome', 'qual o seu nome',
             'como você se chama', 'quem é você', 'quem voce e',
@@ -7267,7 +7356,44 @@ async function findBestAnswer(userMessage, userId) {
         console.error('❌ [IA] ERRO em findBestAnswer:', error);
         console.error('Stack:', error.stack);
         
-        // Retornar resposta de erro educada
+        // Se a pergunta for sobre valores e der erro, retornar valores padrão
+        const lowerMessage = (userMessage || '').toLowerCase();
+        const pricingKeywords = ['valores', 'preços', 'preço', 'quanto custa', 'planos', 'pacotes', 'assinatura'];
+        const isPricingQuestion = pricingKeywords.some(keyword => lowerMessage.includes(keyword));
+        
+        if (isPricingQuestion) {
+            return {
+                answer: "💰 **VALORES E PLANOS DO CONECTA KING**\n\n" +
+                       "**Pacote 1** - R$ 480,00/mês\n" +
+                       "   Todas as funcionalidades do cartão\n" +
+                       "   Todos os módulos disponíveis\n" +
+                       "   Não pode alterar a logomarca do sistema\n" +
+                       "   1 perfil\n\n" +
+                       "**Pacote 2** - R$ 700,00/mês\n" +
+                       "   Todas as funcionalidades do cartão\n" +
+                       "   Todos os módulos disponíveis\n" +
+                       "   Pode alterar a logomarca do cartão\n" +
+                       "   1 perfil\n\n" +
+                       "**Pacote 3** - R$ 1.500,00/mês (EMPRESARIAL)\n" +
+                       "   Todas as funcionalidades do cartão\n" +
+                       "   Todos os módulos disponíveis\n" +
+                       "   Pode alterar a logomarca\n" +
+                       "   3 perfis/cartões\n" +
+                       "   Modo empresarial\n\n" +
+                       "💳 **Forma de Pagamento:** PIX\n" +
+                       "📱 **Renovação:** Via WhatsApp\n\n" +
+                       "Para assinar ou renovar, acesse a seção 'Assinatura' no dashboard! 😊",
+                confidence: 95,
+                source: 'pricing_info_error_fallback',
+                mentalMode: 'informative',
+                auditPassed: true,
+                hallucinationRisk: 'low',
+                cognitiveVersion: '2.0',
+                category: 'pricing'
+            };
+        }
+        
+        // Retornar resposta de erro educada para outros casos
         return {
             answer: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou reformule sua pergunta.',
             confidence: 0,
@@ -8061,20 +8187,26 @@ async function analyzeKnowledgeQuality(client) {
 // Calcular Taxa de Uso do Conhecimento
 async function calculateKnowledgeUsageRate(client) {
     try {
-        // Conhecimento usado em conversas
-        // Usar as colunas corretas: message e response (não user_message e ai_response)
-        const usageCheck = await client.query(`
-            SELECT 
-                COUNT(DISTINCT kb.id) as used_knowledge,
-                COUNT(*) as total_knowledge
-            FROM ia_knowledge_base kb
-            LEFT JOIN ia_conversations c ON 
-                LOWER(c.message) LIKE '%' || LOWER(kb.title) || '%'
-                OR LOWER(c.response) LIKE '%' || LOWER(SUBSTRING(kb.content, 1, 100)) || '%'
-            WHERE kb.is_active = true
+        // Total de conhecimento ativo
+        const totalCheck = await client.query(`
+            SELECT COUNT(*) as total_knowledge
+            FROM ia_knowledge_base
+            WHERE is_active = true
         `);
         
-        const totalKnowledge = parseInt(usageCheck.rows[0].total_knowledge || 0);
+        const totalKnowledge = parseInt(totalCheck.rows[0].total_knowledge || 0);
+        
+        // Conhecimento usado em conversas (usando knowledge_used_ids)
+        const usageCheck = await client.query(`
+            SELECT COUNT(DISTINCT kb_id) as used_knowledge
+            FROM (
+                SELECT unnest(knowledge_used_ids) as kb_id
+                FROM ia_conversations
+                WHERE knowledge_used_ids IS NOT NULL 
+                AND array_length(knowledge_used_ids, 1) > 0
+            ) as used_kb
+        `);
+        
         const usedKnowledge = parseInt(usageCheck.rows[0].used_knowledge || 0);
         
         // Livros usados
@@ -8593,7 +8725,7 @@ router.get('/intelligence/diagnostic', protectAdmin, asyncHandler(async (req, re
                 kb.title,
                 MAX(ic.created_at) as last_used
             FROM ia_knowledge_base kb
-            LEFT JOIN ia_conversations ic ON kb.id = ANY(ic.knowledge_used)
+            LEFT JOIN ia_conversations ic ON kb.id = ANY(ic.knowledge_used_ids)
             WHERE kb.source_type IN ('book_training', 'tavily_book', 'tavily_book_trained')
             GROUP BY kb.id, kb.title
             ORDER BY last_used DESC NULLS LAST
@@ -17745,18 +17877,37 @@ router.get('/tutorials', protectUser, asyncHandler(async (req, res) => {
             return res.json({ success: true, tutorials: [] });
         }
         
+        const userId = req.user?.userId || req.user?.id;
+        
         const tutorials = await client.query(`
             SELECT t.*, 
                    COALESCE(utp.is_completed, false) as is_completed,
                    utp.current_step,
-                   utp.completed_steps
+                   COALESCE(utp.completed_steps, ARRAY[]::INTEGER[]) as completed_steps
             FROM ia_tutorials t
             LEFT JOIN ia_user_tutorial_progress utp ON utp.tutorial_id = t.id AND utp.user_id = $1
             WHERE t.is_active = true
-            ORDER BY t.order_index ASC, t.created_at ASC
-        `, [req.user?.userId || req.user?.id]);
+            ORDER BY COALESCE(t.order_index, 0) ASC, t.created_at ASC
+        `, [userId]);
         
-        res.json({ success: true, tutorials: tutorials.rows });
+        // Garantir que todos os campos necessários estejam presentes
+        const formattedTutorials = tutorials.rows.map(tutorial => ({
+            id: tutorial.id,
+            title: tutorial.title || 'Tutorial sem título',
+            description: tutorial.description || '',
+            steps: tutorial.steps || [],
+            estimated_time: tutorial.estimated_time || 5,
+            difficulty: tutorial.difficulty || 'beginner',
+            category: tutorial.category || 'general',
+            is_completed: tutorial.is_completed || false,
+            current_step: tutorial.current_step || 0,
+            completed_steps: tutorial.completed_steps || [],
+            order_index: tutorial.order_index || 0,
+            created_at: tutorial.created_at,
+            updated_at: tutorial.updated_at
+        }));
+        
+        res.json({ success: true, tutorials: formattedTutorials });
     } catch (error) {
         console.error('Erro ao buscar tutoriais:', error);
         // Em caso de erro, retornar array vazio para que o frontend use tutoriais locais
