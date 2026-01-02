@@ -865,6 +865,315 @@ function extractKeywords(message) {
     return words;
 }
 
+// ============================================
+// SISTEMA DE BUSCA MULTI-API - MÚLTIPLAS FONTES
+// ============================================
+
+// Função para buscar usando SerpAPI (Paga - Muito Boa)
+async function searchWithSerpAPI(query, apiKey) {
+    try {
+        if (!apiKey) {
+            throw new Error('API Key do SerpAPI não configurada');
+        }
+        
+        console.log('🔍 [SerpAPI] Buscando:', query.substring(0, 100));
+        const serpUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${apiKey}&engine=google&num=10&hl=pt&gl=br`;
+        
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout SerpAPI')), 10000)
+        );
+        
+        const fetchPromise = fetch(serpUrl);
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        if (!response.ok) {
+            throw new Error(`SerpAPI erro: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const results = [];
+        
+        if (data.organic_results) {
+            data.organic_results.forEach((result, index) => {
+                results.push({
+                    title: result.title || `Resultado ${index + 1}`,
+                    snippet: result.snippet || '',
+                    content: result.snippet || '',
+                    url: result.link || '',
+                    provider: 'serpapi',
+                    score: 100 - index
+                });
+            });
+        }
+        
+        // Adicionar resposta direta se houver
+        if (data.answer_box?.answer) {
+            results.unshift({
+                title: 'Resposta Direta',
+                snippet: data.answer_box.answer,
+                url: data.answer_box.link || '',
+                provider: 'serpapi',
+                score: 100
+            });
+        }
+        
+        return { results, provider: 'serpapi', answer: data.answer_box?.answer || null };
+    } catch (error) {
+        console.error('Erro ao buscar com SerpAPI:', error.message);
+        return { results: [], provider: 'serpapi', error: error.message };
+    }
+}
+
+// Função para buscar usando Google Custom Search (Gratuita - Limites)
+async function searchWithGoogleCustom(query, apiKey, searchEngineId) {
+    try {
+        if (!apiKey || !searchEngineId) {
+            throw new Error('API Key ou Search Engine ID não configurados');
+        }
+        
+        console.log('🔍 [Google Custom] Buscando:', query.substring(0, 100));
+        const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=10&hl=pt`;
+        
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout Google Custom')), 10000)
+        );
+        
+        const fetchPromise = fetch(googleUrl);
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        if (!response.ok) {
+            throw new Error(`Google Custom erro: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const results = [];
+        
+        if (data.items) {
+            data.items.forEach((item, index) => {
+                results.push({
+                    title: item.title || `Resultado ${index + 1}`,
+                    snippet: item.snippet || '',
+                    content: item.snippet || '',
+                    url: item.link || '',
+                    provider: 'google_custom',
+                    score: 100 - index
+                });
+            });
+        }
+        
+        return { results, provider: 'google_custom' };
+    } catch (error) {
+        console.error('Erro ao buscar com Google Custom:', error.message);
+        return { results: [], provider: 'google_custom', error: error.message };
+    }
+}
+
+// Função para buscar usando Bing Search API (Microsoft)
+async function searchWithBing(query, apiKey) {
+    try {
+        if (!apiKey) {
+            throw new Error('API Key do Bing não configurada');
+        }
+        
+        console.log('🔍 [Bing] Buscando:', query.substring(0, 100));
+        const bingUrl = `https://api.bing.microsoft.com/v7.0/search?q=${encodeURIComponent(query)}&count=10&mkt=pt-BR`;
+        
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout Bing')), 10000)
+        );
+        
+        const fetchPromise = fetch(bingUrl, {
+            headers: {
+                'Ocp-Apim-Subscription-Key': apiKey
+            }
+        });
+        
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        if (!response.ok) {
+            throw new Error(`Bing erro: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const results = [];
+        
+        if (data.webPages?.value) {
+            data.webPages.value.forEach((page, index) => {
+                results.push({
+                    title: page.name || `Resultado ${index + 1}`,
+                    snippet: page.snippet || '',
+                    content: page.snippet || '',
+                    url: page.url || '',
+                    provider: 'bing',
+                    score: 100 - index
+                });
+            });
+        }
+        
+        return { results, provider: 'bing' };
+    } catch (error) {
+        console.error('Erro ao buscar com Bing:', error.message);
+        return { results: [], provider: 'bing', error: error.message };
+    }
+}
+
+// Função para buscar usando Exa (Nova API de Busca)
+async function searchWithExa(query, apiKey) {
+    try {
+        if (!apiKey) {
+            throw new Error('API Key do Exa não configurada');
+        }
+        
+        console.log('🔍 [Exa] Buscando:', query.substring(0, 100));
+        const exaUrl = 'https://api.exa.ai/search';
+        
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout Exa')), 10000)
+        );
+        
+        const fetchPromise = fetch(exaUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey
+            },
+            body: JSON.stringify({
+                query: query,
+                num_results: 10,
+                contents: {
+                    text: true,
+                    summary: true
+                }
+            })
+        });
+        
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        if (!response.ok) {
+            throw new Error(`Exa erro: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const results = [];
+        
+        if (data.results) {
+            data.results.forEach((result, index) => {
+                results.push({
+                    title: result.title || `Resultado ${index + 1}`,
+                    snippet: result.text || result.summary || '',
+                    content: result.text || result.summary || '',
+                    url: result.url || '',
+                    provider: 'exa',
+                    score: 100 - index
+                });
+            });
+        }
+        
+        return { results, provider: 'exa' };
+    } catch (error) {
+        console.error('Erro ao buscar com Exa:', error.message);
+        return { results: [], provider: 'exa', error: error.message };
+    }
+}
+
+// Função para buscar usando Brave Search API
+async function searchWithBrave(query, apiKey) {
+    try {
+        if (!apiKey) {
+            throw new Error('API Key do Brave não configurada');
+        }
+        
+        console.log('🔍 [Brave] Buscando:', query.substring(0, 100));
+        const braveUrl = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=10`;
+        
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout Brave')), 10000)
+        );
+        
+        const fetchPromise = fetch(braveUrl, {
+            headers: {
+                'X-Subscription-Token': apiKey
+            }
+        });
+        
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        if (!response.ok) {
+            throw new Error(`Brave erro: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const results = [];
+        
+        if (data.web?.results) {
+            data.web.results.forEach((result, index) => {
+                results.push({
+                    title: result.title || `Resultado ${index + 1}`,
+                    snippet: result.description || '',
+                    content: result.description || '',
+                    url: result.url || '',
+                    provider: 'brave',
+                    score: 100 - index
+                });
+            });
+        }
+        
+        return { results, provider: 'brave' };
+    } catch (error) {
+        console.error('Erro ao buscar com Brave:', error.message);
+        return { results: [], provider: 'brave', error: error.message };
+    }
+}
+
+// Função para buscar usando You.com API
+async function searchWithYou(query, apiKey) {
+    try {
+        if (!apiKey) {
+            throw new Error('API Key do You.com não configurada');
+        }
+        
+        console.log('🔍 [You.com] Buscando:', query.substring(0, 100));
+        const youUrl = `https://api.you.com/search?q=${encodeURIComponent(query)}&count=10`;
+        
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout You.com')), 10000)
+        );
+        
+        const fetchPromise = fetch(youUrl, {
+            headers: {
+                'X-API-Key': apiKey
+            }
+        });
+        
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        if (!response.ok) {
+            throw new Error(`You.com erro: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const results = [];
+        
+        if (data.results) {
+            data.results.forEach((result, index) => {
+                results.push({
+                    title: result.title || `Resultado ${index + 1}`,
+                    snippet: result.snippet || result.description || '',
+                    content: result.snippet || result.description || '',
+                    url: result.url || result.link || '',
+                    provider: 'you',
+                    score: 100 - index
+                });
+            });
+        }
+        
+        return { results, provider: 'you' };
+    } catch (error) {
+        console.error('Erro ao buscar com You.com:', error.message);
+        return { results: [], provider: 'you', error: error.message };
+    }
+}
+
 // Função para buscar usando Tavily API
 async function searchWithTavily(query, apiKey) {
     try {
@@ -960,70 +1269,111 @@ async function searchWithTavily(query, apiKey) {
     }
 }
 
-// Função para buscar na web (com suporte a Tavily)
+// Função para buscar na web (SISTEMA MULTI-API COM FALLBACK INTELIGENTE)
 async function searchWeb(query, config = null) {
     try {
-        const results = [];
+        console.log('🌐 [Busca Multi-API] Iniciando busca para:', query.substring(0, 100));
         
-        // Se Tavily estiver configurado e habilitado, usar primeiro
-        if (config && config.is_enabled && config.api_provider === 'tavily' && config.api_key) {
-            console.log('🚀 [Tavily] INICIANDO BUSCA COM TAVILY!');
-            console.log('🔍 [Tavily] Query:', query.substring(0, 100));
-            console.log('🔑 [Tavily] API Key:', config.api_key.substring(0, 20) + '...');
-            
+        // Ordem de prioridade das APIs (da melhor para a pior)
+        const apiPriority = [
+            'tavily',
+            'serpapi',
+            'google_custom',
+            'bing',
+            'exa',
+            'brave',
+            'you'
+        ];
+        
+        // Tentar cada API configurada em ordem de prioridade
+        for (const provider of apiPriority) {
             try {
-                const tavilyResult = await searchWithTavily(query, config.api_key);
+                let result = null;
                 
-                console.log('📊 [Tavily] Resultado da busca:', {
-                    hasResults: !!(tavilyResult.results && tavilyResult.results.length > 0),
-                    resultsCount: tavilyResult.results?.length || 0,
-                    hasAnswer: !!tavilyResult.answer,
-                    hasError: !!tavilyResult.error,
-                    error: tavilyResult.error
-                });
+                switch (provider) {
+                    case 'tavily':
+                        if (config?.api_provider === 'tavily' && config?.api_key && config?.is_enabled) {
+                            console.log('🔍 [1/7] Tentando Tavily...');
+                            result = await searchWithTavily(query, config.api_key);
+                        }
+                        break;
+                        
+                    case 'serpapi':
+                        if (config?.api_provider === 'serpapi' && config?.api_key && config?.is_enabled) {
+                            console.log('🔍 [2/7] Tentando SerpAPI...');
+                            result = await searchWithSerpAPI(query, config.api_key);
+                        }
+                        break;
+                        
+                    case 'google_custom':
+                        if (config?.api_provider === 'google_custom' && config?.api_key && config?.search_engine_id && config?.is_enabled) {
+                            console.log('🔍 [3/7] Tentando Google Custom Search...');
+                            result = await searchWithGoogleCustom(query, config.api_key, config.search_engine_id);
+                        }
+                        break;
+                        
+                    case 'bing':
+                        if (config?.api_provider === 'bing' && config?.api_key && config?.is_enabled) {
+                            console.log('🔍 [4/7] Tentando Bing Search...');
+                            result = await searchWithBing(query, config.api_key);
+                        }
+                        break;
+                        
+                    case 'exa':
+                        if (config?.api_provider === 'exa' && config?.api_key && config?.is_enabled) {
+                            console.log('🔍 [5/7] Tentando Exa...');
+                            result = await searchWithExa(query, config.api_key);
+                        }
+                        break;
+                        
+                    case 'brave':
+                        if (config?.api_provider === 'brave' && config?.api_key && config?.is_enabled) {
+                            console.log('🔍 [6/7] Tentando Brave Search...');
+                            result = await searchWithBrave(query, config.api_key);
+                        }
+                        break;
+                        
+                    case 'you':
+                        if (config?.api_provider === 'you' && config?.api_key && config?.is_enabled) {
+                            console.log('🔍 [7/7] Tentando You.com...');
+                            result = await searchWithYou(query, config.api_key);
+                        }
+                        break;
+                }
                 
-                if (tavilyResult.results && tavilyResult.results.length > 0) {
-                    console.log('✅ [Tavily] RESULTADOS ENCONTRADOS! Retornando resultados do Tavily.');
-                    return tavilyResult;
-                } else if (tavilyResult.error) {
-                    console.error('❌ [Tavily] ERRO na busca:', tavilyResult.error);
-                    // Continuar para fallback
-                } else {
-                    console.log('⚠️ [Tavily] Nenhum resultado encontrado, usando fallback');
+                // Se encontrou resultados, retornar imediatamente
+                if (result && result.results && result.results.length > 0) {
+                    console.log(`✅ [${provider.toUpperCase()}] ${result.results.length} resultados encontrados!`);
+                    return result;
                 }
             } catch (error) {
-                console.error('❌ [Tavily] EXCEÇÃO ao buscar:', error);
-                console.error('Stack:', error.stack);
-                // Continuar para fallback
+                console.log(`⚠️ [${provider}] Erro: ${error.message}, tentando próxima API...`);
+                continue; // Tentar próxima API
             }
-        } else {
-            console.log('⚠️ [Tavily] NÃO VAI USAR TAVILY. Verificando configuração...');
-            console.log('📋 [Tavily] Config recebida:', {
-                hasConfig: !!config,
-                is_enabled: config?.is_enabled,
-                api_provider: config?.api_provider,
-                has_api_key: !!config?.api_key,
-                api_key_length: config?.api_key?.length || 0
-            });
         }
         
-        // Fallback para buscas gratuitas
-        // Tentar DuckDuckGo Instant Answer API
+        // Se nenhuma API paga funcionou, tentar APIs gratuitas como fallback
+        console.log('🆓 [Fallback] Tentando APIs gratuitas...');
+        const freeResults = [];
+        
+        // Tentar DuckDuckGo
         try {
             const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
             const ddgResponse = await fetch(ddgUrl, { timeout: 5000 });
             const ddgData = await ddgResponse.json();
             
             if (ddgData.AbstractText) {
-                results.push({
+                freeResults.push({
                     title: ddgData.Heading || query,
                     snippet: ddgData.AbstractText,
+                    content: ddgData.AbstractText,
                     url: ddgData.AbstractURL || '',
-                    provider: 'duckduckgo'
+                    provider: 'duckduckgo',
+                    score: 50
                 });
             }
         } catch (e) {
-            console.log('DuckDuckGo não disponível:', e.message);
+            console.log('⚠️ DuckDuckGo não disponível:', e.message);
         }
         
         // Tentar Wikipedia
@@ -1033,24 +1383,38 @@ async function searchWeb(query, config = null) {
             const wikiData = await wikiResponse.json();
             
             if (wikiData.extract) {
-                results.push({
+                freeResults.push({
                     title: wikiData.title || query,
                     snippet: wikiData.extract.substring(0, 500),
+                    content: wikiData.extract,
                     url: wikiData.content_urls?.desktop?.page || '',
-                    provider: 'wikipedia'
+                    provider: 'wikipedia',
+                    score: 50
                 });
             }
         } catch (e) {
-            console.log('Wikipedia não disponível:', e.message);
+            console.log('⚠️ Wikipedia não disponível:', e.message);
         }
         
+        if (freeResults.length > 0) {
+            console.log(`✅ [Gratuitas] ${freeResults.length} resultados encontrados!`);
+            return {
+                results: freeResults,
+                provider: freeResults[0].provider
+            };
+        }
+        
+        // Se nada funcionou
+        console.log('❌ [Busca] Nenhuma API retornou resultados');
         return {
-            results,
-            provider: results.length > 0 ? results[0].provider : 'none'
+            results: [],
+            provider: 'none',
+            error: 'Nenhuma API de busca disponível ou configurada'
         };
+        
     } catch (error) {
-        console.error('Erro na busca web:', error);
-        return { results: [], provider: 'error' };
+        console.error('❌ [Busca Multi-API] Erro geral:', error);
+        return { results: [], provider: 'error', error: error.message };
     }
 }
 
@@ -1614,11 +1978,10 @@ async function autoTrainIAKing(question, questionContext, client) {
             try {
                 console.log('🌐 [IA KING] Pesquisando na internet...');
                 
-                // Buscar configuração de busca na web
+                // Buscar configuração de busca na web (qualquer API configurada)
                 const webConfigResult = await client.query(`
                     SELECT * FROM ia_web_search_config
                     WHERE is_enabled = true 
-                    AND api_provider = 'tavily' 
                     AND api_key IS NOT NULL
                     ORDER BY id DESC
                     LIMIT 1
@@ -1627,8 +1990,8 @@ async function autoTrainIAKing(question, questionContext, client) {
                 if (webConfigResult.rows.length > 0) {
                     const webConfig = webConfigResult.rows[0];
                     
-                    // Pesquisar com Tavily
-                    const webResults = await searchWithTavily(question, webConfig.api_key);
+                    // Usar sistema multi-API com fallback automático
+                    const webResults = await searchWeb(question, webConfig);
                     
                     if (webResults && webResults.results && webResults.results.length > 0) {
                         // Se Tavily retornou resposta direta, usar ela
@@ -6527,14 +6890,13 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // LÓGICA MELHORADA: Buscar na web se:
-        // 1. Tavily está configurado E habilitado
+        // 1. Qualquer API está configurada E habilitada (sistema multi-API)
         // 2. NÃO buscar se já temos resposta de LIVRO (prioridade máxima - conhecimento dos livros é mais confiável)
         // 3. PRIORIDADE: Se pergunta NÃO é sobre sistema, buscar (mas não se tiver resposta de livro)
         // 4. Se é sobre sistema, buscar apenas se não tem resposta ou score baixo
-        const hasTavilyConfig = webSearchConfig && 
-                                webSearchConfig.is_enabled && 
-                                webSearchConfig.api_provider === 'tavily' &&
-                                webSearchConfig.api_key;
+        const hasWebSearchConfig = webSearchConfig && 
+                                   webSearchConfig.is_enabled && 
+                                   webSearchConfig.api_key;
         
         // VERIFICAR SE TEM RESPOSTA DE LIVRO (PRIORIDADE MÁXIMA)
         // Verificar se a resposta veio de um livro processado
@@ -6580,7 +6942,7 @@ async function findBestAnswer(userMessage, userId) {
         // 3. Resposta não menciona a entidade da pergunta (erro de busca)
         let shouldSearchWeb = false;
         
-        if (hasTavilyConfig) {
+        if (hasWebSearchConfig) {
             // Se encontrou resposta de livro com score bom, NÃO buscar na web
             if (hasBookKnowledge && bookAnswerScore >= 100) {
                 shouldSearchWeb = false;
@@ -6612,13 +6974,13 @@ async function findBestAnswer(userMessage, userId) {
         
         console.log('🤔 [IA] Decisão de buscar na web:', {
             shouldSearchWeb: shouldSearchWeb,
-            hasTavilyConfig: hasTavilyConfig,
+            hasWebSearchConfig: hasWebSearchConfig,
+            api_provider: webSearchConfig?.api_provider || 'N/A',
             questionIsAboutSystem: questionIsAboutSystem,
             hasAnswer: !!bestAnswer,
             bestScore: bestScore,
             motivo: !webSearchConfig ? '❌ Sem configuração' :
                     !webSearchConfig.is_enabled ? '❌ Desabilitado' :
-                    webSearchConfig.api_provider !== 'tavily' ? `❌ Provider errado: ${webSearchConfig.api_provider}` :
                     !webSearchConfig.api_key ? '❌ Sem API key' :
                     hasBookKnowledge ? '📚 Tem conhecimento de LIVRO - Prioridade máxima!' :
                     !questionIsAboutSystem ? '✅ PERGUNTA EXTERNA - Sempre buscar!' :
@@ -6628,7 +6990,7 @@ async function findBestAnswer(userMessage, userId) {
         });
         
         if (shouldSearchWeb) {
-            console.log('🚀 [IA] INICIANDO BUSCA NA WEB COM TAVILY!');
+            console.log(`🚀 [IA] INICIANDO BUSCA NA WEB COM ${webSearchConfig.api_provider?.toUpperCase() || 'MULTI-API'}!`);
             try {
                 const webResults = await searchWeb(userMessage, webSearchConfig);
                 
@@ -6908,9 +7270,9 @@ async function findBestAnswer(userMessage, userId) {
                             if (currentCount < config.max_searches_per_day) {
                                 console.log('🔍 [IA] Fallback: Auto-pesquisa tradicional...');
                                 
-                                // Buscar automaticamente
-                                if (webSearchConfig && webSearchConfig.is_enabled && webSearchConfig.api_provider === 'tavily' && webSearchConfig.api_key) {
-                                    const autoSearchResult = await searchWithTavily(userMessage, webSearchConfig.api_key);
+                                // Buscar automaticamente (usar sistema multi-API)
+                                if (webSearchConfig && webSearchConfig.is_enabled && webSearchConfig.api_key) {
+                                    const autoSearchResult = await searchWeb(userMessage, webSearchConfig);
                                     
                                     if (autoSearchResult && autoSearchResult.results && autoSearchResult.results.length > 0) {
                                         const autoAnswer = autoSearchResult.results.slice(0, 3).map((r, idx) => 
@@ -10928,6 +11290,7 @@ router.get('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
                     is_enabled BOOLEAN DEFAULT false,
                     api_provider VARCHAR(50) DEFAULT 'scraping',
                     api_key TEXT,
+                    search_engine_id TEXT,
                     max_results INTEGER DEFAULT 5,
                     search_domains TEXT[],
                     blocked_domains TEXT[],
@@ -10937,6 +11300,16 @@ router.get('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
+            
+            // Adicionar coluna search_engine_id se não existir (migration)
+            try {
+                await client.query(`
+                    ALTER TABLE ia_web_search_config 
+                    ADD COLUMN IF NOT EXISTS search_engine_id TEXT
+                `);
+            } catch (e) {
+                // Coluna já existe, ignorar
+            }
         } catch (tableError) {
             console.log('Tabela já existe ou erro ao criar:', tableError.message);
         }
@@ -10971,7 +11344,7 @@ router.get('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
 
 // PUT /api/ia-king/web-search/config
 router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => {
-    const { is_enabled, api_provider, api_key, max_results, use_cache } = req.body;
+    const { is_enabled, api_provider, api_key, search_engine_id, max_results, use_cache } = req.body;
     const adminId = req.user.userId;
     
     const client = await db.pool.connect();
@@ -10984,6 +11357,7 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
                     is_enabled BOOLEAN DEFAULT false,
                     api_provider VARCHAR(50) DEFAULT 'scraping',
                     api_key TEXT,
+                    search_engine_id TEXT,
                     max_results INTEGER DEFAULT 5,
                     search_domains TEXT[],
                     blocked_domains TEXT[],
@@ -10993,6 +11367,16 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
+            
+            // Adicionar coluna search_engine_id se não existir (migration)
+            try {
+                await client.query(`
+                    ALTER TABLE ia_web_search_config 
+                    ADD COLUMN IF NOT EXISTS search_engine_id TEXT
+                `);
+            } catch (e) {
+                // Coluna já existe, ignorar
+            }
         } catch (tableError) {
             console.log('Tabela já existe ou erro ao criar:', tableError.message);
         }
@@ -11005,13 +11389,14 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
         if (existing.rows.length === 0) {
             // Criar nova configuração
             const result = await client.query(`
-                INSERT INTO ia_web_search_config (is_enabled, api_provider, api_key, max_results, use_cache, updated_by)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO ia_web_search_config (is_enabled, api_provider, api_key, search_engine_id, max_results, use_cache, updated_by)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING *
             `, [
                 is_enabled !== undefined ? is_enabled : false,
                 api_provider || 'scraping',
                 api_key || null,
+                search_engine_id || null,
                 max_results || 5,
                 use_cache !== undefined ? use_cache : true,
                 adminId
@@ -11025,16 +11410,18 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
                 SET is_enabled = COALESCE($1, is_enabled),
                     api_provider = COALESCE($2, api_provider),
                     api_key = COALESCE($3, api_key),
-                    max_results = COALESCE($4, max_results),
-                    use_cache = COALESCE($5, use_cache),
-                    updated_by = $6,
+                    search_engine_id = COALESCE($4, search_engine_id),
+                    max_results = COALESCE($5, max_results),
+                    use_cache = COALESCE($6, use_cache),
+                    updated_by = $7,
                     updated_at = CURRENT_TIMESTAMP
-                WHERE id = $7
+                WHERE id = $8
                 RETURNING *
             `, [
                 is_enabled,
                 api_provider,
                 api_key,
+                search_engine_id,
                 max_results,
                 use_cache,
                 adminId,
@@ -11054,7 +11441,317 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
     }
 }));
 
-// GET /api/ia-king/web-search/free-apis - Buscar APIs gratuitas disponíveis
+// GET /api/ia-king/web-search/all-apis - Listar TODAS as APIs disponíveis (gratuitas e pagas)
+router.get('/web-search/all-apis', protectAdmin, asyncHandler(async (req, res) => {
+    try {
+        const allAPIs = [
+            // APIs PAGAS (Melhor Qualidade)
+            {
+                name: 'Tavily API',
+                provider: 'tavily',
+                type: 'paga',
+                description: 'API de busca avançada com IA. Melhor qualidade de resultados e respostas diretas.',
+                url: 'https://tavily.com',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '1.000 créditos/mês (gratuito) | Planos pagos disponíveis',
+                quality: 'Muito Alta',
+                price: 'Gratuito até 1.000/mês, depois $20/mês',
+                signup_url: 'https://tavily.com',
+                recommended: true
+            },
+            {
+                name: 'SerpAPI',
+                provider: 'serpapi',
+                type: 'paga',
+                description: 'API completa de busca do Google. Resultados reais do Google Search.',
+                url: 'https://serpapi.com',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '100 buscas/mês (gratuito) | Planos pagos disponíveis',
+                quality: 'Muito Alta',
+                price: 'Gratuito até 100/mês, depois $50/mês',
+                signup_url: 'https://serpapi.com',
+                recommended: true
+            },
+            {
+                name: 'Bing Search API',
+                provider: 'bing',
+                type: 'paga',
+                description: 'API oficial da Microsoft Bing. Resultados de alta qualidade.',
+                url: 'https://www.microsoft.com/en-us/bing/apis',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '1.000 buscas/mês (gratuito) | Planos pagos disponíveis',
+                quality: 'Alta',
+                price: 'Gratuito até 1.000/mês, depois $4/1.000 buscas',
+                signup_url: 'https://azure.microsoft.com/services/cognitive-services/bing-web-search-api/',
+                recommended: true
+            },
+            {
+                name: 'Exa AI',
+                provider: 'exa',
+                type: 'paga',
+                description: 'Nova API de busca com IA. Focada em conteúdo de alta qualidade.',
+                url: 'https://exa.ai',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '100 buscas/mês (gratuito) | Planos pagos disponíveis',
+                quality: 'Muito Alta',
+                price: 'Gratuito até 100/mês, depois $20/mês',
+                signup_url: 'https://exa.ai',
+                recommended: false
+            },
+            {
+                name: 'Brave Search API',
+                provider: 'brave',
+                type: 'paga',
+                description: 'API do navegador Brave. Busca independente e privada.',
+                url: 'https://brave.com/search/api/',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '2.000 buscas/mês (gratuito) | Planos pagos disponíveis',
+                quality: 'Alta',
+                price: 'Gratuito até 2.000/mês, depois $3/1.000 buscas',
+                signup_url: 'https://brave.com/search/api/',
+                recommended: false
+            },
+            {
+                name: 'You.com API',
+                provider: 'you',
+                type: 'paga',
+                description: 'API do You.com. Busca com IA integrada.',
+                url: 'https://you.com',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: 'Limitado (gratuito) | Planos pagos disponíveis',
+                quality: 'Alta',
+                price: 'Gratuito limitado, depois $20/mês',
+                signup_url: 'https://you.com',
+                recommended: false
+            },
+            {
+                name: 'Google Custom Search API',
+                provider: 'google_custom',
+                type: 'paga',
+                description: 'API oficial do Google. Requer criação de Custom Search Engine.',
+                url: 'https://developers.google.com/custom-search',
+                requires_key: true,
+                requires_extra: true,
+                extra_field: 'search_engine_id',
+                extra_description: 'ID do Custom Search Engine (criar em https://programmablesearchengine.google.com)',
+                rate_limit: '100 buscas/dia (gratuito) | $5/1.000 buscas',
+                quality: 'Muito Alta',
+                price: 'Gratuito até 100/dia, depois $5/1.000 buscas',
+                signup_url: 'https://developers.google.com/custom-search',
+                recommended: true
+            },
+            // APIs GRATUITAS (Fallback)
+            {
+                name: 'DuckDuckGo Instant Answer API',
+                provider: 'duckduckgo',
+                type: 'gratuita',
+                description: 'API gratuita sem necessidade de chave. Retorna respostas instantâneas.',
+                url: 'https://api.duckduckgo.com/',
+                requires_key: false,
+                requires_extra: false,
+                rate_limit: 'Sem limite conhecido',
+                quality: 'Média',
+                price: '100% Gratuita',
+                signup_url: null,
+                recommended: false
+            },
+            {
+                name: 'Wikipedia REST API',
+                provider: 'wikipedia',
+                type: 'gratuita',
+                description: 'API gratuita da Wikipedia. Acesso a resumos e artigos completos.',
+                url: 'https://www.mediawiki.org/wiki/API:REST_API',
+                requires_key: false,
+                requires_extra: false,
+                rate_limit: 'Sem limite conhecido',
+                quality: 'Alta (apenas Wikipedia)',
+                price: '100% Gratuita',
+                signup_url: null,
+                recommended: false
+            }
+        ];
+        
+        res.json({
+            success: true,
+            apis: allAPIs,
+            total: allAPIs.length,
+            paid: allAPIs.filter(a => a.type === 'paga').length,
+            free: allAPIs.filter(a => a.type === 'gratuita').length,
+            recommended: allAPIs.filter(a => a.recommended).map(a => a.provider),
+            message: `${allAPIs.length} APIs disponíveis (${allAPIs.filter(a => a.type === 'paga').length} pagas, ${allAPIs.filter(a => a.type === 'gratuita').length} gratuitas)`
+        });
+    } catch (error) {
+        console.error('Erro ao listar APIs:', error);
+        res.status(500).json({ 
+            error: 'Erro ao listar APIs',
+            message: error.message 
+        });
+    }
+}));
+
+// POST /api/ia-king/web-search/test-all - Testar todas as APIs configuradas
+router.post('/web-search/test-all', protectAdmin, asyncHandler(async (req, res) => {
+    const { query = 'inteligência artificial' } = req.body;
+    const client = await db.pool.connect();
+    
+    try {
+        // Buscar todas as configurações de APIs
+        const configsResult = await client.query(`
+            SELECT * FROM ia_web_search_config
+            WHERE is_enabled = true AND api_key IS NOT NULL
+            ORDER BY id DESC
+        `);
+        
+        const testResults = [];
+        
+        for (const config of configsResult.rows) {
+            const provider = config.api_provider;
+            let result = null;
+            let error = null;
+            const startTime = Date.now();
+            
+            try {
+                switch (provider) {
+                    case 'tavily':
+                        result = await searchWithTavily(query, config.api_key);
+                        break;
+                    case 'serpapi':
+                        result = await searchWithSerpAPI(query, config.api_key);
+                        break;
+                    case 'google_custom':
+                        if (config.search_engine_id) {
+                            result = await searchWithGoogleCustom(query, config.api_key, config.search_engine_id);
+                        } else {
+                            error = 'search_engine_id não configurado';
+                        }
+                        break;
+                    case 'bing':
+                        result = await searchWithBing(query, config.api_key);
+                        break;
+                    case 'exa':
+                        result = await searchWithExa(query, config.api_key);
+                        break;
+                    case 'brave':
+                        result = await searchWithBrave(query, config.api_key);
+                        break;
+                    case 'you':
+                        result = await searchWithYou(query, config.api_key);
+                        break;
+                    default:
+                        error = `Provider ${provider} não suportado`;
+                }
+                
+                const responseTime = Date.now() - startTime;
+                
+                testResults.push({
+                    provider: provider,
+                    status: result && result.results && result.results.length > 0 ? 'success' : 'no_results',
+                    results_count: result?.results?.length || 0,
+                    has_answer: !!result?.answer,
+                    response_time_ms: responseTime,
+                    error: error || result?.error || null,
+                    working: !error && result && result.results && result.results.length > 0
+                });
+            } catch (e) {
+                const responseTime = Date.now() - startTime;
+                testResults.push({
+                    provider: provider,
+                    status: 'error',
+                    results_count: 0,
+                    response_time_ms: responseTime,
+                    error: e.message,
+                    working: false
+                });
+            }
+        }
+        
+        // Testar APIs gratuitas também
+        try {
+            const ddgStart = Date.now();
+            const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+            const ddgResponse = await fetch(ddgUrl, { timeout: 5000 });
+            const ddgData = await ddgResponse.json();
+            const ddgTime = Date.now() - ddgStart;
+            
+            testResults.push({
+                provider: 'duckduckgo',
+                status: ddgData.AbstractText ? 'success' : 'no_results',
+                results_count: ddgData.AbstractText ? 1 : 0,
+                response_time_ms: ddgTime,
+                error: null,
+                working: !!ddgData.AbstractText
+            });
+        } catch (e) {
+            testResults.push({
+                provider: 'duckduckgo',
+                status: 'error',
+                results_count: 0,
+                response_time_ms: 0,
+                error: e.message,
+                working: false
+            });
+        }
+        
+        try {
+            const wikiStart = Date.now();
+            const wikiUrl = `https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+            const wikiResponse = await fetch(wikiUrl, { timeout: 5000 });
+            const wikiData = await wikiResponse.json();
+            const wikiTime = Date.now() - wikiStart;
+            
+            testResults.push({
+                provider: 'wikipedia',
+                status: wikiData.extract ? 'success' : 'no_results',
+                results_count: wikiData.extract ? 1 : 0,
+                response_time_ms: wikiTime,
+                error: null,
+                working: !!wikiData.extract
+            });
+        } catch (e) {
+            testResults.push({
+                provider: 'wikipedia',
+                status: 'error',
+                results_count: 0,
+                response_time_ms: 0,
+                error: e.message,
+                working: false
+            });
+        }
+        
+        const workingAPIs = testResults.filter(r => r.working);
+        const failedAPIs = testResults.filter(r => !r.working);
+        
+        res.json({
+            success: true,
+            query: query,
+            total_tested: testResults.length,
+            working: workingAPIs.length,
+            failed: failedAPIs.length,
+            results: testResults,
+            best_api: workingAPIs.length > 0 ? 
+                workingAPIs.sort((a, b) => (b.results_count || 0) - (a.results_count || 0))[0].provider : null,
+            fastest_api: workingAPIs.length > 0 ?
+                workingAPIs.sort((a, b) => a.response_time_ms - b.response_time_ms)[0].provider : null,
+            message: `${workingAPIs.length} de ${testResults.length} APIs estão funcionando`
+        });
+    } catch (error) {
+        console.error('Erro ao testar APIs:', error);
+        res.status(500).json({ 
+            error: 'Erro ao testar APIs',
+            message: error.message 
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/web-search/free-apis - Buscar APIs gratuitas disponíveis (mantido para compatibilidade)
 router.get('/web-search/free-apis', protectAdmin, asyncHandler(async (req, res) => {
     try {
         // Lista de APIs gratuitas conhecidas
