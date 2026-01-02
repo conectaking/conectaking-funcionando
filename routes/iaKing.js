@@ -11445,20 +11445,285 @@ router.put('/web-search/config', protectAdmin, asyncHandler(async (req, res) => 
 router.get('/web-search/all-apis', protectAdmin, asyncHandler(async (req, res) => {
     try {
         const allAPIs = [
-            // APIs PAGAS (Melhor Qualidade)
+            // ============================================
+            // 🏆 MELHORES APIs DO MUNDO (Premium)
+            // ============================================
             {
                 name: 'Tavily API',
                 provider: 'tavily',
                 type: 'paga',
-                description: 'API de busca avançada com IA. Melhor qualidade de resultados e respostas diretas.',
+                price_category: 'economica',
+                quality_category: 'melhor',
+                description: 'API de busca avançada com IA. Melhor qualidade de resultados e respostas diretas. Especializada em IA.',
                 url: 'https://tavily.com',
                 requires_key: true,
                 requires_extra: false,
                 rate_limit: '1.000 créditos/mês (gratuito) | Planos pagos disponíveis',
                 quality: 'Muito Alta',
+                quality_score: 95,
                 price: 'Gratuito até 1.000/mês, depois $20/mês',
+                price_per_1k: 20,
                 signup_url: 'https://tavily.com',
-                recommended: true
+                recommended: true,
+                features: ['IA integrada', 'Respostas diretas', 'Alta precisão', 'Rápida']
+            },
+            {
+                name: 'SerpAPI',
+                provider: 'serpapi',
+                type: 'paga',
+                price_category: 'premium',
+                quality_category: 'melhor',
+                description: 'API completa de busca do Google. Resultados reais do Google Search com dados estruturados.',
+                url: 'https://serpapi.com',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '100 buscas/mês (gratuito) | Planos pagos disponíveis',
+                quality: 'Muito Alta',
+                quality_score: 98,
+                price: 'Gratuito até 100/mês, depois $50/mês',
+                price_per_1k: 50,
+                signup_url: 'https://serpapi.com',
+                recommended: true,
+                features: ['Resultados Google reais', 'Dados estruturados', 'Alta confiabilidade', 'Suporte completo']
+            },
+            {
+                name: 'Google Custom Search API',
+                provider: 'google_custom',
+                type: 'paga',
+                price_category: 'economica',
+                quality_category: 'melhor',
+                description: 'API oficial do Google. Resultados diretos do Google com melhor custo-benefício.',
+                url: 'https://developers.google.com/custom-search',
+                requires_key: true,
+                requires_extra: true,
+                extra_field: 'search_engine_id',
+                extra_description: 'ID do Custom Search Engine (criar em https://programmablesearchengine.google.com)',
+                rate_limit: '100 buscas/dia (gratuito) | $5/1.000 buscas',
+                quality: 'Muito Alta',
+                quality_score: 97,
+                price: 'Gratuito até 100/dia, depois $5/1.000 buscas',
+                price_per_1k: 5,
+                signup_url: 'https://developers.google.com/custom-search',
+                recommended: true,
+                features: ['Oficial Google', 'Melhor custo-benefício', 'Alta qualidade', 'Confiável']
+            },
+            {
+                name: 'Exa AI',
+                provider: 'exa',
+                type: 'paga',
+                price_category: 'economica',
+                quality_category: 'melhor',
+                description: 'Nova API de busca com IA avançada. Focada em conteúdo de alta qualidade e semântica.',
+                url: 'https://exa.ai',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '100 buscas/mês (gratuito) | Planos pagos disponíveis',
+                quality: 'Muito Alta',
+                quality_score: 94,
+                price: 'Gratuito até 100/mês, depois $20/mês',
+                price_per_1k: 20,
+                signup_url: 'https://exa.ai',
+                recommended: true,
+                features: ['IA semântica', 'Conteúdo premium', 'Busca inteligente', 'Moderno']
+            },
+            // ============================================
+            // ⭐ APIs DE ALTA QUALIDADE
+            // ============================================
+            {
+                name: 'Bing Search API',
+                provider: 'bing',
+                type: 'paga',
+                price_category: 'economica',
+                quality_category: 'alta',
+                description: 'API oficial da Microsoft Bing. Resultados de alta qualidade com bom custo-benefício.',
+                url: 'https://www.microsoft.com/en-us/bing/apis',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '1.000 buscas/mês (gratuito) | Planos pagos disponíveis',
+                quality: 'Alta',
+                quality_score: 88,
+                price: 'Gratuito até 1.000/mês, depois $4/1.000 buscas',
+                price_per_1k: 4,
+                signup_url: 'https://azure.microsoft.com/services/cognitive-services/bing-web-search-api/',
+                recommended: true,
+                features: ['Oficial Microsoft', 'Bom custo-benefício', 'Alta disponibilidade', 'Escalável']
+            },
+            {
+                name: 'Brave Search API',
+                provider: 'brave',
+                type: 'paga',
+                price_category: 'economica',
+                quality_category: 'alta',
+                description: 'API do navegador Brave. Busca independente, privada e sem rastreamento.',
+                url: 'https://brave.com/search/api/',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '2.000 buscas/mês (gratuito) | Planos pagos disponíveis',
+                quality: 'Alta',
+                quality_score: 85,
+                price: 'Gratuito até 2.000/mês, depois $3/1.000 buscas',
+                price_per_1k: 3,
+                signup_url: 'https://brave.com/search/api/',
+                recommended: false,
+                features: ['Privacidade', 'Independente', 'Sem rastreamento', 'Ético']
+            },
+            {
+                name: 'You.com API',
+                provider: 'you',
+                type: 'paga',
+                price_category: 'economica',
+                quality_category: 'alta',
+                description: 'API do You.com. Busca com IA integrada e resultados personalizados.',
+                url: 'https://you.com',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: 'Limitado (gratuito) | Planos pagos disponíveis',
+                quality: 'Alta',
+                quality_score: 82,
+                price: 'Gratuito limitado, depois $20/mês',
+                price_per_1k: 20,
+                signup_url: 'https://you.com',
+                recommended: false,
+                features: ['IA integrada', 'Personalizado', 'Moderno', 'Inovador']
+            },
+            {
+                name: 'Zenserp API',
+                provider: 'zenserp',
+                type: 'paga',
+                price_category: 'premium',
+                quality_category: 'alta',
+                description: 'API profissional para scraping de resultados do Bing. Alta velocidade e precisão.',
+                url: 'https://zenserp.com',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '5.000 buscas/mês (plano pequeno)',
+                quality: 'Alta',
+                quality_score: 87,
+                price: '$49.99/mês (5.000 buscas) | $129.99/mês (20.000 buscas)',
+                price_per_1k: 10,
+                signup_url: 'https://zenserp.com',
+                recommended: false,
+                features: ['Alta velocidade', 'Profissional', 'Dados estruturados', 'Confiável']
+            },
+            {
+                name: 'ScraperAPI',
+                provider: 'scraperapi',
+                type: 'paga',
+                price_category: 'intermediaria',
+                quality_category: 'alta',
+                description: 'API de scraping profissional. Bypass de bloqueios e proxy rotativo.',
+                url: 'https://www.scraperapi.com',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '5.000 requisições/mês (starter)',
+                quality: 'Alta',
+                quality_score: 84,
+                price: '$49/mês (5.000) | $149/mês (25.000)',
+                price_per_1k: 10,
+                signup_url: 'https://www.scraperapi.com',
+                recommended: false,
+                features: ['Proxy rotativo', 'Bypass bloqueios', 'Alta taxa sucesso', 'Profissional']
+            },
+            // ============================================
+            // 📊 APIs DE MÉDIA QUALIDADE
+            // ============================================
+            {
+                name: 'Algolia Search API',
+                provider: 'algolia',
+                type: 'paga',
+                price_category: 'premium',
+                quality_category: 'media',
+                description: 'Plataforma de busca como serviço. Focada em busca em sites próprios.',
+                url: 'https://www.algolia.com',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: '10.000 requisições/mês (free)',
+                quality: 'Média',
+                quality_score: 75,
+                price: 'Gratuito até 10k/mês, depois $0.50/1.000',
+                price_per_1k: 0.5,
+                signup_url: 'https://www.algolia.com',
+                recommended: false,
+                features: ['Busca instantânea', 'Filtros avançados', 'Analytics', 'Escalável']
+            },
+            {
+                name: 'Meilisearch API',
+                provider: 'meilisearch',
+                type: 'paga',
+                price_category: 'economica',
+                quality_category: 'media',
+                description: 'Motor de busca open-source. Rápido e fácil de usar.',
+                url: 'https://www.meilisearch.com',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: 'Ilimitado (self-hosted)',
+                quality: 'Média',
+                quality_score: 72,
+                price: 'Gratuito (self-hosted) | $25/mês (cloud)',
+                price_per_1k: 0,
+                signup_url: 'https://www.meilisearch.com',
+                recommended: false,
+                features: ['Open-source', 'Rápido', 'Fácil uso', 'Self-hosted']
+            },
+            {
+                name: 'Typesense API',
+                provider: 'typesense',
+                type: 'paga',
+                price_category: 'economica',
+                quality_category: 'media',
+                description: 'Motor de busca open-source. Focado em simplicidade e performance.',
+                url: 'https://typesense.org',
+                requires_key: true,
+                requires_extra: false,
+                rate_limit: 'Ilimitado (self-hosted)',
+                quality: 'Média',
+                quality_score: 70,
+                price: 'Gratuito (self-hosted) | $40/mês (cloud)',
+                price_per_1k: 0,
+                signup_url: 'https://typesense.org',
+                recommended: false,
+                features: ['Open-source', 'Simples', 'Performance', 'Flexível']
+            },
+            // ============================================
+            // 🆓 APIs GRATUITAS (Fallback)
+            // ============================================
+            {
+                name: 'DuckDuckGo Instant Answer API',
+                provider: 'duckduckgo',
+                type: 'gratuita',
+                price_category: 'gratuita',
+                quality_category: 'media',
+                description: 'API gratuita sem necessidade de chave. Retorna respostas instantâneas.',
+                url: 'https://api.duckduckgo.com/',
+                requires_key: false,
+                requires_extra: false,
+                rate_limit: 'Sem limite conhecido',
+                quality: 'Média',
+                quality_score: 65,
+                price: '100% Gratuita',
+                price_per_1k: 0,
+                signup_url: null,
+                recommended: false,
+                features: ['100% Gratuita', 'Sem chave', 'Privacidade', 'Sem limites']
+            },
+            {
+                name: 'Wikipedia REST API',
+                provider: 'wikipedia',
+                type: 'gratuita',
+                price_category: 'gratuita',
+                quality_category: 'alta',
+                description: 'API gratuita da Wikipedia. Acesso a resumos e artigos completos.',
+                url: 'https://www.mediawiki.org/wiki/API:REST_API',
+                requires_key: false,
+                requires_extra: false,
+                rate_limit: 'Sem limite conhecido',
+                quality: 'Alta (apenas Wikipedia)',
+                quality_score: 80,
+                price: '100% Gratuita',
+                price_per_1k: 0,
+                signup_url: null,
+                recommended: false,
+                features: ['100% Gratuita', 'Conteúdo confiável', 'Sem limites', 'Educacional']
             },
             {
                 name: 'SerpAPI',
@@ -11577,6 +11842,34 @@ router.get('/web-search/all-apis', protectAdmin, asyncHandler(async (req, res) =
             }
         ];
         
+        // Organizar por categorias
+        const byQuality = {
+            melhor: allAPIs.filter(a => a.quality_category === 'melhor'),
+            alta: allAPIs.filter(a => a.quality_category === 'alta'),
+            media: allAPIs.filter(a => a.quality_category === 'media'),
+            baixa: allAPIs.filter(a => a.quality_category === 'baixa')
+        };
+        
+        const byPrice = {
+            premium: allAPIs.filter(a => a.price_category === 'premium'),
+            intermediaria: allAPIs.filter(a => a.price_category === 'intermediaria'),
+            economica: allAPIs.filter(a => a.price_category === 'economica'),
+            gratuita: allAPIs.filter(a => a.price_category === 'gratuita')
+        };
+        
+        // Ordenar por qualidade (score) e preço
+        const bestAPIs = allAPIs
+            .filter(a => a.quality_score >= 90)
+            .sort((a, b) => b.quality_score - a.quality_score);
+        
+        const cheapestAPIs = allAPIs
+            .filter(a => a.price_per_1k !== undefined)
+            .sort((a, b) => a.price_per_1k - b.price_per_1k);
+        
+        const mostExpensiveAPIs = allAPIs
+            .filter(a => a.price_per_1k !== undefined && a.price_per_1k > 0)
+            .sort((a, b) => b.price_per_1k - a.price_per_1k);
+        
         res.json({
             success: true,
             apis: allAPIs,
@@ -11584,6 +11877,43 @@ router.get('/web-search/all-apis', protectAdmin, asyncHandler(async (req, res) =
             paid: allAPIs.filter(a => a.type === 'paga').length,
             free: allAPIs.filter(a => a.type === 'gratuita').length,
             recommended: allAPIs.filter(a => a.recommended).map(a => a.provider),
+            
+            // Categorias por Qualidade
+            by_quality: {
+                melhor: byQuality.melhor,
+                alta: byQuality.alta,
+                media: byQuality.media,
+                baixa: byQuality.baixa
+            },
+            
+            // Categorias por Preço
+            by_price: {
+                premium: byPrice.premium,
+                intermediaria: byPrice.intermediaria,
+                economica: byPrice.economica,
+                gratuita: byPrice.gratuita
+            },
+            
+            // Rankings
+            best_apis: bestAPIs.slice(0, 5).map(a => ({
+                name: a.name,
+                provider: a.provider,
+                quality_score: a.quality_score,
+                price_per_1k: a.price_per_1k
+            })),
+            cheapest_apis: cheapestAPIs.slice(0, 5).map(a => ({
+                name: a.name,
+                provider: a.provider,
+                price_per_1k: a.price_per_1k,
+                quality_score: a.quality_score
+            })),
+            most_expensive_apis: mostExpensiveAPIs.slice(0, 5).map(a => ({
+                name: a.name,
+                provider: a.provider,
+                price_per_1k: a.price_per_1k,
+                quality_score: a.quality_score
+            })),
+            
             message: `${allAPIs.length} APIs disponíveis (${allAPIs.filter(a => a.type === 'paga').length} pagas, ${allAPIs.filter(a => a.type === 'gratuita').length} gratuitas)`
         });
     } catch (error) {
