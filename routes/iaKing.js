@@ -7781,24 +7781,108 @@ router.post('/knowledge/:id/generate-embedding', protectAdmin, asyncHandler(asyn
 // ROTAS DE ESTATÍSTICAS
 // ============================================
 
-// GET /api/ia-king/stats
+// GET /api/ia-king/stats - MELHORADO com métricas avançadas
 router.get('/stats', protectAdmin, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
+        // Estatísticas básicas
         const [knowledgeCount, qaCount, docCount, convCount, learningCount] = await Promise.all([
-            client.query('SELECT COUNT(*) as count FROM ia_knowledge_base'),
+            client.query('SELECT COUNT(*) as count FROM ia_knowledge_base WHERE is_active = true'),
             client.query('SELECT COUNT(*) as count FROM ia_qa'),
             client.query('SELECT COUNT(*) as count FROM ia_documents'),
             client.query('SELECT COUNT(*) as count FROM ia_conversations WHERE DATE(created_at) = CURRENT_DATE'),
             client.query("SELECT COUNT(*) as count FROM ia_learning WHERE status = 'pending'")
         ]);
         
+        // NOVAS MÉTRICAS AVANÇADAS
+        let performanceMetrics = {};
+        let qualityMetrics = {};
+        let usageMetrics = {};
+        
+        try {
+            // Métricas de Performance (últimos 30 dias)
+            const perfResult = await client.query(`
+                SELECT 
+                    COUNT(*) as total_responses,
+                    AVG(response_time_ms) as avg_response_time,
+                    AVG(confidence_score) as avg_confidence,
+                    COUNT(CASE WHEN response_quality_score >= 8 THEN 1 END)::float / NULLIF(COUNT(*), 0) * 100 as high_quality_rate,
+                    COUNT(CASE WHEN response_time_ms < 1000 THEN 1 END)::float / NULLIF(COUNT(*), 0) * 100 as fast_response_rate
+                FROM ia_conversations
+                WHERE created_at >= NOW() - INTERVAL '30 days'
+            `);
+            
+            if (perfResult.rows.length > 0) {
+                performanceMetrics = {
+                    total_responses: parseInt(perfResult.rows[0].total_responses || 0),
+                    avg_response_time: parseFloat(perfResult.rows[0].avg_response_time || 0),
+                    avg_confidence: parseFloat(perfResult.rows[0].avg_confidence || 0),
+                    high_quality_rate: parseFloat(perfResult.rows[0].high_quality_rate || 0),
+                    fast_response_rate: parseFloat(perfResult.rows[0].fast_response_rate || 0)
+                };
+            }
+            
+            // Métricas de Qualidade
+            const qualityResult = await client.query(`
+                SELECT 
+                    AVG(success_rate) as avg_success_rate,
+                    COUNT(CASE WHEN success_rate > 70 THEN 1 END) as high_quality_count,
+                    COUNT(*) as total_tracked
+                FROM ia_knowledge_stats
+            `);
+            
+            if (qualityResult.rows.length > 0) {
+                qualityMetrics = {
+                    avg_success_rate: parseFloat(qualityResult.rows[0].avg_success_rate || 0),
+                    high_quality_count: parseInt(qualityResult.rows[0].high_quality_count || 0),
+                    total_tracked: parseInt(qualityResult.rows[0].total_tracked || 0)
+                };
+            }
+            
+            // Métricas de Uso (últimos 7 dias)
+            const usageResult = await client.query(`
+                SELECT 
+                    COUNT(DISTINCT user_id) as active_users,
+                    COUNT(*) as total_conversations,
+                    AVG(response_time_ms) as avg_response_time_week
+                FROM ia_conversations
+                WHERE created_at >= NOW() - INTERVAL '7 days'
+            `);
+            
+            if (usageResult.rows.length > 0) {
+                usageMetrics = {
+                    active_users: parseInt(usageResult.rows[0].active_users || 0),
+                    total_conversations: parseInt(usageResult.rows[0].total_conversations || 0),
+                    avg_response_time_week: parseFloat(usageResult.rows[0].avg_response_time_week || 0)
+                };
+            }
+        } catch (error) {
+            console.warn('⚠️ Algumas métricas avançadas não disponíveis:', error.message);
+        }
+        
         res.json({
-            total_knowledge: parseInt(knowledgeCount.rows[0].count),
-            total_qa: parseInt(qaCount.rows[0].count),
-            total_documents: parseInt(docCount.rows[0].count),
-            conversations_today: parseInt(convCount.rows[0].count),
-            pending_learning: parseInt(learningCount.rows[0].count)
+            stats: {
+                total_knowledge: parseInt(knowledgeCount.rows[0].count),
+                total_qa: parseInt(qaCount.rows[0].count),
+                total_documents: parseInt(docCount.rows[0].count),
+                conversations_today: parseInt(convCount.rows[0].count),
+                pending_learning: parseInt(learningCount.rows[0].count)
+            },
+            performance: performanceMetrics,
+            quality: qualityMetrics,
+            usage: usageMetrics
+        });
+    } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+        res.status(500).json({ 
+            error: 'Erro ao buscar estatísticas',
+            stats: {
+                total_knowledge: 0,
+                total_qa: 0,
+                total_documents: 0,
+                conversations_today: 0,
+                pending_learning: 0
+            }
         });
     } finally {
         client.release();
