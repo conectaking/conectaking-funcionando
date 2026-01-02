@@ -17877,6 +17877,21 @@ router.get('/contextual-help', protectUser, asyncHandler(async (req, res) => {
     const { page } = req.query;
     const client = await db.pool.connect();
     try {
+        // Verificar se a tabela existe
+        const tableCheck = await client.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'ia_contextual_help'
+            ) as table_exists
+        `);
+        
+        if (!tableCheck.rows[0].table_exists) {
+            // Se a tabela não existe, retornar array vazio
+            console.log('⚠️ Tabela ia_contextual_help não existe, retornando array vazio');
+            return res.json({ success: true, help: [] });
+        }
+        
         const help = await client.query(`
             SELECT * FROM ia_contextual_help
             WHERE page_path = $1 AND is_active = true
@@ -17886,7 +17901,8 @@ router.get('/contextual-help', protectUser, asyncHandler(async (req, res) => {
         res.json({ success: true, help: help.rows });
     } catch (error) {
         console.error('Erro ao buscar ajuda contextual:', error);
-        res.status(500).json({ success: false, error: error.message });
+        // Em caso de erro, retornar array vazio
+        res.json({ success: true, help: [] });
     } finally {
         client.release();
     }
