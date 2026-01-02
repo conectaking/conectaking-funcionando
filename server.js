@@ -40,6 +40,7 @@ const analyticsRoutesSalesPage = require('./modules/salesPage/analytics/analytic
 const suggestionsRoutes = require('./routes/suggestions');
 const iaKingRoutes = require('./routes/iaKing');
 const iaKingTrainingRoutes = require('./routes/iaKingTraining');
+const aiCoreRoutes = require('./routes/aiCore');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize } = require('./middleware/security');
 
@@ -333,6 +334,7 @@ app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/api/suggestions', apiLimiter, suggestionsRoutes);
 app.use('/api/ia-king', apiLimiter, iaKingRoutes);
 app.use('/api/ia-king', apiLimiter, iaKingTrainingRoutes);
+app.use('/api/ai-core', apiLimiter, aiCoreRoutes); // Nova ConectaKing AI Core
 app.use('/vcard', vcardRoutes);
 
 // Rotas do módulo Sales Page
