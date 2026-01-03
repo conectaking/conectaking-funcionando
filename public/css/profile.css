@@ -278,11 +278,8 @@ body {
         /* Removido max-width e max-height para respeitar o tamanho definido inline */
     }
     
-    /* Logo circular (JPEG) - manter comportamento original */
-    .profile-link-logo.logo-circular {
-        width: 24px !important;
-        height: 24px !important;
-    }
+    /* Logo circular (JPEG) - respeitar tamanho definido inline via EJS */
+    /* Removido width/height fixos para permitir que logo_size seja aplicado */
     
     .profile-banner-item,
     .profile-banner-container {
@@ -417,11 +414,8 @@ body {
         /* Removido max-width e max-height para respeitar o tamanho definido inline */
     }
     
-    /* Logo circular (JPEG) - manter comportamento original */
-    .profile-link-logo.logo-circular {
-        width: 22px !important;
-        height: 22px !important;
-    }
+    /* Logo circular (JPEG) - respeitar tamanho definido inline via EJS */
+    /* Removido width/height fixos para permitir que logo_size seja aplicado */
     
     .branding-logo img {
         height: 70px;

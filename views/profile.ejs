@@ -398,7 +398,7 @@
                         %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <% if (hasLogo) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Link Personalizado' %>" class="profile-link-logo <%= isJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= logoSize %>px; height: <%= logoSize %>px; border-radius: <%= borderRadius %>; object-fit: <%= objectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Link Personalizado' %>" class="profile-link-logo <%= isJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= logoSize %>px !important; height: <%= logoSize %>px !important; border-radius: <%= borderRadius %>; object-fit: <%= objectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
                                 <i class="<%= item.icon_class || 'fas fa-link' %>" style="display: none;"></i>
                             <% } else { %>
                             <i class="<%= item.icon_class || 'fas fa-link' %>"></i>
@@ -1004,7 +1004,7 @@
                                 data-profile-slug="<%= details.profile_slug || details.user_id %>"
                                 data-products='<%= JSON.stringify(item.products || []) %>'>
                             <% if (catalogHasLogo) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Minha Loja' %>" class="profile-link-logo <%= catalogIsJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= catalogLogoSize %>px; height: <%= catalogLogoSize %>px; border-radius: <%= catalogBorderRadius %>; object-fit: <%= catalogObjectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Minha Loja' %>" class="profile-link-logo <%= catalogIsJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= catalogLogoSize %>px !important; height: <%= catalogLogoSize %>px !important; border-radius: <%= catalogBorderRadius %>; object-fit: <%= catalogObjectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
                                 <i class="<%= item.icon_class || 'fas fa-store' %>" style="display: none;"></i>
                             <% } else { %>
                                 <i class="<%= item.icon_class || 'fas fa-store' %>"></i>
@@ -1565,7 +1565,7 @@
                         %>
                         <a href="<%= salesPageUrl %>" class="profile-link" <%= salesPageUrl !== '#' ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;" style="opacity: 0.5; cursor: not-allowed;" title="Página não publicada"' %> data-item-id="<%= item.id %>">
                             <% if (salesPageHasLogo) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="max-width: <%= salesPageLogoSize %>px; max-height: <%= salesPageLogoSize %>px; width: <%= salesPageLogoSize %>px; height: <%= salesPageLogoSize %>px; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %>; overflow: visible;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="max-width: <%= salesPageLogoSize %>px !important; max-height: <%= salesPageLogoSize %>px !important; width: <%= salesPageLogoSize %>px !important; height: <%= salesPageLogoSize %>px !important; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %>; overflow: visible;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
                                 <i class="<%= item.icon_class || 'fas fa-store' %>" style="display: none;"></i>
                             <% } else { %>
                                 <i class="<%= item.icon_class || 'fas fa-store' %>"></i>
