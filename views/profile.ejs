@@ -29,18 +29,6 @@
         .profile-avatar { border: none !important; }
 
         <%
-            // Tratar alinhamento do conteúdo dos botões
-            let alignValue = 'center'; // padrão
-            const buttonAlign = details.button_content_align;
-            if (buttonAlign === 'left') {
-                alignValue = 'flex-start';
-            } else if (buttonAlign === 'right') {
-                alignValue = 'flex-end';
-            } else {
-                // 'center' ou null/undefined - usar center como padrão
-                alignValue = 'center';
-            }
-            
             // Calcular alinhamento da logo baseado no logo_spacing (agora armazena 'left', 'center', 'right')
             let logoAlign = 'center'; // padrão
             if (details.logo_spacing !== undefined && details.logo_spacing !== null) {
@@ -52,6 +40,22 @@
                     else if (details.logo_spacing >= 20) logoAlign = 'right';
                     else logoAlign = 'center';
                 }
+            }
+            
+            // Tratar alinhamento do conteúdo dos botões
+            // Se a logo está centralizada, forçar o botão a centralizar também
+            let alignValue = 'center'; // padrão
+            const buttonAlign = details.button_content_align;
+            if (logoAlign === 'center') {
+                // Quando logo está centralizada, sempre centralizar o botão
+                alignValue = 'center';
+            } else if (buttonAlign === 'left') {
+                alignValue = 'flex-start';
+            } else if (buttonAlign === 'right') {
+                alignValue = 'flex-end';
+            } else {
+                // 'center' ou null/undefined - usar center como padrão
+                alignValue = 'center';
             }
             
             // Espaçamento fixo entre logo e texto (12px)
@@ -74,7 +78,7 @@
                 logoOrder = '2'; // Logo depois do texto
                 textOrder = '1'; // Texto primeiro
             } else {
-                // Center - logo à esquerda do texto
+                // Center - logo à esquerda do texto, conjunto centralizado no botão
                 logoMarginRight = logoSpacing + 'px';
                 logoMarginLeft = '0px';
                 logoOrder = '0';
@@ -121,8 +125,9 @@
             margin-left: <%= logoMarginLeft %> !important;
             order: <%= logoOrder %> !important;
             flex-shrink: 0 !important;
-            display: inline-block !important;
-            vertical-align: middle !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
         /* PNG: logo sem border-radius (mantém forma original) */
         .profile-link-logo.logo-png {
