@@ -351,11 +351,18 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
         
+        // Garantir que logo_spacing seja sempre um número válido
+        if (details.logo_spacing === null || details.logo_spacing === undefined) {
+            details.logo_spacing = 12;
+        } else {
+            details.logo_spacing = parseInt(details.logo_spacing, 10) || 12;
+        }
+        
         // Garantir que profile_slug está disponível em details
         if (!details.profile_slug) {
             details.profile_slug = user.profile_slug || identifier;
         }
-        
+
         if (!details.button_content_align || !['left', 'center', 'right'].includes(details.button_content_align)) {
             details.button_content_align = 'center';
         }

@@ -267,7 +267,7 @@ body {
     }
     
     .profile-link-logo {
-        margin-right: 10px !important;
+        /* margin-right é definido dinamicamente via EJS no profile.ejs */
         flex-shrink: 0 !important;
     }
     
@@ -407,7 +407,7 @@ body {
     }
     
     .profile-link-logo {
-        margin-right: 8px !important;
+        /* margin-right é definido dinamicamente via EJS no profile.ejs */
     }
     
     /* Logo PNG - garantir que não seja cortada em mobile, mas respeitando o logo_size definido inline */
