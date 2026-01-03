@@ -41,27 +41,40 @@
                 alignValue = 'center';
             }
             
-            // Calcular espaçamento da logo baseado no alinhamento
-            const logoSpacing = (details.logo_spacing !== undefined && details.logo_spacing !== null) ? parseInt(details.logo_spacing, 10) : 12;
+            // Calcular alinhamento da logo baseado no logo_spacing (agora armazena 'left', 'center', 'right')
+            let logoAlign = 'center'; // padrão
+            if (details.logo_spacing !== undefined && details.logo_spacing !== null) {
+                if (typeof details.logo_spacing === 'string' && ['left', 'center', 'right'].includes(details.logo_spacing)) {
+                    logoAlign = details.logo_spacing;
+                } else if (typeof details.logo_spacing === 'number') {
+                    // Compatibilidade com versão antiga (número)
+                    if (details.logo_spacing <= 5) logoAlign = 'left';
+                    else if (details.logo_spacing >= 20) logoAlign = 'right';
+                    else logoAlign = 'center';
+                }
+            }
+            
+            // Espaçamento fixo entre logo e texto (12px)
+            const logoSpacing = 12;
             let logoMarginRight = '0px';
             let logoMarginLeft = '0px';
             let logoOrder = '0'; // Ordem no flexbox (0 = ordem normal)
             let textOrder = '1'; // Ordem do texto no flexbox
             
-            if (buttonAlign === 'left') {
-                // Logo à esquerda, texto à direita - espaçamento entre logo e texto
+            if (logoAlign === 'left') {
+                // Logo à esquerda, texto à direita
                 logoMarginRight = logoSpacing + 'px';
                 logoMarginLeft = '0px';
                 logoOrder = '0';
                 textOrder = '1';
-            } else if (buttonAlign === 'right') {
-                // Logo à direita, texto à esquerda - espaçamento entre texto e logo
+            } else if (logoAlign === 'right') {
+                // Logo à direita, texto à esquerda
                 logoMarginRight = '0px';
                 logoMarginLeft = logoSpacing + 'px';
                 logoOrder = '2'; // Logo depois do texto
                 textOrder = '1'; // Texto primeiro
             } else {
-                // Center - espaçamento entre logo e texto (logo à esquerda do texto)
+                // Center - logo à esquerda do texto
                 logoMarginRight = logoSpacing + 'px';
                 logoMarginLeft = '0px';
                 logoOrder = '0';
