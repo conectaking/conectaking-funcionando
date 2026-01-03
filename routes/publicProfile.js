@@ -47,7 +47,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 u.id AS user_id,
                 u.profile_slug,
                 p.*,
-                COALESCE(p.logo_spacing, 12) as logo_spacing,
+                COALESCE(p.logo_spacing, 'center') as logo_spacing,
                 CASE
                     WHEN u.account_type = 'business_owner' OR u.account_type = 'individual_com_logo' THEN u.company_logo_url
                     ELSE parent.company_logo_url
@@ -351,11 +351,17 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
         
-        // Garantir que logo_spacing seja sempre um número válido
+        // Garantir que logo_spacing seja sempre uma string válida ('left', 'center', 'right')
         if (details.logo_spacing === null || details.logo_spacing === undefined) {
-            details.logo_spacing = 12;
-        } else {
-            details.logo_spacing = parseInt(details.logo_spacing, 10) || 12;
+            details.logo_spacing = 'center';
+        } else if (typeof details.logo_spacing === 'number') {
+            // Compatibilidade com versão antiga (número)
+            if (details.logo_spacing <= 5) details.logo_spacing = 'left';
+            else if (details.logo_spacing >= 20) details.logo_spacing = 'right';
+            else details.logo_spacing = 'center';
+        } else if (!['left', 'center', 'right'].includes(details.logo_spacing)) {
+            // Se não for um valor válido, usar 'center' como padrão
+            details.logo_spacing = 'center';
         }
         
         // Garantir que profile_slug está disponível em details

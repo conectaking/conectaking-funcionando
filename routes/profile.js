@@ -31,7 +31,7 @@ router.get('/', protectUser, async (req, res) => {
                 p.card_background_color, p.card_opacity,
                 p.button_font_size, p.background_image_opacity,
                 p.show_vcard_button, p.share_image_url,
-                COALESCE(p.logo_spacing, 12) as logo_spacing
+                COALESCE(p.logo_spacing, 'center') as logo_spacing
             FROM users u
             LEFT JOIN user_profiles p ON u.id = p.user_id
             WHERE u.id = $1;
@@ -71,7 +71,7 @@ router.get('/', protectUser, async (req, res) => {
                         p.card_background_color, p.card_opacity,
                         p.button_font_size, p.background_image_opacity,
                         p.show_vcard_button,
-                        COALESCE(p.logo_spacing, 12) as logo_spacing
+                        COALESCE(p.logo_spacing, 'center') as logo_spacing
                     FROM users u
                     LEFT JOIN user_profiles p ON u.id = p.user_id
                     WHERE u.id = $1;
