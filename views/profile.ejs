@@ -397,7 +397,7 @@
                         %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <% if (hasLogo) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Link Personalizado' %>" class="profile-link-logo <%= isJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= logoSize %>px !important; height: <%= logoSize %>px !important; border-radius: <%= borderRadius %>; object-fit: <%= objectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Link Personalizado' %>" class="profile-link-logo <%= isJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= logoSize %>px !important; height: <%= logoSize %>px !important; border-radius: <%= borderRadius %>; object-fit: <%= objectFit %> !important;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
                                 <i class="<%= item.icon_class || 'fas fa-link' %>" style="display: none;"></i>
                             <% } else { %>
                             <i class="<%= item.icon_class || 'fas fa-link' %>"></i>
@@ -996,7 +996,11 @@
                         const catalogIsJpeg = catalogHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
                         const catalogBorderRadius = catalogHasLogo ? (catalogIsJpeg ? '50%' : '0') : '50%';
                         // Usar logo_fit_mode do item se disponível, senão usar 'contain' (completo, sem corte) como padrão
-                        const catalogObjectFit = catalogHasLogo ? ((item.logo_fit_mode && ['contain', 'cover'].includes(item.logo_fit_mode)) ? item.logo_fit_mode : 'contain') : 'contain';
+                        // Garantir que sempre use 'contain' por padrão para não cortar a logo
+                        let catalogObjectFit = 'contain'; // Padrão: completo, sem corte
+                        if (catalogHasLogo && item.logo_fit_mode && ['contain', 'cover'].includes(item.logo_fit_mode)) {
+                            catalogObjectFit = item.logo_fit_mode;
+                        }
                     %>
                         <button class="profile-link product-catalog-btn" 
                                 data-item-id="<%= item.id %>" 
@@ -1004,7 +1008,7 @@
                                 data-profile-slug="<%= details.profile_slug || details.user_id %>"
                                 data-products='<%= JSON.stringify(item.products || []) %>'>
                             <% if (catalogHasLogo) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Minha Loja' %>" class="profile-link-logo <%= catalogIsJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= catalogLogoSize %>px !important; height: <%= catalogLogoSize %>px !important; border-radius: <%= catalogBorderRadius %>; object-fit: <%= catalogObjectFit %>;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Minha Loja' %>" class="profile-link-logo <%= catalogIsJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= catalogLogoSize %>px !important; height: <%= catalogLogoSize %>px !important; border-radius: <%= catalogBorderRadius %>; object-fit: <%= catalogObjectFit %> !important;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
                                 <i class="<%= item.icon_class || 'fas fa-store' %>" style="display: none;"></i>
                             <% } else { %>
                                 <i class="<%= item.icon_class || 'fas fa-store' %>"></i>
@@ -1554,7 +1558,11 @@
                             const salesPageIsJpeg = salesPageHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
                             const salesPageBorderRadius = salesPageHasLogo ? (salesPageIsJpeg ? '50%' : '0') : '50%';
                             // Usar logo_fit_mode do item se disponível, senão usar 'contain' (completo, sem corte) como padrão
-                            const salesPageObjectFit = salesPageHasLogo ? ((item.logo_fit_mode && ['contain', 'cover'].includes(item.logo_fit_mode)) ? item.logo_fit_mode : 'contain') : 'contain';
+                            // Garantir que sempre use 'contain' por padrão para não cortar a logo
+                            let salesPageObjectFit = 'contain'; // Padrão: completo, sem corte
+                            if (salesPageHasLogo && item.logo_fit_mode && ['contain', 'cover'].includes(item.logo_fit_mode)) {
+                                salesPageObjectFit = item.logo_fit_mode;
+                            }
                             
                             // Construir URL correta: /:slug/loja/:itemId
                             // Usar o profile_slug do usuário e o item.id como identifier
@@ -1576,7 +1584,7 @@
                         %>
                         <a href="<%= salesPageUrl %>" class="profile-link" <%= salesPageUrl !== '#' ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;" style="opacity: 0.5; cursor: not-allowed;" title="Página não publicada"' %> data-item-id="<%= item.id %>">
                             <% if (salesPageHasLogo) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="max-width: <%= salesPageLogoSize %>px !important; max-height: <%= salesPageLogoSize %>px !important; width: <%= salesPageLogoSize %>px !important; height: <%= salesPageLogoSize %>px !important; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %>; overflow: hidden;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="max-width: <%= salesPageLogoSize %>px !important; max-height: <%= salesPageLogoSize %>px !important; width: <%= salesPageLogoSize %>px !important; height: <%= salesPageLogoSize %>px !important; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %> !important; overflow: hidden;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
                                 <i class="<%= item.icon_class || 'fas fa-store' %>" style="display: none;"></i>
                             <% } else { %>
                                 <i class="<%= item.icon_class || 'fas fa-store' %>"></i>
