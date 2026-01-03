@@ -271,12 +271,11 @@ body {
         flex-shrink: 0 !important;
     }
     
-    /* Logo PNG - garantir que não seja cortada */
+    /* Logo PNG - garantir que não seja cortada, mas respeitando o logo_size definido inline */
     .profile-link-logo.logo-png {
-        max-width: 100% !important;
-        max-height: 100% !important;
         object-fit: contain !important;
         overflow: visible !important;
+        /* Removido max-width e max-height para respeitar o tamanho definido inline */
     }
     
     /* Logo circular (JPEG) - manter comportamento original */
