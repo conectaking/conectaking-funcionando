@@ -482,7 +482,15 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 }
                 if (existingColumns.includes('logo_size')) {
                     insertFields.push('logo_size');
-                    insertValues.push(item.logo_size || null);
+                    // Preservar logo_size se fornecido, senão usar null (será aplicado o padrão de 24px no frontend)
+                    // Garantir que o valor seja um número válido ou null
+                    let logoSizeValue = null;
+                    if (item.logo_size !== undefined && item.logo_size !== null && item.logo_size !== '') {
+                        const parsed = parseInt(item.logo_size, 10);
+                        logoSizeValue = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+                    }
+                    insertValues.push(logoSizeValue);
+                    console.log(`📏 [SAVE-ALL] Item ${item.id || 'novo'} - logo_size: ${logoSizeValue} (original: ${item.logo_size})`);
                 }
                 if (existingColumns.includes('whatsapp_message')) {
                     insertFields.push('whatsapp_message');

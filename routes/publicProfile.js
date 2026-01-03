@@ -47,6 +47,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 u.id AS user_id,
                 u.profile_slug,
                 p.*,
+                COALESCE(p.logo_spacing, 12) as logo_spacing,
                 CASE
                     WHEN u.account_type = 'business_owner' OR u.account_type = 'individual_com_logo' THEN u.company_logo_url
                     ELSE parent.company_logo_url
