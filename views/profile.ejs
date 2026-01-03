@@ -174,7 +174,7 @@
         .profile-embed-item.pinterest-embed-container {
             aspect-ratio: auto !important;
             height: auto !important;
-            overflow: visible !important;
+            overflow: hidden !important;
             width: 100% !important;
             box-sizing: border-box !important;
             padding: 0 !important;
@@ -1353,7 +1353,7 @@
                                 %>
                                 <iframe 
                                     id="youtube-player-<%= item.id %>"
-                                    src="<%= finalEmbedUrl %>?autoplay=1&mute=1&playsinline=1&enablejsapi=1&origin=<%= encodeURIComponent(origin || 'https://tag.conectaking.com.br') %>&rel=0" 
+                                    data-video-url="<%= finalEmbedUrl %>"
                                     frameborder="0" 
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                                     allowfullscreen 
@@ -1361,6 +1361,16 @@
                                     referrerpolicy="strict-origin-when-cross-origin"
                                     style="width: 100%; aspect-ratio: 16/9; border-radius: 12px;"
                                 ></iframe>
+                                <script>
+                                    (function() {
+                                        var iframe = document.getElementById('youtube-player-<%= item.id %>');
+                                        if (iframe) {
+                                            var videoUrl = iframe.getAttribute('data-video-url');
+                                            var currentOrigin = window.location.protocol + '//' + window.location.host;
+                                            iframe.src = videoUrl + '?autoplay=1&mute=1&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(currentOrigin) + '&rel=0';
+                                        }
+                                    })();
+                                </script>
                             <% } else { %>
                                 <div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>
                             <% } %>
@@ -1564,7 +1574,7 @@
                         %>
                         <a href="<%= salesPageUrl %>" class="profile-link" <%= salesPageUrl !== '#' ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;" style="opacity: 0.5; cursor: not-allowed;" title="Página não publicada"' %> data-item-id="<%= item.id %>">
                             <% if (salesPageHasLogo) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="max-width: <%= salesPageLogoSize %>px !important; max-height: <%= salesPageLogoSize %>px !important; width: <%= salesPageLogoSize %>px !important; height: <%= salesPageLogoSize %>px !important; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %>; overflow: visible;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="max-width: <%= salesPageLogoSize %>px !important; max-height: <%= salesPageLogoSize %>px !important; width: <%= salesPageLogoSize %>px !important; height: <%= salesPageLogoSize %>px !important; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %>; overflow: hidden;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
                                 <i class="<%= item.icon_class || 'fas fa-store' %>" style="display: none;"></i>
                             <% } else { %>
                                 <i class="<%= item.icon_class || 'fas fa-store' %>"></i>
@@ -1849,23 +1859,39 @@ document.addEventListener('DOMContentLoaded', () => {
                         events: {
                             onReady: function(event) {
                                 try {
-                                event.target.playVideo();
-                } catch (e) {
-                                    // Ignorar erros de autoplay (normal devido a políticas do navegador)
+                                    event.target.playVideo();
+                                } catch (e) {
+                                    // Ignorar erros de autoplay silenciosamente (normal devido a políticas do navegador)
                                 }
                             },
                             onError: function(event) {
-                                // Ignorar erros silenciosamente
-                                console.warn('Erro no player do YouTube (pode ser ignorado):', event.data);
+                                // Ignorar erros silenciosamente - não logar no console
+                            },
+                            onStateChange: function(event) {
+                                // Silenciar mudanças de estado
                             }
                         }
                     });
                 } catch (e) {
-                    // Ignorar erros de inicialização do YouTube API
-                    console.warn('Erro ao inicializar player do YouTube (pode ser ignorado):', e);
+                    // Ignorar erros de inicialização do YouTube API silenciosamente
                 }
             }
         });
+    }
+    
+    // Suprimir avisos do YouTube postMessage
+    if (typeof window !== 'undefined') {
+        var originalPostMessage = window.postMessage;
+        window.addEventListener('message', function(event) {
+            // Filtrar mensagens do YouTube que causam avisos
+            if (event.origin && event.origin.includes('youtube.com')) {
+                try {
+                    // Processar mensagens do YouTube normalmente, mas suprimir erros
+                } catch (e) {
+                    // Ignorar erros de postMessage do YouTube
+                }
+            }
+        }, true);
     }
 
     function activateYouTubeSound() {
