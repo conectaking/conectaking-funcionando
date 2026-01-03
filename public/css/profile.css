@@ -271,10 +271,10 @@ body {
         flex-shrink: 0 !important;
     }
     
-    /* Logo PNG - garantir que não seja cortada, mas respeitando o logo_size definido inline */
+    /* Logo PNG - preencher até as bordas, respeitando o logo_size definido inline */
     .profile-link-logo.logo-png {
-        object-fit: contain !important;
-        overflow: visible !important;
+        object-fit: cover !important;
+        overflow: hidden !important;
         /* Removido max-width e max-height para respeitar o tamanho definido inline */
     }
     
@@ -407,10 +407,10 @@ body {
         /* margin-right é definido dinamicamente via EJS no profile.ejs */
     }
     
-    /* Logo PNG - garantir que não seja cortada em mobile, mas respeitando o logo_size definido inline */
+    /* Logo PNG - preencher até as bordas em mobile, respeitando o logo_size definido inline */
     .profile-link-logo.logo-png {
-        object-fit: contain !important;
-        overflow: visible !important;
+        object-fit: cover !important;
+        overflow: hidden !important;
         /* Removido max-width e max-height para respeitar o tamanho definido inline */
     }
     

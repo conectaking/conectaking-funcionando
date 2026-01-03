@@ -136,9 +136,9 @@
             align-items: center !important;
             justify-content: center !important;
         }
-        /* PNG: logo sem border-radius (mantém forma original) */
+        /* PNG: logo sem border-radius (preenche até as bordas) */
         .profile-link-logo.logo-png {
-            object-fit: contain !important;
+            object-fit: cover !important;
             border-radius: 0 !important;
         }
         /* JPEG: foto circular */
@@ -381,18 +381,17 @@
                                 if (imageUrl.includes('.png')) {
                                     isPng = true;
                                     borderRadius = '0'; // PNG: sem border-radius (logo)
-                                    objectFit = 'contain';
+                                    objectFit = 'cover'; // Cover para preencher até as bordas
                                 } else if (imageUrl.includes('.jpg') || imageUrl.includes('.jpeg')) {
                                     isJpeg = true;
                                     borderRadius = '50%'; // JPEG: círculo (foto)
                                     objectFit = 'cover';
                                 } else {
-                                    // URL sem extensão (Cloudflare R2) - assumir JPEG por padrão
-                                    // Se o usuário quiser PNG, deve garantir que o nome do arquivo tenha .png
-                                    // Por padrão, fotos são JPEG, então circular
-                                    isJpeg = true; // Assumir JPEG (foto circular) por padrão
-                                    borderRadius = '50%';
-                                    objectFit = 'cover';
+                                    // URL sem extensão (Cloudflare R2) - assumir PNG (logo) por padrão para links personalizados
+                                    // Logos devem preencher o espaço até as bordas
+                                    isPng = true; // Assumir PNG (logo) por padrão para links
+                                    borderRadius = '0';
+                                    objectFit = 'cover'; // Cover para preencher até as bordas
                                 }
                             }
                         %>
@@ -996,7 +995,7 @@
                         const catalogLogoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
                         const catalogIsJpeg = catalogHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
                         const catalogBorderRadius = catalogHasLogo ? (catalogIsJpeg ? '50%' : '0') : '50%';
-                        const catalogObjectFit = catalogHasLogo ? (catalogIsJpeg ? 'cover' : 'contain') : 'cover';
+                        const catalogObjectFit = catalogHasLogo ? (catalogIsJpeg ? 'cover' : 'cover') : 'cover'; // Cover para preencher até as bordas
                     %>
                         <button class="profile-link product-catalog-btn" 
                                 data-item-id="<%= item.id %>" 
@@ -1543,7 +1542,7 @@
                             const salesPageLogoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
                             const salesPageIsJpeg = salesPageHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
                             const salesPageBorderRadius = salesPageHasLogo ? (salesPageIsJpeg ? '50%' : '0') : '50%';
-                            const salesPageObjectFit = salesPageHasLogo ? (salesPageIsJpeg ? 'cover' : 'contain') : 'cover';
+                            const salesPageObjectFit = salesPageHasLogo ? (salesPageIsJpeg ? 'cover' : 'cover') : 'cover'; // Cover para preencher até as bordas
                             
                             // Construir URL correta: /:slug/loja/:itemId
                             // Usar o profile_slug do usuário e o item.id como identifier
