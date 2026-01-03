@@ -75,7 +75,7 @@
             text-align: <%= buttonAlign === 'left' ? 'left' : (buttonAlign === 'right' ? 'right' : 'center') %> !important;
         }
         .profile-link-logo {
-            margin-right: 12px !important;
+            margin-right: <%= details.logo_spacing !== undefined ? details.logo_spacing : 12 %>px !important;
             flex-shrink: 0 !important;
             display: inline-block !important;
             vertical-align: middle !important;

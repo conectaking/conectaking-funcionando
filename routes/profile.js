@@ -224,7 +224,8 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     'card_opacity = COALESCE($15, card_opacity)',
                     'button_font_size = COALESCE($16, button_font_size)',
                     'background_image_opacity = COALESCE($17, background_image_opacity)',
-                    'show_vcard_button = COALESCE($18, show_vcard_button)'
+                    'show_vcard_button = COALESCE($18, show_vcard_button)',
+                    'logo_spacing = COALESCE($19, logo_spacing)'
                 ];
                 const updateValues = [
                     details.display_name || details.displayName || null,
@@ -244,11 +245,12 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     details.card_opacity || details.cardOpacity,
                     details.button_font_size || details.buttonFontSize,
                     details.background_image_opacity || details.backgroundImageOpacity,
-                    details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : undefined)
+                    details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : undefined),
+                    details.logo_spacing !== undefined ? details.logo_spacing : (details.logoSpacing !== undefined ? details.logoSpacing : null)
                 ];
 
                 if (hasAvatarFormat && avatarFormatValue) {
-                    updateFields.push('avatar_format = COALESCE($19, avatar_format)');
+                    updateFields.push('avatar_format = COALESCE($20, avatar_format)');
                     updateValues.push(avatarFormatValue);
                 }
 
