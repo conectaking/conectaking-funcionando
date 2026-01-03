@@ -489,8 +489,10 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                         const parsed = parseInt(item.logo_size, 10);
                         logoSizeValue = (!isNaN(parsed) && parsed > 0) ? parsed : null;
                     }
+                    // IMPORTANTE: Se logo_size não foi fornecido (null/undefined), usar null
+                    // O frontend aplicará o padrão de 24px quando for null
                     insertValues.push(logoSizeValue);
-                    console.log(`📏 [SAVE-ALL] Item ${item.id || 'novo'} - logo_size: ${logoSizeValue} (original: ${item.logo_size})`);
+                    console.log(`📏 [SAVE-ALL] Item ${item.id || 'novo'} (${item.item_type}) - logo_size: ${logoSizeValue} (original: ${item.logo_size}, tipo: ${typeof item.logo_size})`);
                 }
                 if (existingColumns.includes('whatsapp_message')) {
                     insertFields.push('whatsapp_message');

@@ -358,7 +358,14 @@
                         <%
                             // Verificar se tem logo válida
                             const hasLogo = item.image_url && typeof item.image_url === 'string' && item.image_url.trim() !== '' && !item.image_url.includes('placeholder');
-                            const logoSize = item.logo_size ? parseInt(item.logo_size) : 24; // Tamanho padrão: 24px
+                            // Garantir que logo_size seja sempre um número válido
+                            let logoSize = 24; // Tamanho padrão: 24px
+                            if (item.logo_size !== undefined && item.logo_size !== null && item.logo_size !== '') {
+                                const parsed = parseInt(item.logo_size, 10);
+                                if (!isNaN(parsed) && parsed > 0) {
+                                    logoSize = parsed;
+                                }
+                            }
                             
                             // Detectar se é PNG (logo) ou JPEG (foto) pela URL
                             // Como URLs do Cloudflare R2 não têm extensão, usamos heurística melhorada
@@ -986,7 +993,7 @@
                     <% } else if (item.item_type === 'product_catalog') { 
                         // Verificar se tem logo para product_catalog
                         const catalogHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
-                        const catalogLogoSize = item.logo_size || 24;
+                        const catalogLogoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
                         const catalogIsJpeg = catalogHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
                         const catalogBorderRadius = catalogHasLogo ? (catalogIsJpeg ? '50%' : '0') : '50%';
                         const catalogObjectFit = catalogHasLogo ? (catalogIsJpeg ? 'cover' : 'contain') : 'cover';
@@ -1533,7 +1540,7 @@
                         <% 
                             // Verificar se tem logo para sales_page
                             const salesPageHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
-                            const salesPageLogoSize = item.logo_size || 24;
+                            const salesPageLogoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
                             const salesPageIsJpeg = salesPageHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
                             const salesPageBorderRadius = salesPageHasLogo ? (salesPageIsJpeg ? '50%' : '0') : '50%';
                             const salesPageObjectFit = salesPageHasLogo ? (salesPageIsJpeg ? 'cover' : 'contain') : 'cover';
