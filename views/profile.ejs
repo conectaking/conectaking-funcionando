@@ -109,6 +109,8 @@
             border-radius: var(--btn-border-radius) !important;
             justify-content: <%= alignValue %> !important;
             font-size: var(--btn-font-size) !important;
+            display: flex !important;
+            align-items: center !important;
         }
         .profile-link i, .profile-button-pix i { 
             color: <%= details.button_text_color || '#FFFFFF' %> !important; 
@@ -119,6 +121,11 @@
         .profile-button-pix span {
             text-align: <%= buttonAlign === 'left' ? 'left' : (buttonAlign === 'right' ? 'right' : 'center') %> !important;
             order: <%= textOrder %> !important;
+            <% if (logoAlign === 'center') { %>
+            flex: 0 1 auto !important;
+            <% } else { %>
+            flex: 1 !important;
+            <% } %>
         }
         .profile-link-logo {
             margin-right: <%= logoMarginRight %> !important;
