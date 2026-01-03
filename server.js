@@ -343,9 +343,28 @@ app.use('/api/v1/sales-pages', apiLimiter, analyticsRoutesSalesPage);
 app.use('/api/v1/sales-pages', apiLimiter, productRoutes);
 app.use('/api/v1/sales-pages', apiLimiter, salesPageRoutes);
 
-// Rota de redirecionamento CNKING/:slug -> /:slug (formato curto para Instagram)
+// Middleware para redirecionar domínio cnking.bio para tag.conectaking.com.br
+app.use((req, res, next) => {
+    // Verificar se a requisição vem do domínio cnking.bio
+    const host = req.get('host') || req.hostname;
+    if (host && (host === 'cnking.bio' || host === 'www.cnking.bio')) {
+        // Se for a raiz, redirecionar para tag.conectaking.com.br
+        if (req.path === '/' || req.path === '') {
+            return res.redirect(301, 'https://tag.conectaking.com.br/');
+        }
+        // Para qualquer caminho /:slug, redirecionar mantendo o slug
+        const slug = req.path.replace(/^\//, ''); // Remove barra inicial
+        if (slug) {
+            const redirectUrl = `https://tag.conectaking.com.br/${slug}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`;
+            return res.redirect(301, redirectUrl);
+        }
+    }
+    next();
+});
+
+// Rota de redirecionamento cnking/:slug -> /:slug (fallback para formato no mesmo domínio)
 // Deve vir ANTES de todas as outras rotas públicas
-app.get('/CNKING/:slug', (req, res) => {
+app.get('/cnking/:slug', (req, res) => {
     const { slug } = req.params;
     // Redirecionar para tag.conectaking.com.br/:slug
     const redirectUrl = `https://tag.conectaking.com.br/${slug}`;
