@@ -233,7 +233,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     'button_font_size = COALESCE($16, button_font_size)',
                     'background_image_opacity = COALESCE($17, background_image_opacity)',
                     'show_vcard_button = COALESCE($18, show_vcard_button)',
-                    'logo_spacing = CASE WHEN $19 IS NOT NULL THEN $19 ELSE logo_spacing END'
+                    'logo_spacing = CASE WHEN $19::VARCHAR IS NOT NULL THEN $19::VARCHAR ELSE logo_spacing END'
                 ];
                 const updateValues = [
                     details.display_name || details.displayName || null,
