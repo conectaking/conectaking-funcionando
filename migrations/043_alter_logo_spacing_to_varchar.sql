@@ -12,22 +12,19 @@ BEGIN
         AND column_name = 'logo_spacing'
         AND data_type = 'integer'
     ) THEN
-        -- Converter valores numéricos existentes para strings
-        UPDATE user_profiles 
-        SET logo_spacing = CASE 
-            WHEN logo_spacing::integer <= 5 THEN 'left'
-            WHEN logo_spacing::integer >= 20 THEN 'right'
-            ELSE 'center'
-        END
-        WHERE logo_spacing IS NOT NULL;
-        
-        -- Alterar tipo da coluna para VARCHAR
-        ALTER TABLE user_profiles 
-        ALTER COLUMN logo_spacing TYPE VARCHAR(10);
-        
         -- Remover constraint de CHECK numérico se existir
         ALTER TABLE user_profiles 
         DROP CONSTRAINT IF EXISTS user_profiles_logo_spacing_check;
+        
+        -- Alterar tipo da coluna para VARCHAR usando USING para converter valores
+        ALTER TABLE user_profiles 
+        ALTER COLUMN logo_spacing TYPE VARCHAR(10) USING (
+            CASE 
+                WHEN logo_spacing::integer <= 5 THEN 'left'
+                WHEN logo_spacing::integer >= 20 THEN 'right'
+                ELSE 'center'
+            END
+        );
         
         -- Adicionar nova constraint para aceitar apenas 'left', 'center', 'right'
         ALTER TABLE user_profiles 
