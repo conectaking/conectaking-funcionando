@@ -40,6 +40,33 @@
                 // 'center' ou null/undefined - usar center como padrão
                 alignValue = 'center';
             }
+            
+            // Calcular espaçamento da logo baseado no alinhamento
+            const logoSpacing = (details.logo_spacing !== undefined && details.logo_spacing !== null) ? parseInt(details.logo_spacing, 10) : 12;
+            let logoMarginRight = '0px';
+            let logoMarginLeft = '0px';
+            let logoOrder = '0'; // Ordem no flexbox (0 = ordem normal)
+            let textOrder = '1'; // Ordem do texto no flexbox
+            
+            if (buttonAlign === 'left') {
+                // Logo à esquerda, texto à direita - espaçamento entre logo e texto
+                logoMarginRight = logoSpacing + 'px';
+                logoMarginLeft = '0px';
+                logoOrder = '0';
+                textOrder = '1';
+            } else if (buttonAlign === 'right') {
+                // Logo à direita, texto à esquerda - espaçamento entre texto e logo
+                logoMarginRight = '0px';
+                logoMarginLeft = logoSpacing + 'px';
+                logoOrder = '2'; // Logo depois do texto
+                textOrder = '1'; // Texto primeiro
+            } else {
+                // Center - espaçamento entre logo e texto (logo à esquerda do texto)
+                logoMarginRight = logoSpacing + 'px';
+                logoMarginLeft = '0px';
+                logoOrder = '0';
+                textOrder = '1';
+            }
         %>
 
         :root {
@@ -69,13 +96,17 @@
         .profile-link i, .profile-button-pix i { 
             color: <%= details.button_text_color || '#FFFFFF' %> !important; 
             opacity: 1 !important;
+            order: <%= logoOrder %> !important;
         }
         .profile-link span,
         .profile-button-pix span {
             text-align: <%= buttonAlign === 'left' ? 'left' : (buttonAlign === 'right' ? 'right' : 'center') %> !important;
+            order: <%= textOrder %> !important;
         }
         .profile-link-logo {
-            margin-right: <%= (details.logo_spacing !== undefined && details.logo_spacing !== null) ? parseInt(details.logo_spacing, 10) : 12 %>px !important;
+            margin-right: <%= logoMarginRight %> !important;
+            margin-left: <%= logoMarginLeft %> !important;
+            order: <%= logoOrder %> !important;
             flex-shrink: 0 !important;
             display: inline-block !important;
             vertical-align: middle !important;
