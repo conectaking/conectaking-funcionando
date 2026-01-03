@@ -123,6 +123,12 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
         const { details, items } = req.body;
 
         console.log('💾 Salvando todas as alterações do perfil:', { userId, hasDetails: !!details, itemsCount: items?.length || 0 });
+        console.log('🔍 [DEBUG] logo_spacing recebido:', { 
+            logo_spacing: details?.logo_spacing, 
+            logoSpacing: details?.logoSpacing,
+            tipo_logo_spacing: typeof details?.logo_spacing,
+            tipo_logoSpacing: typeof details?.logoSpacing
+        });
 
         // Salvar detalhes do perfil
         if (details) {
@@ -227,7 +233,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     'button_font_size = COALESCE($16, button_font_size)',
                     'background_image_opacity = COALESCE($17, background_image_opacity)',
                     'show_vcard_button = COALESCE($18, show_vcard_button)',
-                    'logo_spacing = COALESCE($19, logo_spacing)'
+                    'logo_spacing = CASE WHEN $19 IS NOT NULL THEN $19 ELSE logo_spacing END'
                 ];
                 const updateValues = [
                     details.display_name || details.displayName || null,
@@ -248,8 +254,10 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     details.button_font_size || details.buttonFontSize,
                     details.background_image_opacity || details.backgroundImageOpacity,
                     details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : undefined),
-                    details.logo_spacing !== undefined ? details.logo_spacing : (details.logoSpacing !== undefined ? details.logoSpacing : null)
+                    (details.logo_spacing !== undefined && details.logo_spacing !== null) ? details.logo_spacing : ((details.logoSpacing !== undefined && details.logoSpacing !== null) ? details.logoSpacing : null)
                 ];
+
+                console.log(`🔍 [DEBUG] logo_spacing no updateValues[18]:`, updateValues[18], 'tipo:', typeof updateValues[18], 'é null?', updateValues[18] === null, 'é undefined?', updateValues[18] === undefined);
 
                 if (hasAvatarFormat && avatarFormatValue) {
                     updateFields.push('avatar_format = COALESCE($20, avatar_format)');
@@ -281,12 +289,17 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 }
                 
                 try {
+                    console.log(`🔍 [DEBUG] Executando UPDATE com logo_spacing = $19:`, updateValues[18]);
                     const updateResult = await client.query(`
                         UPDATE user_profiles SET
                             ${updateFields.join(', ')}
                         WHERE user_id = $${paramIndex}
                     `, updateValues);
                     console.log(`✅ [SAVE-ALL] UPDATE concluído em ${Date.now() - updateStart}ms (${updateResult.rowCount} linha(s) atualizada(s))`);
+                    
+                    // Verificar o valor salvo
+                    const verifyRes = await client.query('SELECT logo_spacing FROM user_profiles WHERE user_id = $1', [userId]);
+                    console.log(`🔍 [DEBUG] Valor de logo_spacing após UPDATE:`, verifyRes.rows[0]?.logo_spacing);
                 } catch (updateError) {
                     console.error(`❌ [SAVE-ALL] Erro no UPDATE após ${Date.now() - updateStart}ms:`, updateError);
                     console.error(`❌ [SAVE-ALL] Código do erro: ${updateError.code}`);
