@@ -494,6 +494,18 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     insertValues.push(logoSizeValue);
                     console.log(`📏 [SAVE-ALL] Item ${item.id || 'novo'} (${item.item_type}) - logo_size: ${logoSizeValue} (original: ${item.logo_size}, tipo: ${typeof item.logo_size})`);
                 }
+                if (existingColumns.includes('logo_fit_mode')) {
+                    insertFields.push('logo_fit_mode');
+                    // Preservar logo_fit_mode se fornecido, senão usar 'contain' (completo, sem corte) como padrão
+                    let logoFitModeValue = 'contain'; // Padrão: completo, sem corte
+                    if (item.logo_fit_mode !== undefined && item.logo_fit_mode !== null && item.logo_fit_mode !== '') {
+                        if (['contain', 'cover'].includes(item.logo_fit_mode)) {
+                            logoFitModeValue = item.logo_fit_mode;
+                        }
+                    }
+                    insertValues.push(logoFitModeValue);
+                    console.log(`📏 [SAVE-ALL] Item ${item.id || 'novo'} (${item.item_type}) - logo_fit_mode: ${logoFitModeValue} (original: ${item.logo_fit_mode})`);
+                }
                 if (existingColumns.includes('whatsapp_message')) {
                     insertFields.push('whatsapp_message');
                     insertValues.push(item.whatsapp_message || null);
@@ -891,6 +903,11 @@ router.put('/items/link/:id', protectUser, asyncHandler(async (req, res) => {
         if (existingColumns.includes('logo_size') && logo_size !== undefined) {
             updateFields.push(`logo_size = $${paramIndex++}`);
             updateValues.push(logo_size || null);
+        }
+        if (existingColumns.includes('logo_fit_mode') && item.logo_fit_mode !== undefined) {
+            const logo_fit_mode = item.logo_fit_mode || 'contain'; // Padrão: completo, sem corte
+            updateFields.push(`logo_fit_mode = $${paramIndex++}`);
+            updateValues.push(['contain', 'cover'].includes(logo_fit_mode) ? logo_fit_mode : 'contain');
         }
         if (is_active !== undefined) {
             updateFields.push(`is_active = $${paramIndex++}`);
