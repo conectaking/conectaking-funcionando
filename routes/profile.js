@@ -96,6 +96,9 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
         const details = profileRes.rows[0];
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
+        
+        console.log('📱 [GET /api/profile] WhatsApp retornado:', details.whatsapp);
+        console.log('📱 [GET /api/profile] Coluna whatsapp existe?', existingColumns.includes('whatsapp'));
 
         const fullProfile = {
             details: details,
@@ -298,11 +301,14 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 
                 if (existingColumns.includes('whatsapp')) {
                     console.log(`✅ [SAVE-ALL] Adicionando campo 'whatsapp' ao UPDATE`);
+                    console.log(`📱 [SAVE-ALL] Valor do WhatsApp recebido:`, details.whatsapp);
                     updateFields.push(`whatsapp = COALESCE($${paramIndex}, whatsapp)`);
                     updateValues.push(details.whatsapp || null);
+                    console.log(`📱 [SAVE-ALL] Valor do WhatsApp que será salvo:`, updateValues[updateValues.length - 1]);
                     paramIndex++;
                 } else {
                     console.log(`⚠️ [SAVE-ALL] Coluna 'whatsapp' NÃO existe, pulando...`);
+                    console.log(`📱 [SAVE-ALL] Valor do WhatsApp recebido (mas não será salvo):`, details.whatsapp);
                 }
                 
                 if (existingColumns.includes('whatsapp_number')) {
