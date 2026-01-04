@@ -48,9 +48,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             'p.background_type', 'p.background_image_url',
             'p.card_background_color', 'p.card_opacity',
             'p.button_font_size', 'p.background_image_opacity',
-            'p.show_vcard_button',
-            'COALESCE(p.logo_spacing, \'center\') as logo_spacing',
-            'p.whatsapp'
+            'p.show_vcard_button'
         ];
         
         // Adicionar colunas opcionais se existirem
@@ -60,8 +58,18 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             baseFields.splice(3, 0, "'circular' as avatar_format");
         }
         
+        if (existingColumns.includes('logo_spacing')) {
+            baseFields.push("COALESCE(p.logo_spacing, 'center') as logo_spacing");
+        } else {
+            baseFields.push("'center' as logo_spacing");
+        }
+        
         if (existingColumns.includes('share_image_url')) {
             baseFields.push('p.share_image_url');
+        }
+        
+        if (existingColumns.includes('whatsapp')) {
+            baseFields.push('p.whatsapp');
         }
         
         if (existingColumns.includes('whatsapp_number')) {
