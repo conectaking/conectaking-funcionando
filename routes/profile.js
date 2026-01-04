@@ -324,6 +324,8 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
 
                 console.log(`🔄 [SAVE-ALL] Executando UPDATE em user_profiles (${updateFields.length} campos)...`);
                 console.log(`🔄 [SAVE-ALL] Primeiros 5 campos: ${updateFields.slice(0, 5).join(', ')}${updateFields.length > 5 ? '...' : ''}`);
+                console.log(`🔍 [SAVE-ALL] Todos os campos do UPDATE:`, updateFields);
+                console.log(`🔍 [SAVE-ALL] Verificando se 'whatsapp' está nos campos:`, updateFields.some(f => f.includes('whatsapp')));
                 const updateStart = Date.now();
                 
                 // Verificar locks antes do UPDATE
@@ -344,12 +346,14 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 }
                 
                 try {
-                    console.log(`🔍 [DEBUG] Executando UPDATE com ${updateFields.length} campos`);
-                    const updateResult = await client.query(`
+                    const updateQuery = `
                         UPDATE user_profiles SET
                             ${updateFields.join(', ')}
                         WHERE user_id = $${userIdParamIndex}
-                    `, updateValues);
+                    `;
+                    console.log(`🔍 [DEBUG] Query UPDATE:`, updateQuery.substring(0, 500));
+                    console.log(`🔍 [DEBUG] Executando UPDATE com ${updateFields.length} campos e ${updateValues.length} valores`);
+                    const updateResult = await client.query(updateQuery, updateValues);
                     console.log(`✅ [SAVE-ALL] UPDATE concluído em ${Date.now() - updateStart}ms (${updateResult.rowCount} linha(s) atualizada(s))`);
                     
                     // Verificar o valor salvo
