@@ -32,6 +32,7 @@ router.get('/', protectUser, async (req, res) => {
                 p.button_font_size, p.background_image_opacity,
                 p.show_vcard_button, p.share_image_url,
                 COALESCE(p.logo_spacing, 'center') as logo_spacing,
+                p.whatsapp,
                 p.whatsapp_number
             FROM users u
             LEFT JOIN user_profiles p ON u.id = p.user_id
@@ -164,7 +165,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     'background_type', 'background_image_url',
                     'card_background_color', 'card_opacity',
                     'button_font_size', 'background_image_opacity',
-                    'show_vcard_button', 'whatsapp_number'
+                    'show_vcard_button', 'whatsapp'
                 ];
                 const insertValues = [
                     userId,
@@ -186,7 +187,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     details.button_font_size || details.buttonFontSize || null,
                     details.background_image_opacity || details.backgroundImageOpacity || null,
                     details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : true),
-                    details.whatsapp_number || null
+                    details.whatsapp || null
                 ];
 
                 if (hasAvatarFormat) {
@@ -236,7 +237,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     'background_image_opacity = COALESCE($17, background_image_opacity)',
                     'show_vcard_button = COALESCE($18, show_vcard_button)',
                     'logo_spacing = CASE WHEN $19::VARCHAR IS NOT NULL THEN $19::VARCHAR ELSE logo_spacing END',
-                    'whatsapp_number = COALESCE($20, whatsapp_number)'
+                    'whatsapp = COALESCE($20, whatsapp)'
                 ];
                 const updateValues = [
                     details.display_name || details.displayName || null,
@@ -258,13 +259,13 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     details.background_image_opacity || details.backgroundImageOpacity,
                     details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : undefined),
                     (details.logo_spacing !== undefined && details.logo_spacing !== null) ? details.logo_spacing : ((details.logoSpacing !== undefined && details.logoSpacing !== null) ? details.logoSpacing : null),
-                    details.whatsapp_number || null
+                    details.whatsapp || null
                 ];
 
                 console.log(`🔍 [DEBUG] logo_spacing no updateValues[18]:`, updateValues[18], 'tipo:', typeof updateValues[18], 'é null?', updateValues[18] === null, 'é undefined?', updateValues[18] === undefined);
 
                 if (hasAvatarFormat && avatarFormatValue) {
-                    updateFields.push('avatar_format = COALESCE($20, avatar_format)');
+                    updateFields.push('avatar_format = COALESCE($21, avatar_format)');
                     updateValues.push(avatarFormatValue);
                 }
 

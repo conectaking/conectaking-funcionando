@@ -17,7 +17,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         }
         const userId = userRes.rows[0].id;
 
-        const profileRes = await client.query('SELECT display_name, whatsapp_number FROM user_profiles WHERE user_id = $1', [userId]);
+        const profileRes = await client.query('SELECT display_name, whatsapp FROM user_profiles WHERE user_id = $1', [userId]);
         if (profileRes.rows.length === 0) {
             return res.status(404).send('Detalhes do perfil não encontrados.');
         }
@@ -38,16 +38,15 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         let emailAdded = false;
         let phoneAdded = false;
         
-        // Se não houver módulo WhatsApp, usar o WhatsApp do perfil
-        const hasWhatsAppModule = itemsRes.rows.some(item => item.item_type === 'whatsapp');
-        if (!hasWhatsAppModule && profile.whatsapp_number) {
-            const phoneNumber = profile.whatsapp_number.replace(/\D/g, '');
-            if (phoneNumber && !phoneAdded) {
-                vCard += `TEL;TYPE=CELL,VOICE:${phoneNumber}\n`;
+        // Se houver WhatsApp no perfil e ainda não foi adicionado telefone, adicionar primeiro
+        // (antes de processar os módulos, para garantir que o WhatsApp do perfil seja usado se não houver módulo)
+        if (profile.whatsapp && !phoneAdded) {
+            const whatsappNumber = profile.whatsapp.replace(/\D/g, '');
+            if (whatsappNumber) {
+                vCard += `TEL;TYPE=CELL,VOICE:${whatsappNumber}\n`;
+                vCard += `URL;TYPE=WhatsApp:https://wa.me/${whatsappNumber}\n`;
                 phoneAdded = true;
             }
-            // Adicionar também como URL do WhatsApp
-            vCard += `URL;TYPE=WhatsApp:https://wa.me/${phoneNumber}\n`;
         }
 
         itemsRes.rows.forEach(item => {
