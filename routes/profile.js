@@ -163,11 +163,16 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'user_profiles'
+                ORDER BY column_name
             `);
             const existingColumns = columnsCheck.rows.map(row => row.column_name);
             console.log(`✅ [SAVE-ALL] ${existingColumns.length} colunas encontradas na tabela user_profiles`);
-            console.log(`🔍 [SAVE-ALL] Coluna 'whatsapp' existe? ${existingColumns.includes('whatsapp')}`);
-            console.log(`🔍 [SAVE-ALL] Colunas disponíveis:`, existingColumns.slice(0, 10).join(', '), '...');
+            const hasWhatsapp = existingColumns.includes('whatsapp');
+            console.log(`🔍 [SAVE-ALL] Coluna 'whatsapp' existe? ${hasWhatsapp}`);
+            if (!hasWhatsapp) {
+                console.log(`⚠️ [SAVE-ALL] ATENÇÃO: Coluna 'whatsapp' NÃO encontrada!`);
+                console.log(`📋 [SAVE-ALL] Colunas disponíveis:`, existingColumns.join(', '));
+            }
             
             // Verificar se o perfil existe (user_id é a chave primária, não precisa selecionar id)
             console.log('🔍 [SAVE-ALL] Verificando se perfil existe...');
@@ -218,7 +223,12 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 // Adicionar colunas opcionais se existirem
                 if (existingColumns.includes('whatsapp')) {
                     insertFields.push('whatsapp');
-                    insertValues.push(details.whatsapp || null);
+                    const whatsappValue = details.whatsapp || details.whatsappNumber || null;
+                    insertValues.push(whatsappValue);
+                    console.log(`📱 [SAVE-ALL] INSERT - Valor do WhatsApp que será salvo:`, whatsappValue);
+                } else {
+                    console.log(`⚠️ [SAVE-ALL] INSERT - Coluna 'whatsapp' NÃO existe no banco de dados!`);
+                    console.log(`💡 [SAVE-ALL] Execute a migration 045_add_whatsapp_to_user_profiles.sql no banco de dados do Render`);
                 }
                 
                 if (existingColumns.includes('whatsapp_number')) {
