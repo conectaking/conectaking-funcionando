@@ -154,6 +154,16 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
         // Salvar detalhes do perfil
         if (details) {
             console.log('📝 [SAVE-ALL] Processando detalhes do perfil...');
+            
+            // Verificar quais colunas existem na tabela user_profiles
+            const columnsCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'user_profiles'
+            `);
+            const existingColumns = columnsCheck.rows.map(row => row.column_name);
+            console.log(`✅ [SAVE-ALL] ${existingColumns.length} colunas encontradas na tabela user_profiles`);
+            
             // Verificar se o perfil existe (user_id é a chave primária, não precisa selecionar id)
             console.log('🔍 [SAVE-ALL] Verificando se perfil existe...');
             const checkStart = Date.now();
@@ -166,15 +176,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
 
             if (checkProfile.rows.length === 0) {
                 // Verificar se a coluna avatar_format existe antes de tentar inserir
-                const columnCheck = await client.query(`
-                    SELECT EXISTS (
-                        SELECT 1 
-                        FROM information_schema.columns 
-                        WHERE table_name = 'user_profiles' 
-                        AND column_name = 'avatar_format'
-                    ) AS coluna_existe
-                `);
-                const hasAvatarFormat = columnCheck.rows[0]?.coluna_existe;
+                const hasAvatarFormat = existingColumns.includes('avatar_format');
                 const avatarFormatValue = details.avatar_format || details.avatarFormat || 'circular';
 
                 const insertFields = [
@@ -184,7 +186,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     'background_type', 'background_image_url',
                     'card_background_color', 'card_opacity',
                     'button_font_size', 'background_image_opacity',
-                    'show_vcard_button', 'whatsapp'
+                    'show_vcard_button'
                 ];
                 const insertValues = [
                     userId,
@@ -205,9 +207,24 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     details.card_opacity || details.cardOpacity || null,
                     details.button_font_size || details.buttonFontSize || null,
                     details.background_image_opacity || details.backgroundImageOpacity || null,
-                    details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : true),
-                    details.whatsapp || null
+                    details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : true)
                 ];
+
+                // Adicionar colunas opcionais se existirem
+                if (existingColumns.includes('whatsapp')) {
+                    insertFields.push('whatsapp');
+                    insertValues.push(details.whatsapp || null);
+                }
+                
+                if (existingColumns.includes('whatsapp_number')) {
+                    insertFields.push('whatsapp_number');
+                    insertValues.push(details.whatsapp_number || details.whatsappNumber || null);
+                }
+                
+                if (existingColumns.includes('logo_spacing')) {
+                    insertFields.push('logo_spacing');
+                    insertValues.push((details.logo_spacing !== undefined && details.logo_spacing !== null) ? details.logo_spacing : ((details.logoSpacing !== undefined && details.logoSpacing !== null) ? details.logoSpacing : 'center'));
+                }
 
                 if (hasAvatarFormat) {
                     insertFields.push('avatar_format');
@@ -224,18 +241,9 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 console.log(`✅ [SAVE-ALL] INSERT concluído em ${Date.now() - insertStart}ms`);
             } else {
                 // Atualizar perfil existente
-                // Verificar se a coluna avatar_format existe antes de tentar atualizar
-                const columnCheck = await client.query(`
-                    SELECT EXISTS (
-                        SELECT 1 
-                        FROM information_schema.columns 
-                        WHERE table_name = 'user_profiles' 
-                        AND column_name = 'avatar_format'
-                    ) AS coluna_existe
-                `);
-                const hasAvatarFormat = columnCheck.rows[0]?.coluna_existe;
-
+                const hasAvatarFormat = existingColumns.includes('avatar_format');
                 const avatarFormatValue = details.avatar_format || details.avatarFormat;
+                
                 const updateFields = [
                     'display_name = COALESCE($1, display_name)',
                     'bio = COALESCE($2, bio)',
@@ -254,9 +262,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     'card_opacity = COALESCE($15, card_opacity)',
                     'button_font_size = COALESCE($16, button_font_size)',
                     'background_image_opacity = COALESCE($17, background_image_opacity)',
-                    'show_vcard_button = COALESCE($18, show_vcard_button)',
-                    'logo_spacing = CASE WHEN $19::VARCHAR IS NOT NULL THEN $19::VARCHAR ELSE logo_spacing END',
-                    'whatsapp = COALESCE($20, whatsapp)'
+                    'show_vcard_button = COALESCE($18, show_vcard_button)'
                 ];
                 const updateValues = [
                     details.display_name || details.displayName || null,
@@ -276,20 +282,40 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     details.card_opacity || details.cardOpacity,
                     details.button_font_size || details.buttonFontSize,
                     details.background_image_opacity || details.backgroundImageOpacity,
-                    details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : undefined),
-                    (details.logo_spacing !== undefined && details.logo_spacing !== null) ? details.logo_spacing : ((details.logoSpacing !== undefined && details.logoSpacing !== null) ? details.logoSpacing : null),
-                    details.whatsapp || null
+                    details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : undefined)
                 ];
+                
+                let paramIndex = updateValues.length + 1;
 
-                console.log(`🔍 [DEBUG] logo_spacing no updateValues[18]:`, updateValues[18], 'tipo:', typeof updateValues[18], 'é null?', updateValues[18] === null, 'é undefined?', updateValues[18] === undefined);
+                // Adicionar colunas opcionais se existirem
+                if (existingColumns.includes('logo_spacing')) {
+                    updateFields.push(`logo_spacing = CASE WHEN $${paramIndex}::VARCHAR IS NOT NULL THEN $${paramIndex}::VARCHAR ELSE logo_spacing END`);
+                    updateValues.push((details.logo_spacing !== undefined && details.logo_spacing !== null) ? details.logo_spacing : ((details.logoSpacing !== undefined && details.logoSpacing !== null) ? details.logoSpacing : null));
+                    paramIndex++;
+                }
+                
+                if (existingColumns.includes('whatsapp')) {
+                    updateFields.push(`whatsapp = COALESCE($${paramIndex}, whatsapp)`);
+                    updateValues.push(details.whatsapp || null);
+                    paramIndex++;
+                }
+                
+                if (existingColumns.includes('whatsapp_number')) {
+                    updateFields.push(`whatsapp_number = COALESCE($${paramIndex}, whatsapp_number)`);
+                    updateValues.push(details.whatsapp_number || details.whatsappNumber || null);
+                    paramIndex++;
+                }
+
+                console.log(`🔍 [DEBUG] logo_spacing no updateValues:`, updateValues.find((v, i) => updateFields[i]?.includes('logo_spacing')));
 
                 if (hasAvatarFormat && avatarFormatValue) {
-                    updateFields.push('avatar_format = COALESCE($21, avatar_format)');
+                    updateFields.push(`avatar_format = COALESCE($${paramIndex}, avatar_format)`);
                     updateValues.push(avatarFormatValue);
+                    paramIndex++;
                 }
 
                 updateValues.push(userId);
-                const paramIndex = updateValues.length;
+                const userIdParamIndex = updateValues.length;
 
                 console.log(`🔄 [SAVE-ALL] Executando UPDATE em user_profiles (${updateFields.length} campos)...`);
                 console.log(`🔄 [SAVE-ALL] Primeiros 5 campos: ${updateFields.slice(0, 5).join(', ')}${updateFields.length > 5 ? '...' : ''}`);
@@ -313,11 +339,11 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 }
                 
                 try {
-                    console.log(`🔍 [DEBUG] Executando UPDATE com logo_spacing = $19:`, updateValues[18]);
+                    console.log(`🔍 [DEBUG] Executando UPDATE com ${updateFields.length} campos`);
                     const updateResult = await client.query(`
                         UPDATE user_profiles SET
                             ${updateFields.join(', ')}
-                        WHERE user_id = $${paramIndex}
+                        WHERE user_id = $${userIdParamIndex}
                     `, updateValues);
                     console.log(`✅ [SAVE-ALL] UPDATE concluído em ${Date.now() - updateStart}ms (${updateResult.rowCount} linha(s) atualizada(s))`);
                     
