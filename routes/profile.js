@@ -15,29 +15,67 @@ function hexToRgb(hex) {
     } : { r: 20, g: 20, b: 23 };
 }
 
-router.get('/', protectUser, async (req, res) => {
+router.get('/', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const userId = req.user.userId;
+        
+        if (!userId) {
+            return res.status(400).json({ message: 'ID do usuário não encontrado.' });
+        }
+        
+        // Verificar quais colunas existem na tabela user_profiles
+        let existingColumns = [];
+        try {
+            const columnsCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'user_profiles'
+            `);
+            existingColumns = columnsCheck.rows.map(row => row.column_name);
+        } catch (checkError) {
+            console.warn('⚠️ Erro ao verificar colunas da tabela user_profiles:', checkError.message);
+            // Se falhar, usar query mais simples
+        }
+        
+        // Construir query dinamicamente baseada nas colunas existentes
+        const baseFields = [
+            'u.id', 'u.email', 'u.profile_slug',
+            'p.display_name', 'p.bio', 'p.profile_image_url',
+            'p.font_family',
+            'p.background_color', 'p.text_color', 'p.button_color', 'p.button_text_color',
+            'p.button_opacity', 'p.button_border_radius', 'p.button_content_align',
+            'p.background_type', 'p.background_image_url',
+            'p.card_background_color', 'p.card_opacity',
+            'p.button_font_size', 'p.background_image_opacity',
+            'p.show_vcard_button',
+            'COALESCE(p.logo_spacing, \'center\') as logo_spacing',
+            'p.whatsapp'
+        ];
+        
+        // Adicionar colunas opcionais se existirem
+        if (existingColumns.includes('avatar_format')) {
+            baseFields.splice(3, 0, "COALESCE(p.avatar_format, 'circular') as avatar_format");
+        } else {
+            baseFields.splice(3, 0, "'circular' as avatar_format");
+        }
+        
+        if (existingColumns.includes('share_image_url')) {
+            baseFields.push('p.share_image_url');
+        }
+        
+        if (existingColumns.includes('whatsapp_number')) {
+            baseFields.push('p.whatsapp_number');
+        }
+        
         const profileQuery = `
             SELECT 
-                u.id, u.email, u.profile_slug,
-                p.display_name, p.bio, p.profile_image_url, 
-                COALESCE(p.avatar_format, 'circular') as avatar_format, 
-                p.font_family,
-                p.background_color, p.text_color, p.button_color, p.button_text_color,
-                p.button_opacity, p.button_border_radius, p.button_content_align,
-                p.background_type, p.background_image_url,
-                p.card_background_color, p.card_opacity,
-                p.button_font_size, p.background_image_opacity,
-                p.show_vcard_button, p.share_image_url,
-                COALESCE(p.logo_spacing, 'center') as logo_spacing,
-                p.whatsapp,
-                p.whatsapp_number
+                ${baseFields.join(', ')}
             FROM users u
             LEFT JOIN user_profiles p ON u.id = p.user_id
             WHERE u.id = $1;
         `;
+        
         const profileRes = await client.query(profileQuery, [userId]);
 
         if (profileRes.rows.length === 0) {
@@ -59,46 +97,19 @@ router.get('/', protectUser, async (req, res) => {
         res.json(fullProfile);
 
     } catch (error) {
-        console.error("Erro ao buscar perfil completo:", error);
-        // Se o erro for relacionado à coluna avatar_format não existir, tentar novamente sem ela
-        if (error.message && error.message.includes('avatar_format')) {
-            try {
-                const fallbackQuery = `
-                    SELECT 
-                        u.id, u.email, u.profile_slug,
-                        p.display_name, p.bio, p.profile_image_url, p.font_family,
-                        p.background_color, p.text_color, p.button_color, p.button_text_color,
-                        p.button_opacity, p.button_border_radius, p.button_content_align,
-                        p.background_type, p.background_image_url,
-                        p.card_background_color, p.card_opacity,
-                        p.button_font_size, p.background_image_opacity,
-                        p.show_vcard_button,
-                        COALESCE(p.logo_spacing, 'center') as logo_spacing
-                    FROM users u
-                    LEFT JOIN user_profiles p ON u.id = p.user_id
-                    WHERE u.id = $1;
-                `;
-                const fallbackRes = await client.query(fallbackQuery, [userId]);
-                if (fallbackRes.rows.length > 0) {
-                    const details = fallbackRes.rows[0];
-                    details.avatar_format = 'circular'; // Valor padrão
-                    details.button_color_rgb = hexToRgb(details.button_color);
-                    details.card_color_rgb = hexToRgb(details.card_background_color);
-                    const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order ASC', [userId]);
-                    return res.json({
-                        details: details,
-                        items: itemsRes.rows || []
-                    });
-                }
-            } catch (fallbackError) {
-                console.error("Erro no fallback:", fallbackError);
-            }
-        }
-        res.status(500).json({ message: 'Erro ao buscar dados do perfil.' });
+        console.error("❌ Erro ao buscar perfil completo:", error);
+        console.error("❌ Stack trace:", error.stack);
+        console.error("❌ Error code:", error.code);
+        console.error("❌ Error message:", error.message);
+        
+        // Não enviar resposta aqui, deixar asyncHandler tratar
+        throw error;
     } finally {
-        client.release();
+        if (client) {
+            client.release();
+        }
     }
-});
+}));
 
 // PUT /api/profile/save-all - Salvar todas as alterações do perfil (detalhes + itens)
 router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
