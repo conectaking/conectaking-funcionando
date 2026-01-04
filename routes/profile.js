@@ -245,6 +245,12 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     insertFields.push('avatar_format');
                     insertValues.push(avatarFormatValue);
                 }
+                
+                // Adicionar share_image_url se existir
+                if (existingColumns.includes('share_image_url')) {
+                    insertFields.push('share_image_url');
+                    insertValues.push(details.share_image_url || null);
+                }
 
                 const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
                 console.log('🔄 [SAVE-ALL] Executando INSERT em user_profiles...');
@@ -332,6 +338,13 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 if (hasAvatarFormat && avatarFormatValue) {
                     updateFields.push(`avatar_format = COALESCE($${paramIndex}, avatar_format)`);
                     updateValues.push(avatarFormatValue);
+                    paramIndex++;
+                }
+                
+                // Adicionar share_image_url se existir
+                if (existingColumns.includes('share_image_url')) {
+                    updateFields.push(`share_image_url = COALESCE($${paramIndex}, share_image_url)`);
+                    updateValues.push(details.share_image_url || null);
                     paramIndex++;
                 }
 
