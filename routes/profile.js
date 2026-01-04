@@ -163,6 +163,8 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             `);
             const existingColumns = columnsCheck.rows.map(row => row.column_name);
             console.log(`✅ [SAVE-ALL] ${existingColumns.length} colunas encontradas na tabela user_profiles`);
+            console.log(`🔍 [SAVE-ALL] Coluna 'whatsapp' existe? ${existingColumns.includes('whatsapp')}`);
+            console.log(`🔍 [SAVE-ALL] Colunas disponíveis:`, existingColumns.slice(0, 10).join(', '), '...');
             
             // Verificar se o perfil existe (user_id é a chave primária, não precisa selecionar id)
             console.log('🔍 [SAVE-ALL] Verificando se perfil existe...');
@@ -295,9 +297,12 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 }
                 
                 if (existingColumns.includes('whatsapp')) {
+                    console.log(`✅ [SAVE-ALL] Adicionando campo 'whatsapp' ao UPDATE`);
                     updateFields.push(`whatsapp = COALESCE($${paramIndex}, whatsapp)`);
                     updateValues.push(details.whatsapp || null);
                     paramIndex++;
+                } else {
+                    console.log(`⚠️ [SAVE-ALL] Coluna 'whatsapp' NÃO existe, pulando...`);
                 }
                 
                 if (existingColumns.includes('whatsapp_number')) {
