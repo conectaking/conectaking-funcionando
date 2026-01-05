@@ -16,9 +16,43 @@
             --text-color: <%= formData.text_color || '#333333' %>;
             --theme: <%= formData.theme || 'light' %>;
         }
+        <% if (formData.background_image_url) { %>
+        body {
+            background-image: url('<%= formData.background_image_url %>');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, <%= 1 - (formData.background_opacity || 1.0) %>);
+            z-index: -1;
+        }
+        <% } %>
+        <% if (formData.header_image_url) { %>
+        .header-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            display: block;
+        }
+        <% } %>
     </style>
 </head>
 <body class="digital-form-page theme-<%= formData.theme || 'light' %>" data-form-id="<%= item.id %>" data-whatsapp="<%= formData.whatsapp_number || '' %>">
+    <!-- Header Image -->
+    <% if (formData.header_image_url) { %>
+    <div class="header-image-container">
+        <img src="<%= formData.header_image_url %>" alt="Header" class="header-image">
+    </div>
+    <% } %>
+    
     <!-- Header -->
     <header class="form-header">
         <div class="container">
@@ -31,7 +65,7 @@
             <% if (formData.form_logo_url) { %>
             <img src="<%= formData.form_logo_url %>" alt="Logo" class="form-logo">
             <% } %>
-            <h1 class="form-title"><%= formData.form_title || 'Formulário Digital' %></h1>
+            <h1 class="form-title"><%= formData.form_title || 'Formulário King' %></h1>
         </div>
     </header>
 
@@ -45,110 +79,8 @@
             </div>
             <% } %>
 
-            <!-- Mensagem de Boas-vindas -->
-            <% if (formData.welcome_text) { %>
-            <div class="welcome-section">
-                <p class="welcome-text"><%= formData.welcome_text %></p>
-            </div>
-            <% } %>
-
-            <!-- Pedidos de Oração -->
-            <% if (formData.prayer_requests_text) { %>
-            <div class="section prayer-section">
-                <h2 class="section-title">Pedidos de Oração</h2>
-                <p class="section-text"><%= formData.prayer_requests_text %></p>
-            </div>
-            <% } %>
-
-            <!-- Nossos Encontros -->
-            <% if (formData.meetings_text) { %>
-            <div class="section meetings-section">
-                <h2 class="section-title">Nossos Encontros</h2>
-                <div class="section-content"><%= formData.meetings_text.replace(/\n/g, '<br>') %></div>
-            </div>
-            <% } %>
-
             <!-- Formulário -->
             <form id="digital-form" class="digital-form">
-                <!-- Campos Padrão -->
-                <div class="form-group">
-                    <label for="form-name">Nome <span class="required">*</span></label>
-                    <input type="text" id="form-name" name="name" required placeholder="Seu nome completo">
-                </div>
-
-                <div class="form-group">
-                    <label for="form-address">Endereço</label>
-                    <input type="text" id="form-address" name="address" placeholder="Rua, número">
-                </div>
-
-                <div class="form-group">
-                    <label for="form-neighborhood">Bairro</label>
-                    <input type="text" id="form-neighborhood" name="neighborhood" placeholder="Seu bairro">
-                </div>
-
-                <div class="form-group">
-                    <label for="form-whatsapp">WhatsApp <span class="required">*</span></label>
-                    <input type="tel" id="form-whatsapp" name="whatsapp" required placeholder="(99) 99999-9999">
-                </div>
-
-                <div class="form-group">
-                    <label for="form-participation-date">Data de Participação</label>
-                    <input type="date" id="form-participation-date" name="participation_date">
-                </div>
-
-                <div class="form-group">
-                    <label for="form-birthdate">Data de Nascimento</label>
-                    <input type="date" id="form-birthdate" name="birthdate">
-                </div>
-
-                <!-- Faixa Etária -->
-                <div class="form-group">
-                    <label>Faixa Etária</label>
-                    <div class="checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="age_group" value="adulto">
-                            <span>Adulto</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="age_group" value="jovem">
-                            <span>Jovem</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="age_group" value="adolescente">
-                            <span>Adolescente</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="age_group" value="crianca">
-                            <span>Criança</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Conhece algum membro? -->
-                <div class="form-group">
-                    <label for="form-knows-member">Conhece algum membro da igreja?</label>
-                    <input type="text" id="form-knows-member" name="knows_member" placeholder="Nome do membro">
-                </div>
-
-                <!-- Opções -->
-                <div class="form-group">
-                    <label>Opções</label>
-                    <div class="checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="wants_visit" value="sim">
-                            <span>Quero uma visita em minha casa</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="wants_cell" value="sim">
-                            <span>Quero participar de uma célula</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="wants_bible_study" value="sim">
-                            <span>Quero participar de um Estudo Bíblico</span>
-                        </label>
-                    </div>
-                </div>
-
                 <!-- Campos Dinâmicos (form_fields) -->
                 <div id="dynamic-fields-container"></div>
 
@@ -168,26 +100,113 @@
 
         // Carregar campos dinâmicos se existirem
         const formFields = formDataObj.form_fields || [];
-        if (formFields && Array.isArray(formFields) && formFields.length > 0) {
-            const container = document.getElementById('dynamic-fields-container');
+        const container = document.getElementById('dynamic-fields-container');
+        
+        if (!formFields || formFields.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: var(--text-color, #666); padding: 40px;">Nenhum campo configurado neste formulário.</p>';
+        } else {
             formFields.forEach((field, index) => {
-                if (field.type === 'text') {
-                    const group = document.createElement('div');
-                    group.className = 'form-group';
-                    group.innerHTML = `
-                        <label for="field-${index}">${field.label || 'Campo'} ${field.required ? '<span class="required">*</span>' : ''}</label>
-                        <input type="text" id="field-${index}" name="field_${index}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}">
-                    `;
-                    container.appendChild(group);
-                } else if (field.type === 'textarea') {
-                    const group = document.createElement('div');
-                    group.className = 'form-group';
-                    group.innerHTML = `
-                        <label for="field-${index}">${field.label || 'Campo'} ${field.required ? '<span class="required">*</span>' : ''}</label>
-                        <textarea id="field-${index}" name="field_${index}" rows="4" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}"></textarea>
-                    `;
-                    container.appendChild(group);
+                const group = document.createElement('div');
+                group.className = 'form-group';
+                group.dataset.fieldType = field.type;
+                group.dataset.fieldId = field.id || `field_${index}`;
+                
+                let fieldHTML = `<label for="field-${index}">${field.label || 'Campo'} ${field.required ? '<span class="required">*</span>' : ''}</label>`;
+                
+                switch(field.type) {
+                    case 'short_text':
+                        fieldHTML += `<input type="text" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}">`;
+                        break;
+                    case 'paragraph':
+                        fieldHTML += `<textarea id="field-${index}" name="${field.id || `field_${index}`}" rows="4" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}"></textarea>`;
+                        break;
+                    case 'multiple_choice':
+                        if (field.options && field.options.length > 0) {
+                            field.options.forEach((opt, optIdx) => {
+                                fieldHTML += `
+                                    <label class="radio-label">
+                                        <input type="radio" name="${field.id || `field_${index}`}" value="${opt}" ${field.required ? 'required' : ''}>
+                                        <span>${opt}</span>
+                                    </label>
+                                `;
+                            });
+                        }
+                        break;
+                    case 'checkbox':
+                        if (field.options && field.options.length > 0) {
+                            field.options.forEach((opt, optIdx) => {
+                                fieldHTML += `
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="${field.id || `field_${index}`}" value="${opt}">
+                                        <span>${opt}</span>
+                                    </label>
+                                `;
+                            });
+                        }
+                        break;
+                    case 'dropdown':
+                        fieldHTML += `<select id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''}><option value="">Selecione...</option>`;
+                        if (field.options && field.options.length > 0) {
+                            field.options.forEach(opt => {
+                                fieldHTML += `<option value="${opt}">${opt}</option>`;
+                            });
+                        }
+                        fieldHTML += `</select>`;
+                        break;
+                    case 'yes_no':
+                        fieldHTML += `
+                            <div class="yes-no-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="${field.id || `field_${index}`}" value="sim" ${field.required ? 'required' : ''}>
+                                    <span>Sim</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="${field.id || `field_${index}`}" value="não" ${field.required ? 'required' : ''}>
+                                    <span>Não</span>
+                                </label>
+                            </div>
+                        `;
+                        break;
+                    case 'date':
+                        fieldHTML += `<input type="date" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''}>`;
+                        break;
+                    case 'time':
+                        fieldHTML += `<input type="time" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''}>`;
+                        break;
+                    case 'datetime':
+                        fieldHTML += `<input type="datetime-local" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''}>`;
+                        break;
+                    case 'linear_scale':
+                        const min = field.min || 1;
+                        const max = field.max || 5;
+                        fieldHTML += `<div class="linear-scale-group">`;
+                        for (let i = min; i <= max; i++) {
+                            fieldHTML += `
+                                <label class="radio-label">
+                                    <input type="radio" name="${field.id || `field_${index}`}" value="${i}" ${field.required ? 'required' : ''}>
+                                    <span>${i}</span>
+                                </label>
+                            `;
+                        }
+                        fieldHTML += `</div>`;
+                        break;
+                    case 'rating':
+                        const ratingMax = field.max || 5;
+                        fieldHTML += `<div class="rating-group">`;
+                        for (let i = 1; i <= ratingMax; i++) {
+                            fieldHTML += `<input type="radio" name="${field.id || `field_${index}`}" value="${i}" id="rating-${index}-${i}" ${field.required ? 'required' : ''}><label for="rating-${index}-${i}">★</label>`;
+                        }
+                        fieldHTML += `</div>`;
+                        break;
+                    case 'file_upload':
+                        fieldHTML += `<input type="file" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} accept="${field.accept || '*/*'}">`;
+                        break;
+                    default:
+                        fieldHTML += `<input type="text" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}">`;
                 }
+                
+                group.innerHTML = fieldHTML;
+                container.appendChild(group);
             });
         }
 
@@ -218,52 +237,76 @@
             }
 
             // Coletar dados do formulário
-            const formData = new FormData(this);
+            const formDataObj = new FormData(this);
             const data = {};
+            const responseData = {};
 
-            // Campos de texto
-            for (const [key, value] of formData.entries()) {
-                if (key.startsWith('field_')) {
-                    if (!data.customFields) data.customFields = {};
-                    data.customFields[key] = value;
-                } else if (key === 'age_group' || key === 'wants_visit' || key === 'wants_cell' || key === 'wants_bible_study') {
-                    if (!data[key]) data[key] = [];
-                    data[key].push(value);
+            // Coletar todos os campos
+            for (const [key, value] of formDataObj.entries()) {
+                // Verificar se é um campo dinâmico
+                const field = formFields.find(f => (f.id || `field_${formFields.indexOf(f)}`) === key);
+                if (field) {
+                    if (field.type === 'checkbox') {
+                        if (!responseData[key]) responseData[key] = [];
+                        responseData[key].push(value);
+                    } else {
+                        responseData[key] = value;
+                    }
+                    data[key] = responseData[key];
                 } else {
                     data[key] = value;
                 }
             }
+            
+            // Para checkboxes, coletar todos os valores
+            formFields.forEach((field) => {
+                const fieldId = field.id || `field_${formFields.indexOf(field)}`;
+                if (field.type === 'checkbox') {
+                    const checkboxes = document.querySelectorAll(`input[name="${fieldId}"]:checked`);
+                    if (checkboxes.length > 0) {
+                        responseData[fieldId] = Array.from(checkboxes).map(cb => cb.value);
+                        data[fieldId] = responseData[fieldId];
+                    }
+                }
+            });
+            
+            // Enviar para o servidor
+            try {
+                const submitResponse = await fetch(`/<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>/form/<%= item.id %>/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        response_data: responseData,
+                        responder_name: data.name || null,
+                        responder_email: data.email || null,
+                        responder_phone: data.phone || null
+                    })
+                });
+                
+                if (!submitResponse.ok) {
+                    console.error('Erro ao salvar resposta no servidor');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar resposta:', error);
+            }
 
             // Formatando mensagem para WhatsApp
-            let message = `*${formDataObj.form_title || 'Formulário Digital'}*\n\n`;
+            let message = `*${formDataObj.form_title || 'Formulário King'}*\n\n`;
             
-            if (data.name) message += `*Nome:* ${data.name}\n`;
-            if (data.address) message += `*Endereço:* ${data.address}\n`;
-            if (data.neighborhood) message += `*Bairro:* ${data.neighborhood}\n`;
-            if (data.whatsapp) message += `*WhatsApp:* ${data.whatsapp}\n`;
-            if (data.participation_date) message += `*Data de Participação:* ${data.participation_date}\n`;
-            if (data.birthdate) message += `*Data de Nascimento:* ${data.birthdate}\n`;
-            
-            if (data.age_group && data.age_group.length > 0) {
-                message += `*Faixa Etária:* ${data.age_group.join(', ')}\n`;
-            }
-            
-            if (data.knows_member) message += `*Conhece algum membro:* ${data.knows_member}\n`;
-            
-            if (data.wants_visit && data.wants_visit.includes('sim')) message += `✓ Quero uma visita em minha casa\n`;
-            if (data.wants_cell && data.wants_cell.includes('sim')) message += `✓ Quero participar de uma célula\n`;
-            if (data.wants_bible_study && data.wants_bible_study.includes('sim')) message += `✓ Quero participar de um Estudo Bíblico\n`;
-
-            if (data.customFields && formFields && formFields.length > 0) {
-                message += `\n*Campos Adicionais:*\n`;
-                Object.entries(data.customFields).forEach(([key, value]) => {
-                    const fieldIndex = parseInt(key.replace('field_', ''), 10);
-                    const field = formFields[fieldIndex] || null;
-                    if (field && value) {
-                        message += `${field.label || 'Campo'}: ${value}\n`;
+            // Adicionar respostas dos campos dinâmicos
+            formFields.forEach((field, index) => {
+                const fieldId = field.id || `field_${index}`;
+                const fieldValue = data[fieldId];
+                if (fieldValue) {
+                    if (Array.isArray(fieldValue)) {
+                        message += `*${field.label || 'Campo'}:* ${fieldValue.join(', ')}\n`;
+                    } else {
+                        message += `*${field.label || 'Campo'}:* ${fieldValue}\n`;
                     }
-                });
-            }
+                }
+            });
 
             // Limpar número do WhatsApp (apenas números)
             const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
