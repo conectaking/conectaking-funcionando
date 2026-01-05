@@ -1,7 +1,15 @@
 /* Formulário Digital - Estilos Premium */
-html, body {
+html {
     overflow-x: hidden;
     overflow-y: auto;
+    height: 100%;
+}
+
+body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    min-height: 100%;
+    height: auto;
 }
 
 .digital-form-page {
@@ -10,7 +18,8 @@ html, body {
     padding-bottom: 60px;
     line-height: 1.6;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: visible;
+    height: auto;
 }
 
 .digital-form-page.theme-light {
