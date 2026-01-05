@@ -375,6 +375,10 @@ app.get('/cnking/:slug', (req, res) => {
 // Ela verifica se não é "produto" e passa para próxima rota se necessário
 app.use('/', publicSalesPageRoutes);
 
+// Rota pública de formulário digital (deve vir antes de publicProfileRoutes)
+const publicDigitalFormRoutes = require('./routes/publicDigitalForm.routes');
+app.use('/', publicDigitalFormRoutes);
+
 // Rota pública de produto individual (deve vir antes de publicProfileRoutes)
 const publicProductRoutes = require('./routes/publicProduct');
 app.use('/', publicProductRoutes);

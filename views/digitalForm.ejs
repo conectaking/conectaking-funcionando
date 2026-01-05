@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title><%= formData.form_title || 'Formulário Digital' %></title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="/css/digitalForm.css">
+    <style>
+        :root {
+            --primary-color: <%= formData.primary_color || '#4A90E2' %>;
+            --text-color: <%= formData.text_color || '#333333' %>;
+            --theme: <%= formData.theme || 'light' %>;
+        }
+    </style>
+</head>
+<body class="digital-form-page theme-<%= formData.theme || 'light' %>" data-form-id="<%= item.id %>" data-whatsapp="<%= formData.whatsapp_number || '' %>">
+    <!-- Header -->
+    <header class="form-header">
+        <div class="container">
+            <% if (typeof profileSlug !== 'undefined' && profileSlug) { %>
+            <a href="/<%= profileSlug %>" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                <span>Voltar</span>
+            </a>
+            <% } %>
+            <% if (formData.form_logo_url) { %>
+            <img src="<%= formData.form_logo_url %>" alt="Logo" class="form-logo">
+            <% } %>
+            <h1 class="form-title"><%= formData.form_title || 'Formulário Digital' %></h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="form-container">
+        <div class="container">
+            <!-- Descrição -->
+            <% if (formData.form_description) { %>
+            <div class="form-description">
+                <p><%= formData.form_description %></p>
+            </div>
+            <% } %>
+
+            <!-- Mensagem de Boas-vindas -->
+            <% if (formData.welcome_text) { %>
+            <div class="welcome-section">
+                <p class="welcome-text"><%= formData.welcome_text %></p>
+            </div>
+            <% } %>
+
+            <!-- Pedidos de Oração -->
+            <% if (formData.prayer_requests_text) { %>
+            <div class="section prayer-section">
+                <h2 class="section-title">Pedidos de Oração</h2>
+                <p class="section-text"><%= formData.prayer_requests_text %></p>
+            </div>
+            <% } %>
+
+            <!-- Nossos Encontros -->
+            <% if (formData.meetings_text) { %>
+            <div class="section meetings-section">
+                <h2 class="section-title">Nossos Encontros</h2>
+                <div class="section-content"><%= formData.meetings_text.replace(/\n/g, '<br>') %></div>
+            </div>
+            <% } %>
+
+            <!-- Formulário -->
+            <form id="digital-form" class="digital-form">
+                <!-- Campos Padrão -->
+                <div class="form-group">
+                    <label for="form-name">Nome <span class="required">*</span></label>
+                    <input type="text" id="form-name" name="name" required placeholder="Seu nome completo">
+                </div>
+
+                <div class="form-group">
+                    <label for="form-address">Endereço</label>
+                    <input type="text" id="form-address" name="address" placeholder="Rua, número">
+                </div>
+
+                <div class="form-group">
+                    <label for="form-neighborhood">Bairro</label>
+                    <input type="text" id="form-neighborhood" name="neighborhood" placeholder="Seu bairro">
+                </div>
+
+                <div class="form-group">
+                    <label for="form-whatsapp">WhatsApp <span class="required">*</span></label>
+                    <input type="tel" id="form-whatsapp" name="whatsapp" required placeholder="(99) 99999-9999">
+                </div>
+
+                <div class="form-group">
+                    <label for="form-participation-date">Data de Participação</label>
+                    <input type="date" id="form-participation-date" name="participation_date">
+                </div>
+
+                <div class="form-group">
+                    <label for="form-birthdate">Data de Nascimento</label>
+                    <input type="date" id="form-birthdate" name="birthdate">
+                </div>
+
+                <!-- Faixa Etária -->
+                <div class="form-group">
+                    <label>Faixa Etária</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="age_group" value="adulto">
+                            <span>Adulto</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="age_group" value="jovem">
+                            <span>Jovem</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="age_group" value="adolescente">
+                            <span>Adolescente</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="age_group" value="crianca">
+                            <span>Criança</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Conhece algum membro? -->
+                <div class="form-group">
+                    <label for="form-knows-member">Conhece algum membro da igreja?</label>
+                    <input type="text" id="form-knows-member" name="knows_member" placeholder="Nome do membro">
+                </div>
+
+                <!-- Opções -->
+                <div class="form-group">
+                    <label>Opções</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="wants_visit" value="sim">
+                            <span>Quero uma visita em minha casa</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="wants_cell" value="sim">
+                            <span>Quero participar de uma célula</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="wants_bible_study" value="sim">
+                            <span>Quero participar de um Estudo Bíblico</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Campos Dinâmicos (form_fields) -->
+                <div id="dynamic-fields-container"></div>
+
+                <!-- Botão Enviar -->
+                <button type="submit" class="submit-btn">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>Enviar via WhatsApp</span>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // Dados do formulário
+        const formDataObj = <%- JSON.stringify(formData) %>;
+        const whatsappNumber = '<%= formData.whatsapp_number || '' %>';
+
+        // Carregar campos dinâmicos se existirem
+        const formFields = formDataObj.form_fields || [];
+        if (formFields && Array.isArray(formFields) && formFields.length > 0) {
+            const container = document.getElementById('dynamic-fields-container');
+            formFields.forEach((field, index) => {
+                if (field.type === 'text') {
+                    const group = document.createElement('div');
+                    group.className = 'form-group';
+                    group.innerHTML = `
+                        <label for="field-${index}">${field.label || 'Campo'} ${field.required ? '<span class="required">*</span>' : ''}</label>
+                        <input type="text" id="field-${index}" name="field_${index}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}">
+                    `;
+                    container.appendChild(group);
+                } else if (field.type === 'textarea') {
+                    const group = document.createElement('div');
+                    group.className = 'form-group';
+                    group.innerHTML = `
+                        <label for="field-${index}">${field.label || 'Campo'} ${field.required ? '<span class="required">*</span>' : ''}</label>
+                        <textarea id="field-${index}" name="field_${index}" rows="4" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}"></textarea>
+                    `;
+                    container.appendChild(group);
+                }
+            });
+        }
+
+        // Formatar WhatsApp
+        function formatWhatsApp(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.substring(0, 11);
+            if (value.length > 6) {
+                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            } else if (value.length > 2) {
+                value = value.replace(/(\d{2})(\d+)/, '($1) $2');
+            }
+            input.value = value;
+        }
+
+        const whatsappInput = document.getElementById('form-whatsapp');
+        if (whatsappInput) {
+            whatsappInput.addEventListener('input', () => formatWhatsApp(whatsappInput));
+        }
+
+        // Enviar formulário
+        document.getElementById('digital-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!whatsappNumber) {
+                alert('Número do WhatsApp não configurado!');
+                return;
+            }
+
+            // Coletar dados do formulário
+            const formData = new FormData(this);
+            const data = {};
+
+            // Campos de texto
+            for (const [key, value] of formData.entries()) {
+                if (key.startsWith('field_')) {
+                    if (!data.customFields) data.customFields = {};
+                    data.customFields[key] = value;
+                } else if (key === 'age_group' || key === 'wants_visit' || key === 'wants_cell' || key === 'wants_bible_study') {
+                    if (!data[key]) data[key] = [];
+                    data[key].push(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+
+            // Formatando mensagem para WhatsApp
+            let message = `*${formDataObj.form_title || 'Formulário Digital'}*\n\n`;
+            
+            if (data.name) message += `*Nome:* ${data.name}\n`;
+            if (data.address) message += `*Endereço:* ${data.address}\n`;
+            if (data.neighborhood) message += `*Bairro:* ${data.neighborhood}\n`;
+            if (data.whatsapp) message += `*WhatsApp:* ${data.whatsapp}\n`;
+            if (data.participation_date) message += `*Data de Participação:* ${data.participation_date}\n`;
+            if (data.birthdate) message += `*Data de Nascimento:* ${data.birthdate}\n`;
+            
+            if (data.age_group && data.age_group.length > 0) {
+                message += `*Faixa Etária:* ${data.age_group.join(', ')}\n`;
+            }
+            
+            if (data.knows_member) message += `*Conhece algum membro:* ${data.knows_member}\n`;
+            
+            if (data.wants_visit && data.wants_visit.includes('sim')) message += `✓ Quero uma visita em minha casa\n`;
+            if (data.wants_cell && data.wants_cell.includes('sim')) message += `✓ Quero participar de uma célula\n`;
+            if (data.wants_bible_study && data.wants_bible_study.includes('sim')) message += `✓ Quero participar de um Estudo Bíblico\n`;
+
+            if (data.customFields && formFields && formFields.length > 0) {
+                message += `\n*Campos Adicionais:*\n`;
+                Object.entries(data.customFields).forEach(([key, value]) => {
+                    const fieldIndex = parseInt(key.replace('field_', ''), 10);
+                    const field = formFields[fieldIndex] || null;
+                    if (field && value) {
+                        message += `${field.label || 'Campo'}: ${value}\n`;
+                    }
+                });
+            }
+
+            // Limpar número do WhatsApp (apenas números)
+            const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
+            const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
+            
+            // Abrir WhatsApp
+            window.open(whatsappUrl, '_blank');
+        });
+    </script>
+</body>
+</html>
+

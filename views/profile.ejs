@@ -1548,6 +1548,47 @@
                     <% } %>
 
                     <%# ========================================================== %>
+                    <%# TIPO: DIGITAL FORM (Formulário Digital) %>
+                    <%# ========================================================== %>
+                    <% } else if (item.item_type === 'digital_form') { %>
+                        <%
+                            // Buscar form_data do item se existir
+                            let formData = {};
+                            if (item.form_data) {
+                                formData = typeof item.form_data === 'string' ? JSON.parse(item.form_data) : item.form_data;
+                            }
+                            const displayFormat = formData.display_format || 'button';
+                            const formLogo = formData.form_logo_url || item.image_url || '';
+                            const hasFormLogo = formLogo && formLogo.trim() && !formLogo.includes('placeholder');
+                        %>
+                        <%
+                            // Construir URL do formulário
+                            let profileSlug = '';
+                            if (typeof profile_slug !== 'undefined' && profile_slug) {
+                                profileSlug = profile_slug;
+                            } else if (typeof details !== 'undefined' && details.profile_slug) {
+                                profileSlug = details.profile_slug;
+                            } else if (typeof identifier !== 'undefined' && identifier) {
+                                profileSlug = identifier;
+                            }
+                            const formUrl = profileSlug ? `/${profileSlug}/form/${item.id}` : '#';
+                        %>
+                        <% if (displayFormat === 'banner' && formData.banner_image_url) { %>
+                            <a href="<%= formUrl %>" class="profile-link banner-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                                <img src="<%= formData.banner_image_url %>" alt="<%= item.title || 'Formulário Digital' %>" class="banner-image" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px;">
+                            </a>
+                        <% } else { %>
+                            <a href="<%= formUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                                <% if (hasFormLogo) { %>
+                                    <img src="<%= formLogo %>" alt="<%= item.title || 'Formulário Digital' %>" class="profile-link-logo" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px;">
+                                <% } else { %>
+                                    <i class="fas fa-file-alt"></i>
+                                <% } %>
+                                <span><%= item.title || 'Formulário Digital' %></span>
+                            </a>
+                        <% } %>
+
+                    <%# ========================================================== %>
                     <%# TIPO: SALES PAGE (Página de Vendas) %>
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'sales_page') { %>

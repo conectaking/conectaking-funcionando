@@ -316,6 +316,24 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 }
             }
             
+            if (item.item_type === 'digital_form') {
+                try {
+                    // Buscar dados do formulário digital
+                    const formRes = await client.query(
+                        'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+                        [item.id]
+                    );
+                    if (formRes.rows.length > 0) {
+                        item.form_data = formRes.rows[0];
+                    }
+                } catch (formError) {
+                    logger.error('Erro ao carregar dados do formulário digital', { 
+                        itemId: item.id, 
+                        error: formError.message 
+                    });
+                }
+            }
+            
             if (item.item_type === 'sales_page') {
                 try {
                     // Buscar sales_page (mesmo que não esteja publicada, para construir a URL)
