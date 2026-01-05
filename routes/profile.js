@@ -1378,7 +1378,7 @@ router.put('/items/pdf/:id', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
-// PUT /api/profile/items/digital_form/:id - Atualizar Formulário Digital específico
+// PUT /api/profile/items/digital_form/:id - Atualizar Formulário King específico
 router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
@@ -1481,7 +1481,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
 
             if (form_title !== undefined) {
                 updateFormFields.push(`form_title = $${formParamIndex++}`);
-                updateFormValues.push(form_title || 'Formulário Digital');
+                updateFormValues.push(form_title || 'Formulário King');
             }
             if (form_logo_url !== undefined) {
                 updateFormFields.push(`form_logo_url = $${formParamIndex++}`);
@@ -1553,7 +1553,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14)
             `, [
                 itemId,
-                form_title || 'Formulário Digital',
+                form_title || 'Formulário King',
                 form_logo_url || null,
                 form_description || null,
                 prayer_requests_text || null,
@@ -1595,7 +1595,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         });
         res.json(responseData);
     } catch (error) {
-        console.error(`❌ Erro ao atualizar Formulário Digital ${req.params.id}:`, error);
+        console.error(`❌ Erro ao atualizar Formulário King ${req.params.id}:`, error);
         res.status(500).json({ message: 'Erro ao atualizar Formulário King.', error: error.message });
     } finally {
         client.release();
@@ -1639,7 +1639,7 @@ router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
         
         if (checkRes.rows[0].item_type === 'digital_form') {
             await client.query('DELETE FROM digital_form_items WHERE profile_item_id = $1', [itemId]);
-            console.log(`🗑️ Formulário Digital ${itemId} deletado`);
+            console.log(`🗑️ Formulário King ${itemId} deletado`);
         }
 
         // Deletar o item
@@ -1884,7 +1884,7 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
                     ) VALUES ($1, $2, $3)
                 `, [
                     newItem.id,
-                    title || 'Formulário Digital',
+                    title || 'Formulário King',
                     'button' // Padrão: formato botão
                 ]);
                 console.log(`✅ Formulário King criado para item ${newItem.id}`);
