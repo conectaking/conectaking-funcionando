@@ -1552,10 +1552,10 @@
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'digital_form') { %>
                         <%
-                            // Buscar form_data do item se existir
+                            // Buscar digital_form_data do item se existir
                             let formData = {};
-                            if (item.form_data) {
-                                formData = typeof item.form_data === 'string' ? JSON.parse(item.form_data) : item.form_data;
+                            if (item.digital_form_data) {
+                                formData = typeof item.digital_form_data === 'string' ? JSON.parse(item.digital_form_data) : item.digital_form_data;
                             }
                             const displayFormat = formData.display_format || 'button';
                             const formLogo = formData.form_logo_url || item.image_url || '';
