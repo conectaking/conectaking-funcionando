@@ -1378,6 +1378,230 @@ router.put('/items/pdf/:id', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
+// PUT /api/profile/items/digital_form/:id - Atualizar Formulário Digital específico
+router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+        const { 
+            title, 
+            form_title,
+            form_logo_url,
+            form_description,
+            prayer_requests_text,
+            meetings_text,
+            welcome_text,
+            whatsapp_number,
+            display_format,
+            banner_image_url,
+            form_fields,
+            theme,
+            primary_color,
+            text_color,
+            is_active, 
+            display_order 
+        } = req.body;
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do item inválido.' });
+        }
+
+        console.log(`📝 PUT /api/profile/items/digital_form/${itemId} - userId: ${userId}`);
+
+        // Verificar se o item pertence ao usuário e é do tipo digital_form
+        const checkRes = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2 AND item_type = $3',
+            [itemId, userId, 'digital_form']
+        );
+
+        if (checkRes.rows.length === 0) {
+            console.log(`❌ Formulário Digital ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
+            return res.status(404).json({ message: 'Formulário Digital não encontrado ou você não tem permissão para editá-lo.' });
+        }
+
+        // Verificar quais colunas existem na tabela profile_items
+        const columnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'profile_items'
+        `);
+        const existingColumns = columnsCheck.rows.map(row => row.column_name);
+
+        // Atualizar profile_items
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        if (title !== undefined) {
+            updateFields.push(`title = $${paramIndex++}`);
+            updateValues.push(title || null);
+        }
+        if (is_active !== undefined) {
+            updateFields.push(`is_active = $${paramIndex++}`);
+            updateValues.push(is_active);
+        }
+        if (display_order !== undefined) {
+            updateFields.push(`display_order = $${paramIndex++}`);
+            updateValues.push(display_order);
+        }
+        // Para digital_form, image_url pode ser usado para o banner_image_url
+        if (banner_image_url !== undefined && display_format === 'banner') {
+            if (existingColumns.includes('image_url')) {
+                updateFields.push(`image_url = $${paramIndex++}`);
+                updateValues.push(banner_image_url || null);
+            }
+        }
+
+        if (updateFields.length > 0) {
+            updateValues.push(itemId, userId);
+            const profileQuery = `
+                UPDATE profile_items 
+                SET ${updateFields.join(', ')}
+                WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+                RETURNING *
+            `;
+            await client.query(profileQuery, updateValues);
+        }
+
+        // Atualizar ou criar digital_form_items
+        const formFieldsJSON = form_fields ? JSON.stringify(form_fields) : '[]';
+        
+        // Verificar se já existe registro em digital_form_items
+        const formCheck = await client.query(
+            'SELECT id FROM digital_form_items WHERE profile_item_id = $1',
+            [itemId]
+        );
+
+        if (formCheck.rows.length > 0) {
+            // Atualizar registro existente
+            const updateFormFields = [];
+            const updateFormValues = [];
+            let formParamIndex = 1;
+
+            if (form_title !== undefined) {
+                updateFormFields.push(`form_title = $${formParamIndex++}`);
+                updateFormValues.push(form_title || 'Formulário Digital');
+            }
+            if (form_logo_url !== undefined) {
+                updateFormFields.push(`form_logo_url = $${formParamIndex++}`);
+                updateFormValues.push(form_logo_url || null);
+            }
+            if (form_description !== undefined) {
+                updateFormFields.push(`form_description = $${formParamIndex++}`);
+                updateFormValues.push(form_description || null);
+            }
+            if (prayer_requests_text !== undefined) {
+                updateFormFields.push(`prayer_requests_text = $${formParamIndex++}`);
+                updateFormValues.push(prayer_requests_text || null);
+            }
+            if (meetings_text !== undefined) {
+                updateFormFields.push(`meetings_text = $${formParamIndex++}`);
+                updateFormValues.push(meetings_text || null);
+            }
+            if (welcome_text !== undefined) {
+                updateFormFields.push(`welcome_text = $${formParamIndex++}`);
+                updateFormValues.push(welcome_text || null);
+            }
+            if (whatsapp_number !== undefined) {
+                updateFormFields.push(`whatsapp_number = $${formParamIndex++}`);
+                updateFormValues.push(whatsapp_number || null);
+            }
+            if (display_format !== undefined) {
+                updateFormFields.push(`display_format = $${formParamIndex++}`);
+                updateFormValues.push(display_format || 'button');
+            }
+            if (banner_image_url !== undefined) {
+                updateFormFields.push(`banner_image_url = $${formParamIndex++}`);
+                updateFormValues.push(banner_image_url || null);
+            }
+            if (form_fields !== undefined) {
+                updateFormFields.push(`form_fields = $${formParamIndex++}::jsonb`);
+                updateFormValues.push(formFieldsJSON);
+            }
+            if (theme !== undefined) {
+                updateFormFields.push(`theme = $${formParamIndex++}`);
+                updateFormValues.push(theme || 'light');
+            }
+            if (primary_color !== undefined) {
+                updateFormFields.push(`primary_color = $${formParamIndex++}`);
+                updateFormValues.push(primary_color || '#4A90E2');
+            }
+            if (text_color !== undefined) {
+                updateFormFields.push(`text_color = $${formParamIndex++}`);
+                updateFormValues.push(text_color || '#333333');
+            }
+
+            if (updateFormFields.length > 0) {
+                updateFormValues.push(itemId);
+                const formUpdateQuery = `
+                    UPDATE digital_form_items 
+                    SET ${updateFormFields.join(', ')}
+                    WHERE profile_item_id = $${formParamIndex++}
+                    RETURNING *
+                `;
+                await client.query(formUpdateQuery, updateFormValues);
+            }
+        } else {
+            // Criar novo registro
+            await client.query(`
+                INSERT INTO digital_form_items (
+                    profile_item_id, form_title, form_logo_url, form_description,
+                    prayer_requests_text, meetings_text, welcome_text,
+                    whatsapp_number, display_format, banner_image_url,
+                    form_fields, theme, primary_color, text_color
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14)
+            `, [
+                itemId,
+                form_title || 'Formulário Digital',
+                form_logo_url || null,
+                form_description || null,
+                prayer_requests_text || null,
+                meetings_text || null,
+                welcome_text || null,
+                whatsapp_number || null,
+                display_format || 'button',
+                banner_image_url || null,
+                formFieldsJSON,
+                theme || 'light',
+                primary_color || '#4A90E2',
+                text_color || '#333333'
+            ]);
+        }
+
+        // Buscar dados atualizados
+        const result = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
+            [itemId, userId]
+        );
+
+        const formResult = await client.query(
+            'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+            [itemId]
+        );
+
+        const responseData = result.rows[0];
+        if (formResult.rows.length > 0) {
+            responseData.form_data = formResult.rows[0];
+        }
+
+        console.log(`✅ Formulário Digital ${itemId} atualizado com sucesso`);
+
+        // Evitar cache do navegador
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
+        res.json(responseData);
+    } catch (error) {
+        console.error(`❌ Erro ao atualizar Formulário Digital ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Erro ao atualizar Formulário Digital.', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
 // DELETE /api/profile/items/:id - Deletar item (DEVE VIR ANTES DAS ROTAS DE PRODUTOS PARA EVITAR CONFLITO)
 router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
@@ -1411,6 +1635,11 @@ router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
         if (checkRes.rows[0].item_type === 'sales_page') {
             await client.query('DELETE FROM sales_pages WHERE profile_item_id = $1', [itemId]);
             console.log(`🗑️ Página de vendas ${itemId} deletada`);
+        }
+        
+        if (checkRes.rows[0].item_type === 'digital_form') {
+            await client.query('DELETE FROM digital_form_items WHERE profile_item_id = $1', [itemId]);
+            console.log(`🗑️ Formulário Digital ${itemId} deletado`);
         }
 
         // Deletar o item
@@ -1504,6 +1733,18 @@ router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
         const userResult = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
         const profileId = userResult.rows[0]?.id || userId;
 
+        // Se for digital_form, buscar dados do formulário
+        let responseData = result.rows[0];
+        if (responseData.item_type === 'digital_form') {
+            const formResult = await client.query(
+                'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+                [itemId]
+            );
+            if (formResult.rows.length > 0) {
+                responseData.form_data = formResult.rows[0];
+            }
+        }
+
         // Evitar cache do navegador
         res.set({
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -1513,7 +1754,7 @@ router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
         res.json({ 
             success: true, 
             data: {
-                ...result.rows[0],
+                ...responseData,
                 profile_id: profileId
             }
         });
@@ -1631,6 +1872,25 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
             } catch (error) {
                 console.error("Erro ao criar página de vendas:", error);
                 // Não falhar a criação do item se falhar criar a página
+            }
+        }
+
+        // Se for digital_form, criar registro na tabela digital_form_items
+        if (item_type === 'digital_form') {
+            try {
+                await client.query(`
+                    INSERT INTO digital_form_items (
+                        profile_item_id, form_title, display_format
+                    ) VALUES ($1, $2, $3)
+                `, [
+                    newItem.id,
+                    title || 'Formulário Digital',
+                    'button' // Padrão: formato botão
+                ]);
+                console.log(`✅ Formulário Digital criado para item ${newItem.id}`);
+            } catch (error) {
+                console.error("Erro ao criar formulário digital:", error);
+                // Não falhar a criação do item se falhar criar o formulário
             }
         }
 
