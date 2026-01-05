@@ -36,11 +36,28 @@
         }
         <% } %>
         <% if (formData.header_image_url) { %>
+        .header-image-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
         .header-image {
             width: 100%;
-            max-height: 400px;
+            height: auto;
+            min-height: 280px;
+            max-height: 500px;
             object-fit: cover;
             display: block;
+        }
+        .header-image-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.3));
+            pointer-events: none;
         }
         <% } %>
     </style>
@@ -208,6 +225,27 @@
                 group.innerHTML = fieldHTML;
                 container.appendChild(group);
             });
+            
+            // Adicionar classe 'checked' aos labels quando inputs são marcados (fallback para :has())
+            setTimeout(() => {
+                document.querySelectorAll('.radio-label input[type="radio"], .checkbox-label input[type="checkbox"]').forEach(input => {
+                    input.addEventListener('change', function() {
+                        // Remover 'checked' de todos os irmãos do mesmo grupo (para radio)
+                        if (this.type === 'radio') {
+                            const name = this.name;
+                            document.querySelectorAll(`input[type="radio"][name="${name}"]`).forEach(radio => {
+                                radio.closest('.radio-label')?.classList.remove('checked');
+                            });
+                        }
+                        // Adicionar/remover 'checked' baseado no estado
+                        if (this.checked) {
+                            this.closest('.radio-label, .checkbox-label')?.classList.add('checked');
+                        } else {
+                            this.closest('.checkbox-label')?.classList.remove('checked');
+                        }
+                    });
+                });
+            }, 100);
         }
 
         // Formatar WhatsApp

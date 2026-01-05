@@ -52,7 +52,7 @@
 
 /* Header Premium */
 .form-header {
-    background: linear-gradient(135deg, var(--primary-color, #4A90E2), color-mix(in srgb, var(--primary-color, #4A90E2) 85%, black));
+    background: linear-gradient(135deg, var(--primary-color, #4A90E2), rgba(74, 144, 226, 0.85));
     color: white;
     padding: 32px 0;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -277,7 +277,7 @@
 .form-group select:focus {
     outline: none;
     border-color: var(--primary-color, #4A90E2);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary-color, #4A90E2) 15%, transparent);
+    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.15);
     border-width: 2px;
 }
 
@@ -336,13 +336,13 @@
 .radio-label:hover,
 .checkbox-label:hover {
     border-color: var(--primary-color, #4A90E2);
-    background: color-mix(in srgb, var(--primary-color, #4A90E2) 5%, white);
+    background: rgba(74, 144, 226, 0.05);
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .theme-dark .radio-label:hover,
 .theme-dark .checkbox-label:hover {
-    background: color-mix(in srgb, var(--primary-color, #4A90E2) 15%, #2C2C2F);
+    background: rgba(74, 144, 226, 0.15);
     border-color: var(--primary-color, #4A90E2);
 }
 
@@ -379,16 +379,22 @@
     color: var(--primary-color, #4A90E2);
 }
 
-.radio-label:has(input[type="radio"]:checked),
-.checkbox-label:has(input[type="checkbox"]:checked) {
+.radio-label input[type="radio"]:checked,
+.checkbox-label input[type="checkbox"]:checked {
+    /* Checked state - aplicar estilo ao label pai via JS se necessário */
+}
+
+/* Fallback para navegadores sem suporte a :has() - usar JS para adicionar classe .checked */
+.radio-label.checked,
+.checkbox-label.checked {
     border-color: var(--primary-color, #4A90E2);
-    background: color-mix(in srgb, var(--primary-color, #4A90E2) 10%, white);
+    background: rgba(74, 144, 226, 0.1);
     box-shadow: 0 0 0 1px var(--primary-color, #4A90E2);
 }
 
-.theme-dark .radio-label:has(input[type="radio"]:checked),
-.theme-dark .checkbox-label:has(input[type="checkbox"]:checked) {
-    background: color-mix(in srgb, var(--primary-color, #4A90E2) 20%, #2C2C2F);
+.theme-dark .radio-label.checked,
+.theme-dark .checkbox-label.checked {
+    background: rgba(74, 144, 226, 0.2);
 }
 
 /* Submit Button Premium */
@@ -450,22 +456,98 @@
     font-size: 20px;
 }
 
-/* Responsivo */
+/* Rating Group */
+.rating-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.rating-group input[type="radio"] {
+    display: none;
+}
+
+.rating-group label {
+    font-size: 32px;
+    color: #dadce0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1;
+    margin: 0;
+}
+
+.rating-group label:hover,
+.rating-group input[type="radio"]:checked ~ label {
+    color: #fbbc04;
+    transform: scale(1.1);
+}
+
+.rating-group input[type="radio"]:checked ~ label {
+    color: #fbbc04;
+}
+
+/* Linear Scale Group */
+.linear-scale-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 12px 0;
+}
+
+/* Responsivo Premium */
 @media (max-width: 768px) {
+    .container {
+        padding: 0 16px;
+    }
+    
     .form-title {
-        font-size: 20px;
+        font-size: 24px;
     }
 
     .form-container {
-        padding: 20px 0;
+        padding: 32px 0;
     }
 
     .digital-form {
-        padding: 20px;
+        padding: 28px 24px;
+        border-radius: 16px;
+    }
+    
+    .form-description {
+        padding: 24px;
+        border-radius: 12px;
     }
 
-    .welcome-text {
-        font-size: 16px;
+    .form-group {
+        margin-bottom: 28px;
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="tel"],
+    .form-group input[type="date"],
+    .form-group input[type="time"],
+    .form-group input[type="datetime-local"],
+    .form-group input[type="email"],
+    .form-group select,
+    .form-group textarea {
+        padding: 12px 16px;
+        font-size: 16px; /* Prevenir zoom no iOS */
+    }
+    
+    .yes-no-group {
+        flex-direction: column;
+    }
+    
+    .linear-scale-group {
+        gap: 8px;
+    }
+    
+    .submit-btn {
+        padding: 14px 24px;
+        font-size: 15px;
     }
 }
 
