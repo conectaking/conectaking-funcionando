@@ -1625,7 +1625,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
 
         const responseData = result.rows[0];
         if (formResult.rows.length > 0) {
-            responseData.form_data = formResult.rows[0];
+            responseData.digital_form_data = formResult.rows[0];
         }
 
         console.log(`✅ Formulário King ${itemId} atualizado com sucesso`);
