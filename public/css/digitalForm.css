@@ -1,12 +1,13 @@
-/* Formulário Digital - Estilos */
+/* Formulário Digital - Estilos Premium */
 .digital-form-page {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     min-height: 100vh;
-    padding-bottom: 40px;
+    padding-bottom: 60px;
+    line-height: 1.6;
 }
 
 .digital-form-page.theme-light {
-    background-color: #f5f5f5;
+    background-color: #f8f9fa;
     color: #333;
 }
 
@@ -16,17 +17,47 @@
 }
 
 .container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 24px;
 }
 
-/* Header */
+/* Header Image Premium */
+.header-image-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.header-image {
+    width: 100%;
+    height: auto;
+    min-height: 280px;
+    max-height: 500px;
+    object-fit: cover;
+    display: block;
+}
+
+.header-image-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.3));
+    pointer-events: none;
+}
+
+/* Header Premium */
 .form-header {
-    background: var(--primary-color, #4A90E2);
+    background: linear-gradient(135deg, var(--primary-color, #4A90E2), color-mix(in srgb, var(--primary-color, #4A90E2) 85%, black));
     color: white;
-    padding: 20px 0;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 32px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    position: relative;
+    z-index: 10;
 }
 
 .form-header .container {
@@ -61,32 +92,44 @@
 
 .form-title {
     margin: 0;
-    font-size: 24px;
+    font-size: 32px;
     font-weight: 700;
     flex: 1;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
 }
 
 /* Main Content */
 .form-container {
-    padding: 40px 0;
+    padding: 48px 0;
+    position: relative;
+    z-index: 5;
 }
 
 .form-description {
     background: white;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 28px 32px;
+    border-radius: 16px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: box-shadow 0.3s ease;
 }
 
 .theme-dark .form-description {
     background: #1C1C21;
+    border-color: rgba(255,255,255,0.1);
+}
+
+.form-description:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
 .form-description p {
     margin: 0;
-    line-height: 1.6;
+    line-height: 1.8;
     color: var(--text-color, #333);
+    font-size: 16px;
 }
 
 .welcome-section {
@@ -136,28 +179,39 @@
     color: #ECECEC;
 }
 
-/* Formulário */
+/* Formulário Premium */
 .digital-form {
     background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 40px 48px;
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: box-shadow 0.3s ease;
 }
 
 .theme-dark .digital-form {
     background: #1C1C21;
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
 }
 
 .form-group {
-    margin-bottom: 25px;
+    margin-bottom: 32px;
+    position: relative;
+}
+
+.form-group:last-of-type {
+    margin-bottom: 40px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     font-weight: 600;
-    color: var(--text-color, #333);
-    font-size: 14px;
+    color: var(--text-color, #202124);
+    font-size: 15px;
+    letter-spacing: 0.1px;
+    line-height: 1.4;
 }
 
 .theme-dark .form-group label {
@@ -165,121 +219,235 @@
 }
 
 .required {
-    color: #e74c3c;
+    color: #ea4335;
+    font-weight: 700;
+    margin-left: 2px;
 }
 
 .form-group input[type="text"],
 .form-group input[type="tel"],
 .form-group input[type="date"],
+.form-group input[type="time"],
+.form-group input[type="datetime-local"],
+.form-group input[type="email"],
+.form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 12px 16px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 16px;
-    font-family: 'Inter', sans-serif;
-    transition: border-color 0.2s;
+    padding: 14px 18px;
+    border: 1.5px solid #dadce0;
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: all 0.2s ease;
     background: white;
-    color: #333;
+    color: #202124;
     box-sizing: border-box;
+    outline: none;
+    appearance: none;
 }
 
 .theme-dark .form-group input[type="text"],
 .theme-dark .form-group input[type="tel"],
 .theme-dark .form-group input[type="date"],
+.theme-dark .form-group input[type="time"],
+.theme-dark .form-group input[type="datetime-local"],
+.theme-dark .form-group input[type="email"],
+.theme-dark .form-group select,
 .theme-dark .form-group textarea {
     background: #2C2C2F;
     border-color: #3C3C40;
     color: #ECECEC;
 }
 
+.form-group input:hover,
+.form-group textarea:hover,
+.form-group select:hover {
+    border-color: #8e8ea0;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+.theme-dark .form-group input:hover,
+.theme-dark .form-group textarea:hover,
+.theme-dark .form-group select:hover {
+    border-color: #5f6368;
+}
+
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
     outline: none;
     border-color: var(--primary-color, #4A90E2);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary-color, #4A90E2) 15%, transparent);
+    border-width: 2px;
 }
 
 .form-group textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 120px;
+    line-height: 1.6;
 }
 
-/* Checkbox Group */
-.checkbox-group {
+.form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 44px;
+    cursor: pointer;
+}
+
+.theme-dark .form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ececec' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+/* Radio e Checkbox Groups Premium */
+.radio-group,
+.checkbox-group,
+.yes-no-group {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
+.yes-no-group {
+    flex-direction: row;
+    gap: 16px;
+}
+
+.radio-label,
 .checkbox-label {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     cursor: pointer;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    transition: all 0.2s;
+    padding: 14px 18px;
+    border: 1.5px solid #dadce0;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    background: white;
+    position: relative;
 }
 
+.theme-dark .radio-label,
 .theme-dark .checkbox-label {
     border-color: #3C3C40;
+    background: #2C2C2F;
 }
 
+.radio-label:hover,
 .checkbox-label:hover {
     border-color: var(--primary-color, #4A90E2);
-    background: rgba(74, 144, 226, 0.05);
+    background: color-mix(in srgb, var(--primary-color, #4A90E2) 5%, white);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
+.theme-dark .radio-label:hover,
+.theme-dark .checkbox-label:hover {
+    background: color-mix(in srgb, var(--primary-color, #4A90E2) 15%, #2C2C2F);
+    border-color: var(--primary-color, #4A90E2);
+}
+
+.radio-label input[type="radio"],
 .checkbox-label input[type="checkbox"] {
     width: 20px;
     height: 20px;
     cursor: pointer;
     accent-color: var(--primary-color, #4A90E2);
+    flex-shrink: 0;
 }
 
+.radio-label span,
 .checkbox-label span {
     flex: 1;
-    color: var(--text-color, #333);
+    color: var(--text-color, #202124);
+    font-size: 15px;
+    line-height: 1.5;
 }
 
+.theme-dark .radio-label span,
 .theme-dark .checkbox-label span {
     color: #ECECEC;
 }
 
-.checkbox-label input[type="checkbox"]:checked + span {
+.radio-label input[type="radio"]:checked ~ span,
+.checkbox-label input[type="checkbox"]:checked ~ span {
     font-weight: 600;
+    color: var(--primary-color, #4A90E2);
 }
 
-/* Submit Button */
+.theme-dark .radio-label input[type="radio"]:checked ~ span,
+.theme-dark .checkbox-label input[type="checkbox"]:checked ~ span {
+    color: var(--primary-color, #4A90E2);
+}
+
+.radio-label:has(input[type="radio"]:checked),
+.checkbox-label:has(input[type="checkbox"]:checked) {
+    border-color: var(--primary-color, #4A90E2);
+    background: color-mix(in srgb, var(--primary-color, #4A90E2) 10%, white);
+    box-shadow: 0 0 0 1px var(--primary-color, #4A90E2);
+}
+
+.theme-dark .radio-label:has(input[type="radio"]:checked),
+.theme-dark .checkbox-label:has(input[type="checkbox"]:checked) {
+    background: color-mix(in srgb, var(--primary-color, #4A90E2) 20%, #2C2C2F);
+}
+
+/* Submit Button Premium */
 .submit-btn {
     width: 100%;
-    padding: 16px 24px;
-    background: #25D366;
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #25D366, #20BA5A);
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 18px;
+    border-radius: 12px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    transition: background 0.2s;
-    margin-top: 30px;
+    gap: 12px;
+    transition: all 0.3s ease;
+    margin-top: 40px;
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    letter-spacing: 0.3px;
+    position: relative;
+    overflow: hidden;
+}
+
+.submit-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
 }
 
 .submit-btn:hover {
-    background: #20BA5A;
+    background: linear-gradient(135deg, #20BA5A, #1DA851);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+    transform: translateY(-2px);
+}
+
+.submit-btn:hover::before {
+    left: 100%;
 }
 
 .submit-btn:active {
-    transform: scale(0.98);
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+}
+
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .submit-btn i {
-    font-size: 24px;
+    font-size: 20px;
 }
 
 /* Responsivo */
