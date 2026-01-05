@@ -32,7 +32,7 @@ router.get('/plan-availability', protectUser, asyncHandler(async (req, res) => {
                 'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
                 'spotify', 'linkedin', 'pinterest',
                 'link', 'portfolio', 'banner', 'carousel', 
-                'youtube_embed', 'sales_page'
+                'youtube_embed', 'sales_page', 'digital_form'
             )
             ORDER BY mpa.module_type, mpa.plan_code
         `;

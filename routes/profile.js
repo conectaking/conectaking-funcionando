@@ -472,21 +472,21 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                         console.log(`✅ [SAVE-ALL] Sales_page ${itemIdInt} atualizado (apenas is_active e display_order)`);
                     } else {
                         // INSERT para novo sales_page
-                        const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'display_order', 'is_active'] : ['user_id', 'item_type', 'display_order', 'is_active'];
-                        const insertValues = hasValidId ? [
+                    const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'display_order', 'is_active'] : ['user_id', 'item_type', 'display_order', 'is_active'];
+                    const insertValues = hasValidId ? [
                             itemIdInt,
-                            userId,
-                            item.item_type,
-                            item.display_order !== undefined ? item.display_order : 0,
-                            item.is_active !== undefined ? item.is_active : true
-                        ] : [
-                            userId,
-                            item.item_type,
-                            item.display_order !== undefined ? item.display_order : 0,
-                            item.is_active !== undefined ? item.is_active : true
-                        ];
-                        
-                        const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+                        userId,
+                        item.item_type,
+                        item.display_order !== undefined ? item.display_order : 0,
+                        item.is_active !== undefined ? item.is_active : true
+                    ] : [
+                        userId,
+                        item.item_type,
+                        item.display_order !== undefined ? item.display_order : 0,
+                        item.is_active !== undefined ? item.is_active : true
+                    ];
+                    
+                    const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
                         const result = await client.query(`
                             INSERT INTO profile_items (${insertFields.join(', ')})
                             VALUES (${placeholders})
@@ -611,78 +611,78 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     console.log(`✅ [SAVE-ALL] Item ${itemIdInt} (${item.item_type}) atualizado`);
                 } else {
                     // INSERT: item novo
-                    const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'] : ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
-                    const insertValues = hasValidId ? [
+                const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'] : ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
+                const insertValues = hasValidId ? [
                         itemIdInt,
-                        userId,
-                        item.item_type,
-                        item.title || null,
-                        normalizedDestinationUrl,
-                        item.image_url || null,
-                        item.icon_class || null,
-                        item.display_order !== undefined ? item.display_order : 0,
-                        item.is_active !== undefined ? item.is_active : true
-                    ] : [
-                        userId,
-                        item.item_type,
-                        item.title || null,
-                        normalizedDestinationUrl,
-                        item.image_url || null,
-                        item.icon_class || null,
-                        item.display_order !== undefined ? item.display_order : 0,
-                        item.is_active !== undefined ? item.is_active : true
-                    ];
-                    
+                    userId,
+                    item.item_type,
+                    item.title || null,
+                    normalizedDestinationUrl,
+                    item.image_url || null,
+                    item.icon_class || null,
+                    item.display_order !== undefined ? item.display_order : 0,
+                    item.is_active !== undefined ? item.is_active : true
+                ] : [
+                    userId,
+                    item.item_type,
+                    item.title || null,
+                    normalizedDestinationUrl,
+                    item.image_url || null,
+                    item.icon_class || null,
+                    item.display_order !== undefined ? item.display_order : 0,
+                    item.is_active !== undefined ? item.is_active : true
+                ];
+                
                     // Adicionar campos opcionais
-                    if (existingColumns.includes('pix_key')) {
-                        insertFields.push('pix_key');
-                        insertValues.push(item.pix_key || null);
-                    }
-                    if (existingColumns.includes('recipient_name')) {
-                        insertFields.push('recipient_name');
-                        insertValues.push(item.recipient_name || null);
-                    }
-                    if (existingColumns.includes('pix_amount')) {
-                        insertFields.push('pix_amount');
+                if (existingColumns.includes('pix_key')) {
+                    insertFields.push('pix_key');
+                    insertValues.push(item.pix_key || null);
+                }
+                if (existingColumns.includes('recipient_name')) {
+                    insertFields.push('recipient_name');
+                    insertValues.push(item.recipient_name || null);
+                }
+                if (existingColumns.includes('pix_amount')) {
+                    insertFields.push('pix_amount');
                         insertValues.push(item.pix_amount ? parseFloat(item.pix_amount) : null);
+                }
+                if (existingColumns.includes('pix_description')) {
+                    insertFields.push('pix_description');
+                    insertValues.push(item.pix_description || null);
+                }
+                if (existingColumns.includes('pdf_url')) {
+                    insertFields.push('pdf_url');
+                    insertValues.push(item.pdf_url || null);
+                }
+                if (existingColumns.includes('logo_size')) {
+                    insertFields.push('logo_size');
+                    let logoSizeValue = null;
+                    if (item.logo_size !== undefined && item.logo_size !== null && item.logo_size !== '') {
+                        const parsed = parseInt(item.logo_size, 10);
+                        logoSizeValue = (!isNaN(parsed) && parsed > 0) ? parsed : null;
                     }
-                    if (existingColumns.includes('pix_description')) {
-                        insertFields.push('pix_description');
-                        insertValues.push(item.pix_description || null);
-                    }
-                    if (existingColumns.includes('pdf_url')) {
-                        insertFields.push('pdf_url');
-                        insertValues.push(item.pdf_url || null);
-                    }
-                    if (existingColumns.includes('logo_size')) {
-                        insertFields.push('logo_size');
-                        let logoSizeValue = null;
-                        if (item.logo_size !== undefined && item.logo_size !== null && item.logo_size !== '') {
-                            const parsed = parseInt(item.logo_size, 10);
-                            logoSizeValue = (!isNaN(parsed) && parsed > 0) ? parsed : null;
-                        }
-                        insertValues.push(logoSizeValue);
-                    }
-                    if (existingColumns.includes('logo_fit_mode')) {
-                        insertFields.push('logo_fit_mode');
+                    insertValues.push(logoSizeValue);
+                }
+                if (existingColumns.includes('logo_fit_mode')) {
+                    insertFields.push('logo_fit_mode');
                         let logoFitModeValue = 'contain';
-                        if (item.logo_fit_mode !== undefined && item.logo_fit_mode !== null && item.logo_fit_mode !== '') {
-                            if (['contain', 'cover'].includes(item.logo_fit_mode)) {
-                                logoFitModeValue = item.logo_fit_mode;
-                            }
+                    if (item.logo_fit_mode !== undefined && item.logo_fit_mode !== null && item.logo_fit_mode !== '') {
+                        if (['contain', 'cover'].includes(item.logo_fit_mode)) {
+                            logoFitModeValue = item.logo_fit_mode;
                         }
-                        insertValues.push(logoFitModeValue);
                     }
-                    if (existingColumns.includes('whatsapp_message')) {
-                        insertFields.push('whatsapp_message');
-                        insertValues.push(item.whatsapp_message || null);
-                    }
-                    if (existingColumns.includes('aspect_ratio')) {
-                        insertFields.push('aspect_ratio');
-                        insertValues.push(item.aspect_ratio || null);
-                    }
-                    
-                    const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+                    insertValues.push(logoFitModeValue);
+                }
+                if (existingColumns.includes('whatsapp_message')) {
+                    insertFields.push('whatsapp_message');
+                    insertValues.push(item.whatsapp_message || null);
+                }
+                if (existingColumns.includes('aspect_ratio')) {
+                    insertFields.push('aspect_ratio');
+                    insertValues.push(item.aspect_ratio || null);
+                }
+                
+                const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
                     const result = await client.query(`
                         INSERT INTO profile_items (${insertFields.join(', ')})
                         VALUES (${placeholders})
@@ -705,7 +705,7 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             const itemsToDelete = Array.from(existingItemIds).filter(id => !savedItemIds.has(id));
             if (itemsToDelete.length > 0) {
                 console.log(`🗑️ [SAVE-ALL] Deletando ${itemsToDelete.length} itens que não foram incluídos no save-all...`);
-                await client.query(`
+                        await client.query(`
                     DELETE FROM profile_items 
                     WHERE id = ANY($1::int[]) AND user_id = $2
                 `, [itemsToDelete, userId]);
@@ -1416,8 +1416,8 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         );
 
         if (checkRes.rows.length === 0) {
-            console.log(`❌ Formulário Digital ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
-            return res.status(404).json({ message: 'Formulário Digital não encontrado ou você não tem permissão para editá-lo.' });
+            console.log(`❌ Formulário King ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
+            return res.status(404).json({ message: 'Formulário King não encontrado ou você não tem permissão para editá-lo.' });
         }
 
         // Verificar quais colunas existem na tabela profile_items
@@ -1585,7 +1585,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             responseData.form_data = formResult.rows[0];
         }
 
-        console.log(`✅ Formulário Digital ${itemId} atualizado com sucesso`);
+        console.log(`✅ Formulário King ${itemId} atualizado com sucesso`);
 
         // Evitar cache do navegador
         res.set({
@@ -1596,7 +1596,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         res.json(responseData);
     } catch (error) {
         console.error(`❌ Erro ao atualizar Formulário Digital ${req.params.id}:`, error);
-        res.status(500).json({ message: 'Erro ao atualizar Formulário Digital.', error: error.message });
+        res.status(500).json({ message: 'Erro ao atualizar Formulário King.', error: error.message });
     } finally {
         client.release();
     }
@@ -1887,7 +1887,7 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
                     title || 'Formulário Digital',
                     'button' // Padrão: formato botão
                 ]);
-                console.log(`✅ Formulário Digital criado para item ${newItem.id}`);
+                console.log(`✅ Formulário King criado para item ${newItem.id}`);
             } catch (error) {
                 console.error("Erro ao criar formulário digital:", error);
                 // Não falhar a criação do item se falhar criar o formulário
