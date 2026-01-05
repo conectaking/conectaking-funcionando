@@ -1419,6 +1419,9 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             whatsapp_number,
             display_format,
             banner_image_url,
+            header_image_url,
+            background_image_url,
+            background_opacity,
             form_fields,
             theme,
             primary_color,
@@ -1555,6 +1558,18 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 updateFormFields.push(`text_color = $${formParamIndex++}`);
                 updateFormValues.push(text_color || '#333333');
             }
+            if (header_image_url !== undefined) {
+                updateFormFields.push(`header_image_url = $${formParamIndex++}`);
+                updateFormValues.push(header_image_url || null);
+            }
+            if (background_image_url !== undefined) {
+                updateFormFields.push(`background_image_url = $${formParamIndex++}`);
+                updateFormValues.push(background_image_url || null);
+            }
+            if (background_opacity !== undefined) {
+                updateFormFields.push(`background_opacity = $${formParamIndex++}`);
+                updateFormValues.push(background_opacity !== undefined ? background_opacity : 1.0);
+            }
 
             if (updateFormFields.length > 0) {
                 updateFormValues.push(itemId);
@@ -1573,8 +1588,9 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                     profile_item_id, form_title, form_logo_url, form_description,
                     prayer_requests_text, meetings_text, welcome_text,
                     whatsapp_number, display_format, banner_image_url,
+                    header_image_url, background_image_url, background_opacity,
                     form_fields, theme, primary_color, text_color
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14)
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15, $16, $17)
             `, [
                 itemId,
                 form_title || 'Formulário King',
@@ -1586,6 +1602,9 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 whatsapp_number || null,
                 display_format || 'button',
                 banner_image_url || null,
+                header_image_url || null,
+                background_image_url || null,
+                background_opacity !== undefined ? background_opacity : 1.0,
                 formFieldsJSON,
                 theme || 'light',
                 primary_color || '#4A90E2',
