@@ -93,6 +93,30 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
         // Buscar TODOS os itens (ativos e inativos) para o dashboard
         const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order ASC', [userId]);
         
+        // Buscar dados adicionais para digital_form
+        const items = await Promise.all(itemsRes.rows.map(async (item) => {
+            if (item.item_type === 'digital_form') {
+                try {
+                    const digitalFormRes = await client.query(
+                        'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+                        [item.id]
+                    );
+                    if (digitalFormRes.rows.length > 0) {
+                        item.digital_form_data = digitalFormRes.rows[0];
+                    } else {
+                        item.digital_form_data = {}; // Garantir que o objeto exista
+                    }
+                } catch (formError) {
+                    console.error('Erro ao carregar dados do formulário digital', {
+                        itemId: item.id,
+                        error: formError.message
+                    });
+                    item.digital_form_data = {};
+                }
+            }
+            return item;
+        }));
+        
         const details = profileRes.rows[0];
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
@@ -102,7 +126,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
 
         const fullProfile = {
             details: details,
-            items: itemsRes.rows || []
+            items: items || []
         };
         
         res.json(fullProfile);
