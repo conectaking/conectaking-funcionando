@@ -413,15 +413,8 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
         if (items && Array.isArray(items)) {
             console.log(`📦 [SAVE-ALL] Processando ${items.length} itens do perfil...`);
             
-            // IMPORTANTE: Preservar sales_page ANTES de deletar
-            // sales_page não é incluído no save-all, então precisa ser preservado
-            console.log('🔒 [SAVE-ALL] Preservando sales_page antes de deletar itens...');
-            const salesPagePreserveStart = Date.now();
-            const salesPageItemsToPreserve = await client.query(`
-                SELECT * FROM profile_items 
-                WHERE user_id = $1 AND item_type = 'sales_page'
-            `, [userId]);
-            console.log(`✅ [SAVE-ALL] ${salesPageItemsToPreserve.rows.length} sales_page(s) preservado(s) em ${Date.now() - salesPagePreserveStart}ms`);
+            // IMPORTANTE: NÃO deletar mais todos os itens - usar UPDATE para preservar dados
+            // Esta mudança evita perda de dados quando módulos são salvos individualmente
             
             // Verificar quais colunas existem na tabela profile_items (cachear resultado)
             console.log('🔍 [SAVE-ALL] Verificando colunas da tabela profile_items...');
@@ -435,11 +428,16 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             const existingColumns = columnsCheck.rows.map(row => row.column_name);
             console.log(`✅ [SAVE-ALL] ${existingColumns.length} colunas encontradas`);
             
-            // Deletar apenas itens que NÃO são sales_page
-            console.log('🗑️ [SAVE-ALL] Deletando itens existentes do usuário (exceto sales_page)...');
-            const deleteStart = Date.now();
-            const deleteResult = await client.query('DELETE FROM profile_items WHERE user_id = $1 AND item_type != $2', [userId, 'sales_page']);
-            console.log(`✅ [SAVE-ALL] ${deleteResult.rowCount} itens deletados em ${Date.now() - deleteStart}ms (sales_page preservado)`);
+            // Buscar IDs de todos os itens existentes do usuário (exceto sales_page) para identificar o que precisa ser deletado
+            const existingItemsResult = await client.query(
+                'SELECT id FROM profile_items WHERE user_id = $1 AND item_type != $2',
+                [userId, 'sales_page']
+            );
+            const existingItemIds = new Set(existingItemsResult.rows.map(row => row.id));
+            console.log(`📋 [SAVE-ALL] ${existingItemIds.size} itens existentes encontrados (exceto sales_page)`);
+            
+            // Criar Set com IDs dos itens que estão sendo salvos
+            const savedItemIds = new Set();
 
             // Encontrar o maior ID para atualizar sequência uma única vez
             const maxIdResult = await client.query('SELECT COALESCE(MAX(id), 0) as max_id FROM profile_items');
@@ -455,230 +453,263 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 // Esses campos são gerenciados exclusivamente pela página de vendas
                 if (item.item_type === 'sales_page') {
                     const hasValidId = item.id && !isNaN(parseInt(item.id, 10)) && parseInt(item.id, 10) > 0;
-                    const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'display_order', 'is_active'] : ['user_id', 'item_type', 'display_order', 'is_active'];
-                    const insertValues = hasValidId ? [
-                        parseInt(item.id, 10),
-                        userId,
-                        item.item_type,
-                        item.display_order !== undefined ? item.display_order : 0,
-                        item.is_active !== undefined ? item.is_active : true
-                    ] : [
-                        userId,
-                        item.item_type,
-                        item.display_order !== undefined ? item.display_order : 0,
-                        item.is_active !== undefined ? item.is_active : true
-                    ];
+                    const itemIdInt = hasValidId ? parseInt(item.id, 10) : null;
+                    const itemExists = itemIdInt && existingItemIds.has(itemIdInt);
                     
-                    const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
-                    let insertedId = null;
-                    
-                    try {
-                        if (hasValidId) {
-                            const itemIdInt = parseInt(item.id, 10);
-                            if (itemIdInt > maxIdToSet) {
-                                maxIdToSet = itemIdInt;
-                            }
-                        }
+                    if (itemExists) {
+                        // UPDATE apenas is_active e display_order para sales_page existente
+                        await client.query(`
+                            UPDATE profile_items 
+                            SET display_order = $1, is_active = $2
+                            WHERE id = $3 AND user_id = $4 AND item_type = 'sales_page'
+                        `, [
+                            item.display_order !== undefined ? item.display_order : 0,
+                            item.is_active !== undefined ? item.is_active : true,
+                            itemIdInt,
+                            userId
+                        ]);
+                        savedItemIds.add(itemIdInt);
+                        console.log(`✅ [SAVE-ALL] Sales_page ${itemIdInt} atualizado (apenas is_active e display_order)`);
+                    } else {
+                        // INSERT para novo sales_page
+                        const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'display_order', 'is_active'] : ['user_id', 'item_type', 'display_order', 'is_active'];
+                        const insertValues = hasValidId ? [
+                            itemIdInt,
+                            userId,
+                            item.item_type,
+                            item.display_order !== undefined ? item.display_order : 0,
+                            item.is_active !== undefined ? item.is_active : true
+                        ] : [
+                            userId,
+                            item.item_type,
+                            item.display_order !== undefined ? item.display_order : 0,
+                            item.is_active !== undefined ? item.is_active : true
+                        ];
                         
+                        const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
                         const result = await client.query(`
                             INSERT INTO profile_items (${insertFields.join(', ')})
                             VALUES (${placeholders})
                             RETURNING id, user_id, item_type
                         `, insertValues);
                         
-                        insertedId = result.rows[0].id;
-                        console.log(`✅ [SAVE-ALL] Sales_page ${insertedId} inserido (apenas is_active e display_order)`);
+                        const insertedId = result.rows[0].id;
+                        savedItemIds.add(insertedId);
+                        console.log(`✅ [SAVE-ALL] Sales_page ${insertedId} inserido (novo)`);
+                        
+                        if (hasValidId && itemIdInt > maxIdToSet) {
+                            maxIdToSet = itemIdInt;
+                        }
                         
                         // Guardar para verificar se precisa criar sales_page (só se não existir)
                         salesPageItems.push({ insertedId, item });
-                    } catch (insertError) {
-                        console.error(`❌ Erro ao inserir sales_page ${item.id || 'novo'}:`, insertError);
-                        throw insertError;
                     }
-                    
-                    // Pular para o próximo item (sales_page já processado)
                     continue;
                 }
                 
-                // Para outros tipos de item, usar lógica normal
-                // Verificar se item.id é válido (número e maior que 0)
+                // Para outros tipos de item: usar UPDATE se existir, INSERT se novo
                 const hasValidId = item.id && !isNaN(parseInt(item.id, 10)) && parseInt(item.id, 10) > 0;
+                const itemIdInt = hasValidId ? parseInt(item.id, 10) : null;
+                const itemExists = itemIdInt && existingItemIds.has(itemIdInt);
                 
                 // Normalizar destination_url para carrossel (evitar dupla codificação JSON)
                 let normalizedDestinationUrl = item.destination_url || null;
                 if (item.item_type === 'carousel' && normalizedDestinationUrl) {
                     try {
-                        // Se já for uma string JSON válida, tentar parsear e re-stringify para garantir formato correto
                         const parsed = JSON.parse(normalizedDestinationUrl);
                         if (Array.isArray(parsed)) {
                             normalizedDestinationUrl = JSON.stringify(parsed);
                         } else {
-                            // Se não for array, converter para array
                             normalizedDestinationUrl = JSON.stringify([parsed]);
                         }
                     } catch (e) {
-                        // Se não for JSON válido, tentar tratar como string simples
                         if (typeof normalizedDestinationUrl === 'string' && !normalizedDestinationUrl.startsWith('[')) {
                             normalizedDestinationUrl = JSON.stringify([normalizedDestinationUrl]);
                         }
                     }
                 }
                 
-                // Se o item tem ID válido, incluir no INSERT para preservar
-                const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'] : ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
-                const insertValues = hasValidId ? [
-                    parseInt(item.id, 10), // Preservar ID original (garantir que é número)
-                    userId,
-                    item.item_type,
-                    item.title || null,
-                    normalizedDestinationUrl,
-                    item.image_url || null,
-                    item.icon_class || null,
-                    item.display_order !== undefined ? item.display_order : 0,
-                    item.is_active !== undefined ? item.is_active : true
-                ] : [
-                    userId,
-                    item.item_type,
-                    item.title || null,
-                    normalizedDestinationUrl,
-                    item.image_url || null,
-                    item.icon_class || null,
-                    item.display_order !== undefined ? item.display_order : 0,
-                    item.is_active !== undefined ? item.is_active : true
-                ];
-                
-                // Adicionar campos opcionais apenas se as colunas existirem
-                if (existingColumns.includes('pix_key')) {
-                    insertFields.push('pix_key');
-                    insertValues.push(item.pix_key || null);
-                }
-                if (existingColumns.includes('recipient_name')) {
-                    insertFields.push('recipient_name');
-                    insertValues.push(item.recipient_name || null);
-                }
-                if (existingColumns.includes('pix_amount')) {
-                    insertFields.push('pix_amount');
-                    insertValues.push(item.pix_amount || null);
-                }
-                if (existingColumns.includes('pix_description')) {
-                    insertFields.push('pix_description');
-                    insertValues.push(item.pix_description || null);
-                }
-                if (existingColumns.includes('pdf_url')) {
-                    insertFields.push('pdf_url');
-                    insertValues.push(item.pdf_url || null);
-                }
-                if (existingColumns.includes('logo_size')) {
-                    insertFields.push('logo_size');
-                    // Preservar logo_size se fornecido, senão usar null (será aplicado o padrão de 24px no frontend)
-                    // Garantir que o valor seja um número válido ou null
-                    let logoSizeValue = null;
-                    if (item.logo_size !== undefined && item.logo_size !== null && item.logo_size !== '') {
-                        const parsed = parseInt(item.logo_size, 10);
-                        logoSizeValue = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+                if (itemExists) {
+                    // UPDATE: item existe, atualizar campos
+                    const updateFields = [];
+                    const updateValues = [];
+                    let paramIndex = 1;
+                    
+                    // Campos padrão
+                    updateFields.push(`title = $${paramIndex++}`);
+                    updateValues.push(item.title || null);
+                    updateFields.push(`destination_url = $${paramIndex++}`);
+                    updateValues.push(normalizedDestinationUrl);
+                    updateFields.push(`image_url = $${paramIndex++}`);
+                    updateValues.push(item.image_url || null);
+                    updateFields.push(`icon_class = $${paramIndex++}`);
+                    updateValues.push(item.icon_class || null);
+                    updateFields.push(`display_order = $${paramIndex++}`);
+                    updateValues.push(item.display_order !== undefined ? item.display_order : 0);
+                    updateFields.push(`is_active = $${paramIndex++}`);
+                    updateValues.push(item.is_active !== undefined ? item.is_active : true);
+                    
+                    // Campos opcionais
+                    if (existingColumns.includes('pix_key')) {
+                        updateFields.push(`pix_key = $${paramIndex++}`);
+                        updateValues.push(item.pix_key || null);
                     }
-                    // IMPORTANTE: Se logo_size não foi fornecido (null/undefined), usar null
-                    // O frontend aplicará o padrão de 24px quando for null
-                    insertValues.push(logoSizeValue);
-                    console.log(`📏 [SAVE-ALL] Item ${item.id || 'novo'} (${item.item_type}) - logo_size: ${logoSizeValue} (original: ${item.logo_size}, tipo: ${typeof item.logo_size})`);
-                }
-                if (existingColumns.includes('logo_fit_mode')) {
-                    insertFields.push('logo_fit_mode');
-                    // Preservar logo_fit_mode se fornecido, senão usar 'contain' (completo, sem corte) como padrão
-                    let logoFitModeValue = 'contain'; // Padrão: completo, sem corte
-                    if (item.logo_fit_mode !== undefined && item.logo_fit_mode !== null && item.logo_fit_mode !== '') {
-                        if (['contain', 'cover'].includes(item.logo_fit_mode)) {
-                            logoFitModeValue = item.logo_fit_mode;
-                        }
+                    if (existingColumns.includes('recipient_name')) {
+                        updateFields.push(`recipient_name = $${paramIndex++}`);
+                        updateValues.push(item.recipient_name || null);
                     }
-                    insertValues.push(logoFitModeValue);
-                    console.log(`📏 [SAVE-ALL] Item ${item.id || 'novo'} (${item.item_type}) - logo_fit_mode: ${logoFitModeValue} (original: ${item.logo_fit_mode})`);
-                }
-                if (existingColumns.includes('whatsapp_message')) {
-                    insertFields.push('whatsapp_message');
-                    insertValues.push(item.whatsapp_message || null);
-                }
-                if (existingColumns.includes('aspect_ratio')) {
-                    insertFields.push('aspect_ratio');
-                    insertValues.push(item.aspect_ratio || null);
-                }
-                
-                const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
-                
-                // Declarar insertedId fora do try para que possa ser usada depois
-                let insertedId = null;
-                
-                try {
-                    // Se estamos preservando um ID, atualizar maxIdToSet para atualizar sequência depois
-                    if (hasValidId) {
-                        const itemIdInt = parseInt(item.id, 10);
-                        if (itemIdInt > maxIdToSet) {
-                            maxIdToSet = itemIdInt;
+                    if (existingColumns.includes('pix_amount')) {
+                        updateFields.push(`pix_amount = $${paramIndex++}`);
+                        updateValues.push(item.pix_amount ? parseFloat(item.pix_amount) : null);
+                    }
+                    if (existingColumns.includes('pix_description')) {
+                        updateFields.push(`pix_description = $${paramIndex++}`);
+                        updateValues.push(item.pix_description || null);
+                    }
+                    if (existingColumns.includes('pdf_url')) {
+                        updateFields.push(`pdf_url = $${paramIndex++}`);
+                        updateValues.push(item.pdf_url || null);
+                    }
+                    if (existingColumns.includes('logo_size')) {
+                        updateFields.push(`logo_size = $${paramIndex++}`);
+                        let logoSizeValue = null;
+                        if (item.logo_size !== undefined && item.logo_size !== null && item.logo_size !== '') {
+                            const parsed = parseInt(item.logo_size, 10);
+                            logoSizeValue = (!isNaN(parsed) && parsed > 0) ? parsed : null;
                         }
+                        updateValues.push(logoSizeValue);
+                    }
+                    if (existingColumns.includes('logo_fit_mode')) {
+                        updateFields.push(`logo_fit_mode = $${paramIndex++}`);
+                        let logoFitModeValue = 'contain';
+                        if (item.logo_fit_mode !== undefined && item.logo_fit_mode !== null && item.logo_fit_mode !== '') {
+                            if (['contain', 'cover'].includes(item.logo_fit_mode)) {
+                                logoFitModeValue = item.logo_fit_mode;
+                            }
+                        }
+                        updateValues.push(logoFitModeValue);
+                    }
+                    if (existingColumns.includes('whatsapp_message')) {
+                        updateFields.push(`whatsapp_message = $${paramIndex++}`);
+                        updateValues.push(item.whatsapp_message || null);
+                    }
+                    if (existingColumns.includes('aspect_ratio')) {
+                        updateFields.push(`aspect_ratio = $${paramIndex++}`);
+                        updateValues.push(item.aspect_ratio || null);
                     }
                     
+                    // Adicionar WHERE clause
+                    updateValues.push(itemIdInt, userId);
+                    
+                    await client.query(`
+                        UPDATE profile_items 
+                        SET ${updateFields.join(', ')}
+                        WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+                    `, updateValues);
+                    
+                    savedItemIds.add(itemIdInt);
+                    console.log(`✅ [SAVE-ALL] Item ${itemIdInt} (${item.item_type}) atualizado`);
+                } else {
+                    // INSERT: item novo
+                    const insertFields = hasValidId ? ['id', 'user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'] : ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'display_order', 'is_active'];
+                    const insertValues = hasValidId ? [
+                        itemIdInt,
+                        userId,
+                        item.item_type,
+                        item.title || null,
+                        normalizedDestinationUrl,
+                        item.image_url || null,
+                        item.icon_class || null,
+                        item.display_order !== undefined ? item.display_order : 0,
+                        item.is_active !== undefined ? item.is_active : true
+                    ] : [
+                        userId,
+                        item.item_type,
+                        item.title || null,
+                        normalizedDestinationUrl,
+                        item.image_url || null,
+                        item.icon_class || null,
+                        item.display_order !== undefined ? item.display_order : 0,
+                        item.is_active !== undefined ? item.is_active : true
+                    ];
+                    
+                    // Adicionar campos opcionais
+                    if (existingColumns.includes('pix_key')) {
+                        insertFields.push('pix_key');
+                        insertValues.push(item.pix_key || null);
+                    }
+                    if (existingColumns.includes('recipient_name')) {
+                        insertFields.push('recipient_name');
+                        insertValues.push(item.recipient_name || null);
+                    }
+                    if (existingColumns.includes('pix_amount')) {
+                        insertFields.push('pix_amount');
+                        insertValues.push(item.pix_amount ? parseFloat(item.pix_amount) : null);
+                    }
+                    if (existingColumns.includes('pix_description')) {
+                        insertFields.push('pix_description');
+                        insertValues.push(item.pix_description || null);
+                    }
+                    if (existingColumns.includes('pdf_url')) {
+                        insertFields.push('pdf_url');
+                        insertValues.push(item.pdf_url || null);
+                    }
+                    if (existingColumns.includes('logo_size')) {
+                        insertFields.push('logo_size');
+                        let logoSizeValue = null;
+                        if (item.logo_size !== undefined && item.logo_size !== null && item.logo_size !== '') {
+                            const parsed = parseInt(item.logo_size, 10);
+                            logoSizeValue = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+                        }
+                        insertValues.push(logoSizeValue);
+                    }
+                    if (existingColumns.includes('logo_fit_mode')) {
+                        insertFields.push('logo_fit_mode');
+                        let logoFitModeValue = 'contain';
+                        if (item.logo_fit_mode !== undefined && item.logo_fit_mode !== null && item.logo_fit_mode !== '') {
+                            if (['contain', 'cover'].includes(item.logo_fit_mode)) {
+                                logoFitModeValue = item.logo_fit_mode;
+                            }
+                        }
+                        insertValues.push(logoFitModeValue);
+                    }
+                    if (existingColumns.includes('whatsapp_message')) {
+                        insertFields.push('whatsapp_message');
+                        insertValues.push(item.whatsapp_message || null);
+                    }
+                    if (existingColumns.includes('aspect_ratio')) {
+                        insertFields.push('aspect_ratio');
+                        insertValues.push(item.aspect_ratio || null);
+                    }
+                    
+                    const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
                     const result = await client.query(`
                         INSERT INTO profile_items (${insertFields.join(', ')})
                         VALUES (${placeholders})
                         RETURNING id, user_id, item_type
                     `, insertValues);
                     
-                    insertedId = result.rows[0].id;
+                    const insertedId = result.rows[0].id;
+                    savedItemIds.add(insertedId);
                     
-                } catch (insertError) {
-                    console.error(`❌ Erro ao inserir item ${item.id || 'novo'}:`, insertError);
-                    throw insertError; // Re-throw para que a transação seja revertida
+                    if (hasValidId && itemIdInt > maxIdToSet) {
+                        maxIdToSet = itemIdInt;
+                    }
+                    
+                    console.log(`✅ [SAVE-ALL] Item ${insertedId} (${item.item_type}) inserido (novo)`);
                 }
             }
             
-            // IMPORTANTE: Reinserir sales_page preservados (se houver)
-            if (salesPageItemsToPreserve.rows.length > 0) {
-                console.log(`🔄 [SAVE-ALL] Reinserindo ${salesPageItemsToPreserve.rows.length} sales_page(s) preservado(s)...`);
-                for (const preservedSalesPage of salesPageItemsToPreserve.rows) {
-                    try {
-                        // Verificar se o item ainda existe (pode ter sido deletado por outro processo)
-                        const existingCheck = await client.query(
-                            'SELECT id FROM profile_items WHERE id = $1',
-                            [preservedSalesPage.id]
-                        );
-                        
-                        if (existingCheck.rows.length > 0) {
-                            // Já existe, não precisa reinserir
-                            console.log(`✅ [SAVE-ALL] Sales_page ${preservedSalesPage.id} já existe, não precisa reinserir`);
-                            continue;
-                        }
-                        
-                        // Reinserir o sales_page exatamente como estava
-                        const insertFields = Object.keys(preservedSalesPage).filter(key => 
-                            key !== 'id' && // Não incluir id na lista de campos (será preservado)
-                            preservedSalesPage[key] !== null && 
-                            preservedSalesPage[key] !== undefined
-                        );
-                        
-                        // Se o item tinha ID, tentar preservar
-                        const hasId = preservedSalesPage.id && !isNaN(parseInt(preservedSalesPage.id, 10)) && parseInt(preservedSalesPage.id, 10) > 0;
-                        if (hasId) {
-                            insertFields.unshift('id');
-                        }
-                        
-                        const insertValues = hasId 
-                            ? [preservedSalesPage.id, ...insertFields.slice(1).map(key => preservedSalesPage[key])]
-                            : insertFields.map(key => preservedSalesPage[key]);
-                        
-                        const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
-                        
-                        await client.query(`
-                            INSERT INTO profile_items (${insertFields.join(', ')})
-                            VALUES (${placeholders})
-                            ON CONFLICT (id) DO NOTHING
-                        `, insertValues);
-                        
-                        console.log(`✅ [SAVE-ALL] Sales_page ${preservedSalesPage.id} preservado e reinserido`);
-                    } catch (preserveError) {
-                        console.error(`❌ [SAVE-ALL] Erro ao preservar sales_page ${preservedSalesPage.id}:`, preserveError);
-                        // Não falhar a operação inteira se uma sales_page falhar ao preservar
-                    }
-                }
+            // Deletar apenas itens que existem no banco mas não foram enviados no save-all
+            // IMPORTANTE: não deletar sales_page
+            const itemsToDelete = Array.from(existingItemIds).filter(id => !savedItemIds.has(id));
+            if (itemsToDelete.length > 0) {
+                console.log(`🗑️ [SAVE-ALL] Deletando ${itemsToDelete.length} itens que não foram incluídos no save-all...`);
+                await client.query(`
+                    DELETE FROM profile_items 
+                    WHERE id = ANY($1::int[]) AND user_id = $2
+                `, [itemsToDelete, userId]);
+                console.log(`✅ [SAVE-ALL] ${itemsToDelete.length} itens deletados`);
             }
             
             // Atualizar sequência uma única vez no final (se necessário)
