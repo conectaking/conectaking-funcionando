@@ -765,7 +765,25 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
         await client.query('COMMIT');
         console.log('✅ Todas as alterações salvas com sucesso');
         console.log('📤 Enviando resposta para o cliente...');
-        res.json({ message: 'Alterações salvas com sucesso!' });
+        
+        // Buscar dados atualizados para retornar
+        const updatedItemsRes = await client.query(
+            'SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order ASC', 
+            [userId]
+        );
+        
+        // Evitar cache do navegador e retornar dados atualizados
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+            'Last-Modified': new Date().toUTCString()
+        });
+        res.json({ 
+            message: 'Alterações salvas com sucesso!',
+            items: updatedItemsRes.rows,
+            timestamp: Date.now() // Timestamp para forçar atualização no frontend
+        });
         console.log('✅ Resposta enviada com sucesso');
 
     } catch (error) {
@@ -937,6 +955,12 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
             console.log(`✅ Banner ${itemId} atualizado com sucesso`);
             console.log(`📸 image_url salvo: ${result.rows[0].image_url ? 'Sim (' + result.rows[0].image_url.substring(0, 50) + '...)' : 'Não'}`);
 
+            // Evitar cache do navegador
+            res.set({
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            });
             res.json(result.rows[0]);
         } catch (queryError) {
             console.error(`❌ [BANNER] Erro na query SQL:`, queryError);
@@ -1051,6 +1075,12 @@ router.put('/items/link/:id', protectUser, asyncHandler(async (req, res) => {
         const result = await client.query(query, updateValues);
 
         console.log(`✅ Link ${itemId} atualizado com sucesso`);
+        // Evitar cache do navegador
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
         res.json(result.rows[0]);
     } catch (error) {
         console.error(`❌ Erro ao atualizar link ${req.params.id}:`, error);
@@ -1142,6 +1172,12 @@ router.put('/items/carousel/:id', protectUser, asyncHandler(async (req, res) => 
         console.log(`📸 image_url salvo: ${result.rows[0].image_url ? 'Sim' : 'Não'}`);
         console.log(`🖼️ destination_url (JSON): ${result.rows[0].destination_url ? 'Presente' : 'Vazio'}`);
 
+        // Evitar cache do navegador
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
         res.json(result.rows[0]);
     } catch (error) {
         console.error(`❌ Erro ao atualizar carousel ${req.params.id}:`, error);
@@ -1236,6 +1272,12 @@ router.put('/items/pix/:id', protectUser, asyncHandler(async (req, res) => {
         const result = await client.query(query, updateValues);
 
         console.log(`✅ PIX ${itemId} atualizado com sucesso`);
+        // Evitar cache do navegador
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
         res.json(result.rows[0]);
     } catch (error) {
         console.error(`❌ Erro ao atualizar PIX ${req.params.id}:`, error);
@@ -1321,6 +1363,12 @@ router.put('/items/pdf/:id', protectUser, asyncHandler(async (req, res) => {
         console.log(`✅ PDF ${itemId} atualizado com sucesso`);
         console.log(`📄 pdf_url salvo: ${result.rows[0].pdf_url ? 'Sim' : 'Não'}`);
 
+        // Evitar cache do navegador
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
         res.json(result.rows[0]);
     } catch (error) {
         console.error(`❌ Erro ao atualizar PDF ${req.params.id}:`, error);
@@ -1391,6 +1439,12 @@ router.get('/items', protectUser, asyncHandler(async (req, res) => {
             'SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order ASC',
             [userId]
         );
+        // Evitar cache do navegador
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
         res.json(result.rows);
     } catch (error) {
         console.error("Erro ao buscar itens:", error);
@@ -1450,6 +1504,12 @@ router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
         const userResult = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
         const profileId = userResult.rows[0]?.id || userId;
 
+        // Evitar cache do navegador
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
         res.json({ 
             success: true, 
             data: {
@@ -1575,6 +1635,12 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
         }
 
         console.log(`✅ Item criado com sucesso:`, newItem);
+        // Evitar cache do navegador
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
         res.status(201).json(newItem);
     } catch (error) {
         console.error("Erro ao criar item:", error);
@@ -1726,6 +1792,12 @@ router.put('/items/:id', protectUser, asyncHandler(async (req, res) => {
         const duration = Date.now() - startTime;
         console.log(`✅ Item ${itemId} atualizado com sucesso em ${duration}ms`);
 
+        // Evitar cache do navegador
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
         res.json(result.rows[0]);
     } catch (error) {
         const duration = Date.now() - startTime;
