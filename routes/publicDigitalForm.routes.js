@@ -88,5 +88,79 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
     }
 }));
 
+// POST /:slug/form/:itemId/submit - Salvar resposta do formulário (público)
+router.post('/:slug/form/:itemId/submit', asyncHandler(async (req, res) => {
+    const { slug, itemId } = req.params;
+    const { response_data, responder_name, responder_email, responder_phone } = req.body;
+    
+    const client = await db.pool.connect();
+    
+    try {
+        // Buscar usuário por slug
+        const userRes = await client.query(
+            'SELECT id FROM users WHERE profile_slug = $1 OR id = $1',
+            [slug]
+        );
+        
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Perfil não encontrado' });
+        }
+
+        const userId = userRes.rows[0].id;
+        const itemIdInt = parseInt(itemId, 10);
+
+        if (isNaN(itemIdInt)) {
+            return res.status(400).json({ message: 'ID do formulário inválido' });
+        }
+
+        if (!response_data || typeof response_data !== 'object') {
+            return res.status(400).json({ message: 'Dados de resposta são obrigatórios' });
+        }
+
+        // Verificar se o formulário existe e está ativo
+        const itemRes = await client.query(
+            `SELECT pi.id 
+             FROM profile_items pi
+             WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'digital_form' AND pi.is_active = true`,
+            [itemIdInt, userId]
+        );
+
+        if (itemRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Formulário não encontrado ou não está ativo' });
+        }
+
+        // Inserir resposta
+        const result = await client.query(`
+            INSERT INTO digital_form_responses (
+                profile_item_id, response_data, responder_name, responder_email, responder_phone
+            ) VALUES ($1, $2::jsonb, $3, $4, $5)
+            RETURNING id, submitted_at
+        `, [
+            itemIdInt,
+            JSON.stringify(response_data),
+            responder_name || null,
+            responder_email || null,
+            responder_phone || null
+        ]);
+
+        logger.info('Resposta do formulário salva', { 
+            itemId: itemIdInt, 
+            responseId: result.rows[0].id 
+        });
+
+        res.json({
+            success: true,
+            message: 'Resposta salva com sucesso',
+            response_id: result.rows[0].id
+        });
+
+    } catch (error) {
+        logger.error('Erro ao salvar resposta do formulário:', error);
+        res.status(500).json({ message: 'Erro ao salvar resposta', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
 

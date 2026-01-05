@@ -2396,6 +2396,121 @@ router.post('/items/repair-sales-pages', protectUser, asyncHandler(async (req, r
     }
 }));
 
+// POST /api/profile/digital-forms/:itemId/responses - Salvar resposta do formulário
+router.post('/digital-forms/:itemId/responses', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.itemId, 10);
+        const { response_data, responder_name, responder_email, responder_phone } = req.body;
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do formulário inválido.' });
+        }
+
+        if (!response_data || typeof response_data !== 'object') {
+            return res.status(400).json({ message: 'Dados de resposta são obrigatórios.' });
+        }
+
+        // Verificar se o formulário pertence ao usuário
+        const formCheck = await client.query(
+            'SELECT pi.id FROM profile_items pi WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = $3',
+            [itemId, userId, 'digital_form']
+        );
+
+        if (formCheck.rows.length === 0) {
+            return res.status(404).json({ message: 'Formulário não encontrado ou você não tem permissão.' });
+        }
+
+        // Inserir resposta
+        const result = await client.query(`
+            INSERT INTO digital_form_responses (
+                profile_item_id, response_data, responder_name, responder_email, responder_phone
+            ) VALUES ($1, $2::jsonb, $3, $4, $5)
+            RETURNING *
+        `, [
+            itemId,
+            JSON.stringify(response_data),
+            responder_name || null,
+            responder_email || null,
+            responder_phone || null
+        ]);
+
+        console.log(`✅ Resposta do formulário ${itemId} salva com sucesso`);
+
+        res.status(201).json({
+            success: true,
+            response: result.rows[0]
+        });
+    } catch (error) {
+        console.error('❌ Erro ao salvar resposta do formulário:', error);
+        res.status(500).json({ message: 'Erro ao salvar resposta.', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/profile/digital-forms/:itemId/responses - Buscar respostas do formulário (dashboard)
+router.get('/digital-forms/:itemId/responses', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.itemId, 10);
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do formulário inválido.' });
+        }
+
+        // Verificar se o formulário pertence ao usuário
+        const formCheck = await client.query(
+            'SELECT pi.id FROM profile_items pi WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = $3',
+            [itemId, userId, 'digital_form']
+        );
+
+        if (formCheck.rows.length === 0) {
+            return res.status(404).json({ message: 'Formulário não encontrado ou você não tem permissão.' });
+        }
+
+        // Buscar respostas
+        const responsesRes = await client.query(`
+            SELECT * FROM digital_form_responses
+            WHERE profile_item_id = $1
+            ORDER BY submitted_at DESC
+        `, [itemId]);
+
+        // Estatísticas
+        const statsRes = await client.query(`
+            SELECT 
+                COUNT(*) as total_responses,
+                COUNT(DISTINCT responder_phone) as unique_responders,
+                COUNT(DISTINCT responder_email) as unique_emails,
+                MIN(submitted_at) as first_response,
+                MAX(submitted_at) as last_response
+            FROM digital_form_responses
+            WHERE profile_item_id = $1
+        `, [itemId]);
+
+        console.log(`✅ Respostas do formulário ${itemId} buscadas: ${responsesRes.rows.length} resposta(s)`);
+
+        res.json({
+            success: true,
+            responses: responsesRes.rows,
+            statistics: statsRes.rows[0] || {
+                total_responses: 0,
+                unique_responders: 0,
+                unique_emails: 0,
+                first_response: null,
+                last_response: null
+            }
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar respostas do formulário:', error);
+        res.status(500).json({ message: 'Erro ao buscar respostas.', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
 
 
