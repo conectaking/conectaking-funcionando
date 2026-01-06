@@ -731,3 +731,78 @@ body.light-theme .branding-logo span {
     text-align: center; 
     margin-top: 20px; 
 }
+
+/* Estilos específicos para Banner do King Forms */
+.banner-link {
+    display: block !important;
+    width: 100%;
+    margin-bottom: 16px;
+    text-decoration: none !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.banner-link:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.banner-image-wrapper {
+    position: relative;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+.banner-image {
+    width: 100%;
+    height: auto;
+    min-height: 180px;
+    max-height: 280px;
+    object-fit: cover;
+    display: block;
+    border-radius: 16px;
+}
+
+.banner-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+    padding: 24px 20px 20px;
+    border-radius: 0 0 16px 16px;
+}
+
+.banner-title {
+    margin: 0;
+    color: #FFFFFF;
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    text-align: left;
+}
+
+/* Garantir que banner-link NÃO herde estilos de profile-link */
+.banner-link.profile-link,
+.banner-link.profile-link:hover {
+    background: transparent !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    border-radius: 16px !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+}
+
+.banner-link .profile-link-logo,
+.banner-link i,
+.banner-link span {
+    display: none !important;
+}
