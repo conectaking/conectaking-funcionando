@@ -1444,6 +1444,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             header_image_url,
             background_image_url,
             background_opacity,
+            background_color,
             form_fields,
             theme,
             primary_color,
@@ -1676,6 +1677,18 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 updateFormFields.push(`background_opacity = $${formParamIndex++}`);
                 updateFormValues.push(background_opacity !== undefined ? background_opacity : 1.0);
             }
+            // Verificar se coluna background_color existe antes de atualizar
+            if (background_color !== undefined) {
+                const colorColumnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'background_color'
+                `);
+                if (colorColumnCheck.rows.length > 0) {
+                    updateFormFields.push(`background_color = $${formParamIndex++}`);
+                    updateFormValues.push(background_color || '#FFFFFF');
+                }
+            }
 
             if (updateFormFields.length > 0) {
                 updateFormValues.push(itemId);
@@ -1722,6 +1735,11 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 extraFields += ', show_logo_corner';
                 extraValues += `, $${paramIdx++}`;
                 extraParams.push(show_logo_corner || false);
+            }
+            if (hasBackgroundColor && background_color !== undefined) {
+                extraFields += ', background_color';
+                extraValues += `, $${paramIdx++}`;
+                extraParams.push(background_color || '#FFFFFF');
             }
             
             await client.query(`
