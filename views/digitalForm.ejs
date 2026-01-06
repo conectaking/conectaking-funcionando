@@ -512,11 +512,169 @@
         }
 
         // Enviar formulário
+        // Função de validação robusta
+        function validateForm() {
+            let isValid = true;
+            const errors = [];
+            
+            currentFormFields.forEach((field, index) => {
+                const fieldId = field.id || `field_${index}`;
+                const fieldLabel = field.label || 'Campo sem título';
+                const fieldElement = document.querySelector(`#field-${index}`);
+                const fieldGroup = fieldElement?.closest('.form-group');
+                
+                // Remover estados de erro anteriores
+                if (fieldGroup) {
+                    fieldGroup.classList.remove('field-error', 'field-valid');
+                    const errorMsg = fieldGroup.querySelector('.field-error-message');
+                    if (errorMsg) errorMsg.remove();
+                }
+                
+                // Validar campo obrigatório
+                if (field.required) {
+                    let fieldValue = '';
+                    
+                    if (field.type === 'checkbox') {
+                        const checked = document.querySelectorAll(`input[name="${fieldId}"]:checked`);
+                        fieldValue = checked.length > 0 ? Array.from(checked).map(c => c.value).join(',') : '';
+                    } else if (field.type === 'multiple_choice' || field.type === 'yes_no') {
+                        const selected = document.querySelector(`input[name="${fieldId}"]:checked`);
+                        fieldValue = selected ? selected.value : '';
+                    } else if (fieldElement) {
+                        fieldValue = fieldElement.value ? fieldElement.value.trim() : '';
+                    }
+                    
+                    if (!fieldValue) {
+                        isValid = false;
+                        errors.push(`${fieldLabel} é obrigatório`);
+                        if (fieldGroup) {
+                            fieldGroup.classList.add('field-error');
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'field-error-message';
+                            errorDiv.style.cssText = 'color: #d32f2f; font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;';
+                            errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Este campo é obrigatório';
+                            fieldGroup.appendChild(errorDiv);
+                        }
+                    }
+                }
+                
+                // Validação específica por tipo
+                if (fieldElement && fieldElement.value) {
+                    const value = fieldElement.value.trim();
+                    
+                    // Validação de email
+                    if (field.type === 'email' && value) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(value)) {
+                            isValid = false;
+                            errors.push(`${fieldLabel} deve ser um email válido`);
+                            if (fieldGroup) {
+                                fieldGroup.classList.add('field-error');
+                                const errorDiv = fieldGroup.querySelector('.field-error-message') || document.createElement('div');
+                                errorDiv.className = 'field-error-message';
+                                errorDiv.style.cssText = 'color: #d32f2f; font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;';
+                                errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Email inválido';
+                                if (!fieldGroup.querySelector('.field-error-message')) {
+                                    fieldGroup.appendChild(errorDiv);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Validação de telefone
+                    if (field.type === 'phone' && value) {
+                        const phoneRegex = /^[\d\s\(\)\-\+]{10,}$/;
+                        const digitsOnly = value.replace(/\D/g, '');
+                        if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+                            isValid = false;
+                            errors.push(`${fieldLabel} deve ser um telefone válido`);
+                            if (fieldGroup) {
+                                fieldGroup.classList.add('field-error');
+                                const errorDiv = fieldGroup.querySelector('.field-error-message') || document.createElement('div');
+                                errorDiv.className = 'field-error-message';
+                                errorDiv.style.cssText = 'color: #d32f2f; font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;';
+                                errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Telefone inválido (mínimo 10 dígitos)';
+                                if (!fieldGroup.querySelector('.field-error-message')) {
+                                    fieldGroup.appendChild(errorDiv);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Validação de número
+                    if (field.type === 'number' && value) {
+                        if (isNaN(value)) {
+                            isValid = false;
+                            errors.push(`${fieldLabel} deve ser um número válido`);
+                            if (fieldGroup) {
+                                fieldGroup.classList.add('field-error');
+                            }
+                        } else {
+                            if (field.min !== undefined && parseFloat(value) < field.min) {
+                                isValid = false;
+                                errors.push(`${fieldLabel} deve ser no mínimo ${field.min}`);
+                            }
+                            if (field.max !== undefined && parseFloat(value) > field.max) {
+                                isValid = false;
+                                errors.push(`${fieldLabel} deve ser no máximo ${field.max}`);
+                            }
+                        }
+                    }
+                    
+                    // Feedback visual de sucesso
+                    if (isValid && fieldGroup && fieldElement.value) {
+                        fieldGroup.classList.add('field-valid');
+                    }
+                }
+            });
+            
+            return { isValid, errors };
+        }
+        
+        // Validação em tempo real
+        document.querySelectorAll('#digital-form input, #digital-form textarea, #digital-form select').forEach(input => {
+            input.addEventListener('blur', () => {
+                const fieldGroup = input.closest('.form-group');
+                if (fieldGroup) {
+                    const fieldIndex = parseInt(input.id.replace('field-', ''));
+                    const field = currentFormFields[fieldIndex];
+                    if (field && field.required && !input.value.trim()) {
+                        fieldGroup.classList.add('field-error');
+                    } else if (fieldGroup.classList.contains('field-error')) {
+                        fieldGroup.classList.remove('field-error');
+                        fieldGroup.classList.add('field-valid');
+                    }
+                }
+            });
+        });
+        
         document.getElementById('digital-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             if (!whatsappNumber) {
                 alert('Número do WhatsApp não configurado!');
+                return;
+            }
+            
+            // Validar formulário antes de enviar
+            const validation = validateForm();
+            if (!validation.isValid) {
+                // Scroll para o primeiro erro
+                const firstError = document.querySelector('.field-error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                
+                // Mostrar mensagem de erro
+                const submitBtn = document.getElementById('form-submit-btn');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Corrija os erros acima';
+                submitBtn.style.background = '#d32f2f';
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.style.background = '';
+                }, 3000);
+                
                 return;
             }
 
