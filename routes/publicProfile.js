@@ -72,7 +72,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Perfil não configurado</h1>');
         }
         
-        const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC', [userId]);
+        const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true AND (is_listed IS NULL OR is_listed = true) ORDER BY display_order ASC', [userId]);
         
         // Log para debug
         logger.debug('Itens encontrados no banco', { 

@@ -1445,7 +1445,9 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             primary_color,
             text_color,
             is_active, 
-            display_order 
+            display_order,
+            is_listed,
+            generate_share_token
         } = req.body;
 
         if (!itemId || isNaN(itemId)) {
@@ -1490,6 +1492,46 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             updateFields.push(`display_order = $${paramIndex++}`);
             updateValues.push(display_order);
         }
+        if (is_listed !== undefined && existingColumns.includes('is_listed')) {
+            updateFields.push(`is_listed = $${paramIndex++}`);
+            updateValues.push(is_listed);
+        }
+        // Gerar share_token se solicitado
+        let generatedToken = null;
+        if (generate_share_token === true && existingColumns.includes('share_token')) {
+            // Verificar se já existe token
+            const tokenCheck = await client.query(
+                'SELECT share_token FROM profile_items WHERE id = $1',
+                [itemId]
+            );
+            if (!tokenCheck.rows[0]?.share_token) {
+                // Tentar usar função do banco, se não existir, criar manualmente
+                try {
+                    const tokenResult = await client.query('SELECT generate_share_token() as token');
+                    generatedToken = tokenResult.rows[0]?.token;
+                } catch (e) {
+                    // Se função não existir, criar token manualmente
+                    const crypto = require('crypto');
+                    generatedToken = crypto.randomBytes(16).toString('hex').toUpperCase();
+                    // Garantir que é único
+                    let exists = true;
+                    let attempts = 0;
+                    while (exists && attempts < 10) {
+                        const check = await client.query('SELECT 1 FROM profile_items WHERE share_token = $1', [generatedToken]);
+                        exists = check.rows.length > 0;
+                        if (exists) {
+                            generatedToken = crypto.randomBytes(16).toString('hex').toUpperCase();
+                            attempts++;
+                        }
+                    }
+                }
+                updateFields.push(`share_token = $${paramIndex++}`);
+                updateValues.push(generatedToken);
+                console.log(`🔗 [DIGITAL_FORM] Token gerado para formulário ${itemId}: ${generatedToken}`);
+            } else {
+                generatedToken = tokenCheck.rows[0].share_token;
+            }
+        }
         // Para digital_form, image_url pode ser usado para o banner_image_url
         if (banner_image_url !== undefined && display_format === 'banner') {
             if (existingColumns.includes('image_url')) {
@@ -1506,7 +1548,15 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
                 RETURNING *
             `;
-            await client.query(profileQuery, updateValues);
+            const profileResult = await client.query(profileQuery, updateValues);
+            
+            // Se token foi gerado, retornar na resposta
+            if (generate_share_token === true && existingColumns.includes('share_token')) {
+                const updatedItem = profileResult.rows[0];
+                if (updatedItem?.share_token) {
+                    console.log(`🔗 [DIGITAL_FORM] Token disponível: ${updatedItem.share_token}`);
+                }
+            }
         }
 
         // Atualizar ou criar digital_form_items

@@ -5,6 +5,81 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
 
 /**
+ * Rota pública: GET /form/share/:token
+ * Acesso via link compartilhável (formulário oculto do cartão público)
+ */
+router.get('/form/share/:token', asyncHandler(async (req, res) => {
+    const { token } = req.params;
+    const client = await db.pool.connect();
+    
+    try {
+        // Buscar formulário pelo share_token
+        const itemRes = await client.query(
+            `SELECT pi.* 
+             FROM profile_items pi
+             WHERE pi.share_token = $1 AND pi.item_type = 'digital_form' AND pi.is_active = true`,
+            [token]
+        );
+
+        if (itemRes.rows.length === 0) {
+            return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>O link compartilhável é inválido ou expirou.</p>');
+        }
+
+        const item = itemRes.rows[0];
+        const userId = item.user_id;
+        const itemIdInt = item.id;
+
+        // Buscar dados do formulário
+        const formRes = await client.query(
+            'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+            [itemIdInt]
+        );
+
+        if (formRes.rows.length === 0) {
+            return res.status(404).send('<h1>404 - Dados do formulário não encontrados</h1>');
+        }
+
+        let formData = formRes.rows[0];
+        
+        // Garantir que form_fields seja um array
+        if (formData.form_fields) {
+            if (typeof formData.form_fields === 'string') {
+                try {
+                    formData.form_fields = JSON.parse(formData.form_fields);
+                } catch (e) {
+                    logger.error('Erro ao parsear form_fields:', e);
+                    formData.form_fields = [];
+                }
+            }
+            if (!Array.isArray(formData.form_fields)) {
+                formData.form_fields = [];
+            }
+        } else {
+            formData.form_fields = [];
+        }
+
+        // Buscar profile_slug
+        const profileSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
+        const profileSlug = profileSlugRes.rows[0]?.profile_slug || userId;
+
+        // Renderizar página
+        res.render('digitalForm', {
+            item: item,
+            formData: formData,
+            profileSlug: profileSlug,
+            slug: profileSlug,
+            itemId: itemIdInt
+        });
+
+    } catch (error) {
+        logger.error('Erro ao carregar formulário via share_token:', error);
+        return res.status(500).send('<h1>500 - Erro ao carregar formulário</h1>');
+    } finally {
+        client.release();
+    }
+}));
+
+/**
  * Rota pública: GET /:slug/form/:itemId
  * Renderiza o formulário digital público
  */
@@ -42,16 +117,17 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             return res.status(400).send('<h1>400 - ID do formulário inválido</h1>');
         }
 
-        // Buscar item do tipo digital_form
+        // Buscar item do tipo digital_form (verificar se está listado ou se é acesso direto)
         const itemRes = await client.query(
             `SELECT pi.* 
              FROM profile_items pi
-             WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'digital_form' AND pi.is_active = true`,
+             WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'digital_form' AND pi.is_active = true
+             AND (pi.is_listed IS NULL OR pi.is_listed = true)`,
             [itemIdInt, userId]
         );
 
         if (itemRes.rows.length === 0) {
-            return res.status(404).send('<h1>404 - Formulário não encontrado</h1>');
+            return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>Este formulário não está disponível publicamente. Use o link compartilhável se você tiver um.</p>');
         }
 
         const item = itemRes.rows[0];
