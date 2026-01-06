@@ -156,48 +156,6 @@
         }, true);
 
         // Carregar campos dinâmicos se existirem
-        console.log('🔍 [DEBUG] formDataObj completo:', formDataObj);
-        console.log('🔍 [DEBUG] formDataObj.form_fields (tipo):', typeof formDataObj.form_fields);
-        console.log('🔍 [DEBUG] formDataObj.form_fields (valor):', formDataObj.form_fields);
-        
-        let formFields = formDataObj.form_fields || [];
-        
-        // Garantir que formFields seja um array
-        if (typeof formFields === 'string') {
-            try {
-                formFields = JSON.parse(formFields);
-            } catch (e) {
-                console.error('❌ Erro ao parsear form_fields:', e);
-                formFields = [];
-            }
-        }
-        if (!Array.isArray(formFields)) {
-            console.warn('⚠️ formFields não é um array:', typeof formFields, formFields);
-            formFields = [];
-        }
-        
-        console.log('✅ Form fields carregados (array):', formFields);
-        console.log('✅ Total de campos:', formFields.length);
-        console.log('🔍 [PUBLIC] formDataObj completo:', formDataObj);
-        console.log('🔍 [PUBLIC] formFields detalhado:', JSON.stringify(formFields, null, 2));
-        
-        const container = document.getElementById('dynamic-fields-container');
-        
-        if (!container) {
-            console.error('❌ [PUBLIC] Container dynamic-fields-container não encontrado!');
-            // Tentar aguardar e tentar novamente
-            setTimeout(() => {
-                const containerRetry = document.getElementById('dynamic-fields-container');
-                if (containerRetry && formFields && formFields.length > 0) {
-                    console.log('✅ [PUBLIC] Container encontrado no retry, renderizando campos...');
-                    renderFormFields(containerRetry, formFields);
-                }
-            }, 500);
-            return;
-        }
-        
-        renderFormFields(container, formFields);
-        
         function renderFormFields(containerEl, fields) {
             if (!fields || fields.length === 0) {
                 containerEl.innerHTML = '<p style="text-align: center; color: var(--text-color, #666); padding: 40px;">Nenhum campo configurado neste formulário.</p>';
