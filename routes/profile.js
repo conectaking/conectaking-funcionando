@@ -2689,6 +2689,162 @@ router.get('/digital-forms/:itemId/responses', protectUser, asyncHandler(async (
     }
 }));
 
+// ============================================
+// ROTAS DE RESPOSTAS E DASHBOARD DO FORMULÁRIO
+// ============================================
+
+// GET /api/profile/items/digital_form/:id/responses - Buscar respostas do formulário
+router.get('/items/digital_form/:id/responses', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do formulário inválido.' });
+        }
+
+        // Verificar se o formulário pertence ao usuário
+        const checkRes = await client.query(
+            'SELECT id FROM profile_items WHERE id = $1 AND user_id = $2 AND item_type = $3',
+            [itemId, userId, 'digital_form']
+        );
+
+        if (checkRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Formulário não encontrado ou você não tem permissão.' });
+        }
+
+        // Buscar respostas
+        const responsesRes = await client.query(
+            `SELECT id, response_data, responder_name, responder_email, responder_phone, submitted_at
+             FROM digital_form_responses
+             WHERE profile_item_id = $1
+             ORDER BY submitted_at DESC`,
+            [itemId]
+        );
+
+        res.json({
+            responses: responsesRes.rows.map(row => {
+                let responseData = row.response_data;
+                // Parsear se for string (PostgreSQL JSONB pode retornar como string)
+                if (typeof responseData === 'string') {
+                    try {
+                        responseData = JSON.parse(responseData);
+                    } catch (e) {
+                        console.error('Erro ao parsear response_data:', e);
+                        responseData = {};
+                    }
+                }
+                return {
+                    ...row,
+                    response_data: responseData
+                };
+            })
+        });
+    } catch (error) {
+        console.error('Erro ao buscar respostas:', error);
+        res.status(500).json({ message: 'Erro ao buscar respostas.', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/profile/items/digital_form/:id/dashboard - Buscar estatísticas do formulário
+router.get('/items/digital_form/:id/dashboard', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ message: 'ID do formulário inválido.' });
+        }
+
+        // Verificar se o formulário pertence ao usuário
+        const checkRes = await client.query(
+            'SELECT id FROM profile_items WHERE id = $1 AND user_id = $2 AND item_type = $3',
+            [itemId, userId, 'digital_form']
+        );
+
+        if (checkRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Formulário não encontrado ou você não tem permissão.' });
+        }
+
+        // Total de respostas
+        const totalRes = await client.query(
+            'SELECT COUNT(*) as total FROM digital_form_responses WHERE profile_item_id = $1',
+            [itemId]
+        );
+        const totalResponses = parseInt(totalRes.rows[0].total) || 0;
+
+        // Respostas dos últimos 7 dias
+        const last7DaysRes = await client.query(
+            `SELECT COUNT(*) as total 
+             FROM digital_form_responses 
+             WHERE profile_item_id = $1 AND submitted_at >= NOW() - INTERVAL '7 days'`,
+            [itemId]
+        );
+        const last7Days = parseInt(last7DaysRes.rows[0].total) || 0;
+
+        // Respostas dos últimos 30 dias
+        const last30DaysRes = await client.query(
+            `SELECT COUNT(*) as total 
+             FROM digital_form_responses 
+             WHERE profile_item_id = $1 AND submitted_at >= NOW() - INTERVAL '30 days'`,
+            [itemId]
+        );
+        const last30Days = parseInt(last30DaysRes.rows[0].total) || 0;
+
+        // Respostas por dia (últimos 30 dias) para gráfico
+        const dailyRes = await client.query(
+            `SELECT DATE(submitted_at) as date, COUNT(*) as count
+             FROM digital_form_responses
+             WHERE profile_item_id = $1 AND submitted_at >= NOW() - INTERVAL '30 days'
+             GROUP BY DATE(submitted_at)
+             ORDER BY date ASC`,
+            [itemId]
+        );
+
+        // Analytics (visualizações, cliques, etc)
+        const analyticsRes = await client.query(
+            `SELECT 
+                event_type,
+                COUNT(*) as count
+             FROM digital_form_analytics
+             WHERE profile_item_id = $1
+             GROUP BY event_type`,
+            [itemId]
+        );
+
+        const analytics = {};
+        analyticsRes.rows.forEach(row => {
+            analytics[row.event_type] = parseInt(row.count) || 0;
+        });
+
+        res.json({
+            total_responses: totalResponses,
+            last_7_days: last7Days,
+            last_30_days: last30Days,
+            daily_data: dailyRes.rows.map(row => ({
+                date: row.date,
+                count: parseInt(row.count) || 0
+            })),
+            analytics: {
+                views: analytics.view || 0,
+                clicks: analytics.click || 0,
+                submits: analytics.submit || 0,
+                starts: analytics.start || 0,
+                abandons: analytics.abandon || 0
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao buscar dashboard:', error);
+        res.status(500).json({ message: 'Erro ao buscar dashboard.', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
 
 
