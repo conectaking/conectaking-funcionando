@@ -28,6 +28,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     
     try {
+        logger.debug('🔍 Buscando perfil público', { identifier });
         const userRes = await client.query('SELECT id, account_type FROM users WHERE profile_slug = $1 OR id = $1', [identifier]);
         
         if (userRes.rows.length === 0) {
@@ -72,7 +73,40 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Perfil não configurado</h1>');
         }
         
-        const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true AND (is_listed IS NULL OR is_listed = true) ORDER BY display_order ASC', [userId]);
+        // Query com verificação segura para is_listed (pode não existir em tabelas antigas)
+        let itemsRes;
+        try {
+            // Tentar primeiro com is_listed
+            itemsRes = await client.query(
+                `SELECT * FROM profile_items 
+                WHERE user_id = $1 
+                AND is_active = true 
+                AND (is_listed IS NULL OR is_listed = true) 
+                ORDER BY display_order ASC`, 
+                [userId]
+            );
+        } catch (error) {
+            // Se is_listed não existir, usar query sem essa coluna
+            if (error.message && (error.message.includes('is_listed') || error.code === '42703')) {
+                logger.warn('Coluna is_listed não existe, usando query sem filtro is_listed', {
+                    error: error.message,
+                    code: error.code
+                });
+                itemsRes = await client.query(
+                    'SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC', 
+                    [userId]
+                );
+            } else {
+                // Log detalhado do erro antes de re-throw
+                logger.error('Erro ao buscar itens do perfil', {
+                    userId,
+                    error: error.message,
+                    code: error.code,
+                    stack: error.stack
+                });
+                throw error; // Re-throw se for outro erro
+            }
+        }
         
         // Log para debug
         logger.debug('Itens encontrados no banco', { 
@@ -325,15 +359,39 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     );
                     if (formRes.rows.length > 0) {
                         item.digital_form_data = formRes.rows[0];
+                        // Garantir que form_fields seja sempre um array válido
+                        if (item.digital_form_data.form_fields) {
+                            if (typeof item.digital_form_data.form_fields === 'string') {
+                                try {
+                                    item.digital_form_data.form_fields = JSON.parse(item.digital_form_data.form_fields);
+                                } catch (e) {
+                                    logger.warn('Erro ao parsear form_fields do formulário digital', {
+                                        itemId: item.id,
+                                        error: e.message
+                                    });
+                                    item.digital_form_data.form_fields = [];
+                                }
+                            }
+                            if (!Array.isArray(item.digital_form_data.form_fields)) {
+                                item.digital_form_data.form_fields = [];
+                            }
+                        } else {
+                            item.digital_form_data.form_fields = [];
+                        }
                     } else {
-                        item.digital_form_data = {}; // Garantir que o objeto exista
+                        item.digital_form_data = {
+                            form_fields: []
+                        }; // Garantir que o objeto exista com estrutura correta
                     }
                 } catch (formError) {
                     logger.error('Erro ao carregar dados do formulário digital', { 
                         itemId: item.id, 
-                        error: formError.message 
+                        error: formError.message,
+                        stack: formError.stack
                     });
-                    item.digital_form_data = {};
+                    item.digital_form_data = {
+                        form_fields: []
+                    };
                 }
             }
             
@@ -419,8 +477,21 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             identifier: identifier // Adicionar identifier também
         };
         
+        logger.debug('✅ Renderizando perfil público', {
+            identifier,
+            itemsCount: items.length,
+            itemTypes: items.map(i => i.item_type)
+        });
         res.render('profile', profileData);
 
+    } catch (error) {
+        logger.error('❌ Erro ao carregar perfil público', {
+            identifier,
+            error: error.message,
+            stack: error.stack,
+            code: error.code
+        });
+        throw error; // Re-throw para o errorHandler processar
     } finally {
         client.release();
     }
