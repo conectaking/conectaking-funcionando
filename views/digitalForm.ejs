@@ -130,18 +130,24 @@
                         <!-- Campos Dinâmicos (form_fields) -->
                         <div id="dynamic-fields-container"></div>
 
-                        <!-- Botão Enviar -->
+                        <!-- Botão Enviar (WhatsApp Normal) -->
                         <button type="submit" class="submit-btn" id="form-submit-btn">
-                            <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
-                            <i class="fas fa-praying-hands" style="font-size: 22px;"></i>
-                            <span>Enviar Mensagem para o Pastor</span>
-                            <% } else { %>
                             <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
                             <span>Enviar via WhatsApp</span>
-                            <% } %>
                             <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
                         </button>
                     </form>
+                    
+                    <!-- Botão Enviar Mensagem para o Pastor (Abaixo do formulário) -->
+                    <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
+                    <div style="margin-top: 24px; padding-top: 24px; border-top: 2px solid #e8eaed;">
+                        <button type="button" class="submit-btn" id="pastor-message-btn" style="background: linear-gradient(135deg, #FFC700, #FFA500); color: #000; border: none; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.4);">
+                            <i class="fas fa-praying-hands" style="font-size: 22px;"></i>
+                            <span>Enviar Mensagem para o Pastor</span>
+                            <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
+                        </button>
+                    </div>
+                    <% } %>
                 </div>
                 
                 <!-- Sidebar - Informações Adicionais (Estilo Checkout) -->
@@ -824,6 +830,150 @@
             // Abrir WhatsApp
             window.open(whatsappUrl, '_blank');
         });
+        
+        // Botão "Enviar Mensagem para o Pastor"
+        <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
+        const pastorBtn = document.getElementById('pastor-message-btn');
+        if (pastorBtn) {
+            pastorBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                
+                const pastorWhatsapp = '<%= formData.pastor_whatsapp_number || '' %>';
+                if (!pastorWhatsapp) {
+                    alert('Número do WhatsApp do pastor não configurado!');
+                    return;
+                }
+                
+                // Validar formulário antes de enviar
+                const validation = validateForm();
+                if (!validation.isValid) {
+                    const firstError = document.querySelector('.field-error');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    
+                    const submitBtn = document.getElementById('pastor-message-btn');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Corrija os erros acima';
+                    submitBtn.style.background = '#d32f2f';
+                    setTimeout(() => {
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.style.background = '';
+                    }, 3000);
+                    
+                    return;
+                }
+                
+                // Coletar dados do formulário (mesmo processo do botão normal)
+                const form = document.getElementById('digital-form');
+                const formData = new FormData(form);
+                const data = {};
+                const responseData = {};
+                
+                let currentFormFields = window.formFields || formDataObj.form_fields || [];
+                if (typeof currentFormFields === 'string') {
+                    try {
+                        currentFormFields = JSON.parse(currentFormFields);
+                    } catch (e) {
+                        currentFormFields = [];
+                    }
+                }
+                if (!Array.isArray(currentFormFields)) {
+                    currentFormFields = [];
+                }
+                
+                // Coletar todos os campos (mesmo código do submit normal)
+                for (const [key, value] of formData.entries()) {
+                    const field = currentFormFields.find(f => {
+                        const fieldId = f.id || `field_${currentFormFields.indexOf(f)}`;
+                        return fieldId === key;
+                    });
+                    if (field) {
+                        if (field.type === 'checkbox') {
+                            if (!responseData[key]) responseData[key] = [];
+                            responseData[key].push(value);
+                        } else {
+                            responseData[key] = value;
+                        }
+                        data[key] = responseData[key];
+                    } else {
+                        data[key] = value;
+                    }
+                }
+                
+                currentFormFields.forEach((field, index) => {
+                    const fieldId = field.id || `field_${index}`;
+                    
+                    if (field.type === 'checkbox') {
+                        const checkboxes = document.querySelectorAll(`input[name="${fieldId}"]:checked`);
+                        if (checkboxes.length > 0) {
+                            responseData[fieldId] = Array.from(checkboxes).map(cb => cb.value);
+                            data[fieldId] = responseData[fieldId].join(', ');
+                        }
+                    } else if (field.type === 'multiple_choice' || field.type === 'yes_no' || field.type === 'linear_scale' || field.type === 'rating') {
+                        const selected = document.querySelector(`input[name="${fieldId}"]:checked`);
+                        if (selected) {
+                            responseData[fieldId] = selected.value;
+                            data[fieldId] = selected.value;
+                        }
+                    } else {
+                        const input = document.querySelector(`#field-${index}`);
+                        if (input && input.value) {
+                            responseData[fieldId] = input.value;
+                            data[fieldId] = input.value;
+                        }
+                    }
+                });
+                
+                // Salvar resposta no servidor
+                try {
+                    const submitResponse = await fetch(`/<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>/form/<%= item.id %>/submit`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            response_data: responseData,
+                            responder_name: data.name || null,
+                            responder_email: data.email || null,
+                            responder_phone: data.phone || null,
+                            session_id: sessionId
+                        })
+                    });
+                    
+                    if (!submitResponse.ok) {
+                        console.error('Erro ao salvar resposta no servidor');
+                    }
+                } catch (error) {
+                    console.error('Erro ao salvar resposta:', error);
+                }
+                
+                // Formatar mensagem para WhatsApp do Pastor
+                let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
+                message += '*Mensagem para o Pastor*\n\n';
+                
+                currentFormFields.forEach((field, index) => {
+                    const fieldId = field.id || `field_${index}`;
+                    const fieldValue = data[fieldId];
+                    if (fieldValue) {
+                        const fieldLabel = field.label || field.Label || 'Campo';
+                        if (Array.isArray(fieldValue)) {
+                            message += `*${fieldLabel}:* ${fieldValue.join(', ')}\n`;
+                        } else {
+                            message += `*${fieldLabel}:* ${fieldValue}\n`;
+                        }
+                    }
+                });
+                
+                // Limpar número do WhatsApp do pastor (apenas números)
+                const cleanPastorWhatsapp = pastorWhatsapp.replace(/\D/g, '');
+                const pastorWhatsappUrl = `https://wa.me/${cleanPastorWhatsapp}?text=${encodeURIComponent(message)}`;
+                
+                // Abrir WhatsApp do Pastor
+                window.open(pastorWhatsappUrl, '_blank');
+            });
+        }
+        <% } %>
     </script>
 </body>
 </html>
