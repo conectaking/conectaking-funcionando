@@ -1435,6 +1435,8 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             meetings_text,
             welcome_text,
             whatsapp_number,
+            enable_pastor_button,
+            pastor_whatsapp_number,
             display_format,
             banner_image_url,
             header_image_url,
@@ -1611,6 +1613,14 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 updateFormFields.push(`whatsapp_number = $${formParamIndex++}`);
                 updateFormValues.push(whatsapp_number || null);
             }
+            if (enable_pastor_button !== undefined) {
+                updateFormFields.push(`enable_pastor_button = $${formParamIndex++}`);
+                updateFormValues.push(enable_pastor_button || false);
+            }
+            if (pastor_whatsapp_number !== undefined) {
+                updateFormFields.push(`pastor_whatsapp_number = $${formParamIndex++}`);
+                updateFormValues.push(pastor_whatsapp_number || null);
+            }
             if (display_format !== undefined) {
                 updateFormFields.push(`display_format = $${formParamIndex++}`);
                 updateFormValues.push(display_format || 'button');
@@ -1664,14 +1674,26 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
         } else {
             // Criar novo registro
+            // Verificar se colunas do pastor existem
+            const pastorColumnsCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'digital_form_items'
+                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number')
+            `);
+            const hasPastorColumns = pastorColumnsCheck.rows.length > 0;
+            const pastorFields = hasPastorColumns ? ', enable_pastor_button, pastor_whatsapp_number' : '';
+            const pastorValues = hasPastorColumns ? `, $${formParamIndex++}, $${formParamIndex++}` : '';
+            const pastorParams = hasPastorColumns ? [enable_pastor_button || false, pastor_whatsapp_number || null] : [];
+            
             await client.query(`
                 INSERT INTO digital_form_items (
                     profile_item_id, form_title, form_logo_url, form_description,
                     prayer_requests_text, meetings_text, welcome_text,
                     whatsapp_number, display_format, banner_image_url,
                     header_image_url, background_image_url, background_opacity,
-                    form_fields, theme, primary_color, text_color
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15, $16, $17)
+                    form_fields, theme, primary_color, text_color${pastorFields}
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15, $16, $17${pastorValues})
             `, [
                 itemId,
                 form_title || 'Formulário King',
@@ -1689,7 +1711,8 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 formFieldsJSON,
                 theme || 'light',
                 primary_color || '#4A90E2',
-                text_color || '#333333'
+                text_color || '#333333',
+                ...pastorParams
             ]);
         }
 

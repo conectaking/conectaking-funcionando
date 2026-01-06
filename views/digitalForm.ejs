@@ -119,9 +119,14 @@
                         <div id="dynamic-fields-container"></div>
 
                         <!-- Botão Enviar -->
-                        <button type="submit" class="submit-btn">
+                        <button type="submit" class="submit-btn" id="form-submit-btn">
+                            <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
+                            <i class="fas fa-praying-hands" style="font-size: 22px;"></i>
+                            <span>Enviar Mensagem para o Pastor</span>
+                            <% } else { %>
                             <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
                             <span>Enviar via WhatsApp</span>
+                            <% } %>
                             <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
                         </button>
                     </form>
@@ -146,6 +151,20 @@
                             <p style="margin: 0; font-size: 13px; color: #5f6368; line-height: 1.6;">Enviaremos sua mensagem diretamente pelo WhatsApp para um atendimento imediato.</p>
                         </div>
                         
+                        <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
+                        <div style="background: linear-gradient(135deg, rgba(255,199,0,0.15), rgba(255,199,0,0.08)); border-radius: 14px; padding: 20px; border: 2px solid rgba(255,199,0,0.3);">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #FFC700, #FFA500); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-size: 18px; font-weight: 700;">
+                                    <i class="fas fa-praying-hands"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 800; font-size: 15px; color: var(--text-color, #202124);">Enviar Mensagem para o Pastor</div>
+                                    <div style="font-size: 12px; color: #5f6368; margin-top: 2px;">Contato direto e pessoal</div>
+                                </div>
+                            </div>
+                            <p style="margin: 0; font-size: 13px; color: #5f6368; line-height: 1.6; font-weight: 500;">Ao clicar em "Enviar", você será redirecionado para o WhatsApp do pastor com sua mensagem formatada.</p>
+                        </div>
+                        <% } else { %>
                         <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(74, 144, 226, 0.05)); border-radius: 14px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
                             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                                 <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-color, #4A90E2), rgba(74, 144, 226, 0.7)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">
@@ -158,6 +177,7 @@
                             </div>
                             <p style="margin: 0; font-size: 12px; color: #5f6368; line-height: 1.6;">Ao clicar em "Enviar", você será redirecionado para o WhatsApp com sua mensagem formatada.</p>
                         </div>
+                        <% } %>
                     </div>
                 </aside>
             </div>
@@ -167,7 +187,9 @@
     <script>
         // Dados do formulário
         const formDataObj = <%- JSON.stringify(formData) %>;
-        const whatsappNumber = '<%= formData.whatsapp_number || '' %>';
+        const enablePastorButton = <%= formData.enable_pastor_button || false %>;
+        const pastorWhatsappNumber = '<%= formData.pastor_whatsapp_number || '' %>';
+        const whatsappNumber = enablePastorButton && pastorWhatsappNumber ? pastorWhatsappNumber : '<%= formData.whatsapp_number || '' %>';
         const itemId = <%= itemId || item.id %>;
         const slug = '<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>';
         
