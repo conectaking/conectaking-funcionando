@@ -376,7 +376,9 @@ app.get('/cnking/:slug', (req, res) => {
 app.use('/', publicSalesPageRoutes);
 
 // Rota pública de formulário digital (deve vir antes de publicProfileRoutes)
+const publicDigitalFormAnalyticsRoutes = require('./routes/publicDigitalFormAnalytics.routes');
 const publicDigitalFormRoutes = require('./routes/publicDigitalForm.routes');
+app.use('/', publicDigitalFormAnalyticsRoutes);
 app.use('/', publicDigitalFormRoutes);
 
 // Rota pública de produto individual (deve vir antes de publicProfileRoutes)

@@ -2450,6 +2450,103 @@ router.post('/digital-forms/:itemId/responses', protectUser, asyncHandler(async 
     }
 }));
 
+// GET /api/profile/digital-forms/:itemId/analytics - Buscar analytics do formulário
+router.get('/digital-forms/:itemId/analytics', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.itemId, 10);
+        
+        if (!itemId || isNaN(itemId)) {
+            return res.status(400).json({ success: false, message: 'ID do formulário inválido.' });
+        }
+        
+        // Verificar se o formulário pertence ao usuário
+        const formCheck = await client.query(
+            'SELECT pi.id FROM profile_items pi WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = $3',
+            [itemId, userId, 'digital_form']
+        );
+        
+        if (formCheck.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Formulário não encontrado.' });
+        }
+        
+        // Estatísticas gerais por tipo de evento
+        const stats = await client.query(`
+            SELECT 
+                event_type,
+                COUNT(*) as count,
+                COUNT(DISTINCT session_id) as unique_sessions,
+                COUNT(DISTINCT user_ip) as unique_visitors
+            FROM digital_form_analytics
+            WHERE profile_item_id = $1
+            GROUP BY event_type
+        `, [itemId]);
+        
+        // Estatísticas por período (últimos 30 dias)
+        const statsByPeriod = await client.query(`
+            SELECT 
+                DATE(created_at) as date,
+                event_type,
+                COUNT(*) as count,
+                COUNT(DISTINCT session_id) as unique_sessions
+            FROM digital_form_analytics
+            WHERE profile_item_id = $1
+            AND created_at >= NOW() - INTERVAL '30 days'
+            GROUP BY DATE(created_at), event_type
+            ORDER BY date DESC
+        `, [itemId]);
+        
+        // Taxa de conversão
+        const conversionStats = await client.query(`
+            SELECT 
+                (SELECT COUNT(DISTINCT session_id) FROM digital_form_analytics WHERE profile_item_id = $1 AND event_type = 'view') as total_views,
+                (SELECT COUNT(DISTINCT session_id) FROM digital_form_analytics WHERE profile_item_id = $1 AND event_type = 'submit') as total_submits,
+                (SELECT COUNT(DISTINCT session_id) FROM digital_form_analytics WHERE profile_item_id = $1 AND event_type = 'start') as total_starts,
+                (SELECT COUNT(DISTINCT session_id) FROM digital_form_analytics WHERE profile_item_id = $1 AND event_type = 'abandon') as total_abandons
+        `, [itemId]);
+        
+        const views = parseInt(conversionStats.rows[0]?.total_views || 0);
+        const submits = parseInt(conversionStats.rows[0]?.total_submits || 0);
+        const starts = parseInt(conversionStats.rows[0]?.total_starts || 0);
+        const abandons = parseInt(conversionStats.rows[0]?.total_abandons || 0);
+        
+        const conversion_rate = views > 0 ? ((submits / views) * 100).toFixed(2) : 0;
+        const completion_rate = starts > 0 ? (((starts - abandons) / starts) * 100).toFixed(2) : 0;
+        
+        res.json({
+            success: true,
+            analytics: {
+                by_type: stats.rows.map(row => ({
+                    event_type: row.event_type,
+                    count: parseInt(row.count),
+                    unique_sessions: parseInt(row.unique_sessions),
+                    unique_visitors: parseInt(row.unique_visitors)
+                })),
+                by_period: statsByPeriod.rows.map(row => ({
+                    date: row.date,
+                    event_type: row.event_type,
+                    count: parseInt(row.count),
+                    unique_sessions: parseInt(row.unique_sessions)
+                })),
+                summary: {
+                    total_views: views,
+                    total_submits: submits,
+                    total_starts: starts,
+                    total_abandons: abandons,
+                    conversion_rate: parseFloat(conversion_rate),
+                    completion_rate: parseFloat(completion_rate)
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao buscar analytics:', error);
+        res.status(500).json({ success: false, message: 'Erro ao buscar analytics.' });
+    } finally {
+        client.release();
+    }
+}));
+
 // GET /api/profile/digital-forms/:itemId/responses - Buscar respostas do formulário (dashboard)
 router.get('/digital-forms/:itemId/responses', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();

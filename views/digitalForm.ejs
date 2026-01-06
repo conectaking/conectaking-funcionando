@@ -114,6 +114,46 @@
         // Dados do formulário
         const formDataObj = <%- JSON.stringify(formData) %>;
         const whatsappNumber = '<%= formData.whatsapp_number || '' %>';
+        const itemId = <%= itemId || item.id %>;
+        const slug = '<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>';
+        
+        // Gerar session ID único
+        let sessionId = sessionStorage.getItem('form_session_id');
+        if (!sessionId) {
+            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('form_session_id', sessionId);
+        }
+        
+        // Função para registrar eventos de analytics
+        async function trackEvent(eventType) {
+            try {
+                await fetch(`/${slug}/form/${itemId}/analytics`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        event_type: eventType,
+                        session_id: sessionId
+                    })
+                });
+            } catch (error) {
+                console.error('Erro ao registrar analytics:', error);
+                // Não bloquear a experiência se analytics falhar
+            }
+        }
+        
+        // Registrar view quando a página carregar
+        trackEvent('view');
+        
+        // Registrar start quando o usuário começar a interagir com o formulário
+        let formStarted = false;
+        document.addEventListener('focusin', function(e) {
+            if (e.target.closest('#digital-form') && !formStarted) {
+                formStarted = true;
+                trackEvent('start');
+            }
+        }, true);
 
         // Carregar campos dinâmicos se existirem
         const formFields = formDataObj.form_fields || [];
@@ -414,7 +454,8 @@
                         response_data: responseData,
                         responder_name: data.name || null,
                         responder_email: data.email || null,
-                        responder_phone: data.phone || null
+                        responder_phone: data.phone || null,
+                        session_id: sessionId
                     })
                 });
                 

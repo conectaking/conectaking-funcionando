@@ -72,12 +72,15 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         const profileSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
         const profileSlug = profileSlugRes.rows[0]?.profile_slug || slug;
 
+        // Registrar evento 'view' de analytics (será feito via JavaScript no frontend)
+        
         // Renderizar página
         res.render('digitalForm', {
             item: item,
             formData: formData,
             profileSlug: profileSlug,
-            slug: slug
+            slug: slug,
+            itemId: itemIdInt
         });
 
     } catch (error) {
@@ -142,6 +145,23 @@ router.post('/:slug/form/:itemId/submit', asyncHandler(async (req, res) => {
             responder_email || null,
             responder_phone || null
         ]);
+
+        // Registrar evento 'submit' de analytics
+        const user_ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for']?.split(',')[0];
+        const user_agent = req.headers['user-agent'] || null;
+        const referer = req.headers.referer || null;
+        const session_id = req.body.session_id || null;
+        
+        try {
+            await client.query(`
+                INSERT INTO digital_form_analytics (
+                    profile_item_id, event_type, user_ip, user_agent, referer, session_id
+                ) VALUES ($1, 'submit', $2, $3, $4, $5)
+            `, [itemIdInt, user_ip, user_agent, referer, session_id]);
+        } catch (analyticsError) {
+            logger.warn('Erro ao registrar analytics de submit:', analyticsError);
+            // Não falhar a requisição se analytics falhar
+        }
 
         logger.info('Resposta do formulário salva', { 
             itemId: itemIdInt, 
