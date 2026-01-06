@@ -1637,6 +1637,32 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 updateFormFields.push(`pastor_whatsapp_number = $${formParamIndex++}`);
                 updateFormValues.push(pastor_whatsapp_number || null);
             }
+            if (button_logo_url !== undefined) {
+                const buttonLogoCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items'
+                    AND column_name = 'button_logo_url'
+                `);
+                if (buttonLogoCheck.rows.length > 0) {
+                    updateFormFields.push(`button_logo_url = $${formParamIndex++}`);
+                    updateFormValues.push(button_logo_url || null);
+                }
+            }
+            if (button_logo_size !== undefined) {
+                const buttonLogoSizeCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items'
+                    AND column_name = 'button_logo_size'
+                `);
+                if (buttonLogoSizeCheck.rows.length > 0) {
+                    const parsedSize = parseInt(button_logo_size, 10);
+                    const validSize = (!isNaN(parsedSize) && parsedSize >= 20 && parsedSize <= 80) ? parsedSize : 40;
+                    updateFormFields.push(`button_logo_size = $${formParamIndex++}`);
+                    updateFormValues.push(validSize);
+                }
+            }
             if (display_format !== undefined) {
                 updateFormFields.push(`display_format = $${formParamIndex++}`);
                 updateFormValues.push(display_format || 'button');
@@ -1702,17 +1728,18 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
         } else {
             // Criar novo registro
-            // Verificar se colunas do pastor, logo corner, button_logo_url e background_color existem
+            // Verificar se colunas do pastor, logo corner, button_logo_url, button_logo_size e background_color existem
             const extraColumnsCheck = await client.query(`
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'digital_form_items'
-                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'show_logo_corner', 'button_logo_url', 'background_color')
+                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'show_logo_corner', 'button_logo_url', 'button_logo_size', 'background_color')
             `);
             const existingColumns = extraColumnsCheck.rows.map(r => r.column_name);
             const hasPastorColumns = existingColumns.includes('enable_pastor_button');
             const hasLogoCorner = existingColumns.includes('show_logo_corner');
             const hasButtonLogo = existingColumns.includes('button_logo_url');
+            const hasButtonLogoSize = existingColumns.includes('button_logo_size');
             const hasBackgroundColor = existingColumns.includes('background_color');
             
             let extraFields = '';

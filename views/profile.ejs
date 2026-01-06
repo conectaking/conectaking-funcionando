@@ -1569,6 +1569,14 @@
                                 buttonLogo = formData.button_logo_url || formData.form_logo_url || item.image_url || '';
                                 formLogo = buttonLogo;
                                 hasFormLogo = formLogo && formLogo.trim() && !formLogo.includes('placeholder');
+                                // Obter tamanho da logo (padrão: 40px)
+                                let buttonLogoSize = 40;
+                                if (formData.button_logo_size !== undefined && formData.button_logo_size !== null) {
+                                    const parsed = parseInt(formData.button_logo_size, 10);
+                                    if (!isNaN(parsed) && parsed >= 20 && parsed <= 80) {
+                                        buttonLogoSize = parsed;
+                                    }
+                                }
                             }
                             // Se for modo banner, buttonLogo, formLogo e hasFormLogo permanecem vazios/false
                         %>
@@ -1604,7 +1612,7 @@
                         <% } else { %>
                             <a href="<%= formUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                                 <% if (hasFormLogo) { %>
-                                    <img src="<%= formLogo %>" alt="<%= item.title || 'Formulário Digital' %>" class="profile-link-logo" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px;">
+                                    <img src="<%= formLogo %>" alt="<%= item.title || 'Formulário Digital' %>" class="profile-link-logo" style="width: <%= buttonLogoSize %>px; height: <%= buttonLogoSize %>px; object-fit: contain; border-radius: 8px;">
                                 <% } else { %>
                                     <i class="fas fa-file-alt"></i>
                                 <% } %>
