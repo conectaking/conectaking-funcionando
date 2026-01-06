@@ -362,6 +362,54 @@
                 });
             }, 100);
         }
+        
+        // Inicializar renderização dos campos
+        (function() {
+            console.log('🔍 [DEBUG] formDataObj completo:', formDataObj);
+            console.log('🔍 [DEBUG] formDataObj.form_fields (tipo):', typeof formDataObj.form_fields);
+            console.log('🔍 [DEBUG] formDataObj.form_fields (valor):', formDataObj.form_fields);
+            
+            let formFields = formDataObj.form_fields || [];
+            
+            // Garantir que formFields seja um array
+            if (typeof formFields === 'string') {
+                try {
+                    formFields = JSON.parse(formFields);
+                } catch (e) {
+                    console.error('❌ Erro ao parsear form_fields:', e);
+                    formFields = [];
+                }
+            }
+            if (!Array.isArray(formFields)) {
+                console.warn('⚠️ formFields não é um array:', typeof formFields, formFields);
+                formFields = [];
+            }
+            
+            console.log('✅ Form fields carregados (array):', formFields);
+            console.log('✅ Total de campos:', formFields.length);
+            console.log('🔍 [PUBLIC] formDataObj completo:', formDataObj);
+            console.log('🔍 [PUBLIC] formFields detalhado:', JSON.stringify(formFields, null, 2));
+            
+            const container = document.getElementById('dynamic-fields-container');
+            
+            if (!container) {
+                console.error('❌ [PUBLIC] Container dynamic-fields-container não encontrado!');
+                // Tentar aguardar e tentar novamente
+                setTimeout(() => {
+                    const containerRetry = document.getElementById('dynamic-fields-container');
+                    if (containerRetry && formFields && formFields.length > 0) {
+                        console.log('✅ [PUBLIC] Container encontrado no retry, renderizando campos...');
+                        renderFormFields(containerRetry, formFields);
+                    }
+                }, 500);
+                return;
+            }
+            
+            renderFormFields(container, formFields);
+            
+            // Tornar formFields acessível globalmente para event listeners
+            window.formFields = formFields;
+        })();
 
         // Formatar WhatsApp
         function formatWhatsApp(input) {
@@ -390,12 +438,12 @@
             }
 
             // Coletar dados do formulário
-            const formDataObj = new FormData(this);
+            const formData = new FormData(this);
             const data = {};
             const responseData = {};
 
             // Coletar todos os campos
-            for (const [key, value] of formDataObj.entries()) {
+            for (const [key, value] of formData.entries()) {
                 // Verificar se é um campo dinâmico
                 const field = formFields.find(f => (f.id || `field_${formFields.indexOf(f)}`) === key);
                 if (field) {
@@ -493,15 +541,32 @@
             // Formatando mensagem para WhatsApp
             let message = `*${formDataObj.form_title || 'Formulário King'}*\n\n`;
             
+            // Obter formFields para formatar mensagem
+            let currentFormFields = window.formFields || [];
+            if (!currentFormFields || currentFormFields.length === 0) {
+                currentFormFields = formDataObj.form_fields || [];
+                if (typeof currentFormFields === 'string') {
+                    try {
+                        currentFormFields = JSON.parse(currentFormFields);
+                    } catch (e) {
+                        currentFormFields = [];
+                    }
+                }
+                if (!Array.isArray(currentFormFields)) {
+                    currentFormFields = [];
+                }
+            }
+            
             // Adicionar respostas dos campos dinâmicos
-            formFields.forEach((field, index) => {
+            currentFormFields.forEach((field, index) => {
                 const fieldId = field.id || `field_${index}`;
                 const fieldValue = data[fieldId];
                 if (fieldValue) {
+                    const fieldLabel = field.label || field.Label || 'Campo';
                     if (Array.isArray(fieldValue)) {
-                        message += `*${field.label || 'Campo'}:* ${fieldValue.join(', ')}\n`;
+                        message += `*${fieldLabel}:* ${fieldValue.join(', ')}\n`;
                     } else {
-                        message += `*${field.label || 'Campo'}:* ${fieldValue}\n`;
+                        message += `*${fieldLabel}:* ${fieldValue}\n`;
                     }
                 }
             });
