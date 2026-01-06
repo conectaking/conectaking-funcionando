@@ -1430,6 +1430,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             title, 
             form_title,
             form_logo_url,
+            button_logo_url,
             show_logo_corner,
             form_description,
             prayer_requests_text,
@@ -1688,21 +1689,29 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
         } else {
             // Criar novo registro
-            // Verificar se colunas do pastor e logo corner existem
+            // Verificar se colunas do pastor, logo corner e button_logo_url existem
             const extraColumnsCheck = await client.query(`
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'digital_form_items'
-                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'show_logo_corner')
+                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'show_logo_corner', 'button_logo_url')
             `);
             const existingColumns = extraColumnsCheck.rows.map(r => r.column_name);
             const hasPastorColumns = existingColumns.includes('enable_pastor_button');
             const hasLogoCorner = existingColumns.includes('show_logo_corner');
+            const hasButtonLogo = existingColumns.includes('button_logo_url');
             
             let extraFields = '';
             let extraValues = '';
             let extraParams = [];
             let paramIdx = formParamIndex;
+            
+            // Adicionar button_logo_url se existir
+            if (hasButtonLogo && button_logo_url !== undefined) {
+                extraFields += ', button_logo_url';
+                extraValues += `, $${paramIdx++}`;
+                extraParams.push(button_logo_url || null);
+            }
             
             if (hasPastorColumns) {
                 extraFields += ', enable_pastor_button, pastor_whatsapp_number';

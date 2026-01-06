@@ -1558,7 +1558,9 @@
                                 formData = typeof item.digital_form_data === 'string' ? JSON.parse(item.digital_form_data) : item.digital_form_data;
                             }
                             const displayFormat = formData.display_format || 'button';
-                            const formLogo = formData.form_logo_url || item.image_url || '';
+                            // Para modo botão, usar button_logo_url, senão usar form_logo_url ou image_url
+                            const buttonLogo = displayFormat === 'button' ? (formData.button_logo_url || formData.form_logo_url || item.image_url || '') : '';
+                            const formLogo = displayFormat === 'banner' ? (formData.form_logo_url || item.image_url || '') : buttonLogo;
                             const hasFormLogo = formLogo && formLogo.trim() && !formLogo.includes('placeholder');
                         %>
                         <%
