@@ -324,13 +324,16 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                         [item.id]
                     );
                     if (formRes.rows.length > 0) {
-                        item.form_data = formRes.rows[0];
+                        item.digital_form_data = formRes.rows[0];
+                    } else {
+                        item.digital_form_data = {}; // Garantir que o objeto exista
                     }
                 } catch (formError) {
                     logger.error('Erro ao carregar dados do formulário digital', { 
                         itemId: item.id, 
                         error: formError.message 
                     });
+                    item.digital_form_data = {};
                 }
             }
             
