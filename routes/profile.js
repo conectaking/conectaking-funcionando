@@ -1492,7 +1492,16 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         }
 
         // Atualizar ou criar digital_form_items
-        const formFieldsJSON = form_fields ? JSON.stringify(form_fields) : '[]';
+        // Garantir que form_fields seja sempre um array válido
+        const formFieldsArray = Array.isArray(form_fields) ? form_fields : (form_fields ? [form_fields] : []);
+        const formFieldsJSON = JSON.stringify(formFieldsArray);
+        
+        console.log(`📝 [DIGITAL_FORM] Processando form_fields:`, {
+            itemId: itemId,
+            receivedType: typeof form_fields,
+            isArray: Array.isArray(form_fields),
+            fieldsCount: formFieldsArray.length
+        });
         
         // Verificar se já existe registro em digital_form_items
         const formCheck = await client.query(
@@ -1542,10 +1551,14 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 updateFormFields.push(`banner_image_url = $${formParamIndex++}`);
                 updateFormValues.push(banner_image_url || null);
             }
-            if (form_fields !== undefined) {
-                updateFormFields.push(`form_fields = $${formParamIndex++}::jsonb`);
-                updateFormValues.push(formFieldsJSON);
-            }
+            // Sempre atualizar form_fields (mesmo que seja array vazio)
+            updateFormFields.push(`form_fields = $${formParamIndex++}::jsonb`);
+            updateFormValues.push(formFieldsJSON);
+            console.log(`📝 [DIGITAL_FORM] Salvando form_fields:`, {
+                itemId: itemId,
+                formFieldsCount: formFieldsArray.length,
+                formFieldsJSON: formFieldsJSON.substring(0, 200) + (formFieldsJSON.length > 200 ? '...' : '')
+            });
             if (theme !== undefined) {
                 updateFormFields.push(`theme = $${formParamIndex++}`);
                 updateFormValues.push(theme || 'light');

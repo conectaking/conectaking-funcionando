@@ -156,6 +156,10 @@
         }, true);
 
         // Carregar campos dinâmicos se existirem
+        console.log('🔍 [DEBUG] formDataObj completo:', formDataObj);
+        console.log('🔍 [DEBUG] formDataObj.form_fields (tipo):', typeof formDataObj.form_fields);
+        console.log('🔍 [DEBUG] formDataObj.form_fields (valor):', formDataObj.form_fields);
+        
         let formFields = formDataObj.form_fields || [];
         
         // Garantir que formFields seja um array
@@ -163,15 +167,17 @@
             try {
                 formFields = JSON.parse(formFields);
             } catch (e) {
-                console.error('Erro ao parsear form_fields:', e);
+                console.error('❌ Erro ao parsear form_fields:', e);
                 formFields = [];
             }
         }
         if (!Array.isArray(formFields)) {
+            console.warn('⚠️ formFields não é um array:', typeof formFields, formFields);
             formFields = [];
         }
         
-        console.log('Form fields carregados:', formFields);
+        console.log('✅ Form fields carregados (array):', formFields);
+        console.log('✅ Total de campos:', formFields.length);
         const container = document.getElementById('dynamic-fields-container');
         
         if (!formFields || formFields.length === 0) {
