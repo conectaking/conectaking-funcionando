@@ -1431,6 +1431,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             form_title,
             form_logo_url,
             button_logo_url,
+            button_logo_size,
             show_logo_corner,
             form_description,
             prayer_requests_text,
