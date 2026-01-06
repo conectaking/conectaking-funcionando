@@ -86,27 +86,81 @@
         </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- Main Content - Layout Checkout Premium -->
     <main class="form-container">
         <div class="container">
-            <!-- Descrição -->
-            <% if (formData.form_description) { %>
-            <div class="form-description">
-                <p><%= formData.form_description %></p>
+            <div class="checkout-layout">
+                <!-- Coluna Principal - Formulário -->
+                <div class="checkout-main">
+                    <!-- Descrição -->
+                    <% if (formData.form_description) { %>
+                    <div class="form-description">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary-color, #4A90E2), rgba(74, 144, 226, 0.7)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: var(--text-color, #202124);">Informações</h2>
+                        </div>
+                        <p style="margin: 0; padding-left: 52px;"><%= formData.form_description %></p>
+                    </div>
+                    <% } %>
+
+                    <!-- Formulário -->
+                    <form id="digital-form" class="digital-form">
+                        <div style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e8eaed;">
+                            <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text-color, #202124); letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 6px; height: 32px; background: linear-gradient(180deg, var(--primary-color, #4A90E2), rgba(74, 144, 226, 0.6)); border-radius: 3px;"></div>
+                                Preencha os dados
+                            </h2>
+                            <p style="margin: 12px 0 0 18px; color: #5f6368; font-size: 14px;">Todos os campos marcados com * são obrigatórios</p>
+                        </div>
+                        
+                        <!-- Campos Dinâmicos (form_fields) -->
+                        <div id="dynamic-fields-container"></div>
+
+                        <!-- Botão Enviar -->
+                        <button type="submit" class="submit-btn">
+                            <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
+                            <span>Enviar via WhatsApp</span>
+                            <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Sidebar - Informações Adicionais (Estilo Checkout) -->
+                <aside class="checkout-sidebar" style="position: sticky; top: 100px;">
+                    <div class="checkout-sidebar-card" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 20px; padding: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06); animation: fadeInUp 0.6s ease-out;">
+                        <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #e8eaed;">
+                            <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: var(--text-color, #202124); display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-shield-alt" style="color: var(--primary-color, #4A90E2);"></i>
+                                Seguro e Confiável
+                            </h3>
+                            <p style="margin: 0; font-size: 13px; color: #5f6368; line-height: 1.6;">Seus dados estão protegidos e serão usados apenas para contato.</p>
+                        </div>
+                        
+                        <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #e8eaed;">
+                            <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 700; color: var(--text-color, #202124); display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-clock" style="color: var(--primary-color, #4A90E2);"></i>
+                                Resposta Rápida
+                            </h3>
+                            <p style="margin: 0; font-size: 13px; color: #5f6368; line-height: 1.6;">Enviaremos sua mensagem diretamente pelo WhatsApp para um atendimento imediato.</p>
+                        </div>
+                        
+                        <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(74, 144, 226, 0.05)); border-radius: 14px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-color, #4A90E2), rgba(74, 144, 226, 0.7)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">
+                                    <i class="fab fa-whatsapp"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 700; font-size: 14px; color: var(--text-color, #202124);">Envio via WhatsApp</div>
+                                    <div style="font-size: 12px; color: #5f6368; margin-top: 2px;">Resposta instantânea</div>
+                                </div>
+                            </div>
+                            <p style="margin: 0; font-size: 12px; color: #5f6368; line-height: 1.6;">Ao clicar em "Enviar", você será redirecionado para o WhatsApp com sua mensagem formatada.</p>
+                        </div>
+                    </div>
+                </aside>
             </div>
-            <% } %>
-
-            <!-- Formulário -->
-            <form id="digital-form" class="digital-form">
-                <!-- Campos Dinâmicos (form_fields) -->
-                <div id="dynamic-fields-container"></div>
-
-                <!-- Botão Enviar -->
-                <button type="submit" class="submit-btn">
-                    <i class="fab fa-whatsapp"></i>
-                    <span>Enviar via WhatsApp</span>
-                </button>
-            </form>
         </div>
     </main>
 
