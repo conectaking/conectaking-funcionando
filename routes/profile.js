@@ -1702,17 +1702,18 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
         } else {
             // Criar novo registro
-            // Verificar se colunas do pastor, logo corner e button_logo_url existem
+            // Verificar se colunas do pastor, logo corner, button_logo_url e background_color existem
             const extraColumnsCheck = await client.query(`
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'digital_form_items'
-                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'show_logo_corner', 'button_logo_url')
+                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'show_logo_corner', 'button_logo_url', 'background_color')
             `);
             const existingColumns = extraColumnsCheck.rows.map(r => r.column_name);
             const hasPastorColumns = existingColumns.includes('enable_pastor_button');
             const hasLogoCorner = existingColumns.includes('show_logo_corner');
             const hasButtonLogo = existingColumns.includes('button_logo_url');
+            const hasBackgroundColor = existingColumns.includes('background_color');
             
             let extraFields = '';
             let extraValues = '';
@@ -1735,6 +1736,11 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 extraFields += ', show_logo_corner';
                 extraValues += `, $${paramIdx++}`;
                 extraParams.push(show_logo_corner || false);
+            }
+            if (hasBackgroundColor && background_color !== undefined) {
+                extraFields += ', background_color';
+                extraValues += `, $${paramIdx++}`;
+                extraParams.push(background_color || '#FFFFFF');
             }
             if (hasBackgroundColor && background_color !== undefined) {
                 extraFields += ', background_color';
