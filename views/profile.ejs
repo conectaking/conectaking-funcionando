@@ -1575,10 +1575,16 @@
                             }
                             const formUrl = profileSlug ? `/${profileSlug}/form/${item.id}` : '#';
                         %>
-                        <% if (displayFormat === 'banner' && formData.banner_image_url) { %>
+                        <% if (displayFormat === 'banner') { %>
                             <a href="<%= formUrl %>" class="banner-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                                 <div class="banner-image-wrapper">
-                                    <img src="<%= formData.banner_image_url %>" alt="<%= item.title || 'Formulário Digital' %>" class="banner-image">
+                                    <% if (formData.banner_image_url) { %>
+                                        <img src="<%= formData.banner_image_url %>" alt="<%= item.title || 'Formulário Digital' %>" class="banner-image">
+                                    <% } else { %>
+                                        <div class="banner-placeholder" style="width: 100%; min-height: 180px; background: linear-gradient(135deg, #1C1C21 0%, #0D0D0F 100%); display: flex; align-items: center; justify-content: center; border-radius: 16px; border: 2px dashed rgba(255,255,255,0.1);">
+                                            <i class="fas fa-image" style="font-size: 3rem; color: rgba(255,255,255,0.2);"></i>
+                                        </div>
+                                    <% } %>
                                     <% if (item.title) { %>
                                         <div class="banner-overlay">
                                             <h3 class="banner-title"><%= item.title %></h3>
