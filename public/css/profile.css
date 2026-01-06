@@ -801,8 +801,18 @@ body.light-theme .branding-logo span {
     align-items: flex-start !important;
 }
 
+/* IMPORTANTE: Ocultar COMPLETAMENTE qualquer logo, ícone ou texto dentro do banner-link */
 .banner-link .profile-link-logo,
-.banner-link i,
-.banner-link span {
+.banner-link img:not(.banner-image):not(.banner-image-wrapper img),
+.banner-link i:not(.banner-overlay i),
+.banner-link span:not(.banner-title),
+.banner-link .profile-link-logo.logo-png,
+.banner-link .profile-link-logo.logo-circular {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
