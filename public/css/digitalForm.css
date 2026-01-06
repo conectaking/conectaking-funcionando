@@ -513,6 +513,103 @@ body {
     padding: 12px 0;
 }
 
+/* Grids (Grelhas) */
+.choice-grid,
+.checkbox-grid {
+    margin: 20px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #dadce0;
+}
+
+.theme-dark .choice-grid,
+.theme-dark .checkbox-grid {
+    border-color: #3C3C40;
+}
+
+.choice-grid table,
+.checkbox-grid table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.theme-dark .choice-grid table,
+.theme-dark .checkbox-grid table {
+    background: #1C1C21;
+}
+
+.choice-grid th,
+.checkbox-grid th {
+    padding: 16px 12px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-color, #202124);
+    border-bottom: 2px solid #dadce0;
+    background: #f8f9fa;
+}
+
+.theme-dark .choice-grid th,
+.theme-dark .checkbox-grid th {
+    color: #ECECEC;
+    border-bottom-color: #3C3C40;
+    background: #2C2C2F;
+}
+
+.choice-grid td,
+.checkbox-grid td {
+    padding: 16px 12px;
+    text-align: center;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.theme-dark .choice-grid td,
+.theme-dark .checkbox-grid td {
+    border-bottom-color: #3C3C40;
+}
+
+.choice-grid input[type="radio"],
+.checkbox-grid input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary-color, #4A90E2);
+}
+
+.choice-grid td:first-child,
+.checkbox-grid td:first-child {
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-color, #202124);
+}
+
+.theme-dark .choice-grid td:first-child,
+.theme-dark .checkbox-grid td:first-child {
+    color: #ECECEC;
+}
+
+/* File Upload */
+.form-group input[type="file"] {
+    padding: 14px 18px;
+    border: 1.5px solid #dadce0;
+    border-radius: 12px;
+    background: white;
+    color: var(--text-color, #202124);
+    cursor: pointer;
+    font-size: 15px;
+    transition: all 0.2s ease;
+}
+
+.theme-dark .form-group input[type="file"] {
+    background: #2C2C2F;
+    border-color: #3C3C40;
+    color: #ECECEC;
+}
+
+.form-group input[type="file"]:hover {
+    border-color: var(--primary-color, #4A90E2);
+}
+
 /* Responsivo Premium */
 @media (max-width: 768px) {
     .container {

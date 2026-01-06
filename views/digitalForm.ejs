@@ -193,10 +193,23 @@
                     case 'datetime':
                         fieldHTML += `<input type="datetime-local" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''}>`;
                         break;
+                    case 'email':
+                        fieldHTML += `<input type="email" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || 'exemplo@email.com'}">`;
+                        break;
+                    case 'number':
+                        fieldHTML += `<input type="number" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}" ${field.min !== undefined ? `min="${field.min}"` : ''} ${field.max !== undefined ? `max="${field.max}"` : ''}>`;
+                        break;
+                    case 'phone':
+                        fieldHTML += `<input type="tel" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || '(00) 00000-0000'}">`;
+                        break;
+                    case 'url':
+                        fieldHTML += `<input type="url" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || 'https://exemplo.com'}">`;
+                        break;
                     case 'linear_scale':
                         const min = field.min || 1;
                         const max = field.max || 5;
                         fieldHTML += `<div class="linear-scale-group">`;
+                        fieldHTML += `<div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-dark, #666);"><span>${min}</span><span>${max}</span></div>`;
                         for (let i = min; i <= max; i++) {
                             fieldHTML += `
                                 <label class="radio-label">
@@ -216,7 +229,45 @@
                         fieldHTML += `</div>`;
                         break;
                     case 'file_upload':
-                        fieldHTML += `<input type="file" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} accept="${field.accept || '*/*'}">`;
+                        fieldHTML += `<input type="file" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} accept="${field.accept || '*/*'}" style="padding: 12px; border: 1.5px solid #dadce0; border-radius: 12px; background: white; cursor: pointer;">`;
+                        break;
+                    case 'multiple_choice_grid':
+                        if (field.rows && field.columns) {
+                            fieldHTML += `<div class="choice-grid" style="overflow-x: auto;">`;
+                            fieldHTML += `<table style="width: 100%; border-collapse: collapse; min-width: 500px;">`;
+                            fieldHTML += `<thead><tr><th style="padding: 12px; text-align: left; border-bottom: 2px solid #dadce0;"></th>`;
+                            field.columns.forEach(col => {
+                                fieldHTML += `<th style="padding: 12px; text-align: center; border-bottom: 2px solid #dadce0;">${col}</th>`;
+                            });
+                            fieldHTML += `</tr></thead><tbody>`;
+                            field.rows.forEach(row => {
+                                fieldHTML += `<tr><td style="padding: 12px; font-weight: 600;">${row}</td>`;
+                                field.columns.forEach(col => {
+                                    fieldHTML += `<td style="padding: 12px; text-align: center;"><input type="radio" name="${field.id || `field_${index}`}_${row}" value="${col}" ${field.required ? 'required' : ''}></td>`;
+                                });
+                                fieldHTML += `</tr>`;
+                            });
+                            fieldHTML += `</tbody></table></div>`;
+                        }
+                        break;
+                    case 'checkbox_grid':
+                        if (field.rows && field.columns) {
+                            fieldHTML += `<div class="checkbox-grid" style="overflow-x: auto;">`;
+                            fieldHTML += `<table style="width: 100%; border-collapse: collapse; min-width: 500px;">`;
+                            fieldHTML += `<thead><tr><th style="padding: 12px; text-align: left; border-bottom: 2px solid #dadce0;"></th>`;
+                            field.columns.forEach(col => {
+                                fieldHTML += `<th style="padding: 12px; text-align: center; border-bottom: 2px solid #dadce0;">${col}</th>`;
+                            });
+                            fieldHTML += `</tr></thead><tbody>`;
+                            field.rows.forEach(row => {
+                                fieldHTML += `<tr><td style="padding: 12px; font-weight: 600;">${row}</td>`;
+                                field.columns.forEach(col => {
+                                    fieldHTML += `<td style="padding: 12px; text-align: center;"><input type="checkbox" name="${field.id || `field_${index}`}_${row}" value="${col}"></td>`;
+                                });
+                                fieldHTML += `</tr>`;
+                            });
+                            fieldHTML += `</tbody></table></div>`;
+                        }
                         break;
                     default:
                         fieldHTML += `<input type="text" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}">`;
@@ -296,14 +347,58 @@
                 }
             }
             
-            // Para checkboxes, coletar todos os valores
-            formFields.forEach((field) => {
-                const fieldId = field.id || `field_${formFields.indexOf(field)}`;
+            // Coletar dados de todos os campos
+            formFields.forEach((field, index) => {
+                const fieldId = field.id || `field_${index}`;
+                
                 if (field.type === 'checkbox') {
+                    // Checkboxes: múltiplos valores
                     const checkboxes = document.querySelectorAll(`input[name="${fieldId}"]:checked`);
                     if (checkboxes.length > 0) {
                         responseData[fieldId] = Array.from(checkboxes).map(cb => cb.value);
-                        data[fieldId] = responseData[fieldId];
+                        data[fieldId] = responseData[fieldId].join(', ');
+                    }
+                } else if (field.type === 'multiple_choice_grid' || field.type === 'checkbox_grid') {
+                    // Grids: estrutura complexa
+                    const gridData = {};
+                    if (field.rows) {
+                        field.rows.forEach(row => {
+                            const rowName = `${fieldId}_${row}`;
+                            if (field.type === 'multiple_choice_grid') {
+                                const selected = document.querySelector(`input[name="${rowName}"]:checked`);
+                                if (selected) {
+                                    gridData[row] = selected.value;
+                                }
+                            } else {
+                                const selected = document.querySelectorAll(`input[name="${rowName}"]:checked`);
+                                if (selected.length > 0) {
+                                    gridData[row] = Array.from(selected).map(cb => cb.value);
+                                }
+                            }
+                        });
+                        if (Object.keys(gridData).length > 0) {
+                            responseData[fieldId] = gridData;
+                            // Formatar para WhatsApp
+                            let gridText = '';
+                            Object.entries(gridData).forEach(([row, value]) => {
+                                gridText += `${row}: ${Array.isArray(value) ? value.join(', ') : value}\n`;
+                            });
+                            data[fieldId] = gridText.trim();
+                        }
+                    }
+                } else if (field.type === 'multiple_choice' || field.type === 'yes_no' || field.type === 'linear_scale' || field.type === 'rating') {
+                    // Radio buttons: valor único
+                    const selected = document.querySelector(`input[name="${fieldId}"]:checked`);
+                    if (selected) {
+                        responseData[fieldId] = selected.value;
+                        data[fieldId] = selected.value;
+                    }
+                } else {
+                    // Campos de texto, número, data, etc.
+                    const input = document.querySelector(`#field-${index}`);
+                    if (input && input.value) {
+                        responseData[fieldId] = input.value;
+                        data[fieldId] = input.value;
                     }
                 }
             });
