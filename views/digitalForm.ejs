@@ -209,28 +209,39 @@
             containerEl.innerHTML = ''; // Limpar container antes de adicionar
             
             fields.forEach((field, index) => {
+                // Normalizar campo (case-insensitive para label)
+                const normalizedField = {
+                    ...field,
+                    label: field.label || field.Label || 'Campo sem título',
+                    type: field.type || 'short_text',
+                    required: field.required !== undefined ? field.required : (field.Required !== undefined ? field.Required : false),
+                    placeholder: field.placeholder || field.Placeholder || '',
+                    options: field.options || field.Options || []
+                };
+                
                 const group = document.createElement('div');
                 group.className = 'form-group';
-                group.dataset.fieldType = field.type;
-                group.dataset.fieldId = field.id || `field_${index}`;
+                group.dataset.fieldType = normalizedField.type;
+                group.dataset.fieldId = normalizedField.id || `field_${index}`;
                 
-                console.log(`🔄 [PUBLIC] Processando campo ${index + 1}/${fields.length}:`, field.label || field.type, '- Tipo:', field.type);
+                console.log(`🔄 [PUBLIC] Processando campo ${index + 1}/${fields.length}:`, normalizedField.label, '- Tipo:', normalizedField.type);
+                console.log(`🔍 [PUBLIC] Campo completo:`, normalizedField);
                 
-                let fieldHTML = `<label for="field-${index}">${field.label || 'Campo'} ${field.required ? '<span class="required">*</span>' : ''}</label>`;
+                let fieldHTML = `<label for="field-${index}">${normalizedField.label} ${normalizedField.required ? '<span class="required">*</span>' : ''}</label>`;
                 
-                switch(field.type) {
+                switch(normalizedField.type) {
                     case 'short_text':
-                        fieldHTML += `<input type="text" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}">`;
+                        fieldHTML += `<input type="text" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder}">`;
                         break;
                     case 'paragraph':
-                        fieldHTML += `<textarea id="field-${index}" name="${field.id || `field_${index}`}" rows="4" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}"></textarea>`;
+                        fieldHTML += `<textarea id="field-${index}" name="${normalizedField.id || `field_${index}`}" rows="4" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder}"></textarea>`;
                         break;
                     case 'multiple_choice':
-                        if (field.options && field.options.length > 0) {
-                            field.options.forEach((opt, optIdx) => {
+                        if (normalizedField.options && normalizedField.options.length > 0) {
+                            normalizedField.options.forEach((opt, optIdx) => {
                                 fieldHTML += `
                                     <label class="radio-label">
-                                        <input type="radio" name="${field.id || `field_${index}`}" value="${opt}" ${field.required ? 'required' : ''}>
+                                        <input type="radio" name="${normalizedField.id || `field_${index}`}" value="${opt}" ${normalizedField.required ? 'required' : ''}>
                                         <span>${opt}</span>
                                     </label>
                                 `;
@@ -238,11 +249,11 @@
                         }
                         break;
                     case 'checkbox':
-                        if (field.options && field.options.length > 0) {
-                            field.options.forEach((opt, optIdx) => {
+                        if (normalizedField.options && normalizedField.options.length > 0) {
+                            normalizedField.options.forEach((opt, optIdx) => {
                                 fieldHTML += `
                                     <label class="checkbox-label">
-                                        <input type="checkbox" name="${field.id || `field_${index}`}" value="${opt}">
+                                        <input type="checkbox" name="${normalizedField.id || `field_${index}`}" value="${opt}">
                                         <span>${opt}</span>
                                     </label>
                                 `;
@@ -250,9 +261,9 @@
                         }
                         break;
                     case 'dropdown':
-                        fieldHTML += `<select id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''}><option value="">Selecione...</option>`;
-                        if (field.options && field.options.length > 0) {
-                            field.options.forEach(opt => {
+                        fieldHTML += `<select id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''}><option value="">Selecione...</option>`;
+                        if (normalizedField.options && normalizedField.options.length > 0) {
+                            normalizedField.options.forEach(opt => {
                                 fieldHTML += `<option value="${opt}">${opt}</option>`;
                             });
                         }
@@ -262,46 +273,46 @@
                         fieldHTML += `
                             <div class="yes-no-group">
                                 <label class="radio-label">
-                                    <input type="radio" name="${field.id || `field_${index}`}" value="sim" ${field.required ? 'required' : ''}>
+                                    <input type="radio" name="${normalizedField.id || `field_${index}`}" value="sim" ${normalizedField.required ? 'required' : ''}>
                                     <span>Sim</span>
                                 </label>
                                 <label class="radio-label">
-                                    <input type="radio" name="${field.id || `field_${index}`}" value="não" ${field.required ? 'required' : ''}>
+                                    <input type="radio" name="${normalizedField.id || `field_${index}`}" value="não" ${normalizedField.required ? 'required' : ''}>
                                     <span>Não</span>
                                 </label>
                             </div>
                         `;
                         break;
                     case 'date':
-                        fieldHTML += `<input type="date" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''}>`;
+                        fieldHTML += `<input type="date" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''}>`;
                         break;
                     case 'time':
-                        fieldHTML += `<input type="time" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''}>`;
+                        fieldHTML += `<input type="time" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''}>`;
                         break;
                     case 'datetime':
-                        fieldHTML += `<input type="datetime-local" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''}>`;
+                        fieldHTML += `<input type="datetime-local" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''}>`;
                         break;
                     case 'email':
-                        fieldHTML += `<input type="email" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || 'exemplo@email.com'}">`;
+                        fieldHTML += `<input type="email" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder || 'exemplo@email.com'}">`;
                         break;
                     case 'number':
-                        fieldHTML += `<input type="number" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}" ${field.min !== undefined ? `min="${field.min}"` : ''} ${field.max !== undefined ? `max="${field.max}"` : ''}>`;
+                        fieldHTML += `<input type="number" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder}" ${normalizedField.min !== undefined ? `min="${normalizedField.min}"` : ''} ${normalizedField.max !== undefined ? `max="${normalizedField.max}"` : ''}>`;
                         break;
                     case 'phone':
-                        fieldHTML += `<input type="tel" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || '(00) 00000-0000'}">`;
+                        fieldHTML += `<input type="tel" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder || '(00) 00000-0000'}">`;
                         break;
                     case 'url':
-                        fieldHTML += `<input type="url" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || 'https://exemplo.com'}">`;
+                        fieldHTML += `<input type="url" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder || 'https://exemplo.com'}">`;
                         break;
                     case 'linear_scale':
-                        const min = field.min || 1;
-                        const max = field.max || 5;
+                        const min = normalizedField.min || field.min || 1;
+                        const max = normalizedField.max || field.max || 5;
                         fieldHTML += `<div class="linear-scale-group">`;
                         fieldHTML += `<div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-dark, #666);"><span>${min}</span><span>${max}</span></div>`;
                         for (let i = min; i <= max; i++) {
                             fieldHTML += `
                                 <label class="radio-label">
-                                    <input type="radio" name="${field.id || `field_${index}`}" value="${i}" ${field.required ? 'required' : ''}>
+                                    <input type="radio" name="${normalizedField.id || `field_${index}`}" value="${i}" ${normalizedField.required ? 'required' : ''}>
                                     <span>${i}</span>
                                 </label>
                             `;
@@ -309,29 +320,31 @@
                         fieldHTML += `</div>`;
                         break;
                     case 'rating':
-                        const ratingMax = field.max || 5;
+                        const ratingMax = normalizedField.max || field.max || 5;
                         fieldHTML += `<div class="rating-group">`;
                         for (let i = 1; i <= ratingMax; i++) {
-                            fieldHTML += `<input type="radio" name="${field.id || `field_${index}`}" value="${i}" id="rating-${index}-${i}" ${field.required ? 'required' : ''}><label for="rating-${index}-${i}">★</label>`;
+                            fieldHTML += `<input type="radio" name="${normalizedField.id || `field_${index}`}" value="${i}" id="rating-${index}-${i}" ${normalizedField.required ? 'required' : ''}><label for="rating-${index}-${i}">★</label>`;
                         }
                         fieldHTML += `</div>`;
                         break;
                     case 'file_upload':
-                        fieldHTML += `<input type="file" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} accept="${field.accept || '*/*'}" style="padding: 12px; border: 1.5px solid #dadce0; border-radius: 12px; background: white; cursor: pointer;">`;
+                        fieldHTML += `<input type="file" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} accept="${normalizedField.accept || field.accept || '*/*'}" style="padding: 12px; border: 1.5px solid #dadce0; border-radius: 12px; background: white; cursor: pointer;">`;
                         break;
                     case 'multiple_choice_grid':
-                        if (field.rows && field.columns) {
+                        if ((normalizedField.rows || field.rows) && (normalizedField.columns || field.columns)) {
+                            const rows = normalizedField.rows || field.rows;
+                            const columns = normalizedField.columns || field.columns;
                             fieldHTML += `<div class="choice-grid" style="overflow-x: auto;">`;
                             fieldHTML += `<table style="width: 100%; border-collapse: collapse; min-width: 500px;">`;
                             fieldHTML += `<thead><tr><th style="padding: 12px; text-align: left; border-bottom: 2px solid #dadce0;"></th>`;
-                            field.columns.forEach(col => {
+                            columns.forEach(col => {
                                 fieldHTML += `<th style="padding: 12px; text-align: center; border-bottom: 2px solid #dadce0;">${col}</th>`;
                             });
                             fieldHTML += `</tr></thead><tbody>`;
-                            field.rows.forEach(row => {
+                            rows.forEach(row => {
                                 fieldHTML += `<tr><td style="padding: 12px; font-weight: 600;">${row}</td>`;
-                                field.columns.forEach(col => {
-                                    fieldHTML += `<td style="padding: 12px; text-align: center;"><input type="radio" name="${field.id || `field_${index}`}_${row}" value="${col}" ${field.required ? 'required' : ''}></td>`;
+                                columns.forEach(col => {
+                                    fieldHTML += `<td style="padding: 12px; text-align: center;"><input type="radio" name="${normalizedField.id || `field_${index}`}_${row}" value="${col}" ${normalizedField.required ? 'required' : ''}></td>`;
                                 });
                                 fieldHTML += `</tr>`;
                             });
@@ -339,18 +352,20 @@
                         }
                         break;
                     case 'checkbox_grid':
-                        if (field.rows && field.columns) {
+                        if ((normalizedField.rows || field.rows) && (normalizedField.columns || field.columns)) {
+                            const rows = normalizedField.rows || field.rows;
+                            const columns = normalizedField.columns || field.columns;
                             fieldHTML += `<div class="checkbox-grid" style="overflow-x: auto;">`;
                             fieldHTML += `<table style="width: 100%; border-collapse: collapse; min-width: 500px;">`;
                             fieldHTML += `<thead><tr><th style="padding: 12px; text-align: left; border-bottom: 2px solid #dadce0;"></th>`;
-                            field.columns.forEach(col => {
+                            columns.forEach(col => {
                                 fieldHTML += `<th style="padding: 12px; text-align: center; border-bottom: 2px solid #dadce0;">${col}</th>`;
                             });
                             fieldHTML += `</tr></thead><tbody>`;
-                            field.rows.forEach(row => {
+                            rows.forEach(row => {
                                 fieldHTML += `<tr><td style="padding: 12px; font-weight: 600;">${row}</td>`;
-                                field.columns.forEach(col => {
-                                    fieldHTML += `<td style="padding: 12px; text-align: center;"><input type="checkbox" name="${field.id || `field_${index}`}_${row}" value="${col}"></td>`;
+                                columns.forEach(col => {
+                                    fieldHTML += `<td style="padding: 12px; text-align: center;"><input type="checkbox" name="${normalizedField.id || `field_${index}`}_${row}" value="${col}"></td>`;
                                 });
                                 fieldHTML += `</tr>`;
                             });
@@ -358,7 +373,7 @@
                         }
                         break;
                     default:
-                        fieldHTML += `<input type="text" id="field-${index}" name="${field.id || `field_${index}`}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}">`;
+                        fieldHTML += `<input type="text" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder}">`;
                 }
                 
                 group.innerHTML = fieldHTML;
