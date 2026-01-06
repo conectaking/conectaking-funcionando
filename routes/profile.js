@@ -2821,6 +2821,39 @@ router.get('/items/digital_form/:id/dashboard', protectUser, asyncHandler(async 
             analytics[row.event_type] = parseInt(row.count) || 0;
         });
 
+        // Respostas por hora (últimas 24 horas)
+        const hourlyRes = await client.query(
+            `SELECT EXTRACT(HOUR FROM submitted_at) as hour, COUNT(*) as count
+             FROM digital_form_responses
+             WHERE profile_item_id = $1 AND submitted_at >= NOW() - INTERVAL '24 hours'
+             GROUP BY EXTRACT(HOUR FROM submitted_at)
+             ORDER BY hour ASC`,
+            [itemId]
+        );
+
+        // Taxa de conversão (submits / views)
+        const conversionRate = analytics.view > 0 
+            ? ((analytics.submit || 0) / analytics.view * 100).toFixed(2) 
+            : 0;
+
+        // Taxa de abandono
+        const abandonmentRate = analytics.start > 0 
+            ? ((analytics.abandon || 0) / analytics.start * 100).toFixed(2) 
+            : 0;
+
+        // Respostas com email/telefone
+        const contactInfoRes = await client.query(
+            `SELECT 
+                COUNT(*) FILTER (WHERE responder_email IS NOT NULL) as with_email,
+                COUNT(*) FILTER (WHERE responder_phone IS NOT NULL) as with_phone,
+                COUNT(*) FILTER (WHERE responder_name IS NOT NULL) as with_name
+             FROM digital_form_responses
+             WHERE profile_item_id = $1`,
+            [itemId]
+        );
+
+        const contactInfo = contactInfoRes.rows[0] || { with_email: 0, with_phone: 0, with_name: 0 };
+
         res.json({
             total_responses: totalResponses,
             last_7_days: last7Days,
@@ -2829,12 +2862,23 @@ router.get('/items/digital_form/:id/dashboard', protectUser, asyncHandler(async 
                 date: row.date,
                 count: parseInt(row.count) || 0
             })),
+            hourly_data: hourlyRes.rows.map(row => ({
+                hour: parseInt(row.hour) || 0,
+                count: parseInt(row.count) || 0
+            })),
             analytics: {
                 views: analytics.view || 0,
                 clicks: analytics.click || 0,
                 submits: analytics.submit || 0,
                 starts: analytics.start || 0,
                 abandons: analytics.abandon || 0
+            },
+            metrics: {
+                conversion_rate: parseFloat(conversionRate),
+                abandonment_rate: parseFloat(abandonmentRate),
+                with_email: parseInt(contactInfo.with_email) || 0,
+                with_phone: parseInt(contactInfo.with_phone) || 0,
+                with_name: parseInt(contactInfo.with_name) || 0
             }
         });
     } catch (error) {
