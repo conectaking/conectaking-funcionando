@@ -103,8 +103,26 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                     );
                     if (digitalFormRes.rows.length > 0) {
                         item.digital_form_data = digitalFormRes.rows[0];
+                        
+                        // Garantir que form_fields seja parseado corretamente (PostgreSQL pode retornar JSONB como string)
+                        if (item.digital_form_data.form_fields) {
+                            if (typeof item.digital_form_data.form_fields === 'string') {
+                                try {
+                                    item.digital_form_data.form_fields = JSON.parse(item.digital_form_data.form_fields);
+                                } catch (e) {
+                                    console.error('Erro ao parsear form_fields na API:', e);
+                                    item.digital_form_data.form_fields = [];
+                                }
+                            }
+                            // Garantir que seja um array
+                            if (!Array.isArray(item.digital_form_data.form_fields)) {
+                                item.digital_form_data.form_fields = [];
+                            }
+                        } else {
+                            item.digital_form_data.form_fields = [];
+                        }
                     } else {
-                        item.digital_form_data = {}; // Garantir que o objeto exista
+                        item.digital_form_data = { form_fields: [] }; // Garantir que o objeto exista
                     }
                 } catch (formError) {
                     console.error('Erro ao carregar dados do formulário digital', {
