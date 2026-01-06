@@ -156,7 +156,22 @@
         }, true);
 
         // Carregar campos dinâmicos se existirem
-        const formFields = formDataObj.form_fields || [];
+        let formFields = formDataObj.form_fields || [];
+        
+        // Garantir que formFields seja um array
+        if (typeof formFields === 'string') {
+            try {
+                formFields = JSON.parse(formFields);
+            } catch (e) {
+                console.error('Erro ao parsear form_fields:', e);
+                formFields = [];
+            }
+        }
+        if (!Array.isArray(formFields)) {
+            formFields = [];
+        }
+        
+        console.log('Form fields carregados:', formFields);
         const container = document.getElementById('dynamic-fields-container');
         
         if (!formFields || formFields.length === 0) {

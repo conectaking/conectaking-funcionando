@@ -66,7 +66,25 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Dados do formulário não encontrados</h1>');
         }
 
-        const formData = formRes.rows[0];
+        let formData = formRes.rows[0];
+        
+        // Garantir que form_fields seja um array (pode vir como string JSON do PostgreSQL)
+        if (formData.form_fields) {
+            if (typeof formData.form_fields === 'string') {
+                try {
+                    formData.form_fields = JSON.parse(formData.form_fields);
+                } catch (e) {
+                    logger.error('Erro ao parsear form_fields:', e);
+                    formData.form_fields = [];
+                }
+            }
+            // Garantir que seja um array
+            if (!Array.isArray(formData.form_fields)) {
+                formData.form_fields = [];
+            }
+        } else {
+            formData.form_fields = [];
+        }
 
         // Buscar profile_slug
         const profileSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
