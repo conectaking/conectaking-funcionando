@@ -1430,6 +1430,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             title, 
             form_title,
             form_logo_url,
+            show_logo_corner,
             form_description,
             prayer_requests_text,
             meetings_text,
@@ -1592,6 +1593,19 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             if (form_logo_url !== undefined) {
                 updateFormFields.push(`form_logo_url = $${formParamIndex++}`);
                 updateFormValues.push(form_logo_url || null);
+            }
+            if (show_logo_corner !== undefined) {
+                // Verificar se coluna existe antes de atualizar
+                const logoCornerCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items'
+                    AND column_name = 'show_logo_corner'
+                `);
+                if (logoCornerCheck.rows.length > 0) {
+                    updateFormFields.push(`show_logo_corner = $${formParamIndex++}`);
+                    updateFormValues.push(show_logo_corner || false);
+                }
             }
             if (form_description !== undefined) {
                 updateFormFields.push(`form_description = $${formParamIndex++}`);
