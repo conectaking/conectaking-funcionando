@@ -82,7 +82,7 @@
             <% if (formData.form_logo_url) { %>
             <img src="<%= formData.form_logo_url %>" alt="Logo" class="form-logo">
             <% } %>
-            <h1 class="form-title"><%= formData.form_title || 'Formulário King' %></h1>
+            <h1 class="form-title"><%= formData.form_title || 'King Forms' %></h1>
         </div>
     </header>
 
@@ -609,7 +609,7 @@
             }
 
             // Formatando mensagem para WhatsApp
-            let message = `*${formDataObj.form_title || 'Formulário King'}*\n\n`;
+            let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
             
             // Adicionar respostas dos campos dinâmicos (currentFormFields já foi declarado acima)
             currentFormFields.forEach((field, index) => {
