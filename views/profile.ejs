@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Lora:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
-    <link rel="stylesheet" href="/css/profile.css?v=<%= cacheBuster %>">
+    <link rel="stylesheet" href="/css/profile.css?v=<%= typeof cacheBuster !== 'undefined' ? cacheBuster : Date.now() %>">
     
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -1554,8 +1554,26 @@
                         <%
                             // Buscar digital_form_data do item se existir
                             let formData = {};
-                            if (item.digital_form_data) {
-                                formData = typeof item.digital_form_data === 'string' ? JSON.parse(item.digital_form_data) : item.digital_form_data;
+                            try {
+                                if (item.digital_form_data) {
+                                    if (typeof item.digital_form_data === 'string') {
+                                        try {
+                                            formData = JSON.parse(item.digital_form_data);
+                                        } catch (parseError) {
+                                            console.error('Erro ao parsear digital_form_data:', parseError);
+                                            formData = {};
+                                        }
+                                    } else if (typeof item.digital_form_data === 'object') {
+                                        formData = item.digital_form_data;
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Erro ao processar digital_form_data:', error);
+                                formData = {};
+                            }
+                            // Garantir que formData sempre tenha estrutura válida
+                            if (!formData || typeof formData !== 'object') {
+                                formData = {};
                             }
                             const displayFormat = formData.display_format || 'button';
                             // Para modo botão, usar button_logo_url, senão usar form_logo_url ou image_url
@@ -1583,14 +1601,19 @@
                         <%
                             // Construir URL do formulário
                             let profileSlug = '';
-                            if (typeof profile_slug !== 'undefined' && profile_slug) {
-                                profileSlug = profile_slug;
-                            } else if (typeof details !== 'undefined' && details.profile_slug) {
-                                profileSlug = details.profile_slug;
-                            } else if (typeof identifier !== 'undefined' && identifier) {
-                                profileSlug = identifier;
+                            try {
+                                if (typeof profile_slug !== 'undefined' && profile_slug) {
+                                    profileSlug = profile_slug;
+                                } else if (typeof details !== 'undefined' && details && details.profile_slug) {
+                                    profileSlug = details.profile_slug;
+                                } else if (typeof identifier !== 'undefined' && identifier) {
+                                    profileSlug = identifier;
+                                }
+                            } catch (e) {
+                                console.error('Erro ao obter profileSlug:', e);
+                                profileSlug = '';
                             }
-                            const formUrl = profileSlug ? `/${profileSlug}/form/${item.id}` : '#';
+                            const formUrl = profileSlug && item.id ? `/${profileSlug}/form/${item.id}` : '#';
                         %>
                         <% if (displayFormat === 'banner') { %>
                             <a href="<%= formUrl %>" class="banner-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
