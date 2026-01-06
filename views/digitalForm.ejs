@@ -557,23 +557,7 @@
             // Formatando mensagem para WhatsApp
             let message = `*${formDataObj.form_title || 'Formulário King'}*\n\n`;
             
-            // Obter formFields para formatar mensagem
-            let currentFormFields = window.formFields || [];
-            if (!currentFormFields || currentFormFields.length === 0) {
-                currentFormFields = formDataObj.form_fields || [];
-                if (typeof currentFormFields === 'string') {
-                    try {
-                        currentFormFields = JSON.parse(currentFormFields);
-                    } catch (e) {
-                        currentFormFields = [];
-                    }
-                }
-                if (!Array.isArray(currentFormFields)) {
-                    currentFormFields = [];
-                }
-            }
-            
-            // Adicionar respostas dos campos dinâmicos
+            // Adicionar respostas dos campos dinâmicos (currentFormFields já foi declarado acima)
             currentFormFields.forEach((field, index) => {
                 const fieldId = field.id || `field_${index}`;
                 const fieldValue = data[fieldId];
