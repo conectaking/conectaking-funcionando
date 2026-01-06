@@ -178,16 +178,43 @@
         
         console.log('✅ Form fields carregados (array):', formFields);
         console.log('✅ Total de campos:', formFields.length);
+        console.log('🔍 [PUBLIC] formDataObj completo:', formDataObj);
+        console.log('🔍 [PUBLIC] formFields detalhado:', JSON.stringify(formFields, null, 2));
+        
         const container = document.getElementById('dynamic-fields-container');
         
-        if (!formFields || formFields.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--text-color, #666); padding: 40px;">Nenhum campo configurado neste formulário.</p>';
-        } else {
-            formFields.forEach((field, index) => {
+        if (!container) {
+            console.error('❌ [PUBLIC] Container dynamic-fields-container não encontrado!');
+            // Tentar aguardar e tentar novamente
+            setTimeout(() => {
+                const containerRetry = document.getElementById('dynamic-fields-container');
+                if (containerRetry && formFields && formFields.length > 0) {
+                    console.log('✅ [PUBLIC] Container encontrado no retry, renderizando campos...');
+                    renderFormFields(containerRetry, formFields);
+                }
+            }, 500);
+            return;
+        }
+        
+        renderFormFields(container, formFields);
+        
+        function renderFormFields(containerEl, fields) {
+            if (!fields || fields.length === 0) {
+                containerEl.innerHTML = '<p style="text-align: center; color: var(--text-color, #666); padding: 40px;">Nenhum campo configurado neste formulário.</p>';
+                console.warn('⚠️ [PUBLIC] Nenhum campo para renderizar');
+                return;
+            }
+            
+            console.log(`🔄 [PUBLIC] Renderizando ${fields.length} campos...`);
+            containerEl.innerHTML = ''; // Limpar container antes de adicionar
+            
+            fields.forEach((field, index) => {
                 const group = document.createElement('div');
                 group.className = 'form-group';
                 group.dataset.fieldType = field.type;
                 group.dataset.fieldId = field.id || `field_${index}`;
+                
+                console.log(`🔄 [PUBLIC] Processando campo ${index + 1}/${fields.length}:`, field.label || field.type, '- Tipo:', field.type);
                 
                 let fieldHTML = `<label for="field-${index}">${field.label || 'Campo'} ${field.required ? '<span class="required">*</span>' : ''}</label>`;
                 
@@ -335,8 +362,11 @@
                 }
                 
                 group.innerHTML = fieldHTML;
-                container.appendChild(group);
+                containerEl.appendChild(group);
+                console.log(`✅ [PUBLIC] Campo ${index + 1} renderizado:`, field.label || field.type);
             });
+            
+            console.log(`✅ [PUBLIC] Todos os ${fields.length} campos foram renderizados com sucesso!`);
             
             // Adicionar classe 'checked' aos labels quando inputs são marcados (fallback para :has())
             setTimeout(() => {
