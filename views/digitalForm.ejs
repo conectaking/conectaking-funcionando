@@ -429,7 +429,7 @@
         }
 
         // Enviar formulário
-        document.getElementById('digital-form').addEventListener('submit', function(e) {
+        document.getElementById('digital-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             if (!whatsappNumber) {
@@ -442,10 +442,26 @@
             const data = {};
             const responseData = {};
 
+            // Obter formFields (pode estar no escopo global)
+            let currentFormFields = window.formFields || formDataObj.form_fields || [];
+            if (typeof currentFormFields === 'string') {
+                try {
+                    currentFormFields = JSON.parse(currentFormFields);
+                } catch (e) {
+                    currentFormFields = [];
+                }
+            }
+            if (!Array.isArray(currentFormFields)) {
+                currentFormFields = [];
+            }
+
             // Coletar todos os campos
             for (const [key, value] of formData.entries()) {
                 // Verificar se é um campo dinâmico
-                const field = formFields.find(f => (f.id || `field_${formFields.indexOf(f)}`) === key);
+                const field = currentFormFields.find(f => {
+                    const fieldId = f.id || `field_${currentFormFields.indexOf(f)}`;
+                    return fieldId === key;
+                });
                 if (field) {
                     if (field.type === 'checkbox') {
                         if (!responseData[key]) responseData[key] = [];
@@ -459,8 +475,8 @@
                 }
             }
             
-            // Coletar dados de todos os campos
-            formFields.forEach((field, index) => {
+            // Coletar dados de todos os campos dinâmicos
+            currentFormFields.forEach((field, index) => {
                 const fieldId = field.id || `field_${index}`;
                 
                 if (field.type === 'checkbox') {
