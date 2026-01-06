@@ -62,6 +62,11 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         const profileSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
         const profileSlug = profileSlugRes.rows[0]?.profile_slug || userId;
 
+        // Garantir que show_logo_corner esteja disponível (pode não existir em versões antigas)
+        if (formData.show_logo_corner === undefined) {
+            formData.show_logo_corner = false;
+        }
+        
         // Renderizar página
         res.render('digitalForm', {
             item: item,
