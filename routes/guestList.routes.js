@@ -376,15 +376,43 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
         
         // Buscar dados atualizados
         const result = await client.query(`
-            SELECT pi.*, gli.*
+            SELECT 
+                pi.id as profile_item_id,
+                pi.user_id,
+                pi.item_type,
+                pi.title,
+                pi.is_active,
+                pi.display_order,
+                pi.created_at as profile_created_at,
+                gli.id as guest_list_item_id,
+                gli.event_title,
+                gli.event_description,
+                gli.event_date,
+                gli.event_time,
+                gli.event_location,
+                gli.registration_token,
+                gli.confirmation_token,
+                gli.max_guests,
+                gli.allow_self_registration,
+                gli.require_confirmation,
+                gli.custom_form_fields,
+                gli.use_custom_form,
+                gli.public_view_token,
+                gli.created_at as guest_list_created_at,
+                gli.updated_at as guest_list_updated_at
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
             WHERE pi.id = $1
         `, [listId]);
         
+        const listData = result.rows[0];
+        if (listData) {
+            listData.id = listData.profile_item_id;
+        }
+        
         res.json({
-            ...result.rows[0],
-            guest_list_data: result.rows[0]
+            ...listData,
+            guest_list_data: listData
         });
     } catch (error) {
         logger.error('Erro ao atualizar lista de convidados:', error);
