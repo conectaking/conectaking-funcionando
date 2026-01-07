@@ -1492,7 +1492,8 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             is_active, 
             display_order,
             is_listed,
-            generate_share_token
+            generate_share_token,
+            item_type
         } = req.body;
 
         if (!itemId || isNaN(itemId)) {
@@ -1501,10 +1502,10 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
 
         console.log(`📝 PUT /api/profile/items/digital_form/${itemId} - userId: ${userId}`);
 
-        // Verificar se o item pertence ao usuário e é do tipo digital_form
+        // Verificar se o item pertence ao usuário (pode ser digital_form ou guest_list que será convertido)
         const checkRes = await client.query(
-            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2 AND item_type = $3',
-            [itemId, userId, 'digital_form']
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
+            [itemId, userId]
         );
 
         if (checkRes.rows.length === 0) {
