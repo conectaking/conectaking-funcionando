@@ -16,8 +16,24 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
         
         const result = await client.query(`
             SELECT 
-                pi.*,
-                gli.*,
+                pi.id as profile_item_id,
+                pi.user_id,
+                pi.item_type,
+                pi.title,
+                pi.is_active,
+                pi.display_order,
+                pi.created_at as profile_created_at,
+                pi.updated_at as profile_updated_at,
+                gli.id as guest_list_item_id,
+                gli.event_title,
+                gli.event_description,
+                gli.event_date,
+                gli.event_location,
+                gli.registration_token,
+                gli.confirmation_token,
+                gli.max_guests,
+                gli.is_registration_open,
+                gli.is_confirmation_required,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'registered') as registered_count,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'confirmed') as confirmed_count,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'checked_in') as checked_in_count
@@ -25,11 +41,20 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
             LEFT JOIN guests g ON g.guest_list_id = gli.id
             WHERE pi.user_id = $1 AND pi.item_type = 'guest_list' AND pi.is_active = true
-            GROUP BY pi.id, gli.id
+            GROUP BY pi.id, pi.user_id, pi.item_type, pi.title, pi.is_active, pi.display_order, 
+                     pi.created_at, pi.updated_at, gli.id, gli.event_title, gli.event_description, 
+                     gli.event_date, gli.event_location, gli.registration_token, gli.confirmation_token, 
+                     gli.max_guests, gli.is_registration_open, gli.is_confirmation_required
             ORDER BY pi.display_order ASC, pi.created_at DESC
         `, [userId]);
         
-        res.json(result.rows);
+        // Garantir que id seja o profile_item_id
+        const lists = result.rows.map(row => ({
+            ...row,
+            id: row.profile_item_id
+        }));
+        
+        res.json(lists);
     } catch (error) {
         logger.error('Erro ao listar listas de convidados:', error);
         res.status(500).json({ message: 'Erro ao listar listas', error: error.message });
@@ -127,20 +152,82 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
         const userId = req.user.userId;
         const listId = parseInt(req.params.id, 10);
         
-        const result = await client.query(`
+        if (isNaN(listId)) {
+            return res.status(400).json({ message: 'ID da lista inválido' });
+        }
+        
+        logger.info(`Buscando lista de convidados: listId=${listId}, userId=${userId}`);
+        
+        // Buscar primeiro por profile_item_id
+        let result = await client.query(`
             SELECT 
-                pi.*,
-                gli.*
+                pi.id as profile_item_id,
+                pi.user_id,
+                pi.item_type,
+                pi.title,
+                pi.is_active,
+                pi.display_order,
+                pi.created_at as profile_created_at,
+                pi.updated_at as profile_updated_at,
+                gli.id as guest_list_item_id,
+                gli.event_title,
+                gli.event_description,
+                gli.event_date,
+                gli.event_location,
+                gli.registration_token,
+                gli.confirmation_token,
+                gli.max_guests,
+                gli.is_registration_open,
+                gli.is_confirmation_required,
+                gli.created_at as guest_list_created_at,
+                gli.updated_at as guest_list_updated_at
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
             WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
         `, [listId, userId]);
         
+        // Se não encontrar, tentar buscar pelo id da guest_list_items
         if (result.rows.length === 0) {
+            logger.info(`Tentando buscar pelo guest_list_items.id: ${listId}`);
+            result = await client.query(`
+                SELECT 
+                    pi.id as profile_item_id,
+                    pi.user_id,
+                    pi.item_type,
+                    pi.title,
+                    pi.is_active,
+                    pi.display_order,
+                    pi.created_at as profile_created_at,
+                    pi.updated_at as profile_updated_at,
+                    gli.id as guest_list_item_id,
+                    gli.event_title,
+                    gli.event_description,
+                    gli.event_date,
+                    gli.event_location,
+                    gli.registration_token,
+                    gli.confirmation_token,
+                    gli.max_guests,
+                    gli.is_registration_open,
+                    gli.is_confirmation_required,
+                    gli.created_at as guest_list_created_at,
+                    gli.updated_at as guest_list_updated_at
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            `, [listId, userId]);
+        }
+        
+        if (result.rows.length === 0) {
+            logger.warn(`Lista não encontrada: listId=${listId}, userId=${userId}`);
             return res.status(404).json({ message: 'Lista não encontrada' });
         }
         
-        res.json(result.rows[0]);
+        const listData = result.rows[0];
+        // Garantir que o id principal seja o profile_item_id
+        listData.id = listData.profile_item_id;
+        
+        logger.info(`Lista encontrada: profile_item_id=${listData.profile_item_id}, guest_list_item_id=${listData.guest_list_item_id}`);
+        res.json(listData);
     } catch (error) {
         logger.error('Erro ao buscar lista:', error);
         res.status(500).json({ message: 'Erro ao buscar lista', error: error.message });
@@ -291,19 +378,33 @@ router.get('/:id/guests', protectUser, asyncHandler(async (req, res) => {
         const listId = parseInt(req.params.id, 10);
         const { status } = req.query;
         
-        // Verificar se a lista pertence ao usuário
-        const checkResult = await client.query(`
-            SELECT gli.id
+        if (isNaN(listId)) {
+            return res.status(400).json({ message: 'ID da lista inválido' });
+        }
+        
+        // Verificar se a lista pertence ao usuário - tentar por profile_item_id primeiro
+        let checkResult = await client.query(`
+            SELECT gli.id as guest_list_item_id
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
             WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
         `, [listId, userId]);
         
+        // Se não encontrar, tentar buscar pelo id da guest_list_items
+        if (checkResult.rows.length === 0) {
+            checkResult = await client.query(`
+                SELECT gli.id as guest_list_item_id
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            `, [listId, userId]);
+        }
+        
         if (checkResult.rows.length === 0) {
             return res.status(404).json({ message: 'Lista não encontrada' });
         }
         
-        const guestListItemId = checkResult.rows[0].id;
+        const guestListItemId = checkResult.rows[0].guest_list_item_id;
         
         let query = 'SELECT * FROM guests WHERE guest_list_id = $1';
         const params = [guestListItemId];
@@ -528,19 +629,33 @@ router.get('/:id/stats', protectUser, asyncHandler(async (req, res) => {
         const userId = req.user.userId;
         const listId = parseInt(req.params.id, 10);
         
-        // Verificar se a lista pertence ao usuário
-        const checkResult = await client.query(`
-            SELECT gli.id
+        if (isNaN(listId)) {
+            return res.status(400).json({ message: 'ID da lista inválido' });
+        }
+        
+        // Verificar se a lista pertence ao usuário - tentar por profile_item_id primeiro
+        let checkResult = await client.query(`
+            SELECT gli.id as guest_list_item_id
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
             WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
         `, [listId, userId]);
         
+        // Se não encontrar, tentar buscar pelo id da guest_list_items
+        if (checkResult.rows.length === 0) {
+            checkResult = await client.query(`
+                SELECT gli.id as guest_list_item_id
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            `, [listId, userId]);
+        }
+        
         if (checkResult.rows.length === 0) {
             return res.status(404).json({ message: 'Lista não encontrada' });
         }
         
-        const guestListItemId = checkResult.rows[0].id;
+        const guestListItemId = checkResult.rows[0].guest_list_item_id;
         
         const stats = await client.query(`
             SELECT 
