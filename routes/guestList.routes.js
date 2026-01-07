@@ -85,9 +85,10 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
         // Gerar tokens únicos
         const registrationToken = crypto.randomBytes(16).toString('hex');
         const confirmationToken = crypto.randomBytes(16).toString('hex');
+        const publicViewToken = crypto.randomBytes(16).toString('hex');
         
         // Criar profile_item - usar parâmetros separados para evitar erro de tipo inconsistente
-        const itemTitle = title || 'Nova Lista de Convidados';
+        const itemTitle = title || event_title || 'Nova Lista de Convidados';
         const userIdStr = String(userId);
         
         // Primeiro obter o próximo display_order
@@ -113,9 +114,9 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
             INSERT INTO guest_list_items (
                 profile_item_id, event_title, event_description, event_date, event_time,
                 event_location, max_guests, require_confirmation, allow_self_registration,
-                registration_token, confirmation_token
+                registration_token, confirmation_token, public_view_token
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             RETURNING *
         `, [
             profileItemId,
@@ -128,7 +129,8 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
             require_confirmation !== undefined ? require_confirmation : true,
             allow_self_registration !== undefined ? allow_self_registration : true,
             registrationToken,
-            confirmationToken
+            confirmationToken,
+            publicViewToken
         ]);
         
         res.json({
@@ -408,10 +410,26 @@ router.get('/:id/guests', protectUser, asyncHandler(async (req, res) => {
         
         let query = 'SELECT * FROM guests WHERE guest_list_id = $1';
         const params = [guestListItemId];
+        let paramIndex = 2;
         
         if (status) {
-            query += ' AND status = $2';
+            query += ` AND status = $${paramIndex}`;
             params.push(status);
+            paramIndex++;
+        }
+        
+        // Busca por texto (se fornecido)
+        const { search } = req.query;
+        if (search && search.trim()) {
+            const searchTerm = `%${search.trim()}%`;
+            query += ` AND (name ILIKE $${paramIndex} OR `;
+            query += `COALESCE(email, '') ILIKE $${paramIndex} OR `;
+            query += `COALESCE(phone, '') ILIKE $${paramIndex} OR `;
+            query += `COALESCE(whatsapp, '') ILIKE $${paramIndex} OR `;
+            query += `COALESCE(document, '') ILIKE $${paramIndex} OR `;
+            query += `COALESCE(instagram, '') ILIKE $${paramIndex})`;
+            params.push(searchTerm);
+            paramIndex++;
         }
         
         query += ' ORDER BY created_at DESC';
@@ -439,7 +457,14 @@ router.post('/:id/guests', protectUser, asyncHandler(async (req, res) => {
             name,
             email,
             phone,
+            whatsapp,
             document,
+            address,
+            neighborhood,
+            city,
+            state,
+            zipcode,
+            instagram,
             notes
         } = req.body;
         
@@ -485,16 +510,25 @@ router.post('/:id/guests', protectUser, asyncHandler(async (req, res) => {
         
         const result = await client.query(`
             INSERT INTO guests (
-                guest_list_id, name, email, phone, document, notes, status, registration_source
+                guest_list_id, name, email, phone, whatsapp, document, 
+                address, neighborhood, city, state, zipcode, instagram,
+                notes, status, registration_source
             )
-            VALUES ($1, $2, $3, $4, $5, $6, 'registered', 'admin')
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'registered', 'admin')
             RETURNING *
         `, [
             guestListItemId,
             name,
             email || null,
             phone || null,
+            whatsapp || null,
             document || null,
+            address || null,
+            neighborhood || null,
+            city || null,
+            state || null,
+            zipcode || null,
+            instagram || null,
             notes || null
         ]);
         
@@ -548,7 +582,14 @@ router.put('/:id/guests/:guestId', protectUser, asyncHandler(async (req, res) =>
             name,
             email,
             phone,
+            whatsapp,
             document,
+            address,
+            neighborhood,
+            city,
+            state,
+            zipcode,
+            instagram,
             status,
             notes
         } = req.body;
@@ -580,9 +621,37 @@ router.put('/:id/guests/:guestId', protectUser, asyncHandler(async (req, res) =>
             updateFields.push(`phone = $${paramIndex++}`);
             updateValues.push(phone);
         }
+        if (whatsapp !== undefined) {
+            updateFields.push(`whatsapp = $${paramIndex++}`);
+            updateValues.push(whatsapp);
+        }
         if (document !== undefined) {
             updateFields.push(`document = $${paramIndex++}`);
             updateValues.push(document);
+        }
+        if (address !== undefined) {
+            updateFields.push(`address = $${paramIndex++}`);
+            updateValues.push(address);
+        }
+        if (neighborhood !== undefined) {
+            updateFields.push(`neighborhood = $${paramIndex++}`);
+            updateValues.push(neighborhood);
+        }
+        if (city !== undefined) {
+            updateFields.push(`city = $${paramIndex++}`);
+            updateValues.push(city);
+        }
+        if (state !== undefined) {
+            updateFields.push(`state = $${paramIndex++}`);
+            updateValues.push(state);
+        }
+        if (zipcode !== undefined) {
+            updateFields.push(`zipcode = $${paramIndex++}`);
+            updateValues.push(zipcode);
+        }
+        if (instagram !== undefined) {
+            updateFields.push(`instagram = $${paramIndex++}`);
+            updateValues.push(instagram);
         }
         if (status !== undefined) {
             updateFields.push(`status = $${paramIndex++}`);
@@ -755,8 +824,28 @@ router.post('/public/register/:token', asyncHandler(async (req, res) => {
             name,
             email,
             phone,
-            document
+            whatsapp,
+            document,
+            address,
+            neighborhood,
+            city,
+            state,
+            zipcode,
+            instagram
         } = req.body;
+        
+        // Validações obrigatórias
+        if (!name || !name.trim()) {
+            return res.status(400).json({ message: 'Nome completo é obrigatório' });
+        }
+        
+        if (!whatsapp || !whatsapp.trim()) {
+            return res.status(400).json({ message: 'WhatsApp é obrigatório' });
+        }
+        
+        if (!document || !document.trim()) {
+            return res.status(400).json({ message: 'CPF/CNPJ é obrigatório' });
+        }
         
         // Buscar lista pelo token
         const listResult = await client.query(`
@@ -787,19 +876,28 @@ router.post('/public/register/:token', asyncHandler(async (req, res) => {
             }
         }
         
-        // Criar convidado
+        // Criar convidado com todos os campos
         const result = await client.query(`
             INSERT INTO guests (
-                guest_list_id, name, email, phone, document, status, registration_source
+                guest_list_id, name, email, phone, whatsapp, document, 
+                address, neighborhood, city, state, zipcode, instagram,
+                status, registration_source
             )
-            VALUES ($1, $2, $3, $4, $5, $6, 'self')
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'self')
             RETURNING *
         `, [
             guestList.id,
-            name,
-            email || null,
-            phone || null,
-            document || null,
+            name.trim(),
+            email ? email.trim() : null,
+            phone ? phone.trim() : null,
+            whatsapp.trim(),
+            document.trim(),
+            address ? address.trim() : null,
+            neighborhood ? neighborhood.trim() : null,
+            city ? city.trim() : null,
+            state ? state.trim() : null,
+            zipcode ? zipcode.trim() : null,
+            instagram ? instagram.trim() : null,
             guestList.require_confirmation ? 'registered' : 'confirmed'
         ]);
         
@@ -955,6 +1053,111 @@ router.get('/public/register/:token', asyncHandler(async (req, res) => {
     } catch (error) {
         logger.error('Erro ao buscar lista para inscrição:', error);
         res.status(500).json({ message: 'Erro ao buscar lista', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
+ * DELETE /api/guest-lists/:id - Deletar lista de convidados
+ */
+router.delete('/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const listId = parseInt(req.params.id, 10);
+        
+        if (isNaN(listId)) {
+            return res.status(400).json({ message: 'ID da lista inválido' });
+        }
+        
+        // Verificar se a lista pertence ao usuário
+        const checkResult = await client.query(`
+            SELECT pi.id
+            FROM profile_items pi
+            INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+        `, [listId, userId]);
+        
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Lista não encontrada' });
+        }
+        
+        // Deletar profile_item (CASCADE vai deletar guest_list_items e guests)
+        await client.query(`DELETE FROM profile_items WHERE id = $1`, [listId]);
+        
+        res.json({ success: true, message: 'Lista deletada com sucesso' });
+    } catch (error) {
+        logger.error('Erro ao deletar lista:', error);
+        res.status(500).json({ message: 'Erro ao deletar lista', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
+ * GET /api/guest-lists/:id/export/pdf - Exportar convidados em PDF
+ */
+router.get('/:id/export/pdf', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const listId = parseInt(req.params.id, 10);
+        const { status } = req.query;
+        
+        if (isNaN(listId)) {
+            return res.status(400).json({ message: 'ID da lista inválido' });
+        }
+        
+        // Verificar se a lista pertence ao usuário
+        let checkResult = await client.query(`
+            SELECT gli.id as guest_list_item_id, gli.event_title, pi.title
+            FROM profile_items pi
+            INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+        `, [listId, userId]);
+        
+        if (checkResult.rows.length === 0) {
+            checkResult = await client.query(`
+                SELECT gli.id as guest_list_item_id, gli.event_title, pi.title
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            `, [listId, userId]);
+        }
+        
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Lista não encontrada' });
+        }
+        
+        const guestListItemId = checkResult.rows[0].guest_list_item_id;
+        const eventTitle = checkResult.rows[0].event_title || checkResult.rows[0].title;
+        
+        // Buscar convidados
+        let query = 'SELECT * FROM guests WHERE guest_list_id = $1';
+        const params = [guestListItemId];
+        
+        if (status) {
+            query += ' AND status = $2';
+            params.push(status);
+        }
+        
+        query += ' ORDER BY name ASC';
+        
+        const guestsResult = await client.query(query, params);
+        const guests = guestsResult.rows;
+        
+        // Por enquanto, retornar JSON (PDF será implementado com biblioteca)
+        // TODO: Implementar geração de PDF com pdfkit ou similar
+        res.json({
+            success: true,
+            event_title: eventTitle,
+            total: guests.length,
+            guests: guests
+        });
+    } catch (error) {
+        logger.error('Erro ao exportar PDF:', error);
+        res.status(500).json({ message: 'Erro ao exportar PDF', error: error.message });
     } finally {
         client.release();
     }

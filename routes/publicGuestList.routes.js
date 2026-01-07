@@ -273,5 +273,77 @@ router.get('/view/:itemId', asyncHandler(async (req, res) => {
     }
 }));
 
+/**
+ * GET /guest-list/view-full/:token - Visualização pública completa (portaria - todas as abas)
+ */
+router.get('/view-full/:token', asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const { token } = req.params;
+        
+        // Buscar lista pelo public_view_token
+        const listResult = await client.query(`
+            SELECT 
+                gli.*,
+                pi.id as profile_item_id,
+                pi.title,
+                pi.user_id,
+                u.profile_slug
+            FROM guest_list_items gli
+            INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+            INNER JOIN users u ON u.id = pi.user_id
+            WHERE (gli.public_view_token = $1 OR gli.confirmation_token = $1) AND pi.is_active = true
+        `, [token]);
+        
+        if (listResult.rows.length === 0) {
+            return res.status(404).render('error', {
+                message: 'Link inválido ou expirado',
+                title: 'Erro'
+            });
+        }
+        
+        const guestList = listResult.rows[0];
+        
+        // Buscar todos os convidados por status
+        const registeredResult = await client.query(`
+            SELECT id, name, email, phone, whatsapp, document, address, city, status, created_at
+            FROM guests
+            WHERE guest_list_id = $1 AND status = 'registered'
+            ORDER BY name ASC
+        `, [guestList.id]);
+        
+        const confirmedResult = await client.query(`
+            SELECT id, name, email, phone, whatsapp, document, address, city, status, confirmed_at, created_at
+            FROM guests
+            WHERE guest_list_id = $1 AND status = 'confirmed'
+            ORDER BY name ASC
+        `, [guestList.id]);
+        
+        const checkedInResult = await client.query(`
+            SELECT id, name, email, phone, whatsapp, document, address, city, status, checked_in_at, confirmed_at, created_at
+            FROM guests
+            WHERE guest_list_id = $1 AND status = 'checked_in'
+            ORDER BY checked_in_at DESC
+        `, [guestList.id]);
+        
+        res.render('guestListViewFull', {
+            guestList,
+            registeredGuests: registeredResult.rows,
+            confirmedGuests: confirmedResult.rows,
+            checkedInGuests: checkedInResult.rows,
+            token: token,
+            profileItemId: guestList.profile_item_id
+        });
+    } catch (error) {
+        logger.error('Erro ao carregar visualização completa:', error);
+        res.status(500).render('error', {
+            message: 'Erro ao carregar página',
+            title: 'Erro'
+        });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
 

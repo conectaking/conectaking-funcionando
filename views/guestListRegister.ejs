@@ -218,8 +218,18 @@
         <div class="form-card">
             <form id="registration-form">
                 <div class="form-group">
-                    <label for="name">Nome Completo *</label>
+                    <label for="name">Nome Completo <span style="color: #ff4444;">*</span></label>
                     <input type="text" id="name" name="name" required placeholder="Digite seu nome completo">
+                </div>
+                
+                <div class="form-group">
+                    <label for="whatsapp">WhatsApp <span style="color: #ff4444;">*</span></label>
+                    <input type="tel" id="whatsapp" name="whatsapp" required placeholder="(00) 00000-0000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="document">CPF/CNPJ <span style="color: #ff4444;">*</span></label>
+                    <input type="text" id="document" name="document" required placeholder="000.000.000-00">
                 </div>
                 
                 <div class="form-group">
@@ -233,8 +243,37 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="document">CPF/CNPJ (opcional)</label>
-                    <input type="text" id="document" name="document" placeholder="000.000.000-00">
+                    <label for="address">Endereço</label>
+                    <input type="text" id="address" name="address" placeholder="Rua, número, complemento">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="neighborhood">Bairro</label>
+                        <input type="text" id="neighborhood" name="neighborhood" placeholder="Bairro">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="zipcode">CEP</label>
+                        <input type="text" id="zipcode" name="zipcode" placeholder="00000-000">
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="city">Cidade</label>
+                        <input type="text" id="city" name="city" placeholder="Cidade">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="state">Estado</label>
+                        <input type="text" id="state" name="state" placeholder="UF" maxlength="2">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="instagram">Instagram</label>
+                    <input type="text" id="instagram" name="instagram" placeholder="@seuinstagram">
                 </div>
                 
                 <button type="submit" class="btn-submit" id="submit-btn">
@@ -259,13 +298,35 @@
             
             const formData = {
                 name: document.getElementById('name').value.trim(),
+                whatsapp: document.getElementById('whatsapp').value.trim(),
+                document: document.getElementById('document').value.trim(),
                 email: document.getElementById('email').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
-                document: document.getElementById('document').value.trim()
+                address: document.getElementById('address').value.trim(),
+                neighborhood: document.getElementById('neighborhood').value.trim(),
+                city: document.getElementById('city').value.trim(),
+                state: document.getElementById('state').value.trim().toUpperCase(),
+                zipcode: document.getElementById('zipcode').value.trim(),
+                instagram: document.getElementById('instagram').value.trim()
             };
             
+            // Validações obrigatórias
             if (!formData.name) {
                 alert('Por favor, preencha o nome completo');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
+                return;
+            }
+            
+            if (!formData.whatsapp) {
+                alert('Por favor, preencha o WhatsApp');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
+                return;
+            }
+            
+            if (!formData.document) {
+                alert('Por favor, preencha o CPF/CNPJ');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
                 return;
