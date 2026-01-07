@@ -25,6 +25,9 @@
             background-position: center;
             background-attachment: fixed;
             background-repeat: no-repeat;
+            <% if (formData.background_color) { %>
+            background-color: <%= formData.background_color %>;
+            <% } %>
         }
         body::before {
             content: '';
@@ -37,9 +40,13 @@
             opacity: <%= 1 - (formData.background_opacity || 1.0) %>;
             z-index: -1;
         }
-        <% } else if (formData.background_color) { %>
+        <% } %>
+        <% if (formData.background_color) { %>
         body {
-            background-color: <%= formData.background_color %>;
+            background-color: <%= formData.background_color %> !important;
+        }
+        .digital-form-page {
+            background-color: <%= formData.background_color %> !important;
         }
         <% } %>
         <% if (formData.header_image_url) { %>
@@ -69,7 +76,7 @@
         <% } %>
     </style>
 </head>
-<body class="digital-form-page theme-<%= formData.theme || 'light' %>" data-form-id="<%= item.id %>" data-whatsapp="<%= formData.whatsapp_number || '' %>">
+<body class="digital-form-page theme-<%= formData.theme || 'light' %>" data-form-id="<%= item.id %>" data-whatsapp="<%= formData.whatsapp_number || '' %>" style="<% if (formData.background_color && !formData.background_image_url) { %>background-color: <%= formData.background_color %> !important;<% } %>">
     <!-- Header Image -->
     <% if (formData.header_image_url) { %>
     <div class="header-image-container">
