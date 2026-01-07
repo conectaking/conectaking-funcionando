@@ -243,8 +243,25 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
         
         logger.info(`Buscando lista de convidados: listId=${listId}, userId=${userId}`);
         
-        // Buscar primeiro por profile_item_id
-        // Usar COALESCE para garantir valores padrão caso os campos não existam
+        // Primeiro, verificar se o profile_item existe e pertence ao usuário
+        const profileItemCheck = await client.query(`
+            SELECT id, item_type, title, user_id
+            FROM profile_items
+            WHERE id = $1 AND user_id = $2
+        `, [listId, userId]);
+        
+        if (profileItemCheck.rows.length === 0) {
+            logger.warn(`Profile item não encontrado ou não pertence ao usuário: listId=${listId}, userId=${userId}`);
+            return res.status(404).json({ 
+                message: 'Item não encontrado ou você não tem permissão para acessá-lo',
+                code: 'PROFILE_ITEM_NOT_FOUND'
+            });
+        }
+        
+        const profileItem = profileItemCheck.rows[0];
+        logger.info(`Profile item encontrado: id=${profileItem.id}, item_type=${profileItem.item_type}, title=${profileItem.title}`);
+        
+        // Buscar lista de convidados associada
         let result = await client.query(`
             SELECT 
                 pi.id as profile_item_id,
@@ -277,14 +294,16 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.created_at as guest_list_created_at,
                 gli.updated_at as guest_list_updated_at
             FROM profile_items pi
-            INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+            LEFT JOIN guest_list_items gli ON gli.profile_item_id = pi.id
             WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
-        // Se não encontrar, tentar buscar pelo id da guest_list_items
-        if (result.rows.length === 0) {
-            logger.info(`Tentando buscar pelo guest_list_items.id: ${listId}`);
-            result = await client.query(`
+        // Se não encontrar lista associada, mas o profile_item existe, criar uma lista básica
+        if (result.rows.length === 0 || !result.rows[0].guest_list_item_id) {
+            logger.info(`Nenhuma lista de convidados associada ao profile_item ${listId}. Verificando se é digital_form...`);
+            
+            // Se não encontrar, tentar buscar pelo id da guest_list_items
+            const guestListByItemId = await client.query(`
                 SELECT 
                     pi.id as profile_item_id,
                     pi.user_id,
@@ -319,11 +338,91 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
                 WHERE gli.id = $1 AND pi.user_id = $2
             `, [listId, userId]);
+            
+            if (guestListByItemId.rows.length > 0) {
+                result = guestListByItemId;
+            } else {
+                // Se o item existe mas não tem lista associada, criar uma lista básica automaticamente
+                logger.info(`Criando lista de convidados automaticamente para profile_item ${listId}`);
+                
+                const registrationToken = require('crypto').randomBytes(32).toString('hex');
+                const confirmationToken = require('crypto').randomBytes(32).toString('hex');
+                const publicViewToken = require('crypto').randomBytes(32).toString('hex');
+                
+                const createResult = await client.query(`
+                    INSERT INTO guest_list_items (
+                        profile_item_id,
+                        event_title,
+                        event_description,
+                        registration_token,
+                        confirmation_token,
+                        public_view_token,
+                        allow_self_registration,
+                        require_confirmation,
+                        max_guests,
+                        created_at,
+                        updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+                    RETURNING *
+                `, [
+                    listId,
+                    profileItem.title || 'Lista de Convidados',
+                    '',
+                    registrationToken,
+                    confirmationToken,
+                    publicViewToken,
+                    true,
+                    true,
+                    null
+                ]);
+                
+                logger.info(`Lista de convidados criada automaticamente: guest_list_item_id=${createResult.rows[0].id}`);
+                
+                // Buscar novamente com os dados completos
+                result = await client.query(`
+                    SELECT 
+                        pi.id as profile_item_id,
+                        pi.user_id,
+                        pi.item_type,
+                        pi.title,
+                        pi.is_active,
+                        pi.display_order,
+                        pi.created_at as profile_created_at,
+                        gli.id as guest_list_item_id,
+                        gli.event_title,
+                        gli.event_description,
+                        gli.event_date,
+                        gli.event_location,
+                        gli.registration_token,
+                        gli.confirmation_token,
+                        gli.max_guests,
+                        gli.allow_self_registration,
+                        gli.require_confirmation,
+                        gli.custom_form_fields,
+                        gli.use_custom_form,
+                        gli.public_view_token,
+                        COALESCE(gli.primary_color, '#FFC700') as primary_color,
+                        COALESCE(gli.text_color, '#ECECEC') as text_color,
+                        COALESCE(gli.background_color, '#0D0D0F') as background_color,
+                        gli.header_image_url,
+                        gli.background_image_url,
+                        COALESCE(gli.background_opacity, 1.0) as background_opacity,
+                        COALESCE(gli.theme, 'dark') as theme,
+                        gli.created_at as guest_list_created_at,
+                        gli.updated_at as guest_list_updated_at
+                    FROM profile_items pi
+                    INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+                    WHERE pi.id = $1 AND pi.user_id = $2
+                `, [listId, userId]);
+            }
         }
         
         if (result.rows.length === 0) {
-            logger.warn(`Lista não encontrada: listId=${listId}, userId=${userId}`);
-            return res.status(404).json({ message: 'Lista não encontrada' });
+            logger.warn(`Lista não encontrada após todas as tentativas: listId=${listId}, userId=${userId}`);
+            return res.status(404).json({ 
+                message: 'Lista de convidados não encontrada. Certifique-se de que o item foi convertido para lista de convidados.',
+                code: 'GUEST_LIST_NOT_FOUND'
+            });
         }
         
         const listData = result.rows[0];
