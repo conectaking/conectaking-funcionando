@@ -107,6 +107,37 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /api/guest-lists/:id - Obter lista específica (ADM)
+ */
+router.get('/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const listId = parseInt(req.params.id, 10);
+        
+        const result = await client.query(`
+            SELECT 
+                pi.*,
+                gli.*
+            FROM profile_items pi
+            INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+        `, [listId, userId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Lista não encontrada' });
+        }
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        logger.error('Erro ao buscar lista:', error);
+        res.status(500).json({ message: 'Erro ao buscar lista', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
  * PUT /api/guest-lists/:id - Atualizar lista de convidados
  */
 router.put('/:id', protectUser, asyncHandler(async (req, res) => {
