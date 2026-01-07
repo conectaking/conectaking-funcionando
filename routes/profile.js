@@ -2236,6 +2236,69 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
                 // Não falhar a criação do item se falhar criar o formulário
             }
         }
+        
+        // Se for contract, criar registro na tabela contract_items
+        if (item_type === 'contract') {
+            try {
+                await client.query(`
+                    INSERT INTO contract_items (
+                        profile_item_id, contract_title, contract_type, contract_template,
+                        require_signature, require_stamp, allow_digital_signature, 
+                        allow_photo_signature, stamp_image_url, stamp_text
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                `, [
+                    newItem.id,
+                    title || 'Contrato Digital',
+                    'general',
+                    '',
+                    true,
+                    true,
+                    true,
+                    true,
+                    null,
+                    null
+                ]);
+                console.log(`✅ Contrato criado para item ${newItem.id}`);
+            } catch (error) {
+                console.error("Erro ao criar contrato:", error);
+                // Não falhar a criação do item se falhar criar o contrato
+            }
+        }
+        
+        // Se for guest_list, criar registro na tabela guest_list_items
+        if (item_type === 'guest_list') {
+            try {
+                const crypto = require('crypto');
+                const registrationToken = crypto.randomBytes(16).toString('hex');
+                const confirmationToken = crypto.randomBytes(16).toString('hex');
+                
+                await client.query(`
+                    INSERT INTO guest_list_items (
+                        profile_item_id, event_title, event_description, event_date, event_time,
+                        event_location, max_guests, require_confirmation, allow_self_registration,
+                        registration_token, confirmation_token
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                `, [
+                    newItem.id,
+                    title || 'Lista de Convidados',
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    true,
+                    true,
+                    registrationToken,
+                    confirmationToken
+                ]);
+                console.log(`✅ Lista de convidados criada para item ${newItem.id}`);
+            } catch (error) {
+                console.error("Erro ao criar lista de convidados:", error);
+                // Não falhar a criação do item se falhar criar a lista
+            }
+        }
 
         console.log(`✅ Item criado com sucesso:`, newItem);
         // Evitar cache do navegador
