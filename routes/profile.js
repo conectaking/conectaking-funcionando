@@ -1600,6 +1600,15 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
         }
         
+        // Se o item_type está sendo explicitamente atualizado para guest_list, fazer isso também
+        if (req.body.item_type === 'guest_list') {
+            const hasItemType = updateFields.some(field => field.startsWith('item_type ='));
+            if (!hasItemType) {
+                updateFields.push(`item_type = $${paramIndex++}`);
+                updateValues.push('guest_list');
+            }
+        }
+        
         if (updateFields.length > 0) {
             updateValues.push(itemId, userId);
             const profileQuery = `
