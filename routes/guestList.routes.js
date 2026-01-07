@@ -190,6 +190,9 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.max_guests,
                 gli.allow_self_registration,
                 gli.require_confirmation,
+                gli.custom_form_fields,
+                gli.use_custom_form,
+                gli.public_view_token,
                 gli.created_at as guest_list_created_at,
                 gli.updated_at as guest_list_updated_at
             FROM profile_items pi
@@ -268,7 +271,9 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             require_confirmation,
             allow_self_registration,
             is_active,
-            display_order
+            display_order,
+            custom_form_fields,
+            use_custom_form
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
