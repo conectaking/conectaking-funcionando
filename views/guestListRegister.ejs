@@ -217,6 +217,100 @@
         
         <div class="form-card">
             <form id="registration-form">
+                <!-- Campos obrigatórios padrão (sempre presentes) -->
+                <div class="form-group">
+                    <label for="name">Nome Completo <span style="color: #ff4444;">*</span></label>
+                    <input type="text" id="name" name="name" required placeholder="Digite seu nome completo">
+                </div>
+                
+                <div class="form-group">
+                    <label for="whatsapp">WhatsApp <span style="color: #ff4444;">*</span></label>
+                    <input type="tel" id="whatsapp" name="whatsapp" required placeholder="(00) 00000-0000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="document">CPF/CNPJ <span style="color: #ff4444;">*</span></label>
+                    <input type="text" id="document" name="document" required placeholder="000.000.000-00">
+                </div>
+                
+                <% if (guestList.use_custom_form && guestList.custom_form_fields && Array.isArray(guestList.custom_form_fields) && guestList.custom_form_fields.length > 0) { %>
+                <!-- Campos customizados do KingForms -->
+                <div id="custom-fields-container" style="margin-top: 24px; padding-top: 24px; border-top: 2px solid rgba(255,255,255,0.1);">
+                    <h3 style="color: #FFC700; margin-bottom: 20px; font-size: 18px;">
+                        <i class="fas fa-sliders-h"></i> Informações Adicionais
+                    </h3>
+                    <% guestList.custom_form_fields.forEach((field, index) => { %>
+                        <div class="form-group">
+                            <label for="custom_<%= index %>">
+                                <%= field.label || 'Campo' %>
+                                <% if (field.required) { %> <span style="color: #ff4444;">*</span><% } %>
+                            </label>
+                            <% if (field.type === 'short_text' || field.type === 'email' || field.type === 'phone' || field.type === 'number' || field.type === 'url') { %>
+                                <input 
+                                    type="<%= field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text' %>" 
+                                    id="custom_<%= index %>" 
+                                    name="custom_<%= field.label || 'campo_' + index %>"
+                                    <% if (field.required) { %>required<% } %>
+                                    placeholder="<%= field.placeholder || 'Digite sua resposta' %>">
+                            <% } else if (field.type === 'long_text') { %>
+                                <textarea 
+                                    id="custom_<%= index %>" 
+                                    name="custom_<%= field.label || 'campo_' + index %>"
+                                    <% if (field.required) { %>required<% } %>
+                                    placeholder="<%= field.placeholder || 'Digite sua resposta' %>"
+                                    rows="4" style="width: 100%; padding: 14px 16px; background: #0D0D0F; border: 2px solid #2C2C2F; border-radius: 12px; color: #ECECEC; font-size: 16px; resize: vertical;"></textarea>
+                            <% } else if (field.type === 'select' && field.options) { %>
+                                <select 
+                                    id="custom_<%= index %>" 
+                                    name="custom_<%= field.label || 'campo_' + index %>"
+                                    <% if (field.required) { %>required<% } %>
+                                    style="width: 100%; padding: 14px 16px; background: #0D0D0F; border: 2px solid #2C2C2F; border-radius: 12px; color: #ECECEC; font-size: 16px;">
+                                    <option value="">Selecione...</option>
+                                    <% const options = Array.isArray(field.options) ? field.options : field.options.split(','); %>
+                                    <% options.forEach(opt => { %>
+                                        <option value="<%= opt.trim() %>"><%= opt.trim() %></option>
+                                    <% }); %>
+                                </select>
+                            <% } else if (field.type === 'radio' && field.options) { %>
+                                <% const options = Array.isArray(field.options) ? field.options : field.options.split(','); %>
+                                <% options.forEach((opt, optIndex) => { %>
+                                    <div style="margin: 12px 0; display: flex; align-items: center;">
+                                        <input 
+                                            type="radio" 
+                                            id="custom_<%= index %>_<%= optIndex %>" 
+                                            name="custom_<%= field.label || 'campo_' + index %>"
+                                            value="<%= opt.trim() %>"
+                                            style="width: 20px; height: 20px; margin-right: 12px; accent-color: #FFC700;"
+                                            <% if (field.required) { %>required<% } %>>
+                                        <label for="custom_<%= index %>_<%= optIndex %>" style="margin: 0; font-weight: normal; cursor: pointer;"><%= opt.trim() %></label>
+                                    </div>
+                                <% }); %>
+                            <% } else if (field.type === 'checkbox' && field.options) { %>
+                                <% const options = Array.isArray(field.options) ? field.options : field.options.split(','); %>
+                                <% options.forEach((opt, optIndex) => { %>
+                                    <div style="margin: 12px 0; display: flex; align-items: center;">
+                                        <input 
+                                            type="checkbox" 
+                                            id="custom_<%= index %>_<%= optIndex %>" 
+                                            name="custom_<%= field.label || 'campo_' + index %>"
+                                            value="<%= opt.trim() %>"
+                                            style="width: 20px; height: 20px; margin-right: 12px; accent-color: #FFC700;">
+                                        <label for="custom_<%= index %>_<%= optIndex %>" style="margin: 0; font-weight: normal; cursor: pointer;"><%= opt.trim() %></label>
+                                    </div>
+                                <% }); %>
+                            <% } else if (field.type === 'date') { %>
+                                <input 
+                                    type="date" 
+                                    id="custom_<%= index %>" 
+                                    name="custom_<%= field.label || 'campo_' + index %>"
+                                    <% if (field.required) { %>required<% } %>
+                                    style="width: 100%; padding: 14px 16px; background: #0D0D0F; border: 2px solid #2C2C2F; border-radius: 12px; color: #ECECEC; font-size: 16px;">
+                            <% } %>
+                        </div>
+                    <% }); %>
+                </div>
+                <% } else { %>
+                <!-- Campos opcionais padrão (quando não há campos customizados) -->
                 <div class="form-group">
                     <label for="name">Nome Completo <span style="color: #ff4444;">*</span></label>
                     <input type="text" id="name" name="name" required placeholder="Digite seu nome completo">
@@ -275,8 +369,9 @@
                     <label for="instagram">Instagram</label>
                     <input type="text" id="instagram" name="instagram" placeholder="@seuinstagram">
                 </div>
+                <% } %>
                 
-                <button type="submit" class="btn-submit" id="submit-btn">
+                <button type="submit" class="btn-submit" id="submit-btn" style="margin-top: 24px;">
                     <i class="fas fa-paper-plane"></i> Enviar
                 </button>
             </form>

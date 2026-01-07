@@ -25,6 +25,17 @@ router.get('/register/:token', asyncHandler(async (req, res) => {
             WHERE gli.registration_token = $1 AND pi.is_active = true
         `, [token]);
         
+        // Parsear custom_form_fields se for string
+        if (listResult.rows.length > 0 && listResult.rows[0].custom_form_fields) {
+            if (typeof listResult.rows[0].custom_form_fields === 'string') {
+                try {
+                    listResult.rows[0].custom_form_fields = JSON.parse(listResult.rows[0].custom_form_fields);
+                } catch (e) {
+                    listResult.rows[0].custom_form_fields = [];
+                }
+            }
+        }
+        
         if (listResult.rows.length === 0) {
             return res.status(404).render('error', {
                 message: 'Link de inscrição inválido ou expirado',
@@ -33,6 +44,17 @@ router.get('/register/:token', asyncHandler(async (req, res) => {
         }
         
         const guestList = listResult.rows[0];
+        
+        // Parsear custom_form_fields se for string
+        if (guestList.custom_form_fields && typeof guestList.custom_form_fields === 'string') {
+            try {
+                guestList.custom_form_fields = JSON.parse(guestList.custom_form_fields);
+            } catch (e) {
+                guestList.custom_form_fields = [];
+            }
+        } else if (!guestList.custom_form_fields) {
+            guestList.custom_form_fields = [];
+        }
         
         // Verificar se ainda há vagas
         const countResult = await client.query(`
@@ -304,23 +326,32 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         
         const guestList = listResult.rows[0];
         
+        // Parsear custom_form_fields se for string
+        if (guestList.custom_form_fields && typeof guestList.custom_form_fields === 'string') {
+            try {
+                guestList.custom_form_fields = JSON.parse(guestList.custom_form_fields);
+            } catch (e) {
+                guestList.custom_form_fields = [];
+            }
+        }
+        
         // Buscar todos os convidados por status
         const registeredResult = await client.query(`
-            SELECT id, name, email, phone, whatsapp, document, address, city, status, created_at
+            SELECT id, name, email, phone, whatsapp, document, address, neighborhood, city, state, zipcode, instagram, status, created_at, custom_responses
             FROM guests
             WHERE guest_list_id = $1 AND status = 'registered'
             ORDER BY name ASC
         `, [guestList.id]);
         
         const confirmedResult = await client.query(`
-            SELECT id, name, email, phone, whatsapp, document, address, city, status, confirmed_at, created_at
+            SELECT id, name, email, phone, whatsapp, document, address, neighborhood, city, state, zipcode, instagram, status, confirmed_at, created_at, custom_responses
             FROM guests
             WHERE guest_list_id = $1 AND status = 'confirmed'
             ORDER BY name ASC
         `, [guestList.id]);
         
         const checkedInResult = await client.query(`
-            SELECT id, name, email, phone, whatsapp, document, address, city, status, checked_in_at, confirmed_at, created_at
+            SELECT id, name, email, phone, whatsapp, document, address, neighborhood, city, state, zipcode, instagram, status, checked_in_at, confirmed_at, created_at, custom_responses
             FROM guests
             WHERE guest_list_id = $1 AND status = 'checked_in'
             ORDER BY checked_in_at DESC

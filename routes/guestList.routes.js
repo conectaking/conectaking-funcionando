@@ -109,14 +109,19 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
         
         const profileItemId = itemResult.rows[0].id;
         
+        // Campos customizados (se fornecidos)
+        const customFormFields = req.body.custom_form_fields || [];
+        const useCustomForm = req.body.use_custom_form === true;
+        
         // Criar guest_list_item
         const guestListResult = await client.query(`
             INSERT INTO guest_list_items (
                 profile_item_id, event_title, event_description, event_date, event_time,
                 event_location, max_guests, require_confirmation, allow_self_registration,
-                registration_token, confirmation_token, public_view_token
+                registration_token, confirmation_token, public_view_token,
+                custom_form_fields, use_custom_form
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             RETURNING *
         `, [
             profileItemId,
@@ -130,7 +135,9 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
             allow_self_registration !== undefined ? allow_self_registration : true,
             registrationToken,
             confirmationToken,
-            publicViewToken
+            publicViewToken,
+            JSON.stringify(customFormFields),
+            useCustomForm
         ]);
         
         res.json({
@@ -211,6 +218,9 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                     gli.max_guests,
                     gli.is_registration_open,
                     gli.is_confirmation_required,
+                    gli.custom_form_fields,
+                    gli.use_custom_form,
+                    gli.public_view_token,
                     gli.created_at as guest_list_created_at,
                     gli.updated_at as guest_list_updated_at
                 FROM guest_list_items gli
@@ -340,6 +350,14 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             guestListUpdateFields.push(`allow_self_registration = $${guestListParamIndex++}`);
             guestListUpdateValues.push(allow_self_registration);
         }
+        if (custom_form_fields !== undefined) {
+            guestListUpdateFields.push(`custom_form_fields = $${guestListParamIndex++}::jsonb`);
+            guestListUpdateValues.push(JSON.stringify(custom_form_fields));
+        }
+        if (use_custom_form !== undefined) {
+            guestListUpdateFields.push(`use_custom_form = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(use_custom_form);
+        }
         
         if (guestListUpdateFields.length > 0) {
             guestListUpdateValues.push(guestListItemId);
@@ -408,7 +426,13 @@ router.get('/:id/guests', protectUser, asyncHandler(async (req, res) => {
         
         const guestListItemId = checkResult.rows[0].guest_list_item_id;
         
-        let query = 'SELECT * FROM guests WHERE guest_list_id = $1';
+        let query = `SELECT 
+            id, guest_list_id, name, email, phone, whatsapp, document, 
+            address, neighborhood, city, state, zipcode, instagram, 
+            status, registration_source, confirmed_at, confirmed_by, 
+            checked_in_at, checked_in_by, notes, custom_responses, 
+            created_at, updated_at 
+        FROM guests WHERE guest_list_id = $1`;
         const params = [guestListItemId];
         let paramIndex = 2;
         
@@ -900,6 +924,16 @@ router.post('/public/register/:token', asyncHandler(async (req, res) => {
             instagram ? instagram.trim() : null,
             guestList.require_confirmation ? 'registered' : 'confirmed'
         ]);
+        
+        // Salvar respostas customizadas se houver
+        const customResponses = req.body.custom_responses || {};
+        if (Object.keys(customResponses).length > 0) {
+            await client.query(`
+                UPDATE guests 
+                SET custom_responses = $1::jsonb
+                WHERE id = $2
+            `, [JSON.stringify(customResponses), result.rows[0].id]);
+        }
         
         // Se não requer confirmação, já confirmar
         if (!guestList.require_confirmation) {
