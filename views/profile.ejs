@@ -1703,6 +1703,54 @@ if (typeof details === 'undefined' || !details) {
                         </a>
 
                     <%# ========================================================== %>
+                    <%# TIPO: LISTA DE CONVIDADOS %>
+                    <%# ========================================================== %>
+                    <% } else if (item.item_type === 'guest_list' && item.guest_list_data) { %>
+                        <% 
+                            const guestList = item.guest_list_data;
+                            const stats = guestList.stats || { total_count: 0, registered_count: 0, confirmed_count: 0, checked_in_count: 0 };
+                            const hasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
+                            const logoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
+                            const registrationLink = guestList.registration_token 
+                                ? `/guest-list/register/${guestList.registration_token}` 
+                                : '#';
+                            const confirmationLink = guestList.confirmation_token 
+                                ? `/guest-list/confirm/${guestList.confirmation_token}` 
+                                : '#';
+                        %>
+                        <div class="profile-link guest-list-item" data-item-id="<%= item.id %>" style="cursor: pointer;">
+                            <% if (hasLogo) { %>
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Lista de Convidados' %>" class="profile-link-logo" style="max-width: <%= logoSize %>px; max-height: <%= logoSize %>px; border-radius: 8px;">
+                            <% } else { %>
+                                <i class="fas fa-users"></i>
+                            <% } %>
+                            <span><%= item.title || guestList.event_title || 'Lista de Convidados' %></span>
+                            <div class="guest-list-stats-mini" style="font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 4px;">
+                                <%= stats.total_count || 0 %> convidados • 
+                                <%= stats.confirmed_count || 0 %> confirmados
+                            </div>
+                        </div>
+
+                    <%# ========================================================== %>
+                    <%# TIPO: CONTRATO DIGITAL %>
+                    <%# ========================================================== %>
+                    <% } else if (item.item_type === 'contract' && item.contract_data) { %>
+                        <% 
+                            const contract = item.contract_data;
+                            const hasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
+                            const logoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
+                            const contractUrl = `/contract/${contract.id}`;
+                        %>
+                        <a href="<%= contractUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <% if (hasLogo) { %>
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Contrato Digital' %>" class="profile-link-logo" style="max-width: <%= logoSize %>px; max-height: <%= logoSize %>px; border-radius: 8px;">
+                            <% } else { %>
+                                <i class="fas fa-file-contract"></i>
+                            <% } %>
+                            <span><%= item.title || contract.contract_title || 'Contrato Digital' %></span>
+                        </a>
+
+                    <%# ========================================================== %>
                     <%# FALLBACK: Tipo de item não reconhecido %>
                     <%# ========================================================== %>
                     <% } else { %>
@@ -1756,6 +1804,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. DECLARAÇÃO DE VARIÁVEIS E SELETORES
     // ==========================================================
     const userId = '<%= details.user_id %>';
+    const guestListsData = <% JSON.stringify(items.filter(i => i.item_type === 'guest_list')) %>;
     const shareButton = document.getElementById('share-btn');
     const saveContactBtn = document.getElementById('save-contact-btn');
     const pixModal = document.getElementById('pix-qrcode-modal');
@@ -1943,6 +1992,92 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalText = pixCopyBrCodeBtn.textContent;
         pixCopyBrCodeBtn.textContent = 'Copiado!';
         setTimeout(() => { pixCopyBrCodeBtn.textContent = originalText; }, 2000);
+    });
+
+    // Lista de Convidados - Modal com links
+    document.querySelectorAll('.guest-list-item').forEach(element => {
+        element.addEventListener('click', () => {
+            const itemId = parseInt(element.getAttribute('data-item-id'));
+            registrarClique(itemId);
+            
+            // Buscar dados da lista
+            const item = guestListsData.find(i => i.id === itemId);
+            if (!item || !item.guest_list_data) return;
+            
+            const guestList = item.guest_list_data;
+            const stats = guestList.stats || { total_count: 0, confirmed_count: 0, checked_in_count: 0 };
+            const registrationLink = guestList.registration_token 
+                ? `${window.location.origin}/guest-list/register/${guestList.registration_token}` 
+                : null;
+            const confirmationLink = guestList.confirmation_token 
+                ? `${window.location.origin}/guest-list/confirm/${guestList.confirmation_token}` 
+                : null;
+            
+            const modal = document.createElement('div');
+            modal.className = 'guest-list-modal-public';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            
+            let linksHTML = '';
+            if (registrationLink) {
+                linksHTML += `
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; color: #ECECEC; font-weight: 600; margin-bottom: 8px; font-size: 14px;">
+                            <i class="fas fa-user-plus" style="color: #2196F3; margin-right: 6px;"></i> Inscrever-se no Evento
+                        </label>
+                        <a href="${registrationLink}" target="_blank" style="display: block; padding: 12px; background: #2196F3; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                            <i class="fas fa-arrow-right" style="margin-left: 8px;"></i> Acessar Inscrição
+                        </a>
+                    </div>
+                `;
+            }
+            if (confirmationLink) {
+                linksHTML += `
+                    <div>
+                        <label style="display: block; color: #ECECEC; font-weight: 600; margin-bottom: 8px; font-size: 14px;">
+                            <i class="fas fa-check-circle" style="color: #4CAF50; margin-right: 6px;"></i> Confirmar Presença
+                        </label>
+                        <a href="${confirmationLink}" target="_blank" style="display: block; padding: 12px; background: #4CAF50; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                            <i class="fas fa-arrow-right" style="margin-left: 8px;"></i> Acessar Confirmação
+                        </a>
+                    </div>
+                `;
+            }
+            
+            modal.innerHTML = `
+                <div style="background: #1C1C21; padding: 32px; border-radius: 16px; max-width: 500px; width: 100%; border: 1px solid #2C2C2F; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h3 style="margin: 0; color: #ECECEC; font-size: 22px; font-weight: 700;">
+                            <i class="fas fa-users" style="color: #FFC700;"></i> ${item.title || guestList.event_title || 'Lista de Convidados'}
+                        </h3>
+                        <button class="close-guest-list-modal" style="background: none; border: none; color: #A1A1A1; font-size: 24px; cursor: pointer; padding: 5px 10px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
+                        <div style="text-align: center; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: 800; color: #FFC700;">${stats.total_count || 0}</div>
+                            <div style="font-size: 12px; color: #A1A1A1; margin-top: 4px;">Total</div>
+                        </div>
+                        <div style="text-align: center; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: 800; color: #4CAF50;">${stats.confirmed_count || 0}</div>
+                            <div style="font-size: 12px; color: #A1A1A1; margin-top: 4px;">Confirmados</div>
+                        </div>
+                        <div style="text-align: center; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: 800; color: #2196F3;">${stats.checked_in_count || 0}</div>
+                            <div style="font-size: 12px; color: #A1A1A1; margin-top: 4px;">Conferidos</div>
+                        </div>
+                    </div>
+                    ${linksHTML}
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            modal.querySelector('.close-guest-list-modal').addEventListener('click', () => modal.remove());
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        });
     });
 
     // ==========================================================

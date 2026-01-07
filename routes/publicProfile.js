@@ -423,6 +423,55 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 }
             }
             
+            if (item.item_type === 'guest_list') {
+                try {
+                    // Buscar dados da lista de convidados
+                    const guestListRes = await client.query(
+                        'SELECT * FROM guest_list_items WHERE profile_item_id = $1',
+                        [item.id]
+                    );
+                    if (guestListRes.rows.length > 0) {
+                        item.guest_list_data = guestListRes.rows[0];
+                        // Carregar estatísticas de convidados
+                        const statsRes = await client.query(
+                            `SELECT 
+                                COUNT(*) FILTER (WHERE status = 'registered') as registered_count,
+                                COUNT(*) FILTER (WHERE status = 'confirmed') as confirmed_count,
+                                COUNT(*) FILTER (WHERE status = 'checked_in') as checked_in_count,
+                                COUNT(*) as total_count
+                            FROM guests WHERE guest_list_id = $1`,
+                            [item.guest_list_data.id]
+                        );
+                        if (statsRes.rows.length > 0) {
+                            item.guest_list_data.stats = statsRes.rows[0];
+                        }
+                    }
+                } catch (guestListError) {
+                    logger.error('Erro ao carregar lista de convidados', { 
+                        itemId: item.id, 
+                        error: guestListError.message 
+                    });
+                }
+            }
+            
+            if (item.item_type === 'contract') {
+                try {
+                    // Buscar dados do contrato
+                    const contractRes = await client.query(
+                        'SELECT * FROM contract_items WHERE profile_item_id = $1',
+                        [item.id]
+                    );
+                    if (contractRes.rows.length > 0) {
+                        item.contract_data = contractRes.rows[0];
+                    }
+                } catch (contractError) {
+                    logger.error('Erro ao carregar contrato', { 
+                        itemId: item.id, 
+                        error: contractError.message 
+                    });
+                }
+            }
+            
             return item;
         }));
         
