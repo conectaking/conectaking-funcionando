@@ -140,6 +140,81 @@ router.get('/confirm/:identifier', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /guest-list/view-confirmed/:token - Página pública para ver lista de confirmados usando token
+ */
+router.get('/view-confirmed/:token', asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const { token } = req.params;
+        const tab = req.query.tab || 'confirmed';
+        
+        // Buscar lista pelo token de confirmação
+        const listResult = await client.query(`
+            SELECT 
+                gli.*,
+                pi.id as profile_item_id,
+                pi.title,
+                pi.user_id,
+                u.profile_slug
+            FROM guest_list_items gli
+            INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+            INNER JOIN users u ON u.id = pi.user_id
+            WHERE gli.confirmation_token = $1 AND pi.is_active = true
+        `, [token]);
+        
+        if (listResult.rows.length === 0) {
+            return res.status(404).render('error', {
+                message: 'Link inválido ou expirado',
+                title: 'Erro'
+            });
+        }
+        
+        const guestList = listResult.rows[0];
+        
+        // Buscar convidados confirmados e conferidos
+        const confirmedResult = await client.query(`
+            SELECT id, name, email, phone, status, confirmed_at, created_at
+            FROM guests
+            WHERE guest_list_id = $1 AND status = 'confirmed'
+            ORDER BY confirmed_at DESC, created_at DESC
+        `, [guestList.id]);
+        
+        const checkedInResult = await client.query(`
+            SELECT id, name, email, phone, status, checked_in_at, confirmed_at, created_at
+            FROM guests
+            WHERE guest_list_id = $1 AND status = 'checked_in'
+            ORDER BY checked_in_at DESC
+        `, [guestList.id]);
+        
+        const registeredResult = await client.query(`
+            SELECT id, name, email, phone, status, created_at
+            FROM guests
+            WHERE guest_list_id = $1 AND status = 'registered'
+            ORDER BY created_at DESC
+        `, [guestList.id]);
+        
+        res.render('guestListConfirm', {
+            guestList,
+            guests: confirmedResult.rows,
+            checkedInGuests: checkedInResult.rows,
+            registeredGuests: registeredResult.rows,
+            token: token,
+            profileItemId: guestList.profile_item_id,
+            tab: tab,
+            viewOnly: true
+        });
+    } catch (error) {
+        logger.error('Erro ao carregar página de visualização:', error);
+        res.status(500).render('error', {
+            message: 'Erro ao carregar página',
+            title: 'Erro'
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
  * GET /guest-list/view/:itemId - Página pública para ver lista de confirmados
  */
 router.get('/view/:itemId', asyncHandler(async (req, res) => {
