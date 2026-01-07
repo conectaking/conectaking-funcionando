@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmação de Presença - <%= guestList.event_title || 'Evento' %></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0D0D0F 0%, #1C1C21 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #ECECEC;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            color: #FFC700;
+            margin-bottom: 12px;
+        }
+        
+        .header p {
+            color: #A1A1A1;
+            font-size: 16px;
+        }
+        
+        .info-box {
+            background: rgba(255, 199, 0, 0.1);
+            border: 1px solid rgba(255, 199, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .info-box h3 {
+            color: #FFC700;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+        
+        .guests-list {
+            background: #1C1C21;
+            border: 1px solid #2C2C2F;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        
+        .guest-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: #0D0D0F;
+            border: 2px solid #2C2C2F;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+        
+        .guest-item:hover {
+            border-color: #FFC700;
+            background: rgba(255, 199, 0, 0.05);
+        }
+        
+        .guest-item.checked {
+            border-color: #25D366;
+            background: rgba(37, 211, 102, 0.1);
+        }
+        
+        .guest-info {
+            flex: 1;
+        }
+        
+        .guest-info .name {
+            font-weight: 600;
+            font-size: 16px;
+            color: #ECECEC;
+            margin-bottom: 4px;
+        }
+        
+        .guest-info .details {
+            font-size: 14px;
+            color: #A1A1A1;
+        }
+        
+        .guest-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: #FFC700;
+        }
+        
+        .btn-confirm {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #FFC700, #FFA500);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 24px;
+        }
+        
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 199, 0, 0.4);
+        }
+        
+        .btn-confirm:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .alert {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .alert-success {
+            background: rgba(37, 211, 102, 0.2);
+            border: 1px solid #25D366;
+            color: #25D366;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #A1A1A1;
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: #1C1C21;
+            border: 1px solid #2C2C2F;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 800;
+            color: #FFC700;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .label {
+            font-size: 14px;
+            color: #A1A1A1;
+        }
+        
+        @media (max-width: 768px) {
+            .guest-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-user-check"></i> Confirmação de Presença</h1>
+            <p><%= guestList.event_title || 'Evento' %></p>
+        </div>
+        
+        <% if (guestList.event_description || guestList.event_date || guestList.event_time || guestList.event_location) { %>
+        <div class="info-box">
+            <h3><i class="fas fa-info-circle"></i> Informações do Evento</h3>
+            <% if (guestList.event_description) { %>
+            <p style="margin-bottom: 12px;"><%= guestList.event_description %></p>
+            <% } %>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,199,0,0.2);">
+                <% if (guestList.event_date) { %>
+                <p><i class="fas fa-calendar"></i> <strong>Data:</strong> <%= new Date(guestList.event_date).toLocaleDateString('pt-BR') %></p>
+                <% } %>
+                <% if (guestList.event_time) { %>
+                <p><i class="fas fa-clock"></i> <strong>Horário:</strong> <%= guestList.event_time %></p>
+                <% } %>
+                <% if (guestList.event_location) { %>
+                <p><i class="fas fa-map-marker-alt"></i> <strong>Local:</strong> <%= guestList.event_location %></p>
+                <% } %>
+            </div>
+        </div>
+        <% } %>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="value" id="total-count"><%= guests.length %></div>
+                <div class="label">Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" id="confirmed-count"><%= guests.filter(g => g.status === 'confirmed').length %></div>
+                <div class="label">Confirmados</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" id="pending-count"><%= guests.filter(g => g.status === 'registered').length %></div>
+                <div class="label">Pendentes</div>
+            </div>
+        </div>
+        
+        <div class="guests-list">
+            <% if (guests.length === 0) { %>
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <p>Nenhum convidado encontrado</p>
+            </div>
+            <% } else { %>
+            <form id="confirmation-form">
+                <% guests.forEach(guest => { %>
+                <div class="guest-item <%= guest.status === 'confirmed' ? 'checked' : '' %>">
+                    <div class="guest-info">
+                        <div class="name"><%= guest.name %></div>
+                        <div class="details">
+                            <% if (guest.email) { %>
+                            <i class="fas fa-envelope"></i> <%= guest.email %>
+                            <% } %>
+                            <% if (guest.phone) { %>
+                            <span style="margin-left: 12px;"><i class="fas fa-phone"></i> <%= guest.phone %></span>
+                            <% } %>
+                        </div>
+                    </div>
+                    <input 
+                        type="checkbox" 
+                        class="guest-checkbox" 
+                        name="guest_ids" 
+                        value="<%= guest.id %>"
+                        <%= guest.status === 'confirmed' ? 'checked disabled' : '' %>
+                        data-guest-id="<%= guest.id %>"
+                    >
+                </div>
+                <% }); %>
+                
+                <button type="submit" class="btn-confirm" id="confirm-btn">
+                    <i class="fas fa-check"></i> Confirmar Selecionados
+                </button>
+            </form>
+            <% } %>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('confirmation-form');
+        const confirmBtn = document.getElementById('confirm-btn');
+        const token = '<%= token %>';
+        
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const checkboxes = form.querySelectorAll('input[name="guest_ids"]:checked:not(:disabled)');
+                const guestIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+                
+                if (guestIds.length === 0) {
+                    alert('Selecione pelo menos um convidado para confirmar');
+                    return;
+                }
+                
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirmando...';
+                
+                try {
+                    const response = await fetch(`/api/guest-lists/public/confirm/${token}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ guest_ids: guestIds })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        // Atualizar interface
+                        guestIds.forEach(guestId => {
+                            const checkbox = form.querySelector(`input[value="${guestId}"]`);
+                            const guestItem = checkbox.closest('.guest-item');
+                            checkbox.disabled = true;
+                            guestItem.classList.add('checked');
+                        });
+                        
+                        // Atualizar contadores
+                        const confirmedCount = parseInt(document.getElementById('confirmed-count').textContent);
+                        const pendingCount = parseInt(document.getElementById('pending-count').textContent);
+                        document.getElementById('confirmed-count').textContent = confirmedCount + guestIds.length;
+                        document.getElementById('pending-count').textContent = Math.max(0, pendingCount - guestIds.length);
+                        
+                        // Mostrar mensagem de sucesso
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-success';
+                        alert.innerHTML = `
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <strong>Confirmado!</strong>
+                                <p>${result.confirmed_count} convidado(s) confirmado(s) com sucesso.</p>
+                            </div>
+                        `;
+                        form.insertBefore(alert, form.firstChild);
+                        
+                        setTimeout(() => alert.remove(), 5000);
+                    } else {
+                        throw new Error(result.message || 'Erro ao confirmar convidados');
+                    }
+                } catch (error) {
+                    alert('Erro ao confirmar convidados: ' + error.message);
+                } finally {
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirmar Selecionados';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
