@@ -31,8 +31,8 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 gli.registration_token,
                 gli.confirmation_token,
                 gli.max_guests,
-                gli.is_registration_open,
-                gli.is_confirmation_required,
+                gli.allow_self_registration,
+                gli.require_confirmation,
                 gli.custom_form_fields,
                 gli.use_custom_form,
                 gli.public_view_token,
@@ -46,7 +46,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             GROUP BY pi.id, pi.user_id, pi.item_type, pi.title, pi.is_active, pi.display_order, 
                      pi.created_at, gli.id, gli.event_title, gli.event_description, 
                      gli.event_date, gli.event_location, gli.registration_token, gli.confirmation_token, 
-                     gli.max_guests, gli.is_registration_open, gli.is_confirmation_required,
+                     gli.max_guests, gli.allow_self_registration, gli.require_confirmation,
                      gli.custom_form_fields, gli.use_custom_form, gli.public_view_token
             ORDER BY pi.display_order ASC, pi.created_at DESC
         `, [userId]);
@@ -188,8 +188,8 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.registration_token,
                 gli.confirmation_token,
                 gli.max_guests,
-                gli.is_registration_open,
-                gli.is_confirmation_required,
+                gli.allow_self_registration,
+                gli.require_confirmation,
                 gli.created_at as guest_list_created_at,
                 gli.updated_at as guest_list_updated_at
             FROM profile_items pi
@@ -217,8 +217,8 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                     gli.registration_token,
                     gli.confirmation_token,
                     gli.max_guests,
-                    gli.is_registration_open,
-                    gli.is_confirmation_required,
+                    gli.allow_self_registration,
+                    gli.require_confirmation,
                     gli.custom_form_fields,
                     gli.use_custom_form,
                     gli.public_view_token,
