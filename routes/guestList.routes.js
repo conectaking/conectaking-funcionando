@@ -345,11 +345,10 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 // Se o item existe mas não tem lista associada, criar uma lista básica automaticamente
                 logger.info(`Criando lista de convidados automaticamente para profile_item ${listId}`);
                 
-                // Gerar tokens únicos
-                const crypto = require('crypto');
-                const registrationToken = crypto.randomBytes(32).toString('hex');
-                const confirmationToken = crypto.randomBytes(32).toString('hex');
-                const publicViewToken = crypto.randomBytes(32).toString('hex');
+                // Gerar tokens únicos (crypto já está importado no topo do arquivo)
+                const registrationToken = crypto.randomBytes(16).toString('hex');
+                const confirmationToken = crypto.randomBytes(16).toString('hex');
+                const publicViewToken = crypto.randomBytes(16).toString('hex');
                 
                 const createResult = await client.query(`
                     INSERT INTO guest_list_items (
