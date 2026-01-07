@@ -65,11 +65,11 @@ CREATE TABLE IF NOT EXISTS guests (
     
     -- Confirmação
     confirmed_at TIMESTAMP,
-    confirmed_by INTEGER, -- ID do usuário que confirmou (se não for auto-confirmação)
+    confirmed_by VARCHAR(255), -- ID do usuário que confirmou (se não for auto-confirmação)
     
     -- Check-in (conferência)
     checked_in_at TIMESTAMP,
-    checked_in_by INTEGER, -- ID do usuário que fez o check-in
+    checked_in_by VARCHAR(255), -- ID do usuário que fez o check-in
     
     -- Observações
     notes TEXT,
@@ -79,10 +79,34 @@ CREATE TABLE IF NOT EXISTS guests (
     updated_at TIMESTAMP DEFAULT NOW(),
     
     -- Foreign key
-    FOREIGN KEY (guest_list_id) REFERENCES guest_list_items(id) ON DELETE CASCADE,
-    FOREIGN KEY (confirmed_by) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (checked_in_by) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (guest_list_id) REFERENCES guest_list_items(id) ON DELETE CASCADE
 );
+
+-- Adicionar foreign keys para users se a tabela existir
+DO $$ 
+BEGIN
+    -- Verificar se a tabela users existe e adicionar foreign keys
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') THEN
+        -- Verificar se a constraint já existe antes de criar
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE constraint_name = 'guests_confirmed_by_fkey'
+        ) THEN
+            ALTER TABLE guests 
+            ADD CONSTRAINT guests_confirmed_by_fkey 
+            FOREIGN KEY (confirmed_by) REFERENCES users(id) ON DELETE SET NULL;
+        END IF;
+        
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE constraint_name = 'guests_checked_in_by_fkey'
+        ) THEN
+            ALTER TABLE guests 
+            ADD CONSTRAINT guests_checked_in_by_fkey 
+            FOREIGN KEY (checked_in_by) REFERENCES users(id) ON DELETE SET NULL;
+        END IF;
+    END IF;
+END $$;
 
 -- Índices
 CREATE INDEX IF NOT EXISTS idx_guest_list_items_profile_item ON guest_list_items(profile_item_id);
