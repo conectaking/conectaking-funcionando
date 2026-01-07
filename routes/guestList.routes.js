@@ -23,7 +23,6 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 pi.is_active,
                 pi.display_order,
                 pi.created_at as profile_created_at,
-                pi.updated_at as profile_updated_at,
                 gli.id as guest_list_item_id,
                 gli.event_title,
                 gli.event_description,
@@ -34,6 +33,9 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 gli.max_guests,
                 gli.is_registration_open,
                 gli.is_confirmation_required,
+                gli.custom_form_fields,
+                gli.use_custom_form,
+                gli.public_view_token,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'registered') as registered_count,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'confirmed') as confirmed_count,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'checked_in') as checked_in_count
@@ -42,9 +44,10 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             LEFT JOIN guests g ON g.guest_list_id = gli.id
             WHERE pi.user_id = $1 AND pi.item_type = 'guest_list' AND pi.is_active = true
             GROUP BY pi.id, pi.user_id, pi.item_type, pi.title, pi.is_active, pi.display_order, 
-                     pi.created_at, pi.updated_at, gli.id, gli.event_title, gli.event_description, 
+                     pi.created_at, gli.id, gli.event_title, gli.event_description, 
                      gli.event_date, gli.event_location, gli.registration_token, gli.confirmation_token, 
-                     gli.max_guests, gli.is_registration_open, gli.is_confirmation_required
+                     gli.max_guests, gli.is_registration_open, gli.is_confirmation_required,
+                     gli.custom_form_fields, gli.use_custom_form, gli.public_view_token
             ORDER BY pi.display_order ASC, pi.created_at DESC
         `, [userId]);
         
@@ -177,7 +180,6 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 pi.is_active,
                 pi.display_order,
                 pi.created_at as profile_created_at,
-                pi.updated_at as profile_updated_at,
                 gli.id as guest_list_item_id,
                 gli.event_title,
                 gli.event_description,
@@ -207,7 +209,6 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                     pi.is_active,
                     pi.display_order,
                     pi.created_at as profile_created_at,
-                    pi.updated_at as profile_updated_at,
                     gli.id as guest_list_item_id,
                     gli.event_title,
                     gli.event_description,
