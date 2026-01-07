@@ -61,13 +61,25 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
         const registrationToken = crypto.randomBytes(16).toString('hex');
         const confirmationToken = crypto.randomBytes(16).toString('hex');
         
-        // Criar profile_item
+        // Criar profile_item - usar parâmetros separados para evitar erro de tipo inconsistente
+        const itemTitle = title || 'Nova Lista de Convidados';
+        const userIdStr = String(userId);
+        
+        // Primeiro obter o próximo display_order
+        const orderResult = await client.query(`
+            SELECT COALESCE(MAX(display_order), 0) + 1 as next_order
+            FROM profile_items 
+            WHERE user_id = $1
+        `, [userIdStr]);
+        
+        const nextOrder = orderResult.rows[0].next_order;
+        
+        // Agora inserir com o display_order calculado
         const itemResult = await client.query(`
             INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
-            VALUES ($1, 'guest_list', $2, true, 
-                (SELECT COALESCE(MAX(display_order), 0) + 1 FROM profile_items WHERE user_id = $1))
+            VALUES ($1, 'guest_list', $2, true, $3)
             RETURNING id
-        `, [userId, title || 'Nova Lista de Convidados']);
+        `, [userIdStr, itemTitle, nextOrder]);
         
         const profileItemId = itemResult.rows[0].id;
         
