@@ -1585,6 +1585,21 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
         }
 
+        // Se o item era guest_list, atualizar para digital_form
+        const checkItemType = await client.query(
+            'SELECT item_type FROM profile_items WHERE id = $1 AND user_id = $2',
+            [itemId, userId]
+        );
+        if (checkItemType.rows.length > 0 && checkItemType.rows[0].item_type === 'guest_list') {
+            console.log(`🔄 [DIGITAL_FORM] Convertendo item_type de guest_list para digital_form para item ${itemId}`);
+            // Verificar se item_type já está sendo atualizado
+            const hasItemType = updateFields.some(field => field.startsWith('item_type ='));
+            if (!hasItemType) {
+                updateFields.push(`item_type = $${paramIndex++}`);
+                updateValues.push('digital_form');
+            }
+        }
+        
         if (updateFields.length > 0) {
             updateValues.push(itemId, userId);
             const profileQuery = `
