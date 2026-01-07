@@ -13,7 +13,7 @@
     <style>
         :root {
             --primary-color: <%= formData.primary_color || '#4A90E2' %>;
-            --secondary-color: <%= formData.secondary_color || (formData.primary_color || '#4A90E2') %>;
+            --secondary-color: <%= (formData.secondary_color && formData.secondary_color.trim()) ? formData.secondary_color : (formData.primary_color || '#4A90E2') %>;
             --text-color: <%= formData.text_color || '#333333' %>;
             --background-color: <%= formData.background_color || '#FFFFFF' %>;
             --theme: <%= formData.theme || 'light' %>;

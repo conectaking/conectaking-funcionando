@@ -1440,6 +1440,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             whatsapp_number,
             enable_pastor_button,
             pastor_whatsapp_number,
+            pastor_button_name,
             display_format,
             banner_image_url,
             header_image_url,
@@ -1449,6 +1450,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             form_fields,
             theme,
             primary_color,
+            secondary_color,
             text_color,
             is_active, 
             display_order,
@@ -1688,9 +1690,33 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 updateFormFields.push(`primary_color = $${formParamIndex++}`);
                 updateFormValues.push(primary_color || '#4A90E2');
             }
+            // Verificar se coluna secondary_color existe antes de atualizar
+            if (secondary_color !== undefined) {
+                const secondaryColorCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'secondary_color'
+                `);
+                if (secondaryColorCheck.rows.length > 0) {
+                    updateFormFields.push(`secondary_color = $${formParamIndex++}`);
+                    updateFormValues.push(secondary_color || null);
+                }
+            }
             if (text_color !== undefined) {
                 updateFormFields.push(`text_color = $${formParamIndex++}`);
                 updateFormValues.push(text_color || '#333333');
+            }
+            // Verificar se coluna pastor_button_name existe antes de atualizar
+            if (pastor_button_name !== undefined) {
+                const pastorButtonNameCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'pastor_button_name'
+                `);
+                if (pastorButtonNameCheck.rows.length > 0) {
+                    updateFormFields.push(`pastor_button_name = $${formParamIndex++}`);
+                    updateFormValues.push(pastor_button_name || 'Enviar Mensagem para o Pastor');
+                }
             }
             if (header_image_url !== undefined) {
                 updateFormFields.push(`header_image_url = $${formParamIndex++}`);
@@ -1729,19 +1755,21 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
         } else {
             // Criar novo registro
-            // Verificar se colunas do pastor, logo corner, button_logo_url, button_logo_size e background_color existem
+            // Verificar se colunas do pastor, logo corner, button_logo_url, button_logo_size, background_color, secondary_color e pastor_button_name existem
             const extraColumnsCheck = await client.query(`
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'digital_form_items'
-                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'show_logo_corner', 'button_logo_url', 'button_logo_size', 'background_color')
+                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'pastor_button_name', 'show_logo_corner', 'button_logo_url', 'button_logo_size', 'background_color', 'secondary_color')
             `);
             const existingColumns = extraColumnsCheck.rows.map(r => r.column_name);
             const hasPastorColumns = existingColumns.includes('enable_pastor_button');
+            const hasPastorButtonName = existingColumns.includes('pastor_button_name');
             const hasLogoCorner = existingColumns.includes('show_logo_corner');
             const hasButtonLogo = existingColumns.includes('button_logo_url');
             const hasButtonLogoSize = existingColumns.includes('button_logo_size');
             const hasBackgroundColor = existingColumns.includes('background_color');
+            const hasSecondaryColor = existingColumns.includes('secondary_color');
             
             let extraFields = '';
             let extraValues = '';
@@ -1760,6 +1788,11 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 extraValues += `, $${paramIdx++}, $${paramIdx++}`;
                 extraParams.push(enable_pastor_button || false, pastor_whatsapp_number || null);
             }
+            if (hasPastorButtonName && pastor_button_name !== undefined) {
+                extraFields += ', pastor_button_name';
+                extraValues += `, $${paramIdx++}`;
+                extraParams.push(pastor_button_name || 'Enviar Mensagem para o Pastor');
+            }
             if (hasLogoCorner) {
                 extraFields += ', show_logo_corner';
                 extraValues += `, $${paramIdx++}`;
@@ -1770,21 +1803,16 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 extraValues += `, $${paramIdx++}`;
                 extraParams.push(background_color || '#FFFFFF');
             }
-            if (hasBackgroundColor && background_color !== undefined) {
-                extraFields += ', background_color';
+            if (hasSecondaryColor && secondary_color !== undefined) {
+                extraFields += ', secondary_color';
                 extraValues += `, $${paramIdx++}`;
-                extraParams.push(background_color || '#FFFFFF');
+                extraParams.push(secondary_color || null);
             }
             
-            await client.query(`
-                INSERT INTO digital_form_items (
-                    profile_item_id, form_title, form_logo_url, form_description,
-                    prayer_requests_text, meetings_text, welcome_text,
-                    whatsapp_number, display_format, banner_image_url,
-                    header_image_url, background_image_url, background_opacity,
-                    form_fields, theme, primary_color, text_color${extraFields}
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15, $16, $17${extraValues})
-            `, [
+            // Construir lista de campos e valores dinamicamente
+            let insertFields = 'profile_item_id, form_title, form_logo_url, form_description, prayer_requests_text, meetings_text, welcome_text, whatsapp_number, display_format, banner_image_url, header_image_url, background_image_url, background_opacity, form_fields, theme, primary_color';
+            let insertValues = '$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15, $16';
+            let insertParams = [
                 itemId,
                 form_title || 'Formulário King',
                 form_logo_url || null,
@@ -1800,10 +1828,33 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 background_opacity !== undefined ? background_opacity : 1.0,
                 formFieldsJSON,
                 theme || 'light',
-                primary_color || '#4A90E2',
-                text_color || '#333333',
-                ...extraParams
-            ]);
+                primary_color || '#4A90E2'
+            ];
+            let paramCounter = 17;
+            
+            // Adicionar secondary_color se existir
+            if (hasSecondaryColor && secondary_color !== undefined) {
+                insertFields += ', secondary_color';
+                insertValues += `, $${paramCounter++}`;
+                insertParams.push(secondary_color || null);
+            }
+            
+            // Adicionar text_color
+            insertFields += ', text_color';
+            insertValues += `, $${paramCounter++}`;
+            insertParams.push(text_color || '#333333');
+            
+            // Adicionar campos extras
+            if (extraFields) {
+                insertFields += extraFields;
+                insertValues += extraValues;
+                insertParams.push(...extraParams);
+            }
+            
+            await client.query(`
+                INSERT INTO digital_form_items (${insertFields})
+                VALUES (${insertValues})
+            `, insertParams);
         }
 
         // Buscar dados atualizados
