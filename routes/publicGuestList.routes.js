@@ -23,6 +23,10 @@ router.get('/register/:token', asyncHandler(async (req, res) => {
                 gli.background_image_url,
                 gli.background_opacity,
                 gli.theme,
+                COALESCE(gli.whatsapp_number, '') as whatsapp_number,
+                COALESCE(gli.enable_whatsapp, true) as enable_whatsapp,
+                COALESCE(gli.enable_pastor_button, false) as enable_pastor_button,
+                COALESCE(gli.pastor_whatsapp_number, '') as pastor_whatsapp_number,
                 pi.title,
                 pi.user_id,
                 u.profile_slug

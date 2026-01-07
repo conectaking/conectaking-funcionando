@@ -43,6 +43,10 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 gli.background_image_url,
                 COALESCE(gli.background_opacity, 1.0) as background_opacity,
                 COALESCE(gli.theme, 'dark') as theme,
+                COALESCE(gli.whatsapp_number, '') as whatsapp_number,
+                COALESCE(gli.enable_whatsapp, true) as enable_whatsapp,
+                COALESCE(gli.enable_pastor_button, false) as enable_pastor_button,
+                COALESCE(gli.pastor_whatsapp_number, '') as pastor_whatsapp_number,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'registered') as registered_count,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'confirmed') as confirmed_count,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'checked_in') as checked_in_count
@@ -409,6 +413,10 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                         gli.background_image_url,
                         COALESCE(gli.background_opacity, 1.0) as background_opacity,
                         COALESCE(gli.theme, 'dark') as theme,
+                        COALESCE(gli.whatsapp_number, '') as whatsapp_number,
+                        COALESCE(gli.enable_whatsapp, true) as enable_whatsapp,
+                        COALESCE(gli.enable_pastor_button, false) as enable_pastor_button,
+                        COALESCE(gli.pastor_whatsapp_number, '') as pastor_whatsapp_number,
                         gli.created_at as guest_list_created_at,
                         gli.updated_at as guest_list_updated_at
                     FROM profile_items pi
@@ -468,20 +476,85 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             header_image_url,
             background_image_url,
             background_opacity,
-            theme
+            theme,
+            whatsapp_number,
+            enable_whatsapp,
+            enable_pastor_button,
+            pastor_whatsapp_number
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
         // Aceita tanto item_type = 'guest_list' quanto 'digital_form' (formulário convertido)
-        const checkResult = await client.query(`
+        let checkResult = await client.query(`
             SELECT pi.id, gli.id as guest_list_item_id
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
             WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
+        // Se não encontrou, criar automaticamente
         if (checkResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Lista não encontrada' });
+            // Verificar se o profile_item existe
+            const profileItemCheck = await client.query(`
+                SELECT id, item_type, title, user_id
+                FROM profile_items
+                WHERE id = $1 AND user_id = $2
+            `, [listId, userId]);
+            
+            if (profileItemCheck.rows.length === 0) {
+                logger.warn(`Profile item não encontrado: listId=${listId}, userId=${userId}`);
+                return res.status(404).json({ 
+                    message: 'Item não encontrado ou você não tem permissão para acessá-lo',
+                    code: 'PROFILE_ITEM_NOT_FOUND'
+                });
+            }
+            
+            // Criar lista automaticamente
+            const profileItem = profileItemCheck.rows[0];
+            logger.info(`Criando lista de convidados automaticamente para profile_item ${listId}`);
+            
+            const crypto = require('crypto');
+            const registrationToken = crypto.randomBytes(16).toString('hex');
+            const confirmationToken = crypto.randomBytes(16).toString('hex');
+            const publicViewToken = crypto.randomBytes(16).toString('hex');
+            
+            const createResult = await client.query(`
+                INSERT INTO guest_list_items (
+                    profile_item_id,
+                    event_title,
+                    event_description,
+                    registration_token,
+                    confirmation_token,
+                    public_view_token,
+                    allow_self_registration,
+                    require_confirmation,
+                    max_guests,
+                    created_at,
+                    updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+                RETURNING id
+            `, [
+                listId,
+                profileItem.title || 'Lista de Convidados',
+                '',
+                registrationToken,
+                confirmationToken,
+                publicViewToken,
+                true,
+                true,
+                null
+            ]);
+            
+            const guestListItemId = createResult.rows[0].id;
+            logger.info(`Lista de convidados criada automaticamente: guest_list_item_id=${guestListItemId}`);
+            
+            // Refazer a busca com o ID criado
+            checkResult = await client.query(`
+                SELECT pi.id, gli.id as guest_list_item_id
+                FROM profile_items pi
+                INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+                WHERE pi.id = $1 AND pi.user_id = $2
+            `, [listId, userId]);
         }
         
         const guestListItemId = checkResult.rows[0].guest_list_item_id;
@@ -588,12 +661,28 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             guestListUpdateFields.push(`theme = $${guestListParamIndex++}`);
             guestListUpdateValues.push(theme);
         }
+        if (whatsapp_number !== undefined) {
+            guestListUpdateFields.push(`whatsapp_number = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(whatsapp_number || null);
+        }
+        if (enable_whatsapp !== undefined) {
+            guestListUpdateFields.push(`enable_whatsapp = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(enable_whatsapp !== false); // Default true
+        }
+        if (enable_pastor_button !== undefined) {
+            guestListUpdateFields.push(`enable_pastor_button = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(enable_pastor_button === true);
+        }
+        if (pastor_whatsapp_number !== undefined) {
+            guestListUpdateFields.push(`pastor_whatsapp_number = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(pastor_whatsapp_number || null);
+        }
         
         if (guestListUpdateFields.length > 0) {
             guestListUpdateValues.push(guestListItemId);
             await client.query(`
                 UPDATE guest_list_items 
-                SET ${guestListUpdateFields.join(', ')}
+                SET ${guestListUpdateFields.join(', ')}, updated_at = NOW()
                 WHERE id = $${guestListParamIndex++}
             `, guestListUpdateValues);
         }
