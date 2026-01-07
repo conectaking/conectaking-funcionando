@@ -1452,6 +1452,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             primary_color,
             secondary_color,
             text_color,
+            card_color,
             is_active, 
             display_order,
             is_listed,
@@ -1706,6 +1707,18 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 updateFormFields.push(`text_color = $${formParamIndex++}`);
                 updateFormValues.push(text_color || '#333333');
             }
+            // Verificar se coluna card_color existe antes de atualizar
+            if (card_color !== undefined) {
+                const cardColorCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'card_color'
+                `);
+                if (cardColorCheck.rows.length > 0) {
+                    updateFormFields.push(`card_color = $${formParamIndex++}`);
+                    updateFormValues.push(card_color || '#FFFFFF');
+                }
+            }
             // Verificar se coluna pastor_button_name existe antes de atualizar
             if (pastor_button_name !== undefined) {
                 const pastorButtonNameCheck = await client.query(`
@@ -1755,12 +1768,12 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
         } else {
             // Criar novo registro
-            // Verificar se colunas do pastor, logo corner, button_logo_url, button_logo_size, background_color, secondary_color e pastor_button_name existem
+            // Verificar se colunas do pastor, logo corner, button_logo_url, button_logo_size, background_color, secondary_color, card_color e pastor_button_name existem
             const extraColumnsCheck = await client.query(`
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'digital_form_items'
-                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'pastor_button_name', 'show_logo_corner', 'button_logo_url', 'button_logo_size', 'background_color', 'secondary_color')
+                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'pastor_button_name', 'show_logo_corner', 'button_logo_url', 'button_logo_size', 'background_color', 'secondary_color', 'card_color')
             `);
             const existingColumns = extraColumnsCheck.rows.map(r => r.column_name);
             const hasPastorColumns = existingColumns.includes('enable_pastor_button');
@@ -1770,6 +1783,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             const hasButtonLogoSize = existingColumns.includes('button_logo_size');
             const hasBackgroundColor = existingColumns.includes('background_color');
             const hasSecondaryColor = existingColumns.includes('secondary_color');
+            const hasCardColor = existingColumns.includes('card_color');
             
             let extraFields = '';
             let extraValues = '';
@@ -1807,6 +1821,11 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 extraFields += ', secondary_color';
                 extraValues += `, $${paramIdx++}`;
                 extraParams.push(secondary_color || null);
+            }
+            if (hasCardColor && card_color !== undefined) {
+                extraFields += ', card_color';
+                extraValues += `, $${paramIdx++}`;
+                extraParams.push(card_color || '#FFFFFF');
             }
             
             // Construir lista de campos e valores dinamicamente

@@ -42,6 +42,25 @@ BEGIN
     END IF;
 END $$;
 
+-- Adicionar coluna card_color
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'digital_form_items' 
+        AND column_name = 'card_color'
+    ) THEN
+        ALTER TABLE digital_form_items 
+        ADD COLUMN card_color VARCHAR(7) DEFAULT '#FFFFFF';
+        
+        COMMENT ON COLUMN digital_form_items.card_color IS 'Cor do fundo dos cards/containers brancos do formulário';
+        
+        RAISE NOTICE 'Coluna card_color adicionada com sucesso!';
+    ELSE
+        RAISE NOTICE 'Coluna card_color já existe.';
+    END IF;
+END $$;
+
 -- Verificação final
-SELECT 'Migration 059 concluída com sucesso! Colunas secondary_color e pastor_button_name adicionadas.' AS status;
+SELECT 'Migration 059 concluída com sucesso! Colunas secondary_color, pastor_button_name e card_color adicionadas.' AS status;
 

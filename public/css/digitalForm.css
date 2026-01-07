@@ -259,7 +259,7 @@ body {
 }
 
 .form-description {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    background: linear-gradient(135deg, var(--card-color, #ffffff) 0%, var(--card-color, #f8f9fa) 100%);
     padding: 32px 40px;
     border-radius: 20px;
     margin-bottom: 32px;
@@ -349,7 +349,7 @@ body {
 
 /* Formulário Premium - Estilo Checkout */
 .digital-form {
-    background: white;
+    background: var(--card-color, white);
     padding: 48px 56px;
     border-radius: 24px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.1);

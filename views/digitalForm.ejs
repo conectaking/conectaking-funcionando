@@ -16,6 +16,7 @@
             --secondary-color: <%= (formData.secondary_color && formData.secondary_color.trim()) ? formData.secondary_color : (formData.primary_color || '#4A90E2') %>;
             --text-color: <%= formData.text_color || '#333333' %>;
             --background-color: <%= formData.background_color || '#FFFFFF' %>;
+            --card-color: <%= formData.card_color || '#FFFFFF' %>;
             --theme: <%= formData.theme || 'light' %>;
         }
         <% if (formData.background_image_url) { %>
@@ -86,7 +87,7 @@
     
     <!-- Logo fixo no cantinho (se configurado) -->
     <% if (formData.form_logo_url && formData.show_logo_corner) { %>
-    <div class="corner-logo" style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: white; padding: 12px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: all 0.3s; max-width: 120px; max-height: 120px; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 30px rgba(0,0,0,0.25)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.15)';">
+    <div class="corner-logo" style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--card-color, white); padding: 12px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: all 0.3s; max-width: 120px; max-height: 120px; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 30px rgba(0,0,0,0.25)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.15)';">
         <img src="<%= formData.form_logo_url %>" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain; display: block;">
     </div>
     <% } %>
@@ -161,7 +162,7 @@
                 
                 <!-- Sidebar - Informações Adicionais (Estilo Checkout) -->
                 <aside class="checkout-sidebar" style="position: sticky; top: 100px;">
-                    <div class="checkout-sidebar-card" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 20px; padding: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06); animation: fadeInUp 0.6s ease-out;">
+                    <div class="checkout-sidebar-card" style="background: linear-gradient(135deg, var(--card-color, #f8f9fa) 0%, var(--card-color, #ffffff) 100%); border-radius: 20px; padding: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06); animation: fadeInUp 0.6s ease-out;">
                         <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #e8eaed;">
                             <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: var(--text-color, #202124); display: flex; align-items: center; gap: 10px;">
                                 <i class="fas fa-shield-alt" style="color: var(--primary-color, #4A90E2);"></i>
@@ -984,6 +985,21 @@
         }
         <% } %>
     </script>
+    
+    <!-- Rodapé com Direitos Autorais -->
+    <footer style="margin-top: 60px; padding: 40px 24px; text-align: center; border-top: 1px solid rgba(0,0,0,0.1); background: <%= formData.background_color || 'transparent' %>;">
+        <div style="max-width: 1000px; margin: 0 auto;">
+            <p style="margin: 0 0 12px 0; color: var(--text-color, #5f6368); font-size: 14px; line-height: 1.6;">
+                <strong style="color: var(--primary-color, #4A90E2);">King Forms</strong> é um sistema desenvolvido pela <strong style="color: var(--primary-color, #4A90E2);">Conecta King</strong>
+            </p>
+            <p style="margin: 0; color: var(--text-color, #5f6368); font-size: 13px; opacity: 0.8;">
+                © <%= new Date().getFullYear() %> Conecta King. Todos os direitos reservados.
+            </p>
+            <p style="margin: 12px 0 0 0; color: var(--text-color, #5f6368); font-size: 12px; opacity: 0.7;">
+                King Forms é uma solução premium para criação de formulários digitais profissionais.
+            </p>
+        </div>
+    </footer>
 </body>
 </html>
 
