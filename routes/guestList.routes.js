@@ -49,7 +49,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
             LEFT JOIN guests g ON g.guest_list_id = gli.id
-            WHERE pi.user_id = $1 AND pi.item_type = 'guest_list' AND pi.is_active = true
+            WHERE pi.user_id = $1 AND pi.is_active = true
             GROUP BY pi.id, pi.user_id, pi.item_type, pi.title, pi.is_active, pi.display_order, 
                      pi.created_at, gli.id, gli.event_title, gli.event_description, 
                      gli.event_date, gli.event_location, gli.registration_token, gli.confirmation_token, 
@@ -472,11 +472,12 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
+        // Aceita tanto item_type = 'guest_list' quanto 'digital_form' (formulário convertido)
         const checkResult = await client.query(`
             SELECT pi.id, gli.id as guest_list_item_id
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
         if (checkResult.rows.length === 0) {
@@ -671,7 +672,7 @@ router.get('/:id/guests', protectUser, asyncHandler(async (req, res) => {
             SELECT gli.id as guest_list_item_id
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
         // Se não encontrar, tentar buscar pelo id da guest_list_items
@@ -680,12 +681,67 @@ router.get('/:id/guests', protectUser, asyncHandler(async (req, res) => {
                 SELECT gli.id as guest_list_item_id
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+                WHERE gli.id = $1 AND pi.user_id = $2
             `, [listId, userId]);
         }
         
         if (checkResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Lista não encontrada' });
+            // Se não encontrou, pode ser que o formulário ainda não tenha uma lista associada
+            // Verificar se o profile_item existe e criar a lista automaticamente
+            const profileItemCheck = await client.query(`
+                SELECT id, item_type, title, user_id
+                FROM profile_items
+                WHERE id = $1 AND user_id = $2
+            `, [listId, userId]);
+            
+            if (profileItemCheck.rows.length === 0) {
+                logger.warn(`Profile item não encontrado: listId=${listId}, userId=${userId}`);
+                return res.status(404).json({ 
+                    message: 'Item não encontrado ou você não tem permissão para acessá-lo',
+                    code: 'PROFILE_ITEM_NOT_FOUND'
+                });
+            }
+            
+            // Criar lista automaticamente
+            const profileItem = profileItemCheck.rows[0];
+            logger.info(`Criando lista de convidados automaticamente para profile_item ${listId}`);
+            
+            const registrationToken = crypto.randomBytes(16).toString('hex');
+            const confirmationToken = crypto.randomBytes(16).toString('hex');
+            const publicViewToken = crypto.randomBytes(16).toString('hex');
+            
+            const createResult = await client.query(`
+                INSERT INTO guest_list_items (
+                    profile_item_id,
+                    event_title,
+                    event_description,
+                    registration_token,
+                    confirmation_token,
+                    public_view_token,
+                    allow_self_registration,
+                    require_confirmation,
+                    max_guests,
+                    created_at,
+                    updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+                RETURNING id
+            `, [
+                listId,
+                profileItem.title || 'Lista de Convidados',
+                '',
+                registrationToken,
+                confirmationToken,
+                publicViewToken,
+                true,
+                true,
+                null
+            ]);
+            
+            const guestListItemId = createResult.rows[0].id;
+            logger.info(`Lista de convidados criada automaticamente: guest_list_item_id=${guestListItemId}`);
+            
+            // Retornar array vazio já que acabou de criar
+            return res.json([]);
         }
         
         const guestListItemId = checkResult.rows[0].guest_list_item_id;
@@ -779,7 +835,7 @@ router.post('/:id/guests', protectUser, asyncHandler(async (req, res) => {
             SELECT gli.id as guest_list_item_id, gli.max_guests
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
         // Se não encontrar, tentar buscar pelo id da guest_list_items
@@ -788,7 +844,7 @@ router.post('/:id/guests', protectUser, asyncHandler(async (req, res) => {
                 SELECT gli.id as guest_list_item_id, gli.max_guests
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+                WHERE gli.id = $1 AND pi.user_id = $2
             `, [listId, userId]);
         }
         
@@ -862,7 +918,7 @@ router.put('/:id/guests/:guestId', protectUser, asyncHandler(async (req, res) =>
             SELECT gli.id as guest_list_item_id
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
         // Se não encontrar, tentar buscar pelo id da guest_list_items
@@ -871,7 +927,7 @@ router.put('/:id/guests/:guestId', protectUser, asyncHandler(async (req, res) =>
                 SELECT gli.id as guest_list_item_id
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+                WHERE gli.id = $1 AND pi.user_id = $2
             `, [listId, userId]);
         }
         
@@ -1017,7 +1073,7 @@ router.delete('/:id/guests/:guestId', protectUser, asyncHandler(async (req, res)
             SELECT gli.id as guest_list_item_id
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
         // Se não encontrar, tentar buscar pelo id da guest_list_items
@@ -1026,7 +1082,7 @@ router.delete('/:id/guests/:guestId', protectUser, asyncHandler(async (req, res)
                 SELECT gli.id as guest_list_item_id
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+                WHERE gli.id = $1 AND pi.user_id = $2
             `, [listId, userId]);
         }
         
@@ -1076,7 +1132,7 @@ router.get('/:id/stats', protectUser, asyncHandler(async (req, res) => {
             SELECT gli.id as guest_list_item_id
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
         // Se não encontrar, tentar buscar pelo id da guest_list_items
@@ -1085,7 +1141,7 @@ router.get('/:id/stats', protectUser, asyncHandler(async (req, res) => {
                 SELECT gli.id as guest_list_item_id
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+                WHERE gli.id = $1 AND pi.user_id = $2
             `, [listId, userId]);
         }
         
@@ -1388,7 +1444,7 @@ router.delete('/:id', protectUser, asyncHandler(async (req, res) => {
             SELECT pi.id
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
         if (checkResult.rows.length === 0) {
@@ -1426,7 +1482,7 @@ router.get('/:id/export/pdf', protectUser, asyncHandler(async (req, res) => {
             SELECT gli.id as guest_list_item_id, gli.event_title, pi.title
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
         if (checkResult.rows.length === 0) {
@@ -1434,7 +1490,7 @@ router.get('/:id/export/pdf', protectUser, asyncHandler(async (req, res) => {
                 SELECT gli.id as guest_list_item_id, gli.event_title, pi.title
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+                WHERE gli.id = $1 AND pi.user_id = $2
             `, [listId, userId]);
         }
         
