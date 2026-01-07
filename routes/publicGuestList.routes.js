@@ -12,10 +12,17 @@ router.get('/register/:token', asyncHandler(async (req, res) => {
     try {
         const { token } = req.params;
         
-        // Buscar lista pelo token
+        // Buscar lista pelo token (incluindo campos de estilo)
         const listResult = await client.query(`
             SELECT 
                 gli.*,
+                gli.primary_color,
+                gli.text_color,
+                gli.background_color,
+                gli.header_image_url,
+                gli.background_image_url,
+                gli.background_opacity,
+                gli.theme,
                 pi.title,
                 pi.user_id,
                 u.profile_slug
@@ -34,6 +41,16 @@ router.get('/register/:token', asyncHandler(async (req, res) => {
                     listResult.rows[0].custom_form_fields = [];
                 }
             }
+        }
+        
+        // Garantir que os campos de estilo estejam presentes (valores padrão se não existirem)
+        if (listResult.rows.length > 0) {
+            const row = listResult.rows[0];
+            row.primary_color = row.primary_color || '#FFC700';
+            row.text_color = row.text_color || '#ECECEC';
+            row.background_color = row.background_color || '#0D0D0F';
+            row.background_opacity = row.background_opacity !== undefined ? parseFloat(row.background_opacity) : 1.0;
+            row.theme = row.theme || 'dark';
         }
         
         if (listResult.rows.length === 0) {
@@ -55,6 +72,13 @@ router.get('/register/:token', asyncHandler(async (req, res) => {
         } else if (!guestList.custom_form_fields) {
             guestList.custom_form_fields = [];
         }
+        
+        // Garantir que os campos de estilo estejam presentes (valores padrão se não existirem)
+        guestList.primary_color = guestList.primary_color || '#FFC700';
+        guestList.text_color = guestList.text_color || '#ECECEC';
+        guestList.background_color = guestList.background_color || '#0D0D0F';
+        guestList.background_opacity = guestList.background_opacity !== undefined && guestList.background_opacity !== null ? parseFloat(guestList.background_opacity) : 1.0;
+        guestList.theme = guestList.theme || 'dark';
         
         // Verificar se ainda há vagas
         const countResult = await client.query(`

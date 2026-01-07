@@ -15,11 +15,36 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0D0D0F 0%, #1C1C21 100%);
+            <% if (guestList.background_image_url) { %>
+            background-image: url('<%= guestList.background_image_url %>');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: <%= guestList.background_color || '#0D0D0F' %>;
+            <% if (guestList.background_opacity !== undefined && guestList.background_opacity < 1) { %>
+            position: relative;
+            <% } %>
+            <% } else { %>
+            background: linear-gradient(135deg, <%= guestList.background_color || '#0D0D0F' %> 0%, #1C1C21 100%);
+            <% } %>
             min-height: 100vh;
             padding: 20px;
-            color: #ECECEC;
+            color: <%= guestList.text_color || '#ECECEC' %>;
         }
+        
+        <% if (guestList.background_image_url && guestList.background_opacity !== undefined && guestList.background_opacity < 1) { %>
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: <%= guestList.background_color || '#0D0D0F' %>;
+            opacity: <%= 1 - (parseFloat(guestList.background_opacity) || 0) %>;
+            z-index: -1;
+        }
+        <% } %>
         
         .container {
             max-width: 600px;
@@ -35,9 +60,25 @@
         .header h1 {
             font-size: 32px;
             font-weight: 800;
-            color: #FFC700;
+            color: <%= guestList.primary_color || '#FFC700' %>;
             margin-bottom: 12px;
         }
+        
+        <% if (guestList.header_image_url) { %>
+        .header-image {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .header-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        <% } %>
         
         .header p {
             color: #A1A1A1;
@@ -75,17 +116,19 @@
             transition: all 0.3s;
         }
         
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
             outline: none;
-            border-color: #FFC700;
-            box-shadow: 0 0 0 3px rgba(255, 199, 0, 0.1);
+            border-color: <%= guestList.primary_color || '#FFC700' %>;
+            box-shadow: 0 0 0 3px <%= (guestList.primary_color || '#FFC700') %>33;
         }
         
         .btn-submit {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, #FFC700, #FFA500);
-            color: #000;
+            background: linear-gradient(135deg, <%= guestList.primary_color || '#FFC700' %>, <%= guestList.primary_color || '#FFC700' %>dd);
+            color: <%= (guestList.theme === 'dark' || !guestList.theme) ? '#000' : '#FFF' %>;
             border: none;
             border-radius: 12px;
             font-size: 18px;
@@ -97,7 +140,13 @@
         
         .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(255, 199, 0, 0.4);
+            box-shadow: 0 8px 24px <%= (guestList.primary_color || '#FFC700') %>66;
+        }
+        
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
         
         .btn-submit:disabled {
@@ -166,9 +215,17 @@
 </head>
 <body>
     <div class="container">
+        <% if (guestList.header_image_url) { %>
+        <div class="header-image">
+            <img src="<%= guestList.header_image_url %>" alt="<%= guestList.event_title || 'Evento' %>">
+        </div>
+        <% } %>
         <div class="header">
             <h1><i class="fas fa-user-plus"></i> Inscrição no Evento</h1>
             <p><%= guestList.event_title || 'Evento' %></p>
+            <% if (guestList.event_description) { %>
+            <p style="margin-top: 8px; color: #A1A1A1; font-size: 14px;"><%= guestList.event_description %></p>
+            <% } %>
         </div>
         
         <% if (isFull) { %>
@@ -376,19 +433,95 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
             
+            // Coletar campos padrão
             const formData = {
                 name: document.getElementById('name').value.trim(),
                 whatsapp: document.getElementById('whatsapp').value.trim(),
                 document: document.getElementById('document').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                phone: document.getElementById('phone').value.trim(),
-                address: document.getElementById('address').value.trim(),
-                neighborhood: document.getElementById('neighborhood').value.trim(),
-                city: document.getElementById('city').value.trim(),
-                state: document.getElementById('state').value.trim().toUpperCase(),
-                zipcode: document.getElementById('zipcode').value.trim(),
-                instagram: document.getElementById('instagram').value.trim()
+                email: document.getElementById('email')?.value.trim() || '',
+                phone: document.getElementById('phone')?.value.trim() || '',
+                address: document.getElementById('address')?.value.trim() || '',
+                neighborhood: document.getElementById('neighborhood')?.value.trim() || '',
+                city: document.getElementById('city')?.value.trim() || '',
+                state: document.getElementById('state')?.value.trim().toUpperCase() || '',
+                zipcode: document.getElementById('zipcode')?.value.trim() || '',
+                instagram: document.getElementById('instagram')?.value.trim() || ''
             };
+            
+            // Coletar campos customizados se existirem
+            const customResponses = {};
+            const customFieldsContainer = document.getElementById('custom-fields-container');
+            if (customFieldsContainer) {
+                // Coletar todos os campos (incluindo radio e checkbox)
+                const allCustomFields = customFieldsContainer.querySelectorAll('[name^="custom_"]');
+                const fieldGroups = {};
+                
+                // Agrupar campos por name (para radio e checkbox que têm múltiplos inputs)
+                allCustomFields.forEach(field => {
+                    const fieldName = field.name.replace(/^custom_/, '');
+                    if (!fieldGroups[fieldName]) {
+                        fieldGroups[fieldName] = [];
+                    }
+                    fieldGroups[fieldName].push(field);
+                });
+                
+                // Processar cada grupo de campos
+                Object.keys(fieldGroups).forEach(fieldName => {
+                    const fields = fieldGroups[fieldName];
+                    if (fields.length === 1) {
+                        // Campo único (input, textarea, select)
+                        const field = fields[0];
+                        const value = field.value.trim();
+                        if (value) {
+                            customResponses[fieldName] = value;
+                        }
+                    } else {
+                        // Múltiplos campos (radio ou checkbox)
+                        const checkedFields = fields.filter(f => f.checked || f.value);
+                        if (checkedFields.length > 0) {
+                            if (checkedFields[0].type === 'checkbox') {
+                                // Checkbox: array de valores
+                                customResponses[fieldName] = checkedFields.map(f => f.value.trim());
+                            } else {
+                                // Radio: valor único selecionado
+                                const checked = checkedFields.find(f => f.checked);
+                                if (checked) {
+                                    customResponses[fieldName] = checked.value.trim();
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Validar campos obrigatórios customizados
+                const requiredCustomFields = customFieldsContainer.querySelectorAll('[required]');
+                for (const field of requiredCustomFields) {
+                    const fieldName = field.name.replace(/^custom_/, '');
+                    if (field.type === 'checkbox' || field.type === 'radio') {
+                        // Para checkbox/radio, verificar se pelo menos um está marcado
+                        const sameNameFields = customFieldsContainer.querySelectorAll(`[name="${field.name}"]:checked`);
+                        if (sameNameFields.length === 0) {
+                            alert(`Por favor, preencha o campo: ${fieldName}`);
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
+                            return;
+                        }
+                    } else {
+                        // Campo normal
+                        if (!field.value || !field.value.trim()) {
+                            alert(`Por favor, preencha o campo: ${fieldName}`);
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // Adicionar custom_responses se houver campos customizados
+            if (Object.keys(customResponses).length > 0) {
+                formData.custom_responses = customResponses;
+            }
             
             // Validações obrigatórias
             if (!formData.name) {
@@ -421,7 +554,17 @@
                     body: JSON.stringify(formData)
                 });
                 
-                const result = await response.json();
+                // Verificar se a resposta tem conteúdo antes de parsear JSON
+                const contentType = response.headers.get('content-type');
+                let result;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error('Resposta não é JSON:', text);
+                    throw new Error('Resposta inválida do servidor');
+                }
                 
                 if (response.ok) {
                     form.innerHTML = `
@@ -438,7 +581,16 @@
                     throw new Error(result.message || 'Erro ao realizar inscrição');
                 }
             } catch (error) {
-                alert('Erro ao realizar inscrição: ' + error.message);
+                console.error('Erro ao realizar inscrição:', error);
+                let errorMessage = 'Erro ao realizar inscrição';
+                
+                if (error.message) {
+                    errorMessage = error.message;
+                } else if (error instanceof TypeError && error.message.includes('fetch')) {
+                    errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+                }
+                
+                alert(errorMessage);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
             }

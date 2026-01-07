@@ -36,13 +36,13 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 gli.custom_form_fields,
                 gli.use_custom_form,
                 gli.public_view_token,
-                gli.primary_color,
-                gli.text_color,
-                gli.background_color,
+                COALESCE(gli.primary_color, '#FFC700') as primary_color,
+                COALESCE(gli.text_color, '#ECECEC') as text_color,
+                COALESCE(gli.background_color, '#0D0D0F') as background_color,
                 gli.header_image_url,
                 gli.background_image_url,
-                gli.background_opacity,
-                gli.theme,
+                COALESCE(gli.background_opacity, 1.0) as background_opacity,
+                COALESCE(gli.theme, 'dark') as theme,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'registered') as registered_count,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'confirmed') as confirmed_count,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'checked_in') as checked_in_count
@@ -244,6 +244,7 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
         logger.info(`Buscando lista de convidados: listId=${listId}, userId=${userId}`);
         
         // Buscar primeiro por profile_item_id
+        // Usar COALESCE para garantir valores padrão caso os campos não existam
         let result = await client.query(`
             SELECT 
                 pi.id as profile_item_id,
@@ -266,20 +267,18 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.custom_form_fields,
                 gli.use_custom_form,
                 gli.public_view_token,
-                gli.primary_color,
-                gli.text_color,
-                gli.background_color,
+                COALESCE(gli.primary_color, '#FFC700') as primary_color,
+                COALESCE(gli.text_color, '#ECECEC') as text_color,
+                COALESCE(gli.background_color, '#0D0D0F') as background_color,
                 gli.header_image_url,
                 gli.background_image_url,
-                gli.background_opacity,
-                gli.theme,
+                COALESCE(gli.background_opacity, 1.0) as background_opacity,
+                COALESCE(gli.theme, 'dark') as theme,
                 gli.created_at as guest_list_created_at,
                 gli.updated_at as guest_list_updated_at
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-            WHERE pi.id = $1 AND pi.user_id = $2 AND (pi.item_type = 'guest_list' OR EXISTS (
-                SELECT 1 FROM guest_list_items WHERE profile_item_id = pi.id
-            ))
+            WHERE pi.id = $1 AND pi.user_id = $2
         `, [listId, userId]);
         
         // Se não encontrar, tentar buscar pelo id da guest_list_items
@@ -307,20 +306,18 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                     gli.custom_form_fields,
                     gli.use_custom_form,
                     gli.public_view_token,
-                    gli.primary_color,
-                    gli.text_color,
-                    gli.background_color,
+                    COALESCE(gli.primary_color, '#FFC700') as primary_color,
+                    COALESCE(gli.text_color, '#ECECEC') as text_color,
+                    COALESCE(gli.background_color, '#0D0D0F') as background_color,
                     gli.header_image_url,
                     gli.background_image_url,
-                    gli.background_opacity,
-                    gli.theme,
+                    COALESCE(gli.background_opacity, 1.0) as background_opacity,
+                    COALESCE(gli.theme, 'dark') as theme,
                     gli.created_at as guest_list_created_at,
                     gli.updated_at as guest_list_updated_at
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-                WHERE gli.id = $1 AND pi.user_id = $2 AND (pi.item_type = 'guest_list' OR EXISTS (
-                    SELECT 1 FROM guest_list_items WHERE profile_item_id = pi.id
-                ))
+                WHERE gli.id = $1 AND pi.user_id = $2
             `, [listId, userId]);
         }
         
@@ -524,13 +521,13 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.custom_form_fields,
                 gli.use_custom_form,
                 gli.public_view_token,
-                gli.primary_color,
-                gli.text_color,
-                gli.background_color,
+                COALESCE(gli.primary_color, '#FFC700') as primary_color,
+                COALESCE(gli.text_color, '#ECECEC') as text_color,
+                COALESCE(gli.background_color, '#0D0D0F') as background_color,
                 gli.header_image_url,
                 gli.background_image_url,
-                gli.background_opacity,
-                gli.theme,
+                COALESCE(gli.background_opacity, 1.0) as background_opacity,
+                COALESCE(gli.theme, 'dark') as theme,
                 gli.created_at as guest_list_created_at,
                 gli.updated_at as guest_list_updated_at
             FROM profile_items pi
