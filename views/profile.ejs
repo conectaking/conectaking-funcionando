@@ -1589,9 +1589,12 @@ if (typeof details === 'undefined' || !details) {
                             const displayFormat = formData.display_format || 'button';
                             // Para modo botão, usar button_logo_url, senão usar form_logo_url ou image_url
                             // IMPORTANTE: No modo banner, NÃO usar logo de forma alguma
+                            
+                            // Inicializar todas as variáveis com valores padrão
                             let buttonLogo = '';
                             let formLogo = '';
                             let hasFormLogo = false;
+                            let buttonLogoSize = 40; // Valor padrão sempre definido
                             
                             if (displayFormat === 'button') {
                                 // Apenas no modo botão, calcular a logo
@@ -1599,7 +1602,6 @@ if (typeof details === 'undefined' || !details) {
                                 formLogo = buttonLogo;
                                 hasFormLogo = formLogo && formLogo.trim() && !formLogo.includes('placeholder');
                                 // Obter tamanho da logo (padrão: 40px)
-                                let buttonLogoSize = 40;
                                 if (formData.button_logo_size !== undefined && formData.button_logo_size !== null) {
                                     const parsed = parseInt(formData.button_logo_size, 10);
                                     if (!isNaN(parsed) && parsed >= 20 && parsed <= 80) {
@@ -1608,6 +1610,7 @@ if (typeof details === 'undefined' || !details) {
                                 }
                             }
                             // Se for modo banner, buttonLogo, formLogo e hasFormLogo permanecem vazios/false
+                            // Mas buttonLogoSize sempre terá um valor (40px padrão)
                         %>
                         <%
                             // Construir URL do formulário
