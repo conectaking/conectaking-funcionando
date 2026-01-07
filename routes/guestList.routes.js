@@ -36,6 +36,13 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 gli.custom_form_fields,
                 gli.use_custom_form,
                 gli.public_view_token,
+                gli.primary_color,
+                gli.text_color,
+                gli.background_color,
+                gli.header_image_url,
+                gli.background_image_url,
+                gli.background_opacity,
+                gli.theme,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'registered') as registered_count,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'confirmed') as confirmed_count,
                 COUNT(DISTINCT g.id) FILTER (WHERE g.status = 'checked_in') as checked_in_count
@@ -47,7 +54,9 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                      pi.created_at, gli.id, gli.event_title, gli.event_description, 
                      gli.event_date, gli.event_location, gli.registration_token, gli.confirmation_token, 
                      gli.max_guests, gli.allow_self_registration, gli.require_confirmation,
-                     gli.custom_form_fields, gli.use_custom_form, gli.public_view_token
+                     gli.custom_form_fields, gli.use_custom_form, gli.public_view_token,
+                     gli.primary_color, gli.text_color, gli.background_color,
+                     gli.header_image_url, gli.background_image_url, gli.background_opacity, gli.theme
             ORDER BY pi.display_order ASC, pi.created_at DESC
         `, [userId]);
         
@@ -82,7 +91,16 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
             event_location,
             max_guests,
             require_confirmation,
-            allow_self_registration
+            allow_self_registration,
+            use_existing_profile_item,
+            profile_item_id,
+            primary_color,
+            text_color,
+            background_color,
+            header_image_url,
+            background_image_url,
+            background_opacity,
+            theme
         } = req.body;
         
         // Gerar tokens únicos
@@ -90,27 +108,58 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
         const confirmationToken = crypto.randomBytes(16).toString('hex');
         const publicViewToken = crypto.randomBytes(16).toString('hex');
         
-        // Criar profile_item - usar parâmetros separados para evitar erro de tipo inconsistente
-        const itemTitle = title || event_title || 'Nova Lista de Convidados';
-        const userIdStr = String(userId);
+        let profileItemId;
         
-        // Primeiro obter o próximo display_order
-        const orderResult = await client.query(`
-            SELECT COALESCE(MAX(display_order), 0) + 1 as next_order
-            FROM profile_items 
-            WHERE user_id = $1
-        `, [userIdStr]);
-        
-        const nextOrder = orderResult.rows[0].next_order;
-        
-        // Agora inserir com o display_order calculado
-        const itemResult = await client.query(`
-            INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
-            VALUES ($1, 'guest_list', $2, true, $3)
-            RETURNING id
-        `, [userIdStr, itemTitle, nextOrder]);
-        
-        const profileItemId = itemResult.rows[0].id;
+        // Se use_existing_profile_item é true e profile_item_id foi fornecido, usar o existente
+        if (use_existing_profile_item && profile_item_id) {
+            // Verificar se o profile_item pertence ao usuário
+            const existingItemResult = await client.query(`
+                SELECT id, item_type FROM profile_items 
+                WHERE id = $1 AND user_id = $2
+            `, [profile_item_id, String(userId)]);
+            
+            if (existingItemResult.rows.length === 0) {
+                return res.status(404).json({ message: 'Profile item não encontrado' });
+            }
+            
+            profileItemId = existingItemResult.rows[0].id;
+            
+            // Verificar se já existe uma guest_list_item associada
+            const existingGuestListResult = await client.query(`
+                SELECT id FROM guest_list_items WHERE profile_item_id = $1
+            `, [profileItemId]);
+            
+            if (existingGuestListResult.rows.length > 0) {
+                // Já existe, retornar o existente
+                return res.status(400).json({ 
+                    message: 'Lista de convidados já associada a este formulário',
+                    id: profileItemId,
+                    guest_list_item_id: existingGuestListResult.rows[0].id
+                });
+            }
+        } else {
+            // Criar novo profile_item - usar parâmetros separados para evitar erro de tipo inconsistente
+            const itemTitle = title || event_title || 'Nova Lista de Convidados';
+            const userIdStr = String(userId);
+            
+            // Primeiro obter o próximo display_order
+            const orderResult = await client.query(`
+                SELECT COALESCE(MAX(display_order), 0) + 1 as next_order
+                FROM profile_items 
+                WHERE user_id = $1
+            `, [userIdStr]);
+            
+            const nextOrder = orderResult.rows[0].next_order;
+            
+            // Agora inserir com o display_order calculado
+            const itemResult = await client.query(`
+                INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
+                VALUES ($1, 'guest_list', $2, true, $3)
+                RETURNING id
+            `, [userIdStr, itemTitle, nextOrder]);
+            
+            profileItemId = itemResult.rows[0].id;
+        }
         
         // Campos customizados (se fornecidos)
         const customFormFields = req.body.custom_form_fields || [];
@@ -122,9 +171,11 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
                 profile_item_id, event_title, event_description, event_date, event_time,
                 event_location, max_guests, require_confirmation, allow_self_registration,
                 registration_token, confirmation_token, public_view_token,
-                custom_form_fields, use_custom_form
+                custom_form_fields, use_custom_form,
+                primary_color, text_color, background_color,
+                header_image_url, background_image_url, background_opacity, theme
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
             RETURNING *
         `, [
             profileItemId,
@@ -140,13 +191,35 @@ router.post('/', protectUser, asyncHandler(async (req, res) => {
             confirmationToken,
             publicViewToken,
             JSON.stringify(customFormFields),
-            useCustomForm
+            useCustomForm,
+            primary_color || '#4A90E2',
+            text_color || '#333333',
+            background_color || '#FFFFFF',
+            header_image_url || null,
+            background_image_url || null,
+            background_opacity !== undefined ? parseFloat(background_opacity) : 1.0,
+            theme || 'light'
         ]);
         
-        res.json({
-            ...itemResult.rows[0],
-            guest_list_data: guestListResult.rows[0]
-        });
+        // Retornar dados consistentes
+        if (use_existing_profile_item && profile_item_id) {
+            res.json({
+                id: profileItemId,
+                profile_item_id: profileItemId,
+                guest_list_item_id: guestListResult.rows[0].id,
+                guest_list_data: guestListResult.rows[0]
+            });
+        } else {
+            const itemResult = await client.query(`
+                SELECT * FROM profile_items WHERE id = $1
+            `, [profileItemId]);
+            
+            res.json({
+                ...itemResult.rows[0],
+                guest_list_item_id: guestListResult.rows[0].id,
+                guest_list_data: guestListResult.rows[0]
+            });
+        }
     } catch (error) {
         logger.error('Erro ao criar lista de convidados:', error);
         res.status(500).json({ message: 'Erro ao criar lista', error: error.message });
@@ -193,11 +266,20 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.custom_form_fields,
                 gli.use_custom_form,
                 gli.public_view_token,
+                gli.primary_color,
+                gli.text_color,
+                gli.background_color,
+                gli.header_image_url,
+                gli.background_image_url,
+                gli.background_opacity,
+                gli.theme,
                 gli.created_at as guest_list_created_at,
                 gli.updated_at as guest_list_updated_at
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+            WHERE pi.id = $1 AND pi.user_id = $2 AND (pi.item_type = 'guest_list' OR EXISTS (
+                SELECT 1 FROM guest_list_items WHERE profile_item_id = pi.id
+            ))
         `, [listId, userId]);
         
         // Se não encontrar, tentar buscar pelo id da guest_list_items
@@ -225,11 +307,20 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                     gli.custom_form_fields,
                     gli.use_custom_form,
                     gli.public_view_token,
+                    gli.primary_color,
+                    gli.text_color,
+                    gli.background_color,
+                    gli.header_image_url,
+                    gli.background_image_url,
+                    gli.background_opacity,
+                    gli.theme,
                     gli.created_at as guest_list_created_at,
                     gli.updated_at as guest_list_updated_at
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-                WHERE gli.id = $1 AND pi.user_id = $2 AND pi.item_type = 'guest_list'
+                WHERE gli.id = $1 AND pi.user_id = $2 AND (pi.item_type = 'guest_list' OR EXISTS (
+                    SELECT 1 FROM guest_list_items WHERE profile_item_id = pi.id
+                ))
             `, [listId, userId]);
         }
         
@@ -273,7 +364,14 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             is_active,
             display_order,
             custom_form_fields,
-            use_custom_form
+            use_custom_form,
+            primary_color,
+            text_color,
+            background_color,
+            header_image_url,
+            background_image_url,
+            background_opacity,
+            theme
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
@@ -364,6 +462,34 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             guestListUpdateFields.push(`use_custom_form = $${guestListParamIndex++}`);
             guestListUpdateValues.push(use_custom_form);
         }
+        if (primary_color !== undefined) {
+            guestListUpdateFields.push(`primary_color = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(primary_color);
+        }
+        if (text_color !== undefined) {
+            guestListUpdateFields.push(`text_color = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(text_color);
+        }
+        if (background_color !== undefined) {
+            guestListUpdateFields.push(`background_color = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(background_color);
+        }
+        if (header_image_url !== undefined) {
+            guestListUpdateFields.push(`header_image_url = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(header_image_url || null);
+        }
+        if (background_image_url !== undefined) {
+            guestListUpdateFields.push(`background_image_url = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(background_image_url || null);
+        }
+        if (background_opacity !== undefined) {
+            guestListUpdateFields.push(`background_opacity = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(background_opacity !== null ? parseFloat(background_opacity) : 1.0);
+        }
+        if (theme !== undefined) {
+            guestListUpdateFields.push(`theme = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(theme);
+        }
         
         if (guestListUpdateFields.length > 0) {
             guestListUpdateValues.push(guestListItemId);
@@ -398,6 +524,13 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.custom_form_fields,
                 gli.use_custom_form,
                 gli.public_view_token,
+                gli.primary_color,
+                gli.text_color,
+                gli.background_color,
+                gli.header_image_url,
+                gli.background_image_url,
+                gli.background_opacity,
+                gli.theme,
                 gli.created_at as guest_list_created_at,
                 gli.updated_at as guest_list_updated_at
             FROM profile_items pi

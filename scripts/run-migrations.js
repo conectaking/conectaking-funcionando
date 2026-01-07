@@ -11,24 +11,43 @@ const config = require('../config');
 
 // Detectar se deve usar SSL baseado no host
 // Se for localhost ou 127.0.0.1, não usar SSL
-// Se for um host remoto (Render, etc), usar SSL
+// Para migrações, vamos desabilitar SSL por padrão para evitar problemas
 const isLocalhost = config.db.host === 'localhost' || 
                     config.db.host === '127.0.0.1' || 
-                    config.db.host.includes('localhost');
+                    config.db.host?.includes('localhost') ||
+                    config.db.host === '::1' ||
+                    !config.db.host ||
+                    process.env.DB_DISABLE_SSL === 'true';
 
-const sslConfig = isLocalhost ? false : config.db.ssl;
+// Por padrão, SEMPRE desabilitar SSL para migrations (evitar problemas de conexão)
+// Forçar desabilitado a menos que explicitamente habilitado via variável de ambiente
+const useSSL = process.env.DB_USE_SSL === 'true' && !isLocalhost && process.env.DB_HOST?.includes('render');
 
-console.log(`🔌 Conectando ao banco: ${config.db.host} (SSL: ${sslConfig ? 'habilitado' : 'desabilitado'})`);
+console.log(`🔌 Conectando ao banco: ${config.db.host}:${config.db.port}`);
+console.log(`   SSL: ${useSSL ? 'habilitado' : 'DESABILITADO (forçado)'}`);
+console.log(`   isLocalhost: ${isLocalhost}`);
 
-// Usar a mesma configuração do db.js, mas ajustar SSL para ambiente local
-const pool = new Pool({
+// Usar a mesma configuração do db.js, mas FORÇAR SSL=false para migrations
+// IMPORTANTE: Para migrations, sempre usar SSL=false a menos que explicitamente solicitado
+const poolConfig = {
     user: config.db.user,
     host: config.db.host,
     database: config.db.database,
     password: config.db.password,
-    port: config.db.port,
-    ssl: sslConfig
-});
+    port: parseInt(config.db.port, 10),
+    // FORÇAR SSL=false para evitar problemas de conexão
+    ssl: false
+};
+
+// Só usar SSL se explicitamente solicitado E se não for localhost
+if (useSSL && config.db.ssl) {
+    console.log('   ⚠️  Usando SSL conforme solicitado');
+    poolConfig.ssl = config.db.ssl;
+} else {
+    console.log('   ✅ SSL desabilitado para migrations');
+}
+
+const pool = new Pool(poolConfig);
 
 async function runMigrations() {
     const migrationsDir = path.join(__dirname, '..', 'migrations');
