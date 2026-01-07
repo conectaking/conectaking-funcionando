@@ -93,7 +93,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
         // Buscar TODOS os itens (ativos e inativos) para o dashboard
         const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order ASC', [userId]);
         
-        // Buscar dados adicionais para digital_form
+        // Buscar dados adicionais para digital_form, contract e guest_list
         const items = await Promise.all(itemsRes.rows.map(async (item) => {
             if (item.item_type === 'digital_form') {
                 try {
@@ -130,6 +130,42 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                         error: formError.message
                     });
                     item.digital_form_data = {};
+                }
+            } else if (item.item_type === 'contract') {
+                try {
+                    const contractRes = await client.query(
+                        'SELECT * FROM contract_items WHERE profile_item_id = $1',
+                        [item.id]
+                    );
+                    if (contractRes.rows.length > 0) {
+                        item.contract_data = contractRes.rows[0];
+                    } else {
+                        item.contract_data = {};
+                    }
+                } catch (contractError) {
+                    console.error('Erro ao carregar dados do contrato', {
+                        itemId: item.id,
+                        error: contractError.message
+                    });
+                    item.contract_data = {};
+                }
+            } else if (item.item_type === 'guest_list') {
+                try {
+                    const guestListRes = await client.query(
+                        'SELECT * FROM guest_list_items WHERE profile_item_id = $1',
+                        [item.id]
+                    );
+                    if (guestListRes.rows.length > 0) {
+                        item.guest_list_data = guestListRes.rows[0];
+                    } else {
+                        item.guest_list_data = {};
+                    }
+                } catch (guestListError) {
+                    console.error('Erro ao carregar dados da lista de convidados', {
+                        itemId: item.id,
+                        error: guestListError.message
+                    });
+                    item.guest_list_data = {};
                 }
             }
             return item;

@@ -343,6 +343,37 @@ router.post('/:id/sign', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /api/contracts/:id - Obter contrato específico (ADM)
+ */
+router.get('/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const contractId = parseInt(req.params.id, 10);
+        
+        const result = await client.query(`
+            SELECT 
+                pi.*,
+                ci.*
+            FROM profile_items pi
+            INNER JOIN contract_items ci ON ci.profile_item_id = pi.id
+            WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'contract'
+        `, [contractId, userId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Contrato não encontrado' });
+        }
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        logger.error('Erro ao buscar contrato:', error);
+        res.status(500).json({ message: 'Erro ao buscar contrato', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
  * GET /api/contracts/public/:id - Obter contrato público para assinatura
  */
 router.get('/public/:id', asyncHandler(async (req, res) => {

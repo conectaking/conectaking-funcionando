@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinar Contrato - <%= contract.contract_title || 'Contrato' %></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0D0D0F 0%, #1C1C21 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #ECECEC;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            color: #FFC700;
+            margin-bottom: 12px;
+        }
+        
+        .contract-content {
+            background: #1C1C21;
+            border: 1px solid #2C2C2F;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        
+        .contract-body {
+            background: #FFFFFF;
+            color: #000;
+            padding: 40px;
+            border-radius: 12px;
+            min-height: 400px;
+            line-height: 1.8;
+            font-size: 16px;
+        }
+        
+        .signature-section {
+            background: #1C1C21;
+            border: 1px solid #2C2C2F;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ECECEC;
+            font-weight: 600;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #0D0D0F;
+            border: 2px solid #2C2C2F;
+            border-radius: 12px;
+            color: #ECECEC;
+            font-size: 16px;
+        }
+        
+        .signature-canvas-container {
+            margin: 24px 0;
+            text-align: center;
+        }
+        
+        .signature-canvas {
+            border: 2px solid #2C2C2F;
+            border-radius: 12px;
+            background: #FFFFFF;
+            cursor: crosshair;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 12px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #FFC700, #FFA500);
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 199, 0, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #2C2C2F;
+            color: #ECECEC;
+        }
+        
+        .alert {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .alert-success {
+            background: rgba(37, 211, 102, 0.2);
+            border: 1px solid #25D366;
+            color: #25D366;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-contract"></i> Assinar Contrato</h1>
+            <p><%= contract.contract_title || 'Contrato' %></p>
+        </div>
+        
+        <div class="contract-content">
+            <div class="contract-body" id="contract-body">
+                <%= contract.contract_template || '<p>Conteúdo do contrato será exibido aqui.</p>' %>
+            </div>
+        </div>
+        
+        <div class="signature-section">
+            <h3 style="color: #FFC700; margin-bottom: 24px;">Dados para Assinatura</h3>
+            
+            <form id="signature-form">
+                <div class="form-group">
+                    <label for="signer-name">Nome Completo *</label>
+                    <input type="text" id="signer-name" name="signer_name" required placeholder="Digite seu nome completo">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signer-email">Email</label>
+                    <input type="email" id="signer-email" name="signer_email" placeholder="seu@email.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signer-phone">Telefone</label>
+                    <input type="tel" id="signer-phone" name="signer_phone" placeholder="(00) 00000-0000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signer-document">CPF/CNPJ</label>
+                    <input type="text" id="signer-document" name="signer_document" placeholder="000.000.000-00">
+                </div>
+                
+                <% if (contract.allow_digital_signature) { %>
+                <div class="form-group">
+                    <label>Assinatura Digital</label>
+                    <div class="signature-canvas-container">
+                        <canvas id="signature-canvas" class="signature-canvas" width="600" height="200"></canvas>
+                        <button type="button" class="btn btn-secondary" onclick="clearSignature()" style="margin-top: 12px;">
+                            <i class="fas fa-eraser"></i> Limpar Assinatura
+                        </button>
+                    </div>
+                </div>
+                <% } %>
+                
+                <% if (contract.allow_photo_signature) { %>
+                <div class="form-group">
+                    <label>Ou envie foto da assinatura</label>
+                    <input type="file" id="signature-photo" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('signature-photo').click()">
+                        <i class="fas fa-camera"></i> Enviar Foto da Assinatura
+                    </button>
+                    <div id="photo-preview" style="margin-top: 12px; display: none;">
+                        <img id="photo-preview-img" style="max-width: 100%; border-radius: 8px; border: 2px solid #2C2C2F;">
+                    </div>
+                </div>
+                <% } %>
+                
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                    <i class="fas fa-check"></i> Assinar Contrato
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const contractId = <%= contract.id || contract.profile_item_id %>;
+        let signatureData = null;
+        let photoData = null;
+        let isDrawing = false;
+        
+        // Canvas para assinatura digital
+        const canvas = document.getElementById('signature-canvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            canvas.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                const rect = canvas.getBoundingClientRect();
+                ctx.beginPath();
+                ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                ctx.stroke();
+            });
+            
+            canvas.addEventListener('mouseup', () => {
+                isDrawing = false;
+                signatureData = canvas.toDataURL('image/png');
+            });
+            
+            canvas.addEventListener('mouseleave', () => {
+                isDrawing = false;
+            });
+        }
+        
+        function clearSignature() {
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                signatureData = null;
+            }
+        }
+        
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    photoData = e.target.result;
+                    document.getElementById('photo-preview').style.display = 'block';
+                    document.getElementById('photo-preview-img').src = photoData;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        document.getElementById('signature-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assinando...';
+            
+            const formData = {
+                signer_name: document.getElementById('signer-name').value.trim(),
+                signer_email: document.getElementById('signer-email').value.trim(),
+                signer_phone: document.getElementById('signer-phone').value.trim(),
+                signer_document: document.getElementById('signer-document').value.trim(),
+                signature_type: photoData ? 'photo' : 'digital',
+                signature_data: photoData || signatureData,
+                stamp_applied: false
+            };
+            
+            if (!formData.signer_name) {
+                alert('Por favor, preencha o nome completo');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Assinar Contrato';
+                return;
+            }
+            
+            if (!formData.signature_data) {
+                alert('Por favor, forneça uma assinatura (digital ou foto)');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Assinar Contrato';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/contracts/${contractId}/sign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('signature-form').innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <strong>Contrato Assinado com Sucesso!</strong>
+                                <p>O contrato foi assinado e registrado.</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(result.message || 'Erro ao assinar contrato');
+                }
+            } catch (error) {
+                alert('Erro ao assinar contrato: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Assinar Contrato';
+            }
+        });
+    </script>
+</body>
+</html>
+
