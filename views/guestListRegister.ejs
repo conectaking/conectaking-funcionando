@@ -238,7 +238,7 @@
                 </div>
                 
                 <button type="submit" class="btn-submit" id="submit-btn">
-                    <i class="fas fa-check"></i> Confirmar Inscrição
+                    <i class="fas fa-paper-plane"></i> Enviar
                 </button>
             </form>
         </div>
@@ -267,7 +267,7 @@
             if (!formData.name) {
                 alert('Por favor, preencha o nome completo');
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-check"></i> Confirmar Inscrição';
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
                 return;
             }
             
@@ -299,7 +299,7 @@
             } catch (error) {
                 alert('Erro ao realizar inscrição: ' + error.message);
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-check"></i> Confirmar Inscrição';
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
             }
         });
     </script>
