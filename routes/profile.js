@@ -1512,6 +1512,17 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             console.log(`❌ Formulário King ${itemId} não encontrado ou não pertence ao usuário ${userId}`);
             return res.status(404).json({ message: 'Formulário King não encontrado ou você não tem permissão para editá-lo.' });
         }
+        
+        // Verificar se é realmente um digital_form ou guest_list (que pode ser convertido)
+        const currentItemType = checkRes.rows[0].item_type;
+        if (currentItemType !== 'digital_form' && currentItemType !== 'guest_list') {
+            return res.status(400).json({ message: 'Este item não é um formulário digital.' });
+        }
+        
+        // Se o item_type no body é 'digital_form' e o item atual é 'guest_list', vamos converter
+        if (item_type === 'digital_form' && currentItemType === 'guest_list') {
+            console.log(`🔄 [DIGITAL_FORM] Convertendo item ${itemId} de guest_list para digital_form`);
+        }
 
         // Verificar quais colunas existem na tabela profile_items
         const columnsCheck = await client.query(`
@@ -1601,12 +1612,13 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
         }
         
-        // Se o item_type está sendo explicitamente atualizado para guest_list, fazer isso também
-        if (req.body.item_type === 'guest_list') {
+        // Se o item_type está sendo explicitamente atualizado (guest_list ou digital_form), fazer isso também
+        if (req.body.item_type === 'guest_list' || req.body.item_type === 'digital_form') {
             const hasItemType = updateFields.some(field => field.startsWith('item_type ='));
             if (!hasItemType) {
                 updateFields.push(`item_type = $${paramIndex++}`);
-                updateValues.push('guest_list');
+                updateValues.push(req.body.item_type);
+                console.log(`🔄 [DIGITAL_FORM] Atualizando item_type explicitamente para: ${req.body.item_type}`);
             }
         }
         
