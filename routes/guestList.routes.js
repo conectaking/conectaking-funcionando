@@ -460,7 +460,21 @@ router.get('/:id/guests', protectUser, asyncHandler(async (req, res) => {
         
         const result = await client.query(query, params);
         
-        res.json(result.rows);
+        // Parsear custom_responses se for string (PostgreSQL JSONB pode retornar como string)
+        const guests = result.rows.map(row => {
+            if (row.custom_responses && typeof row.custom_responses === 'string') {
+                try {
+                    row.custom_responses = JSON.parse(row.custom_responses);
+                } catch (e) {
+                    row.custom_responses = {};
+                }
+            } else if (!row.custom_responses) {
+                row.custom_responses = {};
+            }
+            return row;
+        });
+        
+        res.json(guests);
     } catch (error) {
         logger.error('Erro ao listar convidados:', error);
         res.status(500).json({ message: 'Erro ao listar convidados', error: error.message });
