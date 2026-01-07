@@ -1,12 +1,18 @@
+<%
+// Validação inicial: garantir que details existe
+if (typeof details === 'undefined' || !details) {
+    throw new Error('Variável details não está definida');
+}
+%>
 <!DOCTYPE html>
-<html lang="pt-BR" style="background-color: <%= details.background_color || '#0D0D0F' %>;">
+<html lang="pt-BR" style="background-color: <%= (details && details.background_color) ? details.background_color : '#0D0D0F' %>;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title><%= details.display_name || 'Conecta King' %></title>
+    <title><%= (details && details.display_name) ? details.display_name : 'Conecta King' %></title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,33 +25,38 @@
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
 
-    <meta property="og:title" content="<%= details.display_name || 'Conecta King' %>">
-    <meta property="og:description" content="<%= details.bio %>">
-    <meta property="og:image" content="<%= typeof ogImageUrl !== 'undefined' && ogImageUrl ? ogImageUrl : (details.profile_image_url || 'URL_DA_SUA_IMAGEM_PADRAO.png') %>">
+    <meta property="og:title" content="<%= (details && details.display_name) ? details.display_name : 'Conecta King' %>">
+    <meta property="og:description" content="<%= (details && details.bio) ? details.bio : '' %>">
+    <meta property="og:image" content="<%= typeof ogImageUrl !== 'undefined' && ogImageUrl ? ogImageUrl : ((details && details.profile_image_url) ? details.profile_image_url : 'URL_DA_SUA_IMAGEM_PADRAO.png') %>">
 
     <style>
-        body, h1, p, span { font-family: '<%= details.font_family || "Inter" %>', sans-serif !important; }
-        .profile-name, .profile-bio { color: <%= details.text_color || '#ECECEC' %> !important; }
+        body, h1, p, span { font-family: '<%= (details && details.font_family) ? details.font_family : "Inter" %>', sans-serif !important; }
+        .profile-name, .profile-bio { color: <%= (details && details.text_color) ? details.text_color : '#ECECEC' %> !important; }
         .profile-avatar { border: none !important; }
 
         <%
             // Calcular alinhamento da logo baseado no logo_spacing (agora armazena 'left', 'center', 'right')
             let logoAlign = 'center'; // padrão
-            if (details.logo_spacing !== undefined && details.logo_spacing !== null) {
-                if (typeof details.logo_spacing === 'string' && ['left', 'center', 'right'].includes(details.logo_spacing)) {
-                    logoAlign = details.logo_spacing;
-                } else if (typeof details.logo_spacing === 'number') {
-                    // Compatibilidade com versão antiga (número)
-                    if (details.logo_spacing <= 5) logoAlign = 'left';
-                    else if (details.logo_spacing >= 20) logoAlign = 'right';
-                    else logoAlign = 'center';
+            try {
+                if (details && details.logo_spacing !== undefined && details.logo_spacing !== null) {
+                    if (typeof details.logo_spacing === 'string' && ['left', 'center', 'right'].includes(details.logo_spacing)) {
+                        logoAlign = details.logo_spacing;
+                    } else if (typeof details.logo_spacing === 'number') {
+                        // Compatibilidade com versão antiga (número)
+                        if (details.logo_spacing <= 5) logoAlign = 'left';
+                        else if (details.logo_spacing >= 20) logoAlign = 'right';
+                        else logoAlign = 'center';
+                    }
                 }
+            } catch (e) {
+                console.error('Erro ao processar logo_spacing:', e);
+                logoAlign = 'center';
             }
             
             // Tratar alinhamento do conteúdo dos botões
             // Se a logo está centralizada, forçar o botão a centralizar também
             let alignValue = 'center'; // padrão
-            const buttonAlign = details.button_content_align;
+            const buttonAlign = (details && details.button_content_align) ? details.button_content_align : 'center';
             if (logoAlign === 'center') {
                 // Quando logo está centralizada, sempre centralizar o botão
                 alignValue = 'center';
@@ -87,16 +98,16 @@
         %>
 
         :root {
-            --btn-r: <%= (details.button_color_rgb && details.button_color_rgb.r) || 20 %>;
-            --btn-g: <%= (details.button_color_rgb && details.button_color_rgb.g) || 20 %>;
-            --btn-b: <%= (details.button_color_rgb && details.button_color_rgb.b) || 23 %>;
-            --btn-opacity: <%= details.button_opacity !== undefined ? details.button_opacity : 1 %>;
+            --btn-r: <%= (details && details.button_color_rgb && details.button_color_rgb.r) ? details.button_color_rgb.r : 20 %>;
+            --btn-g: <%= (details && details.button_color_rgb && details.button_color_rgb.g) ? details.button_color_rgb.g : 20 %>;
+            --btn-b: <%= (details && details.button_color_rgb && details.button_color_rgb.b) ? details.button_color_rgb.b : 23 %>;
+            --btn-opacity: <%= (details && details.button_opacity !== undefined) ? details.button_opacity : 1 %>;
             --btn-border-radius: <%= details.button_border_radius || '12px' %>;
-            --card-r: <%= (details.card_color_rgb && details.card_color_rgb.r) || 20 %>;
-            --card-g: <%= (details.card_color_rgb && details.card_color_rgb.g) || 20 %>;
-            --card-b: <%= (details.card_color_rgb && details.card_color_rgb.b) || 23 %>;
-            --card-opacity: <%= details.card_opacity !== undefined ? details.card_opacity : 1.0 %>;
-            --btn-font-size: <%= details.button_font_size || '1rem' %>;
+            --card-r: <%= (details && details.card_color_rgb && details.card_color_rgb.r) ? details.card_color_rgb.r : 20 %>;
+            --card-g: <%= (details && details.card_color_rgb && details.card_color_rgb.g) ? details.card_color_rgb.g : 20 %>;
+            --card-b: <%= (details && details.card_color_rgb && details.card_color_rgb.b) ? details.card_color_rgb.b : 23 %>;
+            --card-opacity: <%= (details && details.card_opacity !== undefined) ? details.card_opacity : 1.0 %>;
+            --btn-font-size: <%= (details && details.button_font_size) ? details.button_font_size : '1rem' %>;
         }
 
         .profile-card {
@@ -260,10 +271,10 @@
     <%# ========================================================== %>
     <%# SEÇÃO: BACKGROUND IMAGE (se configurado) %>
     <%# ========================================================== %>
-        <% if (details.background_type === 'image' && details.background_image_url) { %>
+        <% if (details && details.background_type === 'image' && details.background_image_url) { %>
         <div class="background-image-overlay" style="
             background-image: url('<%= details.background_image_url %>');
-            opacity: <%= details.background_image_opacity !== undefined ? details.background_image_opacity : 1 %>;
+            opacity: <%= (details.background_image_opacity !== undefined) ? details.background_image_opacity : 1 %>;
         "></div>
     <% } %>
 

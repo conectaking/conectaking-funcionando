@@ -20,12 +20,30 @@ const asyncHandler = (fn) => {
  * Deve ser o último middleware na cadeia
  */
 const errorHandler = (err, req, res, next) => {
-    // Log do erro
+    // Log do erro com mais detalhes, especialmente para erros de template EJS
     logger.error('Erro na requisição', {
         method: req.method,
         path: req.path,
-        error: err
+        error: {
+            name: err.name,
+            message: err.message,
+            stack: err.stack,
+            path: err.path,
+            line: err.line,
+            column: err.column
+        }
     });
+    
+    // Log adicional para erros de template EJS
+    if (err.path && err.path.includes('.ejs')) {
+        logger.error('Erro no template EJS', {
+            template: err.path,
+            line: err.line,
+            column: err.column,
+            message: err.message,
+            originalError: err.originalError ? err.originalError.message : null
+        });
+    }
 
     // Erros de validação
     if (err.name === 'ValidationError' || err.name === 'CastError') {
