@@ -21,9 +21,11 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
     const { identifier } = req.params;
     
     // Headers para evitar cache no navegador
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
+    res.set('Last-Modified', new Date().toUTCString());
+    res.set('ETag', `"${Date.now()}"`);
     
     const client = await db.pool.connect();
     

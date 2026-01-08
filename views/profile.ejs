@@ -1559,9 +1559,9 @@ if (typeof details === 'undefined' || !details) {
                     <% } %>
 
                     <%# ========================================================== %>
-                    <%# TIPO: DIGITAL FORM (Formulário Digital) %>
+                    <%# TIPO: DIGITAL FORM (Formulário Digital) - Inclui guest_list convertido %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'digital_form') { %>
+                    <% } else if (item.item_type === 'digital_form' || (item.item_type === 'guest_list' && item.digital_form_data)) { %>
                         <%
                             // Buscar digital_form_data do item se existir
                             let formData = {};
