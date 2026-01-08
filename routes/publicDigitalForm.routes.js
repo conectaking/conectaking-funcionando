@@ -1,8 +1,26 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const db = require('../db');
 const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
+const { validateFormSubmission, handleValidationErrors, sanitizeResponseData } = require('../utils/formValidators');
+
+// Rate limiting para submissão de formulários
+const formSubmissionLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 10, // 10 submissões por IP
+    message: {
+        success: false,
+        message: 'Muitas tentativas. Por favor, aguarde 15 minutos antes de tentar novamente.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        // Pular rate limit em desenvolvimento (opcional)
+        return process.env.NODE_ENV === 'development' && req.headers['x-skip-rate-limit'] === 'true';
+    }
+});
 
 /**
  * Rota pública: GET /form/share/:token
@@ -290,9 +308,19 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
 }));
 
 // POST /:slug/form/:itemId/submit - Salvar resposta do formulário (público)
-router.post('/:slug/form/:itemId/submit', asyncHandler(async (req, res) => {
+router.post('/:slug/form/:itemId/submit', 
+    formSubmissionLimiter,
+    validateFormSubmission,
+    handleValidationErrors,
+    asyncHandler(async (req, res) => {
     const { slug, itemId } = req.params;
-    const { response_data, responder_name, responder_email, responder_phone } = req.body;
+    let { response_data, responder_name, responder_email, responder_phone } = req.body;
+    
+    // Sanitizar todos os inputs
+    response_data = sanitizeResponseData(response_data);
+    responder_name = responder_name ? sanitizeResponseData({ name: responder_name }).name : null;
+    responder_email = responder_email ? sanitizeResponseData({ email: responder_email }).email : null;
+    responder_phone = responder_phone ? sanitizeResponseData({ phone: responder_phone }).phone : null;
     
     const client = await db.pool.connect();
     
