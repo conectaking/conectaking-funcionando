@@ -39,6 +39,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 COALESCE(gli.primary_color, '#FFC700') as primary_color,
                 COALESCE(gli.text_color, '#ECECEC') as text_color,
                 COALESCE(gli.background_color, '#0D0D0F') as background_color,
+                gli.secondary_color,
                 gli.header_image_url,
                 gli.background_image_url,
                 COALESCE(gli.background_opacity, 1.0) as background_opacity,
@@ -55,7 +56,7 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                      gli.event_date, gli.event_location, gli.registration_token, gli.confirmation_token, 
                      gli.max_guests, gli.allow_self_registration, gli.require_confirmation,
                      gli.custom_form_fields, gli.use_custom_form, gli.public_view_token,
-                     gli.primary_color, gli.text_color, gli.background_color,
+                     gli.primary_color, gli.text_color, gli.background_color, gli.secondary_color,
                      gli.header_image_url, gli.background_image_url, gli.background_opacity, gli.theme
             ORDER BY pi.display_order ASC, pi.created_at DESC
         `, [userId]);
@@ -287,6 +288,7 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 COALESCE(gli.primary_color, '#FFC700') as primary_color,
                 COALESCE(gli.text_color, '#ECECEC') as text_color,
                 COALESCE(gli.background_color, '#0D0D0F') as background_color,
+                gli.secondary_color,
                 gli.header_image_url,
                 gli.background_image_url,
                 COALESCE(gli.background_opacity, 1.0) as background_opacity,
@@ -328,6 +330,7 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                     COALESCE(gli.primary_color, '#FFC700') as primary_color,
                     COALESCE(gli.text_color, '#ECECEC') as text_color,
                     COALESCE(gli.background_color, '#0D0D0F') as background_color,
+                    gli.secondary_color,
                     gli.header_image_url,
                     gli.background_image_url,
                     COALESCE(gli.background_opacity, 1.0) as background_opacity,
@@ -405,6 +408,7 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                         COALESCE(gli.primary_color, '#FFC700') as primary_color,
                         COALESCE(gli.text_color, '#ECECEC') as text_color,
                         COALESCE(gli.background_color, '#0D0D0F') as background_color,
+                        gli.secondary_color,
                         gli.header_image_url,
                         gli.background_image_url,
                         COALESCE(gli.background_opacity, 1.0) as background_opacity,
@@ -587,6 +591,10 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
         if (theme !== undefined) {
             guestListUpdateFields.push(`theme = $${guestListParamIndex++}`);
             guestListUpdateValues.push(theme);
+        }
+        if (secondary_color !== undefined) {
+            guestListUpdateFields.push(`secondary_color = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(secondary_color || null);
         }
         
         if (guestListUpdateFields.length > 0) {
