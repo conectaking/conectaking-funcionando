@@ -10,6 +10,12 @@ const logger = require('../utils/logger');
  */
 router.get('/form/share/:token', asyncHandler(async (req, res) => {
     const { token } = req.params;
+    
+    // Headers para evitar cache
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     const client = await db.pool.connect();
     
     try {
@@ -42,8 +48,19 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         let formData = formRes.rows[0];
         
         // Garantir que secondary_color seja tratado corretamente (pode ser null)
-        if (!formData.secondary_color || formData.secondary_color === 'null' || formData.secondary_color === 'undefined') {
+        // Log para debug
+        logger.info(`[SECONDARY_COLOR] Carregado do banco: ${formData.secondary_color}, tipo: ${typeof formData.secondary_color}`);
+        
+        if (!formData.secondary_color || 
+            formData.secondary_color === 'null' || 
+            formData.secondary_color === 'undefined' ||
+            formData.secondary_color === null ||
+            formData.secondary_color === undefined ||
+            (typeof formData.secondary_color === 'string' && formData.secondary_color.trim() === '')) {
             formData.secondary_color = formData.primary_color || '#4A90E2';
+            logger.info(`[SECONDARY_COLOR] Usando fallback (primary_color): ${formData.secondary_color}`);
+        } else {
+            logger.info(`[SECONDARY_COLOR] Usando valor do banco: ${formData.secondary_color}`);
         }
         
         // Garantir que form_fields seja um array
@@ -155,8 +172,19 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         let formData = formRes.rows[0];
         
         // Garantir que secondary_color seja tratado corretamente (pode ser null)
-        if (!formData.secondary_color || formData.secondary_color === 'null' || formData.secondary_color === 'undefined') {
+        // Log para debug
+        logger.info(`[SECONDARY_COLOR] Carregado do banco: ${formData.secondary_color}, tipo: ${typeof formData.secondary_color}`);
+        
+        if (!formData.secondary_color || 
+            formData.secondary_color === 'null' || 
+            formData.secondary_color === 'undefined' ||
+            formData.secondary_color === null ||
+            formData.secondary_color === undefined ||
+            (typeof formData.secondary_color === 'string' && formData.secondary_color.trim() === '')) {
             formData.secondary_color = formData.primary_color || '#4A90E2';
+            logger.info(`[SECONDARY_COLOR] Usando fallback (primary_color): ${formData.secondary_color}`);
+        } else {
+            logger.info(`[SECONDARY_COLOR] Usando valor do banco: ${formData.secondary_color}`);
         }
         
         // Garantir que form_fields seja um array (pode vir como string JSON do PostgreSQL)

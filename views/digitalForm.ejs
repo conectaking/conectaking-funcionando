@@ -11,9 +11,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="/css/digitalForm.css">
     <style>
+        <%
+            // Garantir que secondary_color seja tratado corretamente
+            let secondaryColor = formData.secondary_color;
+            if (!secondaryColor || 
+                secondaryColor === 'null' || 
+                secondaryColor === 'undefined' ||
+                secondaryColor === null ||
+                secondaryColor === undefined ||
+                (typeof secondaryColor === 'string' && secondaryColor.trim() === '')) {
+                secondaryColor = formData.primary_color || '#4A90E2';
+            }
+            const primaryColor = formData.primary_color || '#4A90E2';
+        %>
         :root {
-            --primary-color: <%= formData.primary_color || '#4A90E2' %>;
-            --secondary-color: <%= (formData.secondary_color && formData.secondary_color.trim() && formData.secondary_color !== 'null' && formData.secondary_color !== 'undefined') ? formData.secondary_color : (formData.primary_color || '#4A90E2') %>;
+            --primary-color: <%= primaryColor %>;
+            --secondary-color: <%= secondaryColor %>;
             --text-color: <%= formData.text_color || '#333333' %>;
             --background-color: <%= formData.background_color || '#FFFFFF' %>;
             --card-color: <%= formData.card_color || '#FFFFFF' %>;
@@ -22,7 +35,16 @@
         
         /* Garantir que o header use a cor secundária */
         .form-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+            background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
+        }
+        
+        /* Aplicar gradiente em todos os elementos que usam cor primária */
+        .welcome-section {
+            background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
+        }
+        
+        .digital-form::before {
+            background: linear-gradient(90deg, <%= primaryColor %>, <%= secondaryColor %>) !important;
         }
         <% if (formData.background_image_url) { %>
         body {

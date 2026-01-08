@@ -1772,8 +1772,14 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                     WHERE table_name = 'digital_form_items' AND column_name = 'secondary_color'
                 `);
                 if (secondaryColorCheck.rows.length > 0) {
+                    console.log(`🎨 [SECONDARY_COLOR] Recebido no backend: "${secondary_color}", tipo: ${typeof secondary_color}`);
+                    // Tratar string vazia como null
+                    const valueToSave = (secondary_color && typeof secondary_color === 'string' && secondary_color.trim() !== '' && secondary_color !== 'null' && secondary_color !== 'undefined') 
+                        ? secondary_color.trim() 
+                        : (secondary_color && secondary_color !== null && secondary_color !== undefined && secondary_color !== 'null' && secondary_color !== 'undefined' ? secondary_color : null);
                     updateFormFields.push(`secondary_color = $${formParamIndex++}`);
-                    updateFormValues.push(secondary_color || null);
+                    updateFormValues.push(valueToSave);
+                    console.log(`🎨 [SECONDARY_COLOR] Valor a ser salvo no banco: "${valueToSave}"`);
                 }
             }
             if (text_color !== undefined) {
