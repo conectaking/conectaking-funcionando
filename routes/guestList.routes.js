@@ -651,6 +651,7 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 COALESCE(gli.primary_color, '#FFC700') as primary_color,
                 COALESCE(gli.text_color, '#ECECEC') as text_color,
                 COALESCE(gli.background_color, '#0D0D0F') as background_color,
+                gli.secondary_color,
                 gli.header_image_url,
                 gli.background_image_url,
                 COALESCE(gli.background_opacity, 1.0) as background_opacity,

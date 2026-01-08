@@ -41,6 +41,11 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
 
         let formData = formRes.rows[0];
         
+        // Garantir que secondary_color seja tratado corretamente (pode ser null)
+        if (!formData.secondary_color || formData.secondary_color === 'null' || formData.secondary_color === 'undefined') {
+            formData.secondary_color = formData.primary_color || '#4A90E2';
+        }
+        
         // Garantir que form_fields seja um array
         if (formData.form_fields) {
             if (typeof formData.form_fields === 'string') {
@@ -148,6 +153,11 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         }
 
         let formData = formRes.rows[0];
+        
+        // Garantir que secondary_color seja tratado corretamente (pode ser null)
+        if (!formData.secondary_color || formData.secondary_color === 'null' || formData.secondary_color === 'undefined') {
+            formData.secondary_color = formData.primary_color || '#4A90E2';
+        }
         
         // Garantir que form_fields seja um array (pode vir como string JSON do PostgreSQL)
         if (formData.form_fields) {

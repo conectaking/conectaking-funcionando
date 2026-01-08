@@ -13,11 +13,16 @@
     <style>
         :root {
             --primary-color: <%= formData.primary_color || '#4A90E2' %>;
-            --secondary-color: <%= (formData.secondary_color && formData.secondary_color.trim()) ? formData.secondary_color : (formData.primary_color || '#4A90E2') %>;
+            --secondary-color: <%= (formData.secondary_color && formData.secondary_color.trim() && formData.secondary_color !== 'null' && formData.secondary_color !== 'undefined') ? formData.secondary_color : (formData.primary_color || '#4A90E2') %>;
             --text-color: <%= formData.text_color || '#333333' %>;
             --background-color: <%= formData.background_color || '#FFFFFF' %>;
             --card-color: <%= formData.card_color || '#FFFFFF' %>;
             --theme: <%= formData.theme || 'light' %>;
+        }
+        
+        /* Garantir que o header use a cor secundária */
+        .form-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
         }
         <% if (formData.background_image_url) { %>
         body {
