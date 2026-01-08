@@ -33,18 +33,27 @@
             --theme: <%= formData.theme || 'light' %>;
         }
         
-        /* Garantir que o header use a cor secundária */
+        /* Garantir que o header use a cor secundária - FORÇAR com !important e especificidade */
+        header.form-header,
         .form-header {
             background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
+            background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
         }
         
         /* Aplicar gradiente em todos os elementos que usam cor primária */
         .welcome-section {
             background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
+            background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
         }
         
         .digital-form::before {
             background: linear-gradient(90deg, <%= primaryColor %>, <%= secondaryColor %>) !important;
+            background-image: linear-gradient(90deg, <%= primaryColor %>, <%= secondaryColor %>) !important;
+        }
+        
+        /* Forçar aplicação em todos os elementos com gradiente */
+        [style*="gradient"] {
+            background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
         }
         <% if (formData.background_image_url) { %>
         body {
@@ -120,7 +129,7 @@
     <% } %>
     
     <!-- Header -->
-    <header class="form-header">
+    <header class="form-header" style="background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important; background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;">
         <div class="container">
             <% if (typeof profileSlug !== 'undefined' && profileSlug) { %>
             <a href="/<%= profileSlug %>" class="back-btn">
