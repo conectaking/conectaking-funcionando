@@ -497,15 +497,115 @@ router.post('/:slug/form/:itemId/submit',
             responseId: result.rows[0].id 
         });
 
+        // Buscar dados do formulário para página de sucesso
+        const formDataRes = await client.query(
+            'SELECT form_title, enable_whatsapp, enable_guest_list_submit, whatsapp_number, primary_color, secondary_color FROM digital_form_items WHERE profile_item_id = $1',
+            [itemIdInt]
+        );
+        
+        const formData = formDataRes.rows[0] || {};
+        const showSuccessPage = req.query.success_page === 'true' || req.headers['x-success-page'] === 'true';
+        
+        if (showSuccessPage) {
+            // Renderizar página de sucesso
+            return res.render('formSuccess', {
+                message: 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.',
+                responseId: result.rows[0].id,
+                formTitle: formData.form_title || 'Formulário',
+                showWhatsAppInfo: formData.enable_whatsapp !== false && formData.whatsapp_number,
+                whatsappNumber: formData.whatsapp_number,
+                showGuestListInfo: formData.enable_guest_list_submit === true,
+                formUrl: `/${slug}/form/${itemId}`,
+                primaryColor: formData.primary_color || '#4A90E2',
+                secondaryColor: formData.secondary_color || formData.primary_color || '#6BA3F0',
+                autoRedirect: false
+            });
+        }
+
         res.json({
             success: true,
             message: 'Resposta salva com sucesso',
-            response_id: result.rows[0].id
+            response_id: result.rows[0].id,
+            success_page_url: `/${slug}/form/${itemId}/success?response_id=${result.rows[0].id}`
         });
 
     } catch (error) {
         logger.error('Erro ao salvar resposta do formulário:', error);
         res.status(500).json({ message: 'Erro ao salvar resposta', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
+ * GET /:slug/form/:itemId/success - Página de sucesso após envio
+ */
+router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
+    const { slug, itemId } = req.params;
+    const { response_id } = req.query;
+    
+    const client = await db.pool.connect();
+    
+    try {
+        // Buscar usuário por slug
+        const userRes = await client.query(
+            'SELECT id FROM users WHERE profile_slug = $1 OR id = $1',
+            [slug]
+        );
+        
+        if (userRes.rows.length === 0) {
+            return res.status(404).send('<h1>404 - Perfil não encontrado</h1>');
+        }
+
+        const userId = userRes.rows[0].id;
+        const itemIdInt = parseInt(itemId, 10);
+
+        if (isNaN(itemIdInt)) {
+            return res.status(400).send('<h1>400 - ID do formulário inválido</h1>');
+        }
+
+        // Buscar dados do formulário
+        const formRes = await client.query(
+            `SELECT dfi.form_title, dfi.enable_whatsapp, dfi.enable_guest_list_submit, 
+                    dfi.whatsapp_number, dfi.primary_color, dfi.secondary_color
+             FROM digital_form_items dfi
+             INNER JOIN profile_items pi ON pi.id = dfi.profile_item_id
+             WHERE dfi.profile_item_id = $1 AND pi.user_id = $2`,
+            [itemIdInt, userId]
+        );
+
+        if (formRes.rows.length === 0) {
+            return res.status(404).send('<h1>404 - Formulário não encontrado</h1>');
+        }
+
+        const formData = formRes.rows[0];
+        
+        // Verificar se resposta existe (opcional)
+        let responseExists = true;
+        if (response_id) {
+            const responseCheck = await client.query(
+                'SELECT id FROM digital_form_responses WHERE id = $1 AND profile_item_id = $2',
+                [response_id, itemIdInt]
+            );
+            responseExists = responseCheck.rows.length > 0;
+        }
+
+        res.render('formSuccess', {
+            message: 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.',
+            responseId: response_id || null,
+            formTitle: formData.form_title || 'Formulário',
+            showWhatsAppInfo: formData.enable_whatsapp !== false && formData.whatsapp_number,
+            whatsappNumber: formData.whatsapp_number,
+            showGuestListInfo: formData.enable_guest_list_submit === true,
+            formUrl: `/${slug}/form/${itemId}`,
+            primaryColor: formData.primary_color || '#4A90E2',
+            secondaryColor: formData.secondary_color || formData.primary_color || '#6BA3F0',
+            autoRedirect: false
+        });
+
+    } catch (error) {
+        logger.error('Erro ao carregar página de sucesso:', error);
+        return res.status(500).send('<h1>500 - Erro ao carregar página</h1>');
     } finally {
         client.release();
     }

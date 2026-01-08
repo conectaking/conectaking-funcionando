@@ -713,40 +713,179 @@
             });
         });
         
+        // Função para mostrar loading state
+        function showLoadingState(button, message = 'Enviando...') {
+            button.disabled = true;
+            button.style.opacity = '0.7';
+            button.style.cursor = 'not-allowed';
+            const originalHTML = button.innerHTML;
+            button.dataset.originalHTML = originalHTML;
+            button.innerHTML = `<i class="fas fa-spinner fa-spin" style="font-size: 22px;"></i> <span>${message}</span>`;
+            return originalHTML;
+        }
+        
+        // Função para restaurar botão
+        function restoreButton(button, originalHTML) {
+            button.disabled = false;
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+            button.innerHTML = originalHTML;
+        }
+        
+        // Função para mostrar mensagem de sucesso
+        function showSuccessMessage(message, duration = 5000) {
+            const form = document.getElementById('digital-form');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'form-success-message';
+            successDiv.style.cssText = `
+                background: linear-gradient(135deg, #4caf50, #45a049);
+                color: white;
+                padding: 24px;
+                border-radius: 12px;
+                margin: 20px 0;
+                box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                animation: slideDown 0.3s ease-out;
+            `;
+            successDiv.innerHTML = `
+                <i class="fas fa-check-circle" style="font-size: 32px;"></i>
+                <div style="flex: 1;">
+                    <strong style="display: block; font-size: 18px; margin-bottom: 4px;">Sucesso!</strong>
+                    <p style="margin: 0; font-size: 14px; opacity: 0.95;">${message}</p>
+                </div>
+            `;
+            
+            // Adicionar animação CSS se não existir
+            if (!document.getElementById('form-success-styles')) {
+                const style = document.createElement('style');
+                style.id = 'form-success-styles';
+                style.textContent = `
+                    @keyframes slideDown {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            form.insertBefore(successDiv, form.firstChild);
+            
+            // Scroll para a mensagem
+            successDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Remover após duração
+            setTimeout(() => {
+                successDiv.style.animation = 'slideDown 0.3s ease-out reverse';
+                setTimeout(() => successDiv.remove(), 300);
+            }, duration);
+        }
+        
+        // Função para mostrar erro de forma amigável
+        function showErrorMessage(message, field = null) {
+            if (field) {
+                const fieldGroup = field.closest('.form-group');
+                if (fieldGroup) {
+                    fieldGroup.classList.add('field-error');
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'field-error-message';
+                    errorDiv.style.cssText = 'color: #d32f2f; font-size: 12px; margin-top: 8px; display: flex; align-items: center; gap: 6px; animation: shake 0.3s;';
+                    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+                    fieldGroup.appendChild(errorDiv);
+                    
+                    // Scroll para o erro
+                    fieldGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else {
+                // Mensagem global
+                const form = document.getElementById('digital-form');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'form-error-message';
+                errorDiv.style.cssText = `
+                    background: #ffebee;
+                    border-left: 4px solid #d32f2f;
+                    color: #c62828;
+                    padding: 16px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    animation: shake 0.3s;
+                `;
+                errorDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle" style="font-size: 20px;"></i>
+                    <div>
+                        <strong style="display: block; margin-bottom: 4px;">Erro</strong>
+                        <p style="margin: 0; font-size: 14px;">${message}</p>
+                    </div>
+                `;
+                
+                // Adicionar animação shake se não existir
+                if (!document.getElementById('form-error-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'form-error-styles';
+                    style.textContent = `
+                        @keyframes shake {
+                            0%, 100% { transform: translateX(0); }
+                            25% { transform: translateX(-10px); }
+                            75% { transform: translateX(10px); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                form.insertBefore(errorDiv, form.firstChild);
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                setTimeout(() => {
+                    errorDiv.style.opacity = '0';
+                    errorDiv.style.transition = 'opacity 0.3s';
+                    setTimeout(() => errorDiv.remove(), 300);
+                }, 5000);
+            }
+        }
+
         document.getElementById('digital-form').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            const submitBtn = document.getElementById('form-submit-btn');
+            const originalHTML = showLoadingState(submitBtn, 'Validando...');
 
             // Verificar se WhatsApp está habilitado e se tem número configurado
             if (enableWhatsapp && !whatsappNumber) {
-                alert('Número do WhatsApp não configurado!');
+                restoreButton(submitBtn, originalHTML);
+                showErrorMessage('Número do WhatsApp não configurado. Entre em contato com o administrador.');
                 return;
             }
             
             // Se nem WhatsApp nem lista de convidados estão ativos, mostrar erro
             if (!enableWhatsapp && !enableGuestListSubmit) {
-                alert('Nenhuma opção de envio está configurada!');
+                restoreButton(submitBtn, originalHTML);
+                showErrorMessage('Nenhuma opção de envio está configurada. Entre em contato com o administrador.');
                 return;
             }
             
             // Validar formulário antes de enviar
+            showLoadingState(submitBtn, 'Validando dados...');
             const validation = validateForm();
             if (!validation.isValid) {
+                restoreButton(submitBtn, originalHTML);
                 // Scroll para o primeiro erro
                 const firstError = document.querySelector('.field-error');
                 if (firstError) {
                     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
                 
-                // Mostrar mensagem de erro
-                const submitBtn = document.getElementById('form-submit-btn');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Corrija os erros acima';
-                submitBtn.style.background = '#d32f2f';
-                setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.style.background = '';
-                }, 3000);
-                
+                // Mostrar mensagem de erro global
+                showErrorMessage('Por favor, corrija os erros destacados acima antes de enviar.');
                 return;
             }
 
@@ -845,6 +984,10 @@
             });
             
             // Enviar para o servidor
+            showLoadingState(submitBtn, 'Enviando formulário...');
+            let submitSuccess = false;
+            let responseId = null;
+            
             try {
                 const submitResponse = await fetch(`/<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>/form/<%= item.id %>/submit`, {
                     method: 'POST',
@@ -860,13 +1003,42 @@
                     })
                 });
                 
+                const submitResult = await submitResponse.json();
+                
                 if (!submitResponse.ok) {
-                    console.error('Erro ao salvar resposta no servidor');
+                    throw new Error(submitResult.message || 'Erro ao salvar resposta no servidor');
                 }
+                
+                submitSuccess = true;
+                responseId = submitResult.response_id;
+                
+                // Opção de redirecionar para página de sucesso
+                if (submitResult.success_page_url && window.location.search.includes('redirect=success')) {
+                    window.location.href = submitResult.success_page_url;
+                    return;
+                }
+                
             } catch (error) {
                 console.error('Erro ao salvar resposta:', error);
+                restoreButton(submitBtn, originalHTML);
+                
+                // Mensagem de erro específica
+                let errorMessage = 'Erro ao enviar formulário. ';
+                if (error.message.includes('fetch') || error.message.includes('network')) {
+                    errorMessage += 'Verifique sua conexão com a internet e tente novamente.';
+                } else if (error.message.includes('429')) {
+                    errorMessage += 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
+                } else {
+                    errorMessage += error.message || 'Tente novamente em alguns instantes.';
+                }
+                
+                showErrorMessage(errorMessage);
+                return;
             }
 
+            // Se chegou aqui, o formulário foi enviado com sucesso
+            showLoadingState(submitBtn, 'Processando...');
+            
             // Verificar se deve abrir WhatsApp
             if (enableWhatsapp && whatsappNumber) {
                 // Formatando mensagem para WhatsApp
@@ -894,37 +1066,53 @@
                 window.open(whatsappUrl, '_blank');
             }
             
-            // Se só está salvando na lista (sem WhatsApp), mostrar mensagem de sucesso
+            // Mostrar mensagem de sucesso baseada nas opções
+            let successMessage = '';
             if (!enableWhatsapp && enableGuestListSubmit) {
-                // Mostrar mensagem de sucesso
-                const submitBtn = document.getElementById('form-submit-btn');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Inscrição realizada com sucesso!';
-                submitBtn.style.background = '#4caf50';
-                submitBtn.disabled = true;
-                
-                // Limpar formulário
+                successMessage = 'Inscrição realizada com sucesso! Você foi adicionado à lista.';
+            } else if (enableWhatsapp && enableGuestListSubmit) {
+                successMessage = 'Formulário enviado e salvo com sucesso! Verifique o WhatsApp.';
+            } else if (enableWhatsapp) {
+                successMessage = 'Formulário enviado com sucesso! Verifique o WhatsApp.';
+            } else {
+                successMessage = 'Formulário enviado com sucesso!';
+            }
+            
+            // Mostrar mensagem de sucesso
+            showSuccessMessage(successMessage, 8000);
+            
+            // Atualizar botão para sucesso
+            submitBtn.innerHTML = '<i class="fas fa-check-circle" style="font-size: 22px;"></i> <span>Enviado com sucesso!</span>';
+            submitBtn.style.background = 'linear-gradient(135deg, #4caf50, #45a049)';
+            submitBtn.style.color = 'white';
+            submitBtn.disabled = true;
+            
+            // Limpar formulário após delay
+            setTimeout(() => {
                 document.getElementById('digital-form').reset();
                 
-                // Scroll para o topo
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                
-                // Restaurar botão após 5 segundos
+                // Restaurar botão após 3 segundos
                 setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
+                    restoreButton(submitBtn, originalHTML);
                     submitBtn.style.background = '';
-                    submitBtn.disabled = false;
-                }, 5000);
-            } else if (enableWhatsapp && enableGuestListSubmit) {
-                // Se ambos estão ativos, WhatsApp já foi aberto acima, apenas mostrar feedback
-                const submitBtn = document.getElementById('form-submit-btn');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Enviado e salvo!';
-                submitBtn.style.background = '#4caf50';
-                setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.style.background = '';
+                    submitBtn.style.color = '';
                 }, 3000);
+            }, 2000);
+            
+            // Registrar evento de sucesso para analytics
+            try {
+                await fetch(`/<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>/form/<%= item.id %>/analytics`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        event_type: 'submit_success',
+                        session_id: sessionId,
+                        response_id: responseId
+                    })
+                });
+            } catch (analyticsError) {
+                // Ignorar erros de analytics
+                console.warn('Erro ao registrar analytics de sucesso:', analyticsError);
             }
         });
         
