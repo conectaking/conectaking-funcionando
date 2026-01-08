@@ -182,29 +182,29 @@
                             const enableGuestListSubmitValue = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
                         %>
                         
-                        <!-- Botão para enviar apenas para o sistema (sem WhatsApp) -->
-                        <% if (enableGuestListSubmitValue && !enableWhatsappValue) { %>
-                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="system-only">
+                        <!-- Botão para enviar apenas para o sistema (sem WhatsApp) - AMARELO -->
+                        <% if (!enableWhatsappValue && enableGuestListSubmitValue) { %>
+                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="system-only" style="background: linear-gradient(135deg, #FFC700, #FFA500) !important; color: #000 !important; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.4) !important;">
                             <i class="fas fa-user-plus" style="font-size: 22px;"></i>
                             <span>Inscrever-se</span>
                             <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
                         </button>
                         <% } %>
                         
-                        <!-- Botão para enviar via WhatsApp -->
-                        <% if (enableWhatsappValue) { %>
-                        <button type="button" class="submit-btn" id="whatsapp-submit-btn" style="<%= enableGuestListSubmitValue && !enableWhatsappValue ? 'display: none;' : '' %>">
-                            <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
-                            <span><%= enableGuestListSubmitValue ? 'Enviar e Inscrever-se via WhatsApp' : 'Enviar via WhatsApp' %></span>
+                        <!-- Botão genérico de envio (fallback) - AMARELO quando WhatsApp desativado -->
+                        <% if (!enableWhatsappValue && !enableGuestListSubmitValue) { %>
+                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="generic" style="background: linear-gradient(135deg, #FFC700, #FFA500) !important; color: #000 !important; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.4) !important;">
+                            <i class="fas fa-paper-plane" style="font-size: 22px;"></i>
+                            <span>Enviar</span>
                             <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
                         </button>
                         <% } %>
                         
-                        <!-- Botão genérico de envio (fallback) - AMARELO quando WhatsApp desativado -->
-                        <% if (!enableWhatsappValue && !enableGuestListSubmitValue) { %>
-                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="generic" style="background: linear-gradient(135deg, #FFC700, #FFA500) !important; color: #000 !important; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.4);">
-                            <i class="fas fa-paper-plane" style="font-size: 22px;"></i>
-                            <span>Enviar</span>
+                        <!-- Botão para enviar via WhatsApp (verde) -->
+                        <% if (enableWhatsappValue) { %>
+                        <button type="button" class="submit-btn" id="whatsapp-submit-btn" style="background: linear-gradient(135deg, #25D366, #20BA5A) !important; color: #fff !important; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3) !important;">
+                            <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
+                            <span><%= enableGuestListSubmitValue ? 'Enviar e Inscrever-se via WhatsApp' : 'Enviar via WhatsApp' %></span>
                             <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
                         </button>
                         <% } %>

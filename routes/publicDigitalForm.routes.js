@@ -391,15 +391,38 @@ router.post('/:slug/form/:itemId/submit',
         const item = itemRes.rows[0];
         const isGuestList = item.item_type === 'guest_list';
         
+        // Buscar configurações do formulário (enable_whatsapp e enable_guest_list_submit)
+        const formDataRes = await client.query(
+            `SELECT enable_whatsapp, enable_guest_list_submit 
+             FROM digital_form_items 
+             WHERE profile_item_id = $1`,
+            [itemIdInt]
+        );
+        
+        let enableWhatsapp = true; // Default
+        let enableGuestListSubmit = false; // Default
+        
+        if (formDataRes.rows.length > 0) {
+            enableWhatsapp = formDataRes.rows[0].enable_whatsapp !== false;
+            enableGuestListSubmit = formDataRes.rows[0].enable_guest_list_submit === true;
+        }
+        
         // Se for guest_list, verificar se enable_guest_list_submit está ativo
         let shouldSaveToGuestList = false;
         if (isGuestList) {
-            const formDataRes = await client.query(
-                'SELECT enable_guest_list_submit FROM digital_form_items WHERE profile_item_id = $1',
+            shouldSaveToGuestList = enableGuestListSubmit;
+        }
+        
+        // IMPORTANTE: Se enable_guest_list_submit estiver ativo (mesmo que não seja guest_list),
+        // também salvar na lista de convidados se existir uma associada
+        if (enableGuestListSubmit && !isGuestList) {
+            // Verificar se existe uma guest_list associada a este profile_item
+            const guestListCheck = await client.query(
+                'SELECT id FROM guest_list_items WHERE profile_item_id = $1',
                 [itemIdInt]
             );
-            if (formDataRes.rows.length > 0) {
-                shouldSaveToGuestList = formDataRes.rows[0].enable_guest_list_submit === true;
+            if (guestListCheck.rows.length > 0) {
+                shouldSaveToGuestList = true;
             }
         }
         
