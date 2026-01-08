@@ -354,13 +354,38 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             
             if (item.item_type === 'digital_form' || item.item_type === 'guest_list') {
                 try {
+                    // Verificar se as colunas existem antes de buscar
+                    const columnCheck = await client.query(`
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'digital_form_items' 
+                        AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit')
+                    `);
+                    
+                    const hasEnableWhatsapp = columnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+                    const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+                    
                     // Buscar dados do formulário digital (pode ser digital_form ou guest_list convertido)
-                    const formRes = await client.query(
-                        'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
-                        [item.id]
-                    );
+                    let formRes;
+                    if (hasEnableWhatsapp || hasEnableGuestListSubmit) {
+                        formRes = await client.query(
+                            `SELECT dfi.*, 
+                                    ${hasEnableWhatsapp ? 'COALESCE(dfi.enable_whatsapp, true) as enable_whatsapp' : 'true as enable_whatsapp'},
+                                    ${hasEnableGuestListSubmit ? 'COALESCE(dfi.enable_guest_list_submit, false) as enable_guest_list_submit' : 'false as enable_guest_list_submit'}
+                             FROM digital_form_items dfi 
+                             WHERE dfi.profile_item_id = $1`,
+                            [item.id]
+                        );
+                    } else {
+                        formRes = await client.query(
+                            'SELECT *, true as enable_whatsapp, false as enable_guest_list_submit FROM digital_form_items WHERE profile_item_id = $1',
+                            [item.id]
+                        );
+                    }
+                    
                     if (formRes.rows.length > 0) {
                         item.digital_form_data = formRes.rows[0];
+                        
                         // Garantir que form_fields seja sempre um array válido
                         if (item.digital_form_data.form_fields) {
                             if (typeof item.digital_form_data.form_fields === 'string') {
@@ -381,13 +406,23 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                             item.digital_form_data.form_fields = [];
                         }
                         
-                        // Garantir valores padrão para enable_whatsapp e enable_guest_list_submit
-                        if (item.digital_form_data.enable_whatsapp === undefined || item.digital_form_data.enable_whatsapp === null) {
-                            item.digital_form_data.enable_whatsapp = true;
+                        // NÃO sobrescrever valores false - apenas aplicar defaults se for undefined/null
+                        // IMPORTANTE: Respeitar valores false do banco!
+                        if (!hasEnableWhatsapp || (item.digital_form_data.enable_whatsapp === undefined || item.digital_form_data.enable_whatsapp === null)) {
+                            item.digital_form_data.enable_whatsapp = true; // Default apenas se não existir
                         }
-                        if (item.digital_form_data.enable_guest_list_submit === undefined || item.digital_form_data.enable_guest_list_submit === null) {
-                            item.digital_form_data.enable_guest_list_submit = false;
+                        if (!hasEnableGuestListSubmit || (item.digital_form_data.enable_guest_list_submit === undefined || item.digital_form_data.enable_guest_list_submit === null)) {
+                            item.digital_form_data.enable_guest_list_submit = false; // Default apenas se não existir
                         }
+                        
+                        // Log para debug
+                        logger.debug('📋 [CARD] Dados do formulário carregados:', {
+                            itemId: item.id,
+                            enable_whatsapp: item.digital_form_data.enable_whatsapp,
+                            enable_guest_list_submit: item.digital_form_data.enable_guest_list_submit,
+                            hasEnableWhatsapp: hasEnableWhatsapp,
+                            hasEnableGuestListSubmit: hasEnableGuestListSubmit
+                        });
                     } else {
                         item.digital_form_data = {
                             form_fields: [],

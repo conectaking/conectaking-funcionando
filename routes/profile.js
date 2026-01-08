@@ -1839,6 +1839,37 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                     updateFormValues.push(background_color || '#FFFFFF');
                 }
             }
+            
+            // Adicionar enable_whatsapp e enable_guest_list_submit se existirem
+            if (enable_whatsapp !== undefined) {
+                const enableWhatsappCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'enable_whatsapp'
+                `);
+                if (enableWhatsappCheck.rows.length > 0) {
+                    updateFormFields.push(`enable_whatsapp = $${formParamIndex++}`);
+                    // Garantir que seja booleano - respeitar false!
+                    const enableWhatsappValue = enable_whatsapp === true || enable_whatsapp === 'true' || enable_whatsapp === 1 || enable_whatsapp === '1';
+                    updateFormValues.push(enableWhatsappValue);
+                    console.log(`💾 [DIGITAL_FORM] Salvando enable_whatsapp: ${enableWhatsappValue} (recebido: ${enable_whatsapp}, tipo: ${typeof enable_whatsapp})`);
+                }
+            }
+            
+            if (enable_guest_list_submit !== undefined) {
+                const enableGuestListSubmitCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'enable_guest_list_submit'
+                `);
+                if (enableGuestListSubmitCheck.rows.length > 0) {
+                    updateFormFields.push(`enable_guest_list_submit = $${formParamIndex++}`);
+                    // Garantir que seja booleano - respeitar false!
+                    const enableGuestListSubmitValue = enable_guest_list_submit === true || enable_guest_list_submit === 'true' || enable_guest_list_submit === 1 || enable_guest_list_submit === '1';
+                    updateFormValues.push(enableGuestListSubmitValue);
+                    console.log(`💾 [DIGITAL_FORM] Salvando enable_guest_list_submit: ${enableGuestListSubmitValue} (recebido: ${enable_guest_list_submit}, tipo: ${typeof enable_guest_list_submit})`);
+                }
+            }
 
             if (updateFormFields.length > 0) {
                 updateFormValues.push(itemId);
@@ -1852,12 +1883,12 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
         } else {
             // Criar novo registro
-            // Verificar se colunas do pastor, logo corner, button_logo_url, button_logo_size, background_color, secondary_color, card_color e pastor_button_name existem
+            // Verificar se colunas do pastor, logo corner, button_logo_url, button_logo_size, background_color, secondary_color, card_color, pastor_button_name, enable_whatsapp e enable_guest_list_submit existem
             const extraColumnsCheck = await client.query(`
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'digital_form_items'
-                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'pastor_button_name', 'show_logo_corner', 'button_logo_url', 'button_logo_size', 'background_color', 'secondary_color', 'card_color')
+                AND column_name IN ('enable_pastor_button', 'pastor_whatsapp_number', 'pastor_button_name', 'show_logo_corner', 'button_logo_url', 'button_logo_size', 'background_color', 'secondary_color', 'card_color', 'enable_whatsapp', 'enable_guest_list_submit')
             `);
             const existingColumns = extraColumnsCheck.rows.map(r => r.column_name);
             const hasPastorColumns = existingColumns.includes('enable_pastor_button');
@@ -1868,6 +1899,8 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             const hasBackgroundColor = existingColumns.includes('background_color');
             const hasSecondaryColor = existingColumns.includes('secondary_color');
             const hasCardColor = existingColumns.includes('card_color');
+            const hasEnableWhatsapp = existingColumns.includes('enable_whatsapp');
+            const hasEnableGuestListSubmit = existingColumns.includes('enable_guest_list_submit');
             
             let extraFields = '';
             let extraValues = '';

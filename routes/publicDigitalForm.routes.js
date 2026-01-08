@@ -67,21 +67,11 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
         
         let formRes;
-        if (hasEnableWhatsapp || hasEnableGuestListSubmit) {
-            formRes = await client.query(
-                `SELECT dfi.*, 
-                        ${hasEnableWhatsapp ? 'COALESCE(dfi.enable_whatsapp, true) as enable_whatsapp' : 'true as enable_whatsapp'},
-                        ${hasEnableGuestListSubmit ? 'COALESCE(dfi.enable_guest_list_submit, false) as enable_guest_list_submit' : 'false as enable_guest_list_submit'}
-                 FROM digital_form_items dfi 
-                 WHERE dfi.profile_item_id = $1`,
-                [itemIdInt]
-            );
-        } else {
-            formRes = await client.query(
-                'SELECT *, true as enable_whatsapp, false as enable_guest_list_submit FROM digital_form_items WHERE profile_item_id = $1',
-                [itemIdInt]
-            );
-        }
+        // IMPORTANTE: Buscar valor exato do banco (sem COALESCE) para respeitar valores false
+        formRes = await client.query(
+            'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+            [itemIdInt]
+        );
 
         if (formRes.rows.length === 0) {
             return res.status(404).send('<h1>404 - Dados do formulário não encontrados</h1>');
@@ -90,12 +80,27 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         let formData = formRes.rows[0];
         
         // Garantir valores padrão para enable_whatsapp e enable_guest_list_submit
-        if (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null) {
-            formData.enable_whatsapp = true; // Default true
+        // IMPORTANTE: Respeitar valores false do banco - não sobrescrever!
+        if (hasEnableWhatsapp && (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null)) {
+            formData.enable_whatsapp = true; // Default true apenas se não existir coluna ou valor for null
+        } else if (!hasEnableWhatsapp) {
+            formData.enable_whatsapp = true; // Default se coluna não existir
         }
-        if (formData.enable_guest_list_submit === undefined || formData.enable_guest_list_submit === null) {
-            formData.enable_guest_list_submit = false; // Default false
+        // Se hasEnableWhatsapp é true e enable_whatsapp é false, manter false!
+        
+        if (hasEnableGuestListSubmit && (formData.enable_guest_list_submit === undefined || formData.enable_guest_list_submit === null)) {
+            formData.enable_guest_list_submit = false; // Default false apenas se não existir coluna ou valor for null
+        } else if (!hasEnableGuestListSubmit) {
+            formData.enable_guest_list_submit = false; // Default se coluna não existir
         }
+        // Se hasEnableGuestListSubmit é true e enable_guest_list_submit é false, manter false!
+        
+        logger.info('📋 [FORM/SHARE] Configurações carregadas:', {
+            enable_whatsapp: formData.enable_whatsapp,
+            enable_guest_list_submit: formData.enable_guest_list_submit,
+            hasEnableWhatsapp: hasEnableWhatsapp,
+            hasEnableGuestListSubmit: hasEnableGuestListSubmit
+        });
         
         // Garantir que secondary_color seja tratado corretamente (pode ser null)
         // Log para debug
@@ -224,21 +229,11 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
         
         let formRes;
-        if (hasEnableWhatsapp || hasEnableGuestListSubmit) {
-            formRes = await client.query(
-                `SELECT dfi.*, 
-                        ${hasEnableWhatsapp ? 'COALESCE(dfi.enable_whatsapp, true) as enable_whatsapp' : 'true as enable_whatsapp'},
-                        ${hasEnableGuestListSubmit ? 'COALESCE(dfi.enable_guest_list_submit, false) as enable_guest_list_submit' : 'false as enable_guest_list_submit'}
-                 FROM digital_form_items dfi 
-                 WHERE dfi.profile_item_id = $1`,
-                [itemIdInt]
-            );
-        } else {
-            formRes = await client.query(
-                'SELECT *, true as enable_whatsapp, false as enable_guest_list_submit FROM digital_form_items WHERE profile_item_id = $1',
-                [itemIdInt]
-            );
-        }
+        // IMPORTANTE: Buscar valor exato do banco (sem COALESCE) para respeitar valores false
+        formRes = await client.query(
+            'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+            [itemIdInt]
+        );
 
         if (formRes.rows.length === 0) {
             return res.status(404).send('<h1>404 - Dados do formulário não encontrados</h1>');
@@ -247,12 +242,27 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         let formData = formRes.rows[0];
         
         // Garantir valores padrão para enable_whatsapp e enable_guest_list_submit
-        if (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null) {
-            formData.enable_whatsapp = true; // Default true
+        // IMPORTANTE: Respeitar valores false do banco - não sobrescrever!
+        if (hasEnableWhatsapp && (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null)) {
+            formData.enable_whatsapp = true; // Default true apenas se não existir coluna ou valor for null
+        } else if (!hasEnableWhatsapp) {
+            formData.enable_whatsapp = true; // Default se coluna não existir
         }
-        if (formData.enable_guest_list_submit === undefined || formData.enable_guest_list_submit === null) {
-            formData.enable_guest_list_submit = false; // Default false
+        // Se hasEnableWhatsapp é true e enable_whatsapp é false, manter false!
+        
+        if (hasEnableGuestListSubmit && (formData.enable_guest_list_submit === undefined || formData.enable_guest_list_submit === null)) {
+            formData.enable_guest_list_submit = false; // Default false apenas se não existir coluna ou valor for null
+        } else if (!hasEnableGuestListSubmit) {
+            formData.enable_guest_list_submit = false; // Default se coluna não existir
         }
+        // Se hasEnableGuestListSubmit é true e enable_guest_list_submit é false, manter false!
+        
+        logger.info('📋 [FORM] Configurações carregadas:', {
+            enable_whatsapp: formData.enable_whatsapp,
+            enable_guest_list_submit: formData.enable_guest_list_submit,
+            hasEnableWhatsapp: hasEnableWhatsapp,
+            hasEnableGuestListSubmit: hasEnableGuestListSubmit
+        });
         
         // Garantir que secondary_color seja tratado corretamente (pode ser null)
         // Log para debug
