@@ -176,10 +176,18 @@
                         <!-- Campos Dinâmicos (form_fields) -->
                         <div id="dynamic-fields-container"></div>
 
-                        <!-- Botão Enviar (WhatsApp Normal) -->
+                        <!-- Botão Enviar (Dinâmico baseado nas opções) -->
                         <button type="submit" class="submit-btn" id="form-submit-btn">
-                            <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
-                            <span>Enviar via WhatsApp</span>
+                            <% if (formData.enable_whatsapp !== false) { %>
+                                <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
+                                <span><%= formData.enable_guest_list_submit === true ? 'Enviar e Inscrever-se' : 'Enviar via WhatsApp' %></span>
+                            <% } else if (formData.enable_guest_list_submit === true) { %>
+                                <i class="fas fa-user-plus" style="font-size: 22px;"></i>
+                                <span>Inscrever-se</span>
+                            <% } else { %>
+                                <i class="fas fa-paper-plane" style="font-size: 22px;"></i>
+                                <span>Enviar</span>
+                            <% } %>
                             <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
                         </button>
                     </form>
@@ -708,8 +716,15 @@
         document.getElementById('digital-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            if (!whatsappNumber) {
+            // Verificar se WhatsApp está habilitado e se tem número configurado
+            if (enableWhatsapp && !whatsappNumber) {
                 alert('Número do WhatsApp não configurado!');
+                return;
+            }
+            
+            // Se nem WhatsApp nem lista de convidados estão ativos, mostrar erro
+            if (!enableWhatsapp && !enableGuestListSubmit) {
+                alert('Nenhuma opção de envio está configurada!');
                 return;
             }
             
@@ -852,29 +867,65 @@
                 console.error('Erro ao salvar resposta:', error);
             }
 
-            // Formatando mensagem para WhatsApp
-            let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
-            
-            // Adicionar respostas dos campos dinâmicos (currentFormFields já foi declarado acima)
-            currentFormFields.forEach((field, index) => {
-                const fieldId = field.id || `field_${index}`;
-                const fieldValue = data[fieldId];
-                if (fieldValue) {
-                    const fieldLabel = field.label || field.Label || 'Campo';
-                    if (Array.isArray(fieldValue)) {
-                        message += `*${fieldLabel}:* ${fieldValue.join(', ')}\n`;
-                    } else {
-                        message += `*${fieldLabel}:* ${fieldValue}\n`;
+            // Verificar se deve abrir WhatsApp
+            if (enableWhatsapp && whatsappNumber) {
+                // Formatando mensagem para WhatsApp
+                let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
+                
+                // Adicionar respostas dos campos dinâmicos (currentFormFields já foi declarado acima)
+                currentFormFields.forEach((field, index) => {
+                    const fieldId = field.id || `field_${index}`;
+                    const fieldValue = data[fieldId];
+                    if (fieldValue) {
+                        const fieldLabel = field.label || field.Label || 'Campo';
+                        if (Array.isArray(fieldValue)) {
+                            message += `*${fieldLabel}:* ${fieldValue.join(', ')}\n`;
+                        } else {
+                            message += `*${fieldLabel}:* ${fieldValue}\n`;
+                        }
                     }
-                }
-            });
+                });
 
-            // Limpar número do WhatsApp (apenas números)
-            const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
-            const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
+                // Limpar número do WhatsApp (apenas números)
+                const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
+                const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
+                
+                // Abrir WhatsApp
+                window.open(whatsappUrl, '_blank');
+            }
             
-            // Abrir WhatsApp
-            window.open(whatsappUrl, '_blank');
+            // Se só está salvando na lista (sem WhatsApp), mostrar mensagem de sucesso
+            if (!enableWhatsapp && enableGuestListSubmit) {
+                // Mostrar mensagem de sucesso
+                const submitBtn = document.getElementById('form-submit-btn');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Inscrição realizada com sucesso!';
+                submitBtn.style.background = '#4caf50';
+                submitBtn.disabled = true;
+                
+                // Limpar formulário
+                document.getElementById('digital-form').reset();
+                
+                // Scroll para o topo
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                // Restaurar botão após 5 segundos
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.style.background = '';
+                    submitBtn.disabled = false;
+                }, 5000);
+            } else if (enableWhatsapp && enableGuestListSubmit) {
+                // Se ambos estão ativos, WhatsApp já foi aberto acima, apenas mostrar feedback
+                const submitBtn = document.getElementById('form-submit-btn');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Enviado e salvo!';
+                submitBtn.style.background = '#4caf50';
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.style.background = '';
+                }, 3000);
+            }
         });
         
         // Botão "Enviar Mensagem para o Pastor"

@@ -236,18 +236,33 @@ router.post('/:slug/form/:itemId/submit', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     
     try {
-        // Buscar usuário por slug
-        const userRes = await client.query(
-            'SELECT id FROM users WHERE profile_slug = $1 OR id = $1',
-            [slug]
-        );
-        
-        if (userRes.rows.length === 0) {
-            return res.status(404).json({ message: 'Perfil não encontrado' });
-        }
-
-        const userId = userRes.rows[0].id;
         const itemIdInt = parseInt(itemId, 10);
+        
+        // Se slug for 'form' e itemId for um número, pode ser acesso via share_token
+        // Nesse caso, buscar o userId pelo itemId
+        let userId;
+        if (slug === 'form' && !isNaN(itemIdInt)) {
+            // Buscar userId pelo itemId
+            const itemRes = await client.query(
+                'SELECT user_id FROM profile_items WHERE id = $1',
+                [itemIdInt]
+            );
+            if (itemRes.rows.length === 0) {
+                return res.status(404).json({ message: 'Formulário não encontrado' });
+            }
+            userId = itemRes.rows[0].user_id;
+        } else {
+            // Buscar usuário por slug
+            const userRes = await client.query(
+                'SELECT id FROM users WHERE profile_slug = $1 OR id = $1',
+                [slug]
+            );
+            
+            if (userRes.rows.length === 0) {
+                return res.status(404).json({ message: 'Perfil não encontrado' });
+            }
+            userId = userRes.rows[0].id;
+        }
 
         if (isNaN(itemIdInt)) {
             return res.status(400).json({ message: 'ID do formulário inválido' });
@@ -257,11 +272,12 @@ router.post('/:slug/form/:itemId/submit', asyncHandler(async (req, res) => {
             return res.status(400).json({ message: 'Dados de resposta são obrigatórios' });
         }
 
-        // Verificar se o formulário existe e está ativo
+        // Verificar se o formulário existe e está ativo (pode ser digital_form ou guest_list)
         const itemRes = await client.query(
-            `SELECT pi.id 
+            `SELECT pi.id, pi.item_type
              FROM profile_items pi
-             WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'digital_form' AND pi.is_active = true`,
+             WHERE pi.id = $1 AND pi.user_id = $2 AND pi.is_active = true
+             AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list')`,
             [itemIdInt, userId]
         );
 
@@ -269,7 +285,83 @@ router.post('/:slug/form/:itemId/submit', asyncHandler(async (req, res) => {
             return res.status(404).json({ message: 'Formulário não encontrado ou não está ativo' });
         }
 
-        // Inserir resposta
+        const item = itemRes.rows[0];
+        const isGuestList = item.item_type === 'guest_list';
+        
+        // Se for guest_list, verificar se enable_guest_list_submit está ativo
+        let shouldSaveToGuestList = false;
+        if (isGuestList) {
+            const formDataRes = await client.query(
+                'SELECT enable_guest_list_submit FROM digital_form_items WHERE profile_item_id = $1',
+                [itemIdInt]
+            );
+            if (formDataRes.rows.length > 0) {
+                shouldSaveToGuestList = formDataRes.rows[0].enable_guest_list_submit === true;
+            }
+        }
+        
+        // Se deve salvar na lista de convidados, fazer isso primeiro
+        if (shouldSaveToGuestList) {
+            try {
+                // Buscar guest_list_item_id
+                const guestListRes = await client.query(
+                    'SELECT id FROM guest_list_items WHERE profile_item_id = $1',
+                    [itemIdInt]
+                );
+                
+                if (guestListRes.rows.length > 0) {
+                    const guestListItemId = guestListRes.rows[0].id;
+                    
+                    // Mapear campos do formulário para campos da lista de convidados
+                    const guestData = {
+                        name: responder_name || response_data.name || '',
+                        whatsapp: responder_phone || response_data.whatsapp || response_data.phone || '',
+                        email: responder_email || response_data.email || null,
+                        phone: response_data.phone || null,
+                        document: response_data.document || response_data.cpf || response_data.cnpj || '',
+                        address: response_data.address || response_data.endereco || null,
+                        neighborhood: response_data.neighborhood || response_data.bairro || null,
+                        city: response_data.city || response_data.cidade || null,
+                        state: response_data.state || response_data.estado || null,
+                        zipcode: response_data.zipcode || response_data.cep || null,
+                        instagram: response_data.instagram || null,
+                        custom_responses: response_data
+                    };
+                    
+                    // Inserir na lista de convidados
+                    await client.query(`
+                        INSERT INTO guests (
+                            guest_list_id, name, email, phone, whatsapp, document, 
+                            address, neighborhood, city, state, zipcode, instagram,
+                            status, registration_source, custom_responses
+                        )
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'registered', 'form', $13::jsonb)
+                        RETURNING id
+                    `, [
+                        guestListItemId,
+                        guestData.name.trim(),
+                        guestData.email ? guestData.email.trim() : null,
+                        guestData.phone ? guestData.phone.trim() : null,
+                        guestData.whatsapp ? guestData.whatsapp.trim() : null,
+                        guestData.document ? guestData.document.trim() : null,
+                        guestData.address ? guestData.address.trim() : null,
+                        guestData.neighborhood ? guestData.neighborhood.trim() : null,
+                        guestData.city ? guestData.city.trim() : null,
+                        guestData.state ? guestData.state.trim() : null,
+                        guestData.zipcode ? guestData.zipcode.trim() : null,
+                        guestData.instagram ? guestData.instagram.trim() : null,
+                        JSON.stringify(guestData.custom_responses)
+                    ]);
+                    
+                    logger.info('Convidado salvo na lista via formulário', { itemId: itemIdInt, guestListItemId });
+                }
+            } catch (guestListError) {
+                logger.error('Erro ao salvar na lista de convidados:', guestListError);
+                // Continuar mesmo se falhar, para salvar a resposta normal
+            }
+        }
+
+        // Inserir resposta (sempre salvar resposta do formulário também)
         const result = await client.query(`
             INSERT INTO digital_form_responses (
                 profile_item_id, response_data, responder_name, responder_email, responder_phone

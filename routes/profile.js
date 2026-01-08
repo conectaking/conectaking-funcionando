@@ -1493,7 +1493,9 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             display_order,
             is_listed,
             generate_share_token,
-            item_type
+            item_type,
+            enable_whatsapp,
+            enable_guest_list_submit
         } = req.body;
 
         if (!itemId || isNaN(itemId)) {
