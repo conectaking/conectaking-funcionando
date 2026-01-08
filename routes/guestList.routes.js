@@ -472,7 +472,8 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             header_image_url,
             background_image_url,
             background_opacity,
-            theme
+            theme,
+            secondary_color
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
@@ -592,9 +593,26 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             guestListUpdateFields.push(`theme = $${guestListParamIndex++}`);
             guestListUpdateValues.push(theme);
         }
+        // Verificar se a coluna secondary_color existe antes de tentar atualizar
         if (secondary_color !== undefined) {
-            guestListUpdateFields.push(`secondary_color = $${guestListParamIndex++}`);
-            guestListUpdateValues.push(secondary_color || null);
+            try {
+                // Verificar se a coluna existe
+                const columnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND column_name = 'secondary_color'
+                `);
+                
+                if (columnCheck.rows.length > 0) {
+                    guestListUpdateFields.push(`secondary_color = $${guestListParamIndex++}`);
+                    guestListUpdateValues.push(secondary_color || null);
+                } else {
+                    logger.warn('Coluna secondary_color não existe na tabela guest_list_items. Execute a migration 068.');
+                }
+            } catch (err) {
+                logger.warn('Erro ao verificar coluna secondary_color:', err.message);
+            }
         }
         
         if (guestListUpdateFields.length > 0) {
