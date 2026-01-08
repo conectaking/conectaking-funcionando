@@ -350,9 +350,9 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 }
             }
             
-            if (item.item_type === 'digital_form') {
+            if (item.item_type === 'digital_form' || item.item_type === 'guest_list') {
                 try {
-                    // Buscar dados do formulário digital
+                    // Buscar dados do formulário digital (pode ser digital_form ou guest_list convertido)
                     const formRes = await client.query(
                         'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
                         [item.id]
@@ -378,9 +378,19 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                         } else {
                             item.digital_form_data.form_fields = [];
                         }
+                        
+                        // Garantir valores padrão para enable_whatsapp e enable_guest_list_submit
+                        if (item.digital_form_data.enable_whatsapp === undefined || item.digital_form_data.enable_whatsapp === null) {
+                            item.digital_form_data.enable_whatsapp = true;
+                        }
+                        if (item.digital_form_data.enable_guest_list_submit === undefined || item.digital_form_data.enable_guest_list_submit === null) {
+                            item.digital_form_data.enable_guest_list_submit = false;
+                        }
                     } else {
                         item.digital_form_data = {
-                            form_fields: []
+                            form_fields: [],
+                            enable_whatsapp: true,
+                            enable_guest_list_submit: false
                         }; // Garantir que o objeto exista com estrutura correta
                     }
                 } catch (formError) {
@@ -390,7 +400,9 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                         stack: formError.stack
                     });
                     item.digital_form_data = {
-                        form_fields: []
+                        form_fields: [],
+                        enable_whatsapp: true,
+                        enable_guest_list_submit: false
                     };
                 }
             }

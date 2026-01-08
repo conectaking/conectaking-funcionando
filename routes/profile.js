@@ -1553,7 +1553,10 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         }
         if (is_listed !== undefined && existingColumns.includes('is_listed')) {
             updateFields.push(`is_listed = $${paramIndex++}`);
-            updateValues.push(is_listed);
+            // Garantir que is_listed seja um booleano
+            const isListedValue = is_listed === true || is_listed === 'true' || is_listed === 1 || is_listed === '1';
+            updateValues.push(isListedValue);
+            console.log(`💾 [DIGITAL_FORM] Salvando is_listed: ${isListedValue} (recebido: ${is_listed}, tipo: ${typeof is_listed})`);
         }
         // Gerar share_token se solicitado
         let generatedToken = null;
