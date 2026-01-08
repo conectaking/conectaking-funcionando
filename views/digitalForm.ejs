@@ -1277,6 +1277,153 @@
             });
         }
         <% } %>
+        
+        // Botão "Enviar via WhatsApp" - SEMPRE salva no sistema também
+        const whatsappBtn = document.getElementById('whatsapp-submit-btn');
+        if (whatsappBtn) {
+            whatsappBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                
+                // Validar formulário antes de enviar
+                const validation = validateForm();
+                if (!validation.isValid) {
+                    const firstError = document.querySelector('.field-error');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    showErrorMessage('Por favor, corrija os erros destacados acima antes de enviar.');
+                    return;
+                }
+                
+                const originalHTML = showLoadingState(whatsappBtn, 'Salvando...');
+                
+                // Coletar dados do formulário
+                const form = document.getElementById('digital-form');
+                const formData = new FormData(form);
+                const data = {};
+                const responseData = {};
+                
+                let currentFormFields = window.formFields || formDataObj.form_fields || [];
+                if (typeof currentFormFields === 'string') {
+                    try {
+                        currentFormFields = JSON.parse(currentFormFields);
+                    } catch (e) {
+                        currentFormFields = [];
+                    }
+                }
+                if (!Array.isArray(currentFormFields)) {
+                    currentFormFields = [];
+                }
+                
+                // Coletar todos os campos
+                for (const [key, value] of formData.entries()) {
+                    const field = currentFormFields.find(f => {
+                        const fieldId = f.id || `field_${currentFormFields.indexOf(f)}`;
+                        return fieldId === key;
+                    });
+                    if (field) {
+                        if (field.type === 'checkbox') {
+                            if (!responseData[key]) responseData[key] = [];
+                            responseData[key].push(value);
+                        } else {
+                            responseData[key] = value;
+                        }
+                        data[key] = responseData[key];
+                    } else {
+                        data[key] = value;
+                    }
+                }
+                
+                currentFormFields.forEach((field, index) => {
+                    const fieldId = field.id || `field_${index}`;
+                    
+                    if (field.type === 'checkbox') {
+                        const checkboxes = document.querySelectorAll(`input[name="${fieldId}"]:checked`);
+                        if (checkboxes.length > 0) {
+                            responseData[fieldId] = Array.from(checkboxes).map(cb => cb.value);
+                            data[fieldId] = responseData[fieldId].join(', ');
+                        }
+                    } else if (field.type === 'multiple_choice' || field.type === 'yes_no' || field.type === 'linear_scale' || field.type === 'rating') {
+                        const selected = document.querySelector(`input[name="${fieldId}"]:checked`);
+                        if (selected) {
+                            responseData[fieldId] = selected.value;
+                            data[fieldId] = selected.value;
+                        }
+                    } else {
+                        const input = document.querySelector(`#field-${index}`);
+                        if (input && input.value) {
+                            responseData[fieldId] = input.value;
+                            data[fieldId] = input.value;
+                        }
+                    }
+                });
+                
+                // IMPORTANTE: Sempre salvar no sistema primeiro
+                try {
+                    showLoadingState(whatsappBtn, 'Salvando no sistema...');
+                    const submitResponse = await fetch(`/${slug}/form/${itemId}/submit`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            response_data: responseData,
+                            responder_name: data.name || null,
+                            responder_email: data.email || null,
+                            responder_phone: data.phone || null,
+                            session_id: sessionId
+                        })
+                    });
+                    
+                    if (!submitResponse.ok) {
+                        const errorData = await submitResponse.json().catch(() => ({ message: 'Erro desconhecido' }));
+                        throw new Error(errorData.message || 'Erro ao salvar resposta no servidor');
+                    }
+                    
+                    const submitResult = await submitResponse.json();
+                    console.log('✅ [WHATSAPP] Resposta salva no sistema:', submitResult);
+                } catch (error) {
+                    console.error('❌ [WHATSAPP] Erro ao salvar no sistema:', error);
+                    restoreButton(whatsappBtn, originalHTML);
+                    showErrorMessage('Erro ao salvar no sistema. Tente novamente.');
+                    return;
+                }
+                
+                // Formatar mensagem para WhatsApp
+                let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
+                
+                currentFormFields.forEach((field, index) => {
+                    const fieldId = field.id || `field_${index}`;
+                    const fieldValue = data[fieldId];
+                    if (fieldValue) {
+                        const fieldLabel = field.label || field.Label || 'Campo';
+                        if (Array.isArray(fieldValue)) {
+                            message += `*${fieldLabel}:* ${fieldValue.join(', ')}\n`;
+                        } else {
+                            message += `*${fieldLabel}:* ${fieldValue}\n`;
+                        }
+                    }
+                });
+                
+                // Limpar número do WhatsApp (apenas números)
+                const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
+                const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
+                
+                // Abrir WhatsApp
+                window.open(whatsappUrl, '_blank');
+                
+                // Mostrar mensagem de sucesso
+                showSuccessMessage('Formulário salvo e enviado via WhatsApp!', 5000);
+                
+                // Restaurar botão
+                restoreButton(whatsappBtn, originalHTML);
+                
+                // Limpar formulário após delay
+                setTimeout(() => {
+                    document.getElementById('digital-form').reset();
+                }, 2000);
+            });
+        }
     </script>
     
     <!-- Rodapé com Direitos Autorais -->

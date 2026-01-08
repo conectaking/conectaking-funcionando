@@ -392,7 +392,7 @@ router.post('/:slug/form/:itemId/submit',
         const isGuestList = item.item_type === 'guest_list';
         
         // Buscar configurações do formulário (enable_whatsapp e enable_guest_list_submit)
-        const formDataRes = await client.query(
+        const formConfigRes = await client.query(
             `SELECT enable_whatsapp, enable_guest_list_submit 
              FROM digital_form_items 
              WHERE profile_item_id = $1`,
@@ -402,9 +402,9 @@ router.post('/:slug/form/:itemId/submit',
         let enableWhatsapp = true; // Default
         let enableGuestListSubmit = false; // Default
         
-        if (formDataRes.rows.length > 0) {
-            enableWhatsapp = formDataRes.rows[0].enable_whatsapp !== false;
-            enableGuestListSubmit = formDataRes.rows[0].enable_guest_list_submit === true;
+        if (formConfigRes.rows.length > 0) {
+            enableWhatsapp = formConfigRes.rows[0].enable_whatsapp !== false;
+            enableGuestListSubmit = formConfigRes.rows[0].enable_guest_list_submit === true;
         }
         
         // Se for guest_list, verificar se enable_guest_list_submit está ativo
@@ -535,12 +535,12 @@ router.post('/:slug/form/:itemId/submit',
         });
 
         // Buscar dados do formulário para página de sucesso
-        const formDataRes = await client.query(
+        const formDataForSuccess = await client.query(
             'SELECT form_title, enable_whatsapp, enable_guest_list_submit, whatsapp_number, primary_color, secondary_color FROM digital_form_items WHERE profile_item_id = $1',
             [itemIdInt]
         );
         
-        const formData = formDataRes.rows[0] || {};
+        const formData = formDataForSuccess.rows[0] || {};
         const showSuccessPage = req.query.success_page === 'true' || req.headers['x-success-page'] === 'true';
         
         if (showSuccessPage) {
