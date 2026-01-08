@@ -176,20 +176,38 @@
                         <!-- Campos Dinâmicos (form_fields) -->
                         <div id="dynamic-fields-container"></div>
 
-                        <!-- Botão Enviar (Dinâmico baseado nas opções) -->
-                        <button type="submit" class="submit-btn" id="form-submit-btn">
-                            <% if (formData.enable_whatsapp !== false) { %>
-                                <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
-                                <span><%= formData.enable_guest_list_submit === true ? 'Enviar e Inscrever-se' : 'Enviar via WhatsApp' %></span>
-                            <% } else if (formData.enable_guest_list_submit === true) { %>
-                                <i class="fas fa-user-plus" style="font-size: 22px;"></i>
-                                <span>Inscrever-se</span>
-                            <% } else { %>
-                                <i class="fas fa-paper-plane" style="font-size: 22px;"></i>
-                                <span>Enviar</span>
-                            <% } %>
+                        <!-- Botões de Envio (Dinâmicos baseado nas opções) -->
+                        <% 
+                            const enableWhatsappValue = formData.enable_whatsapp === true || formData.enable_whatsapp === 'true' || formData.enable_whatsapp === 1 || formData.enable_whatsapp === '1';
+                            const enableGuestListSubmitValue = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
+                        %>
+                        
+                        <!-- Botão para enviar apenas para o sistema (sem WhatsApp) -->
+                        <% if (enableGuestListSubmitValue && !enableWhatsappValue) { %>
+                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="system-only">
+                            <i class="fas fa-user-plus" style="font-size: 22px;"></i>
+                            <span>Inscrever-se</span>
                             <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
                         </button>
+                        <% } %>
+                        
+                        <!-- Botão para enviar via WhatsApp -->
+                        <% if (enableWhatsappValue) { %>
+                        <button type="button" class="submit-btn" id="whatsapp-submit-btn" style="<%= enableGuestListSubmitValue && !enableWhatsappValue ? 'display: none;' : '' %>">
+                            <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
+                            <span><%= enableGuestListSubmitValue ? 'Enviar e Inscrever-se via WhatsApp' : 'Enviar via WhatsApp' %></span>
+                            <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
+                        </button>
+                        <% } %>
+                        
+                        <!-- Botão genérico de envio (fallback) -->
+                        <% if (!enableWhatsappValue && !enableGuestListSubmitValue) { %>
+                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="generic">
+                            <i class="fas fa-paper-plane" style="font-size: 22px;"></i>
+                            <span>Enviar</span>
+                            <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
+                        </button>
+                        <% } %>
                     </form>
                     
                     <!-- Botão Enviar Mensagem para o Pastor (Abaixo do formulário) -->
@@ -264,6 +282,18 @@
         const whatsappNumber = enablePastorButton && pastorWhatsappNumber ? pastorWhatsappNumber : '<%= formData.whatsapp_number || '' %>';
         const itemId = <%= itemId || item.id %>;
         const slug = '<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>';
+        
+        // Verificar enable_whatsapp e enable_guest_list_submit corretamente
+        const enableWhatsapp = formDataObj.enable_whatsapp === true || formDataObj.enable_whatsapp === 'true' || formDataObj.enable_whatsapp === 1 || formDataObj.enable_whatsapp === '1';
+        const enableGuestListSubmit = formDataObj.enable_guest_list_submit === true || formDataObj.enable_guest_list_submit === 'true' || formDataObj.enable_guest_list_submit === 1 || formDataObj.enable_guest_list_submit === '1';
+        
+        console.log('🔍 [FORM] Configurações carregadas:', {
+            enable_whatsapp: formDataObj.enable_whatsapp,
+            enableWhatsapp: enableWhatsapp,
+            enable_guest_list_submit: formDataObj.enable_guest_list_submit,
+            enableGuestListSubmit: enableGuestListSubmit,
+            whatsappNumber: whatsappNumber
+        });
         
         // Gerar session ID único
         let sessionId = sessionStorage.getItem('form_session_id');
@@ -989,7 +1019,7 @@
             let responseId = null;
             
             try {
-                const submitResponse = await fetch(`/<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>/form/<%= item.id %>/submit`, {
+                const submitResponse = await fetch(`/${slug}/form/${itemId}/submit`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1003,14 +1033,15 @@
                     })
                 });
                 
-                const submitResult = await submitResponse.json();
-                
                 if (!submitResponse.ok) {
-                    throw new Error(submitResult.message || 'Erro ao salvar resposta no servidor');
+                    const errorData = await submitResponse.json().catch(() => ({ message: 'Erro desconhecido' }));
+                    throw new Error(errorData.message || 'Erro ao salvar resposta no servidor');
                 }
                 
+                const submitResult = await submitResponse.json();
+                
                 submitSuccess = true;
-                responseId = submitResult.response_id;
+                responseId = submitResult.response_id || submitResult.id || null;
                 
                 // Opção de redirecionar para página de sucesso
                 if (submitResult.success_page_url && window.location.search.includes('redirect=success')) {
@@ -1024,9 +1055,9 @@
                 
                 // Mensagem de erro específica
                 let errorMessage = 'Erro ao enviar formulário. ';
-                if (error.message.includes('fetch') || error.message.includes('network')) {
+                if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
                     errorMessage += 'Verifique sua conexão com a internet e tente novamente.';
-                } else if (error.message.includes('429')) {
+                } else if (error.message && error.message.includes('429')) {
                     errorMessage += 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
                 } else {
                     errorMessage += error.message || 'Tente novamente em alguns instantes.';
@@ -1039,41 +1070,13 @@
             // Se chegou aqui, o formulário foi enviado com sucesso
             showLoadingState(submitBtn, 'Processando...');
             
-            // Verificar se deve abrir WhatsApp
-            if (enableWhatsapp && whatsappNumber) {
-                // Formatando mensagem para WhatsApp
-                let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
-                
-                // Adicionar respostas dos campos dinâmicos (currentFormFields já foi declarado acima)
-                currentFormFields.forEach((field, index) => {
-                    const fieldId = field.id || `field_${index}`;
-                    const fieldValue = data[fieldId];
-                    if (fieldValue) {
-                        const fieldLabel = field.label || field.Label || 'Campo';
-                        if (Array.isArray(fieldValue)) {
-                            message += `*${fieldLabel}:* ${fieldValue.join(', ')}\n`;
-                        } else {
-                            message += `*${fieldLabel}:* ${fieldValue}\n`;
-                        }
-                    }
-                });
-
-                // Limpar número do WhatsApp (apenas números)
-                const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
-                const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
-                
-                // Abrir WhatsApp
-                window.open(whatsappUrl, '_blank');
-            }
+            // NÃO abrir WhatsApp aqui - este handler é apenas para envio ao sistema
+            // O WhatsApp é tratado pelo botão separado
             
             // Mostrar mensagem de sucesso baseada nas opções
             let successMessage = '';
-            if (!enableWhatsapp && enableGuestListSubmit) {
+            if (enableGuestListSubmit) {
                 successMessage = 'Inscrição realizada com sucesso! Você foi adicionado à lista.';
-            } else if (enableWhatsapp && enableGuestListSubmit) {
-                successMessage = 'Formulário enviado e salvo com sucesso! Verifique o WhatsApp.';
-            } else if (enableWhatsapp) {
-                successMessage = 'Formulário enviado com sucesso! Verifique o WhatsApp.';
             } else {
                 successMessage = 'Formulário enviado com sucesso!';
             }

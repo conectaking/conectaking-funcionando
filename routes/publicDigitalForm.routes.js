@@ -29,10 +29,12 @@ const formSubmissionLimiter = rateLimit({
 router.get('/form/share/:token', asyncHandler(async (req, res) => {
     const { token } = req.params;
     
-    // Headers para evitar cache
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+    // Headers para evitar cache no navegador e servidor
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
+    res.set('Last-Modified', new Date().toUTCString());
+    res.set('ETag', `"${Date.now()}"`);
     
     const client = await db.pool.connect();
     
@@ -161,10 +163,12 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
 router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
     const { slug, itemId } = req.params;
     
-    // Headers para evitar cache
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+    // Headers para evitar cache no navegador e servidor
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
+    res.set('Last-Modified', new Date().toUTCString());
+    res.set('ETag', `"${Date.now()}"`);
     
     const client = await db.pool.connect();
     
