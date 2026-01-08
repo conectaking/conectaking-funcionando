@@ -19,11 +19,11 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     
     try {
-        // Buscar formulário pelo share_token
+        // Buscar formulário pelo share_token (pode ser digital_form ou guest_list)
         const itemRes = await client.query(
             `SELECT pi.* 
              FROM profile_items pi
-             WHERE pi.share_token = $1 AND pi.item_type = 'digital_form' AND pi.is_active = true`,
+             WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
             [token]
         );
 
@@ -35,17 +35,47 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         const userId = item.user_id;
         const itemIdInt = item.id;
 
-        // Buscar dados do formulário
-        const formRes = await client.query(
-            'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
-            [itemIdInt]
-        );
+        // Buscar dados do formulário com verificação de colunas
+        const columnCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'digital_form_items' 
+            AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit')
+        `);
+        
+        const hasEnableWhatsapp = columnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+        const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+        
+        let formRes;
+        if (hasEnableWhatsapp || hasEnableGuestListSubmit) {
+            formRes = await client.query(
+                `SELECT dfi.*, 
+                        ${hasEnableWhatsapp ? 'COALESCE(dfi.enable_whatsapp, true) as enable_whatsapp' : 'true as enable_whatsapp'},
+                        ${hasEnableGuestListSubmit ? 'COALESCE(dfi.enable_guest_list_submit, false) as enable_guest_list_submit' : 'false as enable_guest_list_submit'}
+                 FROM digital_form_items dfi 
+                 WHERE dfi.profile_item_id = $1`,
+                [itemIdInt]
+            );
+        } else {
+            formRes = await client.query(
+                'SELECT *, true as enable_whatsapp, false as enable_guest_list_submit FROM digital_form_items WHERE profile_item_id = $1',
+                [itemIdInt]
+            );
+        }
 
         if (formRes.rows.length === 0) {
             return res.status(404).send('<h1>404 - Dados do formulário não encontrados</h1>');
         }
 
         let formData = formRes.rows[0];
+        
+        // Garantir valores padrão para enable_whatsapp e enable_guest_list_submit
+        if (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null) {
+            formData.enable_whatsapp = true; // Default true
+        }
+        if (formData.enable_guest_list_submit === undefined || formData.enable_guest_list_submit === null) {
+            formData.enable_guest_list_submit = false; // Default false
+        }
         
         // Garantir que secondary_color seja tratado corretamente (pode ser null)
         // Log para debug
@@ -144,11 +174,11 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             return res.status(400).send('<h1>400 - ID do formulário inválido</h1>');
         }
 
-        // Buscar item do tipo digital_form (verificar se está listado ou se é acesso direto)
+        // Buscar item do tipo digital_form ou guest_list (verificar se está listado ou se é acesso direto)
         const itemRes = await client.query(
             `SELECT pi.* 
              FROM profile_items pi
-             WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = 'digital_form' AND pi.is_active = true
+             WHERE pi.id = $1 AND pi.user_id = $2 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
              AND (pi.is_listed IS NULL OR pi.is_listed = true)`,
             [itemIdInt, userId]
         );
@@ -159,17 +189,48 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
 
         const item = itemRes.rows[0];
 
-        // Buscar dados do formulário
-        const formRes = await client.query(
-            'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
-            [itemIdInt]
-        );
+        // Buscar dados do formulário (pode ser digital_form ou guest_list)
+        // Verificar se as colunas existem antes de selecionar
+        const columnCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'digital_form_items' 
+            AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit')
+        `);
+        
+        const hasEnableWhatsapp = columnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+        const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+        
+        let formRes;
+        if (hasEnableWhatsapp || hasEnableGuestListSubmit) {
+            formRes = await client.query(
+                `SELECT dfi.*, 
+                        ${hasEnableWhatsapp ? 'COALESCE(dfi.enable_whatsapp, true) as enable_whatsapp' : 'true as enable_whatsapp'},
+                        ${hasEnableGuestListSubmit ? 'COALESCE(dfi.enable_guest_list_submit, false) as enable_guest_list_submit' : 'false as enable_guest_list_submit'}
+                 FROM digital_form_items dfi 
+                 WHERE dfi.profile_item_id = $1`,
+                [itemIdInt]
+            );
+        } else {
+            formRes = await client.query(
+                'SELECT *, true as enable_whatsapp, false as enable_guest_list_submit FROM digital_form_items WHERE profile_item_id = $1',
+                [itemIdInt]
+            );
+        }
 
         if (formRes.rows.length === 0) {
             return res.status(404).send('<h1>404 - Dados do formulário não encontrados</h1>');
         }
 
         let formData = formRes.rows[0];
+        
+        // Garantir valores padrão para enable_whatsapp e enable_guest_list_submit
+        if (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null) {
+            formData.enable_whatsapp = true; // Default true
+        }
+        if (formData.enable_guest_list_submit === undefined || formData.enable_guest_list_submit === null) {
+            formData.enable_guest_list_submit = false; // Default false
+        }
         
         // Garantir que secondary_color seja tratado corretamente (pode ser null)
         // Log para debug
@@ -314,11 +375,11 @@ router.post('/:slug/form/:itemId/submit', asyncHandler(async (req, res) => {
                     
                     // Mapear campos do formulário para campos da lista de convidados
                     const guestData = {
-                        name: responder_name || response_data.name || '',
+                        name: responder_name || response_data.name || response_data.nome || 'Visitante',
                         whatsapp: responder_phone || response_data.whatsapp || response_data.phone || '',
                         email: responder_email || response_data.email || null,
                         phone: response_data.phone || null,
-                        document: response_data.document || response_data.cpf || response_data.cnpj || '',
+                        document: response_data.document || response_data.cpf || response_data.cnpj || null,
                         address: response_data.address || response_data.endereco || null,
                         neighborhood: response_data.neighborhood || response_data.bairro || null,
                         city: response_data.city || response_data.cidade || null,
@@ -327,6 +388,17 @@ router.post('/:slug/form/:itemId/submit', asyncHandler(async (req, res) => {
                         instagram: response_data.instagram || null,
                         custom_responses: response_data
                     };
+                    
+                    // Validar nome (obrigatório)
+                    if (!guestData.name || !guestData.name.trim()) {
+                        guestData.name = 'Visitante';
+                    }
+                    
+                    // Validar WhatsApp (obrigatório para lista de convidados)
+                    if (!guestData.whatsapp || !guestData.whatsapp.trim()) {
+                        // Se não tiver WhatsApp, usar phone ou email como fallback
+                        guestData.whatsapp = guestData.phone || guestData.email || '';
+                    }
                     
                     // Inserir na lista de convidados
                     await client.query(`
