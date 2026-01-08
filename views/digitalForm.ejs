@@ -200,9 +200,9 @@
                         </button>
                         <% } %>
                         
-                        <!-- Botão genérico de envio (fallback) -->
+                        <!-- Botão genérico de envio (fallback) - AMARELO quando WhatsApp desativado -->
                         <% if (!enableWhatsappValue && !enableGuestListSubmitValue) { %>
-                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="generic">
+                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="generic" style="background: linear-gradient(135deg, #FFC700, #FFA500) !important; color: #000 !important; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.4);">
                             <i class="fas fa-paper-plane" style="font-size: 22px;"></i>
                             <span>Enviar</span>
                             <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
@@ -1043,9 +1043,20 @@
                 submitSuccess = true;
                 responseId = submitResult.response_id || submitResult.id || null;
                 
-                // Opção de redirecionar para página de sucesso
-                if (submitResult.success_page_url && window.location.search.includes('redirect=success')) {
-                    window.location.href = submitResult.success_page_url;
+                // Sempre redirecionar para página de sucesso quando não há WhatsApp
+                if (submitResult.success_page_url) {
+                    // Passar dados do formulário via URL para mostrar na página de sucesso
+                    const formDataParams = new URLSearchParams();
+                    formDataParams.append('response_id', responseId || '');
+                    
+                    // Adicionar dados do formulário para exibir na página de sucesso
+                    Object.keys(data).forEach(key => {
+                        if (data[key] && typeof data[key] === 'string') {
+                            formDataParams.append(`data_${key}`, data[key]);
+                        }
+                    });
+                    
+                    window.location.href = `${submitResult.success_page_url}&${formDataParams.toString()}`;
                     return;
                 }
                 
@@ -1063,7 +1074,11 @@
                     errorMessage += error.message || 'Tente novamente em alguns instantes.';
                 }
                 
-                showErrorMessage(errorMessage);
+                // Redirecionar para página de erro
+                const errorParams = new URLSearchParams();
+                errorParams.append('error', encodeURIComponent(errorMessage));
+                errorParams.append('form_url', `/${slug}/form/${itemId}`);
+                window.location.href = `/${slug}/form/${itemId}/error?${errorParams.toString()}`;
                 return;
             }
 

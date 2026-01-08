@@ -548,6 +548,15 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
     const { slug, itemId } = req.params;
     const { response_id } = req.query;
     
+    // Coletar dados do formulário enviado da query string
+    const submittedData = {};
+    Object.keys(req.query).forEach(key => {
+        if (key.startsWith('data_')) {
+            const fieldName = key.replace('data_', '');
+            submittedData[fieldName] = req.query[key];
+        }
+    });
+    
     const client = await db.pool.connect();
     
     try {
@@ -584,14 +593,28 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
 
         const formData = formRes.rows[0];
         
-        // Verificar se resposta existe (opcional)
-        let responseExists = true;
+        // Buscar dados completos da resposta se tiver response_id
+        let responseData = null;
         if (response_id) {
-            const responseCheck = await client.query(
-                'SELECT id FROM digital_form_responses WHERE id = $1 AND profile_item_id = $2',
-                [response_id, itemIdInt]
-            );
-            responseExists = responseCheck.rows.length > 0;
+            try {
+                const responseRes = await client.query(
+                    'SELECT response_data, responder_name, responder_email, responder_phone, submitted_at FROM digital_form_responses WHERE id = $1',
+                    [response_id]
+                );
+                if (responseRes.rows.length > 0) {
+                    responseData = responseRes.rows[0];
+                    // Parsear response_data se for string
+                    if (typeof responseData.response_data === 'string') {
+                        try {
+                            responseData.response_data = JSON.parse(responseData.response_data);
+                        } catch (e) {
+                            // Se não conseguir parsear, usar como está
+                        }
+                    }
+                }
+            } catch (err) {
+                logger.warn('Erro ao buscar dados da resposta:', err);
+            }
         }
 
         res.render('formSuccess', {
@@ -604,11 +627,49 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             formUrl: `/${slug}/form/${itemId}`,
             primaryColor: formData.primary_color || '#4A90E2',
             secondaryColor: formData.secondary_color || formData.primary_color || '#6BA3F0',
-            autoRedirect: false
+            autoRedirect: false,
+            submittedData: submittedData,
+            responseData: responseData
         });
 
     } catch (error) {
         logger.error('Erro ao carregar página de sucesso:', error);
+        return res.status(500).send('<h1>500 - Erro ao carregar página</h1>');
+    } finally {
+        client.release();
+    }
+}));
+
+/**
+ * GET /:slug/form/:itemId/error - Página de erro após tentativa de envio
+ */
+router.get('/:slug/form/:itemId/error', asyncHandler(async (req, res) => {
+    const { slug, itemId } = req.params;
+    const { error: errorMessage, form_url } = req.query;
+    
+    const client = await db.pool.connect();
+    
+    try {
+        const itemIdInt = parseInt(itemId, 10);
+        
+        // Buscar dados do formulário para cores
+        const formDataRes = await client.query(
+            'SELECT form_title, primary_color, secondary_color FROM digital_form_items WHERE profile_item_id = $1',
+            [itemIdInt]
+        );
+        
+        const formData = formDataRes.rows[0] || {};
+        
+        res.render('formError', {
+            errorMessage: errorMessage ? decodeURIComponent(errorMessage) : 'Ocorreu um erro ao enviar o formulário. Tente novamente.',
+            formTitle: formData.form_title || 'Formulário',
+            formUrl: form_url || `/${slug}/form/${itemId}`,
+            primaryColor: formData.primary_color || '#4A90E2',
+            secondaryColor: formData.secondary_color || formData.primary_color || '#6BA3F0'
+        });
+        
+    } catch (error) {
+        logger.error('Erro ao carregar página de erro:', error);
         return res.status(500).send('<h1>500 - Erro ao carregar página</h1>');
     } finally {
         client.release();
