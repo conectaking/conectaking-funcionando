@@ -1873,13 +1873,28 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
 
             if (updateFormFields.length > 0) {
                 updateFormValues.push(itemId);
+                // IMPORTANTE: Forçar atualização do updated_at explicitamente
                 const formUpdateQuery = `
                     UPDATE digital_form_items 
-                    SET ${updateFormFields.join(', ')}
+                    SET ${updateFormFields.join(', ')}, updated_at = NOW()
                     WHERE profile_item_id = $${formParamIndex++}
                     RETURNING *
                 `;
-                await client.query(formUpdateQuery, updateFormValues);
+                const updateResult = await client.query(formUpdateQuery, updateFormValues);
+                
+                // LOG DETALHADO APÓS UPDATE
+                if (updateResult.rows.length > 0) {
+                    console.log(`✅ [DIGITAL_FORM] UPDATE executado com sucesso:`, {
+                        itemId: itemId,
+                        updated_at: updateResult.rows[0].updated_at,
+                        enable_whatsapp: updateResult.rows[0].enable_whatsapp,
+                        enable_guest_list_submit: updateResult.rows[0].enable_guest_list_submit,
+                        primary_color: updateResult.rows[0].primary_color,
+                        secondary_color: updateResult.rows[0].secondary_color,
+                        form_title: updateResult.rows[0].form_title,
+                        id: updateResult.rows[0].id
+                    });
+                }
             }
         } else {
             // Criar novo registro
@@ -1999,14 +2014,31 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             [itemId, userId]
         );
 
+        // Buscar dados atualizados do formulário (sempre o mais recente)
         const formResult = await client.query(
-            'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+            `SELECT * FROM digital_form_items 
+             WHERE profile_item_id = $1 
+             ORDER BY id DESC 
+             LIMIT 1`,
             [itemId]
         );
 
         const responseData = result.rows[0];
         if (formResult.rows.length > 0) {
             responseData.digital_form_data = formResult.rows[0];
+            
+            // LOG DETALHADO PARA DEBUG
+            console.log(`✅ [DIGITAL_FORM] Formulário ${itemId} atualizado com sucesso:`, {
+                form_title: responseData.digital_form_data.form_title,
+                primary_color: responseData.digital_form_data.primary_color,
+                secondary_color: responseData.digital_form_data.secondary_color,
+                enable_whatsapp: responseData.digital_form_data.enable_whatsapp,
+                enable_guest_list_submit: responseData.digital_form_data.enable_guest_list_submit,
+                updated_at: responseData.digital_form_data.updated_at,
+                id: responseData.digital_form_data.id
+            });
+        } else {
+            console.warn(`⚠️ [DIGITAL_FORM] Nenhum registro encontrado em digital_form_items para item ${itemId}`);
         }
 
         console.log(`✅ Formulário King ${itemId} atualizado com sucesso`);

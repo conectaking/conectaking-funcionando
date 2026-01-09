@@ -285,12 +285,26 @@
         const whatsappNumber = enablePastorButton && pastorWhatsappNumber ? pastorWhatsappNumber : '<%= formData.whatsapp_number || '' %>';
         const itemId = <%= itemId || item.id %>;
         const slug = '<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>';
+        const pageTimestamp = <%= typeof _timestamp !== 'undefined' ? _timestamp : Date.now() %>;
+        
+        // LOG DETALHADO NO CLIENTE
+        console.log('🔍 [FORM/CLIENT] Dados recebidos do servidor:', {
+            formDataObj: formDataObj,
+            enable_whatsapp_raw: formDataObj.enable_whatsapp,
+            enable_whatsapp_type: typeof formDataObj.enable_whatsapp,
+            enable_guest_list_submit_raw: formDataObj.enable_guest_list_submit,
+            enable_guest_list_submit_type: typeof formDataObj.enable_guest_list_submit,
+            primary_color: formDataObj.primary_color,
+            secondary_color: formDataObj.secondary_color,
+            form_title: formDataObj.form_title,
+            pageTimestamp: pageTimestamp
+        });
         
         // Verificar enable_whatsapp e enable_guest_list_submit corretamente
         const enableWhatsapp = formDataObj.enable_whatsapp === true || formDataObj.enable_whatsapp === 'true' || formDataObj.enable_whatsapp === 1 || formDataObj.enable_whatsapp === '1';
         const enableGuestListSubmit = formDataObj.enable_guest_list_submit === true || formDataObj.enable_guest_list_submit === 'true' || formDataObj.enable_guest_list_submit === 1 || formDataObj.enable_guest_list_submit === '1';
         
-        console.log('🔍 [FORM] Configurações carregadas:', {
+        console.log('🔍 [FORM] Configurações processadas:', {
             enable_whatsapp: formDataObj.enable_whatsapp,
             enableWhatsapp: enableWhatsapp,
             enable_guest_list_submit: formDataObj.enable_guest_list_submit,

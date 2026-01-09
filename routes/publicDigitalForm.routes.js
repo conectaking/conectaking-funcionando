@@ -249,6 +249,23 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
 
         let formData = formRes.rows[0];
         
+        // LOG DETALHADO PARA DEBUG
+        logger.info('🔍 [FORM/PUBLIC] Dados carregados do banco:', {
+            itemId: itemIdInt,
+            profile_item_id: formData.profile_item_id,
+            form_title: formData.form_title,
+            primary_color: formData.primary_color,
+            secondary_color: formData.secondary_color,
+            enable_whatsapp_raw: formData.enable_whatsapp,
+            enable_whatsapp_type: typeof formData.enable_whatsapp,
+            enable_guest_list_submit_raw: formData.enable_guest_list_submit,
+            enable_guest_list_submit_type: typeof formData.enable_guest_list_submit,
+            updated_at: formData.updated_at,
+            id: formData.id,
+            hasEnableWhatsapp: hasEnableWhatsapp,
+            hasEnableGuestListSubmit: hasEnableGuestListSubmit
+        });
+        
         // Garantir valores padrão para enable_whatsapp e enable_guest_list_submit
         // IMPORTANTE: Respeitar valores false do banco - não sobrescrever!
         if (hasEnableWhatsapp && (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null)) {
@@ -265,11 +282,12 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         }
         // Se hasEnableGuestListSubmit é true e enable_guest_list_submit é false, manter false!
         
-        logger.info('📋 [FORM] Configurações carregadas:', {
+        logger.info('📋 [FORM] Configurações processadas:', {
             enable_whatsapp: formData.enable_whatsapp,
             enable_guest_list_submit: formData.enable_guest_list_submit,
-            hasEnableWhatsapp: hasEnableWhatsapp,
-            hasEnableGuestListSubmit: hasEnableGuestListSubmit
+            primary_color: formData.primary_color,
+            secondary_color: formData.secondary_color,
+            form_title: formData.form_title
         });
         
         // Garantir que secondary_color seja tratado corretamente (pode ser null)

@@ -380,6 +380,23 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     if (formRes.rows.length > 0) {
                         item.digital_form_data = formRes.rows[0];
                         
+                        // LOG DETALHADO PARA DEBUG
+                        logger.info('🔍 [CARD] Dados carregados do banco:', {
+                            itemId: item.id,
+                            profile_item_id: item.digital_form_data.profile_item_id,
+                            form_title: item.digital_form_data.form_title,
+                            primary_color: item.digital_form_data.primary_color,
+                            secondary_color: item.digital_form_data.secondary_color,
+                            enable_whatsapp_raw: item.digital_form_data.enable_whatsapp,
+                            enable_whatsapp_type: typeof item.digital_form_data.enable_whatsapp,
+                            enable_guest_list_submit_raw: item.digital_form_data.enable_guest_list_submit,
+                            enable_guest_list_submit_type: typeof item.digital_form_data.enable_guest_list_submit,
+                            updated_at: item.digital_form_data.updated_at,
+                            id: item.digital_form_data.id,
+                            hasEnableWhatsapp: hasEnableWhatsapp,
+                            hasEnableGuestListSubmit: hasEnableGuestListSubmit
+                        });
+                        
                         // Garantir que form_fields seja sempre um array válido
                         if (item.digital_form_data.form_fields) {
                             if (typeof item.digital_form_data.form_fields === 'string') {
@@ -410,12 +427,13 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                         }
                         
                         // Log para debug
-                        logger.debug('📋 [CARD] Dados do formulário carregados:', {
+                        logger.info('📋 [CARD] Dados processados:', {
                             itemId: item.id,
                             enable_whatsapp: item.digital_form_data.enable_whatsapp,
                             enable_guest_list_submit: item.digital_form_data.enable_guest_list_submit,
-                            hasEnableWhatsapp: hasEnableWhatsapp,
-                            hasEnableGuestListSubmit: hasEnableGuestListSubmit
+                            primary_color: item.digital_form_data.primary_color,
+                            secondary_color: item.digital_form_data.secondary_color,
+                            form_title: item.digital_form_data.form_title
                         });
                     } else {
                         item.digital_form_data = {
