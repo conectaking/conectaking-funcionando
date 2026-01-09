@@ -162,8 +162,20 @@
     
     <!-- Logo fixo no cantinho (se configurado) -->
     <% if (formData.form_logo_url && formData.show_logo_corner) { %>
-    <div class="corner-logo" style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--card-color, white); padding: 12px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: all 0.3s; max-width: 120px; max-height: 120px; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 30px rgba(0,0,0,0.25)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.15)';">
-        <img src="<%= formData.form_logo_url %>" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain; display: block;">
+    <% 
+        // Calcular tamanho da logo no canto (usar button_logo_size se disponível, senão usar padrão)
+        let cornerLogoSize = 80; // Tamanho padrão para logo no canto
+        if (formData.button_logo_size !== undefined && formData.button_logo_size !== null) {
+            const parsed = parseInt(formData.button_logo_size, 10);
+            if (!isNaN(parsed) && parsed >= 20 && parsed <= 120) {
+                cornerLogoSize = parsed;
+            }
+        }
+        // Para logo no canto, usar um tamanho um pouco maior que o padrão
+        const cornerContainerSize = Math.max(cornerLogoSize + 24, 100);
+    %>
+    <div class="corner-logo" style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--card-color, white); padding: 12px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: all 0.3s; max-width: <%= cornerContainerSize %>px; max-height: <%= cornerContainerSize %>px; width: <%= cornerContainerSize %>px; height: <%= cornerContainerSize %>px; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 30px rgba(0,0,0,0.25)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.15)';">
+        <img src="<%= formData.form_logo_url %>" alt="Logo" style="max-width: <%= cornerLogoSize %>px; max-height: <%= cornerLogoSize %>px; width: auto; height: auto; object-fit: contain; display: block;">
     </div>
     <% } %>
     
@@ -177,7 +189,17 @@
             </a>
             <% } %>
             <% if (formData.form_logo_url && !formData.show_logo_corner) { %>
-            <img src="<%= formData.form_logo_url %>" alt="Logo" class="form-logo">
+            <% 
+                // Calcular tamanho da logo (usar button_logo_size se disponível, senão usar padrão)
+                let logoSize = 60; // Tamanho padrão
+                if (formData.button_logo_size !== undefined && formData.button_logo_size !== null) {
+                    const parsed = parseInt(formData.button_logo_size, 10);
+                    if (!isNaN(parsed) && parsed >= 20 && parsed <= 120) {
+                        logoSize = parsed;
+                    }
+                }
+            %>
+            <img src="<%= formData.form_logo_url %>" alt="Logo" class="form-logo" style="max-width: <%= logoSize %>px; max-height: <%= logoSize %>px; width: auto; height: auto; object-fit: contain;">
             <% } %>
             <h1 class="form-title"><%= formData.form_title || 'King Forms' %></h1>
         </div>

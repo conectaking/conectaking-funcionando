@@ -220,6 +220,17 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
             formData.show_logo_corner = false;
         }
         
+        // LOG DETALHADO: Verificar se todas as configurações de logo estão presentes
+        logger.info('🖼️ [FORM/SHARE] Configurações de logo e texto:', {
+            form_logo_url: formData.form_logo_url,
+            button_logo_url: formData.button_logo_url,
+            button_logo_size: formData.button_logo_size,
+            show_logo_corner: formData.show_logo_corner,
+            form_title: formData.form_title,
+            form_description: formData.form_description,
+            itemId: itemIdInt
+        });
+        
         // Renderizar página
         res.render('digitalForm', {
             item: item,
@@ -527,6 +538,11 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         logger.info('🎨 [FORM/PUBLIC] Renderizando página com dados:', {
             itemId: itemIdInt,
             form_title: formData.form_title,
+            form_description: formData.form_description,
+            form_logo_url: formData.form_logo_url,
+            button_logo_url: formData.button_logo_url,
+            button_logo_size: formData.button_logo_size,
+            show_logo_corner: formData.show_logo_corner,
             primary_color: formData.primary_color,
             primary_color_type: typeof formData.primary_color,
             secondary_color: formData.secondary_color,
