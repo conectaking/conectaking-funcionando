@@ -624,6 +624,52 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             }
         }
         
+        // IMPORTANTE: Também atualizar enable_whatsapp e enable_guest_list_submit em guest_list_items
+        // Verificar se as colunas existem em guest_list_items
+        if (enable_whatsapp !== undefined) {
+            try {
+                const columnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND column_name = 'enable_whatsapp'
+                `);
+                
+                if (columnCheck.rows.length > 0) {
+                    const enableWhatsappValue = enable_whatsapp === true || enable_whatsapp === 'true' || enable_whatsapp === 1 || enable_whatsapp === '1';
+                    guestListUpdateFields.push(`enable_whatsapp = $${guestListParamIndex++}`);
+                    guestListUpdateValues.push(enableWhatsappValue);
+                    logger.info(`🔘 [GUEST_LIST] Salvando enable_whatsapp em guest_list_items: ${enableWhatsappValue} (recebido: ${enable_whatsapp}, tipo: ${typeof enable_whatsapp})`);
+                } else {
+                    logger.warn('Coluna enable_whatsapp não existe na tabela guest_list_items.');
+                }
+            } catch (err) {
+                logger.warn('Erro ao verificar coluna enable_whatsapp:', err.message);
+            }
+        }
+        
+        if (enable_guest_list_submit !== undefined) {
+            try {
+                const columnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND column_name = 'enable_guest_list_submit'
+                `);
+                
+                if (columnCheck.rows.length > 0) {
+                    const enableGuestListSubmitValue = enable_guest_list_submit === true || enable_guest_list_submit === 'true' || enable_guest_list_submit === 1 || enable_guest_list_submit === '1';
+                    guestListUpdateFields.push(`enable_guest_list_submit = $${guestListParamIndex++}`);
+                    guestListUpdateValues.push(enableGuestListSubmitValue);
+                    logger.info(`🔘 [GUEST_LIST] Salvando enable_guest_list_submit em guest_list_items: ${enableGuestListSubmitValue} (recebido: ${enable_guest_list_submit}, tipo: ${typeof enable_guest_list_submit})`);
+                } else {
+                    logger.warn('Coluna enable_guest_list_submit não existe na tabela guest_list_items.');
+                }
+            } catch (err) {
+                logger.warn('Erro ao verificar coluna enable_guest_list_submit:', err.message);
+            }
+        }
+        
         if (guestListUpdateFields.length > 0) {
             guestListUpdateValues.push(guestListItemId);
             const updateResult = await client.query(`

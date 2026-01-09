@@ -415,13 +415,22 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             }
             
             // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
-            if (guestListHasEnableWhatsapp && guestListData.enable_whatsapp !== undefined) {
-                formData.enable_whatsapp = guestListData.enable_whatsapp;
-                logger.info(`🔘 [FORM/PUBLIC] enable_whatsapp atualizado de guest_list_items: ${guestListData.enable_whatsapp}`);
+            // IMPORTANTE: Respeitar valores false - converter corretamente para booleano
+            if (guestListHasEnableWhatsapp && guestListData.enable_whatsapp !== undefined && guestListData.enable_whatsapp !== null) {
+                // Converter para booleano correto, respeitando false
+                const enableWhatsappValue = guestListData.enable_whatsapp === true || guestListData.enable_whatsapp === 'true' || guestListData.enable_whatsapp === 1 || guestListData.enable_whatsapp === '1';
+                formData.enable_whatsapp = enableWhatsappValue;
+                logger.info(`🔘 [FORM/PUBLIC] enable_whatsapp atualizado de guest_list_items: ${guestListData.enable_whatsapp} -> ${enableWhatsappValue} (tipo original: ${typeof guestListData.enable_whatsapp})`);
+            } else if (guestListHasEnableWhatsapp) {
+                logger.info(`ℹ️ [FORM/PUBLIC] enable_whatsapp é null/undefined em guest_list_items, mantendo valor de digital_form_items: ${formData.enable_whatsapp}`);
             }
-            if (guestListHasEnableGuestListSubmit && guestListData.enable_guest_list_submit !== undefined) {
-                formData.enable_guest_list_submit = guestListData.enable_guest_list_submit;
-                logger.info(`🔘 [FORM/PUBLIC] enable_guest_list_submit atualizado de guest_list_items: ${guestListData.enable_guest_list_submit}`);
+            if (guestListHasEnableGuestListSubmit && guestListData.enable_guest_list_submit !== undefined && guestListData.enable_guest_list_submit !== null) {
+                // Converter para booleano correto, respeitando false
+                const enableGuestListSubmitValue = guestListData.enable_guest_list_submit === true || guestListData.enable_guest_list_submit === 'true' || guestListData.enable_guest_list_submit === 1 || guestListData.enable_guest_list_submit === '1';
+                formData.enable_guest_list_submit = enableGuestListSubmitValue;
+                logger.info(`🔘 [FORM/PUBLIC] enable_guest_list_submit atualizado de guest_list_items: ${guestListData.enable_guest_list_submit} -> ${enableGuestListSubmitValue} (tipo original: ${typeof guestListData.enable_guest_list_submit})`);
+            } else if (guestListHasEnableGuestListSubmit) {
+                logger.info(`ℹ️ [FORM/PUBLIC] enable_guest_list_submit é null/undefined em guest_list_items, mantendo valor de digital_form_items: ${formData.enable_guest_list_submit}`);
             }
             
             logger.info(`🎨 [FORM/PUBLIC] Dados finais após mesclar guest_list_items:`, {
@@ -429,7 +438,9 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 secondary_color: formData.secondary_color,
                 text_color: formData.text_color,
                 enable_whatsapp: formData.enable_whatsapp,
-                enable_guest_list_submit: formData.enable_guest_list_submit
+                enable_whatsapp_type: typeof formData.enable_whatsapp,
+                enable_guest_list_submit: formData.enable_guest_list_submit,
+                enable_guest_list_submit_type: typeof formData.enable_guest_list_submit
             });
         } else {
             logger.warn(`⚠️ [FORM/PUBLIC] Nenhum dado encontrado em guest_list_items para item ${itemIdInt} - usando cores de digital_form_items`);
