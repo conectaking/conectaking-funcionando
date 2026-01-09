@@ -718,18 +718,19 @@ router.post('/:slug/form/:itemId/submit',
                     const guestListItemId = guestListRes.rows[0].id;
                     
                     // Mapear campos do formulário para campos da lista de convidados
+                    // IMPORTANTE: Buscar valores de múltiplos campos possíveis
                     const guestData = {
-                        name: responder_name || response_data.name || response_data.nome || 'Visitante',
-                        whatsapp: responder_phone || response_data.whatsapp || response_data.phone || '',
-                        email: responder_email || response_data.email || null,
-                        phone: response_data.phone || null,
-                        document: response_data.document || response_data.cpf || response_data.cnpj || null,
-                        address: response_data.address || response_data.endereco || null,
-                        neighborhood: response_data.neighborhood || response_data.bairro || null,
-                        city: response_data.city || response_data.cidade || null,
-                        state: response_data.state || response_data.estado || null,
-                        zipcode: response_data.zipcode || response_data.cep || null,
-                        instagram: response_data.instagram || null,
+                        name: responder_name || response_data.name || response_data.nome || response_data['Nome completo'] || response_data.nome_completo || 'Visitante',
+                        whatsapp: responder_phone || response_data.whatsapp || response_data.phone || response_data.telefone || response_data['Telefone/WhatsApp'] || '',
+                        email: responder_email || response_data.email || response_data['Email'] || null,
+                        phone: response_data.phone || response_data.telefone || response_data['Telefone'] || null,
+                        document: response_data.document || response_data.cpf || response_data.cnpj || response_data['CPF'] || response_data['CNPJ'] || null,
+                        address: response_data.address || response_data.endereco || response_data['Endereço'] || response_data['Endereço completo'] || null,
+                        neighborhood: response_data.neighborhood || response_data.bairro || response_data['Bairro'] || null,
+                        city: response_data.city || response_data.cidade || response_data['Cidade'] || null,
+                        state: response_data.state || response_data.estado || response_data['Estado'] || null,
+                        zipcode: response_data.zipcode || response_data.cep || response_data['CEP'] || null,
+                        instagram: response_data.instagram || response_data['Instagram'] || null,
                         custom_responses: response_data
                     };
                     
@@ -744,8 +745,16 @@ router.post('/:slug/form/:itemId/submit',
                         guestData.whatsapp = guestData.phone || guestData.email || '';
                     }
                     
+                    logger.info('💾 [SUBMIT] Salvando convidado na lista:', {
+                        guestListItemId,
+                        name: guestData.name,
+                        whatsapp: guestData.whatsapp,
+                        email: guestData.email,
+                        responseDataKeys: Object.keys(response_data)
+                    });
+                    
                     // Inserir na lista de convidados
-                    await client.query(`
+                    const guestInsertResult = await client.query(`
                         INSERT INTO guests (
                             guest_list_id, name, email, phone, whatsapp, document, 
                             address, neighborhood, city, state, zipcode, instagram,
@@ -769,12 +778,30 @@ router.post('/:slug/form/:itemId/submit',
                         JSON.stringify(guestData.custom_responses)
                     ]);
                     
-                    logger.info('Convidado salvo na lista via formulário', { itemId: itemIdInt, guestListItemId });
+                    logger.info('✅ [SUBMIT] Convidado salvo na lista via formulário', { 
+                        itemId: itemIdInt, 
+                        guestListItemId,
+                        guestId: guestInsertResult.rows[0]?.id
+                    });
+                } else {
+                    logger.warn('⚠️ [SUBMIT] guest_list_items não encontrado para profile_item_id:', itemIdInt);
                 }
             } catch (guestListError) {
-                logger.error('Erro ao salvar na lista de convidados:', guestListError);
-                // Continuar mesmo se falhar, para salvar a resposta normal
+                logger.error('❌ [SUBMIT] Erro ao salvar na lista de convidados:', {
+                    error: guestListError.message,
+                    stack: guestListError.stack,
+                    itemId: itemIdInt,
+                    responseData: response_data
+                });
+                // IMPORTANTE: Continuar mesmo se falhar, para salvar a resposta normal
+                // Não bloquear o envio se houver erro ao salvar na lista
             }
+        } else {
+            logger.info('ℹ️ [SUBMIT] Não deve salvar na lista de convidados:', {
+                shouldSaveToGuestList,
+                isGuestList,
+                enableGuestListSubmit
+            });
         }
 
         // Inserir resposta (sempre salvar resposta do formulário também)
@@ -838,6 +865,27 @@ router.post('/:slug/form/:itemId/submit',
             });
         }
 
+        // IMPORTANTE: Validar se a resposta foi salva corretamente
+        if (!result || !result.rows || result.rows.length === 0) {
+            logger.error('❌ [SUBMIT] Erro crítico: Resposta não foi salva no banco de dados', {
+                itemId: itemIdInt,
+                responseData: response_data
+            });
+            return res.status(500).json({ 
+                success: false,
+                message: 'Erro ao salvar resposta no banco de dados',
+                error: 'Resposta não foi inserida'
+            });
+        }
+        
+        logger.info('✅ [SUBMIT] Resposta salva com sucesso - retornando JSON', {
+            response_id: result.rows[0].id,
+            itemId: itemIdInt,
+            shouldSaveToGuestList,
+            enableGuestListSubmit,
+            enableWhatsapp
+        });
+        
         res.json({
             success: true,
             message: 'Resposta salva com sucesso',

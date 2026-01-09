@@ -1169,7 +1169,10 @@
                 responseId = submitResult.response_id || submitResult.id || null;
                 
                 // Sempre redirecionar para página de sucesso quando não há WhatsApp
-                if (submitResult.success_page_url) {
+                // Quando "Salvar na Lista" está ativo OU quando não há WhatsApp, redirecionar
+                if (submitResult.success_page_url || (!enableWhatsapp && enableGuestListSubmit)) {
+                    const successUrl = submitResult.success_page_url || `/${slug}/form/${itemId}/success?response_id=${responseId || ''}`;
+                    
                     // Passar dados do formulário via URL para mostrar na página de sucesso
                     const formDataParams = new URLSearchParams();
                     formDataParams.append('response_id', responseId || '');
@@ -1181,7 +1184,12 @@
                         }
                     });
                     
-                    window.location.href = `${submitResult.success_page_url}&${formDataParams.toString()}`;
+                    const finalUrl = submitResult.success_page_url 
+                        ? `${submitResult.success_page_url}&${formDataParams.toString()}`
+                        : `${successUrl}&${formDataParams.toString()}`;
+                    
+                    console.log('🔄 [SUBMIT] Redirecionando para página de sucesso:', finalUrl);
+                    window.location.href = finalUrl;
                     return;
                 }
                 
