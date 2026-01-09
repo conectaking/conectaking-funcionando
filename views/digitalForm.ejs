@@ -341,15 +341,20 @@
         });
         
         // Verificar enable_whatsapp e enable_guest_list_submit corretamente
-        const enableWhatsapp = formDataObj.enable_whatsapp === true || formDataObj.enable_whatsapp === 'true' || formDataObj.enable_whatsapp === 1 || formDataObj.enable_whatsapp === '1';
+        // IMPORTANTE: Se "Salvar na Lista" está ativo, WhatsApp deve ser false
+        // Porque "Salvar na Lista" significa enviar só para o sistema (sem WhatsApp)
         const enableGuestListSubmit = formDataObj.enable_guest_list_submit === true || formDataObj.enable_guest_list_submit === 'true' || formDataObj.enable_guest_list_submit === 1 || formDataObj.enable_guest_list_submit === '1';
+        const enableWhatsapp = enableGuestListSubmit ? false : (formDataObj.enable_whatsapp === true || formDataObj.enable_whatsapp === 'true' || formDataObj.enable_whatsapp === 1 || formDataObj.enable_whatsapp === '1');
         
         console.log('🔍 [FORM] Configurações processadas:', {
-            enable_whatsapp: formDataObj.enable_whatsapp,
+            enable_whatsapp_raw: formDataObj.enable_whatsapp,
+            enable_whatsapp_type: typeof formDataObj.enable_whatsapp,
             enableWhatsapp: enableWhatsapp,
-            enable_guest_list_submit: formDataObj.enable_guest_list_submit,
+            enable_guest_list_submit_raw: formDataObj.enable_guest_list_submit,
+            enable_guest_list_submit_type: typeof formDataObj.enable_guest_list_submit,
             enableGuestListSubmit: enableGuestListSubmit,
-            whatsappNumber: whatsappNumber
+            whatsappNumber: whatsappNumber,
+            rule: 'Se enableGuestListSubmit=true, enableWhatsapp deve ser false'
         });
         
         // Gerar session ID único
@@ -944,21 +949,36 @@
             e.preventDefault();
             
             const submitBtn = document.getElementById('form-submit-btn');
+            if (!submitBtn) {
+                console.error('❌ [SUBMIT] Botão de submit não encontrado!');
+                showErrorMessage('Erro: Botão de envio não encontrado. Recarregue a página e tente novamente.');
+                return;
+            }
+            
             const originalHTML = showLoadingState(submitBtn, 'Validando...');
 
             // Verificar se WhatsApp está habilitado e se tem número configurado
-            if (enableWhatsapp && !whatsappNumber) {
+            // IMPORTANTE: Só verificar WhatsApp se realmente estiver ativo (não quando "Salvar na Lista" está ativo)
+            if (enableWhatsapp && !enableGuestListSubmit && !whatsappNumber) {
                 restoreButton(submitBtn, originalHTML);
                 showErrorMessage('Número do WhatsApp não configurado. Entre em contato com o administrador.');
                 return;
             }
             
             // Se nem WhatsApp nem lista de convidados estão ativos, mostrar erro
+            // Mas lembrar que quando "Salvar na Lista" está ativo, enableWhatsapp será false
             if (!enableWhatsapp && !enableGuestListSubmit) {
                 restoreButton(submitBtn, originalHTML);
                 showErrorMessage('Nenhuma opção de envio está configurada. Entre em contato com o administrador.');
                 return;
             }
+            
+            console.log('✅ [SUBMIT] Validação passou:', {
+                enableWhatsapp,
+                enableGuestListSubmit,
+                whatsappNumber: whatsappNumber || 'não configurado',
+                submitBtnFound: !!submitBtn
+            });
             
             // Validar formulário antes de enviar
             showLoadingState(submitBtn, 'Validando dados...');
@@ -1012,6 +1032,13 @@
                 } else {
                     data[key] = value;
                 }
+            }
+            
+            // Verificar se há campos configurados
+            if (!currentFormFields || currentFormFields.length === 0) {
+                restoreButton(submitBtn, originalHTML);
+                showErrorMessage('Nenhum campo configurado neste formulário. Entre em contato com o administrador.');
+                return;
             }
             
             // Coletar dados de todos os campos dinâmicos
@@ -1070,32 +1097,73 @@
                 }
             });
             
+            // Verificar se há dados coletados
+            console.log('📊 [SUBMIT] Dados coletados:', {
+                responseDataKeys: Object.keys(responseData),
+                responseData: responseData,
+                dataKeys: Object.keys(data),
+                data: data,
+                fieldsCount: currentFormFields.length
+            });
+            
+            // Se não houver dados coletados, mostrar erro
+            if (Object.keys(responseData).length === 0 && Object.keys(data).length === 0) {
+                restoreButton(submitBtn, originalHTML);
+                showErrorMessage('Por favor, preencha pelo menos um campo do formulário antes de enviar.');
+                return;
+            }
+            
             // Enviar para o servidor
             showLoadingState(submitBtn, 'Enviando formulário...');
             let submitSuccess = false;
             let responseId = null;
             
+            const submitUrl = `/${slug}/form/${itemId}/submit`;
+            const submitPayload = {
+                response_data: responseData,
+                responder_name: data.name || null,
+                responder_email: data.email || null,
+                responder_phone: data.phone || null,
+                session_id: sessionId
+            };
+            
+            console.log('📤 [SUBMIT] Enviando formulário:', {
+                url: submitUrl,
+                payload: submitPayload,
+                enableGuestListSubmit,
+                enableWhatsapp
+            });
+            
             try {
-                const submitResponse = await fetch(`/${slug}/form/${itemId}/submit`, {
+                const submitResponse = await fetch(submitUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        response_data: responseData,
-                        responder_name: data.name || null,
-                        responder_email: data.email || null,
-                        responder_phone: data.phone || null,
-                        session_id: sessionId
-                    })
+                    body: JSON.stringify(submitPayload)
+                });
+                
+                console.log('📥 [SUBMIT] Resposta recebida:', {
+                    status: submitResponse.status,
+                    statusText: submitResponse.statusText,
+                    ok: submitResponse.ok,
+                    headers: Object.fromEntries(submitResponse.headers.entries())
                 });
                 
                 if (!submitResponse.ok) {
-                    const errorData = await submitResponse.json().catch(() => ({ message: 'Erro desconhecido' }));
-                    throw new Error(errorData.message || 'Erro ao salvar resposta no servidor');
+                    const errorText = await submitResponse.text();
+                    console.error('❌ [SUBMIT] Erro na resposta:', errorText);
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch (e) {
+                        errorData = { message: errorText || 'Erro desconhecido' };
+                    }
+                    throw new Error(errorData.message || `Erro ${submitResponse.status}: ${submitResponse.statusText}`);
                 }
                 
                 const submitResult = await submitResponse.json();
+                console.log('✅ [SUBMIT] Resultado do submit:', submitResult);
                 
                 submitSuccess = true;
                 responseId = submitResult.response_id || submitResult.id || null;
@@ -1118,24 +1186,32 @@
                 }
                 
             } catch (error) {
-                console.error('Erro ao salvar resposta:', error);
+                console.error('❌ [SUBMIT] Erro ao salvar resposta:', error);
+                console.error('❌ [SUBMIT] Stack:', error.stack);
                 restoreButton(submitBtn, originalHTML);
                 
                 // Mensagem de erro específica
                 let errorMessage = 'Erro ao enviar formulário. ';
-                if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
+                if (error.message && (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch'))) {
                     errorMessage += 'Verifique sua conexão com a internet e tente novamente.';
                 } else if (error.message && error.message.includes('429')) {
                     errorMessage += 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
+                } else if (error.message) {
+                    errorMessage += error.message;
                 } else {
-                    errorMessage += error.message || 'Tente novamente em alguns instantes.';
+                    errorMessage += 'Tente novamente em alguns instantes.';
                 }
                 
-                // Redirecionar para página de erro
-                const errorParams = new URLSearchParams();
-                errorParams.append('error', encodeURIComponent(errorMessage));
-                errorParams.append('form_url', `/${slug}/form/${itemId}`);
-                window.location.href = `/${slug}/form/${itemId}/error?${errorParams.toString()}`;
+                // Mostrar erro na página mesmo (não redirecionar imediatamente)
+                showErrorMessage(errorMessage);
+                
+                // Apenas redirecionar para página de erro se não houver botão de submit ou se o erro for crítico
+                if (!submitBtn || error.message && error.message.includes('404')) {
+                    const errorParams = new URLSearchParams();
+                    errorParams.append('error', encodeURIComponent(errorMessage));
+                    errorParams.append('form_url', `/${slug}/form/${itemId}`);
+                    window.location.href = `/${slug}/form/${itemId}/error?${errorParams.toString()}`;
+                }
                 return;
             }
 

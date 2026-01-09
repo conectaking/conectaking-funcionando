@@ -674,9 +674,17 @@ router.post('/:slug/form/:itemId/submit',
         let enableGuestListSubmit = false; // Default
         
         if (formConfigRes.rows.length > 0) {
-            enableWhatsapp = formConfigRes.rows[0].enable_whatsapp !== false;
-            enableGuestListSubmit = formConfigRes.rows[0].enable_guest_list_submit === true;
+            enableGuestListSubmit = formConfigRes.rows[0].enable_guest_list_submit === true || formConfigRes.rows[0].enable_guest_list_submit === 'true' || formConfigRes.rows[0].enable_guest_list_submit === 1 || formConfigRes.rows[0].enable_guest_list_submit === '1';
+            // IMPORTANTE: Se "Salvar na Lista" está ativo, WhatsApp deve ser false
+            enableWhatsapp = enableGuestListSubmit ? false : (formConfigRes.rows[0].enable_whatsapp !== false && formConfigRes.rows[0].enable_whatsapp !== 'false' && formConfigRes.rows[0].enable_whatsapp !== 0 && formConfigRes.rows[0].enable_whatsapp !== '0');
         }
+        
+        logger.info('🔍 [SUBMIT] Configurações do formulário:', {
+            enableWhatsapp,
+            enableGuestListSubmit,
+            isGuestList,
+            itemId: itemIdInt
+        });
         
         // Se for guest_list, verificar se enable_guest_list_submit está ativo
         let shouldSaveToGuestList = false;
