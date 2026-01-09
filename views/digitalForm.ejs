@@ -671,8 +671,12 @@
             
             renderFormFields(container, formFields);
             
-            // Tornar formFields acessível globalmente para event listeners
+            // Tornar formFields acessível globalmente para event listeners e funções
             window.formFields = formFields;
+            // Atualizar currentFormFields no escopo global também
+            if (typeof currentFormFields !== 'undefined') {
+                currentFormFields = formFields;
+            }
         })();
 
         // Formatar WhatsApp
@@ -693,12 +697,40 @@
         }
 
         // Enviar formulário
+        // IMPORTANTE: Variável global para currentFormFields (será atualizada quando necessário)
+        let currentFormFields = window.formFields || formDataObj.form_fields || [];
+        if (typeof currentFormFields === 'string') {
+            try {
+                currentFormFields = JSON.parse(currentFormFields);
+            } catch (e) {
+                console.error('❌ [VALIDATE] Erro ao parsear formFields:', e);
+                currentFormFields = [];
+            }
+        }
+        if (!Array.isArray(currentFormFields)) {
+            currentFormFields = [];
+        }
+        
         // Função de validação robusta
         function validateForm() {
             let isValid = true;
             const errors = [];
             
-            currentFormFields.forEach((field, index) => {
+            // Garantir que currentFormFields esteja atualizado
+            let fieldsToValidate = window.formFields || currentFormFields || formDataObj.form_fields || [];
+            if (typeof fieldsToValidate === 'string') {
+                try {
+                    fieldsToValidate = JSON.parse(fieldsToValidate);
+                } catch (e) {
+                    console.error('❌ [VALIDATE] Erro ao parsear formFields:', e);
+                    fieldsToValidate = [];
+                }
+            }
+            if (!Array.isArray(fieldsToValidate)) {
+                fieldsToValidate = [];
+            }
+            
+            fieldsToValidate.forEach((field, index) => {
                 const fieldId = field.id || `field_${index}`;
                 const fieldLabel = field.label || 'Campo sem título';
                 const fieldElement = document.querySelector(`#field-${index}`);
@@ -812,22 +844,39 @@
             return { isValid, errors };
         }
         
-        // Validação em tempo real
-        document.querySelectorAll('#digital-form input, #digital-form textarea, #digital-form select').forEach(input => {
-            input.addEventListener('blur', () => {
-                const fieldGroup = input.closest('.form-group');
-                if (fieldGroup) {
-                    const fieldIndex = parseInt(input.id.replace('field-', ''));
-                    const field = currentFormFields[fieldIndex];
-                    if (field && field.required && !input.value.trim()) {
-                        fieldGroup.classList.add('field-error');
-                    } else if (fieldGroup.classList.contains('field-error')) {
-                        fieldGroup.classList.remove('field-error');
-                        fieldGroup.classList.add('field-valid');
+        // Validação em tempo real (após campos serem renderizados)
+        // IMPORTANTE: Aguardar renderização dos campos antes de adicionar listeners
+        setTimeout(() => {
+            document.querySelectorAll('#digital-form input, #digital-form textarea, #digital-form select').forEach(input => {
+                input.addEventListener('blur', () => {
+                    const fieldGroup = input.closest('.form-group');
+                    if (fieldGroup) {
+                        // Obter campos atualizados de window.formFields ou currentFormFields
+                        const fields = window.formFields || currentFormFields || formDataObj.form_fields || [];
+                        let fieldsArray = fields;
+                        if (typeof fieldsArray === 'string') {
+                            try {
+                                fieldsArray = JSON.parse(fieldsArray);
+                            } catch (e) {
+                                fieldsArray = [];
+                            }
+                        }
+                        if (!Array.isArray(fieldsArray)) {
+                            fieldsArray = [];
+                        }
+                        
+                        const fieldIndex = parseInt(input.id.replace('field-', ''));
+                        const field = fieldsArray[fieldIndex];
+                        if (field && field.required && !input.value.trim()) {
+                            fieldGroup.classList.add('field-error');
+                        } else if (fieldGroup.classList.contains('field-error')) {
+                            fieldGroup.classList.remove('field-error');
+                            fieldGroup.classList.add('field-valid');
+                        }
                     }
-                }
+                });
             });
-        });
+        }, 1000); // Aguardar 1 segundo para garantir que os campos foram renderizados
         
         // Função para mostrar loading state
         function showLoadingState(button, message = 'Enviando...') {
@@ -1021,18 +1070,23 @@
             }
 
             // Obter formFields (pode estar no escopo global)
-            let currentFormFields = window.formFields || formDataObj.form_fields || [];
-            if (typeof currentFormFields === 'string') {
+            // IMPORTANTE: Atualizar a variável global currentFormFields se já existir
+            let fieldsToSubmit = window.formFields || currentFormFields || formDataObj.form_fields || [];
+            if (typeof fieldsToSubmit === 'string') {
                 try {
-                    currentFormFields = JSON.parse(currentFormFields);
+                    fieldsToSubmit = JSON.parse(fieldsToSubmit);
                 } catch (e) {
                     console.error('❌ [SUBMIT] Erro ao parsear formFields:', e);
-                    currentFormFields = [];
+                    fieldsToSubmit = [];
                 }
             }
-            if (!Array.isArray(currentFormFields)) {
-                currentFormFields = [];
+            if (!Array.isArray(fieldsToSubmit)) {
+                fieldsToSubmit = [];
             }
+            
+            // Atualizar currentFormFields global e window.formFields
+            currentFormFields = fieldsToSubmit;
+            window.formFields = fieldsToSubmit;
             
             // Verificar se há campos configurados
             if (!currentFormFields || currentFormFields.length === 0) {
@@ -1045,7 +1099,22 @@
             const data = {};
             const responseData = {};
             
-            currentFormFields.forEach((field, index) => {
+            // IMPORTANTE: Garantir que currentFormFields esteja definido
+            const fieldsToCollect = fieldsArray || fieldsToSubmit || currentFormFields || window.formFields || formDataObj.form_fields || [];
+            let fieldsToProcess = fieldsToCollect;
+            if (typeof fieldsToProcess === 'string') {
+                try {
+                    fieldsToProcess = JSON.parse(fieldsToProcess);
+                } catch (e) {
+                    console.error('❌ [SUBMIT] Erro ao parsear fieldsToProcess:', e);
+                    fieldsToProcess = [];
+                }
+            }
+            if (!Array.isArray(fieldsToProcess)) {
+                fieldsToProcess = [];
+            }
+            
+            fieldsToProcess.forEach((field, index) => {
                 // IMPORTANTE: Usar o mesmo padrão de ID usado na renderização
                 const fieldId = field.id || `field_${index}`;
                 const fieldName = fieldId; // name e id são iguais na renderização
@@ -1148,7 +1217,7 @@
                 dataKeys: Object.keys(data),
                 dataCount: Object.keys(data).length,
                 data: data,
-                fieldsCount: currentFormFields.length,
+                fieldsCount: fieldsForCollection.length,
                 hasData: Object.keys(responseData).length > 0 || Object.keys(data).length > 0
             });
             
@@ -1157,8 +1226,8 @@
             if (Object.keys(responseData).length === 0 && Object.keys(data).length === 0) {
                 restoreButton(submitBtn, originalHTML);
                 console.error('❌ [SUBMIT] Nenhum dado coletado do formulário!', {
-                    formFieldsCount: currentFormFields.length,
-                    formFields: currentFormFields.map(f => ({ id: f.id, label: f.label, type: f.type })),
+                    formFieldsCount: fieldsForCollection.length,
+                    formFields: Array.isArray(fieldsForCollection) ? fieldsForCollection.map(f => ({ id: f.id, label: f.label, type: f.type })) : 'N/A',
                     allInputs: document.querySelectorAll('input, textarea, select').length
                 });
                 showErrorMessage('Por favor, preencha pelo menos um campo do formulário antes de enviar.');
