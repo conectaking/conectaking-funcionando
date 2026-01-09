@@ -97,8 +97,14 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
         const items = await Promise.all(itemsRes.rows.map(async (item) => {
             if (item.item_type === 'digital_form') {
                 try {
+                    // IMPORTANTE: Buscar sempre o registro mais recente baseado em updated_at
                     const digitalFormRes = await client.query(
-                        'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+                        `SELECT * FROM digital_form_items 
+                         WHERE profile_item_id = $1 
+                         ORDER BY 
+                            COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
+                            id DESC 
+                         LIMIT 1`,
                         [item.id]
                     );
                     if (digitalFormRes.rows.length > 0) {
@@ -151,8 +157,14 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 }
             } else if (item.item_type === 'guest_list') {
                 try {
+                    // IMPORTANTE: Buscar sempre o registro mais recente baseado em updated_at
                     const guestListRes = await client.query(
-                        'SELECT * FROM guest_list_items WHERE profile_item_id = $1',
+                        `SELECT * FROM guest_list_items 
+                         WHERE profile_item_id = $1 
+                         ORDER BY 
+                            COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
+                            id DESC 
+                         LIMIT 1`,
                         [item.id]
                     );
                     if (guestListRes.rows.length > 0) {
