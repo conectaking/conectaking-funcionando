@@ -29,12 +29,15 @@ const formSubmissionLimiter = rateLimit({
 router.get('/form/share/:token', asyncHandler(async (req, res) => {
     const { token } = req.params;
     
-    // Headers para evitar cache no navegador e servidor
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+    // Headers AGressivos para evitar cache no navegador e servidor
+    const now = Date.now();
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0, proxy-revalidate');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
-    res.set('Last-Modified', new Date().toUTCString());
-    res.set('ETag', `"${Date.now()}"`);
+    res.set('Last-Modified', new Date(now).toUTCString());
+    res.set('ETag', `"${now}"`);
+    res.set('X-Timestamp', now.toString());
+    res.set('X-No-Cache', '1');
     
     const client = await db.pool.connect();
     
@@ -90,7 +93,9 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
                     header_image_url, background_image_url, background_opacity, theme, updated_at
              FROM guest_list_items 
              WHERE profile_item_id = $1 
-             ORDER BY updated_at DESC NULLS LAST, id DESC 
+             ORDER BY 
+                COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
+                id DESC 
              LIMIT 1`,
             [itemIdInt]
         );
@@ -228,16 +233,26 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
             show_logo_corner: formData.show_logo_corner,
             form_title: formData.form_title,
             form_description: formData.form_description,
-            itemId: itemIdInt
+            updated_at: formData.updated_at,
+            itemId: itemIdInt,
+            timestamp: Date.now()
         });
         
-        // Renderizar página
+        // Adicionar headers com timestamp do formulário atualizado
+        if (formData.updated_at) {
+            res.set('X-Form-Updated-At', new Date(formData.updated_at).getTime().toString());
+        }
+        res.set('X-Cache-Timestamp', Date.now().toString());
+        
+        // Renderizar página com timestamp único para forçar atualização
         res.render('digitalForm', {
             item: item,
             formData: formData,
             profileSlug: profileSlug,
             slug: profileSlug,
-            itemId: itemIdInt
+            itemId: itemIdInt,
+            _timestamp: Date.now(),
+            _cacheBust: `?t=${Date.now()}`
         });
 
     } catch (error) {
@@ -255,12 +270,15 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
 router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
     const { slug, itemId } = req.params;
     
-    // Headers para evitar cache no navegador e servidor
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+    // Headers AGRESSIVOS para evitar cache no navegador e servidor
+    const now = Date.now();
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0, proxy-revalidate');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
-    res.set('Last-Modified', new Date().toUTCString());
-    res.set('ETag', `"${Date.now()}"`);
+    res.set('Last-Modified', new Date(now).toUTCString());
+    res.set('ETag', `"${now}"`);
+    res.set('X-Timestamp', now.toString());
+    res.set('X-No-Cache', '1');
     
     const client = await db.pool.connect();
     
@@ -358,7 +376,9 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             `SELECT ${guestListSelectFields}
              FROM guest_list_items 
              WHERE profile_item_id = $1 
-             ORDER BY updated_at DESC NULLS LAST, id DESC 
+             ORDER BY 
+                COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
+                id DESC 
              LIMIT 1`,
             [itemIdInt]
         );
@@ -564,6 +584,12 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             });
         }
         
+        // Adicionar headers com timestamp do formulário atualizado
+        if (formData.updated_at) {
+            res.set('X-Form-Updated-At', new Date(formData.updated_at).getTime().toString());
+        }
+        res.set('X-Cache-Timestamp', Date.now().toString());
+        
         if (!formData.secondary_color || formData.secondary_color === '#6BA3F0' || formData.secondary_color === '#4A90E2') {
             logger.warn('⚠️ [FORM/PUBLIC] ATENÇÃO: secondary_color pode estar com valor padrão!', {
                 secondary_color: formData.secondary_color,
@@ -573,30 +599,38 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         }
 
         // HEADERS ANTI-CACHE AGRESSIVOS
+        const cacheTimestamp = Date.now();
         res.set({
-            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+            'Cache-Control': 'no-cache, no-store, must-revalidate, private, max-age=0, proxy-revalidate',
             'Pragma': 'no-cache',
             'Expires': '0',
-            'Last-Modified': new Date().toUTCString(),
-            'ETag': `"${Date.now()}-${itemIdInt}"`,
-            'X-Timestamp': Date.now().toString(),
-            'X-Form-Updated-At': formData.updated_at ? new Date(formData.updated_at).toISOString() : 'unknown'
+            'Last-Modified': new Date(cacheTimestamp).toUTCString(),
+            'ETag': `"${cacheTimestamp}-${itemIdInt}"`,
+            'X-Timestamp': cacheTimestamp.toString(),
+            'X-Form-Updated-At': formData.updated_at ? new Date(formData.updated_at).getTime().toString() : 'unknown',
+            'X-Cache-Timestamp': cacheTimestamp.toString()
         });
 
         // Registrar evento 'view' de analytics (será feito via JavaScript no frontend)
         
-        // Renderizar página
+        // Renderizar página com cache busting
         res.render('digitalForm', {
             item: item,
             formData: formData,
             profileSlug: profileSlug,
             slug: slug,
             itemId: itemIdInt,
-            _timestamp: Date.now(), // Adicionar timestamp para forçar atualização
+            _timestamp: Date.now(), // Timestamp único para forçar atualização
+            _cacheBust: `?t=${Date.now()}`, // Cache busting para assets
+            _updatedAt: formData.updated_at ? new Date(formData.updated_at).getTime() : Date.now(),
             _debug: {
                 primary_color: formData.primary_color,
                 secondary_color: formData.secondary_color,
-                updated_at: formData.updated_at
+                updated_at: formData.updated_at,
+                form_title: formData.form_title,
+                form_logo_url: formData.form_logo_url,
+                button_logo_url: formData.button_logo_url,
+                button_logo_size: formData.button_logo_size
             }
         });
 

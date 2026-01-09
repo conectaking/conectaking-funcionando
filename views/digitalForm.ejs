@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title><%= formData.form_title || 'Formulário Digital' %></title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="cache-timestamp" content="<%= typeof _timestamp !== 'undefined' ? _timestamp : Date.now() %>">
+    <meta name="updated-at" content="<%= typeof _updatedAt !== 'undefined' ? _updatedAt : Date.now() %>">
+    <title><%= formData.form_title || 'Formulário Digital' %> <%= typeof _cacheBust !== 'undefined' ? _cacheBust : '' %></title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico<%= typeof _cacheBust !== 'undefined' ? _cacheBust : '' %>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="/css/digitalForm.css">
+    <link rel="stylesheet" href="/css/digitalForm.css<%= typeof _cacheBust !== 'undefined' ? _cacheBust : '' %>">
     <style>
         <%
             // LOG NO SERVIDOR (EJS) - Verificar valores recebidos
