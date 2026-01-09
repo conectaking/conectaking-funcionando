@@ -324,21 +324,35 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         if (guestListRes.rows.length > 0) {
             const guestListData = guestListRes.rows[0];
             logger.info(`🎨 [FORM/PUBLIC] Dados encontrados em guest_list_items:`, {
+                id: guestListData.id,
                 primary_color: guestListData.primary_color,
+                primary_color_type: typeof guestListData.primary_color,
                 secondary_color: guestListData.secondary_color,
+                secondary_color_type: typeof guestListData.secondary_color,
                 updated_at: guestListData.updated_at,
-                item_type: item.item_type
+                item_type: item.item_type,
+                profile_item_id: itemIdInt
             });
             
             // Mesclar dados: SEMPRE priorizar cores de guest_list_items se existirem
+            // IMPORTANTE: Aplicar mesmo se o valor for null (para limpar valores antigos)
             // Isso garante que as cores salvas em guest_list_items sejam usadas
-            if (guestListData.primary_color) {
+            if (guestListData.primary_color !== undefined && guestListData.primary_color !== null) {
                 formData.primary_color = guestListData.primary_color;
                 logger.info(`🎨 [FORM/PUBLIC] primary_color atualizado de guest_list_items: ${guestListData.primary_color}`);
             }
-            if (guestListData.secondary_color) {
-                formData.secondary_color = guestListData.secondary_color;
-                logger.info(`🎨 [FORM/PUBLIC] secondary_color atualizado de guest_list_items: ${guestListData.secondary_color}`);
+            // IMPORTANTE: Aplicar secondary_color mesmo se for null (pode ser intencional)
+            // Mas verificar se não é string vazia
+            if (guestListData.secondary_color !== undefined) {
+                if (guestListData.secondary_color === null || 
+                    (typeof guestListData.secondary_color === 'string' && guestListData.secondary_color.trim() === '')) {
+                    // Se for null ou vazio, usar primary_color como fallback
+                    formData.secondary_color = guestListData.primary_color || formData.primary_color || '#4A90E2';
+                    logger.info(`🎨 [FORM/PUBLIC] secondary_color era null/vazio, usando primary_color: ${formData.secondary_color}`);
+                } else {
+                    formData.secondary_color = guestListData.secondary_color;
+                    logger.info(`🎨 [FORM/PUBLIC] secondary_color atualizado de guest_list_items: ${guestListData.secondary_color}`);
+                }
             }
             if (guestListData.text_color) {
                 formData.text_color = guestListData.text_color;
@@ -365,7 +379,11 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 text_color: formData.text_color
             });
         } else {
-            logger.info(`ℹ️ [FORM/PUBLIC] Nenhum dado encontrado em guest_list_items para item ${itemIdInt}`);
+            logger.warn(`⚠️ [FORM/PUBLIC] Nenhum dado encontrado em guest_list_items para item ${itemIdInt} - usando cores de digital_form_items`);
+            logger.info(`ℹ️ [FORM/PUBLIC] Cores que serão usadas (de digital_form_items):`, {
+                primary_color: formData.primary_color,
+                secondary_color: formData.secondary_color
+            });
         }
         
         // LOG DETALHADO PARA DEBUG
@@ -409,20 +427,38 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             form_title: formData.form_title
         });
         
-        // Garantir que secondary_color seja tratado corretamente (pode ser null)
-        // Log para debug
-        logger.info(`[SECONDARY_COLOR] Carregado do banco: ${formData.secondary_color}, tipo: ${typeof formData.secondary_color}`);
+        // IMPORTANTE: Aplicar fallback de secondary_color APENAS se não foi encontrado em guest_list_items
+        // Isso garante que valores de guest_list_items não sejam sobrescritos pelo fallback
+        const hasGuestListData = guestListRes.rows.length > 0;
+        const hasGuestListSecondaryColor = hasGuestListData && 
+            guestListRes.rows[0].secondary_color && 
+            guestListRes.rows[0].secondary_color !== null &&
+            guestListRes.rows[0].secondary_color !== 'null' &&
+            guestListRes.rows[0].secondary_color !== 'undefined' &&
+            (typeof guestListRes.rows[0].secondary_color !== 'string' || guestListRes.rows[0].secondary_color.trim() !== '');
         
-        if (!formData.secondary_color || 
-            formData.secondary_color === 'null' || 
-            formData.secondary_color === 'undefined' ||
-            formData.secondary_color === null ||
-            formData.secondary_color === undefined ||
-            (typeof formData.secondary_color === 'string' && formData.secondary_color.trim() === '')) {
-            formData.secondary_color = formData.primary_color || '#4A90E2';
-            logger.info(`[SECONDARY_COLOR] Usando fallback (primary_color): ${formData.secondary_color}`);
+        logger.info(`[SECONDARY_COLOR] Verificação:`, {
+            hasGuestListData: hasGuestListData,
+            hasGuestListSecondaryColor: hasGuestListSecondaryColor,
+            current_secondary_color: formData.secondary_color,
+            tipo: typeof formData.secondary_color
+        });
+        
+        // Aplicar fallback APENAS se não veio de guest_list_items
+        if (!hasGuestListSecondaryColor) {
+            if (!formData.secondary_color || 
+                formData.secondary_color === 'null' || 
+                formData.secondary_color === 'undefined' ||
+                formData.secondary_color === null ||
+                formData.secondary_color === undefined ||
+                (typeof formData.secondary_color === 'string' && formData.secondary_color.trim() === '')) {
+                formData.secondary_color = formData.primary_color || '#4A90E2';
+                logger.info(`[SECONDARY_COLOR] Usando fallback (primary_color): ${formData.secondary_color}`);
+            } else {
+                logger.info(`[SECONDARY_COLOR] Usando valor de digital_form_items: ${formData.secondary_color}`);
+            }
         } else {
-            logger.info(`[SECONDARY_COLOR] Usando valor do banco: ${formData.secondary_color}`);
+            logger.info(`[SECONDARY_COLOR] Usando valor de guest_list_items (não aplicar fallback): ${formData.secondary_color}`);
         }
         
         // Garantir que form_fields seja um array (pode vir como string JSON do PostgreSQL)
