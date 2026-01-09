@@ -367,12 +367,14 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     
                     // Buscar dados do formulário digital (pode ser digital_form ou guest_list convertido)
                     // IMPORTANTE: Buscar valor exato do banco (sem COALESCE) para respeitar valores false
-                    // IMPORTANTE: Buscar sempre o registro mais recente (pode haver múltiplos em caso de migração)
+                    // IMPORTANTE: Buscar sempre o registro mais recente baseado em updated_at (pode haver múltiplos em caso de migração)
                     let formRes;
                     formRes = await client.query(
                         `SELECT * FROM digital_form_items 
                          WHERE profile_item_id = $1 
-                         ORDER BY id DESC 
+                         ORDER BY 
+                            COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
+                            id DESC 
                          LIMIT 1`,
                         [item.id]
                     );
@@ -380,11 +382,15 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     if (formRes.rows.length > 0) {
                         item.digital_form_data = formRes.rows[0];
                         
-                        // LOG DETALHADO PARA DEBUG
+                        // LOG DETALHADO PARA DEBUG - INCLUINDO LOGO DO BOTÃO
                         logger.info('🔍 [CARD] Dados carregados do banco:', {
                             itemId: item.id,
                             profile_item_id: item.digital_form_data.profile_item_id,
                             form_title: item.digital_form_data.form_title,
+                            form_logo_url: item.digital_form_data.form_logo_url,
+                            button_logo_url: item.digital_form_data.button_logo_url,
+                            button_logo_size: item.digital_form_data.button_logo_size,
+                            display_format: item.digital_form_data.display_format,
                             primary_color: item.digital_form_data.primary_color,
                             secondary_color: item.digital_form_data.secondary_color,
                             enable_whatsapp_raw: item.digital_form_data.enable_whatsapp,

@@ -1729,6 +1729,14 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 if (buttonLogoCheck.rows.length > 0) {
                     updateFormFields.push(`button_logo_url = $${formParamIndex++}`);
                     updateFormValues.push(button_logo_url || null);
+                    console.log(`🖼️ [DIGITAL_FORM] Salvando button_logo_url:`, {
+                        itemId: itemId,
+                        button_logo_url: button_logo_url,
+                        button_logo_url_type: typeof button_logo_url,
+                        willBeSaved: button_logo_url || null
+                    });
+                } else {
+                    console.warn(`⚠️ [DIGITAL_FORM] Coluna button_logo_url não existe na tabela digital_form_items para item ${itemId}`);
                 }
             }
             if (button_logo_size !== undefined) {
@@ -1743,6 +1751,16 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                     const validSize = (!isNaN(parsedSize) && parsedSize >= 20 && parsedSize <= 80) ? parsedSize : 40;
                     updateFormFields.push(`button_logo_size = $${formParamIndex++}`);
                     updateFormValues.push(validSize);
+                    console.log(`🖼️ [DIGITAL_FORM] Salvando button_logo_size:`, {
+                        itemId: itemId,
+                        button_logo_size_received: button_logo_size,
+                        button_logo_size_type: typeof button_logo_size,
+                        parsedSize: parsedSize,
+                        validSize: validSize,
+                        willBeSaved: validSize
+                    });
+                } else {
+                    console.warn(`⚠️ [DIGITAL_FORM] Coluna button_logo_size não existe na tabela digital_form_items para item ${itemId}`);
                 }
             }
             if (display_format !== undefined) {
@@ -1884,19 +1902,23 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 `;
                 const updateResult = await client.query(formUpdateQuery, updateFormValues);
                 
-                // LOG DETALHADO APÓS UPDATE
-                if (updateResult.rows.length > 0) {
-                    console.log(`✅ [DIGITAL_FORM] UPDATE executado com sucesso:`, {
-                        itemId: itemId,
-                        updated_at: updateResult.rows[0].updated_at,
-                        enable_whatsapp: updateResult.rows[0].enable_whatsapp,
-                        enable_guest_list_submit: updateResult.rows[0].enable_guest_list_submit,
-                        primary_color: updateResult.rows[0].primary_color,
-                        secondary_color: updateResult.rows[0].secondary_color,
-                        form_title: updateResult.rows[0].form_title,
-                        id: updateResult.rows[0].id
-                    });
-                }
+            // LOG DETALHADO APÓS UPDATE - INCLUINDO LOGO DO BOTÃO
+            if (updateResult.rows.length > 0) {
+                console.log(`✅ [DIGITAL_FORM] UPDATE executado com sucesso:`, {
+                    itemId: itemId,
+                    updated_at: updateResult.rows[0].updated_at,
+                    form_title: updateResult.rows[0].form_title,
+                    form_logo_url: updateResult.rows[0].form_logo_url,
+                    button_logo_url: updateResult.rows[0].button_logo_url,
+                    button_logo_size: updateResult.rows[0].button_logo_size,
+                    display_format: updateResult.rows[0].display_format,
+                    enable_whatsapp: updateResult.rows[0].enable_whatsapp,
+                    enable_guest_list_submit: updateResult.rows[0].enable_guest_list_submit,
+                    primary_color: updateResult.rows[0].primary_color,
+                    secondary_color: updateResult.rows[0].secondary_color,
+                    id: updateResult.rows[0].id
+                });
+            }
             }
         } else {
             // Criar novo registro
@@ -2016,11 +2038,13 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             [itemId, userId]
         );
 
-        // Buscar dados atualizados do formulário (sempre o mais recente)
+        // Buscar dados atualizados do formulário (sempre o mais recente baseado em updated_at)
         const formResult = await client.query(
             `SELECT * FROM digital_form_items 
              WHERE profile_item_id = $1 
-             ORDER BY id DESC 
+             ORDER BY 
+                COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
+                id DESC 
              LIMIT 1`,
             [itemId]
         );
@@ -2029,9 +2053,13 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         if (formResult.rows.length > 0) {
             responseData.digital_form_data = formResult.rows[0];
             
-            // LOG DETALHADO PARA DEBUG
+            // LOG DETALHADO PARA DEBUG - INCLUINDO LOGO DO BOTÃO
             console.log(`✅ [DIGITAL_FORM] Formulário ${itemId} atualizado com sucesso:`, {
                 form_title: responseData.digital_form_data.form_title,
+                form_logo_url: responseData.digital_form_data.form_logo_url,
+                button_logo_url: responseData.digital_form_data.button_logo_url,
+                button_logo_size: responseData.digital_form_data.button_logo_size,
+                display_format: responseData.digital_form_data.display_format,
                 primary_color: responseData.digital_form_data.primary_color,
                 secondary_color: responseData.digital_form_data.secondary_color,
                 enable_whatsapp: responseData.digital_form_data.enable_whatsapp,

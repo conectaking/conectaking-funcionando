@@ -1596,18 +1596,58 @@ if (typeof details === 'undefined' || !details) {
                             let hasFormLogo = false;
                             let buttonLogoSize = 40; // Valor padrão sempre definido
                             
+                            // LOG DETALHADO PARA DEBUG
+                            console.log('🖼️ [PROFILE/CARD] Dados do formulário para cartão:', {
+                                itemId: item.id,
+                                displayFormat: displayFormat,
+                                button_logo_url: formData.button_logo_url,
+                                button_logo_url_type: typeof formData.button_logo_url,
+                                form_logo_url: formData.form_logo_url,
+                                button_logo_size: formData.button_logo_size,
+                                button_logo_size_type: typeof formData.button_logo_size,
+                                item_image_url: item.image_url,
+                                updated_at: formData.updated_at
+                            });
+                            
                             if (displayFormat === 'button') {
-                                // Apenas no modo botão, calcular a logo
-                                buttonLogo = formData.button_logo_url || formData.form_logo_url || item.image_url || '';
+                                // IMPORTANTE: Priorizar button_logo_url se existir e não estiver vazio
+                                // Se button_logo_url não existir ou estiver vazio, usar form_logo_url
+                                // Se form_logo_url também não existir, usar item.image_url como último recurso
+                                buttonLogo = '';
+                                if (formData.button_logo_url && typeof formData.button_logo_url === 'string' && formData.button_logo_url.trim() !== '' && formData.button_logo_url !== 'null' && formData.button_logo_url !== 'undefined') {
+                                    buttonLogo = formData.button_logo_url.trim();
+                                    console.log('✅ [PROFILE/CARD] Usando button_logo_url:', buttonLogo);
+                                } else if (formData.form_logo_url && typeof formData.form_logo_url === 'string' && formData.form_logo_url.trim() !== '' && formData.form_logo_url !== 'null' && formData.form_logo_url !== 'undefined') {
+                                    buttonLogo = formData.form_logo_url.trim();
+                                    console.log('✅ [PROFILE/CARD] Usando form_logo_url (fallback):', buttonLogo);
+                                } else if (item.image_url && typeof item.image_url === 'string' && item.image_url.trim() !== '' && item.image_url !== 'null' && item.image_url !== 'undefined') {
+                                    buttonLogo = item.image_url.trim();
+                                    console.log('✅ [PROFILE/CARD] Usando item.image_url (último recurso):', buttonLogo);
+                                } else {
+                                    console.warn('⚠️ [PROFILE/CARD] Nenhuma logo encontrada para exibir');
+                                }
+                                
                                 formLogo = buttonLogo;
-                                hasFormLogo = formLogo && formLogo.trim() && !formLogo.includes('placeholder');
+                                hasFormLogo = formLogo && formLogo.trim() && !formLogo.includes('placeholder') && formLogo !== 'null' && formLogo !== 'undefined';
+                                
                                 // Obter tamanho da logo (padrão: 40px)
                                 if (formData.button_logo_size !== undefined && formData.button_logo_size !== null) {
                                     const parsed = parseInt(formData.button_logo_size, 10);
                                     if (!isNaN(parsed) && parsed >= 20 && parsed <= 80) {
                                         buttonLogoSize = parsed;
+                                        console.log('✅ [PROFILE/CARD] Tamanho da logo definido:', buttonLogoSize);
+                                    } else {
+                                        console.warn('⚠️ [PROFILE/CARD] button_logo_size inválido, usando padrão 40px');
                                     }
+                                } else {
+                                    console.log('ℹ️ [PROFILE/CARD] button_logo_size não definido, usando padrão 40px');
                                 }
+                                
+                                console.log('🖼️ [PROFILE/CARD] Resultado final da logo:', {
+                                    buttonLogo: buttonLogo,
+                                    hasFormLogo: hasFormLogo,
+                                    buttonLogoSize: buttonLogoSize
+                                });
                             }
                             // Se for modo banner, buttonLogo, formLogo e hasFormLogo permanecem vazios/false
                             // Mas buttonLogoSize sempre terá um valor (40px padrão)
