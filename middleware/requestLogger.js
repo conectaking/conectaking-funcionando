@@ -29,13 +29,25 @@ const requestLogger = (req, res, next) => {
             });
         }
 
-        // Log de erros sempre (exceto favicon.ico que é normal não existir)
-        if (res.statusCode >= 400 && req.path !== '/favicon.ico') {
+        // Log de erros sempre (exceto favicon.ico e tentativas de WordPress que são normais)
+        // Filtrar tentativas de acesso ao WordPress (bots/scanners)
+        const isWordPressAttempt = /wp-admin|wordpress|wp-content|wp-includes|wp-login|setup-config|xmlrpc\.php|readme\.html/i.test(req.path);
+        const isCommonBotPath = /phpmyadmin|phpinfo|admin|\.env|\.git|backup|test|api\/v1\/|\.sql$/i.test(req.path);
+        
+        if (res.statusCode >= 400 && req.path !== '/favicon.ico' && !isWordPressAttempt && !isCommonBotPath) {
             logger.warn('Requisição com erro', {
                 method: req.method,
                 path: req.path,
                 statusCode: res.statusCode,
                 duration: `${duration}ms`
+            });
+        } else if (res.statusCode === 404 && (isWordPressAttempt || isCommonBotPath)) {
+            // Log apenas em nível debug para tentativas conhecidas de bots
+            logger.debug('Tentativa de acesso bloqueada (bot/scanner)', {
+                method: req.method,
+                path: req.path,
+                ip: req.ip,
+                userAgent: req.get('user-agent')?.substring(0, 100)
             });
         }
 
