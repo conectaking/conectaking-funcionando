@@ -642,8 +642,41 @@ router.post('/:slug/form/:itemId/submit',
             return res.status(400).json({ message: 'ID do formulário inválido' });
         }
 
+        // IMPORTANTE: Validar response_data mas permitir objeto vazio (alguns formulários podem não ter campos)
         if (!response_data || typeof response_data !== 'object') {
-            return res.status(400).json({ message: 'Dados de resposta são obrigatórios' });
+            logger.warn('⚠️ [SUBMIT] response_data inválido ou ausente', {
+                response_data,
+                type: typeof response_data,
+                itemId: itemIdInt
+            });
+            return res.status(400).json({ 
+                success: false,
+                message: 'Dados de resposta são obrigatórios. Recarregue a página e tente novamente.' 
+            });
+        }
+        
+        // Validar se response_data tem pelo menos uma chave (mesmo que vazia)
+        if (Object.keys(response_data).length === 0) {
+            logger.warn('⚠️ [SUBMIT] response_data está vazio', {
+                itemId: itemIdInt,
+                responder_name,
+                responder_email,
+                responder_phone
+            });
+            // Mesmo vazio, permitir salvar se houver responder_name, responder_email ou responder_phone
+            if (!responder_name && !responder_email && !responder_phone) {
+                return res.status(400).json({ 
+                    success: false,
+                    message: 'Nenhum dado foi enviado. Preencha pelo menos um campo do formulário.' 
+                });
+            }
+            // Se tiver pelo menos um dado de contato, criar response_data mínimo
+            response_data = {
+                _metadata: {
+                    submitted_via: 'form',
+                    has_contact_info: true
+                }
+            };
         }
 
         // Verificar se o formulário existe e está ativo (pode ser digital_form ou guest_list)
@@ -894,10 +927,23 @@ router.post('/:slug/form/:itemId/submit',
         });
 
     } catch (error) {
-        logger.error('Erro ao salvar resposta do formulário:', error);
-        res.status(500).json({ message: 'Erro ao salvar resposta', error: error.message });
+        logger.error('❌ [SUBMIT] Erro ao salvar resposta do formulário:', {
+            error: error.message,
+            stack: error.stack,
+            itemId: itemId || 'unknown',
+            slug: slug || 'unknown'
+        });
+        
+        // IMPORTANTE: Sempre retornar resposta JSON válida, mesmo em caso de erro
+        res.status(500).json({ 
+            success: false,
+            message: 'Erro ao salvar resposta. Tente novamente em alguns instantes.',
+            error: error.message || 'Erro desconhecido'
+        });
     } finally {
-        client.release();
+        if (client) {
+            client.release();
+        }
     }
 }));
 

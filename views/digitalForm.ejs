@@ -996,42 +996,18 @@
                 return;
             }
 
-            // Coletar dados do formulário
-            const formData = new FormData(this);
-            const data = {};
-            const responseData = {};
-
             // Obter formFields (pode estar no escopo global)
             let currentFormFields = window.formFields || formDataObj.form_fields || [];
             if (typeof currentFormFields === 'string') {
                 try {
                     currentFormFields = JSON.parse(currentFormFields);
                 } catch (e) {
+                    console.error('❌ [SUBMIT] Erro ao parsear formFields:', e);
                     currentFormFields = [];
                 }
             }
             if (!Array.isArray(currentFormFields)) {
                 currentFormFields = [];
-            }
-
-            // Coletar todos os campos
-            for (const [key, value] of formData.entries()) {
-                // Verificar se é um campo dinâmico
-                const field = currentFormFields.find(f => {
-                    const fieldId = f.id || `field_${currentFormFields.indexOf(f)}`;
-                    return fieldId === key;
-                });
-                if (field) {
-                    if (field.type === 'checkbox') {
-                        if (!responseData[key]) responseData[key] = [];
-                        responseData[key].push(value);
-                    } else {
-                        responseData[key] = value;
-                    }
-                    data[key] = responseData[key];
-                } else {
-                    data[key] = value;
-                }
             }
             
             // Verificar se há campos configurados
@@ -1041,75 +1017,142 @@
                 return;
             }
             
-            // Coletar dados de todos os campos dinâmicos
+            // Coletar dados de todos os campos dinâmicos - CORRIGIDO: Uma única passagem
+            const data = {};
+            const responseData = {};
+            
             currentFormFields.forEach((field, index) => {
+                // IMPORTANTE: Usar o mesmo padrão de ID usado na renderização
                 const fieldId = field.id || `field_${index}`;
+                const fieldName = fieldId; // name e id são iguais na renderização
+                const fieldLabel = field.label || 'Campo sem título';
                 
-                if (field.type === 'checkbox') {
-                    // Checkboxes: múltiplos valores
-                    const checkboxes = document.querySelectorAll(`input[name="${fieldId}"]:checked`);
-                    if (checkboxes.length > 0) {
-                        responseData[fieldId] = Array.from(checkboxes).map(cb => cb.value);
-                        data[fieldId] = responseData[fieldId].join(', ');
-                    }
-                } else if (field.type === 'multiple_choice_grid' || field.type === 'checkbox_grid') {
-                    // Grids: estrutura complexa
-                    const gridData = {};
-                    if (field.rows) {
-                        field.rows.forEach(row => {
-                            const rowName = `${fieldId}_${row}`;
-                            if (field.type === 'multiple_choice_grid') {
-                                const selected = document.querySelector(`input[name="${rowName}"]:checked`);
-                                if (selected) {
-                                    gridData[row] = selected.value;
+                console.log(`🔍 [SUBMIT] Coletando campo ${index + 1}:`, {
+                    fieldId,
+                    fieldName,
+                    fieldLabel,
+                    type: field.type
+                });
+                
+                try {
+                    if (field.type === 'checkbox') {
+                        // Checkboxes: múltiplos valores
+                        const checkboxes = document.querySelectorAll(`input[type="checkbox"][name="${fieldName}"]:checked`);
+                        if (checkboxes.length > 0) {
+                            responseData[fieldId] = Array.from(checkboxes).map(cb => cb.value);
+                            data[fieldId] = responseData[fieldId].join(', ');
+                            console.log(`✅ [SUBMIT] Checkbox coletado:`, responseData[fieldId]);
+                        }
+                    } else if (field.type === 'multiple_choice_grid' || field.type === 'checkbox_grid') {
+                        // Grids: estrutura complexa
+                        const gridData = {};
+                        if (field.rows && Array.isArray(field.rows)) {
+                            field.rows.forEach(row => {
+                                const rowName = `${fieldName}_${row}`;
+                                if (field.type === 'multiple_choice_grid') {
+                                    const selected = document.querySelector(`input[type="radio"][name="${rowName}"]:checked`);
+                                    if (selected) {
+                                        gridData[row] = selected.value;
+                                    }
+                                } else {
+                                    const selected = document.querySelectorAll(`input[type="checkbox"][name="${rowName}"]:checked`);
+                                    if (selected.length > 0) {
+                                        gridData[row] = Array.from(selected).map(cb => cb.value);
+                                    }
                                 }
-                            } else {
-                                const selected = document.querySelectorAll(`input[name="${rowName}"]:checked`);
-                                if (selected.length > 0) {
-                                    gridData[row] = Array.from(selected).map(cb => cb.value);
-                                }
-                            }
-                        });
-                        if (Object.keys(gridData).length > 0) {
-                            responseData[fieldId] = gridData;
-                            // Formatar para WhatsApp
-                            let gridText = '';
-                            Object.entries(gridData).forEach(([row, value]) => {
-                                gridText += `${row}: ${Array.isArray(value) ? value.join(', ') : value}\n`;
                             });
-                            data[fieldId] = gridText.trim();
+                            if (Object.keys(gridData).length > 0) {
+                                responseData[fieldId] = gridData;
+                                // Formatar para WhatsApp
+                                let gridText = '';
+                                Object.entries(gridData).forEach(([row, value]) => {
+                                    gridText += `${row}: ${Array.isArray(value) ? value.join(', ') : value}\n`;
+                                });
+                                data[fieldId] = gridText.trim();
+                                console.log(`✅ [SUBMIT] Grid coletado:`, gridData);
+                            }
+                        }
+                    } else if (field.type === 'multiple_choice' || field.type === 'yes_no' || field.type === 'linear_scale' || field.type === 'rating') {
+                        // Radio buttons: valor único
+                        const selected = document.querySelector(`input[type="radio"][name="${fieldName}"]:checked`);
+                        if (selected) {
+                            responseData[fieldId] = selected.value;
+                            data[fieldId] = selected.value;
+                            console.log(`✅ [SUBMIT] Radio coletado:`, selected.value);
+                        }
+                    } else if (field.type === 'dropdown' || field.type === 'select') {
+                        // Dropdown/Select
+                        const select = document.querySelector(`select[name="${fieldName}"], select#field-${index}`);
+                        if (select && select.value) {
+                            responseData[fieldId] = select.value;
+                            data[fieldId] = select.value;
+                            console.log(`✅ [SUBMIT] Select coletado:`, select.value);
+                        }
+                    } else {
+                        // Campos de texto, número, data, email, textarea, etc.
+                        // IMPORTANTE: Tentar ambos os seletores para garantir compatibilidade
+                        const input = document.querySelector(`#field-${index}, input[name="${fieldName}"], textarea[name="${fieldName}"], textarea#field-${index}`);
+                        if (input) {
+                            const value = input.value ? input.value.trim() : '';
+                            if (value || field.required) {
+                                responseData[fieldId] = value;
+                                data[fieldId] = value;
+                                console.log(`✅ [SUBMIT] Input coletado (${field.type}):`, value ? 'tem valor' : 'vazio mas obrigatório');
+                            }
+                        } else {
+                            console.warn(`⚠️ [SUBMIT] Campo não encontrado no DOM:`, {
+                                fieldId,
+                                fieldName,
+                                index,
+                                type: field.type,
+                                selector1: `#field-${index}`,
+                                selector2: `input[name="${fieldName}"]`
+                            });
                         }
                     }
-                } else if (field.type === 'multiple_choice' || field.type === 'yes_no' || field.type === 'linear_scale' || field.type === 'rating') {
-                    // Radio buttons: valor único
-                    const selected = document.querySelector(`input[name="${fieldId}"]:checked`);
-                    if (selected) {
-                        responseData[fieldId] = selected.value;
-                        data[fieldId] = selected.value;
-                    }
-                } else {
-                    // Campos de texto, número, data, etc.
-                    const input = document.querySelector(`#field-${index}`);
-                    if (input && input.value) {
-                        responseData[fieldId] = input.value;
-                        data[fieldId] = input.value;
-                    }
+                } catch (fieldError) {
+                    console.error(`❌ [SUBMIT] Erro ao coletar campo ${fieldId}:`, fieldError);
+                    // Continuar coletando outros campos mesmo se um falhar
                 }
             });
             
             // Verificar se há dados coletados
             console.log('📊 [SUBMIT] Dados coletados:', {
                 responseDataKeys: Object.keys(responseData),
+                responseDataCount: Object.keys(responseData).length,
                 responseData: responseData,
                 dataKeys: Object.keys(data),
+                dataCount: Object.keys(data).length,
                 data: data,
-                fieldsCount: currentFormFields.length
+                fieldsCount: currentFormFields.length,
+                hasData: Object.keys(responseData).length > 0 || Object.keys(data).length > 0
             });
             
-            // Se não houver dados coletados, mostrar erro
+            // IMPORTANTE: Validar se pelo menos alguns dados foram coletados
+            // Mas permitir envio mesmo se alguns campos obrigatórios estiverem vazios (a validação já foi feita)
             if (Object.keys(responseData).length === 0 && Object.keys(data).length === 0) {
                 restoreButton(submitBtn, originalHTML);
+                console.error('❌ [SUBMIT] Nenhum dado coletado do formulário!', {
+                    formFieldsCount: currentFormFields.length,
+                    formFields: currentFormFields.map(f => ({ id: f.id, label: f.label, type: f.type })),
+                    allInputs: document.querySelectorAll('input, textarea, select').length
+                });
                 showErrorMessage('Por favor, preencha pelo menos um campo do formulário antes de enviar.');
+                return;
+            }
+            
+            // Garantir que responseData não esteja vazio (pode acontecer se só data tiver valores)
+            if (Object.keys(responseData).length === 0 && Object.keys(data).length > 0) {
+                // Se responseData estiver vazio mas data não, copiar data para responseData
+                Object.assign(responseData, data);
+                console.log('⚠️ [SUBMIT] responseData estava vazio, copiando de data:', responseData);
+            }
+            
+            // IMPORTANTE: Garantir que response_data não seja um objeto vazio antes de enviar
+            if (Object.keys(responseData).length === 0) {
+                restoreButton(submitBtn, originalHTML);
+                console.error('❌ [SUBMIT] responseData vazio após todas as tentativas de coleta!');
+                showErrorMessage('Erro: Não foi possível coletar os dados do formulário. Recarregue a página e tente novamente.');
                 return;
             }
             
@@ -1135,13 +1178,20 @@
             });
             
             try {
+                // IMPORTANTE: Adicionar timeout para evitar que o formulário fique travado
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+                
                 const submitResponse = await fetch(submitUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(submitPayload)
+                    body: JSON.stringify(submitPayload),
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
                 
                 console.log('📥 [SUBMIT] Resposta recebida:', {
                     status: submitResponse.status,
@@ -1168,9 +1218,10 @@
                 submitSuccess = true;
                 responseId = submitResult.response_id || submitResult.id || null;
                 
-                // Sempre redirecionar para página de sucesso quando não há WhatsApp
+                // IMPORTANTE: Sempre redirecionar para página de sucesso quando não há WhatsApp
                 // Quando "Salvar na Lista" está ativo OU quando não há WhatsApp, redirecionar
-                if (submitResult.success_page_url || (!enableWhatsapp && enableGuestListSubmit)) {
+                // Também redirecionar se a resposta do servidor incluir success_page_url
+                if (submitResult.success_page_url || (!enableWhatsapp && enableGuestListSubmit) || !enableWhatsapp) {
                     const successUrl = submitResult.success_page_url || `/${slug}/form/${itemId}/success?response_id=${responseId || ''}`;
                     
                     // Passar dados do formulário via URL para mostrar na página de sucesso
@@ -1188,19 +1239,32 @@
                         ? `${submitResult.success_page_url}&${formDataParams.toString()}`
                         : `${successUrl}&${formDataParams.toString()}`;
                     
-                    console.log('🔄 [SUBMIT] Redirecionando para página de sucesso:', finalUrl);
+                    console.log('🔄 [SUBMIT] Redirecionando para página de sucesso:', {
+                        finalUrl,
+                        enableWhatsapp,
+                        enableGuestListSubmit,
+                        hasSuccessPageUrl: !!submitResult.success_page_url
+                    });
                     window.location.href = finalUrl;
                     return;
                 }
                 
+                // Se chegou aqui e WhatsApp está ativo, o handler do WhatsApp deve tratar
+                // Mas ainda mostrar mensagem de sucesso
+                console.log('✅ [SUBMIT] Formulário enviado com sucesso, aguardando ação do WhatsApp handler');
+                
             } catch (error) {
                 console.error('❌ [SUBMIT] Erro ao salvar resposta:', error);
                 console.error('❌ [SUBMIT] Stack:', error.stack);
+                console.error('❌ [SUBMIT] Error name:', error.name);
+                console.error('❌ [SUBMIT] Error message:', error.message);
                 restoreButton(submitBtn, originalHTML);
                 
                 // Mensagem de erro específica
                 let errorMessage = 'Erro ao enviar formulário. ';
-                if (error.message && (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch'))) {
+                if (error.name === 'AbortError' || error.message && error.message.includes('aborted')) {
+                    errorMessage += 'Tempo de espera esgotado. Verifique sua conexão e tente novamente.';
+                } else if (error.message && (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch'))) {
                     errorMessage += 'Verifique sua conexão com a internet e tente novamente.';
                 } else if (error.message && error.message.includes('429')) {
                     errorMessage += 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
