@@ -605,8 +605,15 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 `);
                 
                 if (columnCheck.rows.length > 0) {
+                    // Tratar string vazia como null, mas manter valores válidos
+                    const valueToSave = (secondary_color && typeof secondary_color === 'string' && secondary_color.trim() !== '' && secondary_color !== 'null' && secondary_color !== 'undefined') 
+                        ? secondary_color.trim() 
+                        : (secondary_color && secondary_color !== null && secondary_color !== undefined && secondary_color !== 'null' && secondary_color !== 'undefined' ? secondary_color : null);
+                    
                     guestListUpdateFields.push(`secondary_color = $${guestListParamIndex++}`);
-                    guestListUpdateValues.push(secondary_color || null);
+                    guestListUpdateValues.push(valueToSave);
+                    
+                    logger.info(`🎨 [GUEST_LIST] Salvando secondary_color: "${secondary_color}" -> "${valueToSave}" (tipo: ${typeof secondary_color})`);
                 } else {
                     logger.warn('Coluna secondary_color não existe na tabela guest_list_items. Execute a migration 068.');
                 }
@@ -617,11 +624,23 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
         
         if (guestListUpdateFields.length > 0) {
             guestListUpdateValues.push(guestListItemId);
-            await client.query(`
+            const updateResult = await client.query(`
                 UPDATE guest_list_items 
-                SET ${guestListUpdateFields.join(', ')}
+                SET ${guestListUpdateFields.join(', ')}, updated_at = NOW()
                 WHERE id = $${guestListParamIndex++}
+                RETURNING *
             `, guestListUpdateValues);
+            
+            // LOG DETALHADO APÓS UPDATE
+            if (updateResult.rows.length > 0) {
+                logger.info(`✅ [GUEST_LIST] UPDATE executado com sucesso:`, {
+                    guestListItemId: guestListItemId,
+                    profile_item_id: listId,
+                    primary_color: updateResult.rows[0].primary_color,
+                    secondary_color: updateResult.rows[0].secondary_color,
+                    updated_at: updateResult.rows[0].updated_at
+                });
+            }
         }
         
         // Buscar dados atualizados

@@ -54,6 +54,7 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         const item = itemRes.rows[0];
         const userId = item.user_id;
         const itemIdInt = item.id;
+        const isGuestList = item.item_type === 'guest_list';
 
         // Buscar dados do formulário com verificação de colunas
         const columnCheck = await client.query(`
@@ -66,9 +67,8 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         const hasEnableWhatsapp = columnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
         const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
         
+        // Buscar dados de digital_form_items (sempre necessário para form_fields, etc)
         let formRes;
-        // IMPORTANTE: Buscar valor exato do banco (sem COALESCE) para respeitar valores false
-        // IMPORTANTE: Adicionar ORDER BY updated_at DESC para garantir dados mais recentes
         formRes = await client.query(
             `SELECT * FROM digital_form_items 
              WHERE profile_item_id = $1 
@@ -82,6 +82,65 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         }
 
         let formData = formRes.rows[0];
+        
+        // IMPORTANTE: Sempre verificar se existe dados em guest_list_items (mesmo que item_type não seja guest_list)
+        // Isso é necessário porque o item pode estar como digital_form mas ter dados salvos em guest_list_items
+        const guestListRes = await client.query(
+            `SELECT primary_color, secondary_color, text_color, background_color, 
+                    header_image_url, background_image_url, background_opacity, theme, updated_at
+             FROM guest_list_items 
+             WHERE profile_item_id = $1 
+             ORDER BY updated_at DESC NULLS LAST, id DESC 
+             LIMIT 1`,
+            [itemIdInt]
+        );
+        
+        if (guestListRes.rows.length > 0) {
+            const guestListData = guestListRes.rows[0];
+            logger.info(`🎨 [FORM/SHARE] Dados encontrados em guest_list_items:`, {
+                primary_color: guestListData.primary_color,
+                secondary_color: guestListData.secondary_color,
+                updated_at: guestListData.updated_at,
+                item_type: item.item_type
+            });
+            
+            // Mesclar dados: SEMPRE priorizar cores de guest_list_items se existirem
+            // Isso garante que as cores salvas em guest_list_items sejam usadas
+            if (guestListData.primary_color) {
+                formData.primary_color = guestListData.primary_color;
+                logger.info(`🎨 [FORM/SHARE] primary_color atualizado de guest_list_items: ${guestListData.primary_color}`);
+            }
+            if (guestListData.secondary_color) {
+                formData.secondary_color = guestListData.secondary_color;
+                logger.info(`🎨 [FORM/SHARE] secondary_color atualizado de guest_list_items: ${guestListData.secondary_color}`);
+            }
+            if (guestListData.text_color) {
+                formData.text_color = guestListData.text_color;
+            }
+            if (guestListData.background_color) {
+                formData.background_color = guestListData.background_color;
+            }
+            if (guestListData.header_image_url) {
+                formData.header_image_url = guestListData.header_image_url;
+            }
+            if (guestListData.background_image_url) {
+                formData.background_image_url = guestListData.background_image_url;
+            }
+            if (guestListData.background_opacity !== null && guestListData.background_opacity !== undefined) {
+                formData.background_opacity = guestListData.background_opacity;
+            }
+            if (guestListData.theme) {
+                formData.theme = guestListData.theme;
+            }
+            
+            logger.info(`🎨 [FORM/SHARE] Dados finais após mesclar guest_list_items:`, {
+                primary_color: formData.primary_color,
+                secondary_color: formData.secondary_color,
+                text_color: formData.text_color
+            });
+        } else {
+            logger.info(`ℹ️ [FORM/SHARE] Nenhum dado encontrado em guest_list_items para item ${itemIdInt}`);
+        }
         
         // Garantir valores padrão para enable_whatsapp e enable_guest_list_submit
         // IMPORTANTE: Respeitar valores false do banco - não sobrescrever!
@@ -219,8 +278,10 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         }
 
         const item = itemRes.rows[0];
+        const isGuestList = item.item_type === 'guest_list';
 
         // Buscar dados do formulário (pode ser digital_form ou guest_list)
+        // IMPORTANTE: Se for guest_list, buscar dados de guest_list_items primeiro
         // Verificar se as colunas existem antes de selecionar
         const columnCheck = await client.query(`
             SELECT column_name 
@@ -232,9 +293,8 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         const hasEnableWhatsapp = columnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
         const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
         
+        // Buscar dados de digital_form_items (sempre necessário para form_fields, etc)
         let formRes;
-        // IMPORTANTE: Buscar valor exato do banco (sem COALESCE) para respeitar valores false
-        // IMPORTANTE: Adicionar ORDER BY updated_at DESC para garantir dados mais recentes
         formRes = await client.query(
             `SELECT * FROM digital_form_items 
              WHERE profile_item_id = $1 
@@ -248,6 +308,65 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         }
 
         let formData = formRes.rows[0];
+        
+        // IMPORTANTE: Sempre verificar se existe dados em guest_list_items (mesmo que item_type não seja guest_list)
+        // Isso é necessário porque o item pode estar como digital_form mas ter dados salvos em guest_list_items
+        const guestListRes = await client.query(
+            `SELECT primary_color, secondary_color, text_color, background_color, 
+                    header_image_url, background_image_url, background_opacity, theme, updated_at
+             FROM guest_list_items 
+             WHERE profile_item_id = $1 
+             ORDER BY updated_at DESC NULLS LAST, id DESC 
+             LIMIT 1`,
+            [itemIdInt]
+        );
+        
+        if (guestListRes.rows.length > 0) {
+            const guestListData = guestListRes.rows[0];
+            logger.info(`🎨 [FORM/PUBLIC] Dados encontrados em guest_list_items:`, {
+                primary_color: guestListData.primary_color,
+                secondary_color: guestListData.secondary_color,
+                updated_at: guestListData.updated_at,
+                item_type: item.item_type
+            });
+            
+            // Mesclar dados: SEMPRE priorizar cores de guest_list_items se existirem
+            // Isso garante que as cores salvas em guest_list_items sejam usadas
+            if (guestListData.primary_color) {
+                formData.primary_color = guestListData.primary_color;
+                logger.info(`🎨 [FORM/PUBLIC] primary_color atualizado de guest_list_items: ${guestListData.primary_color}`);
+            }
+            if (guestListData.secondary_color) {
+                formData.secondary_color = guestListData.secondary_color;
+                logger.info(`🎨 [FORM/PUBLIC] secondary_color atualizado de guest_list_items: ${guestListData.secondary_color}`);
+            }
+            if (guestListData.text_color) {
+                formData.text_color = guestListData.text_color;
+            }
+            if (guestListData.background_color) {
+                formData.background_color = guestListData.background_color;
+            }
+            if (guestListData.header_image_url) {
+                formData.header_image_url = guestListData.header_image_url;
+            }
+            if (guestListData.background_image_url) {
+                formData.background_image_url = guestListData.background_image_url;
+            }
+            if (guestListData.background_opacity !== null && guestListData.background_opacity !== undefined) {
+                formData.background_opacity = guestListData.background_opacity;
+            }
+            if (guestListData.theme) {
+                formData.theme = guestListData.theme;
+            }
+            
+            logger.info(`🎨 [FORM/PUBLIC] Dados finais após mesclar guest_list_items:`, {
+                primary_color: formData.primary_color,
+                secondary_color: formData.secondary_color,
+                text_color: formData.text_color
+            });
+        } else {
+            logger.info(`ℹ️ [FORM/PUBLIC] Nenhum dado encontrado em guest_list_items para item ${itemIdInt}`);
+        }
         
         // LOG DETALHADO PARA DEBUG
         logger.info('🔍 [FORM/PUBLIC] Dados carregados do banco:', {
