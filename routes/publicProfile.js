@@ -366,22 +366,16 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
                     
                     // Buscar dados do formulário digital (pode ser digital_form ou guest_list convertido)
+                    // IMPORTANTE: Buscar valor exato do banco (sem COALESCE) para respeitar valores false
+                    // IMPORTANTE: Buscar sempre o registro mais recente (pode haver múltiplos em caso de migração)
                     let formRes;
-                    if (hasEnableWhatsapp || hasEnableGuestListSubmit) {
-                        formRes = await client.query(
-                            `SELECT dfi.*, 
-                                    ${hasEnableWhatsapp ? 'COALESCE(dfi.enable_whatsapp, true) as enable_whatsapp' : 'true as enable_whatsapp'},
-                                    ${hasEnableGuestListSubmit ? 'COALESCE(dfi.enable_guest_list_submit, false) as enable_guest_list_submit' : 'false as enable_guest_list_submit'}
-                             FROM digital_form_items dfi 
-                             WHERE dfi.profile_item_id = $1`,
-                            [item.id]
-                        );
-                    } else {
-                        formRes = await client.query(
-                            'SELECT *, true as enable_whatsapp, false as enable_guest_list_submit FROM digital_form_items WHERE profile_item_id = $1',
-                            [item.id]
-                        );
-                    }
+                    formRes = await client.query(
+                        `SELECT * FROM digital_form_items 
+                         WHERE profile_item_id = $1 
+                         ORDER BY id DESC 
+                         LIMIT 1`,
+                        [item.id]
+                    );
                     
                     if (formRes.rows.length > 0) {
                         item.digital_form_data = formRes.rows[0];

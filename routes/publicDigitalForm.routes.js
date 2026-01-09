@@ -68,8 +68,12 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         
         let formRes;
         // IMPORTANTE: Buscar valor exato do banco (sem COALESCE) para respeitar valores false
+        // IMPORTANTE: Adicionar ORDER BY updated_at DESC para garantir dados mais recentes
         formRes = await client.query(
-            'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+            `SELECT * FROM digital_form_items 
+             WHERE profile_item_id = $1 
+             ORDER BY updated_at DESC NULLS LAST, id DESC 
+             LIMIT 1`,
             [itemIdInt]
         );
 
@@ -202,11 +206,11 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         }
 
         // Buscar item do tipo digital_form ou guest_list (verificar se está listado ou se é acesso direto)
+        // IMPORTANTE: Remover condição is_listed para permitir acesso direto via URL
         const itemRes = await client.query(
             `SELECT pi.* 
              FROM profile_items pi
-             WHERE pi.id = $1 AND pi.user_id = $2 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
-             AND (pi.is_listed IS NULL OR pi.is_listed = true)`,
+             WHERE pi.id = $1 AND pi.user_id = $2 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
             [itemIdInt, userId]
         );
 
@@ -230,8 +234,12 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         
         let formRes;
         // IMPORTANTE: Buscar valor exato do banco (sem COALESCE) para respeitar valores false
+        // IMPORTANTE: Adicionar ORDER BY updated_at DESC para garantir dados mais recentes
         formRes = await client.query(
-            'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+            `SELECT * FROM digital_form_items 
+             WHERE profile_item_id = $1 
+             ORDER BY updated_at DESC NULLS LAST, id DESC 
+             LIMIT 1`,
             [itemIdInt]
         );
 
