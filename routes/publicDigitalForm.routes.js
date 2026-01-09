@@ -133,10 +133,23 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
                 formData.theme = guestListData.theme;
             }
             
+            // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
+            // Isso garante que as configurações do botão sejam atualizadas corretamente
+            if (guestListHasEnableWhatsapp && guestListData.enable_whatsapp !== undefined) {
+                formData.enable_whatsapp = guestListData.enable_whatsapp;
+                logger.info(`🔘 [FORM/SHARE] enable_whatsapp atualizado de guest_list_items: ${guestListData.enable_whatsapp} (tipo: ${typeof guestListData.enable_whatsapp})`);
+            }
+            if (guestListHasEnableGuestListSubmit && guestListData.enable_guest_list_submit !== undefined) {
+                formData.enable_guest_list_submit = guestListData.enable_guest_list_submit;
+                logger.info(`🔘 [FORM/SHARE] enable_guest_list_submit atualizado de guest_list_items: ${guestListData.enable_guest_list_submit} (tipo: ${typeof guestListData.enable_guest_list_submit})`);
+            }
+            
             logger.info(`🎨 [FORM/SHARE] Dados finais após mesclar guest_list_items:`, {
                 primary_color: formData.primary_color,
                 secondary_color: formData.secondary_color,
-                text_color: formData.text_color
+                text_color: formData.text_color,
+                enable_whatsapp: formData.enable_whatsapp,
+                enable_guest_list_submit: formData.enable_guest_list_submit
             });
         } else {
             logger.info(`ℹ️ [FORM/SHARE] Nenhum dado encontrado em guest_list_items para item ${itemIdInt}`);
@@ -311,15 +324,41 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         
         // IMPORTANTE: Sempre verificar se existe dados em guest_list_items (mesmo que item_type não seja guest_list)
         // Isso é necessário porque o item pode estar como digital_form mas ter dados salvos em guest_list_items
+        // Verificar se guest_list_items tem as colunas enable_whatsapp e enable_guest_list_submit
+        const guestListColumnCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'guest_list_items' 
+            AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit')
+        `);
+        const guestListHasEnableWhatsapp = guestListColumnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+        const guestListHasEnableGuestListSubmit = guestListColumnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+        
+        // Construir SELECT dinamicamente baseado nas colunas disponíveis
+        let guestListSelectFields = 'primary_color, secondary_color, text_color, background_color, header_image_url, background_image_url, background_opacity, theme, updated_at, id';
+        if (guestListHasEnableWhatsapp) {
+            guestListSelectFields += ', enable_whatsapp';
+        }
+        if (guestListHasEnableGuestListSubmit) {
+            guestListSelectFields += ', enable_guest_list_submit';
+        }
+        
         const guestListRes = await client.query(
-            `SELECT primary_color, secondary_color, text_color, background_color, 
-                    header_image_url, background_image_url, background_opacity, theme, updated_at
+            `SELECT ${guestListSelectFields}
              FROM guest_list_items 
              WHERE profile_item_id = $1 
              ORDER BY updated_at DESC NULLS LAST, id DESC 
              LIMIT 1`,
             [itemIdInt]
         );
+        
+        logger.info(`🔍 [FORM/PUBLIC] Query guest_list_items executada:`, {
+            itemId: itemIdInt,
+            rowsFound: guestListRes.rows.length,
+            hasData: guestListRes.rows.length > 0,
+            hasEnableWhatsapp: guestListHasEnableWhatsapp,
+            hasEnableGuestListSubmit: guestListHasEnableGuestListSubmit
+        });
         
         if (guestListRes.rows.length > 0) {
             const guestListData = guestListRes.rows[0];
@@ -329,6 +368,8 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 primary_color_type: typeof guestListData.primary_color,
                 secondary_color: guestListData.secondary_color,
                 secondary_color_type: typeof guestListData.secondary_color,
+                enable_whatsapp: guestListData.enable_whatsapp,
+                enable_guest_list_submit: guestListData.enable_guest_list_submit,
                 updated_at: guestListData.updated_at,
                 item_type: item.item_type,
                 profile_item_id: itemIdInt
@@ -373,10 +414,22 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 formData.theme = guestListData.theme;
             }
             
+            // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
+            if (guestListHasEnableWhatsapp && guestListData.enable_whatsapp !== undefined) {
+                formData.enable_whatsapp = guestListData.enable_whatsapp;
+                logger.info(`🔘 [FORM/PUBLIC] enable_whatsapp atualizado de guest_list_items: ${guestListData.enable_whatsapp}`);
+            }
+            if (guestListHasEnableGuestListSubmit && guestListData.enable_guest_list_submit !== undefined) {
+                formData.enable_guest_list_submit = guestListData.enable_guest_list_submit;
+                logger.info(`🔘 [FORM/PUBLIC] enable_guest_list_submit atualizado de guest_list_items: ${guestListData.enable_guest_list_submit}`);
+            }
+            
             logger.info(`🎨 [FORM/PUBLIC] Dados finais após mesclar guest_list_items:`, {
                 primary_color: formData.primary_color,
                 secondary_color: formData.secondary_color,
-                text_color: formData.text_color
+                text_color: formData.text_color,
+                enable_whatsapp: formData.enable_whatsapp,
+                enable_guest_list_submit: formData.enable_guest_list_submit
             });
         } else {
             logger.warn(`⚠️ [FORM/PUBLIC] Nenhum dado encontrado em guest_list_items para item ${itemIdInt} - usando cores de digital_form_items`);
@@ -386,8 +439,8 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             });
         }
         
-        // LOG DETALHADO PARA DEBUG
-        logger.info('🔍 [FORM/PUBLIC] Dados carregados do banco:', {
+        // LOG DETALHADO PARA DEBUG (ANTES DA MESCLAGEM)
+        logger.info('🔍 [FORM/PUBLIC] Dados carregados do banco (ANTES mesclagem):', {
             itemId: itemIdInt,
             profile_item_id: formData.profile_item_id,
             form_title: formData.form_title,
@@ -401,30 +454,6 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             id: formData.id,
             hasEnableWhatsapp: hasEnableWhatsapp,
             hasEnableGuestListSubmit: hasEnableGuestListSubmit
-        });
-        
-        // Garantir valores padrão para enable_whatsapp e enable_guest_list_submit
-        // IMPORTANTE: Respeitar valores false do banco - não sobrescrever!
-        if (hasEnableWhatsapp && (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null)) {
-            formData.enable_whatsapp = true; // Default true apenas se não existir coluna ou valor for null
-        } else if (!hasEnableWhatsapp) {
-            formData.enable_whatsapp = true; // Default se coluna não existir
-        }
-        // Se hasEnableWhatsapp é true e enable_whatsapp é false, manter false!
-        
-        if (hasEnableGuestListSubmit && (formData.enable_guest_list_submit === undefined || formData.enable_guest_list_submit === null)) {
-            formData.enable_guest_list_submit = false; // Default false apenas se não existir coluna ou valor for null
-        } else if (!hasEnableGuestListSubmit) {
-            formData.enable_guest_list_submit = false; // Default se coluna não existir
-        }
-        // Se hasEnableGuestListSubmit é true e enable_guest_list_submit é false, manter false!
-        
-        logger.info('📋 [FORM] Configurações processadas:', {
-            enable_whatsapp: formData.enable_whatsapp,
-            enable_guest_list_submit: formData.enable_guest_list_submit,
-            primary_color: formData.primary_color,
-            secondary_color: formData.secondary_color,
-            form_title: formData.form_title
         });
         
         // IMPORTANTE: Aplicar fallback de secondary_color APENAS se não foi encontrado em guest_list_items

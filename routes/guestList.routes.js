@@ -473,7 +473,9 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             background_image_url,
             background_opacity,
             theme,
-            secondary_color
+            secondary_color,
+            enable_whatsapp,
+            enable_guest_list_submit
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
@@ -640,6 +642,48 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                     secondary_color: updateResult.rows[0].secondary_color,
                     updated_at: updateResult.rows[0].updated_at
                 });
+            }
+        }
+        
+        // IMPORTANTE: Também atualizar enable_whatsapp e enable_guest_list_submit em digital_form_items
+        // Isso garante que a página pública tenha acesso a esses valores
+        if (enable_whatsapp !== undefined || enable_guest_list_submit !== undefined) {
+            const digitalFormUpdateFields = [];
+            const digitalFormUpdateValues = [];
+            let digitalFormParamIndex = 1;
+            
+            // Verificar se as colunas existem em digital_form_items
+            const digitalFormColumnCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'digital_form_items' 
+                AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit')
+            `);
+            const hasEnableWhatsapp = digitalFormColumnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+            const hasEnableGuestListSubmit = digitalFormColumnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+            
+            if (enable_whatsapp !== undefined && hasEnableWhatsapp) {
+                const enableWhatsappValue = enable_whatsapp === true || enable_whatsapp === 'true' || enable_whatsapp === 1 || enable_whatsapp === '1';
+                digitalFormUpdateFields.push(`enable_whatsapp = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(enableWhatsappValue);
+                logger.info(`🔘 [GUEST_LIST] Salvando enable_whatsapp em digital_form_items: ${enableWhatsappValue}`);
+            }
+            
+            if (enable_guest_list_submit !== undefined && hasEnableGuestListSubmit) {
+                const enableGuestListSubmitValue = enable_guest_list_submit === true || enable_guest_list_submit === 'true' || enable_guest_list_submit === 1 || enable_guest_list_submit === '1';
+                digitalFormUpdateFields.push(`enable_guest_list_submit = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(enableGuestListSubmitValue);
+                logger.info(`🔘 [GUEST_LIST] Salvando enable_guest_list_submit em digital_form_items: ${enableGuestListSubmitValue}`);
+            }
+            
+            if (digitalFormUpdateFields.length > 0) {
+                digitalFormUpdateValues.push(listId);
+                await client.query(`
+                    UPDATE digital_form_items 
+                    SET ${digitalFormUpdateFields.join(', ')}, updated_at = NOW()
+                    WHERE profile_item_id = $${digitalFormParamIndex++}
+                `, digitalFormUpdateValues);
+                logger.info(`✅ [GUEST_LIST] digital_form_items atualizado com enable_whatsapp/enable_guest_list_submit`);
             }
         }
         
