@@ -1767,7 +1767,9 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             }
             if (primary_color !== undefined) {
                 updateFormFields.push(`primary_color = $${formParamIndex++}`);
-                updateFormValues.push(primary_color || '#4A90E2');
+                const primaryColorValue = primary_color && primary_color.trim() ? primary_color.trim() : '#4A90E2';
+                updateFormValues.push(primaryColorValue);
+                console.log(`🎨 [PRIMARY_COLOR] Recebido no backend: "${primary_color}", tipo: ${typeof primary_color}, valor a salvar: "${primaryColorValue}"`);
             }
             // Verificar se coluna secondary_color existe antes de atualizar
             if (secondary_color !== undefined) {

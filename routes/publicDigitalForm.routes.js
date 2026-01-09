@@ -328,6 +328,50 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         const profileSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
         const profileSlug = profileSlugRes.rows[0]?.profile_slug || slug;
 
+        // LOG FINAL ANTES DE RENDERIZAR - MUITO DETALHADO
+        logger.info('🎨 [FORM/PUBLIC] Renderizando página com dados:', {
+            itemId: itemIdInt,
+            form_title: formData.form_title,
+            primary_color: formData.primary_color,
+            primary_color_type: typeof formData.primary_color,
+            secondary_color: formData.secondary_color,
+            secondary_color_type: typeof formData.secondary_color,
+            text_color: formData.text_color,
+            theme: formData.theme,
+            enable_whatsapp: formData.enable_whatsapp,
+            enable_guest_list_submit: formData.enable_guest_list_submit,
+            updated_at: formData.updated_at,
+            id: formData.id,
+            timestamp: Date.now()
+        });
+        
+        // VALIDAÇÃO CRÍTICA: Verificar se as cores estão corretas antes de renderizar
+        if (!formData.primary_color || formData.primary_color === '#4A90E2') {
+            logger.warn('⚠️ [FORM/PUBLIC] ATENÇÃO: primary_color pode estar com valor padrão!', {
+                primary_color: formData.primary_color,
+                itemId: itemIdInt
+            });
+        }
+        
+        if (!formData.secondary_color || formData.secondary_color === '#6BA3F0' || formData.secondary_color === '#4A90E2') {
+            logger.warn('⚠️ [FORM/PUBLIC] ATENÇÃO: secondary_color pode estar com valor padrão!', {
+                secondary_color: formData.secondary_color,
+                primary_color: formData.primary_color,
+                itemId: itemIdInt
+            });
+        }
+
+        // HEADERS ANTI-CACHE AGRESSIVOS
+        res.set({
+            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+            'Last-Modified': new Date().toUTCString(),
+            'ETag': `"${Date.now()}-${itemIdInt}"`,
+            'X-Timestamp': Date.now().toString(),
+            'X-Form-Updated-At': formData.updated_at ? new Date(formData.updated_at).toISOString() : 'unknown'
+        });
+
         // Registrar evento 'view' de analytics (será feito via JavaScript no frontend)
         
         // Renderizar página
@@ -336,7 +380,13 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             formData: formData,
             profileSlug: profileSlug,
             slug: slug,
-            itemId: itemIdInt
+            itemId: itemIdInt,
+            _timestamp: Date.now(), // Adicionar timestamp para forçar atualização
+            _debug: {
+                primary_color: formData.primary_color,
+                secondary_color: formData.secondary_color,
+                updated_at: formData.updated_at
+            }
         });
 
     } catch (error) {

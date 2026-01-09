@@ -15,6 +15,15 @@
     <link rel="stylesheet" href="/css/digitalForm.css">
     <style>
         <%
+            // LOG NO SERVIDOR (EJS) - Verificar valores recebidos
+            console.log('🎨 [EJS] Dados recebidos no template:', {
+                primary_color: formData.primary_color,
+                primary_color_type: typeof formData.primary_color,
+                secondary_color: formData.secondary_color,
+                secondary_color_type: typeof formData.secondary_color,
+                form_title: formData.form_title
+            });
+            
             // Garantir que secondary_color seja tratado corretamente
             let secondaryColor = formData.secondary_color;
             if (!secondaryColor || 
@@ -24,8 +33,15 @@
                 secondaryColor === undefined ||
                 (typeof secondaryColor === 'string' && secondaryColor.trim() === '')) {
                 secondaryColor = formData.primary_color || '#4A90E2';
+                console.log('⚠️ [EJS] secondary_color estava vazio/null, usando primary_color:', secondaryColor);
             }
             const primaryColor = formData.primary_color || '#4A90E2';
+            
+            // LOG FINAL DAS CORES QUE SERÃO USADAS
+            console.log('✅ [EJS] Cores finais que serão aplicadas:', {
+                primaryColor: primaryColor,
+                secondaryColor: secondaryColor
+            });
         %>
         :root {
             --primary-color: <%= primaryColor %>;
@@ -35,6 +51,26 @@
             --card-color: <%= formData.card_color || '#FFFFFF' %>;
             --theme: <%= formData.theme || 'light' %>;
         }
+        
+        /* DEBUG: Forçar cores diretamente no body para garantir aplicação */
+        body {
+            --primary-color: <%= primaryColor %> !important;
+            --secondary-color: <%= secondaryColor %> !important;
+        }
+        
+        /* DEBUG: Log visual das cores aplicadas (descomente para ver) */
+        /* body::after {
+            content: 'Primary: <%= primaryColor %> | Secondary: <%= secondaryColor %>';
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 10px;
+            font-size: 10px;
+            z-index: 99999;
+            border-radius: 4px;
+        } */
         
         /* Garantir que o header use a cor secundária - FORÇAR com !important e especificidade */
         header.form-header,
