@@ -213,6 +213,38 @@
             <div class="checkout-layout <%= (formData.enable_pastor_button && formData.pastor_whatsapp_number) ? 'has-sidebar' : '' %>">
                 <!-- Coluna Principal - Formulário -->
                 <div class="checkout-main">
+                    <!-- Informações do Evento (se disponíveis) -->
+                    <% if (formData.event_date || formData.event_address) { %>
+                    <div class="event-info" style="background: rgba(255,199,0,0.1); border: 2px solid rgba(255,199,0,0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                            <i class="fas fa-calendar-alt" style="color: <%= secondaryColor || primaryColor || '#FFC700' %>; font-size: 20px;"></i>
+                            <h3 style="margin: 0; color: <%= formData.text_color || '#333333' %>; font-size: 18px; font-weight: 700;">Informações do Evento</h3>
+                        </div>
+                        <% if (formData.event_date) { %>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding: 12px; background: rgba(255,255,255,0.5); border-radius: 12px;">
+                            <i class="fas fa-calendar" style="color: <%= secondaryColor || primaryColor || '#FFC700' %>; font-size: 18px;"></i>
+                            <div>
+                                <div style="font-weight: 600; color: <%= formData.text_color || '#333333' %>; font-size: 14px; margin-bottom: 4px;">Data do Evento</div>
+                                <div style="color: <%= formData.text_color || '#666666' %>; font-size: 16px; font-weight: 600;">
+                                    <%= new Date(formData.event_date).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+                        <% if (formData.event_address) { %>
+                        <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: rgba(255,255,255,0.5); border-radius: 12px;">
+                            <i class="fas fa-map-marker-alt" style="color: <%= secondaryColor || primaryColor || '#FFC700' %>; font-size: 18px; margin-top: 2px;"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: <%= formData.text_color || '#333333' %>; font-size: 14px; margin-bottom: 4px;">Endereço do Evento</div>
+                                <div style="color: <%= formData.text_color || '#666666' %>; font-size: 16px; line-height: 1.6;">
+                                    <%= formData.event_address %>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% } %>
+                    
                     <!-- Descrição -->
                     <% if (formData.form_description) { %>
                     <div class="form-description">

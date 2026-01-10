@@ -1507,7 +1507,9 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             generate_share_token,
             item_type,
             enable_whatsapp,
-            enable_guest_list_submit
+            enable_guest_list_submit,
+            event_date,
+            event_address
         } = req.body;
 
         if (!itemId || isNaN(itemId)) {
@@ -1706,6 +1708,41 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             if (form_description !== undefined) {
                 updateFormFields.push(`form_description = $${formParamIndex++}`);
                 updateFormValues.push(form_description || null);
+            }
+            // Campos de evento (data e endereço)
+            if (event_date !== undefined) {
+                // Verificar se a coluna existe antes de salvar
+                const eventDateCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items'
+                    AND column_name = 'event_date'
+                `);
+                if (eventDateCheck.rows.length > 0) {
+                    updateFormFields.push(`event_date = $${formParamIndex++}`);
+                    updateFormValues.push(event_date || null);
+                    console.log(`📅 [DIGITAL_FORM] Salvando event_date:`, {
+                        itemId: itemId,
+                        event_date: event_date
+                    });
+                }
+            }
+            if (event_address !== undefined) {
+                // Verificar se a coluna existe antes de salvar
+                const eventAddressCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items'
+                    AND column_name = 'event_address'
+                `);
+                if (eventAddressCheck.rows.length > 0) {
+                    updateFormFields.push(`event_address = $${formParamIndex++}`);
+                    updateFormValues.push(event_address || null);
+                    console.log(`📍 [DIGITAL_FORM] Salvando event_address:`, {
+                        itemId: itemId,
+                        event_address: event_address
+                    });
+                }
             }
             if (prayer_requests_text !== undefined) {
                 updateFormFields.push(`prayer_requests_text = $${formParamIndex++}`);
