@@ -16,6 +16,7 @@
 - **Descrição**: Adicionar som de confirmação quando QR Code é escaneado com sucesso
 - **Benefício**: Feedback imediato sem precisar olhar a tela
 - **Implementação**: Usar Web Audio API para tocar som curto
+- **Custo**: ✅ GRATUITO - API nativa do navegador
 
 ### 4. Indicador de Progresso no Envio WhatsApp
 - **Descrição**: Mostrar progresso real do envio (salvando no sistema → enviando WhatsApp)
@@ -48,6 +49,9 @@
 - **Descrição**: Gráficos e métricas mais detalhadas (taxa de conversão por período, abandono, etc)
 - **Benefício**: Insights melhores para otimização de formulários
 - **Implementação**: Integração com biblioteca de gráficos (Chart.js ou similar)
+- **Custo**: ✅ GRATUITO - Bibliotecas open-source gratuitas:
+  - **Chart.js**: 100% gratuito e open-source (MIT License)
+  - **Alternativas gratuitas**: ApexCharts, D3.js, Plotly.js (todos gratuitos)
 
 ### 10. Filtros Avançados nas Respostas
 - **Descrição**: Filtrar respostas por data, campos específicos, status, etc
@@ -111,16 +115,23 @@
 - **Descrição**: Permitir configurar webhooks para notificar sistemas externos quando formulário é enviado
 - **Benefício**: Integração com outros sistemas (CRM, email marketing, etc)
 - **Implementação**: Endpoint de webhooks configurável
+- **Custo**: ✅ GRATUITO - Apenas código no servidor, sem APIs externas
 
 ### 21. Integração com Google Sheets
 - **Descrição**: Exportar respostas automaticamente para Google Sheets
 - **Benefício**: Análise de dados em ferramentas familiares
 - **Implementação**: Integração com Google Sheets API
+- **Custo**: ✅ GRATUITO (com limites)
+  - **Plano Gratuito**: 500 requisições por 100 segundos por usuário
+  - **Limite diário**: Aproximadamente 2.500 requisições por dia
+  - **Pago**: A partir de $0.01 por 1.000 requisições extras (Google Workspace)
+  - **Observação**: Para uso básico de exportação de formulários, o plano gratuito é suficiente
 
 ### 22. Notificações Push
 - **Descrição**: Notificar admin quando novo formulário é enviado (se configurado)
 - **Benefício**: Resposta rápida a novos envios
 - **Implementação**: Service Worker + Push API
+- **Custo**: ✅ GRATUITO - APIs nativas do navegador (sem custos externos)
 
 ## Melhorias de Design
 
