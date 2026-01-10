@@ -262,9 +262,22 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
         const profileItem = profileItemCheck.rows[0];
         logger.info(`Profile item encontrado: id=${profileItem.id}, item_type=${profileItem.item_type}, title=${profileItem.title}`);
         
-        // Buscar lista de convidados associada
-        let result = await client.query(`
-            SELECT 
+        // IMPORTANTE: Verificar quais colunas de logo existem em guest_list_items
+        const logoColumnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'guest_list_items' 
+            AND column_name IN ('form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'enable_whatsapp', 'enable_guest_list_submit')
+        `);
+        const hasFormLogoUrl = logoColumnsCheck.rows.some(r => r.column_name === 'form_logo_url');
+        const hasButtonLogoUrl = logoColumnsCheck.rows.some(r => r.column_name === 'button_logo_url');
+        const hasButtonLogoSize = logoColumnsCheck.rows.some(r => r.column_name === 'button_logo_size');
+        const hasShowLogoCorner = logoColumnsCheck.rows.some(r => r.column_name === 'show_logo_corner');
+        const hasEnableWhatsapp = logoColumnsCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+        const hasEnableGuestListSubmit = logoColumnsCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+        
+        // Construir SELECT dinamicamente
+        let selectFields = `
                 pi.id as profile_item_id,
                 pi.user_id,
                 pi.item_type,
@@ -294,7 +307,18 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 COALESCE(gli.background_opacity, 1.0) as background_opacity,
                 COALESCE(gli.theme, 'dark') as theme,
                 gli.created_at as guest_list_created_at,
-                gli.updated_at as guest_list_updated_at
+                gli.updated_at as guest_list_updated_at`;
+        
+        if (hasFormLogoUrl) selectFields += ', gli.form_logo_url';
+        if (hasButtonLogoUrl) selectFields += ', gli.button_logo_url';
+        if (hasButtonLogoSize) selectFields += ', gli.button_logo_size';
+        if (hasShowLogoCorner) selectFields += ', gli.show_logo_corner';
+        if (hasEnableWhatsapp) selectFields += ', gli.enable_whatsapp';
+        if (hasEnableGuestListSubmit) selectFields += ', gli.enable_guest_list_submit';
+        
+        // Buscar lista de convidados associada
+        let result = await client.query(`
+            SELECT ${selectFields}
             FROM profile_items pi
             LEFT JOIN guest_list_items gli ON gli.profile_item_id = pi.id
             WHERE pi.id = $1 AND pi.user_id = $2
@@ -475,7 +499,12 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             theme,
             secondary_color,
             enable_whatsapp,
-            enable_guest_list_submit
+            enable_guest_list_submit,
+            // IMPORTANTE: Incluir campos de logo
+            form_logo_url,
+            button_logo_url,
+            button_logo_size,
+            show_logo_corner
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
@@ -624,6 +653,83 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             }
         }
         
+        // IMPORTANTE: Atualizar campos de logo em guest_list_items
+        // Verificar se as colunas existem antes de tentar atualizar
+        if (form_logo_url !== undefined) {
+            try {
+                const columnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND column_name = 'form_logo_url'
+                `);
+                if (columnCheck.rows.length > 0) {
+                    guestListUpdateFields.push(`form_logo_url = $${guestListParamIndex++}`);
+                    guestListUpdateValues.push(form_logo_url || null);
+                    logger.info(`🖼️ [GUEST_LIST] Salvando form_logo_url em guest_list_items: ${form_logo_url || 'null'}`);
+                }
+            } catch (err) {
+                logger.warn('Erro ao verificar coluna form_logo_url:', err.message);
+            }
+        }
+        
+        if (button_logo_url !== undefined) {
+            try {
+                const columnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND column_name = 'button_logo_url'
+                `);
+                if (columnCheck.rows.length > 0) {
+                    guestListUpdateFields.push(`button_logo_url = $${guestListParamIndex++}`);
+                    guestListUpdateValues.push(button_logo_url || null);
+                    logger.info(`🖼️ [GUEST_LIST] Salvando button_logo_url em guest_list_items: ${button_logo_url || 'null'}`);
+                }
+            } catch (err) {
+                logger.warn('Erro ao verificar coluna button_logo_url:', err.message);
+            }
+        }
+        
+        if (button_logo_size !== undefined) {
+            try {
+                const columnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND column_name = 'button_logo_size'
+                `);
+                if (columnCheck.rows.length > 0) {
+                    const parsedSize = parseInt(button_logo_size, 10);
+                    const validSize = (!isNaN(parsedSize) && parsedSize >= 20 && parsedSize <= 80) ? parsedSize : 40;
+                    guestListUpdateFields.push(`button_logo_size = $${guestListParamIndex++}`);
+                    guestListUpdateValues.push(validSize);
+                    logger.info(`🖼️ [GUEST_LIST] Salvando button_logo_size em guest_list_items: ${validSize} (recebido: ${button_logo_size})`);
+                }
+            } catch (err) {
+                logger.warn('Erro ao verificar coluna button_logo_size:', err.message);
+            }
+        }
+        
+        if (show_logo_corner !== undefined) {
+            try {
+                const columnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND column_name = 'show_logo_corner'
+                `);
+                if (columnCheck.rows.length > 0) {
+                    const showLogoCornerValue = show_logo_corner === true || show_logo_corner === 'true' || show_logo_corner === 1 || show_logo_corner === '1';
+                    guestListUpdateFields.push(`show_logo_corner = $${guestListParamIndex++}`);
+                    guestListUpdateValues.push(showLogoCornerValue);
+                    logger.info(`🖼️ [GUEST_LIST] Salvando show_logo_corner em guest_list_items: ${showLogoCornerValue}`);
+                }
+            } catch (err) {
+                logger.warn('Erro ao verificar coluna show_logo_corner:', err.message);
+            }
+        }
+        
         // IMPORTANTE: Também atualizar enable_whatsapp e enable_guest_list_submit em guest_list_items
         // Verificar se as colunas existem em guest_list_items
         if (enable_whatsapp !== undefined) {
@@ -691,9 +797,11 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             }
         }
         
-        // IMPORTANTE: Também atualizar enable_whatsapp e enable_guest_list_submit em digital_form_items
+        // IMPORTANTE: Também atualizar enable_whatsapp, enable_guest_list_submit e campos de logo em digital_form_items
         // Isso garante que a página pública tenha acesso a esses valores
-        if (enable_whatsapp !== undefined || enable_guest_list_submit !== undefined) {
+        if (enable_whatsapp !== undefined || enable_guest_list_submit !== undefined || 
+            form_logo_url !== undefined || button_logo_url !== undefined || 
+            button_logo_size !== undefined || show_logo_corner !== undefined) {
             const digitalFormUpdateFields = [];
             const digitalFormUpdateValues = [];
             let digitalFormParamIndex = 1;
@@ -703,10 +811,14 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'digital_form_items' 
-                AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit')
+                AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit', 'form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner')
             `);
             const hasEnableWhatsapp = digitalFormColumnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
             const hasEnableGuestListSubmit = digitalFormColumnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+            const hasFormLogoUrl = digitalFormColumnCheck.rows.some(r => r.column_name === 'form_logo_url');
+            const hasButtonLogoUrl = digitalFormColumnCheck.rows.some(r => r.column_name === 'button_logo_url');
+            const hasButtonLogoSize = digitalFormColumnCheck.rows.some(r => r.column_name === 'button_logo_size');
+            const hasShowLogoCorner = digitalFormColumnCheck.rows.some(r => r.column_name === 'show_logo_corner');
             
             if (enable_whatsapp !== undefined && hasEnableWhatsapp) {
                 const enableWhatsappValue = enable_whatsapp === true || enable_whatsapp === 'true' || enable_whatsapp === 1 || enable_whatsapp === '1';
@@ -722,6 +834,34 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 logger.info(`🔘 [GUEST_LIST] Salvando enable_guest_list_submit em digital_form_items: ${enableGuestListSubmitValue}`);
             }
             
+            // IMPORTANTE: Sincronizar campos de logo também em digital_form_items
+            if (form_logo_url !== undefined && hasFormLogoUrl) {
+                digitalFormUpdateFields.push(`form_logo_url = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(form_logo_url || null);
+                logger.info(`🖼️ [GUEST_LIST] Sincronizando form_logo_url em digital_form_items: ${form_logo_url || 'null'}`);
+            }
+            
+            if (button_logo_url !== undefined && hasButtonLogoUrl) {
+                digitalFormUpdateFields.push(`button_logo_url = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(button_logo_url || null);
+                logger.info(`🖼️ [GUEST_LIST] Sincronizando button_logo_url em digital_form_items: ${button_logo_url || 'null'}`);
+            }
+            
+            if (button_logo_size !== undefined && hasButtonLogoSize) {
+                const parsedSize = parseInt(button_logo_size, 10);
+                const validSize = (!isNaN(parsedSize) && parsedSize >= 20 && parsedSize <= 80) ? parsedSize : 40;
+                digitalFormUpdateFields.push(`button_logo_size = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(validSize);
+                logger.info(`🖼️ [GUEST_LIST] Sincronizando button_logo_size em digital_form_items: ${validSize} (recebido: ${button_logo_size})`);
+            }
+            
+            if (show_logo_corner !== undefined && hasShowLogoCorner) {
+                const showLogoCornerValue = show_logo_corner === true || show_logo_corner === 'true' || show_logo_corner === 1 || show_logo_corner === '1';
+                digitalFormUpdateFields.push(`show_logo_corner = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(showLogoCornerValue);
+                logger.info(`🖼️ [GUEST_LIST] Sincronizando show_logo_corner em digital_form_items: ${showLogoCornerValue}`);
+            }
+            
             if (digitalFormUpdateFields.length > 0) {
                 digitalFormUpdateValues.push(listId);
                 await client.query(`
@@ -729,13 +869,26 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                     SET ${digitalFormUpdateFields.join(', ')}, updated_at = NOW()
                     WHERE profile_item_id = $${digitalFormParamIndex++}
                 `, digitalFormUpdateValues);
-                logger.info(`✅ [GUEST_LIST] digital_form_items atualizado com enable_whatsapp/enable_guest_list_submit`);
+                logger.info(`✅ [GUEST_LIST] digital_form_items atualizado com enable_whatsapp/enable_guest_list_submit/logo`);
             }
         }
         
-        // Buscar dados atualizados
-        const result = await client.query(`
-            SELECT 
+        // IMPORTANTE: Verificar quais colunas de logo existem em guest_list_items (buscar novamente para garantir)
+        const logoColumnsCheckFinal = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'guest_list_items' 
+            AND column_name IN ('form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'enable_whatsapp', 'enable_guest_list_submit')
+        `);
+        const hasFormLogoUrlFinal = logoColumnsCheckFinal.rows.some(r => r.column_name === 'form_logo_url');
+        const hasButtonLogoUrlFinal = logoColumnsCheckFinal.rows.some(r => r.column_name === 'button_logo_url');
+        const hasButtonLogoSizeFinal = logoColumnsCheckFinal.rows.some(r => r.column_name === 'button_logo_size');
+        const hasShowLogoCornerFinal = logoColumnsCheckFinal.rows.some(r => r.column_name === 'show_logo_corner');
+        const hasEnableWhatsappFinal = logoColumnsCheckFinal.rows.some(r => r.column_name === 'enable_whatsapp');
+        const hasEnableGuestListSubmitFinal = logoColumnsCheckFinal.rows.some(r => r.column_name === 'enable_guest_list_submit');
+        
+        // Construir SELECT dinamicamente para dados atualizados
+        let selectFieldsFinal = `
                 pi.id as profile_item_id,
                 pi.user_id,
                 pi.item_type,
@@ -766,7 +919,18 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 COALESCE(gli.background_opacity, 1.0) as background_opacity,
                 COALESCE(gli.theme, 'dark') as theme,
                 gli.created_at as guest_list_created_at,
-                gli.updated_at as guest_list_updated_at
+                gli.updated_at as guest_list_updated_at`;
+        
+        if (hasFormLogoUrlFinal) selectFieldsFinal += ', gli.form_logo_url';
+        if (hasButtonLogoUrlFinal) selectFieldsFinal += ', gli.button_logo_url';
+        if (hasButtonLogoSizeFinal) selectFieldsFinal += ', gli.button_logo_size';
+        if (hasShowLogoCornerFinal) selectFieldsFinal += ', gli.show_logo_corner';
+        if (hasEnableWhatsappFinal) selectFieldsFinal += ', gli.enable_whatsapp';
+        if (hasEnableGuestListSubmitFinal) selectFieldsFinal += ', gli.enable_guest_list_submit';
+        
+        // Buscar dados atualizados
+        const result = await client.query(`
+            SELECT ${selectFieldsFinal}
             FROM profile_items pi
             INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
             WHERE pi.id = $1
