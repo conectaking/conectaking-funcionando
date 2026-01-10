@@ -241,7 +241,18 @@
 
                         <!-- Botões de Envio (Dinâmicos baseado nas opções) -->
                         <% 
-                            const enableGuestListSubmitValue = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
+                            // IMPORTANTE: Garantir que enable_guest_list_submit seja sempre booleano
+                            const enableGuestListSubmitRaw = formData.enable_guest_list_submit;
+                            const enableGuestListSubmitValue = enableGuestListSubmitRaw === true || enableGuestListSubmitRaw === 'true' || enableGuestListSubmitRaw === 1 || enableGuestListSubmitRaw === '1';
+                            
+                            // LOG para debug
+                            console.log('🔘 [EJS] Botões - enable_guest_list_submit:', {
+                                raw: enableGuestListSubmitRaw,
+                                tipo: typeof enableGuestListSubmitRaw,
+                                value: enableGuestListSubmitValue,
+                                enable_whatsapp_raw: formData.enable_whatsapp
+                            });
+                            
                             // IMPORTANTE: Se "Salvar na Lista" está ativo, WhatsApp deve ser false
                             // Porque "Salvar na Lista" significa enviar só para o sistema (sem WhatsApp)
                             const enableWhatsappValue = enableGuestListSubmitValue ? false : (formData.enable_whatsapp === true || formData.enable_whatsapp === 'true' || formData.enable_whatsapp === 1 || formData.enable_whatsapp === '1');
