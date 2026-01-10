@@ -1752,10 +1752,27 @@
         <% } %>
         
         // Botão "Enviar via WhatsApp" - SEMPRE salva no sistema também
-        const whatsappBtn = document.getElementById('whatsapp-submit-btn');
-        if (whatsappBtn) {
+        // Aguardar DOM estar completamente carregado antes de procurar o botão
+        function initWhatsappButton() {
+            const whatsappBtn = document.getElementById('whatsapp-submit-btn');
+            console.log('🔍 [WHATSAPP] Botão encontrado:', {
+                found: !!whatsappBtn,
+                element: whatsappBtn,
+                whatsappNumber: whatsappNumber,
+                slug: slug,
+                itemId: itemId
+            });
+            
+            if (!whatsappBtn) {
+                console.warn('⚠️ [WHATSAPP] Botão não encontrado! Tentando novamente em 500ms...');
+                setTimeout(initWhatsappButton, 500);
+                return;
+            }
+            
             whatsappBtn.addEventListener('click', async function(e) {
                 e.preventDefault();
+                e.stopPropagation();
+                console.log('✅ [WHATSAPP] Botão clicado!');
                 
                 // Validar formulário antes de enviar
                 const validation = validateForm();
@@ -1882,35 +1899,51 @@
                     // IMPORTANTE: Sempre redirecionar para página de sucesso, mesmo quando envia por WhatsApp
                     // Isso garante que o QR Code e outras informações apareçam
                     const successUrl = submitResult.success_page_url || `/${slug}/form/${itemId}/success?response_id=${responseId || ''}`;
-                
-                // Passar dados do formulário via URL para mostrar na página de sucesso
-                const formDataParams = new URLSearchParams();
-                formDataParams.append('response_id', responseId || '');
-                formDataParams.append('whatsapp_sent', 'true');
-                
-                // Adicionar dados do formulário para exibir na página de sucesso
-                Object.keys(data).forEach(key => {
-                    if (data[key] && typeof data[key] === 'string' && data[key].trim() !== '') {
-                        try {
-                            formDataParams.append(`data_${key}`, encodeURIComponent(data[key]));
-                        } catch (e) {
-                            console.warn('⚠️ [WHATSAPP] Erro ao codificar dado para URL:', key, e);
+                    
+                    // Passar dados do formulário via URL para mostrar na página de sucesso
+                    const formDataParams = new URLSearchParams();
+                    formDataParams.append('response_id', responseId || '');
+                    formDataParams.append('whatsapp_sent', 'true');
+                    
+                    // Adicionar dados do formulário para exibir na página de sucesso
+                    Object.keys(data).forEach(key => {
+                        if (data[key] && typeof data[key] === 'string' && data[key].trim() !== '') {
+                            try {
+                                formDataParams.append(`data_${key}`, encodeURIComponent(data[key]));
+                            } catch (e) {
+                                console.warn('⚠️ [WHATSAPP] Erro ao codificar dado para URL:', key, e);
+                            }
                         }
-                    }
-                });
-                
-                // Montar URL final
-                const separator = successUrl.includes('?') ? '&' : '?';
-                const finalUrl = `${successUrl}${separator}${formDataParams.toString()}`;
-                
-                // Abrir WhatsApp em nova aba
-                window.open(whatsappUrl, '_blank');
-                
-                // Redirecionar para página de sucesso após pequeno delay para garantir que dados foram salvos
-                setTimeout(() => {
-                    window.location.replace(finalUrl);
-                }, 500);
+                    });
+                    
+                    // Montar URL final
+                    const separator = successUrl.includes('?') ? '&' : '?';
+                    const finalUrl = `${successUrl}${separator}${formDataParams.toString()}`;
+                    
+                    // Abrir WhatsApp em nova aba
+                    window.open(whatsappUrl, '_blank');
+                    
+                    // Redirecionar para página de sucesso após pequeno delay para garantir que dados foram salvos
+                    setTimeout(() => {
+                        window.location.replace(finalUrl);
+                    }, 500);
+                } catch (error) {
+                    console.error('❌ [WHATSAPP] Erro ao salvar no sistema:', error);
+                    restoreButton(whatsappBtn, originalHTML);
+                    showErrorMessage('Erro ao salvar no sistema. Tente novamente.');
+                    return;
+                }
             });
+            
+            console.log('✅ [WHATSAPP] Event listener adicionado ao botão');
+        }
+        
+        // Inicializar botão quando DOM estiver pronto
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initWhatsappButton);
+        } else {
+            // DOM já está pronto
+            setTimeout(initWhatsappButton, 100);
         }
     </script>
     
