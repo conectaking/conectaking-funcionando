@@ -1419,6 +1419,169 @@ router.delete('/:id/guests/:guestId', protectUser, asyncHandler(async (req, res)
 }));
 
 /**
+ * POST /api/guest-lists/:id/guests/:guestId/generate-qr - Gerar/Regenerar QR Code para um convidado específico
+ */
+router.post('/:id/guests/:guestId/generate-qr', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const listId = parseInt(req.params.id, 10);
+        const guestId = parseInt(req.params.guestId, 10);
+        
+        if (isNaN(listId) || isNaN(guestId)) {
+            return res.status(400).json({ message: 'ID inválido' });
+        }
+        
+        // Verificar se a lista pertence ao usuário
+        let checkResult = await client.query(`
+            SELECT gli.id as guest_list_item_id
+            FROM profile_items pi
+            INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+            WHERE pi.id = $1 AND pi.user_id = $2
+        `, [listId, userId]);
+        
+        if (checkResult.rows.length === 0) {
+            checkResult = await client.query(`
+                SELECT gli.id as guest_list_item_id
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                WHERE gli.id = $1 AND pi.user_id = $2
+            `, [listId, userId]);
+        }
+        
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Lista não encontrada' });
+        }
+        
+        const guestListItemId = checkResult.rows[0].guest_list_item_id;
+        
+        // Verificar se o convidado pertence à lista
+        const guestCheck = await client.query(`
+            SELECT id, name, qr_token
+            FROM guests
+            WHERE id = $1 AND guest_list_id = $2
+        `, [guestId, guestListItemId]);
+        
+        if (guestCheck.rows.length === 0) {
+            return res.status(404).json({ message: 'Convidado não encontrado nesta lista' });
+        }
+        
+        const guest = guestCheck.rows[0];
+        
+        // Gerar novo token QR Code
+        const qrToken = crypto.randomBytes(32).toString('hex');
+        
+        // Atualizar convidado com novo QR token
+        const updateResult = await client.query(`
+            UPDATE guests
+            SET qr_token = $1, qr_code_generated_at = NOW()
+            WHERE id = $2
+            RETURNING id, name, qr_token, qr_code_generated_at
+        `, [qrToken, guestId]);
+        
+        logger.info('✅ [QR_GENERATE] QR Code gerado para convidado:', {
+            guestId: guest.id,
+            name: guest.name,
+            listId: listId
+        });
+        
+        res.json({
+            success: true,
+            message: 'QR Code gerado com sucesso',
+            guest: updateResult.rows[0]
+        });
+    } catch (error) {
+        logger.error('❌ [QR_GENERATE] Erro ao gerar QR Code:', error);
+        res.status(500).json({ message: 'Erro ao gerar QR Code', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
+ * POST /api/guest-lists/:id/generate-all-qr-codes - Gerar QR Codes para todos os convidados que não têm
+ */
+router.post('/:id/generate-all-qr-codes', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const listId = parseInt(req.params.id, 10);
+        
+        if (isNaN(listId)) {
+            return res.status(400).json({ message: 'ID inválido' });
+        }
+        
+        // Verificar se a lista pertence ao usuário
+        let checkResult = await client.query(`
+            SELECT gli.id as guest_list_item_id
+            FROM profile_items pi
+            INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+            WHERE pi.id = $1 AND pi.user_id = $2
+        `, [listId, userId]);
+        
+        if (checkResult.rows.length === 0) {
+            checkResult = await client.query(`
+                SELECT gli.id as guest_list_item_id
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                WHERE gli.id = $1 AND pi.user_id = $2
+            `, [listId, userId]);
+        }
+        
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Lista não encontrada' });
+        }
+        
+        const guestListItemId = checkResult.rows[0].guest_list_item_id;
+        
+        // Buscar todos os convidados sem QR token
+        const guestsWithoutQR = await client.query(`
+            SELECT id, name
+            FROM guests
+            WHERE guest_list_id = $1 AND (qr_token IS NULL OR qr_token = '')
+        `, [guestListItemId]);
+        
+        if (guestsWithoutQR.rows.length === 0) {
+            return res.json({
+                success: true,
+                message: 'Todos os convidados já possuem QR Code',
+                updated_count: 0
+            });
+        }
+        
+        // Gerar QR tokens para todos
+        let updatedCount = 0;
+        for (const guest of guestsWithoutQR.rows) {
+            try {
+                const qrToken = crypto.randomBytes(32).toString('hex');
+                await client.query(`
+                    UPDATE guests
+                    SET qr_token = $1, qr_code_generated_at = NOW()
+                    WHERE id = $2
+                `, [qrToken, guest.id]);
+                updatedCount++;
+            } catch (err) {
+                logger.warn(`Erro ao gerar QR Code para convidado ${guest.id}:`, err);
+            }
+        }
+        
+        logger.info(`✅ [QR_GENERATE_ALL] QR Codes gerados para ${updatedCount} convidados na lista ${listId}`);
+        
+        res.json({
+            success: true,
+            message: `QR Codes gerados para ${updatedCount} convidado(s)`,
+            updated_count: updatedCount,
+            total_without_qr: guestsWithoutQR.rows.length
+        });
+    } catch (error) {
+        logger.error('❌ [QR_GENERATE_ALL] Erro ao gerar QR Codes:', error);
+        res.status(500).json({ message: 'Erro ao gerar QR Codes', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
  * GET /api/guest-lists/:id/stats - Estatísticas da lista (ADM)
  */
 router.get('/:id/stats', protectUser, asyncHandler(async (req, res) => {
