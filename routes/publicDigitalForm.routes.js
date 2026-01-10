@@ -600,6 +600,9 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             theme: formData.theme,
             enable_whatsapp: formData.enable_whatsapp,
             enable_guest_list_submit: formData.enable_guest_list_submit,
+            form_fields_count: Array.isArray(formData.form_fields) ? formData.form_fields.length : 0,
+            form_fields_type: typeof formData.form_fields,
+            form_fields_preview: Array.isArray(formData.form_fields) ? formData.form_fields.slice(0, 3).map(f => ({ id: f.id, label: f.label, type: f.type })) : 'N/A',
             updated_at: formData.updated_at,
             id: formData.id,
             timestamp: Date.now()
