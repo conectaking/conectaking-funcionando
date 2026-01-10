@@ -350,7 +350,7 @@
             </h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <!-- Botão Escanear QR Code -->
-                <button onclick="window.openQRScanner()" style="background: linear-gradient(135deg, #FFC700 0%, #FFB700 100%); color: #000; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.3);">
+                <button id="qr-scanner-btn" style="background: linear-gradient(135deg, #FFC700 0%, #FFB700 100%); color: #000; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.3);">
                     <i class="fas fa-qrcode" style="font-size: 20px;"></i>
                     Ler QR Code
                 </button>
@@ -358,7 +358,7 @@
                 <!-- Busca por CPF -->
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="cpf-search-input" placeholder="Digite o CPF (apenas números)" style="flex: 1; padding: 16px; border-radius: 12px; background: #0D0D0F; border: 2px solid #2C2C2F; color: #ECECEC; font-size: 16px; font-weight: 600; letter-spacing: 2px;" maxlength="11" oninput="this.value = this.value.replace(/\D/g, '')">
-                    <button onclick="window.confirmByCPF()" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3); white-space: nowrap;">
+                    <button id="cpf-search-btn" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3); white-space: nowrap;">
                         <i class="fas fa-search"></i> Buscar
                     </button>
                 </div>
@@ -1135,13 +1135,48 @@
             document.getElementById(`tab-${tabId}`).classList.add('active');
         }
         
-        // Permitir confirmar por CPF ao pressionar Enter
+        // Permitir confirmar por CPF ao pressionar Enter e adicionar event listeners
         document.addEventListener('DOMContentLoaded', function() {
+            // Adicionar event listener ao botão QR Code
+            const qrBtn = document.getElementById('qr-scanner-btn');
+            if (qrBtn) {
+                qrBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (typeof window.openQRScanner === 'function') {
+                        window.openQRScanner();
+                    } else {
+                        console.error('openQRScanner não está definida');
+                        alert('Erro: Scanner QR Code não está disponível. Recarregue a página.');
+                    }
+                });
+            }
+            
+            // Adicionar event listener ao botão CPF
+            const cpfBtn = document.getElementById('cpf-search-btn');
+            if (cpfBtn) {
+                cpfBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (typeof window.confirmByCPF === 'function') {
+                        window.confirmByCPF();
+                    } else {
+                        console.error('confirmByCPF não está definida');
+                        alert('Erro: Busca por CPF não está disponível. Recarregue a página.');
+                    }
+                });
+            }
+            
+            // Permitir confirmar por CPF ao pressionar Enter
             const cpfInput = document.getElementById('cpf-search-input');
             if (cpfInput) {
                 cpfInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
-                        window.confirmByCPF();
+                        e.preventDefault();
+                        if (typeof window.confirmByCPF === 'function') {
+                            window.confirmByCPF();
+                        } else {
+                            console.error('confirmByCPF não está definida');
+                            alert('Erro: Busca por CPF não está disponível. Recarregue a página.');
+                        }
                     }
                 });
             }

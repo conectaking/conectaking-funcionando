@@ -928,12 +928,15 @@ router.post('/:slug/form/:itemId/submit',
             
             // Determinar modo baseado nas configurações
             if (enableGuestListSubmit && !enableWhatsapp) {
+                // Só Sistema (salva no sistema, sem WhatsApp)
                 sendMode = 'system-only';
                 shouldSaveToSystem = true;
             } else if (enableWhatsapp && !enableGuestListSubmit) {
-                // Por padrão, quando WhatsApp está ativo, salva no sistema também (modo "Ambos")
-                // Mas podemos verificar se há um parâmetro especial para "Só WhatsApp"
-                // Por enquanto, vamos assumir que é "Ambos" para manter compatibilidade
+                // Ambos: WhatsApp + Sistema (salva no sistema E envia WhatsApp)
+                sendMode = 'both';
+                shouldSaveToSystem = true;
+            } else if (enableGuestListSubmit && enableWhatsapp) {
+                // Ambos: Sistema + Lista + WhatsApp (salva no sistema, na lista E envia WhatsApp)
                 sendMode = 'both';
                 shouldSaveToSystem = true;
             } else if (!enableWhatsapp && !enableGuestListSubmit) {
@@ -1143,17 +1146,31 @@ router.post('/:slug/form/:itemId/submit',
         const showSuccessPage = req.query.success_page === 'true' || req.headers['x-success-page'] === 'true';
         
         if (showSuccessPage) {
-            // Buscar dados do evento se for lista de convidados
+            // Buscar dados do evento se for lista de convidados OU se enable_guest_list_submit estiver ativo
             let eventData = null;
-            if (response_guest_id && response_qr_token) {
+            const shouldShowEventInfo = (response_guest_id && response_qr_token) || enableGuestListSubmit;
+            
+            if (shouldShowEventInfo) {
                 try {
-                    const eventRes = await client.query(`
+                    // Primeiro tentar buscar de guest_list_items
+                    let eventRes = await client.query(`
                         SELECT gli.event_title, gli.event_date, gli.event_location, dfi.event_date as form_event_date, dfi.event_address
                         FROM guest_list_items gli
                         LEFT JOIN digital_form_items dfi ON dfi.profile_item_id = gli.profile_item_id
                         WHERE gli.profile_item_id = $1
                         LIMIT 1
                     `, [itemIdInt]);
+                    
+                    // Se não encontrar em guest_list_items, tentar buscar diretamente de digital_form_items
+                    if (eventRes.rows.length === 0) {
+                        eventRes = await client.query(`
+                            SELECT dfi.form_title as event_title, dfi.event_date, dfi.event_address as event_location
+                            FROM digital_form_items dfi
+                            WHERE dfi.profile_item_id = $1
+                            LIMIT 1
+                        `, [itemIdInt]);
+                    }
+                    
                     if (eventRes.rows.length > 0) {
                         eventData = eventRes.rows[0];
                     }
@@ -1163,13 +1180,16 @@ router.post('/:slug/form/:itemId/submit',
             }
             
             // Renderizar página de sucesso
+            // IMPORTANTE: Mostrar QR code e informações do evento se enable_guest_list_submit estiver ativo OU se tiver guest_id e qr_token
+            const shouldShowGuestListInfo = enableGuestListSubmit || (response_guest_id && response_qr_token);
+            
             return res.render('formSuccess', {
                 message: 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.',
-                responseId: result.rows[0].id,
+                responseId: result && result.rows && result.rows[0] ? result.rows[0].id : null,
                 formTitle: formData.form_title || 'Formulário',
                 showWhatsAppInfo: formData.enable_whatsapp !== false && formData.whatsapp_number,
                 whatsappNumber: formData.whatsapp_number,
-                showGuestListInfo: formData.enable_guest_list_submit === true,
+                showGuestListInfo: shouldShowGuestListInfo,
                 guestId: response_guest_id,
                 qrToken: response_qr_token,
                 eventTitle: eventData?.event_title || formData.form_title || 'Evento',
@@ -1213,7 +1233,6 @@ router.post('/:slug/form/:itemId/submit',
         // IMPORTANTE: Sempre retornar URL de sucesso para que possa ser acessada
         // Mesmo quando envia por WhatsApp, deve aparecer a página de sucesso
         // Se for "whatsapp-only", não retornar success_page_url (não redirecionar)
-        const responseId = result && result.rows && result.rows[0] ? result.rows[0].id : null;
         
         res.json({
             success: true,
