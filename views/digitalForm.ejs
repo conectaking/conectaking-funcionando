@@ -1787,10 +1787,10 @@
     
     <!-- Rodapé com Direitos Autorais -->
     <% 
-        // Determinar tema para ajustar cores do rodapé - lógica melhorada
+        // Determinar tema para ajustar cores do rodapé - lógica melhorada e mais robusta
         let isDarkTheme = false;
         
-        // Verificar tema explícito
+        // Verificar tema explícito primeiro
         if (formData.theme === 'dark') {
             isDarkTheme = true;
         } else if (formData.theme === 'light') {
@@ -1798,43 +1798,71 @@
         } else if (formData.background_color) {
             // Analisar cor de fundo para determinar tema
             const bgColor = formData.background_color.toLowerCase().trim();
-            // Se começa com #0, #1, #2, #3, #4, #5 (tons escuros) ou contém 'dark', 'black', 'preto'
-            if (bgColor.match(/^#[0-5][0-9a-f]/) || 
-                bgColor.includes('dark') || 
-                bgColor.includes('black') || 
-                bgColor.includes('preto') ||
-                bgColor.includes('#0d') ||
-                bgColor.includes('#1c') ||
-                bgColor.includes('#2c')) {
+            
+            // Verificar se é um tom escuro
+            // Tons escuros: começa com #0, #1, #2, #3, #4, #5 ou contém palavras-chave
+            const darkPatterns = [
+                /^#[0-5][0-9a-f]/,  // #0x, #1x, #2x, #3x, #4x, #5x
+                /dark/i,
+                /black/i,
+                /preto/i,
+                /#0d/i,
+                /#1c/i,
+                /#2c/i,
+                /rgb\(0,\s*0,\s*0\)/i,
+                /rgb\(13,\s*13,\s*15\)/i,
+                /rgb\(28,\s*28,\s*33\)/i
+            ];
+            
+            const isDarkColor = darkPatterns.some(pattern => pattern.test(bgColor));
+            
+            // Verificar se é um tom claro
+            // Tons claros: começa com #f, #e, #d, #c, #b, #a, #9, #8, #7, #6 ou branco
+            const lightPatterns = [
+                /^#[6-9a-f][0-9a-f]/,  // #6x, #7x, #8x, #9x, #ax, #bx, #cx, #dx, #ex, #fx
+                /white/i,
+                /branco/i,
+                /#fff/i,
+                /#f8/i,
+                /#fa/i,
+                /rgb\(255,\s*255,\s*255\)/i,
+                /rgb\(248,\s*249,\s*250\)/i
+            ];
+            
+            const isLightColor = lightPatterns.some(pattern => pattern.test(bgColor));
+            
+            if (isDarkColor) {
                 isDarkTheme = true;
-            } else {
-                // Tons claros (#f, #e, #d, #c, #b, #a, #9, #8, #7, #6 ou branco)
+            } else if (isLightColor) {
                 isDarkTheme = false;
+            } else {
+                // Se não conseguir determinar, usar padrão baseado no valor do tema
+                isDarkTheme = formData.theme === 'dark';
             }
         } else {
-            // Padrão: tema claro
+            // Padrão: tema claro se não especificado
             isDarkTheme = false;
         }
         
-        // Cores do rodapé baseadas no tema
+        // Cores do rodapé baseadas no tema - garantindo contraste adequado
         const footerBg = isDarkTheme ? '#1C1C21' : '#f8f9fa';
-        const footerTextMain = isDarkTheme ? '#ECECEC' : '#1a1a1a';
-        const footerTextSecondary = isDarkTheme ? '#A1A1A1' : '#4a4a4a';
-        const footerTextTertiary = isDarkTheme ? '#7a7a7a' : '#6b6b6b';
+        const footerTextMain = isDarkTheme ? '#ECECEC' : '#1a1a1a'; // Texto principal sempre visível
+        const footerTextSecondary = isDarkTheme ? '#A1A1A1' : '#4a4a4a'; // Texto secundário com bom contraste
+        const footerTextTertiary = isDarkTheme ? '#7a7a7a' : '#6b6b6b'; // Texto terciário legível
         const footerBorder = isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
         const footerPrimaryColor = isDarkTheme ? '#4A90E2' : (primaryColor || '#4A90E2');
     %>
-    <footer style="margin-top: 60px; padding: 40px 24px; text-align: center; border-top: 1px solid <%= footerBorder %>; background: <%= footerBg %>;">
+    <footer style="margin-top: 60px; padding: 40px 24px; text-align: center; border-top: 1px solid <%= footerBorder %>; background: <%= footerBg %> !important;">
         <div style="max-width: 1000px; margin: 0 auto;">
-            <p style="margin: 0 0 12px 0; color: <%= footerTextMain %>; font-size: 15px; line-height: 1.7; font-weight: 600;">
-                <span style="color: <%= footerPrimaryColor %>; font-weight: 700; font-size: 16px;">King Forms</span> 
-                <span style="color: <%= footerTextSecondary %>;">é um sistema desenvolvido pela</span> 
-                <span style="color: <%= footerPrimaryColor %>; font-weight: 700;">Conecta King</span>
+            <p style="margin: 0 0 12px 0; color: <%= footerTextMain %> !important; font-size: 15px; line-height: 1.7; font-weight: 600;">
+                <span style="color: <%= footerPrimaryColor %> !important; font-weight: 700; font-size: 16px;">King Forms</span> 
+                <span style="color: <%= footerTextSecondary %> !important;">é um sistema desenvolvido pela</span> 
+                <span style="color: <%= footerPrimaryColor %> !important; font-weight: 700;">Conecta King</span>
             </p>
-            <p style="margin: 0; color: <%= footerTextTertiary %>; font-size: 13px; line-height: 1.6; font-weight: 500;">
+            <p style="margin: 0; color: <%= footerTextTertiary %> !important; font-size: 13px; line-height: 1.6; font-weight: 500;">
                 © <%= new Date().getFullYear() %> Conecta King. Todos os direitos reservados.
             </p>
-            <p style="margin: 8px 0 0 0; color: <%= footerTextTertiary %>; font-size: 12px; line-height: 1.5; font-weight: 400;">
+            <p style="margin: 8px 0 0 0; color: <%= footerTextTertiary %> !important; font-size: 12px; line-height: 1.5; font-weight: 400;">
                 Solução premium para criação de formulários digitais profissionais.
             </p>
         </div>
