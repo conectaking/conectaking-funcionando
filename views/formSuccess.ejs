@@ -220,60 +220,68 @@
         <% } %>
         
         <% if (typeof submittedData !== 'undefined' && submittedData && Object.keys(submittedData).length > 0) { %>
-        <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: left;">
-            <h3 style="font-size: 18px; font-weight: 600; color: #202124; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-info-circle" style="color: <%= primaryColor || '#4A90E2' %>;"></i>
-                Informações Enviadas
+        <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.05), rgba(107, 163, 240, 0.08)); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: left; border: 1px solid rgba(74, 144, 226, 0.2);">
+            <h3 style="font-size: 20px; font-weight: 700; color: #202124; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-clipboard-check" style="color: <%= primaryColor || '#4A90E2' %>; font-size: 24px;"></i>
+                Informações da Sua Inscrição
             </h3>
-            <div style="display: grid; gap: 12px;">
+            <div style="display: grid; gap: 16px;">
                 <% Object.keys(submittedData).forEach(key => { %>
-                    <% if (submittedData[key] && submittedData[key].trim() !== '') { %>
-                    <div style="padding: 12px; background: white; border-radius: 8px; border-left: 3px solid <%= primaryColor || '#4A90E2' %>;">
-                        <div style="font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
-                            <%= key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+                    <% 
+                        const value = submittedData[key];
+                        const displayValue = typeof value === 'string' ? decodeURIComponent(value) : value;
+                    %>
+                    <% if (displayValue && displayValue.toString().trim() !== '') { %>
+                    <div style="padding: 16px; background: white; border-radius: 10px; border-left: 4px solid <%= primaryColor || '#4A90E2' %>; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">
+                        <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600;">
+                            <%= key.replace(/data_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
                         </div>
-                        <div style="font-size: 16px; color: #202124; font-weight: 500;">
-                            <%= submittedData[key] %>
+                        <div style="font-size: 17px; color: #202124; font-weight: 600; line-height: 1.5;">
+                            <%= displayValue %>
                         </div>
                     </div>
                     <% } %>
                 <% }); %>
             </div>
         </div>
-        <% } else if (typeof responseData !== 'undefined' && responseData && responseData.response_data) { %>
-        <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: left;">
-            <h3 style="font-size: 18px; font-weight: 600; color: #202124; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-info-circle" style="color: <%= primaryColor || '#4A90E2' %>;"></i>
-                Informações Enviadas
+        <% } else if (typeof responseData !== 'undefined' && responseData && (responseData.response_data || responseData.responder_name || responseData.responder_email || responseData.responder_phone)) { %>
+        <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.05), rgba(107, 163, 240, 0.08)); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: left; border: 1px solid rgba(74, 144, 226, 0.2);">
+            <h3 style="font-size: 20px; font-weight: 700; color: #202124; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-clipboard-check" style="color: <%= primaryColor || '#4A90E2' %>; font-size: 24px;"></i>
+                Informações da Sua Inscrição
             </h3>
-            <div style="display: grid; gap: 12px;">
+            <div style="display: grid; gap: 16px;">
                 <% if (responseData.responder_name) { %>
-                <div style="padding: 12px; background: white; border-radius: 8px; border-left: 3px solid <%= primaryColor || '#4A90E2' %>;">
-                    <div style="font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Nome</div>
-                    <div style="font-size: 16px; color: #202124; font-weight: 500;"><%= responseData.responder_name %></div>
+                <div style="padding: 16px; background: white; border-radius: 10px; border-left: 4px solid <%= primaryColor || '#4A90E2' %>; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600;">Nome Completo</div>
+                    <div style="font-size: 17px; color: #202124; font-weight: 600;"><%= responseData.responder_name %></div>
                 </div>
                 <% } %>
                 <% if (responseData.responder_email) { %>
-                <div style="padding: 12px; background: white; border-radius: 8px; border-left: 3px solid <%= primaryColor || '#4A90E2' %>;">
-                    <div style="font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Email</div>
-                    <div style="font-size: 16px; color: #202124; font-weight: 500;"><%= responseData.responder_email %></div>
+                <div style="padding: 16px; background: white; border-radius: 10px; border-left: 4px solid <%= primaryColor || '#4A90E2' %>; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600;">E-mail</div>
+                    <div style="font-size: 17px; color: #202124; font-weight: 600;"><%= responseData.responder_email %></div>
                 </div>
                 <% } %>
                 <% if (responseData.responder_phone) { %>
-                <div style="padding: 12px; background: white; border-radius: 8px; border-left: 3px solid <%= primaryColor || '#4A90E2' %>;">
-                    <div style="font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Telefone</div>
-                    <div style="font-size: 16px; color: #202124; font-weight: 500;"><%= responseData.responder_phone %></div>
+                <div style="padding: 16px; background: white; border-radius: 10px; border-left: 4px solid <%= primaryColor || '#4A90E2' %>; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600;">Telefone/WhatsApp</div>
+                    <div style="font-size: 17px; color: #202124; font-weight: 600;"><%= responseData.responder_phone %></div>
                 </div>
                 <% } %>
                 <% if (typeof responseData.response_data === 'object' && responseData.response_data) { %>
                     <% Object.keys(responseData.response_data).forEach(key => { %>
-                        <% if (responseData.response_data[key] && responseData.response_data[key] !== '' && key !== 'name' && key !== 'email' && key !== 'phone') { %>
-                        <div style="padding: 12px; background: white; border-radius: 8px; border-left: 3px solid <%= primaryColor || '#4A90E2' %>;">
-                            <div style="font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+                        <% 
+                            const value = responseData.response_data[key];
+                            const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
+                        %>
+                        <% if (displayValue && displayValue.toString().trim() !== '' && key !== 'name' && key !== 'nome' && key !== 'email' && key !== 'phone' && key !== 'whatsapp' && key !== 'telefone') { %>
+                        <div style="padding: 16px; background: white; border-radius: 10px; border-left: 4px solid <%= primaryColor || '#4A90E2' %>; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600;">
                                 <%= key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
                             </div>
-                            <div style="font-size: 16px; color: #202124; font-weight: 500;">
-                                <%= typeof responseData.response_data[key] === 'object' ? JSON.stringify(responseData.response_data[key]) : responseData.response_data[key] %>
+                            <div style="font-size: 17px; color: #202124; font-weight: 600; line-height: 1.5;">
+                                <%= displayValue %>
                             </div>
                         </div>
                         <% } %>

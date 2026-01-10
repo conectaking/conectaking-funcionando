@@ -474,11 +474,40 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 enable_guest_list_submit_type: typeof formData.enable_guest_list_submit
             });
         } else {
-            logger.warn(`⚠️ [FORM/PUBLIC] Nenhum dado encontrado em guest_list_items para item ${itemIdInt} - usando cores de digital_form_items`);
-            logger.info(`ℹ️ [FORM/PUBLIC] Cores que serão usadas (de digital_form_items):`, {
+            logger.warn(`⚠️ [FORM/PUBLIC] Nenhum dado encontrado em guest_list_items para item ${itemIdInt} - usando dados de digital_form_items`);
+            // IMPORTANTE: Garantir que enable_guest_list_submit e enable_whatsapp sejam booleanos mesmo sem guest_list_items
+            if (formData.enable_guest_list_submit !== undefined && formData.enable_guest_list_submit !== null) {
+                formData.enable_guest_list_submit = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
+            } else {
+                formData.enable_guest_list_submit = false;
+            }
+            if (formData.enable_whatsapp !== undefined && formData.enable_whatsapp !== null) {
+                formData.enable_whatsapp = formData.enable_whatsapp === true || formData.enable_whatsapp === 'true' || formData.enable_whatsapp === 1 || formData.enable_whatsapp === '1';
+            } else {
+                formData.enable_whatsapp = true; // Default
+            }
+            logger.info(`ℹ️ [FORM/PUBLIC] Cores e configurações que serão usadas (de digital_form_items):`, {
                 primary_color: formData.primary_color,
-                secondary_color: formData.secondary_color
+                secondary_color: formData.secondary_color,
+                enable_whatsapp: formData.enable_whatsapp,
+                enable_guest_list_submit: formData.enable_guest_list_submit
             });
+        }
+        
+        // IMPORTANTE: Forçar enable_whatsapp a false se enable_guest_list_submit for true (após mesclar tudo)
+        // IMPORTANTE: Garantir que sejam sempre booleanos
+        if (formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1') {
+            formData.enable_guest_list_submit = true;
+            formData.enable_whatsapp = false;
+            logger.info(`🔘 [FORM/PUBLIC] enable_whatsapp forçado a false porque enable_guest_list_submit é true.`);
+        } else {
+            // Garantir que seja false se não for true
+            formData.enable_guest_list_submit = false;
+        }
+        
+        // Garantir que enable_whatsapp seja booleano
+        if (formData.enable_whatsapp !== true && formData.enable_whatsapp !== false) {
+            formData.enable_whatsapp = formData.enable_whatsapp === 'true' || formData.enable_whatsapp === 1 || formData.enable_whatsapp === '1';
         }
         
         // LOG DETALHADO PARA DEBUG (ANTES DA MESCLAGEM)
@@ -1033,13 +1062,15 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             return res.status(400).send('<h1>400 - ID do formulário inválido</h1>');
         }
 
-        // Buscar dados do formulário
+        // Buscar dados do formulário (primeiro de digital_form_items)
         const formRes = await client.query(
             `SELECT dfi.form_title, dfi.enable_whatsapp, dfi.enable_guest_list_submit, 
                     dfi.whatsapp_number, dfi.primary_color, dfi.secondary_color
              FROM digital_form_items dfi
              INNER JOIN profile_items pi ON pi.id = dfi.profile_item_id
-             WHERE dfi.profile_item_id = $1 AND pi.user_id = $2`,
+             WHERE dfi.profile_item_id = $1 AND pi.user_id = $2
+             ORDER BY COALESCE(dfi.updated_at, '1970-01-01'::timestamp) DESC, dfi.id DESC
+             LIMIT 1`,
             [itemIdInt, userId]
         );
 
@@ -1047,7 +1078,41 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Formulário não encontrado</h1>');
         }
 
-        const formData = formRes.rows[0];
+        let formData = formRes.rows[0];
+        
+        // IMPORTANTE: Verificar se há dados em guest_list_items também (para enable_guest_list_submit)
+        try {
+            const guestListCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'guest_list_items' 
+                AND column_name = 'enable_guest_list_submit'
+            `);
+            const hasEnableGuestListSubmit = guestListCheck.rows.length > 0;
+            
+            if (hasEnableGuestListSubmit) {
+                const guestListRes = await client.query(`
+                    SELECT enable_guest_list_submit, enable_whatsapp
+                    FROM guest_list_items 
+                    WHERE profile_item_id = $1 
+                    ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC 
+                    LIMIT 1
+                `, [itemIdInt]);
+                
+                if (guestListRes.rows.length > 0) {
+                    const guestListData = guestListRes.rows[0];
+                    // Priorizar valores de guest_list_items se existirem
+                    if (guestListData.enable_guest_list_submit !== undefined && guestListData.enable_guest_list_submit !== null) {
+                        formData.enable_guest_list_submit = guestListData.enable_guest_list_submit === true || guestListData.enable_guest_list_submit === 'true' || guestListData.enable_guest_list_submit === 1 || guestListData.enable_guest_list_submit === '1';
+                    }
+                    if (guestListData.enable_whatsapp !== undefined && guestListData.enable_whatsapp !== null) {
+                        formData.enable_whatsapp = guestListData.enable_whatsapp === true || guestListData.enable_whatsapp === 'true' || guestListData.enable_whatsapp === 1 || guestListData.enable_whatsapp === '1';
+                    }
+                }
+            }
+        } catch (err) {
+            logger.warn('Erro ao buscar enable_guest_list_submit de guest_list_items na página de sucesso:', err);
+        }
         
         // Buscar dados completos da resposta se tiver response_id
         let responseData = null;
