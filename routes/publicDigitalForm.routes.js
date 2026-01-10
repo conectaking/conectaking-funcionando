@@ -886,8 +886,9 @@ router.post('/:slug/form/:itemId/submit',
         
         if (formConfigRes.rows.length > 0) {
             enableGuestListSubmit = formConfigRes.rows[0].enable_guest_list_submit === true || formConfigRes.rows[0].enable_guest_list_submit === 'true' || formConfigRes.rows[0].enable_guest_list_submit === 1 || formConfigRes.rows[0].enable_guest_list_submit === '1';
-            // IMPORTANTE: Se "Salvar na Lista" está ativo, WhatsApp deve ser false
-            enableWhatsapp = enableGuestListSubmit ? false : (formConfigRes.rows[0].enable_whatsapp !== false && formConfigRes.rows[0].enable_whatsapp !== 'false' && formConfigRes.rows[0].enable_whatsapp !== 0 && formConfigRes.rows[0].enable_whatsapp !== '0');
+            // IMPORTANTE: WhatsApp e Sistema podem estar ativos ao mesmo tempo
+            // Quando WhatsApp está ativo, sempre salvar no sistema também
+            enableWhatsapp = formConfigRes.rows[0].enable_whatsapp !== false && formConfigRes.rows[0].enable_whatsapp !== 'false' && formConfigRes.rows[0].enable_whatsapp !== 0 && formConfigRes.rows[0].enable_whatsapp !== '0';
         }
         
         logger.info('🔍 [SUBMIT] Configurações do formulário:', {
@@ -1133,11 +1134,17 @@ router.post('/:slug/form/:itemId/submit',
             enableWhatsapp
         });
         
+        // IMPORTANTE: Sempre retornar URL de sucesso para que possa ser acessada
+        // Mesmo quando envia por WhatsApp, deve aparecer a página de sucesso
         res.json({
             success: true,
             message: 'Resposta salva com sucesso',
             response_id: result.rows[0].id,
-            success_page_url: `/${slug}/form/${itemId}/success?response_id=${result.rows[0].id}`
+            success_page_url: `/${slug}/form/${itemId}/success?response_id=${result.rows[0].id}&show_success_page=true`,
+            // Incluir dados para página de sucesso
+            guest_id: response_guest_id || null,
+            qr_token: response_qr_token || null,
+            should_show_guest_list_info: shouldSaveToGuestList || false
         });
 
     } catch (error) {

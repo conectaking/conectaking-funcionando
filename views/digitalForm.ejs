@@ -1773,46 +1773,61 @@
                     
                     const submitResult = await submitResponse.json();
                     console.log('✅ [WHATSAPP] Resposta salva no sistema:', submitResult);
-                } catch (error) {
-                    console.error('❌ [WHATSAPP] Erro ao salvar no sistema:', error);
-                    restoreButton(whatsappBtn, originalHTML);
-                    showErrorMessage('Erro ao salvar no sistema. Tente novamente.');
-                    return;
-                }
+                    
+                    // Obter responseId do resultado
+                    const responseId = submitResult.response_id || submitResult.id || null;
+                    
+                    // Formatar mensagem para WhatsApp
+                    let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
+                    
+                    currentFormFields.forEach((field, index) => {
+                        const fieldId = field.id || `field_${index}`;
+                        const fieldValue = data[fieldId];
+                        if (fieldValue) {
+                            const fieldLabel = field.label || field.Label || 'Campo';
+                            if (Array.isArray(fieldValue)) {
+                                message += `*${fieldLabel}:* ${fieldValue.join(', ')}\n`;
+                            } else {
+                                message += `*${fieldLabel}:* ${fieldValue}\n`;
+                            }
+                        }
+                    });
+                    
+                    // Limpar número do WhatsApp (apenas números)
+                    const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
+                    const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
+                    
+                    // IMPORTANTE: Sempre redirecionar para página de sucesso, mesmo quando envia por WhatsApp
+                    // Isso garante que o QR Code e outras informações apareçam
+                    const successUrl = submitResult.success_page_url || `/${slug}/form/${itemId}/success?response_id=${responseId || ''}`;
                 
-                // Formatar mensagem para WhatsApp
-                let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
+                // Passar dados do formulário via URL para mostrar na página de sucesso
+                const formDataParams = new URLSearchParams();
+                formDataParams.append('response_id', responseId || '');
+                formDataParams.append('whatsapp_sent', 'true');
                 
-                currentFormFields.forEach((field, index) => {
-                    const fieldId = field.id || `field_${index}`;
-                    const fieldValue = data[fieldId];
-                    if (fieldValue) {
-                        const fieldLabel = field.label || field.Label || 'Campo';
-                        if (Array.isArray(fieldValue)) {
-                            message += `*${fieldLabel}:* ${fieldValue.join(', ')}\n`;
-                        } else {
-                            message += `*${fieldLabel}:* ${fieldValue}\n`;
+                // Adicionar dados do formulário para exibir na página de sucesso
+                Object.keys(data).forEach(key => {
+                    if (data[key] && typeof data[key] === 'string' && data[key].trim() !== '') {
+                        try {
+                            formDataParams.append(`data_${key}`, encodeURIComponent(data[key]));
+                        } catch (e) {
+                            console.warn('⚠️ [WHATSAPP] Erro ao codificar dado para URL:', key, e);
                         }
                     }
                 });
                 
-                // Limpar número do WhatsApp (apenas números)
-                const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
-                const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
+                // Montar URL final
+                const separator = successUrl.includes('?') ? '&' : '?';
+                const finalUrl = `${successUrl}${separator}${formDataParams.toString()}`;
                 
-                // Abrir WhatsApp
+                // Abrir WhatsApp em nova aba
                 window.open(whatsappUrl, '_blank');
                 
-                // Mostrar mensagem de sucesso
-                showSuccessMessage('Formulário salvo e enviado via WhatsApp!', 5000);
-                
-                // Restaurar botão
-                restoreButton(whatsappBtn, originalHTML);
-                
-                // Limpar formulário após delay
+                // Redirecionar para página de sucesso após pequeno delay para garantir que dados foram salvos
                 setTimeout(() => {
-                    document.getElementById('digital-form').reset();
-                }, 2000);
+                    window.location.replace(finalUrl);
+                }, 500);
             });
         }
     </script>
