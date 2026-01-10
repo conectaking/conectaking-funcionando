@@ -78,30 +78,60 @@ const validateFormSubmission = [
         .withMessage('response_data não pode estar vazio'),
     
     body('responder_name')
-        .optional()
-        .isString()
-        .trim()
-        .isLength({ min: 2, max: 200 })
-        .withMessage('Nome deve ter entre 2 e 200 caracteres')
-        .customSanitizer(sanitizeString),
+        .optional({ nullable: true, checkFalsy: true })
+        .custom((value) => {
+            // Se não existe ou é null/undefined, permitir
+            if (!value || value === null || value === undefined) {
+                return true;
+            }
+            // Se existe, deve ser string válida
+            if (typeof value !== 'string') {
+                throw new Error('Nome deve ser uma string');
+            }
+            const trimmed = value.trim();
+            if (trimmed.length < 2 || trimmed.length > 200) {
+                throw new Error('Nome deve ter entre 2 e 200 caracteres');
+            }
+            return true;
+        })
+        .customSanitizer((value) => {
+            if (!value || value === null || value === undefined) {
+                return null;
+            }
+            return sanitizeString(value);
+        }),
     
     body('responder_email')
-        .optional()
-        .isString()
-        .trim()
+        .optional({ nullable: true, checkFalsy: true })
         .custom((value) => {
-            if (value && !isValidEmail(value)) {
+            // Se não existe ou é null/undefined, permitir
+            if (!value || value === null || value === undefined) {
+                return true;
+            }
+            // Se existe, deve ser email válido
+            if (typeof value !== 'string') {
+                throw new Error('Email deve ser uma string');
+            }
+            const trimmed = value.trim();
+            if (trimmed && !isValidEmail(trimmed)) {
                 throw new Error('Email inválido');
             }
             return true;
         }),
     
     body('responder_phone')
-        .optional()
-        .isString()
-        .trim()
+        .optional({ nullable: true, checkFalsy: true })
         .custom((value) => {
-            if (value && !isValidPhone(value)) {
+            // Se não existe ou é null/undefined, permitir
+            if (!value || value === null || value === undefined) {
+                return true;
+            }
+            // Se existe, deve ser telefone válido
+            if (typeof value !== 'string') {
+                throw new Error('Telefone deve ser uma string');
+            }
+            const trimmed = value.trim();
+            if (trimmed && !isValidPhone(trimmed)) {
                 throw new Error('Telefone inválido');
             }
             return true;

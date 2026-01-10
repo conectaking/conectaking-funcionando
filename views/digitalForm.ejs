@@ -1242,6 +1242,61 @@
                 }
             });
             
+            // IMPORTANTE: Extrair nome, email e telefone dos campos coletados
+            // Procurar por campos com labels ou tipos específicos que indiquem nome, email ou telefone
+            let extractedName = null;
+            let extractedEmail = null;
+            let extractedPhone = null;
+            
+            // Procurar nos campos coletados
+            fieldsToProcess.forEach((field, index) => {
+                const fieldId = field.id || `field_${index}`;
+                const fieldLabel = (field.label || '').toLowerCase().trim();
+                const fieldType = field.type || '';
+                const fieldValue = responseData[fieldId] || data[fieldId] || '';
+                
+                // Extrair nome
+                if (!extractedName && fieldValue && typeof fieldValue === 'string' && fieldValue.trim().length >= 2) {
+                    if (fieldLabel.includes('nome') || fieldLabel.includes('name') || 
+                        fieldId.toLowerCase().includes('nome') || fieldId.toLowerCase().includes('name')) {
+                        extractedName = fieldValue.trim();
+                        console.log('✅ [SUBMIT] Nome extraído do campo:', fieldLabel, '=', extractedName);
+                    }
+                }
+                
+                // Extrair email
+                if (!extractedEmail && fieldValue && typeof fieldValue === 'string' && fieldValue.trim()) {
+                    if (fieldType === 'email' || fieldLabel.includes('email') || fieldLabel.includes('e-mail') ||
+                        fieldId.toLowerCase().includes('email')) {
+                        const emailValue = fieldValue.trim();
+                        // Validar formato básico de email
+                        if (emailValue.includes('@') && emailValue.includes('.')) {
+                            extractedEmail = emailValue;
+                            console.log('✅ [SUBMIT] Email extraído do campo:', fieldLabel, '=', extractedEmail);
+                        }
+                    }
+                }
+                
+                // Extrair telefone
+                if (!extractedPhone && fieldValue && typeof fieldValue === 'string' && fieldValue.trim()) {
+                    if (fieldType === 'phone' || fieldLabel.includes('telefone') || fieldLabel.includes('whatsapp') ||
+                        fieldLabel.includes('phone') || fieldId.toLowerCase().includes('telefone') ||
+                        fieldId.toLowerCase().includes('whatsapp') || fieldId.toLowerCase().includes('phone')) {
+                        extractedPhone = fieldValue.trim();
+                        console.log('✅ [SUBMIT] Telefone extraído do campo:', fieldLabel, '=', extractedPhone);
+                    }
+                }
+            });
+            
+            // Se não encontrou pelos labels, tentar pelos primeiros campos preenchidos
+            if (!extractedName && Object.keys(responseData).length > 0) {
+                const firstFieldValue = Object.values(responseData)[0];
+                if (firstFieldValue && typeof firstFieldValue === 'string' && firstFieldValue.trim().length >= 2) {
+                    extractedName = firstFieldValue.trim();
+                    console.log('✅ [SUBMIT] Nome extraído do primeiro campo preenchido:', extractedName);
+                }
+            }
+            
             // Verificar se há dados coletados
             console.log('📊 [SUBMIT] Dados coletados:', {
                 responseDataKeys: Object.keys(responseData),
@@ -1251,6 +1306,9 @@
                 dataCount: Object.keys(data).length,
                 data: data,
                 fieldsCount: fieldsToProcess.length,
+                extractedName: extractedName,
+                extractedEmail: extractedEmail,
+                extractedPhone: extractedPhone,
                 hasData: Object.keys(responseData).length > 0 || Object.keys(data).length > 0
             });
             
@@ -1288,13 +1346,27 @@
             let responseId = null;
             
             const submitUrl = `/${slug}/form/${itemId}/submit`;
+            
+            // IMPORTANTE: Garantir que valores vazios sejam null, não strings vazias
+            const finalName = (extractedName || data.name || '').trim();
+            const finalEmail = (extractedEmail || data.email || '').trim();
+            const finalPhone = (extractedPhone || data.phone || '').trim();
+            
             const submitPayload = {
                 response_data: responseData,
-                responder_name: data.name || null,
-                responder_email: data.email || null,
-                responder_phone: data.phone || null,
+                responder_name: finalName.length >= 2 ? finalName : null,
+                responder_email: finalEmail.length > 0 && finalEmail.includes('@') ? finalEmail : null,
+                responder_phone: finalPhone.length > 0 ? finalPhone : null,
                 session_id: sessionId
             };
+            
+            console.log('📤 [SUBMIT] Payload final antes de enviar:', {
+                response_data_keys: Object.keys(submitPayload.response_data),
+                responder_name: submitPayload.responder_name,
+                responder_email: submitPayload.responder_email,
+                responder_phone: submitPayload.responder_phone,
+                responder_name_length: submitPayload.responder_name ? submitPayload.responder_name.length : 0
+            });
             
             console.log('📤 [SUBMIT] Enviando formulário:', {
                 url: submitUrl,

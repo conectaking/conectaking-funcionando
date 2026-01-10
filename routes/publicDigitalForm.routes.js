@@ -685,9 +685,17 @@ router.post('/:slug/form/:itemId/submit',
     
     // Sanitizar todos os inputs
     response_data = sanitizeResponseData(response_data);
-    responder_name = responder_name ? sanitizeResponseData({ name: responder_name }).name : null;
-    responder_email = responder_email ? sanitizeResponseData({ email: responder_email }).email : null;
-    responder_phone = responder_phone ? sanitizeResponseData({ phone: responder_phone }).phone : null;
+    
+    // IMPORTANTE: Tratar strings vazias como null para campos opcionais
+    responder_name = (responder_name && typeof responder_name === 'string' && responder_name.trim()) 
+        ? sanitizeResponseData({ name: responder_name.trim() }).name 
+        : null;
+    responder_email = (responder_email && typeof responder_email === 'string' && responder_email.trim()) 
+        ? sanitizeResponseData({ email: responder_email.trim() }).email 
+        : null;
+    responder_phone = (responder_phone && typeof responder_phone === 'string' && responder_phone.trim()) 
+        ? sanitizeResponseData({ phone: responder_phone.trim() }).phone 
+        : null;
     
     const client = await db.pool.connect();
     
