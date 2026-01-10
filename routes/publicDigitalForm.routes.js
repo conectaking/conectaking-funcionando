@@ -257,21 +257,41 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         }
         
         // Garantir que form_fields seja um array
+        logger.info('📋 [FORM] form_fields antes do processamento:', {
+            exists: !!formData.form_fields,
+            type: typeof formData.form_fields,
+            value: typeof formData.form_fields === 'string' ? formData.form_fields.substring(0, 200) : formData.form_fields,
+            isArray: Array.isArray(formData.form_fields),
+            length: Array.isArray(formData.form_fields) ? formData.form_fields.length : 'N/A'
+        });
+        
         if (formData.form_fields) {
             if (typeof formData.form_fields === 'string') {
                 try {
                     formData.form_fields = JSON.parse(formData.form_fields);
+                    logger.info('✅ [FORM] form_fields parseado com sucesso:', {
+                        length: Array.isArray(formData.form_fields) ? formData.form_fields.length : 'N/A',
+                        firstField: Array.isArray(formData.form_fields) && formData.form_fields.length > 0 ? formData.form_fields[0] : null
+                    });
                 } catch (e) {
-                    logger.error('Erro ao parsear form_fields:', e);
+                    logger.error('❌ [FORM] Erro ao parsear form_fields:', e);
                     formData.form_fields = [];
                 }
             }
             if (!Array.isArray(formData.form_fields)) {
+                logger.warn('⚠️ [FORM] form_fields não é um array após parse:', typeof formData.form_fields);
                 formData.form_fields = [];
             }
         } else {
+            logger.warn('⚠️ [FORM] form_fields está vazio ou undefined');
             formData.form_fields = [];
         }
+        
+        logger.info('📋 [FORM] form_fields após processamento:', {
+            length: formData.form_fields.length,
+            isArray: Array.isArray(formData.form_fields),
+            firstFields: formData.form_fields.slice(0, 3).map(f => ({ id: f?.id, label: f?.label, type: f?.type }))
+        });
 
         // Buscar profile_slug
         const profileSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);

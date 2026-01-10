@@ -669,13 +669,32 @@
             console.log('🔍 [PUBLIC] formFields detalhado:', JSON.stringify(formFields, null, 2));
             
             // IMPORTANTE: Função para renderizar campos quando o DOM estiver pronto
-            function renderFieldsWhenReady() {
+            function renderFieldsWhenReady(attempts = 0) {
                 const container = document.getElementById('dynamic-fields-container');
                 
                 if (!container) {
-                    console.warn('⚠️ [PUBLIC] Container dynamic-fields-container ainda não encontrado, tentando novamente em 100ms...');
-                    // Tentar várias vezes até encontrar o container
-                    setTimeout(renderFieldsWhenReady, 100);
+                    console.warn(`⚠️ [PUBLIC] Container dynamic-fields-container ainda não encontrado (tentativa ${attempts + 1}/20)...`);
+                    // Tentar até 20 vezes (2 segundos total)
+                    if (attempts < 20) {
+                        setTimeout(() => renderFieldsWhenReady(attempts + 1), 100);
+                    } else {
+                        console.error('❌ [PUBLIC] Container não encontrado após 20 tentativas!');
+                        // Tentar criar o container se não existir
+                        const formElement = document.getElementById('digital-form');
+                        if (formElement) {
+                            const newContainer = document.createElement('div');
+                            newContainer.id = 'dynamic-fields-container';
+                            // Inserir antes do botão de submit
+                            const submitBtn = formElement.querySelector('.submit-btn, button[type="submit"]');
+                            if (submitBtn) {
+                                formElement.insertBefore(newContainer, submitBtn);
+                            } else {
+                                formElement.appendChild(newContainer);
+                            }
+                            console.log('✅ [PUBLIC] Container criado dinamicamente');
+                            renderFieldsWhenReady(0); // Tentar novamente com o container criado
+                        }
+                    }
                     return;
                 }
                 
@@ -684,15 +703,29 @@
                 
                 if (formFields && formFields.length > 0) {
                     console.log(`✅ [PUBLIC] Renderizando ${formFields.length} campos no container...`);
-                    renderFormFields(container, formFields);
-                    
-                    // Tornar formFields acessível globalmente para event listeners e funções
-                    window.formFields = formFields;
-                    // Atualizar currentFormFields no escopo global também
-                    if (typeof currentFormFields !== 'undefined') {
-                        currentFormFields = formFields;
+                    try {
+                        renderFormFields(container, formFields);
+                        
+                        // Verificar se campos foram realmente renderizados
+                        const renderedFields = container.querySelectorAll('.form-group');
+                        console.log(`✅ [PUBLIC] Campos renderizados: ${renderedFields.length} de ${formFields.length}`);
+                        
+                        if (renderedFields.length === 0) {
+                            console.error('❌ [PUBLIC] NENHUM campo foi renderizado! Verificando função renderFormFields...');
+                            container.innerHTML = '<div style="padding: 20px; background: #ffebee; border: 2px solid #f44336; border-radius: 8px; margin: 20px 0;"><strong style="color: #c62828;">⚠️ Erro ao renderizar campos:</strong> <span style="color: #333;">Verifique o console para mais detalhes.</span></div>';
+                        }
+                        
+                        // Tornar formFields acessível globalmente para event listeners e funções
+                        window.formFields = formFields;
+                        // Atualizar currentFormFields no escopo global também
+                        if (typeof currentFormFields !== 'undefined') {
+                            currentFormFields = formFields;
+                        }
+                        console.log('✅ [PUBLIC] Campos renderizados e variáveis globais atualizadas');
+                    } catch (error) {
+                        console.error('❌ [PUBLIC] Erro ao renderizar campos:', error);
+                        container.innerHTML = '<div style="padding: 20px; background: #ffebee; border: 2px solid #f44336; border-radius: 8px; margin: 20px 0;"><strong style="color: #c62828;">⚠️ Erro ao renderizar campos:</strong> <span style="color: #333;">' + error.message + '</span></div>';
                     }
-                    console.log('✅ [PUBLIC] Campos renderizados e variáveis globais atualizadas');
                 } else {
                     console.warn('⚠️ [PUBLIC] Nenhum campo configurado no formulário');
                     container.innerHTML = '<p style="text-align: center; color: var(--text-color, #666); padding: 40px; font-size: 16px;">⚠️ Nenhum campo configurado neste formulário. Entre em contato com o administrador.</p>';
@@ -701,10 +734,10 @@
             
             // Aguardar DOM estar pronto antes de tentar renderizar
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', renderFieldsWhenReady);
+                document.addEventListener('DOMContentLoaded', () => renderFieldsWhenReady(0));
             } else {
                 // DOM já está pronto, mas pode precisar de um pequeno delay para garantir que o container existe
-                setTimeout(renderFieldsWhenReady, 50);
+                setTimeout(() => renderFieldsWhenReady(0), 100);
             }
         })();
 
