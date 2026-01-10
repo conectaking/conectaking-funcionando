@@ -603,7 +603,7 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
         const guestResult = await client.query(`
             SELECT * FROM guests
             WHERE guest_list_id = $1 AND document = $2
-        `, [guestList.guest_list_id, cleanCpf]);
+        `, [guestList.id, cleanCpf]);
         
         if (guestResult.rows.length === 0) {
             return res.status(404).json({ 

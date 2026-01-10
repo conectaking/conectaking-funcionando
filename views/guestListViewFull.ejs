@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- QR Code Scanner Library -->
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
     <style>
         * {
             margin: 0;
@@ -475,6 +475,188 @@
     </div>
     
     <script>
+        // IMPORTANTE: Definir funções globais ANTES de qualquer outro código
+        // Variáveis globais para QR Code Scanner
+        window.qrCodeScanner = null;
+        window.qrScannerModal = null;
+        
+        // Função para abrir o scanner de QR Code (definir como global imediatamente)
+        window.openQRScanner = function() {
+            // Criar modal
+            const modal = document.createElement('div');
+            modal.id = 'qr-scanner-modal';
+            window.qrScannerModal = modal;
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            
+            modal.innerHTML = `
+                <div style="background: #1C1C21; border: 2px solid #FFC700; border-radius: 20px; padding: 32px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+                    <h2 style="color: #FFC700; font-size: 24px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 12px;">
+                        <i class="fas fa-qrcode"></i> Escanear QR Code
+                    </h2>
+                    <div id="qr-reader" style="width: 100%; margin-bottom: 20px;"></div>
+                    <p style="color: #A1A1A1; font-size: 14px; margin-bottom: 20px;">
+                        Posicione o QR Code na frente da câmera
+                    </p>
+                    <button onclick="window.closeQRScanner()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Inicializar scanner
+            if (typeof Html5Qrcode !== 'undefined') {
+                window.qrCodeScanner = new Html5Qrcode("qr-reader");
+                window.qrCodeScanner.start(
+                    { facingMode: "environment" }, // Usar câmera traseira
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 }
+                    },
+                    (decodedText, decodedResult) => {
+                        // QR Code escaneado com sucesso
+                        window.handleQRCodeScanned(decodedText);
+                    },
+                    (errorMessage) => {
+                        // Erro ignorado (scanner continua tentando)
+                    }
+                ).catch((err) => {
+                    console.error('Erro ao iniciar scanner:', err);
+                    alert('Erro ao acessar a câmera. Verifique as permissões.');
+                    window.closeQRScanner();
+                });
+            } else {
+                alert('Biblioteca de scanner não carregada. Aguarde alguns segundos e tente novamente.');
+                window.closeQRScanner();
+            }
+        };
+        
+        // Função para fechar o scanner (definir como global imediatamente)
+        window.closeQRScanner = function() {
+            if (window.qrCodeScanner) {
+                window.qrCodeScanner.stop().then(() => {
+                    window.qrCodeScanner.clear();
+                }).catch((err) => {
+                    console.error('Erro ao parar scanner:', err);
+                });
+                window.qrCodeScanner = null;
+            }
+            if (window.qrScannerModal) {
+                window.qrScannerModal.remove();
+                window.qrScannerModal = null;
+            }
+        };
+        
+        // Função para processar QR Code escaneado (definir como global imediatamente)
+        window.handleQRCodeScanned = async function(qrToken) {
+            try {
+                // O QR Code contém apenas o token (hex de 64 caracteres)
+                // Extrair token do QR Code (pode ser uma URL completa ou apenas o token)
+                let token = qrToken.trim();
+                
+                // Se for uma URL, extrair o token
+                if (token.includes('/confirm/')) {
+                    token = token.split('/confirm/')[1].split('/')[0].split('?')[0];
+                } else if (token.includes('/')) {
+                    // Tentar extrair o token da URL
+                    const parts = token.split('/');
+                    token = parts[parts.length - 1].split('?')[0];
+                }
+                
+                // Validar token (deve ter pelo menos 32 caracteres hexadecimais)
+                if (!token || token.length < 32) {
+                    alert('❌ QR Code inválido. Verifique se o QR Code está correto.');
+                    return;
+                }
+                
+                // Fechar scanner
+                window.closeQRScanner();
+                
+                // Mostrar loading
+                const loadingModal = document.createElement('div');
+                loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;';
+                loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Confirmando presença...</div>';
+                document.body.appendChild(loadingModal);
+                
+                // Confirmar via API
+                const response = await fetch(`/guest-list/confirm/qr/${token}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                loadingModal.remove();
+                
+                if (data.success) {
+                    alert(`✅ ${data.message}\n\nNome: ${data.guest.name}`);
+                    // Recarregar página para atualizar estatísticas
+                    location.reload();
+                } else {
+                    alert(`❌ ${data.message || 'Erro ao confirmar presença'}`);
+                }
+            } catch (error) {
+                console.error('Erro ao processar QR Code:', error);
+                alert('❌ Erro ao processar QR Code. Tente novamente.');
+            }
+        };
+        
+        // Função para confirmar presença via CPF (definir como global imediatamente)
+        window.confirmByCPF = async function() {
+            const cpfInput = document.getElementById('cpf-search-input');
+            const cpf = cpfInput?.value?.trim();
+            
+            if (!cpf || cpf.length !== 11) {
+                alert('❌ Por favor, digite um CPF válido com 11 dígitos.');
+                return;
+            }
+            
+            // Verificar se tem token da lista
+            const token = '<%= token %>';
+            if (!token) {
+                alert('❌ Token da lista não encontrado.');
+                return;
+            }
+            
+            try {
+                // Mostrar loading
+                const loadingModal = document.createElement('div');
+                loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;';
+                loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Buscando convidado...</div>';
+                document.body.appendChild(loadingModal);
+                
+                // Confirmar via API
+                const response = await fetch('/guest-list/confirm/cpf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        cpf: cpf,
+                        token: token
+                    })
+                });
+                
+                const data = await response.json();
+                loadingModal.remove();
+                
+                if (data.success) {
+                    alert(`✅ ${data.message}\n\nNome: ${data.guest.name}`);
+                    // Limpar input
+                    if (cpfInput) cpfInput.value = '';
+                    // Recarregar página para atualizar estatísticas
+                    location.reload();
+                } else {
+                    alert(`❌ ${data.message || 'CPF não encontrado na lista'}`);
+                }
+            } catch (error) {
+                console.error('Erro ao buscar por CPF:', error);
+                alert('❌ Erro ao buscar convidado. Tente novamente.');
+            }
+        };
+        
         // Form fields para mapear labels
         const formFields = <%= JSON.stringify(typeof formFields !== 'undefined' ? formFields : []) %>;
         const profileItemId = <%= profileItemId %>;
@@ -805,187 +987,6 @@
             const tabId = tabName === 'checked_in' ? 'checked_in' : tabName === 'not_arrived' ? 'not_arrived' : tabName;
             document.getElementById(`tab-${tabId}`).classList.add('active');
         }
-        
-        // Variáveis globais para QR Code Scanner
-        window.qrCodeScanner = null;
-        window.qrScannerModal = null;
-        
-        // Função para abrir o scanner de QR Code (definir como global)
-        window.openQRScanner = function() {
-            // Criar modal
-            const modal = document.createElement('div');
-            modal.id = 'qr-scanner-modal';
-            window.qrScannerModal = modal;
-            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
-            
-            modal.innerHTML = `
-                <div style="background: #1C1C21; border: 2px solid #FFC700; border-radius: 20px; padding: 32px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
-                    <h2 style="color: #FFC700; font-size: 24px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 12px;">
-                        <i class="fas fa-qrcode"></i> Escanear QR Code
-                    </h2>
-                    <div id="qr-reader" style="width: 100%; margin-bottom: 20px;"></div>
-                    <p style="color: #A1A1A1; font-size: 14px; margin-bottom: 20px;">
-                        Posicione o QR Code na frente da câmera
-                    </p>
-                    <button onclick="window.closeQRScanner()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer; transition: all 0.3s;">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            // Inicializar scanner
-            if (typeof Html5Qrcode !== 'undefined') {
-                window.qrCodeScanner = new Html5Qrcode("qr-reader");
-                window.qrCodeScanner.start(
-                    { facingMode: "environment" }, // Usar câmera traseira
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 }
-                    },
-                    (decodedText, decodedResult) => {
-                        // QR Code escaneado com sucesso
-                        window.handleQRCodeScanned(decodedText);
-                    },
-                    (errorMessage) => {
-                        // Erro ignorado (scanner continua tentando)
-                    }
-                ).catch((err) => {
-                    console.error('Erro ao iniciar scanner:', err);
-                    alert('Erro ao acessar a câmera. Verifique as permissões.');
-                    window.closeQRScanner();
-                });
-            } else {
-                alert('Biblioteca de scanner não carregada. Recarregue a página.');
-                window.closeQRScanner();
-            }
-        };
-        
-        // Função para fechar o scanner (definir como global)
-        window.closeQRScanner = function() {
-            if (window.qrCodeScanner) {
-                window.qrCodeScanner.stop().then(() => {
-                    window.qrCodeScanner.clear();
-                }).catch((err) => {
-                    console.error('Erro ao parar scanner:', err);
-                });
-                window.qrCodeScanner = null;
-            }
-            if (window.qrScannerModal) {
-                window.qrScannerModal.remove();
-                window.qrScannerModal = null;
-            }
-        };
-        
-        // Função para processar QR Code escaneado (definir como global)
-        window.handleQRCodeScanned = async function(qrToken) {
-            try {
-                // O QR Code contém apenas o token (hex de 64 caracteres)
-                // Extrair token do QR Code (pode ser uma URL completa ou apenas o token)
-                let token = qrToken.trim();
-                
-                // Se for uma URL, extrair o token
-                if (token.includes('/confirm/')) {
-                    token = token.split('/confirm/')[1].split('/')[0].split('?')[0];
-                } else if (token.includes('/')) {
-                    // Tentar extrair o token da URL
-                    const parts = token.split('/');
-                    token = parts[parts.length - 1].split('?')[0];
-                }
-                
-                // Validar token (deve ter pelo menos 32 caracteres hexadecimais)
-                if (!token || token.length < 32) {
-                    alert('❌ QR Code inválido. Verifique se o QR Code está correto.');
-                    return;
-                }
-                
-                // Fechar scanner
-                closeQRScanner();
-                
-                // Mostrar loading
-                const loadingModal = document.createElement('div');
-                loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;';
-                loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Confirmando presença...</div>';
-                document.body.appendChild(loadingModal);
-                
-                // Confirmar via API
-                const response = await fetch(`/guest-list/confirm/qr/${token}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const data = await response.json();
-                loadingModal.remove();
-                
-                if (data.success) {
-                    alert(`✅ ${data.message}\n\nNome: ${data.guest.name}`);
-                    // Recarregar página para atualizar estatísticas
-                    location.reload();
-                } else {
-                    alert(`❌ ${data.message || 'Erro ao confirmar presença'}`);
-                }
-            } catch (error) {
-                console.error('Erro ao processar QR Code:', error);
-                    alert('❌ Erro ao processar QR Code. Tente novamente.');
-            }
-        };
-        
-        // Função para confirmar presença via CPF (definir como global)
-        window.confirmByCPF = async function() {
-            const cpfInput = document.getElementById('cpf-search-input');
-            const cpf = cpfInput?.value?.trim();
-            
-            if (!cpf || cpf.length !== 11) {
-                alert('❌ Por favor, digite um CPF válido com 11 dígitos.');
-                return;
-            }
-            
-            // Verificar se tem token da lista
-            const token = '<%= token %>';
-            if (!token) {
-                alert('❌ Token da lista não encontrado.');
-                return;
-            }
-            
-            try {
-                // Mostrar loading
-                const loadingModal = document.createElement('div');
-                loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;';
-                loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Buscando convidado...</div>';
-                document.body.appendChild(loadingModal);
-                
-                // Confirmar via API
-                const response = await fetch('/guest-list/confirm/cpf', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        cpf: cpf,
-                        token: token
-                    })
-                });
-                
-                const data = await response.json();
-                loadingModal.remove();
-                
-                if (data.success) {
-                    alert(`✅ ${data.message}\n\nNome: ${data.guest.name}`);
-                    // Limpar input
-                    cpfInput.value = '';
-                    // Recarregar página para atualizar estatísticas
-                    location.reload();
-                } else {
-                    alert(`❌ ${data.message || 'CPF não encontrado na lista'}`);
-                }
-            } catch (error) {
-                console.error('Erro ao buscar por CPF:', error);
-                alert('❌ Erro ao buscar convidado. Tente novamente.');
-            }
-        };
         
         // Permitir confirmar por CPF ao pressionar Enter
         document.addEventListener('DOMContentLoaded', function() {
