@@ -146,6 +146,10 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
             if (guestListData.theme) {
                 formData.theme = guestListData.theme;
             }
+            if (hasGuestListCardColor && guestListData.card_color) {
+                formData.card_color = guestListData.card_color;
+                logger.info(`🎨 [FORM/SHARE] card_color atualizado de guest_list_items: ${guestListData.card_color}`);
+            }
             
             // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
             // Isso garante que as configurações do botão sejam atualizadas corretamente
