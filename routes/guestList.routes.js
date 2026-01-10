@@ -1166,13 +1166,16 @@ router.post('/:id/guests', protectUser, asyncHandler(async (req, res) => {
             }
         }
         
+        // Gerar token único para QR Code
+        const qrToken = crypto.randomBytes(32).toString('hex');
+        
         const result = await client.query(`
             INSERT INTO guests (
                 guest_list_id, name, email, phone, whatsapp, document, 
                 address, neighborhood, city, state, zipcode, instagram,
-                notes, status, registration_source
+                notes, status, registration_source, qr_token, qr_code_generated_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'registered', 'admin')
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'registered', 'admin', $14, NOW())
             RETURNING *
         `, [
             guestListItemId,
@@ -1187,7 +1190,8 @@ router.post('/:id/guests', protectUser, asyncHandler(async (req, res) => {
             state || null,
             zipcode || null,
             instagram || null,
-            notes || null
+            notes || null,
+            qrToken
         ]);
         
         res.json(result.rows[0]);
@@ -1534,14 +1538,17 @@ router.post('/public/register/:token', asyncHandler(async (req, res) => {
             }
         }
         
+        // Gerar token único para QR Code
+        const qrToken = crypto.randomBytes(32).toString('hex');
+        
         // Criar convidado com todos os campos
         const result = await client.query(`
             INSERT INTO guests (
                 guest_list_id, name, email, phone, whatsapp, document, 
                 address, neighborhood, city, state, zipcode, instagram,
-                status, registration_source
+                status, registration_source, qr_token, qr_code_generated_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'self')
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'self', $14, NOW())
             RETURNING *
         `, [
             guestList.id,
@@ -1556,7 +1563,8 @@ router.post('/public/register/:token', asyncHandler(async (req, res) => {
             state ? state.trim() : null,
             zipcode ? zipcode.trim() : null,
             instagram ? instagram.trim() : null,
-            guestList.require_confirmation ? 'registered' : 'confirmed'
+            guestList.require_confirmation ? 'registered' : 'confirmed',
+            qrToken
         ]);
         
         // Salvar respostas customizadas se houver
