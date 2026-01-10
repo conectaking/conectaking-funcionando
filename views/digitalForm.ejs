@@ -1787,25 +1787,54 @@
     
     <!-- Rodapé com Direitos Autorais -->
     <% 
-        // Determinar tema para ajustar cores do rodapé
-        const isDarkTheme = formData.theme === 'dark' || (formData.background_color && formData.background_color.toLowerCase().includes('#0') || formData.background_color.toLowerCase().includes('dark'));
+        // Determinar tema para ajustar cores do rodapé - lógica melhorada
+        let isDarkTheme = false;
+        
+        // Verificar tema explícito
+        if (formData.theme === 'dark') {
+            isDarkTheme = true;
+        } else if (formData.theme === 'light') {
+            isDarkTheme = false;
+        } else if (formData.background_color) {
+            // Analisar cor de fundo para determinar tema
+            const bgColor = formData.background_color.toLowerCase().trim();
+            // Se começa com #0, #1, #2, #3, #4, #5 (tons escuros) ou contém 'dark', 'black', 'preto'
+            if (bgColor.match(/^#[0-5][0-9a-f]/) || 
+                bgColor.includes('dark') || 
+                bgColor.includes('black') || 
+                bgColor.includes('preto') ||
+                bgColor.includes('#0d') ||
+                bgColor.includes('#1c') ||
+                bgColor.includes('#2c')) {
+                isDarkTheme = true;
+            } else {
+                // Tons claros (#f, #e, #d, #c, #b, #a, #9, #8, #7, #6 ou branco)
+                isDarkTheme = false;
+            }
+        } else {
+            // Padrão: tema claro
+            isDarkTheme = false;
+        }
+        
+        // Cores do rodapé baseadas no tema
         const footerBg = isDarkTheme ? '#1C1C21' : '#f8f9fa';
         const footerTextMain = isDarkTheme ? '#ECECEC' : '#1a1a1a';
         const footerTextSecondary = isDarkTheme ? '#A1A1A1' : '#4a4a4a';
         const footerTextTertiary = isDarkTheme ? '#7a7a7a' : '#6b6b6b';
         const footerBorder = isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+        const footerPrimaryColor = isDarkTheme ? '#4A90E2' : (primaryColor || '#4A90E2');
     %>
     <footer style="margin-top: 60px; padding: 40px 24px; text-align: center; border-top: 1px solid <%= footerBorder %>; background: <%= footerBg %>;">
         <div style="max-width: 1000px; margin: 0 auto;">
             <p style="margin: 0 0 12px 0; color: <%= footerTextMain %>; font-size: 15px; line-height: 1.7; font-weight: 600;">
-                <span style="color: var(--primary-color, #4A90E2); font-weight: 700; font-size: 16px;">King Forms</span> 
+                <span style="color: <%= footerPrimaryColor %>; font-weight: 700; font-size: 16px;">King Forms</span> 
                 <span style="color: <%= footerTextSecondary %>;">é um sistema desenvolvido pela</span> 
-                <span style="color: var(--primary-color, #4A90E2); font-weight: 700;">Conecta King</span>
+                <span style="color: <%= footerPrimaryColor %>; font-weight: 700;">Conecta King</span>
             </p>
             <p style="margin: 0; color: <%= footerTextTertiary %>; font-size: 13px; line-height: 1.6; font-weight: 500;">
                 © <%= new Date().getFullYear() %> Conecta King. Todos os direitos reservados.
             </p>
-            <p style="margin: 8px 0 0 0; color: <%= footerTextTertiary %>; font-size: 12px; line-height: 1.5; opacity: 0.9;">
+            <p style="margin: 8px 0 0 0; color: <%= footerTextTertiary %>; font-size: 12px; line-height: 1.5; font-weight: 400;">
                 Solução premium para criação de formulários digitais profissionais.
             </p>
         </div>
