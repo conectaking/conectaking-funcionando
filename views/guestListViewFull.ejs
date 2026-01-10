@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- QR Code Scanner Library -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -232,7 +232,7 @@
             </h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <!-- Botão Escanear QR Code -->
-                <button onclick="openQRScanner()" style="background: linear-gradient(135deg, #FFC700 0%, #FFB700 100%); color: #000; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.3);">
+                <button onclick="window.openQRScanner()" style="background: linear-gradient(135deg, #FFC700 0%, #FFB700 100%); color: #000; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.3);">
                     <i class="fas fa-qrcode" style="font-size: 20px;"></i>
                     Ler QR Code
                 </button>
@@ -240,7 +240,7 @@
                 <!-- Busca por CPF -->
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="cpf-search-input" placeholder="Digite o CPF (apenas números)" style="flex: 1; padding: 16px; border-radius: 12px; background: #0D0D0F; border: 2px solid #2C2C2F; color: #ECECEC; font-size: 16px; font-weight: 600; letter-spacing: 2px;" maxlength="11" oninput="this.value = this.value.replace(/\D/g, '')">
-                    <button onclick="confirmByCPF()" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3); white-space: nowrap;">
+                    <button onclick="window.confirmByCPF()" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3); white-space: nowrap;">
                         <i class="fas fa-search"></i> Buscar
                     </button>
                 </div>
@@ -807,15 +807,15 @@
         }
         
         // Variáveis globais para QR Code Scanner
-        let qrCodeScanner = null;
-        let qrScannerModal = null;
+        window.qrCodeScanner = null;
+        window.qrScannerModal = null;
         
-        // Função para abrir o scanner de QR Code
-        function openQRScanner() {
+        // Função para abrir o scanner de QR Code (definir como global)
+        window.openQRScanner = function() {
             // Criar modal
             const modal = document.createElement('div');
             modal.id = 'qr-scanner-modal';
-            qrScannerModal = modal;
+            window.qrScannerModal = modal;
             modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
             
             modal.innerHTML = `
@@ -827,7 +827,7 @@
                     <p style="color: #A1A1A1; font-size: 14px; margin-bottom: 20px;">
                         Posicione o QR Code na frente da câmera
                     </p>
-                    <button onclick="closeQRScanner()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                    <button onclick="window.closeQRScanner()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                         <i class="fas fa-times"></i> Cancelar
                     </button>
                 </div>
@@ -837,8 +837,8 @@
             
             // Inicializar scanner
             if (typeof Html5Qrcode !== 'undefined') {
-                qrCodeScanner = new Html5Qrcode("qr-reader");
-                qrCodeScanner.start(
+                window.qrCodeScanner = new Html5Qrcode("qr-reader");
+                window.qrCodeScanner.start(
                     { facingMode: "environment" }, // Usar câmera traseira
                     {
                         fps: 10,
@@ -846,7 +846,7 @@
                     },
                     (decodedText, decodedResult) => {
                         // QR Code escaneado com sucesso
-                        handleQRCodeScanned(decodedText);
+                        window.handleQRCodeScanned(decodedText);
                     },
                     (errorMessage) => {
                         // Erro ignorado (scanner continua tentando)
@@ -854,32 +854,32 @@
                 ).catch((err) => {
                     console.error('Erro ao iniciar scanner:', err);
                     alert('Erro ao acessar a câmera. Verifique as permissões.');
-                    closeQRScanner();
+                    window.closeQRScanner();
                 });
             } else {
                 alert('Biblioteca de scanner não carregada. Recarregue a página.');
-                closeQRScanner();
+                window.closeQRScanner();
             }
-        }
+        };
         
-        // Função para fechar o scanner
-        function closeQRScanner() {
-            if (qrCodeScanner) {
-                qrCodeScanner.stop().then(() => {
-                    qrCodeScanner.clear();
+        // Função para fechar o scanner (definir como global)
+        window.closeQRScanner = function() {
+            if (window.qrCodeScanner) {
+                window.qrCodeScanner.stop().then(() => {
+                    window.qrCodeScanner.clear();
                 }).catch((err) => {
                     console.error('Erro ao parar scanner:', err);
                 });
-                qrCodeScanner = null;
+                window.qrCodeScanner = null;
             }
-            if (qrScannerModal) {
-                qrScannerModal.remove();
-                qrScannerModal = null;
+            if (window.qrScannerModal) {
+                window.qrScannerModal.remove();
+                window.qrScannerModal = null;
             }
-        }
+        };
         
-        // Função para processar QR Code escaneado
-        async function handleQRCodeScanned(qrToken) {
+        // Função para processar QR Code escaneado (definir como global)
+        window.handleQRCodeScanned = async function(qrToken) {
             try {
                 // O QR Code contém apenas o token (hex de 64 caracteres)
                 // Extrair token do QR Code (pode ser uma URL completa ou apenas o token)
@@ -929,12 +929,12 @@
                 }
             } catch (error) {
                 console.error('Erro ao processar QR Code:', error);
-                alert('❌ Erro ao processar QR Code. Tente novamente.');
+                    alert('❌ Erro ao processar QR Code. Tente novamente.');
             }
-        }
+        };
         
-        // Função para confirmar presença via CPF
-        async function confirmByCPF() {
+        // Função para confirmar presença via CPF (definir como global)
+        window.confirmByCPF = async function() {
             const cpfInput = document.getElementById('cpf-search-input');
             const cpf = cpfInput?.value?.trim();
             
@@ -985,7 +985,7 @@
                 console.error('Erro ao buscar por CPF:', error);
                 alert('❌ Erro ao buscar convidado. Tente novamente.');
             }
-        }
+        };
         
         // Permitir confirmar por CPF ao pressionar Enter
         document.addEventListener('DOMContentLoaded', function() {
@@ -993,7 +993,7 @@
             if (cpfInput) {
                 cpfInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
-                        confirmByCPF();
+                        window.confirmByCPF();
                     }
                 });
             }
