@@ -485,5 +485,181 @@ router.post('/view-full/:token/checkin/:guestId', asyncHandler(async (req, res) 
     }
 }));
 
+/**
+ * POST /guest-list/confirm/qr/:qrToken - Confirmar presença via QR Code
+ */
+router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const { qrToken } = req.params;
+        
+        // Buscar convidado pelo qr_token
+        const guestResult = await client.query(`
+            SELECT g.*, gli.public_view_token, gli.profile_item_id
+            FROM guests g
+            INNER JOIN guest_list_items gli ON gli.id = g.guest_list_id
+            WHERE g.qr_token = $1
+        `, [qrToken]);
+        
+        if (guestResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'QR Code inválido ou não encontrado' 
+            });
+        }
+        
+        const guest = guestResult.rows[0];
+        
+        // Verificar se já foi confirmado
+        if (guest.status === 'checked_in') {
+            return res.json({
+                success: true,
+                message: 'Presença já confirmada anteriormente',
+                guest: {
+                    id: guest.id,
+                    name: guest.name,
+                    status: guest.status,
+                    checked_in_at: guest.checked_in_at
+                }
+            });
+        }
+        
+        // Confirmar presença
+        const updateResult = await client.query(`
+            UPDATE guests 
+            SET status = 'checked_in', 
+                checked_in_at = NOW(),
+                confirmed_at = COALESCE(confirmed_at, NOW())
+            WHERE id = $1
+            RETURNING id, name, email, whatsapp, status, checked_in_at
+        `, [guest.id]);
+        
+        logger.info('✅ [QR_CONFIRM] Presença confirmada via QR Code:', {
+            guestId: guest.id,
+            name: guest.name,
+            qrToken: qrToken.substring(0, 16) + '...'
+        });
+        
+        res.json({
+            success: true,
+            message: 'Presença confirmada com sucesso!',
+            guest: updateResult.rows[0]
+        });
+        
+    } catch (error) {
+        logger.error('❌ [QR_CONFIRM] Erro ao confirmar via QR Code:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Erro ao confirmar presença. Tente novamente.' 
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
+ * POST /guest-list/confirm/cpf - Confirmar presença via CPF
+ */
+router.post('/confirm/cpf', asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const { cpf, token } = req.body;
+        
+        if (!cpf || !token) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'CPF e token são obrigatórios' 
+            });
+        }
+        
+        // Limpar CPF (remover pontos, traços, espaços)
+        const cleanCpf = cpf.replace(/\D/g, '');
+        
+        if (cleanCpf.length !== 11) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'CPF inválido. Digite um CPF com 11 dígitos.' 
+            });
+        }
+        
+        // Buscar lista pelo token
+        const listResult = await client.query(`
+            SELECT gli.id as guest_list_id, gli.profile_item_id
+            FROM guest_list_items gli
+            INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+            WHERE (gli.public_view_token = $1 OR gli.confirmation_token = $1) AND pi.is_active = true
+        `, [token]);
+        
+        if (listResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Token inválido ou lista não encontrada' 
+            });
+        }
+        
+        const guestList = listResult.rows[0];
+        
+        // Buscar convidado pelo CPF na lista
+        const guestResult = await client.query(`
+            SELECT * FROM guests
+            WHERE guest_list_id = $1 AND document = $2
+        `, [guestList.guest_list_id, cleanCpf]);
+        
+        if (guestResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'CPF não encontrado na lista de convidados' 
+            });
+        }
+        
+        const guest = guestResult.rows[0];
+        
+        // Verificar se já foi confirmado
+        if (guest.status === 'checked_in') {
+            return res.json({
+                success: true,
+                message: 'Presença já confirmada anteriormente',
+                guest: {
+                    id: guest.id,
+                    name: guest.name,
+                    status: guest.status,
+                    checked_in_at: guest.checked_in_at
+                }
+            });
+        }
+        
+        // Confirmar presença
+        const updateResult = await client.query(`
+            UPDATE guests 
+            SET status = 'checked_in', 
+                checked_in_at = NOW(),
+                confirmed_at = COALESCE(confirmed_at, NOW())
+            WHERE id = $1
+            RETURNING id, name, email, whatsapp, status, checked_in_at
+        `, [guest.id]);
+        
+        logger.info('✅ [CPF_CONFIRM] Presença confirmada via CPF:', {
+            guestId: guest.id,
+            name: guest.name,
+            cpf: cleanCpf.substring(0, 3) + '***.***-**'
+        });
+        
+        res.json({
+            success: true,
+            message: 'Presença confirmada com sucesso!',
+            guest: updateResult.rows[0]
+        });
+        
+    } catch (error) {
+        logger.error('❌ [CPF_CONFIRM] Erro ao confirmar via CPF:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Erro ao confirmar presença. Tente novamente.' 
+        });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 const db = require('../db');
 const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
@@ -766,6 +767,10 @@ router.post('/:slug/form/:itemId/submit',
     const { slug, itemId } = req.params;
     let { response_data, responder_name, responder_email, responder_phone } = req.body;
     
+    // Variáveis para armazenar dados do convidado (se for lista de convidados)
+    let response_guest_id = null;
+    let response_qr_token = null;
+    
     // Sanitizar todos os inputs
     response_data = sanitizeResponseData(response_data);
     
@@ -959,15 +964,18 @@ router.post('/:slug/form/:itemId/submit',
                         responseDataKeys: Object.keys(response_data)
                     });
                     
-                    // Inserir na lista de convidados
+                    // Gerar token único para QR Code
+                    const qrToken = crypto.randomBytes(32).toString('hex');
+                    
+                    // Inserir na lista de convidados com QR token
                     const guestInsertResult = await client.query(`
                         INSERT INTO guests (
                             guest_list_id, name, email, phone, whatsapp, document, 
                             address, neighborhood, city, state, zipcode, instagram,
-                            status, registration_source, custom_responses
+                            status, registration_source, custom_responses, qr_token, qr_code_generated_at
                         )
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'registered', 'form', $13::jsonb)
-                        RETURNING id
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'registered', 'form', $13::jsonb, $14, NOW())
+                        RETURNING id, qr_token
                     `, [
                         guestListItemId,
                         guestData.name.trim(),
@@ -981,14 +989,23 @@ router.post('/:slug/form/:itemId/submit',
                         guestData.state ? guestData.state.trim() : null,
                         guestData.zipcode ? guestData.zipcode.trim() : null,
                         guestData.instagram ? guestData.instagram.trim() : null,
-                        JSON.stringify(guestData.custom_responses)
+                        JSON.stringify(guestData.custom_responses),
+                        qrToken
                     ]);
+                    
+                    const savedGuestId = guestInsertResult.rows[0]?.id;
+                    const savedQrToken = guestInsertResult.rows[0]?.qr_token;
                     
                     logger.info('✅ [SUBMIT] Convidado salvo na lista via formulário', { 
                         itemId: itemIdInt, 
                         guestListItemId,
-                        guestId: guestInsertResult.rows[0]?.id
+                        guestId: savedGuestId,
+                        qrToken: savedQrToken
                     });
+                    
+                    // Armazenar guestId e qrToken para passar para a página de sucesso
+                    response_guest_id = savedGuestId;
+                    response_qr_token = savedQrToken;
                 } else {
                     logger.warn('⚠️ [SUBMIT] guest_list_items não encontrado para profile_item_id:', itemIdInt);
                 }
@@ -1056,6 +1073,25 @@ router.post('/:slug/form/:itemId/submit',
         const showSuccessPage = req.query.success_page === 'true' || req.headers['x-success-page'] === 'true';
         
         if (showSuccessPage) {
+            // Buscar dados do evento se for lista de convidados
+            let eventData = null;
+            if (response_guest_id && response_qr_token) {
+                try {
+                    const eventRes = await client.query(`
+                        SELECT gli.event_title, gli.event_date, gli.event_location, dfi.event_date as form_event_date, dfi.event_address
+                        FROM guest_list_items gli
+                        LEFT JOIN digital_form_items dfi ON dfi.profile_item_id = gli.profile_item_id
+                        WHERE gli.profile_item_id = $1
+                        LIMIT 1
+                    `, [itemIdInt]);
+                    if (eventRes.rows.length > 0) {
+                        eventData = eventRes.rows[0];
+                    }
+                } catch (err) {
+                    logger.warn('Erro ao buscar dados do evento:', err);
+                }
+            }
+            
             // Renderizar página de sucesso
             return res.render('formSuccess', {
                 message: 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.',
@@ -1064,6 +1100,11 @@ router.post('/:slug/form/:itemId/submit',
                 showWhatsAppInfo: formData.enable_whatsapp !== false && formData.whatsapp_number,
                 whatsappNumber: formData.whatsapp_number,
                 showGuestListInfo: formData.enable_guest_list_submit === true,
+                guestId: response_guest_id,
+                qrToken: response_qr_token,
+                eventTitle: eventData?.event_title || formData.form_title || 'Evento',
+                eventDate: eventData?.event_date || eventData?.form_event_date || null,
+                eventAddress: eventData?.event_location || eventData?.event_address || null,
                 formUrl: `/${slug}/form/${itemId}`,
                 primaryColor: formData.primary_color || '#4A90E2',
                 secondaryColor: formData.secondary_color || formData.primary_color || '#6BA3F0',

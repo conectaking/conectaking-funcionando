@@ -310,6 +310,66 @@
         </div>
         <% } %>
         
+        <% if (showGuestListInfo && qrToken) { %>
+        <!-- QR Code de Confirmação de Presença -->
+        <div id="qr-code-section" style="background: linear-gradient(135deg, rgba(<%= primaryColor ? parseInt(primaryColor.slice(1, 3), 16) + ',' + parseInt(primaryColor.slice(3, 5), 16) + ',' + parseInt(primaryColor.slice(5, 7), 16) : '74,144,226' %>, 0.05), rgba(<%= secondaryColor ? parseInt(secondaryColor.slice(1, 3), 16) + ',' + parseInt(secondaryColor.slice(3, 5), 16) + ',' + parseInt(secondaryColor.slice(5, 7), 16) : '107,163,240' %>, 0.08)); border: 2px solid rgba(<%= primaryColor ? parseInt(primaryColor.slice(1, 3), 16) + ',' + parseInt(primaryColor.slice(3, 5), 16) + ',' + parseInt(primaryColor.slice(5, 7), 16) : '74,144,226' %>, 0.3); border-radius: 20px; padding: 32px; margin: 32px 0; text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 24px;">
+                <i class="fas fa-qrcode" style="font-size: 28px; color: <%= primaryColor || '#4A90E2' %>;"></i>
+                <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #202124;">QR Code de Confirmação</h2>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.9); border-radius: 16px; padding: 24px; margin-bottom: 20px; display: inline-block; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                <canvas id="qrcode-canvas" style="max-width: 300px; max-height: 300px; width: 100%; height: auto;"></canvas>
+            </div>
+            
+            <!-- Aviso Importante -->
+            <div style="background: linear-gradient(135deg, rgba(255, 199, 0, 0.15), rgba(255, 199, 0, 0.25)); border: 2px solid rgba(255, 199, 0, 0.4); border-radius: 12px; padding: 20px; margin: 20px 0;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 24px; color: #FFC700;"></i>
+                    <strong style="font-size: 18px; color: #202124;">⚠️ IMPORTANTE</strong>
+                </div>
+                <p style="font-size: 16px; color: #333; line-height: 1.6; margin: 0;">
+                    <strong>Tire um print ou baixe o QR Code</strong> para não perder!<br>
+                    Apresente este QR Code na portaria do evento para confirmar sua presença.
+                </p>
+            </div>
+            
+            <!-- Informações do Evento no QR Code -->
+            <% if (eventTitle || eventDate || eventAddress) { %>
+            <div style="background: white; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left; border: 1px solid rgba(0,0,0,0.1);">
+                <h3 style="font-size: 16px; font-weight: 600; color: #5f6368; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Informações do Evento</h3>
+                <% if (eventTitle) { %>
+                <div style="margin-bottom: 10px;">
+                    <strong style="color: #202124; font-size: 18px;"><%= eventTitle %></strong>
+                </div>
+                <% } %>
+                <% if (eventDate) { %>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #5f6368;">
+                    <i class="fas fa-calendar"></i>
+                    <span><%= new Date(eventDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+                </div>
+                <% } %>
+                <% if (eventAddress) { %>
+                <div style="display: flex; align-items: flex-start; gap: 8px; color: #5f6368;">
+                    <i class="fas fa-map-marker-alt" style="margin-top: 4px;"></i>
+                    <span><%= eventAddress %></span>
+                </div>
+                <% } %>
+            </div>
+            <% } %>
+            
+            <!-- Botões de Ação -->
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px;">
+                <button onclick="downloadQRCode()" class="btn" style="background: linear-gradient(135deg, <%= primaryColor || '#4A90E2' %> 0%, <%= secondaryColor || '#6BA3F0' %> 100%); color: white; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(74, 144, 226, 0.4);">
+                    <i class="fas fa-download"></i> Baixar QR Code
+                </button>
+                <button onclick="shareQRCode()" class="btn btn-secondary" style="background: #f8f9fa; color: #5f6368; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s;">
+                    <i class="fab fa-whatsapp"></i> Compartilhar
+                </button>
+            </div>
+        </div>
+        <% } %>
+        
         <div class="actions">
             <% if (formUrl) { %>
             <a href="<%= formUrl %>" class="btn btn-secondary">
@@ -322,6 +382,12 @@
             </button>
         </div>
     </div>
+    
+    <!-- QR Code Library -->
+    <% if (showGuestListInfo && qrToken) { %>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <% } %>
     
     <script>
         // Auto-redirect após 10 segundos (opcional)
@@ -338,6 +404,176 @@
                 'event_label': 'Success Page View'
             });
         }
+        
+        <% if (showGuestListInfo && qrToken) { %>
+        // Gerar QR Code
+        const qrToken = '<%= qrToken %>';
+        const eventTitle = '<%= eventTitle || "Evento" %>';
+        const eventDate = '<%= eventDate ? new Date(eventDate).toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : "" %>';
+        const eventAddress = '<%= eventAddress || "" %>';
+        const primaryColor = '<%= primaryColor || "#4A90E2" %>';
+        const secondaryColor = '<%= secondaryColor || "#6BA3F0" %>';
+        
+        // URL para confirmação via QR Code
+        // O QR Code contém apenas o token, que será lido pelo scanner
+        const qrCodeData = qrToken;
+        
+        // Gerar QR Code no canvas
+        if (typeof QRCode !== 'undefined') {
+            const canvas = document.getElementById('qrcode-canvas');
+            if (canvas) {
+                QRCode.toCanvas(canvas, qrCodeData, {
+                    width: 300,
+                    margin: 2,
+                    color: {
+                        dark: '#000000',
+                        light: '#FFFFFF'
+                    }
+                }, function (error) {
+                    if (error) {
+                        console.error('Erro ao gerar QR Code:', error);
+                        canvas.parentElement.innerHTML = '<p style="color: red;">Erro ao gerar QR Code. Tente recarregar a página.</p>';
+                    } else {
+                        console.log('QR Code gerado com sucesso');
+                    }
+                });
+            }
+        }
+        
+        // Função para baixar QR Code como PNG
+        function downloadQRCode() {
+            const canvas = document.getElementById('qrcode-canvas');
+            if (!canvas) return;
+            
+            // Criar link de download
+            const link = document.createElement('a');
+            link.download = `QR-Code-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Função para compartilhar QR Code via WhatsApp
+        function shareQRCode() {
+            const canvas = document.getElementById('qrcode-canvas');
+            if (!canvas) return;
+            
+            const qrCodeImage = canvas.toDataURL('image/png');
+            const message = `Olá! Este é meu QR Code de confirmação de presença:\n\n*Evento:* ${eventTitle}${eventDate ? '\n*Data:* ' + eventDate : ''}${eventAddress ? '\n*Local:* ' + eventAddress : ''}\n\nApresente este QR Code na portaria.`;
+            
+            // Converter imagem para base64 e enviar via WhatsApp
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+        
+        // Função para baixar QR Code como PDF (premium design)
+        function downloadQRCodePDF() {
+            if (typeof window.jspdf === 'undefined') {
+                alert('Biblioteca PDF não carregada. Por favor, recarregue a página.');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const canvas = document.getElementById('qrcode-canvas');
+            if (!canvas) return;
+            
+            const qrCodeImage = canvas.toDataURL('image/png');
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: [210, 297] // A4
+            });
+            
+            // Cores
+            const primaryRgb = hexToRgb(primaryColor);
+            const secondaryRgb = hexToRgb(secondaryColor);
+            
+            // Header com gradiente
+            doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            // Título
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Confirmação de Presença', 105, 20, { align: 'center' });
+            
+            // QR Code
+            doc.addImage(qrCodeImage, 'PNG', 55, 50, 100, 100);
+            
+            // Informações do Evento
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text(eventTitle, 105, 160, { align: 'center' });
+            
+            if (eventDate) {
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                doc.text('📅 ' + eventDate, 105, 175, { align: 'center' });
+            }
+            
+            if (eventAddress) {
+                doc.setFontSize(11);
+                doc.text('📍 ' + eventAddress, 105, 185, { align: 'center', maxWidth: 180 });
+            }
+            
+            // Instruções
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Apresente este QR Code na portaria do evento', 105, 250, { align: 'center' });
+            doc.text('Token: ' + qrToken.substring(0, 16) + '...', 105, 260, { align: 'center' });
+            
+            // Footer
+            doc.setFillColor(240, 240, 240);
+            doc.rect(0, 280, 210, 17, 'F');
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text('King Forms - Sistema de Confirmação de Presença', 105, 290, { align: 'center' });
+            doc.text('© 2026 Conecta King. Todos os direitos reservados.', 105, 295, { align: 'center' });
+            
+            // Salvar
+            doc.save(`QR-Code-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.pdf`);
+        }
+        
+        // Função auxiliar para converter hex para RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 74, g: 144, b: 226 };
+        }
+        
+        // Adicionar opção de download PDF ao botão
+        document.addEventListener('DOMContentLoaded', function() {
+            const downloadBtn = document.querySelector('button[onclick="downloadQRCode()"]');
+            if (downloadBtn && typeof window.jspdf !== 'undefined') {
+                // Adicionar menu dropdown
+                downloadBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    const menu = document.createElement('div');
+                    menu.style.cssText = 'position: absolute; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;';
+                    menu.innerHTML = `
+                        <button onclick="downloadQRCode()" style="display: block; width: 100%; padding: 8px 16px; text-align: left; border: none; background: none; cursor: pointer; border-radius: 4px; margin-bottom: 4px;">📷 Baixar PNG</button>
+                        <button onclick="downloadQRCodePDF()" style="display: block; width: 100%; padding: 8px 16px; text-align: left; border: none; background: none; cursor: pointer; border-radius: 4px;">📄 Baixar PDF</button>
+                    `;
+                    const rect = downloadBtn.getBoundingClientRect();
+                    menu.style.position = 'fixed';
+                    menu.style.top = (rect.bottom + 5) + 'px';
+                    menu.style.left = rect.left + 'px';
+                    document.body.appendChild(menu);
+                    
+                    setTimeout(() => {
+                        document.addEventListener('click', function closeMenu() {
+                            menu.remove();
+                            document.removeEventListener('click', closeMenu);
+                        });
+                    }, 100);
+                };
+            }
+        });
+        <% } %>
     </script>
 </body>
 </html>
