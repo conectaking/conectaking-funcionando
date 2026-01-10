@@ -235,7 +235,7 @@
             </button>
         </div>
         
-        <!-- Tab: Cadastrados -->
+        <!-- Tab: Cadastrados (TODOS os inscritos, independente do status) -->
         <div id="tab-registered" class="tab-content active">
             <div class="guests-table">
                 <div class="table-header">
@@ -243,7 +243,7 @@
                     <div>Email</div>
                     <div>WhatsApp</div>
                     <div>Status</div>
-                    <div>Inscrito em</div>
+                    <div>Data</div>
                 </div>
                 <% if (registeredGuests.length === 0) { %>
                     <div class="empty-state">
@@ -251,42 +251,60 @@
                         <p>Nenhum convidado cadastrado</p>
                     </div>
                 <% } else { %>
-                    <% registeredGuests.forEach(guest => { %>
+                    <% registeredGuests.forEach(guest => { 
+                        // Extrair nome, email e whatsapp (tentar também de custom_responses se necessário)
+                        let displayName = guest.name || '';
+                        let displayEmail = guest.email || '';
+                        let displayWhatsapp = guest.whatsapp || guest.phone || '';
+                        
+                        if (!displayName || !displayEmail || !displayWhatsapp) {
+                            try {
+                                const customResponses = typeof guest.custom_responses === 'string' 
+                                    ? JSON.parse(guest.custom_responses) 
+                                    : (guest.custom_responses || {});
+                                
+                                Object.keys(customResponses).forEach(key => {
+                                    const keyLower = key.toLowerCase();
+                                    const value = customResponses[key];
+                                    
+                                    if (!displayName && (keyLower.includes('nome') || keyLower.includes('name'))) {
+                                        displayName = Array.isArray(value) ? value[0] : value;
+                                    }
+                                    if (!displayWhatsapp && (keyLower.includes('whatsapp') || keyLower.includes('telefone') || keyLower.includes('phone'))) {
+                                        displayWhatsapp = Array.isArray(value) ? value[0] : value;
+                                    }
+                                    if (!displayEmail && (keyLower.includes('email') || keyLower.includes('e-mail'))) {
+                                        displayEmail = Array.isArray(value) ? value[0] : value;
+                                    }
+                                });
+                            } catch (e) {}
+                        }
+                        
+                        displayName = displayName || 'Sem nome';
+                        displayEmail = displayEmail || '-';
+                        displayWhatsapp = displayWhatsapp || '-';
+                        
+                        // Determinar status e data
+                        let statusText = 'Inscrito';
+                        let statusClass = 'status-registered';
+                        let dateToShow = guest.created_at;
+                        
+                        if (guest.status === 'checked_in') {
+                            statusText = 'Chegou';
+                            statusClass = 'status-checked_in';
+                            dateToShow = guest.checked_in_at || guest.created_at;
+                        } else if (guest.status === 'confirmed') {
+                            statusText = 'Confirmado';
+                            statusClass = 'status-confirmed';
+                            dateToShow = guest.confirmed_at || guest.created_at;
+                        }
+                    %>
                         <div class="table-row">
-                            <div style="font-weight: 600;"><%= guest.name || 'Sem nome' %></div>
-                            <div><%= guest.email || '-' %></div>
-                            <div><%= guest.whatsapp || guest.phone || '-' %></div>
-                            <div><span class="status-badge status-<%= guest.status %>">Inscrito</span></div>
-                            <div><%= new Date(guest.created_at).toLocaleString('pt-BR') %></div>
-                        </div>
-                    <% }); %>
-                <% } %>
-            </div>
-        </div>
-        
-        <!-- Tab: Confirmados -->
-        <div id="tab-confirmed" class="tab-content">
-            <div class="guests-table">
-                <div class="table-header">
-                    <div>Nome Completo</div>
-                    <div>Email</div>
-                    <div>WhatsApp</div>
-                    <div>Status</div>
-                    <div>Confirmado em</div>
-                </div>
-                <% if (confirmedGuests.length === 0) { %>
-                    <div class="empty-state">
-                        <i class="fas fa-check-circle"></i>
-                        <p>Nenhum convidado confirmado</p>
-                    </div>
-                <% } else { %>
-                    <% confirmedGuests.forEach(guest => { %>
-                        <div class="table-row">
-                            <div style="font-weight: 600;"><%= guest.name || 'Sem nome' %></div>
-                            <div><%= guest.email || '-' %></div>
-                            <div><%= guest.whatsapp || guest.phone || '-' %></div>
-                            <div><span class="status-badge status-<%= guest.status %>">Confirmado</span></div>
-                            <div><%= guest.confirmed_at ? new Date(guest.confirmed_at).toLocaleString('pt-BR') : '-' %></div>
+                            <div style="font-weight: 600;"><%= displayName %></div>
+                            <div><%= displayEmail %></div>
+                            <div><%= displayWhatsapp %></div>
+                            <div><span class="status-badge <%= statusClass %>"><%= statusText %></span></div>
+                            <div><%= dateToShow ? new Date(dateToShow).toLocaleString('pt-BR') : '-' %></div>
                         </div>
                     <% }); %>
                 <% } %>
