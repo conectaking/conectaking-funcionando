@@ -210,7 +210,7 @@
     <!-- Main Content - Layout Checkout Premium -->
     <main class="form-container">
         <div class="container">
-            <div class="checkout-layout">
+            <div class="checkout-layout <%= (formData.enable_pastor_button && formData.pastor_whatsapp_number) ? 'has-sidebar' : '' %>">
                 <!-- Coluna Principal - Formulário -->
                 <div class="checkout-main">
                     <!-- Descrição -->
@@ -300,10 +300,10 @@
                     <% } %>
                 </div>
                 
-                <!-- Sidebar - Informações Adicionais (Estilo Checkout) -->
+                <!-- Sidebar - Informações Adicionais (Estilo Checkout) - Apenas se houver botão do pastor -->
+                <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
                 <aside class="checkout-sidebar" style="position: sticky; top: 100px;">
                     <div class="checkout-sidebar-card" style="background: linear-gradient(135deg, var(--card-color, #f8f9fa) 0%, var(--card-color, #ffffff) 100%); border-radius: 20px; padding: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06); animation: fadeInUp 0.6s ease-out;">
-                        <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
                         <div style="background: linear-gradient(135deg, rgba(255,199,0,0.15), rgba(255,199,0,0.08)); border-radius: 14px; padding: 20px; border: 2px solid rgba(255,199,0,0.3);">
                             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                                 <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #FFC700, #FFA500); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-size: 18px; font-weight: 700;">
@@ -316,9 +316,9 @@
                             </div>
                             <p style="margin: 0; font-size: 13px; color: #5f6368; line-height: 1.6; font-weight: 500;">Ao clicar em "Enviar", você será redirecionado para o WhatsApp do pastor com sua mensagem formatada.</p>
                         </div>
-                        <% } %>
                     </div>
                 </aside>
+                <% } %>
             </div>
         </div>
     </main>
@@ -1786,15 +1786,26 @@
     </script>
     
     <!-- Rodapé com Direitos Autorais -->
-    <footer style="margin-top: 60px; padding: 40px 24px; text-align: center; border-top: 1px solid rgba(0,0,0,0.1); background: <%= formData.background_color || 'transparent' %>;">
+    <% 
+        // Determinar tema para ajustar cores do rodapé
+        const isDarkTheme = formData.theme === 'dark' || (formData.background_color && formData.background_color.toLowerCase().includes('#0') || formData.background_color.toLowerCase().includes('dark'));
+        const footerBg = isDarkTheme ? '#1C1C21' : '#f8f9fa';
+        const footerTextMain = isDarkTheme ? '#ECECEC' : '#1a1a1a';
+        const footerTextSecondary = isDarkTheme ? '#A1A1A1' : '#4a4a4a';
+        const footerTextTertiary = isDarkTheme ? '#7a7a7a' : '#6b6b6b';
+        const footerBorder = isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+    %>
+    <footer style="margin-top: 60px; padding: 40px 24px; text-align: center; border-top: 1px solid <%= footerBorder %>; background: <%= footerBg %>;">
         <div style="max-width: 1000px; margin: 0 auto;">
-            <p style="margin: 0 0 12px 0; color: var(--text-color, #5f6368); font-size: 14px; line-height: 1.6;">
-                <strong style="color: var(--primary-color, #4A90E2);">King Forms</strong> é um sistema desenvolvido pela <strong style="color: var(--primary-color, #4A90E2);">Conecta King</strong>
+            <p style="margin: 0 0 12px 0; color: <%= footerTextMain %>; font-size: 15px; line-height: 1.7; font-weight: 600;">
+                <span style="color: var(--primary-color, #4A90E2); font-weight: 700; font-size: 16px;">King Forms</span> 
+                <span style="color: <%= footerTextSecondary %>;">é um sistema desenvolvido pela</span> 
+                <span style="color: var(--primary-color, #4A90E2); font-weight: 700;">Conecta King</span>
             </p>
-            <p style="margin: 0; color: var(--text-color, #5f6368); font-size: 13px; opacity: 0.8;">
+            <p style="margin: 0; color: <%= footerTextTertiary %>; font-size: 13px; line-height: 1.6; font-weight: 500;">
                 © <%= new Date().getFullYear() %> Conecta King. Todos os direitos reservados.
             </p>
-            <p style="margin: 12px 0 0 0; color: var(--text-color, #5f6368); font-size: 12px; opacity: 0.7;">
+            <p style="margin: 8px 0 0 0; color: <%= footerTextTertiary %>; font-size: 12px; line-height: 1.5; opacity: 0.9;">
                 Solução premium para criação de formulários digitais profissionais.
             </p>
         </div>

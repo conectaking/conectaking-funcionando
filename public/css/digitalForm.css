@@ -157,9 +157,21 @@ body {
 /* Layout Checkout Premium - Grid de 2 colunas */
 .checkout-layout {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: 1fr;
     gap: 32px;
     align-items: start;
+}
+
+/* Se tiver sidebar visível, usar layout de 2 colunas (apenas desktop) */
+@media (min-width: 1025px) {
+    .checkout-layout .checkout-sidebar {
+        display: block;
+    }
+    
+    /* Usar JavaScript para adicionar classe quando sidebar estiver presente */
+    .checkout-layout.has-sidebar {
+        grid-template-columns: 1fr 380px;
+    }
 }
 
 @media (max-width: 1024px) {
