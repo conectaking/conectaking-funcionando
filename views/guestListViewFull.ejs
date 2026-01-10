@@ -227,11 +227,11 @@
             <button class="tab-button active" onclick="switchTab('registered')">
                 <i class="fas fa-user-plus"></i> Cadastrados (<%= registeredGuests.length %>)
             </button>
-            <button class="tab-button" onclick="switchTab('confirmed')">
-                <i class="fas fa-check-circle"></i> Confirmados (<%= confirmedGuests.length %>)
-            </button>
             <button class="tab-button" onclick="switchTab('checked_in')">
-                <i class="fas fa-check-double"></i> Conferidos (<%= checkedInGuests.length %>)
+                <i class="fas fa-check-circle"></i> Quem Chegou (<%= checkedInGuests.length %>)
+            </button>
+            <button class="tab-button" onclick="switchTab('not_arrived')">
+                <i class="fas fa-clock"></i> Quem Não Chegou (<%= notArrivedGuests ? notArrivedGuests.length : 0 %>)
             </button>
         </div>
         
