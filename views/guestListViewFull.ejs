@@ -340,8 +340,12 @@
                             <div><%= displayEmail %></div>
                             <div><%= displayWhatsapp %></div>
                             <div><span class="status-badge <%= statusClass %>"><%= statusText %></span></div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                 <span><%= dateToShow ? new Date(dateToShow).toLocaleString('pt-BR') : '-' %></span>
+                                <button onclick="viewGuestDetailsPortaria(<%= guest.id %>)" 
+                                        style="padding: 6px 12px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
+                                    <i class="fas fa-eye"></i> Ver Detalhes
+                                </button>
                                 <% if (guest.status !== 'checked_in') { %>
                                     <button onclick="confirmarChegada(<%= guest.id %>, '<%= (displayName || '').replace(/'/g, "\\'") %>')" 
                                             style="padding: 6px 12px; background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; border-radius: 6px; color: #000; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
@@ -432,7 +436,13 @@
                             <div><%= displayEmail %></div>
                             <div><%= displayWhatsapp %></div>
                             <div><span class="status-badge status-checked_in">Chegou</span></div>
-                            <div><%= guest.checked_in_at ? new Date(guest.checked_in_at).toLocaleString('pt-BR') : '-' %></div>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span><%= guest.checked_in_at ? new Date(guest.checked_in_at).toLocaleString('pt-BR') : '-' %></span>
+                                <button onclick="viewGuestDetailsPortaria(<%= guest.id %>)" 
+                                        style="padding: 6px 12px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
+                                    <i class="fas fa-eye"></i> Ver Detalhes
+                                </button>
+                            </div>
                         </div>
                     <% }); %>
                 <% } %>
@@ -446,29 +456,286 @@
         const profileItemId = <%= profileItemId %>;
         const token = '<%= token %>';
         
+        // Dados de todos os convidados para o modal
+        const allGuests = <%= JSON.stringify([...registeredGuests, ...(checkedInGuests || []), ...(notArrivedGuests || [])]) %>;
+        
         // Função para confirmar chegada (portaria) - Definir como global
         window.confirmarChegada = async function(guestId, guestName) {
             if (!confirm(`Confirmar chegada de ${guestName || 'este convidado'}?`)) return;
             
-            try {
-                const response = await fetch(`/guest-list/view-full/${token}/checkin/${guestId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
+            // Encontrar o botão que foi clicado
+            const buttons = document.querySelectorAll(`button[onclick*="confirmarChegada(${guestId}"]`);
+            const button = buttons.length > 0 ? buttons[0] : null;
+            if (button) {
+                button.disabled = true;
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirmando...';
+                
+                try {
+                    const response = await fetch(`/guest-list/view-full/${token}/checkin/${guestId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+                        throw new Error(errorData.message || 'Erro ao confirmar chegada');
                     }
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
-                    throw new Error(errorData.message || 'Erro ao confirmar chegada');
+                    
+                    const result = await response.json();
+                    alert('✅ Chegada confirmada com sucesso!');
+                    location.reload();
+                } catch (error) {
+                    console.error('Erro ao confirmar chegada:', error);
+                    alert('❌ Erro ao confirmar chegada: ' + error.message);
+                    button.disabled = false;
+                    button.innerHTML = originalHTML;
                 }
-                
-                alert('Chegada confirmada com sucesso!');
-                location.reload();
-            } catch (error) {
-                console.error('Erro ao confirmar chegada:', error);
-                alert('Erro ao confirmar chegada: ' + error.message);
+            } else {
+                // Fallback se não encontrar o botão
+                try {
+                    const response = await fetch(`/guest-list/view-full/${token}/checkin/${guestId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+                        throw new Error(errorData.message || 'Erro ao confirmar chegada');
+                    }
+                    
+                    const result = await response.json();
+                    alert('✅ Chegada confirmada com sucesso!');
+                    location.reload();
+                } catch (error) {
+                    console.error('Erro ao confirmar chegada:', error);
+                    alert('❌ Erro ao confirmar chegada: ' + error.message);
+                }
             }
+        };
+        
+        // Função para visualizar detalhes do convidado (portaria) - COM PERGUNTAS E RESPOSTAS
+        window.viewGuestDetailsPortaria = function(guestId) {
+            const guest = allGuests.find(g => g.id === guestId || g.id === parseInt(guestId));
+            if (!guest) {
+                alert('Convidado não encontrado');
+                return;
+            }
+            
+            // Criar modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                overflow-y: auto;
+            `;
+            modal.onclick = function(e) {
+                if (e.target === modal) modal.remove();
+            };
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: #1C1C21;
+                border: 2px solid #FFC700;
+                border-radius: 20px;
+                padding: 32px;
+                max-width: 700px;
+                width: 100%;
+                max-height: 90vh;
+                overflow-y: auto;
+                color: #ECECEC;
+                position: relative;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            `;
+            modalContent.onclick = function(e) { e.stopPropagation(); };
+            
+            // Extrair nome, email e whatsapp
+            let displayName = guest.name || '';
+            let displayEmail = guest.email || '';
+            let displayWhatsapp = guest.whatsapp || guest.phone || '';
+            
+            // Tentar extrair de custom_responses se necessário
+            try {
+                const customResponses = typeof guest.custom_responses === 'string' 
+                    ? JSON.parse(guest.custom_responses) 
+                    : (guest.custom_responses || {});
+                
+                if (formFields && Array.isArray(formFields)) {
+                    formFields.forEach(field => {
+                        if (field.id && customResponses[field.id]) {
+                            const value = customResponses[field.id];
+                            const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                            const label = (field.label || '').toLowerCase();
+                            
+                            if ((!displayName || displayName.toLowerCase() === 'visitante') && 
+                                (label.includes('nome') || label.includes('name'))) {
+                                displayName = valueStr;
+                            }
+                            if ((!displayWhatsapp || displayWhatsapp.trim() === '') && 
+                                (label.includes('whatsapp') || label.includes('telefone') || label.includes('phone'))) {
+                                displayWhatsapp = valueStr;
+                            }
+                            if ((!displayEmail || displayEmail.trim() === '') && 
+                                (label.includes('email') || label.includes('e-mail'))) {
+                                displayEmail = valueStr;
+                            }
+                        }
+                    });
+                }
+            } catch (e) {}
+            
+            displayName = (displayName && displayName.trim() && displayName.toLowerCase() !== 'visitante') ? displayName.trim() : 'Sem nome';
+            displayEmail = (displayEmail && displayEmail.trim()) ? displayEmail.trim() : '-';
+            displayWhatsapp = (displayWhatsapp && displayWhatsapp.trim()) ? displayWhatsapp.trim() : '-';
+            
+            // Parsear custom_responses
+            let customResponses = {};
+            if (guest.custom_responses) {
+                try {
+                    customResponses = typeof guest.custom_responses === 'string' 
+                        ? JSON.parse(guest.custom_responses) 
+                        : guest.custom_responses;
+                } catch (e) {
+                    customResponses = {};
+                }
+            }
+            
+            // Gerar código da inscrição
+            const inscricaoCode = `INS-${guest.id}-${new Date(guest.created_at).getFullYear()}${String(new Date(guest.created_at).getMonth() + 1).padStart(2, '0')}${String(new Date(guest.created_at).getDate()).padStart(2, '0')}`;
+            
+            // Preparar HTML dos campos do formulário COM PERGUNTAS E RESPOSTAS
+            let formFieldsHTML = '';
+            if (Object.keys(customResponses).length > 0 && formFields && Array.isArray(formFields)) {
+                formFieldsHTML = Object.entries(customResponses).map(([key, value]) => {
+                    const label = getFieldLabel(key); // Usa a função getFieldLabel para pegar a PERGUNTA
+                    let displayValue = Array.isArray(value) ? value.join(', ') : (value || '');
+                    
+                    // Formatação especial para arrays (como checkbox, multiple_choice)
+                    let formattedValue = displayValue;
+                    if (Array.isArray(value) && value.length > 1) {
+                        formattedValue = value.map(v => `<div style="margin-left: 16px; margin-top: 4px;">• ${String(v)}</div>`).join('');
+                    }
+                    
+                    return `
+                        <div style="margin-bottom: 16px; padding: 16px; background: rgba(255,199,0,0.1); border-radius: 12px; border-left: 4px solid #FFC700;">
+                            <div style="font-weight: 700; color: #FFC700; margin-bottom: 8px; font-size: 15px;">
+                                <i class="fas fa-question-circle"></i> ${label}
+                            </div>
+                            <div style="color: #ECECEC; font-size: 14px; line-height: 1.6; ${Array.isArray(value) && value.length > 1 ? 'padding-left: 8px;' : ''}">
+                                ${formattedValue || '<span style="color: #A1A1A1; font-style: italic;">Não informado</span>'}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else if (Object.keys(customResponses).length > 0) {
+                // Fallback se não tiver formFields
+                formFieldsHTML = Object.entries(customResponses).map(([key, value]) => {
+                    const label = getFieldLabel(key);
+                    const displayValue = Array.isArray(value) ? value.join(', ') : (value || '');
+                    return `
+                        <div style="margin-bottom: 12px; padding: 12px; background: rgba(255,255,255,0.04); border-radius: 8px; border-left: 4px solid #FFC700;">
+                            <strong style="color: #FFC700; display: block; margin-bottom: 6px;">${label}:</strong> 
+                            <span style="color: #ECECEC;">${displayValue}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            modalContent.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 2px solid rgba(255,199,0,0.2); padding-bottom: 16px;">
+                    <h2 style="margin: 0; color: #FFC700; font-size: 24px; font-weight: 700;">
+                        <i class="fas fa-user-circle"></i> Detalhes da Inscrição
+                    </h2>
+                    <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()" 
+                            style="background: rgba(255,255,255,0.1); border: none; color: #ECECEC; font-size: 24px; cursor: pointer; padding: 8px; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.3s;"
+                            onmouseover="this.style.background='rgba(255,199,0,0.2)'; this.style.color='#FFC700';"
+                            onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.color='#ECECEC';">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div style="margin-bottom: 24px; padding: 16px; background: rgba(255,199,0,0.15); border-radius: 12px; border: 1px solid rgba(255,199,0,0.3);">
+                    <div style="font-weight: 700; color: #FFC700; margin-bottom: 8px; font-size: 14px;">
+                        <i class="fas fa-qrcode"></i> Código da Inscrição
+                    </div>
+                    <div style="color: #ECECEC; font-size: 18px; font-family: monospace; font-weight: 600;">
+                        ${inscricaoCode}
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 24px; padding: 20px; background: rgba(255,199,0,0.1); border-radius: 12px; border-left: 4px solid #FFC700;">
+                    <h3 style="margin: 0 0 16px 0; color: #FFC700; font-size: 18px; font-weight: 700;">
+                        <i class="fas fa-info-circle"></i> Informações Básicas
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div>
+                            <strong style="color: #FFC700; display: block; margin-bottom: 4px;">Nome:</strong>
+                            <span style="color: #ECECEC; font-size: 16px;">${displayName}</span>
+                        </div>
+                        <div>
+                            <strong style="color: #FFC700; display: block; margin-bottom: 4px;">Email:</strong>
+                            <span style="color: #ECECEC;">${displayEmail}</span>
+                        </div>
+                        <div>
+                            <strong style="color: #FFC700; display: block; margin-bottom: 4px;">WhatsApp:</strong>
+                            <span style="color: #25D366; font-weight: 600;">${displayWhatsapp}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                ${Object.keys(customResponses).length > 0 ? `
+                <div style="margin-bottom: 24px;">
+                    <h3 style="margin: 0 0 16px 0; color: #FFC700; font-size: 18px; font-weight: 700;">
+                        <i class="fas fa-list-alt"></i> Informações do Formulário
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        ${formFieldsHTML}
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div style="margin-bottom: 24px; padding: 16px; background: rgba(76,175,80,0.1); border-radius: 12px; border-left: 4px solid #4CAF50;">
+                    <h3 style="margin: 0 0 12px 0; color: #4CAF50; font-size: 16px; font-weight: 700;">
+                        <i class="fas fa-calendar-check"></i> Status e Datas
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 8px; color: #ECECEC; font-size: 14px;">
+                        <div>
+                            <strong>Status:</strong> 
+                            <span style="color: ${guest.status === 'checked_in' ? '#4CAF50' : guest.status === 'confirmed' ? '#FFC700' : '#A1A1A1'}; font-weight: 600;">
+                                ${guest.status === 'checked_in' ? 'Chegou' : guest.status === 'confirmed' ? 'Confirmado' : 'Inscrito'}
+                            </span>
+                        </div>
+                        <div><strong>Inscrito em:</strong> ${guest.created_at ? new Date(guest.created_at).toLocaleString('pt-BR') : '-'}</div>
+                        ${guest.confirmed_at ? `<div><strong>Confirmado em:</strong> ${new Date(guest.confirmed_at).toLocaleString('pt-BR')}</div>` : ''}
+                        ${guest.checked_in_at ? `<div><strong>Conferido em:</strong> ${new Date(guest.checked_in_at).toLocaleString('pt-BR')}</div>` : ''}
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+                    <button onclick="this.closest('[style*=\\'position: fixed\\']').remove()" 
+                            style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer; transition: all 0.3s;"
+                            onmouseover="this.style.background='rgba(255,199,0,0.2)'; this.style.borderColor='#FFC700'; this.style.color='#FFC700';"
+                            onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)'; this.style.color='#ECECEC';">
+                        Fechar
+                    </button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
         };
         
         // Função para obter label do campo pelo ID

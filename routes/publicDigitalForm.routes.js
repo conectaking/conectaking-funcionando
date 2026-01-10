@@ -4,7 +4,50 @@ const rateLimit = require('express-rate-limit');
 const db = require('../db');
 const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
-const { validateFormSubmission, handleValidationErrors, sanitizeResponseData } = require('../utils/formValidators');
+const { validateFormSubmission, handleValidationErrors, sanitizeResponseData, escapeHtml, sanitizeHtml } = require('../utils/formValidators');
+
+/**
+ * Sanitiza dados do formulário antes de renderizar no HTML
+ * Previne XSS attacks
+ */
+function sanitizeFormDataForRender(formData) {
+    if (!formData || typeof formData !== 'object') return formData;
+    
+    const sanitized = { ...formData };
+    
+    // Sanitizar campos de texto que são renderizados diretamente no HTML
+    if (sanitized.form_title) {
+        sanitized.form_title = escapeHtml(String(sanitized.form_title));
+    }
+    if (sanitized.form_description) {
+        // Descrição pode conter HTML limitado, então usar sanitizeHtml
+        sanitized.form_description = sanitizeHtml(String(sanitized.form_description));
+    }
+    if (sanitized.pastor_button_name) {
+        sanitized.pastor_button_name = escapeHtml(String(sanitized.pastor_button_name));
+    }
+    
+    // Sanitizar form_fields (labels, placeholders, etc)
+    if (Array.isArray(sanitized.form_fields)) {
+        sanitized.form_fields = sanitized.form_fields.map(field => {
+            const sanitizedField = { ...field };
+            if (sanitizedField.label) {
+                sanitizedField.label = escapeHtml(String(sanitizedField.label));
+            }
+            if (sanitizedField.placeholder) {
+                sanitizedField.placeholder = escapeHtml(String(sanitizedField.placeholder));
+            }
+            if (Array.isArray(sanitizedField.options)) {
+                sanitizedField.options = sanitizedField.options.map(opt => 
+                    typeof opt === 'string' ? escapeHtml(opt) : opt
+                );
+            }
+            return sanitizedField;
+        });
+    }
+    
+    return sanitized;
+}
 
 // Rate limiting para submissão de formulários
 const formSubmissionLimiter = rateLimit({
@@ -257,10 +300,13 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         }
         res.set('X-Cache-Timestamp', Date.now().toString());
         
+        // Sanitizar dados antes de renderizar (prevenir XSS)
+        const sanitizedFormData = sanitizeFormDataForRender(formData);
+        
         // Renderizar página com timestamp único para forçar atualização
         res.render('digitalForm', {
             item: item,
-            formData: formData,
+            formData: sanitizedFormData,
             profileSlug: profileSlug,
             slug: profileSlug,
             itemId: itemIdInt,
@@ -269,8 +315,18 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         });
 
     } catch (error) {
-        logger.error('Erro ao carregar formulário via share_token:', error);
-        return res.status(500).send('<h1>500 - Erro ao carregar formulário</h1>');
+        logger.error('Erro ao carregar formulário via share_token:', {
+            error: error.message,
+            stack: error.stack,
+            token: req.params.token
+        });
+        return res.status(500).render('formError', {
+            errorMessage: 'Erro ao carregar formulário. Por favor, verifique o link e tente novamente.',
+            formTitle: 'Erro',
+            formUrl: '/',
+            primaryColor: '#4A90E2',
+            secondaryColor: '#6BA3F0'
+        });
     } finally {
         client.release();
     }
@@ -658,30 +714,44 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
 
         // Registrar evento 'view' de analytics (será feito via JavaScript no frontend)
         
+        // Sanitizar dados antes de renderizar (prevenir XSS)
+        const sanitizedFormData = sanitizeFormDataForRender(formData);
+        
         // Renderizar página com cache busting
         res.render('digitalForm', {
             item: item,
-            formData: formData,
+            formData: sanitizedFormData,
             profileSlug: profileSlug,
             slug: slug,
             itemId: itemIdInt,
             _timestamp: Date.now(), // Timestamp único para forçar atualização
             _cacheBust: `?t=${Date.now()}`, // Cache busting para assets
-            _updatedAt: formData.updated_at ? new Date(formData.updated_at).getTime() : Date.now(),
+            _updatedAt: sanitizedFormData.updated_at ? new Date(sanitizedFormData.updated_at).getTime() : Date.now(),
             _debug: {
-                primary_color: formData.primary_color,
-                secondary_color: formData.secondary_color,
-                updated_at: formData.updated_at,
-                form_title: formData.form_title,
-                form_logo_url: formData.form_logo_url,
-                button_logo_url: formData.button_logo_url,
-                button_logo_size: formData.button_logo_size
+                primary_color: sanitizedFormData.primary_color,
+                secondary_color: sanitizedFormData.secondary_color,
+                updated_at: sanitizedFormData.updated_at,
+                form_title: sanitizedFormData.form_title,
+                form_logo_url: sanitizedFormData.form_logo_url,
+                button_logo_url: sanitizedFormData.button_logo_url,
+                button_logo_size: sanitizedFormData.button_logo_size
             }
         });
 
     } catch (error) {
-        logger.error('Erro ao carregar formulário digital:', error);
-        return res.status(500).send('<h1>500 - Erro ao carregar formulário</h1>');
+        logger.error('Erro ao carregar formulário digital:', {
+            error: error.message,
+            stack: error.stack,
+            slug: req.params.slug,
+            itemId: req.params.itemId
+        });
+        return res.status(500).render('formError', {
+            errorMessage: 'Erro ao carregar formulário. Por favor, tente novamente mais tarde.',
+            formTitle: 'Erro',
+            formUrl: `/${req.params.slug || ''}`,
+            primaryColor: '#4A90E2',
+            secondaryColor: '#6BA3F0'
+        });
     } finally {
         client.release();
     }

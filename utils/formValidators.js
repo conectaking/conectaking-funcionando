@@ -6,7 +6,7 @@
 const { body, validationResult } = require('express-validator');
 
 /**
- * Sanitiza string removendo HTML e scripts
+ * Sanitiza string removendo HTML e scripts (para salvamento no banco)
  */
 function sanitizeString(str) {
     if (typeof str !== 'string') return str;
@@ -14,6 +14,36 @@ function sanitizeString(str) {
         .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
         .replace(/<[^>]+>/g, '')
         .trim();
+}
+
+/**
+ * Escapa HTML para prevenir XSS (para renderização no HTML)
+ * Esta função deve ser usada quando renderizando dados do usuário no HTML
+ */
+function escapeHtml(str) {
+    if (typeof str !== 'string') return str;
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return str.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+/**
+ * Sanitiza string mantendo HTML seguro (remove apenas scripts e atributos perigosos)
+ * Útil para campos onde HTML é permitido mas scripts não
+ */
+function sanitizeHtml(str) {
+    if (typeof str !== 'string') return str;
+    // Remove scripts e event handlers
+    let sanitized = str
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remove event handlers como onclick="..."
+        .replace(/on\w+\s*=\s*[^\s>]*/gi, ''); // Remove event handlers sem aspas
+    return sanitized;
 }
 
 /**
@@ -192,6 +222,8 @@ module.exports = {
     validateFormSubmission,
     handleValidationErrors,
     sanitizeString,
+    sanitizeHtml,
+    escapeHtml,
     sanitizeResponseData,
     isValidEmail,
     isValidPhone,
