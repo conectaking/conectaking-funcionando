@@ -267,9 +267,9 @@
                             <% } %>
                             <div class="product-price">
                                 <% if (product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price)) { %>
-                                <span class="compare-price">R$ <%= parseFloat(product.compare_price).toFixed(2).replace('.', ',') %></span>
+                                <span class="compare-price">R$ <%= new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(product.compare_price)) %></span>
                                 <% } %>
-                                <span class="current-price">R$ <%= parseFloat(product.price).toFixed(2).replace('.', ',') %></span>
+                                <span class="current-price">R$ <%= new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(product.price)) %></span>
                             </div>
                         </div>
                     </a>
