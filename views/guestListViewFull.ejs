@@ -253,7 +253,7 @@
                 <% } else { %>
                     <% registeredGuests.forEach(guest => { %>
                         <div class="table-row">
-                            <div style="font-weight: 600;"><%= guest.name %></div>
+                            <div style="font-weight: 600;"><%= guest.name || 'Sem nome' %></div>
                             <div><%= guest.email || '-' %></div>
                             <div><%= guest.whatsapp || guest.phone || '-' %></div>
                             <div><span class="status-badge status-<%= guest.status %>">Inscrito</span></div>
@@ -282,7 +282,7 @@
                 <% } else { %>
                     <% confirmedGuests.forEach(guest => { %>
                         <div class="table-row">
-                            <div style="font-weight: 600;"><%= guest.name %></div>
+                            <div style="font-weight: 600;"><%= guest.name || 'Sem nome' %></div>
                             <div><%= guest.email || '-' %></div>
                             <div><%= guest.whatsapp || guest.phone || '-' %></div>
                             <div><span class="status-badge status-<%= guest.status %>">Confirmado</span></div>
@@ -311,7 +311,7 @@
                 <% } else { %>
                     <% checkedInGuests.forEach(guest => { %>
                         <div class="table-row">
-                            <div style="font-weight: 600;"><%= guest.name %></div>
+                            <div style="font-weight: 600;"><%= guest.name || 'Sem nome' %></div>
                             <div><%= guest.email || '-' %></div>
                             <div><%= guest.whatsapp || guest.phone || '-' %></div>
                             <div><span class="status-badge status-checked_in">Conferido</span></div>
