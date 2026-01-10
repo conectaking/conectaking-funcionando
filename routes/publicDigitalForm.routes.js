@@ -1073,8 +1073,16 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             }
         }
 
+        // Determinar mensagem personalizada baseada no tipo de envio
+        let successMessage = 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.';
+        if (formData.enable_guest_list_submit === true) {
+            successMessage = 'Parabéns! Sua inscrição foi realizada com sucesso. Você foi adicionado à nossa lista de convidados.';
+        } else if (formData.enable_whatsapp !== false) {
+            successMessage = 'Formulário enviado com sucesso! Verifique o WhatsApp para continuar o atendimento.';
+        }
+        
         res.render('formSuccess', {
-            message: 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.',
+            message: successMessage,
             responseId: response_id || null,
             formTitle: formData.form_title || 'Formulário',
             showWhatsAppInfo: formData.enable_whatsapp !== false && formData.whatsapp_number,

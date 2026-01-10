@@ -200,10 +200,16 @@
             <i class="fas fa-check"></i>
         </div>
         
-        <h1>Formulário Enviado com Sucesso!</h1>
+        <h1>
+            <% if (showGuestListInfo) { %>
+                ✅ Parabéns! Inscrição Realizada com Sucesso!
+            <% } else { %>
+                ✅ Formulário Enviado com Sucesso!
+            <% } %>
+        </h1>
         
         <p class="success-message">
-            <%= message || 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.' %>
+            <%= message || (showGuestListInfo ? 'Parabéns! Sua inscrição foi realizada com sucesso. Você foi adicionado à nossa lista e aguardamos você no evento!' : 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.') %>
         </p>
         
         <% if (responseId) { %>
@@ -285,9 +291,14 @@
         <% } %>
         
         <% if (showGuestListInfo) { %>
-        <div class="info-box">
-            <strong><i class="fas fa-users"></i> Inscrição Confirmada</strong>
-            <p>Você foi adicionado à lista com sucesso. Aguarde o contato da organização.</p>
+        <div class="info-box" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(69, 160, 73, 0.15)); border-left: 4px solid #4caf50; padding: 24px; border-radius: 12px; margin: 24px 0;">
+            <strong style="display: flex; align-items: center; gap: 8px; color: #2e7d32; font-size: 18px; margin-bottom: 12px;">
+                <i class="fas fa-check-circle"></i> Parabéns! Inscrição Confirmada
+            </strong>
+            <p style="color: #1b5e20; font-size: 16px; line-height: 1.6; margin: 0;">
+                🎉 Sua inscrição foi realizada com sucesso! Você foi adicionado à nossa lista de convidados.<br><br>
+                <strong>Aguarde o nosso contato</strong> - entraremos em contato em breve para mais informações.
+            </p>
         </div>
         <% } %>
         

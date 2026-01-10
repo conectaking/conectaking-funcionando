@@ -1018,10 +1018,23 @@
             }
         }
 
-        document.getElementById('digital-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        const form = document.getElementById('digital-form');
+        if (!form) {
+            console.error('❌ [FORM] Formulário não encontrado!');
+        } else {
+            // Remover listeners anteriores se existirem (clone para limpar)
+            const newForm = form.cloneNode(true);
+            form.parentNode.replaceChild(newForm, form);
             
-            const submitBtn = document.getElementById('form-submit-btn');
+            // Adicionar listener ao novo formulário
+            document.getElementById('digital-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                console.log('🔄 [SUBMIT] Evento submit capturado, prevenindo default...');
+                
+                const submitBtn = document.getElementById('form-submit-btn');
             if (!submitBtn) {
                 console.error('❌ [SUBMIT] Botão de submit não encontrado!');
                 showErrorMessage('Erro: Botão de envio não encontrado. Recarregue a página e tente novamente.');
@@ -1311,10 +1324,10 @@
                 submitSuccess = true;
                 responseId = submitResult.response_id || submitResult.id || null;
                 
-                // IMPORTANTE: Sempre redirecionar para página de sucesso quando não há WhatsApp
-                // Quando "Salvar na Lista" está ativo OU quando não há WhatsApp, redirecionar
-                // Também redirecionar se a resposta do servidor incluir success_page_url
-                if (submitResult.success_page_url || (!enableWhatsapp && enableGuestListSubmit) || !enableWhatsapp) {
+                // IMPORTANTE: Sempre redirecionar para página de sucesso quando o formulário é enviado
+                // Se "Salvar na Lista" está ativo OU não há WhatsApp, SEMPRE redirecionar
+                // Se WhatsApp está ativo, redirecionar apenas se não for para abrir WhatsApp
+                if (submitResult.success || submitResult.success_page_url || !enableWhatsapp || enableGuestListSubmit) {
                     const successUrl = submitResult.success_page_url || `/${slug}/form/${itemId}/success?response_id=${responseId || ''}`;
                     
                     // Passar dados do formulário via URL para mostrar na página de sucesso
@@ -1323,28 +1336,36 @@
                     
                     // Adicionar dados do formulário para exibir na página de sucesso
                     Object.keys(data).forEach(key => {
-                        if (data[key] && typeof data[key] === 'string') {
-                            formDataParams.append(`data_${key}`, data[key]);
+                        if (data[key] && typeof data[key] === 'string' && data[key].trim() !== '') {
+                            // Codificar valor para URL
+                            try {
+                                formDataParams.append(`data_${key}`, encodeURIComponent(data[key]));
+                            } catch (e) {
+                                console.warn('⚠️ [SUBMIT] Erro ao codificar dado para URL:', key, e);
+                            }
                         }
                     });
                     
-                    const finalUrl = submitResult.success_page_url 
-                        ? `${submitResult.success_page_url}&${formDataParams.toString()}`
-                        : `${successUrl}&${formDataParams.toString()}`;
+                    // Montar URL final
+                    const separator = successUrl.includes('?') ? '&' : '?';
+                    const finalUrl = `${successUrl}${separator}${formDataParams.toString()}`;
                     
                     console.log('🔄 [SUBMIT] Redirecionando para página de sucesso:', {
                         finalUrl,
                         enableWhatsapp,
                         enableGuestListSubmit,
-                        hasSuccessPageUrl: !!submitResult.success_page_url
+                        hasSuccessPageUrl: !!submitResult.success_page_url,
+                        responseId
                     });
-                    window.location.href = finalUrl;
+                    
+                    // IMPORTANTE: Forçar redirecionamento imediatamente
+                    window.location.replace(finalUrl);
                     return;
                 }
                 
-                // Se chegou aqui e WhatsApp está ativo, o handler do WhatsApp deve tratar
-                // Mas ainda mostrar mensagem de sucesso
-                console.log('✅ [SUBMIT] Formulário enviado com sucesso, aguardando ação do WhatsApp handler');
+                // Se chegou aqui e WhatsApp está ativo (caso raro), tentar abrir WhatsApp
+                console.log('✅ [SUBMIT] Formulário enviado com sucesso, tentando abrir WhatsApp');
+                // Abrir WhatsApp será tratado pelo handler específico do botão WhatsApp
                 
             } catch (error) {
                 console.error('❌ [SUBMIT] Erro ao salvar resposta:', error);
@@ -1380,40 +1401,30 @@
                 return;
             }
 
-            // Se chegou aqui, o formulário foi enviado com sucesso
-            showLoadingState(submitBtn, 'Processando...');
+            // Se chegou aqui, o formulário foi enviado com sucesso mas não foi redirecionado
+            // Isso não deveria acontecer, mas vamos garantir o redirecionamento
+            console.warn('⚠️ [SUBMIT] Formulário enviado mas não houve redirecionamento no bloco anterior, garantindo redirecionamento...');
+            showLoadingState(submitBtn, 'Redirecionando...');
             
-            // NÃO abrir WhatsApp aqui - este handler é apenas para envio ao sistema
-            // O WhatsApp é tratado pelo botão separado
+            // Redirecionar para página de sucesso imediatamente
+            const fallbackSuccessUrl = `/${slug}/form/${itemId}/success?response_id=${responseId || 'success'}`;
             
-            // Mostrar mensagem de sucesso baseada nas opções
-            let successMessage = '';
-            if (enableGuestListSubmit) {
-                successMessage = 'Inscrição realizada com sucesso! Você foi adicionado à lista.';
-            } else {
-                successMessage = 'Formulário enviado com sucesso!';
-            }
+            // Adicionar dados básicos se disponíveis
+            const fallbackParams = new URLSearchParams();
+            if (responseId) fallbackParams.append('response_id', responseId);
+            if (data.name) fallbackParams.append('data_name', encodeURIComponent(data.name));
+            if (data.email) fallbackParams.append('data_email', encodeURIComponent(data.email));
             
-            // Mostrar mensagem de sucesso
-            showSuccessMessage(successMessage, 8000);
+            const finalFallbackUrl = fallbackParams.toString() 
+                ? `${fallbackSuccessUrl}&${fallbackParams.toString()}` 
+                : fallbackSuccessUrl;
             
-            // Atualizar botão para sucesso
-            submitBtn.innerHTML = '<i class="fas fa-check-circle" style="font-size: 22px;"></i> <span>Enviado com sucesso!</span>';
-            submitBtn.style.background = 'linear-gradient(135deg, #4caf50, #45a049)';
-            submitBtn.style.color = 'white';
-            submitBtn.disabled = true;
+            console.log('🔄 [SUBMIT] Redirecionando via fallback para:', finalFallbackUrl);
             
-            // Limpar formulário após delay
+            // Redirecionar imediatamente (usar replace para não adicionar ao histórico)
             setTimeout(() => {
-                document.getElementById('digital-form').reset();
-                
-                // Restaurar botão após 3 segundos
-                setTimeout(() => {
-                    restoreButton(submitBtn, originalHTML);
-                    submitBtn.style.background = '';
-                    submitBtn.style.color = '';
-                }, 3000);
-            }, 2000);
+                window.location.replace(finalFallbackUrl);
+            }, 500); // Pequeno delay para garantir que o loading state seja visto
             
             // Registrar evento de sucesso para analytics
             try {
