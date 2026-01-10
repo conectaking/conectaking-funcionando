@@ -45,6 +45,8 @@ const contractsRoutes = require('./routes/contracts.routes');
 const guestListRoutes = require('./routes/guestList.routes');
 const publicGuestListRoutes = require('./routes/publicGuestList.routes');
 const publicContractRoutes = require('./routes/publicContract.routes');
+const webhooksRoutes = require('./routes/webhooks.routes');
+const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize } = require('./middleware/security');
 
@@ -397,8 +399,6 @@ app.use('/', publicDigitalFormRoutes);
 
 // Rota pública de produto individual (deve vir antes de publicProfileRoutes)
 const publicProductRoutes = require('./routes/publicProduct');
-const webhooksRoutes = require('./routes/webhooks.routes');
-const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
 app.use('/', publicProductRoutes);
 
 // Perfis públicos (sem rate limiting)

@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { protectUser } = require('../middleware/protectUser');
-const asyncHandler = require('../middleware/asyncHandler');
+const { asyncHandler } = require('../middleware/errorHandler');
 const db = require('../db');
 const logger = require('../utils/logger');
 const { logAuditAction } = require('../utils/auditLogger');
