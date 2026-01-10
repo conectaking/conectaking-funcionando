@@ -359,6 +359,27 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
             }
         }
         
+        // Buscar form_fields do formulário para mapear labels
+        let formFields = [];
+        try {
+            const formFieldsRes = await client.query(`
+                SELECT form_fields FROM digital_form_items 
+                WHERE profile_item_id = $1
+                ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1
+            `, [guestList.profile_item_id]);
+            
+            if (formFieldsRes.rows.length > 0 && formFieldsRes.rows[0].form_fields) {
+                const fields = formFieldsRes.rows[0].form_fields;
+                if (typeof fields === 'string') {
+                    formFields = JSON.parse(fields);
+                } else if (Array.isArray(fields)) {
+                    formFields = fields;
+                }
+            }
+        } catch (e) {
+            logger.warn('Erro ao buscar form_fields:', e);
+        }
+        
         // Buscar todos os convidados por status
         // IMPORTANTE: "Cadastrados" deve mostrar TODOS os convidados, independente do status
         const allGuestsResult = await client.query(`
@@ -390,7 +411,8 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
             checkedInGuests: checkedInResult.rows,
             notArrivedGuests: registeredResult.rows, // Quem não chegou (status registered)
             token: token,
-            profileItemId: guestList.profile_item_id
+            profileItemId: guestList.profile_item_id,
+            formFields: formFields // Campos do formulário para mapear labels
         });
     } catch (error) {
         logger.error('Erro ao carregar visualização completa:', error);
@@ -398,6 +420,66 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
             message: 'Erro ao carregar página',
             title: 'Erro'
         });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
+ * POST /guest-list/view-full/:token/checkin/:guestId - Confirmar chegada (portaria pública)
+ */
+router.post('/view-full/:token/checkin/:guestId', asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const { token, guestId } = req.params;
+        
+        // Buscar lista pelo token
+        const listResult = await client.query(`
+            SELECT gli.*, pi.id as profile_item_id
+            FROM guest_list_items gli
+            INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+            WHERE (gli.public_view_token = $1 OR gli.confirmation_token = $1) AND pi.is_active = true
+        `, [token]);
+        
+        if (listResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Lista não encontrada' });
+        }
+        
+        const guestList = listResult.rows[0];
+        const guestIdInt = parseInt(guestId, 10);
+        
+        // Verificar se o convidado existe e pertence à lista
+        const guestResult = await client.query(`
+            SELECT id, name, status FROM guests 
+            WHERE id = $1 AND guest_list_id = $2
+        `, [guestIdInt, guestList.id]);
+        
+        if (guestResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Convidado não encontrado' });
+        }
+        
+        // Atualizar status para checked_in
+        const updateResult = await client.query(`
+            UPDATE guests 
+            SET status = 'checked_in', 
+                checked_in_at = NOW(),
+                updated_at = NOW()
+            WHERE id = $1 AND guest_list_id = $2
+            RETURNING id, name, status, checked_in_at
+        `, [guestIdInt, guestList.id]);
+        
+        if (updateResult.rows.length === 0) {
+            return res.status(500).json({ message: 'Erro ao atualizar status' });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Chegada confirmada com sucesso',
+            guest: updateResult.rows[0]
+        });
+    } catch (error) {
+        logger.error('Erro ao confirmar chegada:', error);
+        res.status(500).json({ message: 'Erro ao confirmar chegada', error: error.message });
     } finally {
         client.release();
     }

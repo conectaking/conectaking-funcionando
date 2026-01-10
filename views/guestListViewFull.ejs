@@ -214,11 +214,11 @@
                 <div class="stat-value"><%= registeredGuests.length %></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Confirmados</div>
-                <div class="stat-value"><%= confirmedGuests.length %></div>
+                <div class="stat-label">Não Chegou</div>
+                <div class="stat-value"><%= notArrivedGuests ? notArrivedGuests.length : registeredGuests.filter(g => g.status === 'registered').length %></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Conferidos</div>
+                <div class="stat-label">Chegou</div>
                 <div class="stat-value"><%= checkedInGuests.length %></div>
             </div>
         </div>
@@ -257,32 +257,68 @@
                         let displayEmail = guest.email || '';
                         let displayWhatsapp = guest.whatsapp || guest.phone || '';
                         
-                        if (!displayName || !displayEmail || !displayWhatsapp) {
+                        // Tentar extrair de custom_responses se não tiver nos campos diretos
+                        if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') || 
+                            !displayEmail || displayEmail.trim() === '' || 
+                            !displayWhatsapp || displayWhatsapp.trim() === '') {
                             try {
                                 const customResponses = typeof guest.custom_responses === 'string' 
                                     ? JSON.parse(guest.custom_responses) 
                                     : (guest.custom_responses || {});
                                 
-                                Object.keys(customResponses).forEach(key => {
-                                    const keyLower = key.toLowerCase();
-                                    const value = customResponses[key];
-                                    
-                                    if (!displayName && (keyLower.includes('nome') || keyLower.includes('name'))) {
-                                        displayName = Array.isArray(value) ? value[0] : value;
-                                    }
-                                    if (!displayWhatsapp && (keyLower.includes('whatsapp') || keyLower.includes('telefone') || keyLower.includes('phone'))) {
-                                        displayWhatsapp = Array.isArray(value) ? value[0] : value;
-                                    }
-                                    if (!displayEmail && (keyLower.includes('email') || keyLower.includes('e-mail'))) {
-                                        displayEmail = Array.isArray(value) ? value[0] : value;
-                                    }
-                                });
+                                // Procurar nos formFields primeiro
+                                if (typeof formFields !== 'undefined' && Array.isArray(formFields)) {
+                                    formFields.forEach(field => {
+                                        if (field.id && customResponses[field.id]) {
+                                            const value = customResponses[field.id];
+                                            const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                            const label = (field.label || '').toLowerCase();
+                                            
+                                            if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') && 
+                                                (label.includes('nome') || label.includes('name'))) {
+                                                displayName = valueStr;
+                                            }
+                                            if ((!displayWhatsapp || displayWhatsapp.trim() === '') && 
+                                                (label.includes('whatsapp') || label.includes('telefone') || label.includes('phone'))) {
+                                                displayWhatsapp = valueStr;
+                                            }
+                                            if ((!displayEmail || displayEmail.trim() === '') && 
+                                                (label.includes('email') || label.includes('e-mail'))) {
+                                                displayEmail = valueStr;
+                                            }
+                                        }
+                                    });
+                                }
+                                
+                                // Fallback: procurar por chaves nos customResponses
+                                if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') || 
+                                    !displayEmail || displayEmail.trim() === '' || 
+                                    !displayWhatsapp || displayWhatsapp.trim() === '') {
+                                    Object.keys(customResponses).forEach(key => {
+                                        const keyLower = key.toLowerCase();
+                                        const value = customResponses[key];
+                                        const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                        
+                                        if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') && 
+                                            (keyLower.includes('nome') || keyLower.includes('name'))) {
+                                            displayName = valueStr;
+                                        }
+                                        if ((!displayWhatsapp || displayWhatsapp.trim() === '') && 
+                                            (keyLower.includes('whatsapp') || keyLower.includes('telefone') || keyLower.includes('phone'))) {
+                                            displayWhatsapp = valueStr;
+                                        }
+                                        if ((!displayEmail || displayEmail.trim() === '') && 
+                                            (keyLower.includes('email') || keyLower.includes('e-mail'))) {
+                                            displayEmail = valueStr;
+                                        }
+                                    });
+                                }
                             } catch (e) {}
                         }
                         
-                        displayName = displayName || 'Sem nome';
-                        displayEmail = displayEmail || '-';
-                        displayWhatsapp = displayWhatsapp || '-';
+                        displayName = (displayName && displayName.trim() && displayName.toLowerCase() !== 'visitante') ? displayName.trim() : 'Sem nome';
+                        displayEmail = (displayEmail && displayEmail.trim()) ? displayEmail.trim() : '-';
+                        displayWhatsapp = (displayWhatsapp && displayWhatsapp.trim()) ? displayWhatsapp.trim() : '-';
                         
                         // Determinar status e data
                         let statusText = 'Inscrito';
@@ -304,7 +340,15 @@
                             <div><%= displayEmail %></div>
                             <div><%= displayWhatsapp %></div>
                             <div><span class="status-badge <%= statusClass %>"><%= statusText %></span></div>
-                            <div><%= dateToShow ? new Date(dateToShow).toLocaleString('pt-BR') : '-' %></div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span><%= dateToShow ? new Date(dateToShow).toLocaleString('pt-BR') : '-' %></span>
+                                <% if (guest.status !== 'checked_in') { %>
+                                    <button onclick="confirmarChegada(<%= guest.id %>, '<%= (displayName || '').replace(/'/g, "\\'") %>')" 
+                                            style="padding: 6px 12px; background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; border-radius: 6px; color: #000; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
+                                        <i class="fas fa-check"></i> Confirmar Chegada
+                                    </button>
+                                <% } %>
+                            </div>
                         </div>
                     <% }); %>
                 <% } %>
@@ -327,12 +371,67 @@
                         <p>Nenhum convidado conferido</p>
                     </div>
                 <% } else { %>
-                    <% checkedInGuests.forEach(guest => { %>
+                    <% checkedInGuests.forEach(guest => {
+                        // Extrair nome, email e whatsapp corretamente
+                        let displayName = guest.name || '';
+                        let displayEmail = guest.email || '';
+                        let displayWhatsapp = guest.whatsapp || guest.phone || '';
+                        
+                        if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') || 
+                            !displayEmail || displayEmail.trim() === '' || 
+                            !displayWhatsapp || displayWhatsapp.trim() === '') {
+                            try {
+                                const customResponses = typeof guest.custom_responses === 'string' 
+                                    ? JSON.parse(guest.custom_responses) 
+                                    : (guest.custom_responses || {});
+                                
+                                if (typeof formFields !== 'undefined' && Array.isArray(formFields)) {
+                                    formFields.forEach(field => {
+                                        if (field.id && customResponses[field.id]) {
+                                            const value = customResponses[field.id];
+                                            const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                            const label = (field.label || '').toLowerCase();
+                                            
+                                            if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') && 
+                                                (label.includes('nome') || label.includes('name'))) {
+                                                displayName = valueStr;
+                                            }
+                                            if ((!displayWhatsapp || displayWhatsapp.trim() === '') && 
+                                                (label.includes('whatsapp') || label.includes('telefone') || label.includes('phone'))) {
+                                                displayWhatsapp = valueStr;
+                                            }
+                                            if ((!displayEmail || displayEmail.trim() === '') && 
+                                                (label.includes('email') || label.includes('e-mail'))) {
+                                                displayEmail = valueStr;
+                                            }
+                                        }
+                                    });
+                                }
+                                
+                                // Fallback
+                                if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante')) {
+                                    Object.keys(customResponses).forEach(key => {
+                                        const keyLower = key.toLowerCase();
+                                        const value = customResponses[key];
+                                        const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                        if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') && 
+                                            (keyLower.includes('nome') || keyLower.includes('name'))) {
+                                            displayName = valueStr;
+                                        }
+                                    });
+                                }
+                            } catch (e) {}
+                        }
+                        
+                        displayName = (displayName && displayName.trim() && displayName.toLowerCase() !== 'visitante') ? displayName.trim() : 'Sem nome';
+                        displayEmail = (displayEmail && displayEmail.trim()) ? displayEmail.trim() : '-';
+                        displayWhatsapp = (displayWhatsapp && displayWhatsapp.trim()) ? displayWhatsapp.trim() : '-';
+                    %>
                         <div class="table-row">
-                            <div style="font-weight: 600;"><%= guest.name || 'Sem nome' %></div>
-                            <div><%= guest.email || '-' %></div>
-                            <div><%= guest.whatsapp || guest.phone || '-' %></div>
-                            <div><span class="status-badge status-checked_in">Conferido</span></div>
+                            <div style="font-weight: 600;"><%= displayName %></div>
+                            <div><%= displayEmail %></div>
+                            <div><%= displayWhatsapp %></div>
+                            <div><span class="status-badge status-checked_in">Chegou</span></div>
                             <div><%= guest.checked_in_at ? new Date(guest.checked_in_at).toLocaleString('pt-BR') : '-' %></div>
                         </div>
                     <% }); %>
@@ -342,6 +441,65 @@
     </div>
     
     <script>
+        // Form fields para mapear labels
+        const formFields = <%= JSON.stringify(typeof formFields !== 'undefined' ? formFields : []) %>;
+        const profileItemId = <%= profileItemId %>;
+        const token = '<%= token %>';
+        
+        // Função para obter label do campo pelo ID
+        function getFieldLabel(fieldId) {
+            if (!formFields || !Array.isArray(formFields)) return fieldId;
+            
+            // Tentar encontrar pelo ID exato
+            let field = formFields.find(f => f.id === fieldId || (f.id && f.id.toString() === fieldId.toString()));
+            if (field && field.label) return field.label;
+            
+            // Tentar encontrar pelo ID sem prefixo
+            const fieldIdClean = fieldId.toString().replace(/^field_/, '').replace(/_/g, '');
+            field = formFields.find(f => {
+                const fId = (f.id || '').toString().replace(/^field_/, '').replace(/_/g, '');
+                return fId === fieldIdClean || fId.includes(fieldIdClean) || fieldIdClean.includes(fId);
+            });
+            if (field && field.label) return field.label;
+            
+            // Tentar encontrar pelo índice (se fieldId for field_0, field_1, etc)
+            const match = fieldId.toString().match(/field_(\d+)/);
+            if (match && match[1]) {
+                const index = parseInt(match[1]);
+                if (formFields[index] && formFields[index].label) {
+                    return formFields[index].label;
+                }
+            }
+            
+            // Se não encontrou, retornar o ID formatado (remover "field_" e números)
+            return fieldId.toString().replace(/^field_\d+_/, '').replace(/^field_/, '').replace(/_/g, ' ');
+        }
+        
+        // Função para confirmar chegada (portaria)
+        async function confirmarChegada(guestId, guestName) {
+            if (!confirm(`Confirmar chegada de ${guestName || 'este convidado'}?`)) return;
+            
+            try {
+                const response = await fetch(`/guest-list/view-full/${token}/checkin/${guestId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+                    throw new Error(errorData.message || 'Erro ao confirmar chegada');
+                }
+                
+                alert('Chegada confirmada com sucesso!');
+                location.reload();
+            } catch (error) {
+                console.error('Erro ao confirmar chegada:', error);
+                alert('Erro ao confirmar chegada: ' + error.message);
+            }
+        }
+        
         function switchTab(tabName) {
             // Remover active de todas as tabs
             document.querySelectorAll('.tab-button').forEach(btn => {
@@ -353,7 +511,8 @@
             
             // Ativar tab selecionada
             event.target.classList.add('active');
-            document.getElementById(`tab-${tabName}`).classList.add('active');
+            const tabId = tabName === 'checked_in' ? 'checked_in' : tabName === 'not_arrived' ? 'not_arrived' : tabName;
+            document.getElementById(`tab-${tabId}`).classList.add('active');
         }
     </script>
 </body>
