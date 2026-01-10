@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- QR Code Scanner Library -->
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -505,30 +505,59 @@
             
             document.body.appendChild(modal);
             
-            // Inicializar scanner
-            if (typeof Html5Qrcode !== 'undefined') {
-                window.qrCodeScanner = new Html5Qrcode("qr-reader");
-                window.qrCodeScanner.start(
-                    { facingMode: "environment" }, // Usar câmera traseira
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 }
-                    },
-                    (decodedText, decodedResult) => {
-                        // QR Code escaneado com sucesso
-                        window.handleQRCodeScanned(decodedText);
-                    },
-                    (errorMessage) => {
-                        // Erro ignorado (scanner continua tentando)
-                    }
-                ).catch((err) => {
-                    console.error('Erro ao iniciar scanner:', err);
-                    alert('Erro ao acessar a câmera. Verifique as permissões.');
+            // Aguardar um pouco para garantir que a biblioteca está carregada
+            const initScanner = () => {
+                if (typeof Html5Qrcode === 'undefined') {
+                    console.warn('Html5Qrcode não disponível, tentando novamente...');
+                    setTimeout(initScanner, 500);
+                    return;
+                }
+                
+                try {
+                    window.qrCodeScanner = new Html5Qrcode("qr-reader");
+                    window.qrCodeScanner.start(
+                        { facingMode: "environment" }, // Usar câmera traseira
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 }
+                        },
+                        (decodedText, decodedResult) => {
+                            // QR Code escaneado com sucesso
+                            console.log('QR Code escaneado:', decodedText);
+                            window.handleQRCodeScanned(decodedText);
+                        },
+                        (errorMessage) => {
+                            // Erro ignorado (scanner continua tentando)
+                        }
+                    ).catch((err) => {
+                        console.error('Erro ao iniciar scanner:', err);
+                        alert('Erro ao acessar a câmera. Verifique as permissões do navegador.');
+                        window.closeQRScanner();
+                    });
+                } catch (err) {
+                    console.error('Erro ao criar scanner:', err);
+                    alert('Erro ao inicializar scanner. Tente recarregar a página.');
                     window.closeQRScanner();
-                });
+                }
+            };
+            
+            // Tentar inicializar imediatamente ou aguardar
+            if (typeof Html5Qrcode !== 'undefined') {
+                initScanner();
             } else {
-                alert('Biblioteca de scanner não carregada. Aguarde alguns segundos e tente novamente.');
-                window.closeQRScanner();
+                // Aguardar até 5 segundos para a biblioteca carregar
+                let attempts = 0;
+                const checkLibrary = setInterval(() => {
+                    attempts++;
+                    if (typeof Html5Qrcode !== 'undefined') {
+                        clearInterval(checkLibrary);
+                        initScanner();
+                    } else if (attempts > 10) {
+                        clearInterval(checkLibrary);
+                        alert('Biblioteca de scanner não carregou. Recarregue a página e tente novamente.');
+                        window.closeQRScanner();
+                    }
+                }, 500);
             }
         };
         

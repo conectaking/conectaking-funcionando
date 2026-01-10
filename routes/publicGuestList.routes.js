@@ -584,7 +584,7 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
         
         // Buscar lista pelo token
         const listResult = await client.query(`
-            SELECT gli.id as guest_list_id, gli.profile_item_id
+            SELECT gli.id, gli.profile_item_id
             FROM guest_list_items gli
             INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
             WHERE (gli.public_view_token = $1 OR gli.confirmation_token = $1) AND pi.is_active = true
