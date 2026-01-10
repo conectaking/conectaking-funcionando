@@ -268,8 +268,57 @@
                             <p style="margin: 12px 0 0 18px; color: #5f6368; font-size: 14px;">Todos os campos marcados com * são obrigatórios</p>
                         </div>
                         
-                        <!-- Campos Dinâmicos (form_fields) -->
-                        <div id="dynamic-fields-container"></div>
+                        <!-- Campos Dinâmicos (form_fields) - Renderização Server-Side como Fallback -->
+                        <div id="dynamic-fields-container">
+                            <% if (typeof formData.form_fields !== 'undefined' && formData.form_fields && Array.isArray(formData.form_fields) && formData.form_fields.length > 0) { %>
+                                <% formData.form_fields.forEach((field, index) => { %>
+                                    <% 
+                                        const fieldType = field.type || 'short_text';
+                                        const fieldId = field.id || `field_${index}`;
+                                        const fieldName = fieldId;
+                                        const isRequired = field.required !== false && (field.Required === true || field.required === true);
+                                        const placeholder = field.placeholder || field.Placeholder || '';
+                                        const fieldLabel = field.label || field.Label || 'Campo sem título';
+                                    %>
+                                    <div class="form-group" data-field-type="<%= fieldType %>" data-field-id="<%= fieldId %>">
+                                        <label for="field-<%= index %>">
+                                            <%= fieldLabel %>
+                                            <% if (isRequired) { %>
+                                                <span class="required">*</span>
+                                            <% } %>
+                                        </label>
+                                        <% if (fieldType === 'short_text') { %>
+                                            <input type="text" id="field-<%= index %>" name="<%= fieldName %>" <% if (isRequired) { %>required<% } %> placeholder="<%= placeholder %>">
+                                        <% } else if (fieldType === 'paragraph') { %>
+                                            <textarea id="field-<%= index %>" name="<%= fieldName %>" rows="4" <% if (isRequired) { %>required<% } %> placeholder="<%= placeholder %>"></textarea>
+                                        <% } else if (fieldType === 'multiple_choice' && field.options && field.options.length > 0) { %>
+                                            <% field.options.forEach((opt) => { %>
+                                                <label class="radio-label">
+                                                    <input type="radio" name="<%= fieldName %>" value="<%= opt %>" <% if (isRequired) { %>required<% } %>>
+                                                    <span><%= opt %></span>
+                                                </label>
+                                            <% }); %>
+                                        <% } else if (fieldType === 'checkbox' && field.options && field.options.length > 0) { %>
+                                            <% field.options.forEach((opt) => { %>
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox" name="<%= fieldName %>" value="<%= opt %>">
+                                                    <span><%= opt %></span>
+                                                </label>
+                                            <% }); %>
+                                        <% } else if (fieldType === 'dropdown' && field.options && field.options.length > 0) { %>
+                                            <select id="field-<%= index %>" name="<%= fieldName %>" <% if (isRequired) { %>required<% } %>>
+                                                <option value="">Selecione...</option>
+                                                <% field.options.forEach((opt) => { %>
+                                                    <option value="<%= opt %>"><%= opt %></option>
+                                                <% }); %>
+                                            </select>
+                                        <% } else { %>
+                                            <input type="text" id="field-<%= index %>" name="<%= fieldName %>" <% if (isRequired) { %>required<% } %> placeholder="<%= placeholder %>">
+                                        <% } %>
+                                    </div>
+                                <% }); %>
+                            <% } %>
+                        </div>
 
                         <!-- Botões de Envio (Dinâmicos baseado nas opções) -->
                         <% 

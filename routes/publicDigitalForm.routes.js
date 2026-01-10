@@ -290,8 +290,17 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         logger.info('📋 [FORM] form_fields após processamento:', {
             length: formData.form_fields.length,
             isArray: Array.isArray(formData.form_fields),
-            firstFields: formData.form_fields.slice(0, 3).map(f => ({ id: f?.id, label: f?.label, type: f?.type }))
+            firstFields: formData.form_fields.length > 0 ? formData.form_fields.slice(0, 3).map(f => ({ id: f?.id, label: f?.label, type: f?.type })) : []
         });
+        
+        // CRÍTICO: Garantir que form_fields está sendo passado para o template
+        if (!formData.form_fields || formData.form_fields.length === 0) {
+            logger.error('❌ [FORM] ATENÇÃO: form_fields está vazio ou não existe!', {
+                itemId: itemIdInt,
+                formTitle: formData.form_title,
+                hasFormFields: !!formData.form_fields
+            });
+        }
 
         // Buscar profile_slug
         const profileSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
