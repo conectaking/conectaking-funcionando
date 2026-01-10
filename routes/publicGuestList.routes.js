@@ -493,9 +493,9 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
     try {
         const { qrToken } = req.params;
         
-        // Buscar convidado pelo qr_token
+        // Buscar convidado pelo qr_token (Melhoria 15: Validação de Token com expiração)
         const guestResult = await client.query(`
-            SELECT g.*, gli.public_view_token, gli.profile_item_id
+            SELECT g.*, gli.public_view_token, gli.profile_item_id, gli.event_date
             FROM guests g
             INNER JOIN guest_list_items gli ON gli.id = g.guest_list_id
             WHERE g.qr_token = $1
@@ -509,6 +509,23 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
         }
         
         const guest = guestResult.rows[0];
+        
+        // Validação de Token com expiração (Melhoria 15)
+        // Verificar se o evento ainda está válido (se event_date existir)
+        if (guest.event_date) {
+            const eventDate = new Date(guest.event_date);
+            const now = new Date();
+            // Permitir confirmação até 30 dias após o evento
+            const expirationDate = new Date(eventDate);
+            expirationDate.setDate(expirationDate.getDate() + 30);
+            
+            if (now > expirationDate) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'QR Code expirado. Este código não pode mais ser usado para confirmar presença.'
+                });
+            }
+        }
         
         // Verificar se já foi confirmado
         if (guest.status === 'checked_in') {
@@ -524,6 +541,9 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
             });
         }
         
+        // Obter status anterior antes de atualizar (Melhoria 7: Histórico)
+        const previousStatus = guest.status;
+        
         // Confirmar presença
         const updateResult = await client.query(`
             UPDATE guests 
@@ -531,8 +551,22 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
                 checked_in_at = NOW(),
                 confirmed_at = COALESCE(confirmed_at, NOW())
             WHERE id = $1
-            RETURNING id, name, email, whatsapp, status, checked_in_at
+            RETURNING id, name, email, whatsapp, status, checked_in_at, guest_list_id
         `, [guest.id]);
+        
+        // Registrar histórico de confirmação (Melhoria 7)
+        const { logConfirmationHistory } = require('../utils/confirmationHistory');
+        await logConfirmationHistory({
+            guestId: guest.id,
+            guestListId: guest.guest_list_id,
+            action: 'checked_in',
+            previousStatus,
+            newStatus: 'checked_in',
+            confirmedBy: guest.name || 'Sistema',
+            confirmationMethod: 'qr_code',
+            req,
+            notes: `Confirmado via QR Code (token: ${qrToken.substring(0, 16)}...)`
+        }).catch(err => logger.warn('Erro ao registrar histórico:', err));
         
         logger.info('✅ [QR_CONFIRM] Presença confirmada via QR Code:', {
             guestId: guest.id,
@@ -628,6 +662,9 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
             });
         }
         
+        // Obter status anterior antes de atualizar (Melhoria 7: Histórico)
+        const previousStatus = guest.status;
+        
         // Confirmar presença
         const updateResult = await client.query(`
             UPDATE guests 
@@ -635,8 +672,33 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
                 checked_in_at = NOW(),
                 confirmed_at = COALESCE(confirmed_at, NOW())
             WHERE id = $1
-            RETURNING id, name, email, whatsapp, status, checked_in_at
+            RETURNING id, name, email, whatsapp, status, checked_in_at, guest_list_id
         `, [guest.id]);
+        
+        // Registrar histórico de confirmação (Melhoria 7)
+        const { logConfirmationHistory } = require('../utils/confirmationHistory');
+        await logConfirmationHistory({
+            guestId: guest.id,
+            guestListId: guest.guest_list_id,
+            action: 'checked_in',
+            previousStatus,
+            newStatus: 'checked_in',
+            confirmedBy: guest.name || 'Sistema',
+            confirmationMethod: 'cpf',
+            req,
+            notes: `Confirmado via CPF (${cleanCpf.substring(0, 3)}***)`
+        }).catch(err => logger.warn('Erro ao registrar histórico:', err));
+        
+        // Disparar webhooks (Melhoria 20)
+        const { triggerWebhooks } = require('../utils/webhookService');
+        triggerWebhooks('guest.confirm', {
+            guestId: guest.id,
+            guestListId: guest.guest_list_id,
+            guestName: guest.name,
+            status: 'checked_in',
+            method: 'cpf',
+            timestamp: new Date().toISOString()
+        }, null).catch(err => logger.warn('Erro ao disparar webhooks:', err));
         
         logger.info('✅ [CPF_CONFIRM] Presença confirmada via CPF:', {
             guestId: guest.id,

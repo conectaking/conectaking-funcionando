@@ -342,6 +342,12 @@ app.use('/api/ai-core', apiLimiter, aiCoreRoutes); // Nova ConectaKing AI Core
 app.use('/api/contracts', apiLimiter, contractsRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListRoutes);
 app.use('/guest-list', publicGuestListRoutes);
+app.use('/api/webhooks', apiLimiter, webhooksRoutes);
+app.use('/api/push', apiLimiter, pushNotificationsRoutes);
+
+// Histórico de confirmações (Melhoria 7)
+const confirmationHistoryRoutes = require('./routes/confirmationHistory.routes');
+app.use('/api/guest-lists', apiLimiter, confirmationHistoryRoutes);
 app.use('/contract', publicContractRoutes);
 app.use('/vcard', vcardRoutes);
 
@@ -391,6 +397,8 @@ app.use('/', publicDigitalFormRoutes);
 
 // Rota pública de produto individual (deve vir antes de publicProfileRoutes)
 const publicProductRoutes = require('./routes/publicProduct');
+const webhooksRoutes = require('./routes/webhooks.routes');
+const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
 app.use('/', publicProductRoutes);
 
 // Perfis públicos (sem rate limiting)

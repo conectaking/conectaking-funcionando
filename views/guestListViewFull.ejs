@@ -639,6 +639,10 @@
             
             document.body.appendChild(modal);
             
+            // Rate Limiting para Scanner QR Code (Melhoria 14)
+            let lastScanTime = 0;
+            const SCAN_RATE_LIMIT_MS = 1000; // Máximo 1 scan por segundo
+            
             // Aguardar um pouco para garantir que a biblioteca está carregada
             const initScanner = () => {
                 if (typeof Html5Qrcode === 'undefined') {
@@ -656,6 +660,14 @@
                             qrbox: { width: 250, height: 250 }
                         },
                         (decodedText, decodedResult) => {
+                            // Rate Limiting (Melhoria 14)
+                            const now = Date.now();
+                            if (now - lastScanTime < SCAN_RATE_LIMIT_MS) {
+                                console.log('Rate limit: scan muito rápido, ignorando...');
+                                return;
+                            }
+                            lastScanTime = now;
+                            
                             // QR Code escaneado com sucesso
                             console.log('QR Code escaneado:', decodedText);
                             
