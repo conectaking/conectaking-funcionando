@@ -446,6 +446,31 @@
         const profileItemId = <%= profileItemId %>;
         const token = '<%= token %>';
         
+        // Função para confirmar chegada (portaria) - Definir como global
+        window.confirmarChegada = async function(guestId, guestName) {
+            if (!confirm(`Confirmar chegada de ${guestName || 'este convidado'}?`)) return;
+            
+            try {
+                const response = await fetch(`/guest-list/view-full/${token}/checkin/${guestId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+                    throw new Error(errorData.message || 'Erro ao confirmar chegada');
+                }
+                
+                alert('Chegada confirmada com sucesso!');
+                location.reload();
+            } catch (error) {
+                console.error('Erro ao confirmar chegada:', error);
+                alert('Erro ao confirmar chegada: ' + error.message);
+            }
+        };
+        
         // Função para obter label do campo pelo ID
         function getFieldLabel(fieldId) {
             if (!formFields || !Array.isArray(formFields)) return fieldId;
@@ -473,31 +498,6 @@
             
             // Se não encontrou, retornar o ID formatado (remover "field_" e números)
             return fieldId.toString().replace(/^field_\d+_/, '').replace(/^field_/, '').replace(/_/g, ' ');
-        }
-        
-        // Função para confirmar chegada (portaria)
-        async function confirmarChegada(guestId, guestName) {
-            if (!confirm(`Confirmar chegada de ${guestName || 'este convidado'}?`)) return;
-            
-            try {
-                const response = await fetch(`/guest-list/view-full/${token}/checkin/${guestId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
-                    throw new Error(errorData.message || 'Erro ao confirmar chegada');
-                }
-                
-                alert('Chegada confirmada com sucesso!');
-                location.reload();
-            } catch (error) {
-                console.error('Erro ao confirmar chegada:', error);
-                alert('Erro ao confirmar chegada: ' + error.message);
-            }
         }
         
         function switchTab(tabName) {
