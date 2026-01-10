@@ -1045,15 +1045,9 @@
         }
 
         const form = document.getElementById('digital-form');
-        if (!form) {
-            console.error('❌ [FORM] Formulário não encontrado!');
-        } else {
-            // Remover listeners anteriores se existirem (clone para limpar)
-            const newForm = form.cloneNode(true);
-            form.parentNode.replaceChild(newForm, form);
-            
-            // Adicionar listener ao novo formulário
-            document.getElementById('digital-form').addEventListener('submit', async function(e) {
+        if (form) {
+            // Adicionar listener ao formulário
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -1139,8 +1133,8 @@
             const responseData = {};
             
             // IMPORTANTE: Garantir que currentFormFields esteja definido
-            const fieldsToCollect = fieldsArray || fieldsToSubmit || currentFormFields || window.formFields || formDataObj.form_fields || [];
-            let fieldsToProcess = fieldsToCollect;
+            // Usar fieldsToSubmit que já foi processado acima
+            let fieldsToProcess = fieldsToSubmit || currentFormFields || window.formFields || formDataObj.form_fields || [];
             if (typeof fieldsToProcess === 'string') {
                 try {
                     fieldsToProcess = JSON.parse(fieldsToProcess);
@@ -1256,7 +1250,7 @@
                 dataKeys: Object.keys(data),
                 dataCount: Object.keys(data).length,
                 data: data,
-                fieldsCount: fieldsForCollection.length,
+                fieldsCount: fieldsToProcess.length,
                 hasData: Object.keys(responseData).length > 0 || Object.keys(data).length > 0
             });
             
@@ -1265,8 +1259,8 @@
             if (Object.keys(responseData).length === 0 && Object.keys(data).length === 0) {
                 restoreButton(submitBtn, originalHTML);
                 console.error('❌ [SUBMIT] Nenhum dado coletado do formulário!', {
-                    formFieldsCount: fieldsForCollection.length,
-                    formFields: Array.isArray(fieldsForCollection) ? fieldsForCollection.map(f => ({ id: f.id, label: f.label, type: f.type })) : 'N/A',
+                    formFieldsCount: fieldsToProcess.length,
+                    formFields: Array.isArray(fieldsToProcess) ? fieldsToProcess.map(f => ({ id: f.id, label: f.label, type: f.type })) : 'N/A',
                     allInputs: document.querySelectorAll('input, textarea, select').length
                 });
                 showErrorMessage('Por favor, preencha pelo menos um campo do formulário antes de enviar.');
@@ -1451,23 +1445,10 @@
             setTimeout(() => {
                 window.location.replace(finalFallbackUrl);
             }, 500); // Pequeno delay para garantir que o loading state seja visto
-            
-            // Registrar evento de sucesso para analytics
-            try {
-                await fetch(`/<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>/form/<%= item.id %>/analytics`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        event_type: 'submit_success',
-                        session_id: sessionId,
-                        response_id: responseId
-                    })
-                });
-            } catch (analyticsError) {
-                // Ignorar erros de analytics
-                console.warn('Erro ao registrar analytics de sucesso:', analyticsError);
-            }
         });
+        } else {
+            console.error('❌ [FORM] Formulário não encontrado!');
+        }
         
         // Botão "Enviar Mensagem para o Pastor"
         <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
