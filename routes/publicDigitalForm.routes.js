@@ -88,9 +88,18 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         
         // IMPORTANTE: Sempre verificar se existe dados em guest_list_items (mesmo que item_type não seja guest_list)
         // Isso é necessário porque o item pode estar como digital_form mas ter dados salvos em guest_list_items
+        // Verificar se coluna card_color existe em guest_list_items
+        const guestListCardColorCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'guest_list_items' AND column_name = 'card_color'
+        `);
+        const hasGuestListCardColor = guestListCardColorCheck.rows.length > 0;
+        
         const guestListRes = await client.query(
             `SELECT primary_color, secondary_color, text_color, background_color, 
                     header_image_url, background_image_url, background_opacity, theme, updated_at
+                    ${hasGuestListCardColor ? ', card_color' : ''}
              FROM guest_list_items 
              WHERE profile_item_id = $1 
              ORDER BY 
