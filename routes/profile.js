@@ -1508,6 +1508,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             item_type,
             enable_whatsapp,
             enable_guest_list_submit,
+            send_mode,
             event_date,
             event_address
         } = req.body;

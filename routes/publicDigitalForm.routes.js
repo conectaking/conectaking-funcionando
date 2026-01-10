@@ -913,16 +913,41 @@ router.post('/:slug/form/:itemId/submit',
         let enableWhatsapp = true; // Default
         let enableGuestListSubmit = false; // Default
         
+        // NOVO: Determinar modo de envio baseado nas opções
+        // Se enable_guest_list_submit = true → Só Sistema (salva no sistema, sem WhatsApp)
+        // Se enable_whatsapp = true e enable_guest_list_submit = false → Ambos (salva no sistema + WhatsApp)
+        // Se enable_whatsapp = true e enable_guest_list_submit = false mas não salvar resposta → Só WhatsApp (apenas WhatsApp, não salva)
+        // Por padrão, se enable_whatsapp = true, é "Ambos" (para manter compatibilidade)
+        
+        let sendMode = 'both'; // 'whatsapp-only', 'system-only', 'both'
+        let shouldSaveToSystem = true; // Se deve salvar resposta no sistema
+        
         if (formConfigRes.rows.length > 0) {
             enableGuestListSubmit = formConfigRes.rows[0].enable_guest_list_submit === true || formConfigRes.rows[0].enable_guest_list_submit === 'true' || formConfigRes.rows[0].enable_guest_list_submit === 1 || formConfigRes.rows[0].enable_guest_list_submit === '1';
-            // IMPORTANTE: WhatsApp e Sistema podem estar ativos ao mesmo tempo
-            // Quando WhatsApp está ativo, sempre salvar no sistema também
             enableWhatsapp = formConfigRes.rows[0].enable_whatsapp !== false && formConfigRes.rows[0].enable_whatsapp !== 'false' && formConfigRes.rows[0].enable_whatsapp !== 0 && formConfigRes.rows[0].enable_whatsapp !== '0';
+            
+            // Determinar modo baseado nas configurações
+            if (enableGuestListSubmit && !enableWhatsapp) {
+                sendMode = 'system-only';
+                shouldSaveToSystem = true;
+            } else if (enableWhatsapp && !enableGuestListSubmit) {
+                // Por padrão, quando WhatsApp está ativo, salva no sistema também (modo "Ambos")
+                // Mas podemos verificar se há um parâmetro especial para "Só WhatsApp"
+                // Por enquanto, vamos assumir que é "Ambos" para manter compatibilidade
+                sendMode = 'both';
+                shouldSaveToSystem = true;
+            } else if (!enableWhatsapp && !enableGuestListSubmit) {
+                // Se ambos estão false, não deveria acontecer, mas vamos tratar como "Só Sistema"
+                sendMode = 'system-only';
+                shouldSaveToSystem = true;
+            }
         }
         
         logger.info('🔍 [SUBMIT] Configurações do formulário:', {
             enableWhatsapp,
             enableGuestListSubmit,
+            sendMode,
+            shouldSaveToSystem,
             isGuestList,
             itemId: itemIdInt
         });
@@ -1057,19 +1082,34 @@ router.post('/:slug/form/:itemId/submit',
             });
         }
 
-        // Inserir resposta (sempre salvar resposta do formulário também)
-        const result = await client.query(`
-            INSERT INTO digital_form_responses (
-                profile_item_id, response_data, responder_name, responder_email, responder_phone
-            ) VALUES ($1, $2::jsonb, $3, $4, $5)
-            RETURNING id, submitted_at
-        `, [
-            itemIdInt,
-            JSON.stringify(response_data),
-            responder_name || null,
-            responder_email || null,
-            responder_phone || null
-        ]);
+        // Inserir resposta (salvar apenas se shouldSaveToSystem for true)
+        // IMPORTANTE: Se sendMode for 'whatsapp-only', não salvar no sistema
+        let result = null;
+        if (shouldSaveToSystem && sendMode !== 'whatsapp-only') {
+            result = await client.query(`
+                INSERT INTO digital_form_responses (
+                    profile_item_id, response_data, responder_name, responder_email, responder_phone
+                ) VALUES ($1, $2::jsonb, $3, $4, $5)
+                RETURNING id, submitted_at
+            `, [
+                itemIdInt,
+                JSON.stringify(response_data),
+                responder_name || null,
+                responder_email || null,
+                responder_phone || null
+            ]);
+            
+            logger.info('✅ [SUBMIT] Resposta salva no sistema (digital_form_responses)');
+        } else {
+            logger.info('ℹ️ [SUBMIT] Resposta NÃO salva no sistema (modo: whatsapp-only)');
+            // Criar resultado mockado para compatibilidade
+            result = {
+                rows: [{
+                    id: null,
+                    submitted_at: new Date()
+                }]
+            };
+        }
 
         // Registrar evento 'submit' de analytics
         const user_ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for']?.split(',')[0];
@@ -1142,22 +1182,29 @@ router.post('/:slug/form/:itemId/submit',
             });
         }
 
-        // IMPORTANTE: Validar se a resposta foi salva corretamente
-        if (!result || !result.rows || result.rows.length === 0) {
-            logger.error('❌ [SUBMIT] Erro crítico: Resposta não foi salva no banco de dados', {
-                itemId: itemIdInt,
-                responseData: response_data
-            });
-            return res.status(500).json({ 
-                success: false,
-                message: 'Erro ao salvar resposta no banco de dados',
-                error: 'Resposta não foi inserida'
-            });
+        // IMPORTANTE: Validar se a resposta foi salva corretamente (exceto se for modo "whatsapp-only")
+        if (sendMode !== 'whatsapp-only') {
+            if (!result || !result.rows || result.rows.length === 0) {
+                logger.error('❌ [SUBMIT] Erro crítico: Resposta não foi salva no banco de dados', {
+                    itemId: itemIdInt,
+                    responseData: response_data,
+                    sendMode: sendMode
+                });
+                return res.status(500).json({ 
+                    success: false,
+                    message: 'Erro ao salvar resposta no banco de dados',
+                    error: 'Resposta não foi inserida'
+                });
+            }
         }
         
-        logger.info('✅ [SUBMIT] Resposta salva com sucesso - retornando JSON', {
-            response_id: result.rows[0].id,
+        const responseId = result && result.rows && result.rows[0] ? result.rows[0].id : null;
+        
+        logger.info('✅ [SUBMIT] Resposta processada - retornando JSON', {
+            response_id: responseId,
             itemId: itemIdInt,
+            sendMode: sendMode,
+            shouldSaveToSystem: shouldSaveToSystem,
             shouldSaveToGuestList,
             enableGuestListSubmit,
             enableWhatsapp
@@ -1165,15 +1212,20 @@ router.post('/:slug/form/:itemId/submit',
         
         // IMPORTANTE: Sempre retornar URL de sucesso para que possa ser acessada
         // Mesmo quando envia por WhatsApp, deve aparecer a página de sucesso
+        // Se for "whatsapp-only", não retornar success_page_url (não redirecionar)
+        const responseId = result && result.rows && result.rows[0] ? result.rows[0].id : null;
+        
         res.json({
             success: true,
-            message: 'Resposta salva com sucesso',
-            response_id: result.rows[0].id,
-            success_page_url: `/${slug}/form/${itemId}/success?response_id=${result.rows[0].id}&show_success_page=true`,
+            message: sendMode === 'whatsapp-only' ? 'Enviado via WhatsApp' : 'Resposta salva com sucesso',
+            response_id: responseId,
+            success_page_url: sendMode === 'whatsapp-only' ? null : `/${slug}/form/${itemId}/success?response_id=${responseId || ''}&show_success_page=true`,
             // Incluir dados para página de sucesso
             guest_id: response_guest_id || null,
             qr_token: response_qr_token || null,
-            should_show_guest_list_info: shouldSaveToGuestList || false
+            should_show_guest_list_info: shouldSaveToGuestList || false,
+            send_mode: sendMode,
+            should_save: shouldSaveToSystem
         });
 
     } catch (error) {

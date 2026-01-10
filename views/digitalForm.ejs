@@ -1871,7 +1871,10 @@
                     }
                     
                     const submitResult = await submitResponse.json();
-                    console.log('✅ [WHATSAPP] Resposta salva no sistema:', submitResult);
+                    console.log('✅ [WHATSAPP] Resultado do submit:', submitResult);
+                    
+                    const sendMode = submitResult.send_mode || 'both';
+                    const shouldSave = submitResult.should_save !== false;
                     
                     // Obter responseId do resultado
                     const responseId = submitResult.response_id || submitResult.id || null;
@@ -1896,37 +1899,52 @@
                     const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
                     const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
                     
-                    // IMPORTANTE: Sempre redirecionar para página de sucesso, mesmo quando envia por WhatsApp
-                    // Isso garante que o QR Code e outras informações apareçam
-                    const successUrl = submitResult.success_page_url || `/${slug}/form/${itemId}/success?response_id=${responseId || ''}`;
-                    
-                    // Passar dados do formulário via URL para mostrar na página de sucesso
-                    const formDataParams = new URLSearchParams();
-                    formDataParams.append('response_id', responseId || '');
-                    formDataParams.append('whatsapp_sent', 'true');
-                    
-                    // Adicionar dados do formulário para exibir na página de sucesso
-                    Object.keys(data).forEach(key => {
-                        if (data[key] && typeof data[key] === 'string' && data[key].trim() !== '') {
-                            try {
-                                formDataParams.append(`data_${key}`, encodeURIComponent(data[key]));
-                            } catch (e) {
-                                console.warn('⚠️ [WHATSAPP] Erro ao codificar dado para URL:', key, e);
-                            }
-                        }
-                    });
-                    
-                    // Montar URL final
-                    const separator = successUrl.includes('?') ? '&' : '?';
-                    const finalUrl = `${successUrl}${separator}${formDataParams.toString()}`;
-                    
                     // Abrir WhatsApp em nova aba
                     window.open(whatsappUrl, '_blank');
                     
-                    // Redirecionar para página de sucesso após pequeno delay para garantir que dados foram salvos
-                    setTimeout(() => {
-                        window.location.replace(finalUrl);
-                    }, 500);
+                    // Se for "Só WhatsApp" (whatsapp-only), não redirecionar, apenas mostrar mensagem de sucesso
+                    if (sendMode === 'whatsapp-only') {
+                        restoreButton(whatsappBtn, originalHTML);
+                        showSuccessMessage('Formulário enviado via WhatsApp com sucesso!');
+                        // Limpar formulário após delay
+                        setTimeout(() => {
+                            document.getElementById('digital-form').reset();
+                        }, 2000);
+                        return;
+                    }
+                    
+                    // Para "Ambos" ou "Só Sistema", redirecionar para página de sucesso
+                    const successUrl = submitResult.success_page_url || `/${slug}/form/${itemId}/success?response_id=${responseId || ''}`;
+                    
+                    if (successUrl) {
+                        // Passar dados do formulário via URL para mostrar na página de sucesso
+                        const formDataParams = new URLSearchParams();
+                        formDataParams.append('response_id', responseId || '');
+                        formDataParams.append('whatsapp_sent', 'true');
+                        
+                        // Adicionar dados do formulário para exibir na página de sucesso
+                        Object.keys(data).forEach(key => {
+                            if (data[key] && typeof data[key] === 'string' && data[key].trim() !== '') {
+                                try {
+                                    formDataParams.append(`data_${key}`, encodeURIComponent(data[key]));
+                                } catch (e) {
+                                    console.warn('⚠️ [WHATSAPP] Erro ao codificar dado para URL:', key, e);
+                                }
+                            }
+                        });
+                        
+                        // Montar URL final
+                        const separator = successUrl.includes('?') ? '&' : '?';
+                        const finalUrl = `${successUrl}${separator}${formDataParams.toString()}`;
+                        
+                        // Redirecionar para página de sucesso após pequeno delay para garantir que dados foram salvos
+                        setTimeout(() => {
+                            window.location.replace(finalUrl);
+                        }, 500);
+                    } else {
+                        restoreButton(whatsappBtn, originalHTML);
+                        showSuccessMessage('Formulário enviado via WhatsApp com sucesso!');
+                    }
                 } catch (error) {
                     console.error('❌ [WHATSAPP] Erro ao salvar no sistema:', error);
                     restoreButton(whatsappBtn, originalHTML);
