@@ -1850,7 +1850,9 @@
                 
                 // IMPORTANTE: Sempre salvar no sistema primeiro
                 try {
-                    showLoadingState(whatsappBtn, 'Salvando no sistema...');
+                    // Indicador de progresso detalhado (Melhoria 4)
+                    showLoadingState(whatsappBtn, '<i class="fas fa-spinner fa-spin"></i> Salvando no sistema...');
+                    
                     const submitResponse = await fetch(`/${slug}/form/${itemId}/submit`, {
                         method: 'POST',
                         headers: {
@@ -1879,6 +1881,9 @@
                     // Obter responseId do resultado
                     const responseId = submitResult.response_id || submitResult.id || null;
                     
+                    // Atualizar indicador de progresso (Melhoria 4)
+                    showLoadingState(whatsappBtn, '<i class="fas fa-spinner fa-spin"></i> Preparando WhatsApp...');
+                    
                     // Formatar mensagem para WhatsApp
                     let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
                     
@@ -1899,8 +1904,17 @@
                     const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
                     const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
                     
-                    // Abrir WhatsApp em nova aba
-                    window.open(whatsappUrl, '_blank');
+                    // Atualizar indicador de progresso final (Melhoria 4)
+                    showLoadingState(whatsappBtn, '<i class="fab fa-whatsapp"></i> Abrindo WhatsApp...');
+                    
+                    // Pequeno delay para mostrar o progresso
+                    setTimeout(() => {
+                        // Abrir WhatsApp em nova aba
+                        window.open(whatsappUrl, '_blank');
+                        
+                        // Atualizar para "Concluído"
+                        showLoadingState(whatsappBtn, '<i class="fas fa-check-circle"></i> Enviado com sucesso!');
+                    }, 300);
                     
                     // Se for "Só WhatsApp" (whatsapp-only), não redirecionar, apenas mostrar mensagem de sucesso
                     if (sendMode === 'whatsapp-only') {

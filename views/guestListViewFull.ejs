@@ -357,7 +357,7 @@
                 
                 <!-- Busca por CPF -->
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="cpf-search-input" placeholder="Digite o CPF (apenas números)" style="flex: 1; padding: 16px; border-radius: 12px; background: #0D0D0F; border: 2px solid #2C2C2F; color: #ECECEC; font-size: 16px; font-weight: 600; letter-spacing: 2px;" maxlength="11" oninput="this.value = this.value.replace(/\D/g, '')">
+                    <input type="text" id="cpf-search-input" placeholder="Digite o CPF (apenas números)" style="flex: 1; padding: 16px; border-radius: 12px; background: #0D0D0F; border: 2px solid #2C2C2F; color: #ECECEC; font-size: 16px; font-weight: 600; letter-spacing: 2px;" maxlength="14" oninput="this.value = formatCPF(this.value)">
                     <button id="cpf-search-btn" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3); white-space: nowrap;">
                         <i class="fas fa-search"></i> Buscar
                     </button>
@@ -611,9 +611,25 @@
                     <h2 style="color: #FFC700; font-size: 24px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 12px;">
                         <i class="fas fa-qrcode"></i> Escanear QR Code
                     </h2>
-                    <div id="qr-reader" style="width: 100%; margin-bottom: 20px;"></div>
+                    <div style="position: relative; width: 100%; margin-bottom: 20px;">
+                        <div id="qr-reader" style="width: 100%; position: relative;"></div>
+                        <!-- Crosshair/Indicador Visual Melhorado -->
+                        <div id="qr-scanner-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; width: 250px; height: 250px; border: 3px solid #FFC700; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 199, 0, 0.5); animation: pulse 2s infinite;">
+                            <div style="position: absolute; top: -3px; left: -3px; width: 30px; height: 30px; border-top: 4px solid #FFC700; border-left: 4px solid #FFC700; border-radius: 4px 0 0 0;"></div>
+                            <div style="position: absolute; top: -3px; right: -3px; width: 30px; height: 30px; border-top: 4px solid #FFC700; border-right: 4px solid #FFC700; border-radius: 0 4px 0 0;"></div>
+                            <div style="position: absolute; bottom: -3px; left: -3px; width: 30px; height: 30px; border-bottom: 4px solid #FFC700; border-left: 4px solid #FFC700; border-radius: 0 0 0 4px;"></div>
+                            <div style="position: absolute; bottom: -3px; right: -3px; width: 30px; height: 30px; border-bottom: 4px solid #FFC700; border-right: 4px solid #FFC700; border-radius: 0 0 4px 0;"></div>
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: #FFC700; border-radius: 50%; box-shadow: 0 0 10px rgba(255, 199, 0, 0.8);"></div>
+                        </div>
+                    </div>
+                    <style>
+                        @keyframes pulse {
+                            0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 199, 0, 0.5); }
+                            50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 199, 0, 0.8); }
+                        }
+                    </style>
                     <p style="color: #A1A1A1; font-size: 14px; margin-bottom: 20px;">
-                        Posicione o QR Code na frente da câmera
+                        Posicione o QR Code dentro da área indicada
                     </p>
                     <button onclick="window.closeQRScanner()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                         <i class="fas fa-times"></i> Cancelar
@@ -642,6 +658,28 @@
                         (decodedText, decodedResult) => {
                             // QR Code escaneado com sucesso
                             console.log('QR Code escaneado:', decodedText);
+                            
+                            // Tocar som de confirmação
+                            try {
+                                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                                const oscillator = audioContext.createOscillator();
+                                const gainNode = audioContext.createGain();
+                                
+                                oscillator.connect(gainNode);
+                                gainNode.connect(audioContext.destination);
+                                
+                                oscillator.frequency.value = 800;
+                                oscillator.type = 'sine';
+                                
+                                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                                
+                                oscillator.start(audioContext.currentTime);
+                                oscillator.stop(audioContext.currentTime + 0.2);
+                            } catch (e) {
+                                console.log('Som de confirmação não disponível:', e);
+                            }
+                            
                             window.handleQRCodeScanned(decodedText);
                         },
                         (errorMessage) => {
@@ -750,13 +788,68 @@
             }
         };
         
+        // Função para formatar CPF (xxx.xxx.xxx-xx)
+        function formatCPF(value) {
+            const numbers = value.replace(/\D/g, '');
+            if (numbers.length <= 3) return numbers;
+            if (numbers.length <= 6) return numbers.replace(/(\d{3})(\d+)/, '$1.$2');
+            if (numbers.length <= 9) return numbers.replace(/(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
+            return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d+)/, '$1.$2.$3-$4');
+        }
+        
+        // Função para validar CPF
+        function validateCPF(cpf) {
+            const cleanCPF = cpf.replace(/\D/g, '');
+            if (cleanCPF.length !== 11) return false;
+            if (/^(\d)\1{10}$/.test(cleanCPF)) return false; // Todos dígitos iguais
+            
+            let sum = 0;
+            let remainder;
+            
+            for (let i = 1; i <= 9; i++) {
+                sum += parseInt(cleanCPF.substring(i - 1, i)) * (11 - i);
+            }
+            remainder = (sum * 10) % 11;
+            if (remainder === 10 || remainder === 11) remainder = 0;
+            if (remainder !== parseInt(cleanCPF.substring(9, 10))) return false;
+            
+            sum = 0;
+            for (let i = 1; i <= 10; i++) {
+                sum += parseInt(cleanCPF.substring(i - 1, i)) * (12 - i);
+            }
+            remainder = (sum * 10) % 11;
+            if (remainder === 10 || remainder === 11) remainder = 0;
+            if (remainder !== parseInt(cleanCPF.substring(10, 11))) return false;
+            
+            return true;
+        }
+        
         // Função para confirmar presença via CPF (definir como global imediatamente)
         window.confirmByCPF = async function() {
             const cpfInput = document.getElementById('cpf-search-input');
             const cpf = cpfInput?.value?.trim();
+            const cleanCPF = cpf.replace(/\D/g, '');
             
-            if (!cpf || cpf.length !== 11) {
+            // Validação em tempo real
+            if (!cpf || cleanCPF.length !== 11) {
                 alert('❌ Por favor, digite um CPF válido com 11 dígitos.');
+                if (cpfInput) {
+                    cpfInput.style.borderColor = '#d32f2f';
+                    setTimeout(() => {
+                        cpfInput.style.borderColor = '#2C2C2F';
+                    }, 3000);
+                }
+                return;
+            }
+            
+            if (!validateCPF(cpf)) {
+                alert('❌ CPF inválido. Verifique os dígitos.');
+                if (cpfInput) {
+                    cpfInput.style.borderColor = '#d32f2f';
+                    setTimeout(() => {
+                        cpfInput.style.borderColor = '#2C2C2F';
+                    }, 3000);
+                }
                 return;
             }
             
@@ -1135,7 +1228,7 @@
             document.getElementById(`tab-${tabId}`).classList.add('active');
         }
         
-        // Permitir confirmar por CPF ao pressionar Enter e adicionar event listeners
+            // Permitir confirmar por CPF ao pressionar Enter e adicionar event listeners
         document.addEventListener('DOMContentLoaded', function() {
             // Adicionar event listener ao botão QR Code
             const qrBtn = document.getElementById('qr-scanner-btn');
@@ -1149,6 +1242,17 @@
                         alert('Erro: Scanner QR Code não está disponível. Recarregue a página.');
                     }
                 });
+                
+                // Navegação por teclado (acessibilidade)
+                qrBtn.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        qrBtn.click();
+                    }
+                });
+                qrBtn.setAttribute('tabindex', '0');
+                qrBtn.setAttribute('role', 'button');
+                qrBtn.setAttribute('aria-label', 'Abrir scanner de QR Code');
             }
             
             // Adicionar event listener ao botão CPF
@@ -1163,11 +1267,39 @@
                         alert('Erro: Busca por CPF não está disponível. Recarregue a página.');
                     }
                 });
+                
+                // Navegação por teclado (acessibilidade)
+                cpfBtn.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        cpfBtn.click();
+                    }
+                });
+                cpfBtn.setAttribute('tabindex', '0');
+                cpfBtn.setAttribute('role', 'button');
+                cpfBtn.setAttribute('aria-label', 'Buscar convidado por CPF');
             }
             
-            // Permitir confirmar por CPF ao pressionar Enter
+            // Validação de CPF em tempo real e permitir confirmar ao pressionar Enter
             const cpfInput = document.getElementById('cpf-search-input');
             if (cpfInput) {
+                // Validação visual em tempo real
+                cpfInput.addEventListener('input', function() {
+                    const cleanCPF = this.value.replace(/\D/g, '');
+                    if (cleanCPF.length === 11) {
+                        if (validateCPF(this.value)) {
+                            this.style.borderColor = '#4caf50';
+                            this.style.boxShadow = '0 0 0 2px rgba(76, 175, 80, 0.2)';
+                        } else {
+                            this.style.borderColor = '#d32f2f';
+                            this.style.boxShadow = '0 0 0 2px rgba(211, 47, 47, 0.2)';
+                        }
+                    } else {
+                        this.style.borderColor = '#2C2C2F';
+                        this.style.boxShadow = 'none';
+                    }
+                });
+                
                 cpfInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -1179,6 +1311,10 @@
                         }
                     }
                 });
+                
+                // Acessibilidade
+                cpfInput.setAttribute('aria-label', 'Digite o CPF para buscar convidado');
+                cpfInput.setAttribute('aria-describedby', 'cpf-help-text');
             }
         });
     </script>
