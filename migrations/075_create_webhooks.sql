@@ -2,9 +2,10 @@
 -- Data: 2025-01-31
 -- Descrição: Sistema de webhooks para integração com serviços externos
 
+-- Criar tabela primeiro sem foreign key
 CREATE TABLE IF NOT EXISTS webhooks (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id VARCHAR(255) NOT NULL, -- Tipo correto: VARCHAR para corresponder à tabela users
     name VARCHAR(255) NOT NULL,
     url TEXT NOT NULL,
     events TEXT[] NOT NULL, -- Array de eventos: ['form.submit', 'guest.confirm', 'response.create', etc]
@@ -18,9 +19,29 @@ CREATE TABLE IF NOT EXISTS webhooks (
     last_triggered_at TIMESTAMP
 );
 
+-- Adicionar foreign key se a tabela users existir
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'users'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'webhooks_user_id_fkey'
+    ) THEN
+        ALTER TABLE webhooks 
+        ADD CONSTRAINT webhooks_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+        RAISE NOTICE 'Foreign key webhooks_user_id_fkey criada com sucesso';
+    ELSE
+        RAISE NOTICE 'Foreign key não criada (tabela users não existe ou constraint já existe)';
+    END IF;
+END $$;
+
+-- Criar tabela webhook_deliveries após webhooks
 CREATE TABLE IF NOT EXISTS webhook_deliveries (
     id SERIAL PRIMARY KEY,
-    webhook_id INTEGER NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
+    webhook_id INTEGER NOT NULL, -- Referência será adicionada abaixo
     event_type VARCHAR(100) NOT NULL,
     payload JSONB NOT NULL,
     status VARCHAR(50) NOT NULL CHECK (status IN ('pending', 'success', 'failed', 'retrying')),
@@ -32,6 +53,25 @@ CREATE TABLE IF NOT EXISTS webhook_deliveries (
     delivered_at TIMESTAMP,
     next_retry_at TIMESTAMP
 );
+
+-- Adicionar foreign key para webhook_deliveries
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'webhooks'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'webhook_deliveries_webhook_id_fkey'
+    ) THEN
+        ALTER TABLE webhook_deliveries 
+        ADD CONSTRAINT webhook_deliveries_webhook_id_fkey 
+        FOREIGN KEY (webhook_id) REFERENCES webhooks(id) ON DELETE CASCADE;
+        RAISE NOTICE 'Foreign key webhook_deliveries_webhook_id_fkey criada com sucesso';
+    ELSE
+        RAISE NOTICE 'Foreign key não criada (tabela webhooks não existe ou constraint já existe)';
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_webhooks_user ON webhooks(user_id);
 CREATE INDEX IF NOT EXISTS idx_webhooks_active ON webhooks(is_active);

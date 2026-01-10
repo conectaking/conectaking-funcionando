@@ -2,9 +2,10 @@
 -- Data: 2025-01-31
 -- Descrição: Sistema de notificações push usando Web Push API
 
+-- Criar tabela primeiro sem foreign key
 CREATE TABLE IF NOT EXISTS push_subscriptions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id VARCHAR(255) NOT NULL, -- Tipo correto: VARCHAR para corresponder à tabela users
     endpoint TEXT NOT NULL UNIQUE, -- URL do serviço de push
     p256dh_key TEXT NOT NULL, -- Chave pública para criptografia
     auth_key TEXT NOT NULL, -- Chave de autenticação
@@ -14,10 +15,30 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     last_notification_at TIMESTAMP
 );
 
+-- Adicionar foreign key se a tabela users existir
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'users'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'push_subscriptions_user_id_fkey'
+    ) THEN
+        ALTER TABLE push_subscriptions 
+        ADD CONSTRAINT push_subscriptions_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+        RAISE NOTICE 'Foreign key push_subscriptions_user_id_fkey criada com sucesso';
+    ELSE
+        RAISE NOTICE 'Foreign key não criada (tabela users não existe ou constraint já existe)';
+    END IF;
+END $$;
+
+-- Criar tabela push_notifications após push_subscriptions
 CREATE TABLE IF NOT EXISTS push_notifications (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    subscription_id INTEGER REFERENCES push_subscriptions(id) ON DELETE CASCADE,
+    user_id VARCHAR(255), -- Tipo correto: VARCHAR para corresponder à tabela users
+    subscription_id INTEGER, -- Referência será adicionada abaixo
     title VARCHAR(255) NOT NULL,
     body TEXT NOT NULL,
     icon_url TEXT,
@@ -28,6 +49,38 @@ CREATE TABLE IF NOT EXISTS push_notifications (
     error_message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Adicionar foreign keys para push_notifications
+DO $$ 
+BEGIN
+    -- Foreign key para users
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'users'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'push_notifications_user_id_fkey'
+    ) THEN
+        ALTER TABLE push_notifications 
+        ADD CONSTRAINT push_notifications_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+        RAISE NOTICE 'Foreign key push_notifications_user_id_fkey criada com sucesso';
+    END IF;
+    
+    -- Foreign key para push_subscriptions
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'push_subscriptions'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'push_notifications_subscription_id_fkey'
+    ) THEN
+        ALTER TABLE push_notifications 
+        ADD CONSTRAINT push_notifications_subscription_id_fkey 
+        FOREIGN KEY (subscription_id) REFERENCES push_subscriptions(id) ON DELETE CASCADE;
+        RAISE NOTICE 'Foreign key push_notifications_subscription_id_fkey criada com sucesso';
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_push_subscriptions_endpoint ON push_subscriptions(endpoint);

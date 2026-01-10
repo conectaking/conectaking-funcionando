@@ -2,9 +2,10 @@
 -- Data: 2025-01-31
 -- Descrição: Sistema completo de auditoria para rastrear todas as ações importantes
 
+-- Criar tabela primeiro sem foreign key
 CREATE TABLE IF NOT EXISTS audit_logs (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    user_id VARCHAR(255), -- Tipo correto: VARCHAR para corresponder à tabela users
     action_type VARCHAR(100) NOT NULL, -- 'create', 'update', 'delete', 'view', 'export', 'confirm', etc.
     resource_type VARCHAR(100) NOT NULL, -- 'form', 'guest', 'response', 'list', 'user', etc.
     resource_id INTEGER,
@@ -19,6 +20,25 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     execution_time_ms INTEGER, -- Tempo de execução em milissegundos
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Adicionar foreign key se a tabela users existir
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'users'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'audit_logs_user_id_fkey'
+    ) THEN
+        ALTER TABLE audit_logs 
+        ADD CONSTRAINT audit_logs_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+        RAISE NOTICE 'Foreign key audit_logs_user_id_fkey criada com sucesso';
+    ELSE
+        RAISE NOTICE 'Foreign key não criada (tabela users não existe ou constraint já existe)';
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action_type);
