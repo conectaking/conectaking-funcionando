@@ -360,32 +360,35 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         }
         
         // Buscar todos os convidados por status
-        const registeredResult = await client.query(`
-            SELECT id, name, email, phone, whatsapp, document, address, neighborhood, city, state, zipcode, instagram, status, created_at, custom_responses
+        // IMPORTANTE: "Cadastrados" deve mostrar TODOS os convidados, independente do status
+        const allGuestsResult = await client.query(`
+            SELECT id, name, email, phone, whatsapp, document, address, neighborhood, city, state, zipcode, instagram, status, created_at, confirmed_at, checked_in_at, custom_responses
             FROM guests
-            WHERE guest_list_id = $1 AND status = 'registered'
-            ORDER BY name ASC
+            WHERE guest_list_id = $1
+            ORDER BY 
+                CASE status 
+                    WHEN 'checked_in' THEN 1
+                    WHEN 'confirmed' THEN 2
+                    WHEN 'registered' THEN 3
+                    ELSE 4
+                END,
+                name ASC
         `, [guestList.id]);
         
-        const confirmedResult = await client.query(`
-            SELECT id, name, email, phone, whatsapp, document, address, neighborhood, city, state, zipcode, instagram, status, confirmed_at, created_at, custom_responses
-            FROM guests
-            WHERE guest_list_id = $1 AND status = 'confirmed'
-            ORDER BY name ASC
-        `, [guestList.id]);
+        // Separar por status para as abas específicas
+        const registeredResult = { rows: allGuestsResult.rows.filter(g => g.status === 'registered') };
+        const confirmedResult = { rows: allGuestsResult.rows.filter(g => g.status === 'confirmed') };
+        const checkedInResult = { rows: allGuestsResult.rows.filter(g => g.status === 'checked_in') };
         
-        const checkedInResult = await client.query(`
-            SELECT id, name, email, phone, whatsapp, document, address, neighborhood, city, state, zipcode, instagram, status, checked_in_at, confirmed_at, created_at, custom_responses
-            FROM guests
-            WHERE guest_list_id = $1 AND status = 'checked_in'
-            ORDER BY checked_in_at DESC
-        `, [guestList.id]);
+        // Para a aba "Cadastrados" (registered), usar TODOS os convidados
+        const registeredGuests = allGuestsResult.rows;
         
         res.render('guestListViewFull', {
             guestList,
-            registeredGuests: registeredResult.rows,
+            registeredGuests: registeredGuests, // TODOS os convidados (para aba Cadastrados)
             confirmedGuests: confirmedResult.rows,
             checkedInGuests: checkedInResult.rows,
+            notArrivedGuests: registeredResult.rows, // Quem não chegou (status registered)
             token: token,
             profileItemId: guestList.profile_item_id
         });
