@@ -598,6 +598,15 @@
         window.qrCodeScanner = null;
         window.qrScannerModal = null;
         
+        // Função para formatar CPF - DEFINIR PRIMEIRO para uso inline no HTML
+        window.formatCPF = function(value) {
+            const numbers = value.replace(/\D/g, '');
+            if (numbers.length <= 3) return numbers;
+            if (numbers.length <= 6) return numbers.replace(/(\d{3})(\d+)/, '$1.$2');
+            if (numbers.length <= 9) return numbers.replace(/(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
+            return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d+)/, '$1.$2.$3-$4');
+        };
+        
         // Função para abrir o scanner de QR Code (definir como global imediatamente)
         window.openQRScanner = function() {
             // Criar modal
@@ -800,14 +809,7 @@
             }
         };
         
-        // Função para formatar CPF (xxx.xxx.xxx-xx)
-        function formatCPF(value) {
-            const numbers = value.replace(/\D/g, '');
-            if (numbers.length <= 3) return numbers;
-            if (numbers.length <= 6) return numbers.replace(/(\d{3})(\d+)/, '$1.$2');
-            if (numbers.length <= 9) return numbers.replace(/(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
-            return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d+)/, '$1.$2.$3-$4');
-        }
+        // formatCPF já foi definido como window.formatCPF no início do script
         
         // Função para validar CPF
         function validateCPF(cpf) {
