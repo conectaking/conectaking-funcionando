@@ -1501,6 +1501,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             secondary_color,
             text_color,
             card_color,
+            decorative_bar_color,
             is_active, 
             display_order,
             is_listed,
@@ -1896,6 +1897,21 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 if (cardColorCheck.rows.length > 0) {
                     updateFormFields.push(`card_color = $${formParamIndex++}`);
                     updateFormValues.push(card_color || '#FFFFFF');
+                }
+            }
+            // Verificar se coluna decorative_bar_color existe antes de atualizar
+            if (decorative_bar_color !== undefined) {
+                const decorativeBarColorCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'decorative_bar_color'
+                `);
+                if (decorativeBarColorCheck.rows.length > 0) {
+                    updateFormFields.push(`decorative_bar_color = $${formParamIndex++}`);
+                    updateFormValues.push(decorative_bar_color || primary_color || '#4A90E2');
+                    console.log(`🎨 [DECORATIVE_BAR_COLOR] Valor a ser salvo: "${decorative_bar_color || primary_color || '#4A90E2'}"`);
+                } else {
+                    console.warn(`⚠️ [DECORATIVE_BAR_COLOR] Coluna decorative_bar_color não existe na tabela digital_form_items`);
                 }
             }
             // Verificar se coluna pastor_button_name existe antes de atualizar

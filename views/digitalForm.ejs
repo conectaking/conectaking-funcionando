@@ -45,12 +45,17 @@
                 secondaryColor: secondaryColor
             });
         %>
+        <%
+            // Cor das barrinhas decorativas (padrão: cor primária)
+            const decorativeBarColor = formData.decorative_bar_color || primaryColor;
+        %>
         :root {
             --primary-color: <%= primaryColor %>;
             --secondary-color: <%= secondaryColor %>;
             --text-color: <%= formData.text_color || '#333333' %>;
             --background-color: <%= formData.background_color || '#FFFFFF' %>;
             --card-color: <%= formData.card_color || '#FFFFFF' %>;
+            --decorative-bar-color: <%= decorativeBarColor %>;
             --theme: <%= formData.theme || 'light' %>;
         }
         
@@ -262,7 +267,7 @@
                     <form id="digital-form" class="digital-form">
                         <div style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e8eaed;">
                             <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text-color, #202124); letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px;">
-                                <div style="width: 6px; height: 32px; background: linear-gradient(180deg, var(--primary-color, #4A90E2), var(--secondary-color, #4A90E2)); border-radius: 3px;"></div>
+                                <div style="width: 6px; height: 32px; background: linear-gradient(180deg, var(--decorative-bar-color, var(--primary-color, #4A90E2)), var(--secondary-color, #4A90E2)); border-radius: 3px;"></div>
                                 Preencha os dados
                             </h2>
                             <p style="margin: 12px 0 0 18px; color: #5f6368; font-size: 14px;">Todos os campos marcados com * são obrigatórios</p>
@@ -289,11 +294,9 @@
                                     %>
                                     <div class="form-group" data-field-type="<%= fieldType %>" data-field-id="<%= fieldId %>" 
                                          <% if (isConditional) { %>data-depends-on="<%= dependsOnFieldId %>" data-depends-on-value="<%= dependsOnValue %>" style="display: none;" class="conditional-field"<% } %>>
-                                        <label for="field-<%= index %>">
-                                            <%= fieldLabel %>
-                                            <% if (isRequired) { %>
-                                                <span class="required">*</span>
-                                            <% } %>
+                                        <label for="field-<%= index %>" style="display: flex; align-items: flex-start; gap: 8px;">
+                                            <span style="width: 3px; height: 18px; background: linear-gradient(180deg, var(--decorative-bar-color, var(--primary-color, #4A90E2)), rgba(74, 144, 226, 0.6)); border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
+                                            <span style="flex: 1;"><%= fieldLabel %><% if (isRequired) { %><span class="required">*</span><% } %></span>
                                         </label>
                                         <% if (fieldType === 'short_text') { %>
                                             <input type="text" id="field-<%= index %>" name="<%= fieldName %>" <% if (isRequired) { %>required<% } %> placeholder="<%= placeholder %>">
@@ -542,7 +545,10 @@
                 console.log(`🔄 [PUBLIC] Processando campo ${index + 1}/${fields.length}:`, normalizedField.label, '- Tipo:', normalizedField.type);
                 console.log(`🔍 [PUBLIC] Campo completo:`, normalizedField);
                 
-                let fieldHTML = `<label for="field-${index}">${normalizedField.label} ${normalizedField.required ? '<span class="required">*</span>' : ''}</label>`;
+                let fieldHTML = `<label for="field-${index}" style="display: flex; align-items: flex-start; gap: 8px;">
+                    <span style="width: 3px; height: 18px; background: linear-gradient(180deg, var(--decorative-bar-color, var(--primary-color, #4A90E2)), rgba(74, 144, 226, 0.6)); border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
+                    <span style="flex: 1;">${normalizedField.label} ${normalizedField.required ? '<span class="required">*</span>' : ''}</span>
+                </label>`;
                 
                 switch(normalizedField.type) {
                     case 'short_text':
