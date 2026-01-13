@@ -1074,13 +1074,24 @@
             }
             
             // Gerar código da inscrição
-            const inscricaoCode = `INS-${guest.id}-${new Date(guest.created_at).getFullYear()}${String(new Date(guest.created_at).getMonth() + 1).padStart(2, '0')}${String(new Date(guest.created_at).getDate()).padStart(2, '0')}`;
+            const inscricaoCode = `King-${guest.id}-${new Date(guest.created_at).getFullYear()}${String(new Date(guest.created_at).getMonth() + 1).padStart(2, '0')}${String(new Date(guest.created_at).getDate()).padStart(2, '0')}`;
             
             // Preparar HTML dos campos do formulário COM PERGUNTAS E RESPOSTAS
             let formFieldsHTML = '';
-            if (Object.keys(customResponses).length > 0 && formFields && Array.isArray(formFields)) {
+            if (Object.keys(customResponses).length > 0 && formFields && Array.isArray(formFields) && formFields.length > 0) {
                 formFieldsHTML = Object.entries(customResponses).map(([key, value]) => {
-                    const label = getFieldLabel(key); // Usa a função getFieldLabel para pegar a PERGUNTA
+                    // Tentar obter o label do campo
+                    let label = getFieldLabel(key);
+                    
+                    // Se o label ainda for igual à chave (não encontrou), tentar mais uma vez
+                    if (label === key || label === key.toString()) {
+                        // Tentar usar a chave como índice numérico direto
+                        const numKey = parseInt(key);
+                        if (!isNaN(numKey) && numKey >= 0 && numKey < formFields.length) {
+                            label = formFields[numKey].label || formFields[numKey].question || label;
+                        }
+                    }
+                    
                     let displayValue = Array.isArray(value) ? value.join(', ') : (value || '');
                     
                     // Formatação especial para arrays (como checkbox, multiple_choice)
@@ -1103,7 +1114,7 @@
             } else if (Object.keys(customResponses).length > 0) {
                 // Fallback se não tiver formFields
                 formFieldsHTML = Object.entries(customResponses).map(([key, value]) => {
-                    const label = getFieldLabel(key);
+                    let label = getFieldLabel(key);
                     const displayValue = Array.isArray(value) ? value.join(', ') : (value || '');
                     return `
                         <div style="margin-bottom: 12px; padding: 12px; background: rgba(255,255,255,0.04); border-radius: 8px; border-left: 4px solid #FFC700;">
@@ -1200,31 +1211,59 @@
         
         // Função para obter label do campo pelo ID
         function getFieldLabel(fieldId) {
-            if (!formFields || !Array.isArray(formFields)) return fieldId;
+            if (!formFields || !Array.isArray(formFields)) {
+                // Se não tiver formFields, tentar formatar o fieldId de forma mais amigável
+                return fieldId.toString().replace(/^field_\d+_/, '').replace(/^field_/, '').replace(/_/g, ' ') || fieldId;
+            }
+            
+            // Se fieldId for apenas um número (string ou número), tentar usar como índice direto
+            const fieldIdStr = fieldId.toString();
+            if (/^\d+$/.test(fieldIdStr)) {
+                const index = parseInt(fieldIdStr);
+                if (index >= 0 && index < formFields.length && formFields[index] && formFields[index].label) {
+                    return formFields[index].label;
+                }
+            }
             
             // Tentar encontrar pelo ID exato
-            let field = formFields.find(f => f.id === fieldId || (f.id && f.id.toString() === fieldId.toString()));
+            let field = formFields.find(f => {
+                if (!f.id) return false;
+                return f.id === fieldId || 
+                       f.id.toString() === fieldIdStr || 
+                       f.id.toString() === fieldIdStr.toString();
+            });
             if (field && field.label) return field.label;
             
             // Tentar encontrar pelo ID sem prefixo
-            const fieldIdClean = fieldId.toString().replace(/^field_/, '').replace(/_/g, '');
+            const fieldIdClean = fieldIdStr.replace(/^field_/, '').replace(/_/g, '');
             field = formFields.find(f => {
-                const fId = (f.id || '').toString().replace(/^field_/, '').replace(/_/g, '');
+                if (!f.id) return false;
+                const fId = f.id.toString().replace(/^field_/, '').replace(/_/g, '');
                 return fId === fieldIdClean || fId.includes(fieldIdClean) || fieldIdClean.includes(fId);
             });
             if (field && field.label) return field.label;
             
             // Tentar encontrar pelo índice (se fieldId for field_0, field_1, etc)
-            const match = fieldId.toString().match(/field_(\d+)/);
+            const match = fieldIdStr.match(/field_(\d+)/);
             if (match && match[1]) {
                 const index = parseInt(match[1]);
-                if (formFields[index] && formFields[index].label) {
+                if (index >= 0 && index < formFields.length && formFields[index] && formFields[index].label) {
+                    return formFields[index].label;
+                }
+            }
+            
+            // Tentar encontrar pelo índice se fieldId começar com número após "field_"
+            const match2 = fieldIdStr.match(/^(\d+)/);
+            if (match2 && match2[1]) {
+                const index = parseInt(match2[1]);
+                if (index >= 0 && index < formFields.length && formFields[index] && formFields[index].label) {
                     return formFields[index].label;
                 }
             }
             
             // Se não encontrou, retornar o ID formatado (remover "field_" e números)
-            return fieldId.toString().replace(/^field_\d+_/, '').replace(/^field_/, '').replace(/_/g, ' ');
+            const formatted = fieldIdStr.replace(/^field_\d+_/, '').replace(/^field_/, '').replace(/_/g, ' ');
+            return formatted || fieldIdStr;
         }
         
         function switchTab(tabName) {
