@@ -1989,10 +1989,12 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 updateFormValues.push(latestFormId);
                 // IMPORTANTE: Forçar atualização do updated_at explicitamente
                 // Usar ID específico ao invés de profile_item_id para garantir que atualize o registro correto
+                // O índice do parâmetro WHERE é o comprimento do array (já que latestFormId foi adicionado no final)
+                const whereParamIndex = updateFormValues.length;
                 const formUpdateQuery = `
                     UPDATE digital_form_items 
                     SET ${updateFormFields.join(', ')}, updated_at = NOW()
-                    WHERE id = $${formParamIndex++}
+                    WHERE id = $${whereParamIndex}
                     RETURNING *
                 `;
                 const updateResult = await client.query(formUpdateQuery, updateFormValues);
