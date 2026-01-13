@@ -884,11 +884,12 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             }
         }
         
-        // IMPORTANTE: Também atualizar enable_whatsapp, enable_guest_list_submit e campos de logo em digital_form_items
+        // IMPORTANTE: Também atualizar enable_whatsapp, enable_guest_list_submit, campos de logo, form_title e form_fields em digital_form_items
         // Isso garante que a página pública tenha acesso a esses valores
         if (enable_whatsapp !== undefined || enable_guest_list_submit !== undefined || 
             form_logo_url !== undefined || button_logo_url !== undefined || 
-            button_logo_size !== undefined || show_logo_corner !== undefined) {
+            button_logo_size !== undefined || show_logo_corner !== undefined ||
+            event_title !== undefined || custom_form_fields !== undefined) {
             const digitalFormUpdateFields = [];
             const digitalFormUpdateValues = [];
             let digitalFormParamIndex = 1;
@@ -947,6 +948,24 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 digitalFormUpdateFields.push(`show_logo_corner = $${digitalFormParamIndex++}`);
                 digitalFormUpdateValues.push(showLogoCornerValue);
                 logger.info(`🖼️ [GUEST_LIST] Sincronizando show_logo_corner em digital_form_items: ${showLogoCornerValue}`);
+            }
+            
+            // IMPORTANTE: Sincronizar event_title para form_title em digital_form_items
+            const hasFormTitle = digitalFormColumnCheck.rows.some(r => r.column_name === 'form_title');
+            if (event_title !== undefined && hasFormTitle) {
+                digitalFormUpdateFields.push(`form_title = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(event_title);
+                logger.info(`📝 [GUEST_LIST] Sincronizando event_title (${event_title}) para form_title em digital_form_items`);
+            }
+            
+            // IMPORTANTE: Sincronizar custom_form_fields para form_fields em digital_form_items
+            const hasFormFields = digitalFormColumnCheck.rows.some(r => r.column_name === 'form_fields');
+            if (custom_form_fields !== undefined && hasFormFields) {
+                const formFieldsArray = Array.isArray(custom_form_fields) ? custom_form_fields : (custom_form_fields ? [custom_form_fields] : []);
+                const formFieldsJSON = JSON.stringify(formFieldsArray);
+                digitalFormUpdateFields.push(`form_fields = $${digitalFormParamIndex++}::jsonb`);
+                digitalFormUpdateValues.push(formFieldsJSON);
+                logger.info(`📋 [GUEST_LIST] Sincronizando custom_form_fields (${formFieldsArray.length} campos) para form_fields em digital_form_items`);
             }
             
             if (digitalFormUpdateFields.length > 0) {
