@@ -86,13 +86,25 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     
     try {
-        // Buscar formulário pelo share_token (pode ser digital_form ou guest_list)
-        const itemRes = await client.query(
+        // Buscar formulário pelo share_token ou cadastro_slug (pode ser digital_form ou guest_list)
+        // Primeiro tentar pelo share_token
+        let itemRes = await client.query(
             `SELECT pi.* 
              FROM profile_items pi
              WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
             [token]
         );
+
+        // Se não encontrar pelo share_token, tentar pelo cadastro_slug
+        if (itemRes.rows.length === 0) {
+            itemRes = await client.query(
+                `SELECT pi.* 
+                 FROM profile_items pi
+                 INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+                 WHERE gli.cadastro_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
+                [token]
+            );
+        }
 
         if (itemRes.rows.length === 0) {
             return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>O link compartilhável é inválido ou expirou.</p>');
