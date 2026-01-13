@@ -739,6 +739,45 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             }
         }
         
+        // Atualizar cadastro_slug se fornecido
+        if (cadastro_slug !== undefined) {
+            try {
+                // Validar slug: apenas letras, números, hífens e underscores, minúsculas
+                if (cadastro_slug && cadastro_slug.trim() && !/^[a-z0-9_-]+$/.test(cadastro_slug.trim())) {
+                    return res.status(400).json({ 
+                        message: 'Slug inválido. Use apenas letras minúsculas, números, hífens e underscores.' 
+                    });
+                }
+                
+                // Normalizar slug (trim e lowercase)
+                const normalizedSlug = cadastro_slug && cadastro_slug.trim() ? cadastro_slug.trim().toLowerCase() : null;
+                
+                // Verificar se o slug já está em uso por outra lista (apenas se não for null/vazio)
+                if (normalizedSlug) {
+                    const slugCheck = await client.query(`
+                        SELECT id FROM guest_list_items 
+                        WHERE cadastro_slug = $1 AND id != $2
+                    `, [normalizedSlug, guestListItemId]);
+                    
+                    if (slugCheck.rows.length > 0) {
+                        return res.status(400).json({ 
+                            message: 'Este slug já está em uso. Escolha outro.' 
+                        });
+                    }
+                }
+                
+                guestListUpdateFields.push(`cadastro_slug = $${guestListParamIndex++}`);
+                guestListUpdateValues.push(normalizedSlug);
+                logger.info(`🔗 [GUEST_LIST] Salvando cadastro_slug: "${normalizedSlug || 'null'}" (recebido: "${cadastro_slug}")`);
+            } catch (err) {
+                logger.error('❌ Erro ao verificar/atualizar coluna cadastro_slug:', err);
+                return res.status(500).json({ 
+                    message: 'Erro ao salvar slug', 
+                    error: err.message 
+                });
+            }
+        }
+        
         // Atualizar portaria_slug se fornecido
         if (portaria_slug !== undefined) {
             try {
