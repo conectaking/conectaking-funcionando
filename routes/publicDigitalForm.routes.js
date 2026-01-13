@@ -127,11 +127,15 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
         
         // Buscar dados de digital_form_items (sempre necessário para form_fields, etc)
+        // IMPORTANTE: Buscar o registro mais recente baseado em updated_at e id
+        // Usar COALESCE para garantir que registros sem updated_at sejam ordenados corretamente
         let formRes;
         formRes = await client.query(
             `SELECT * FROM digital_form_items 
              WHERE profile_item_id = $1 
-             ORDER BY updated_at DESC NULLS LAST, id DESC 
+             ORDER BY 
+                COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
+                id DESC 
              LIMIT 1`,
             [itemIdInt]
         );
@@ -141,6 +145,17 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         }
 
         let formData = formRes.rows[0];
+        
+        // Log para debug - verificar se está pegando o registro correto
+        logger.info(`📋 [FORM/SHARE] Formulário carregado para item ${itemIdInt}:`, {
+            formTitle: formData.form_title,
+            formDescription: formData.form_description,
+            updatedAt: formData.updated_at,
+            id: formData.id,
+            displayFormat: formData.display_format,
+            primaryColor: formData.primary_color,
+            secondaryColor: formData.secondary_color
+        });
         
         // IMPORTANTE: Sempre verificar se existe dados em guest_list_items (mesmo que item_type não seja guest_list)
         // Isso é necessário porque o item pode estar como digital_form mas ter dados salvos em guest_list_items
