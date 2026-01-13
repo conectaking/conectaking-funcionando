@@ -327,7 +327,7 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
     try {
         const { token } = req.params;
         
-        // Buscar lista pelo public_view_token
+        // Buscar lista pelo public_view_token, confirmation_token ou portaria_slug
         const listResult = await client.query(`
             SELECT 
                 gli.*,
@@ -338,7 +338,11 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
             FROM guest_list_items gli
             INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
             INNER JOIN users u ON u.id = pi.user_id
-            WHERE (gli.public_view_token = $1 OR gli.confirmation_token = $1) AND pi.is_active = true
+            WHERE (
+                gli.public_view_token = $1 
+                OR gli.confirmation_token = $1 
+                OR gli.portaria_slug = $1
+            ) AND pi.is_active = true
         `, [token]);
         
         if (listResult.rows.length === 0) {

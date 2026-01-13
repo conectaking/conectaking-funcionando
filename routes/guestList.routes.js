@@ -351,6 +351,7 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                     gli.custom_form_fields,
                     gli.use_custom_form,
                     gli.public_view_token,
+                    gli.portaria_slug,
                     COALESCE(gli.primary_color, '#FFC700') as primary_color,
                     COALESCE(gli.text_color, '#ECECEC') as text_color,
                     COALESCE(gli.background_color, '#0D0D0F') as background_color,
