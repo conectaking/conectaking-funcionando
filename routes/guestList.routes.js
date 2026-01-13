@@ -36,6 +36,8 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 gli.custom_form_fields,
                 gli.use_custom_form,
                 gli.public_view_token,
+                gli.portaria_slug,
+                gli.cadastro_slug,
                 COALESCE(gli.primary_color, '#FFC700') as primary_color,
                 COALESCE(gli.text_color, '#ECECEC') as text_color,
                 COALESCE(gli.background_color, '#0D0D0F') as background_color,
@@ -298,6 +300,8 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.custom_form_fields,
                 gli.use_custom_form,
                 gli.public_view_token,
+                gli.portaria_slug,
+                gli.cadastro_slug,
                 COALESCE(gli.primary_color, '#FFC700') as primary_color,
                 COALESCE(gli.text_color, '#ECECEC') as text_color,
                 COALESCE(gli.background_color, '#0D0D0F') as background_color,
@@ -352,6 +356,7 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                     gli.use_custom_form,
                     gli.public_view_token,
                     gli.portaria_slug,
+                    gli.cadastro_slug,
                     COALESCE(gli.primary_color, '#FFC700') as primary_color,
                     COALESCE(gli.text_color, '#ECECEC') as text_color,
                     COALESCE(gli.background_color, '#0D0D0F') as background_color,
@@ -506,8 +511,9 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             button_logo_url,
             button_logo_size,
             show_logo_corner,
-            // IMPORTANTE: Incluir portaria_slug
-            portaria_slug
+            // IMPORTANTE: Incluir portaria_slug e cadastro_slug
+            portaria_slug,
+            cadastro_slug
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
@@ -952,6 +958,8 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.custom_form_fields,
                 gli.use_custom_form,
                 gli.public_view_token,
+                gli.portaria_slug,
+                gli.cadastro_slug,
                 COALESCE(gli.primary_color, '#FFC700') as primary_color,
                 COALESCE(gli.text_color, '#ECECEC') as text_color,
                 COALESCE(gli.background_color, '#0D0D0F') as background_color,
