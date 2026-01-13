@@ -505,7 +505,9 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             form_logo_url,
             button_logo_url,
             button_logo_size,
-            show_logo_corner
+            show_logo_corner,
+            // IMPORTANTE: Incluir portaria_slug
+            portaria_slug
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
@@ -734,40 +736,39 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
         // Atualizar portaria_slug se fornecido
         if (portaria_slug !== undefined) {
             try {
-                const columnCheck = await client.query(`
-                    SELECT column_name 
-                    FROM information_schema.columns 
-                    WHERE table_name = 'guest_list_items' 
-                    AND column_name = 'portaria_slug'
-                `);
-                if (columnCheck.rows.length > 0) {
-                    // Validar slug: apenas letras, números, hífens e underscores, minúsculas
-                    if (portaria_slug && !/^[a-z0-9_-]+$/.test(portaria_slug)) {
+                // Validar slug: apenas letras, números, hífens e underscores, minúsculas
+                if (portaria_slug && portaria_slug.trim() && !/^[a-z0-9_-]+$/.test(portaria_slug.trim())) {
+                    return res.status(400).json({ 
+                        message: 'Slug inválido. Use apenas letras minúsculas, números, hífens e underscores.' 
+                    });
+                }
+                
+                // Normalizar slug (trim e lowercase)
+                const normalizedSlug = portaria_slug && portaria_slug.trim() ? portaria_slug.trim().toLowerCase() : null;
+                
+                // Verificar se o slug já está em uso por outra lista (apenas se não for null/vazio)
+                if (normalizedSlug) {
+                    const slugCheck = await client.query(`
+                        SELECT id FROM guest_list_items 
+                        WHERE portaria_slug = $1 AND id != $2
+                    `, [normalizedSlug, guestListItemId]);
+                    
+                    if (slugCheck.rows.length > 0) {
                         return res.status(400).json({ 
-                            message: 'Slug inválido. Use apenas letras minúsculas, números, hífens e underscores.' 
+                            message: 'Este slug já está em uso. Escolha outro.' 
                         });
                     }
-                    
-                    // Verificar se o slug já está em uso por outra lista
-                    if (portaria_slug) {
-                        const slugCheck = await client.query(`
-                            SELECT id FROM guest_list_items 
-                            WHERE portaria_slug = $1 AND id != $2
-                        `, [portaria_slug, guestListItemId]);
-                        
-                        if (slugCheck.rows.length > 0) {
-                            return res.status(400).json({ 
-                                message: 'Este slug já está em uso. Escolha outro.' 
-                            });
-                        }
-                    }
-                    
-                    guestListUpdateFields.push(`portaria_slug = $${guestListParamIndex++}`);
-                    guestListUpdateValues.push(portaria_slug || null);
-                    logger.info(`🔗 [GUEST_LIST] Salvando portaria_slug: ${portaria_slug || 'null'}`);
                 }
+                
+                guestListUpdateFields.push(`portaria_slug = $${guestListParamIndex++}`);
+                guestListUpdateValues.push(normalizedSlug);
+                logger.info(`🔗 [GUEST_LIST] Salvando portaria_slug: "${normalizedSlug || 'null'}" (recebido: "${portaria_slug}")`);
             } catch (err) {
-                logger.warn('Erro ao verificar/atualizar coluna portaria_slug:', err.message);
+                logger.error('❌ Erro ao verificar/atualizar coluna portaria_slug:', err);
+                return res.status(500).json({ 
+                    message: 'Erro ao salvar slug', 
+                    error: err.message 
+                });
             }
         }
         
