@@ -280,7 +280,15 @@
                                         const placeholder = field.placeholder || field.Placeholder || '';
                                         const fieldLabel = field.label || field.Label || 'Campo sem título';
                                     %>
-                                    <div class="form-group" data-field-type="<%= fieldType %>" data-field-id="<%= fieldId %>">
+                                    <% 
+                                        // Suporte para campos condicionais
+                                        const dependsOn = field.dependsOn || field.depends_on;
+                                        const dependsOnValue = dependsOn ? (dependsOn.value || 'Sim') : null;
+                                        const dependsOnFieldId = dependsOn ? (dependsOn.fieldId || dependsOn) : null;
+                                        const isConditional = dependsOn !== undefined && dependsOn !== null;
+                                    %>
+                                    <div class="form-group" data-field-type="<%= fieldType %>" data-field-id="<%= fieldId %>" 
+                                         <% if (isConditional) { %>data-depends-on="<%= dependsOnFieldId %>" data-depends-on-value="<%= dependsOnValue %>" style="display: none;" class="conditional-field"<% } %>>
                                         <label for="field-<%= index %>">
                                             <%= fieldLabel %>
                                             <% if (isRequired) { %>
@@ -508,6 +516,28 @@
                 group.className = 'form-group';
                 group.dataset.fieldType = normalizedField.type;
                 group.dataset.fieldId = normalizedField.id || `field_${index}`;
+                group.dataset.fieldIndex = index; // Adicionar índice para referência
+                
+                // Suporte para campos condicionais
+                if (normalizedField.dependsOn || normalizedField.depends_on) {
+                    const dependsOn = normalizedField.dependsOn || normalizedField.depends_on;
+                    const dependsOnFieldId = dependsOn.fieldId || dependsOn;
+                    const dependsOnValue = dependsOn.value || 'Sim';
+                    
+                    // Encontrar o índice do campo pai
+                    const parentFieldIndex = fields.findIndex(f => {
+                        const fId = (f.id || '').toString();
+                        const dependsId = dependsOnFieldId.toString();
+                        return fId === dependsId || fId === `field_${dependsId}` || `field_${fId}` === dependsId;
+                    });
+                    
+                    if (parentFieldIndex >= 0) {
+                        group.dataset.dependsOn = `field_${parentFieldIndex}`;
+                        group.dataset.dependsOnValue = dependsOnValue;
+                        group.style.display = 'none'; // Esconder inicialmente
+                        group.classList.add('conditional-field');
+                    }
+                }
                 
                 console.log(`🔄 [PUBLIC] Processando campo ${index + 1}/${fields.length}:`, normalizedField.label, '- Tipo:', normalizedField.type);
                 console.log(`🔍 [PUBLIC] Campo completo:`, normalizedField);
@@ -685,9 +715,71 @@
                         } else {
                             this.closest('.checkbox-label')?.classList.remove('checked');
                         }
+                        
+                        // Lógica de campos condicionais
+                        handleConditionalFields(this);
                     });
                 });
             }, 100);
+            
+            // Função para gerenciar campos condicionais
+            function handleConditionalFields(triggerInput) {
+                const triggerGroup = triggerInput.closest('.form-group');
+                if (!triggerGroup) return;
+                
+                const fieldIndex = triggerGroup.dataset.fieldIndex;
+                const fieldId = `field_${fieldIndex}`;
+                if (!fieldIndex && !triggerGroup.dataset.fieldId) return;
+                
+                // Encontrar todos os campos que dependem deste (usar fieldIndex)
+                const selector = fieldIndex !== undefined ? `.conditional-field[data-depends-on="field_${fieldIndex}"]` : `.conditional-field[data-depends-on="${triggerGroup.dataset.fieldId}"]`;
+                document.querySelectorAll(selector).forEach(conditionalField => {
+                    const requiredValue = conditionalField.dataset.dependsOnValue || 'Sim';
+                    const triggerValue = triggerInput.value;
+                    
+                    // Normalizar valores para comparação (case-insensitive)
+                    const normalizedRequired = requiredValue.toLowerCase().trim();
+                    const normalizedTrigger = triggerValue.toLowerCase().trim();
+                    
+                    // Verificar se o valor corresponde
+                    const shouldShow = normalizedTrigger === normalizedRequired || 
+                                      (normalizedRequired === 'sim' && (normalizedTrigger === 'sim' || normalizedTrigger === 'yes' || normalizedTrigger === 's')) ||
+                                      (normalizedRequired === 'não' && (normalizedTrigger === 'não' || normalizedTrigger === 'nao' || normalizedTrigger === 'no' || normalizedTrigger === 'n'));
+                    
+                    if (shouldShow) {
+                        conditionalField.style.display = 'block';
+                        conditionalField.style.animation = 'fadeInUp 0.3s ease-out';
+                        // Tornar campos obrigatórios válidos quando aparecem
+                        const requiredInputs = conditionalField.querySelectorAll('[required]');
+                        requiredInputs.forEach(input => {
+                            input.removeAttribute('required');
+                            input.setAttribute('data-was-required', 'true');
+                            input.setAttribute('required', 'required');
+                        });
+                    } else {
+                        conditionalField.style.display = 'none';
+                        // Limpar valores quando escondido
+                        conditionalField.querySelectorAll('input, textarea, select').forEach(input => {
+                            if (input.type === 'checkbox' || input.type === 'radio') {
+                                input.checked = false;
+                            } else {
+                                input.value = '';
+                            }
+                            // Remover required temporariamente
+                            if (input.hasAttribute('data-was-required')) {
+                                input.removeAttribute('required');
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Inicializar campos condicionais ao carregar
+            setTimeout(() => {
+                document.querySelectorAll('.form-group:not(.conditional-field) input[type="radio"]:checked, .form-group:not(.conditional-field) input[type="checkbox"]:checked').forEach(input => {
+                    handleConditionalFields(input);
+                });
+            }, 200);
         }
         
         // Inicializar renderização dos campos
