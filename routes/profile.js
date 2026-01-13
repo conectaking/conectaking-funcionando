@@ -1674,21 +1674,46 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         });
         
         // Verificar se já existe registro em digital_form_items
+        // IMPORTANTE: Se houver múltiplos registros, vamos manter apenas o mais recente
         const formCheck = await client.query(
+            `SELECT id FROM digital_form_items 
+             WHERE profile_item_id = $1 
+             ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC 
+             LIMIT 1`,
+            [itemId]
+        );
+        
+        // Se houver múltiplos registros, deletar os antigos
+        const allFormsCheck = await client.query(
             'SELECT id FROM digital_form_items WHERE profile_item_id = $1',
             [itemId]
         );
+        
+        if (allFormsCheck.rows.length > 1) {
+            console.log(`⚠️ [DIGITAL_FORM] Encontrados ${allFormsCheck.rows.length} registros para item ${itemId}. Mantendo apenas o mais recente.`);
+            // Manter apenas o mais recente, deletar os outros
+            const latestId = formCheck.rows.length > 0 ? formCheck.rows[0].id : null;
+            if (latestId) {
+                await client.query(
+                    'DELETE FROM digital_form_items WHERE profile_item_id = $1 AND id != $2',
+                    [itemId, latestId]
+                );
+                console.log(`✅ [DIGITAL_FORM] Registros duplicados deletados. Mantido registro ID: ${latestId}`);
+            }
+        }
 
         if (formCheck.rows.length > 0) {
-            // Atualizar registro existente
+            // Atualizar registro existente (o mais recente)
             const updateFormFields = [];
             const updateFormValues = [];
             let formParamIndex = 1;
-
-            if (form_title !== undefined) {
-                updateFormFields.push(`form_title = $${formParamIndex++}`);
-                updateFormValues.push(form_title || 'Formulário King');
-            }
+            
+            // IMPORTANTE: form_title deve ser sempre atualizado, mesmo que seja string vazia
+            // Removido o check de !== undefined para garantir que sempre atualize
+            const formTitleToSave = form_title !== undefined && form_title !== null ? (form_title.trim() || 'Formulário King') : 'Formulário King';
+            updateFormFields.push(`form_title = $${formParamIndex++}`);
+            updateFormValues.push(formTitleToSave);
+            console.log(`📝 [DIGITAL_FORM] Atualizando form_title: "${formTitleToSave}" (recebido: "${form_title}")`);
             if (form_logo_url !== undefined) {
                 updateFormFields.push(`form_logo_url = $${formParamIndex++}`);
                 updateFormValues.push(form_logo_url || null);
@@ -1941,16 +1966,21 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 }
             }
 
+            // IMPORTANTE: Sempre incluir pelo menos form_title no update
             if (updateFormFields.length > 0) {
-                updateFormValues.push(itemId);
+                // Usar o ID do registro mais recente ao invés de profile_item_id
+                const latestFormId = formCheck.rows[0].id;
+                updateFormValues.push(latestFormId);
                 // IMPORTANTE: Forçar atualização do updated_at explicitamente
+                // Usar ID específico ao invés de profile_item_id para garantir que atualize o registro correto
                 const formUpdateQuery = `
                     UPDATE digital_form_items 
                     SET ${updateFormFields.join(', ')}, updated_at = NOW()
-                    WHERE profile_item_id = $${formParamIndex++}
+                    WHERE id = $${formParamIndex++}
                     RETURNING *
                 `;
                 const updateResult = await client.query(formUpdateQuery, updateFormValues);
+                console.log(`✅ [DIGITAL_FORM] UPDATE executado no registro ID ${latestFormId} para item ${itemId}`);
                 
             // LOG DETALHADO APÓS UPDATE - INCLUINDO LOGO DO BOTÃO
             if (updateResult.rows.length > 0) {
