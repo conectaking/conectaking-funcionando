@@ -147,11 +147,27 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         let formData = formRes.rows[0];
         
         // Log para debug - verificar se está pegando o registro correto
+        // IMPORTANTE: Buscar TODOS os registros para debug (verificar se há múltiplos)
+        const allFormsDebug = await client.query(
+            `SELECT id, form_title, updated_at, created_at 
+             FROM digital_form_items 
+             WHERE profile_item_id = $1 
+             ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC`,
+            [itemIdInt]
+        );
+        
         logger.info(`📋 [FORM/SHARE] Formulário carregado para item ${itemIdInt}:`, {
-            formTitle: formData.form_title,
-            formDescription: formData.form_description,
-            updatedAt: formData.updated_at,
-            id: formData.id,
+            totalRegistros: allFormsDebug.rows.length,
+            registroUsado: {
+                id: formData.id,
+                formTitle: formData.form_title,
+                updatedAt: formData.updated_at
+            },
+            todosRegistros: allFormsDebug.rows.map(r => ({
+                id: r.id,
+                formTitle: r.form_title,
+                updatedAt: r.updated_at
+            })),
             displayFormat: formData.display_format,
             primaryColor: formData.primary_color,
             secondaryColor: formData.secondary_color
