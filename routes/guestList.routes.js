@@ -899,7 +899,7 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'digital_form_items' 
-                AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit', 'form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner')
+                AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit', 'form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'form_title', 'form_fields')
             `);
             const hasEnableWhatsapp = digitalFormColumnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
             const hasEnableGuestListSubmit = digitalFormColumnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
