@@ -144,18 +144,31 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         
         // IMPORTANTE: Sempre verificar se existe dados em guest_list_items (mesmo que item_type não seja guest_list)
         // Isso é necessário porque o item pode estar como digital_form mas ter dados salvos em guest_list_items
-        // Verificar se coluna card_color existe em guest_list_items
-        const guestListCardColorCheck = await client.query(`
+        // Verificar quais colunas existem em guest_list_items
+        const guestListColumnsCheck = await client.query(`
             SELECT column_name 
             FROM information_schema.columns 
-            WHERE table_name = 'guest_list_items' AND column_name = 'card_color'
+            WHERE table_name = 'guest_list_items' 
+            AND column_name IN ('card_color', 'enable_whatsapp', 'enable_guest_list_submit')
         `);
-        const hasGuestListCardColor = guestListCardColorCheck.rows.length > 0;
+        const hasGuestListCardColor = guestListColumnsCheck.rows.some(r => r.column_name === 'card_color');
+        const guestListHasEnableWhatsapp = guestListColumnsCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+        const guestListHasEnableGuestListSubmit = guestListColumnsCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+        
+        // Construir SELECT dinamicamente baseado nas colunas disponíveis
+        let guestListSelectFields = 'primary_color, secondary_color, text_color, background_color, header_image_url, background_image_url, background_opacity, theme, updated_at';
+        if (hasGuestListCardColor) {
+            guestListSelectFields += ', card_color';
+        }
+        if (guestListHasEnableWhatsapp) {
+            guestListSelectFields += ', enable_whatsapp';
+        }
+        if (guestListHasEnableGuestListSubmit) {
+            guestListSelectFields += ', enable_guest_list_submit';
+        }
         
         const guestListRes = await client.query(
-            `SELECT primary_color, secondary_color, text_color, background_color, 
-                    header_image_url, background_image_url, background_opacity, theme, updated_at
-                    ${hasGuestListCardColor ? ', card_color' : ''}
+            `SELECT ${guestListSelectFields}
              FROM guest_list_items 
              WHERE profile_item_id = $1 
              ORDER BY 
