@@ -258,7 +258,6 @@
                 width: 100% !important;
                 padding: 14px 16px !important;
                 font-size: 15px !important;
-                letter-spacing: 1px !important;
                 margin-bottom: 8px;
             }
             
@@ -357,9 +356,9 @@
                     Ler QR Code
                 </button>
                 
-                <!-- Busca por CPF -->
+                <!-- Busca por CPF, Email ou Nome -->
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="cpf-search-input" placeholder="Digite o CPF (apenas números)" style="flex: 1; padding: 16px; border-radius: 12px; background: #0D0D0F; border: 2px solid #2C2C2F; color: #ECECEC; font-size: 16px; font-weight: 600; letter-spacing: 2px;" maxlength="14" oninput="this.value = formatCPF(this.value)">
+                    <input type="text" id="cpf-search-input" placeholder="Digite CPF, Email ou Nome" style="flex: 1; padding: 16px; border-radius: 12px; background: #0D0D0F; border: 2px solid #2C2C2F; color: #ECECEC; font-size: 16px; font-weight: 600;" maxlength="100">
                     <button id="cpf-search-btn" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3); white-space: nowrap;">
                         <i class="fas fa-search"></i> Buscar
                     </button>
@@ -1120,46 +1119,35 @@
             return true;
         }
         
-        // Função para confirmar presença via CPF (definir como global imediatamente)
+        // Função para confirmar presença via CPF, Email ou Nome (definir como global imediatamente)
         window.confirmByCPF = async function() {
-            const cpfInput = document.getElementById('cpf-search-input');
-            const cpf = cpfInput?.value?.trim();
+            const searchInput = document.getElementById('cpf-search-input');
+            const searchTerm = searchInput?.value?.trim();
             
-            if (!cpf) {
-                alert('❌ Por favor, digite pelo menos os primeiros dígitos do CPF.');
-                if (cpfInput) {
-                    cpfInput.style.borderColor = '#d32f2f';
+            if (!searchTerm || searchTerm.length < 2) {
+                alert('❌ Por favor, digite pelo menos 2 caracteres (CPF, Email ou Nome) para buscar.');
+                if (searchInput) {
+                    searchInput.style.borderColor = '#d32f2f';
                     setTimeout(() => {
-                        cpfInput.style.borderColor = '#2C2C2F';
+                        searchInput.style.borderColor = '#2C2C2F';
                     }, 3000);
                 }
                 return;
             }
             
-            const cleanCPF = cpf.replace(/\D/g, '');
-            
-            // Permitir busca com pelo menos 3 dígitos (busca parcial)
-            if (cleanCPF.length < 3) {
-                alert('❌ Por favor, digite pelo menos 3 dígitos do CPF para buscar.');
-                if (cpfInput) {
-                    cpfInput.style.borderColor = '#d32f2f';
-                    setTimeout(() => {
-                        cpfInput.style.borderColor = '#2C2C2F';
-                    }, 3000);
+            // Se for apenas números e tiver 11 dígitos, validar CPF
+            const cleanSearch = searchTerm.replace(/\D/g, '');
+            if (cleanSearch.length === 11 && /^\d+$/.test(searchTerm.replace(/[.\-]/g, ''))) {
+                if (!validateCPF(searchTerm)) {
+                    alert('❌ CPF inválido. Verifique os dígitos.');
+                    if (searchInput) {
+                        searchInput.style.borderColor = '#d32f2f';
+                        setTimeout(() => {
+                            searchInput.style.borderColor = '#2C2C2F';
+                        }, 3000);
+                    }
+                    return;
                 }
-                return;
-            }
-            
-            // Se tiver 11 dígitos, validar CPF completo
-            if (cleanCPF.length === 11 && !validateCPF(cpf)) {
-                alert('❌ CPF inválido. Verifique os dígitos.');
-                if (cpfInput) {
-                    cpfInput.style.borderColor = '#d32f2f';
-                    setTimeout(() => {
-                        cpfInput.style.borderColor = '#2C2C2F';
-                    }, 3000);
-                }
-                return;
             }
             
             // Verificar se tem token da lista
@@ -1176,16 +1164,15 @@
                 loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Buscando convidado...</div>';
                 document.body.appendChild(loadingModal);
                 
-                // Confirmar via API (enviar CPF limpo)
+                // Confirmar via API (enviar termo de busca)
                 const response = await fetch('/guest-list/confirm/cpf', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        cpf: cleanCPF, // Enviar apenas números
-                        token: token,
-                        partial: cleanCPF.length < 11 // Indicar se é busca parcial
+                        search: searchTerm, // Enviar termo de busca (CPF, Email ou Nome)
+                        token: token
                     })
                 });
                 
@@ -1195,43 +1182,43 @@
                 if (data.success) {
                     alert(`✅ ${data.message}\n\nNome: ${data.guest.name}`);
                     // Limpar input
-                    if (cpfInput) cpfInput.value = '';
+                    if (searchInput) searchInput.value = '';
                     // Recarregar página para atualizar estatísticas
                     location.reload();
                 } else if (data.partial && data.matches > 1) {
-                    // Múltiplos resultados encontrados - pedir mais dígitos
+                    // Múltiplos resultados encontrados
                     let message = `❌ ${data.message || 'Múltiplos convidados encontrados'}`;
                     if (data.suggestions && data.suggestions.length > 0) {
                         message += '\n\nEncontrados:\n';
                         data.suggestions.forEach((s, i) => {
-                            message += `${i + 1}. ${s.name} (CPF: ${s.cpf})\n`;
+                            message += `${i + 1}. ${s.name}${s.email && s.email !== '-' ? ' (' + s.email + ')' : ''}\n`;
                         });
-                        message += '\nDigite mais dígitos do CPF para refinar a busca.';
+                        message += '\nDigite mais caracteres para refinar a busca.';
                     }
                     alert(message);
-                    if (cpfInput) {
-                        cpfInput.focus();
-                        cpfInput.style.borderColor = '#FFC700';
+                    if (searchInput) {
+                        searchInput.focus();
+                        searchInput.style.borderColor = '#FFC700';
                         setTimeout(() => {
-                            cpfInput.style.borderColor = '#2C2C2F';
+                            searchInput.style.borderColor = '#2C2C2F';
                         }, 3000);
                     }
                 } else {
-                    alert(`❌ ${data.message || 'CPF não encontrado na lista'}`);
-                    if (cpfInput) {
-                        cpfInput.style.borderColor = '#d32f2f';
+                    alert(`❌ ${data.message || 'Nenhum convidado encontrado'}`);
+                    if (searchInput) {
+                        searchInput.style.borderColor = '#d32f2f';
                         setTimeout(() => {
-                            cpfInput.style.borderColor = '#2C2C2F';
+                            searchInput.style.borderColor = '#2C2C2F';
                         }, 3000);
                     }
                 }
             } catch (error) {
-                console.error('❌ Erro ao buscar por CPF:', error);
+                console.error('❌ Erro ao buscar convidado:', error);
                 alert('❌ Erro ao buscar convidado. Tente novamente.');
-                if (cpfInput) {
-                    cpfInput.style.borderColor = '#d32f2f';
+                if (searchInput) {
+                    searchInput.style.borderColor = '#d32f2f';
                     setTimeout(() => {
-                        cpfInput.style.borderColor = '#2C2C2F';
+                        searchInput.style.borderColor = '#2C2C2F';
                     }, 3000);
                 }
             }
@@ -1682,7 +1669,7 @@
                 });
                 cpfBtn.setAttribute('tabindex', '0');
                 cpfBtn.setAttribute('role', 'button');
-                cpfBtn.setAttribute('aria-label', 'Buscar convidado por CPF');
+                cpfBtn.setAttribute('aria-label', 'Buscar convidado por CPF, Email ou Nome');
             } else {
                 console.error('❌ Botão CPF não encontrado');
             }
@@ -1702,8 +1689,7 @@
                 });
                 
                 // Acessibilidade
-                cpfInput.setAttribute('aria-label', 'Digite o CPF para buscar convidado');
-                cpfInput.setAttribute('aria-describedby', 'cpf-help-text');
+                cpfInput.setAttribute('aria-label', 'Digite CPF, Email ou Nome para buscar convidado');
             } else {
                 console.error('❌ Input CPF não encontrado');
             }
@@ -1729,35 +1715,7 @@
             }
         }, 500);
         
-        // Validação de CPF em tempo real (executar após DOM estar pronto)
-        function initCPFValidation() {
-            const cpfInput = document.getElementById('cpf-search-input');
-            if (cpfInput) {
-                // Validação visual em tempo real
-                cpfInput.addEventListener('input', function() {
-                    const cleanCPF = this.value.replace(/\D/g, '');
-                    if (cleanCPF.length === 11) {
-                        if (validateCPF(this.value)) {
-                            this.style.borderColor = '#4caf50';
-                            this.style.boxShadow = '0 0 0 2px rgba(76, 175, 80, 0.2)';
-                        } else {
-                            this.style.borderColor = '#d32f2f';
-                            this.style.boxShadow = '0 0 0 2px rgba(211, 47, 47, 0.2)';
-                        }
-                    } else {
-                        this.style.borderColor = '#2C2C2F';
-                        this.style.boxShadow = 'none';
-                    }
-                });
-            }
-        }
-        
-        // Inicializar validação de CPF
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initCPFValidation);
-        } else {
-            initCPFValidation();
-        }
+        // Validação removida - agora aceita CPF, Email ou Nome
     </script>
 </body>
 </html>

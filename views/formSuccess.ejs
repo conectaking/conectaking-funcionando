@@ -453,7 +453,15 @@
                 console.log('🔄 Tentando gerar QR Code... (tentativa ' + qrCodeAttempts + '/' + maxQRCodeAttempts + ')');
                 
                 // Verificar se a biblioteca está disponível (pode ser QRCode ou window.QRCode)
-                const QRCodeLib = typeof QRCode !== 'undefined' ? QRCode : (typeof window !== 'undefined' && window.QRCode ? window.QRCode : null);
+                // A biblioteca qrcode@1.5.3 expõe QRCode como variável global
+                let QRCodeLib = null;
+                if (typeof QRCode !== 'undefined') {
+                    QRCodeLib = QRCode;
+                } else if (typeof window !== 'undefined' && typeof window.QRCode !== 'undefined') {
+                    QRCodeLib = window.QRCode;
+                } else if (typeof global !== 'undefined' && typeof global.QRCode !== 'undefined') {
+                    QRCodeLib = global.QRCode;
+                }
                 
                 if (!QRCodeLib) {
                     console.warn('⚠️ Biblioteca QRCode ainda não carregou, aguardando...');

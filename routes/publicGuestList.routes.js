@@ -600,29 +600,34 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
 }));
 
 /**
- * POST /guest-list/confirm/cpf - Confirmar presença via CPF
+ * POST /guest-list/confirm/cpf - Confirmar presença via CPF, Email ou Nome
  */
 router.post('/confirm/cpf', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
-        const { cpf, token } = req.body;
+        const { search, token } = req.body; // Mudou de 'cpf' para 'search' para aceitar qualquer valor
+        const cpf = search || req.body.cpf; // Mantém compatibilidade com 'cpf'
         
-        if (!cpf || !token) {
+        if (!search && !cpf) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'CPF e token são obrigatórios' 
+                message: 'Digite CPF, Email ou Nome para buscar' 
             });
         }
         
-        // Limpar CPF (remover pontos, traços, espaços)
-        const cleanCpf = cpf.replace(/\D/g, '');
-        const isPartial = req.body.partial === true || cleanCpf.length < 11;
-        
-        // Permitir busca com pelo menos 3 dígitos
-        if (cleanCpf.length < 3) {
+        if (!token) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Digite pelo menos 3 dígitos do CPF para buscar.' 
+                message: 'Token é obrigatório' 
+            });
+        }
+        
+        const searchTerm = (search || cpf || '').trim();
+        
+        if (searchTerm.length < 2) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Digite pelo menos 2 caracteres para buscar' 
             });
         }
         
@@ -647,72 +652,90 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
         
         const guestList = listResult.rows[0];
         
-        // Buscar convidado pelo CPF na lista (busca exata ou parcial)
+        // Determinar tipo de busca: CPF (numérico) ou Email/Nome (texto)
+        const cleanSearch = searchTerm.replace(/\D/g, '');
+        const isNumeric = /^\d+$/.test(cleanSearch);
+        
         let guestResult;
-        if (isPartial && cleanCpf.length < 11) {
-            // Busca parcial: usar LIKE para encontrar CPFs que começam com os dígitos informados
-            // IMPORTANTE: Remover caracteres não numéricos do campo document antes de comparar
-            // Usar REGEXP_REPLACE para remover todos os caracteres não numéricos
-            // IMPORTANTE: Usar LENGTH para garantir que o documento tenha pelo menos o número de dígitos informados
-            guestResult = await client.query(`
-                SELECT * FROM guests
-                WHERE guest_list_id = $1 
-                AND document IS NOT NULL 
-                AND document != ''
-                AND LENGTH(REGEXP_REPLACE(document, '[^0-9]', '', 'g')) >= $4
-                AND REGEXP_REPLACE(document, '[^0-9]', '', 'g') LIKE $2
-                ORDER BY 
-                    CASE 
-                        WHEN REGEXP_REPLACE(document, '[^0-9]', '', 'g') = $3 THEN 1  -- Priorizar match exato
-                        ELSE 2
-                    END,
-                    created_at DESC
-                LIMIT 10
-            `, [guestList.id, cleanCpf + '%', cleanCpf, cleanCpf.length]);
+        
+        if (isNumeric && cleanSearch.length >= 3) {
+            // Busca por CPF (numérico)
+            const isPartial = cleanSearch.length < 11;
             
-            logger.info('🔍 [CPF_SEARCH] Busca parcial:', {
-                cleanCpf,
-                cleanCpfLength: cleanCpf.length,
-                found: guestResult.rows.length,
-                guestListId: guestList.id,
-                query: `LIKE '${cleanCpf}%'`
-            });
-            
-            // Se encontrou múltiplos resultados, retornar lista para o usuário escolher
-            if (guestResult.rows.length > 1) {
-                return res.json({
-                    success: false,
-                    partial: true,
-                    message: `Encontrados ${guestResult.rows.length} convidados com CPF iniciando em ${cleanCpf.substring(0, 3)}***. Digite mais dígitos para refinar a busca.`,
-                    matches: guestResult.rows.length,
-                    suggestions: guestResult.rows.slice(0, 5).map(g => ({
-                        name: g.name,
-                        cpf: g.document ? g.document.substring(0, 3) + '***.***-**' : 'N/A'
-                    }))
-                });
+            if (isPartial) {
+                guestResult = await client.query(`
+                    SELECT * FROM guests
+                    WHERE guest_list_id = $1 
+                    AND document IS NOT NULL 
+                    AND document != ''
+                    AND LENGTH(REGEXP_REPLACE(document, '[^0-9]', '', 'g')) >= $3
+                    AND REGEXP_REPLACE(document, '[^0-9]', '', 'g') LIKE $2
+                    ORDER BY 
+                        CASE 
+                            WHEN REGEXP_REPLACE(document, '[^0-9]', '', 'g') = $4 THEN 1
+                            ELSE 2
+                        END,
+                        created_at DESC
+                    LIMIT 10
+                `, [guestList.id, cleanSearch + '%', cleanSearch.length, cleanSearch]);
+            } else {
+                guestResult = await client.query(`
+                    SELECT * FROM guests
+                    WHERE guest_list_id = $1 
+                    AND document IS NOT NULL 
+                    AND document != ''
+                    AND REGEXP_REPLACE(document, '[^0-9]', '', 'g') = $2
+                `, [guestList.id, cleanSearch]);
             }
         } else {
-            // Busca exata - remover formatação do CPF no banco antes de comparar
-            // Usar REGEXP_REPLACE para remover todos os caracteres não numéricos
+            // Busca por Email ou Nome (texto)
+            const searchPattern = `%${searchTerm}%`;
             guestResult = await client.query(`
                 SELECT * FROM guests
                 WHERE guest_list_id = $1 
-                AND document IS NOT NULL 
-                AND document != ''
-                AND REGEXP_REPLACE(document, '[^0-9]', '', 'g') = $2
-            `, [guestList.id, cleanCpf]);
-            
-            logger.info('🔍 [CPF_SEARCH] Busca exata:', {
-                cleanCpf,
-                found: guestResult.rows.length,
-                guestListId: guestList.id
+                AND (
+                    name ILIKE $2
+                    OR email ILIKE $2
+                    OR COALESCE(whatsapp, phone, '') ILIKE $2
+                )
+                ORDER BY 
+                    CASE 
+                        WHEN name ILIKE $2 THEN 1
+                        WHEN email ILIKE $2 THEN 2
+                        ELSE 3
+                    END,
+                    name ASC
+                LIMIT 10
+            `, [guestList.id, searchPattern]);
+        }
+        
+        logger.info('🔍 [GUEST_SEARCH] Busca:', {
+            searchTerm,
+            isNumeric,
+            found: guestResult.rows.length,
+            guestListId: guestList.id
+        });
+        
+        // Se encontrou múltiplos resultados, retornar lista para o usuário escolher
+        if (guestResult.rows.length > 1) {
+            return res.json({
+                success: false,
+                partial: true,
+                message: `Encontrados ${guestResult.rows.length} convidados. Digite mais caracteres para refinar a busca.`,
+                matches: guestResult.rows.length,
+                suggestions: guestResult.rows.slice(0, 5).map(g => ({
+                    id: g.id,
+                    name: g.name,
+                    email: g.email || '-',
+                    cpf: g.document ? (g.document.length > 3 ? g.document.substring(0, 3) + '***.***-**' : '***') : '-'
+                }))
             });
         }
         
         if (guestResult.rows.length === 0) {
             return res.status(404).json({ 
                 success: false, 
-                message: 'CPF não encontrado na lista de convidados' 
+                message: 'Nenhum convidado encontrado com os dados informados' 
             });
         }
         
@@ -745,6 +768,11 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
             RETURNING id, name, email, whatsapp, status, checked_in_at, guest_list_id
         `, [guest.id]);
         
+        // Determinar método de confirmação
+        const isNumericSearch = /^\d+$/.test(searchTerm.replace(/\D/g, ''));
+        const confirmationMethod = isNumericSearch ? 'cpf' : 'search';
+        const methodDescription = isNumericSearch ? 'CPF' : (searchTerm.includes('@') ? 'Email' : 'Nome');
+        
         // Registrar histórico de confirmação (Melhoria 7)
         const { logConfirmationHistory } = require('../utils/confirmationHistory');
         await logConfirmationHistory({
@@ -754,9 +782,9 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
             previousStatus,
             newStatus: 'checked_in',
             confirmedBy: guest.name || 'Sistema',
-            confirmationMethod: 'cpf',
+            confirmationMethod: confirmationMethod,
             req,
-            notes: `Confirmado via CPF (${cleanCpf.substring(0, 3)}***)`
+            notes: `Confirmado via ${methodDescription}`
         }).catch(err => logger.warn('Erro ao registrar histórico:', err));
         
         // Disparar webhooks (Melhoria 20)
@@ -766,14 +794,14 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
             guestListId: guest.guest_list_id,
             guestName: guest.name,
             status: 'checked_in',
-            method: 'cpf',
+            method: confirmationMethod,
             timestamp: new Date().toISOString()
         }, null).catch(err => logger.warn('Erro ao disparar webhooks:', err));
         
-        logger.info('✅ [CPF_CONFIRM] Presença confirmada via CPF:', {
+        logger.info(`✅ [GUEST_CONFIRM] Presença confirmada via ${methodDescription}:`, {
             guestId: guest.id,
             name: guest.name,
-            cpf: cleanCpf.substring(0, 3) + '***.***-**'
+            searchTerm: searchTerm.substring(0, 10) + '...'
         });
         
         res.json({
