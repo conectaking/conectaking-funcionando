@@ -437,10 +437,27 @@
             }
         } else {
             // Função para gerar QR Code (aguarda DOM e biblioteca estarem prontos)
+            let qrCodeAttempts = 0;
+            const maxQRCodeAttempts = 50; // 50 * 200ms = 10 segundos máximo
+            
             function generateQRCode() {
-                console.log('🔄 Tentando gerar QR Code...');
+                qrCodeAttempts++;
                 
-                if (typeof QRCode === 'undefined') {
+                if (qrCodeAttempts > maxQRCodeAttempts) {
+                    console.error('❌ Limite de tentativas excedido. Biblioteca QRCode não carregou.');
+                    const canvasContainer = document.getElementById('qrcode-canvas')?.parentElement;
+                    if (canvasContainer) {
+                        canvasContainer.innerHTML = '<p style="color: red; padding: 20px;">Erro: Não foi possível carregar a biblioteca de QR Code. Por favor, recarregue a página.</p>';
+                    }
+                    return;
+                }
+                
+                console.log('🔄 Tentando gerar QR Code... (tentativa ' + qrCodeAttempts + '/' + maxQRCodeAttempts + ')');
+                
+                // Verificar se a biblioteca está disponível (pode ser QRCode ou window.QRCode)
+                const QRCodeLib = typeof QRCode !== 'undefined' ? QRCode : (typeof window !== 'undefined' && window.QRCode ? window.QRCode : null);
+                
+                if (!QRCodeLib) {
                     console.warn('⚠️ Biblioteca QRCode ainda não carregou, aguardando...');
                     setTimeout(generateQRCode, 200);
                     return;
@@ -462,7 +479,7 @@
                 console.log('✅ Gerando QR Code com token:', qrCodeData.substring(0, 20) + '...');
                 
                 try {
-                    QRCode.toCanvas(canvas, qrCodeData, {
+                    QRCodeLib.toCanvas(canvas, qrCodeData, {
                         width: 300,
                         margin: 2,
                         color: {
