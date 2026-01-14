@@ -1,5 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
+const multer = require('multer');
+const FormData = require('form-data');
 const { protectUser } = require('../middleware/protectUser');
 const config = require('../config');
 const logger = require('../utils/logger');
@@ -7,6 +9,19 @@ const { asyncHandler } = require('../middleware/errorHandler');
 require('dotenv').config();
 
 const router = express.Router();
+
+// Configurar multer para upload de imagens em memória
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Apenas imagens são permitidas'), false);
+        }
+    }
+});
 
 router.post('/auth', protectUser, asyncHandler(async (req, res) => {
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -48,6 +63,89 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
     } catch (error) {
         logger.error('Erro ao autenticar com Cloudflare', error);
         throw error;
+    }
+}));
+
+/**
+ * POST /api/upload/image - Upload direto de imagem (para páginas de personalização)
+ * Recebe FormData com campo 'image' e faz upload completo para Cloudflare
+ */
+router.post('/image', protectUser, upload.single('image'), asyncHandler(async (req, res) => {
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN || config.cloudflare.apiToken;
+
+    if (!accountId || !apiToken) {
+        logger.error('Credenciais do Cloudflare não encontradas');
+        return res.status(500).json({ 
+            success: false,
+            message: 'Erro de configuração do servidor.' 
+        });
+    }
+
+    if (!req.file) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Nenhuma imagem enviada.' 
+        });
+    }
+    
+    try {
+        // Obter URL de upload do Cloudflare
+        const authResponse = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2/direct_upload`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiToken}`
+            }
+        });
+        
+        const authData = await authResponse.json();
+        
+        if (!authData.success || !authData.result) {
+            throw new Error(authData.errors?.[0]?.message || 'Falha ao obter URL de upload');
+        }
+        
+        const { uploadURL, id: imageId } = authData.result;
+        
+        // Fazer upload da imagem para Cloudflare usando FormData do Node.js
+        const formData = new FormData();
+        formData.append('file', req.file.buffer, {
+            filename: req.file.originalname || 'image.jpg',
+            contentType: req.file.mimetype
+        });
+        
+        const uploadResponse = await fetch(uploadURL, {
+            method: 'POST',
+            body: formData,
+            headers: formData.getHeaders()
+        });
+        
+        if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text();
+            logger.error('Erro no upload para Cloudflare:', errorText);
+            throw new Error('Falha ao fazer upload da imagem para Cloudflare');
+        }
+        
+        // Construir URL final da imagem
+        const accountHash = config.cloudflare.accountHash || accountId;
+        const imageUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
+        
+        logger.info('✅ [UPLOAD] Imagem enviada com sucesso', { 
+            imageId,
+            userId: req.user.userId,
+            imageUrl 
+        });
+        
+        res.json({
+            success: true,
+            url: imageUrl,
+            imageUrl: imageUrl
+        });
+    } catch (error) {
+        logger.error('Erro ao fazer upload da imagem:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Erro ao fazer upload: ' + error.message 
+        });
     }
 }));
 
