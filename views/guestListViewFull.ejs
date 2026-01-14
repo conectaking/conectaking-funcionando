@@ -464,8 +464,48 @@
                         displayEmail = (displayEmail && displayEmail.trim()) ? displayEmail.trim() : '-';
                         displayWhatsapp = (displayWhatsapp && displayWhatsapp.trim()) ? displayWhatsapp.trim() : '-';
                         
-                        // Formatar CPF
+                        // Formatar CPF - buscar de document ou custom_responses
                         let displayCPF = guest.document || '';
+                        
+                        // Se não tiver CPF em document, tentar buscar em custom_responses
+                        if (!displayCPF || displayCPF.trim() === '') {
+                            try {
+                                const customResponses = typeof guest.custom_responses === 'string' 
+                                    ? JSON.parse(guest.custom_responses) 
+                                    : (guest.custom_responses || {});
+                                
+                                // Procurar nos formFields primeiro
+                                if (typeof formFields !== 'undefined' && Array.isArray(formFields)) {
+                                    formFields.forEach(field => {
+                                        if (field.id && customResponses[field.id]) {
+                                            const value = customResponses[field.id];
+                                            const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                            const label = (field.label || '').toLowerCase();
+                                            
+                                            if ((!displayCPF || displayCPF.trim() === '') && 
+                                                (label.includes('cpf') || label.includes('documento') || label.includes('document'))) {
+                                                displayCPF = valueStr;
+                                            }
+                                        }
+                                    });
+                                }
+                                
+                                // Fallback: procurar por chaves nos customResponses
+                                if (!displayCPF || displayCPF.trim() === '') {
+                                    Object.keys(customResponses).forEach(key => {
+                                        const keyLower = key.toLowerCase();
+                                        const value = customResponses[key];
+                                        const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                        
+                                        if ((!displayCPF || displayCPF.trim() === '') && 
+                                            (keyLower.includes('cpf') || keyLower.includes('documento') || keyLower.includes('document'))) {
+                                            displayCPF = valueStr;
+                                        }
+                                    });
+                                }
+                            } catch (e) {}
+                        }
+                        
                         if (displayCPF) {
                             const cleanCPF = displayCPF.replace(/\D/g, '');
                             if (cleanCPF.length === 11) {
@@ -589,8 +629,48 @@
                         displayEmail = (displayEmail && displayEmail.trim()) ? displayEmail.trim() : '-';
                         displayWhatsapp = (displayWhatsapp && displayWhatsapp.trim()) ? displayWhatsapp.trim() : '-';
                         
-                        // Formatar CPF
+                        // Formatar CPF - buscar de document ou custom_responses
                         let displayCPF = guest.document || '';
+                        
+                        // Se não tiver CPF em document, tentar buscar em custom_responses
+                        if (!displayCPF || displayCPF.trim() === '') {
+                            try {
+                                const customResponses = typeof guest.custom_responses === 'string' 
+                                    ? JSON.parse(guest.custom_responses) 
+                                    : (guest.custom_responses || {});
+                                
+                                // Procurar nos formFields primeiro
+                                if (typeof formFields !== 'undefined' && Array.isArray(formFields)) {
+                                    formFields.forEach(field => {
+                                        if (field.id && customResponses[field.id]) {
+                                            const value = customResponses[field.id];
+                                            const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                            const label = (field.label || '').toLowerCase();
+                                            
+                                            if ((!displayCPF || displayCPF.trim() === '') && 
+                                                (label.includes('cpf') || label.includes('documento') || label.includes('document'))) {
+                                                displayCPF = valueStr;
+                                            }
+                                        }
+                                    });
+                                }
+                                
+                                // Fallback: procurar por chaves nos customResponses
+                                if (!displayCPF || displayCPF.trim() === '') {
+                                    Object.keys(customResponses).forEach(key => {
+                                        const keyLower = key.toLowerCase();
+                                        const value = customResponses[key];
+                                        const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                        
+                                        if ((!displayCPF || displayCPF.trim() === '') && 
+                                            (keyLower.includes('cpf') || keyLower.includes('documento') || keyLower.includes('document'))) {
+                                            displayCPF = valueStr;
+                                        }
+                                    });
+                                }
+                            } catch (e) {}
+                        }
+                        
                         if (displayCPF) {
                             const cleanCPF = displayCPF.replace(/\D/g, '');
                             if (cleanCPF.length === 11) {
