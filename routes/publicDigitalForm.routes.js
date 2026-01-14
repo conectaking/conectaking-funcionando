@@ -1442,11 +1442,51 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
                                 // Se não conseguir parsear, usar como está
                             }
                         }
+                        
+                        // PRIORIDADE 1: Se a resposta já tem guest_id, buscar diretamente pelo guest_id
+                        if (responseData.guest_id) {
+                            try {
+                                logger.info('🔍 [SUCCESS] Buscando QR Token via guest_id direto:', responseData.guest_id);
+                                const directGuestRes = await client.query(
+                                    'SELECT id, qr_token FROM guests WHERE id = $1',
+                                    [responseData.guest_id]
+                                );
+                                if (directGuestRes.rows.length > 0 && directGuestRes.rows[0].qr_token) {
+                                    guestId = directGuestRes.rows[0].id;
+                                    qrToken = directGuestRes.rows[0].qr_token;
+                                    logger.info('✅ [SUCCESS] QR Token encontrado via guest_id direto');
+                                    
+                                    // Buscar dados do evento
+                                    const guestListItemRes = await client.query(
+                                        'SELECT id FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
+                                        [itemIdInt]
+                                    );
+                                    if (guestListItemRes.rows.length > 0) {
+                                        const guestListItemId = guestListItemRes.rows[0].id;
+                                        const eventRes = await client.query(
+                                            `SELECT event_title, event_date, event_location, event_address 
+                                             FROM guest_list_items 
+                                             WHERE id = $1`,
+                                            [guestListItemId]
+                                        );
+                                        if (eventRes.rows.length > 0) {
+                                            eventData = eventRes.rows[0];
+                                        }
+                                    }
+                                } else {
+                                    logger.warn('⚠️ [SUCCESS] guest_id encontrado mas guest não existe ou não tem qr_token');
+                                }
+                            } catch (directErr) {
+                                logger.warn('⚠️ [SUCCESS] Erro ao buscar guest via guest_id direto:', directErr.message);
+                            }
+                        }
                     }
                     
-                    // Buscar convidado associado a esta resposta (via guest_list_id e nome/email)
-                    const enableGuestListSubmit = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
-                    if (enableGuestListSubmit) {
+                    // PRIORIDADE 2: Se ainda não encontrou o qrToken, tentar buscar por nome/email
+                    if (!qrToken) {
+                        // Buscar convidado associado a esta resposta (via guest_list_id e nome/email)
+                        const enableGuestListSubmit = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
+                        if (enableGuestListSubmit) {
                         try {
                             // Buscar guest_list_item_id para este profile_item_id
                             const guestListItemRes = await client.query(
