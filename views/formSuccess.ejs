@@ -555,34 +555,47 @@
         
         // Função para baixar QR Code como PNG (com compressão - Melhoria 13)
         function downloadQRCode() {
-            const canvas = document.getElementById('qrcode-canvas');
-            if (!canvas) return;
+            const container = document.getElementById('qrcode-container');
+            if (!container) return;
             
-            // Compressão de imagem (Melhoria 13)
-            const compressedCanvas = document.createElement('canvas');
-            compressedCanvas.width = canvas.width;
-            compressedCanvas.height = canvas.height;
-            const ctx = compressedCanvas.getContext('2d');
+            const canvas = container.querySelector('canvas');
+            const img = container.querySelector('img');
+            if (!canvas && !img) return;
             
-            // Desenhar imagem original no canvas de compressão
-            ctx.drawImage(canvas, 0, 0);
-            
-            // Obter dados comprimidos (qualidade 0.85 para reduzir tamanho mantendo qualidade)
-            const compressedDataUrl = compressedCanvas.toDataURL('image/png', 0.85);
+            let qrCodeDataUrl;
+            if (canvas) {
+                // Compressão de imagem (Melhoria 13)
+                const compressedCanvas = document.createElement('canvas');
+                compressedCanvas.width = canvas.width;
+                compressedCanvas.height = canvas.height;
+                const ctx = compressedCanvas.getContext('2d');
+                
+                // Desenhar imagem original no canvas de compressão
+                ctx.drawImage(canvas, 0, 0);
+                
+                // Obter dados comprimidos (qualidade 0.85 para reduzir tamanho mantendo qualidade)
+                qrCodeDataUrl = compressedCanvas.toDataURL('image/png', 0.85);
+            } else {
+                qrCodeDataUrl = img.src;
+            }
             
             // Criar link de download
             const link = document.createElement('a');
             link.download = `QR-Code-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.png`;
-            link.href = compressedDataUrl;
+            link.href = qrCodeDataUrl;
             link.click();
         }
         
         // Função para compartilhar QR Code via WhatsApp
         function shareQRCode() {
-            const canvas = document.getElementById('qrcode-canvas');
-            if (!canvas) return;
+            const container = document.getElementById('qrcode-container');
+            if (!container) return;
             
-            const qrCodeImage = canvas.toDataURL('image/png');
+            const canvas = container.querySelector('canvas');
+            const img = container.querySelector('img');
+            if (!canvas && !img) return;
+            
+            const qrCodeImage = canvas ? canvas.toDataURL('image/png') : img.src;
             const message = `Olá! Este é meu QR Code de confirmação de presença:\n\n*Evento:* ${eventTitle}${eventDate ? '\n*Data:* ' + eventDate : ''}${eventAddress ? '\n*Local:* ' + eventAddress : ''}\n\nApresente este QR Code na portaria.`;
             
             // Converter imagem para base64 e enviar via WhatsApp
@@ -598,10 +611,14 @@
             }
             
             const { jsPDF } = window.jspdf;
-            const canvas = document.getElementById('qrcode-canvas');
-            if (!canvas) return;
+            const container = document.getElementById('qrcode-container');
+            if (!container) return;
             
-            const qrCodeImage = canvas.toDataURL('image/png');
+            const canvas = container.querySelector('canvas');
+            const img = container.querySelector('img');
+            if (!canvas && !img) return;
+            
+            const qrCodeImage = canvas ? canvas.toDataURL('image/png') : img.src;
             const doc = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
