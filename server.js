@@ -44,6 +44,7 @@ const aiCoreRoutes = require('./routes/aiCore');
 const contractsRoutes = require('./routes/contracts.routes');
 const guestListRoutes = require('./routes/guestList.routes');
 const publicGuestListRoutes = require('./routes/publicGuestList.routes');
+const guestListCustomizeRoutes = require('./routes/guestListCustomize.routes');
 const publicContractRoutes = require('./routes/publicContract.routes');
 const webhooksRoutes = require('./routes/webhooks.routes');
 const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
@@ -343,6 +344,7 @@ app.use('/api/ia-king', apiLimiter, iaKingTrainingRoutes);
 app.use('/api/ai-core', apiLimiter, aiCoreRoutes); // Nova ConectaKing AI Core
 app.use('/api/contracts', apiLimiter, contractsRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListRoutes);
+app.use('/api/guest-lists', apiLimiter, guestListCustomizeRoutes);
 app.use('/guest-list', publicGuestListRoutes);
 app.use('/api/webhooks', apiLimiter, webhooksRoutes);
 app.use('/api/push', apiLimiter, pushNotificationsRoutes);
