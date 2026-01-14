@@ -501,6 +501,11 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
     try {
         const { qrToken } = req.params;
         
+        logger.info('🔍 [QR_CONFIRM] Recebida requisição de confirmação QR Code:', {
+            qrTokenLength: qrToken ? qrToken.length : 0,
+            qrTokenPrefix: qrToken ? qrToken.substring(0, 16) + '...' : 'null'
+        });
+        
         // Buscar convidado pelo qr_token (Melhoria 15: Validação de Token com expiração)
         const guestResult = await client.query(`
             SELECT g.*, gli.public_view_token, gli.profile_item_id, gli.event_date
@@ -509,7 +514,14 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
             WHERE g.qr_token = $1
         `, [qrToken]);
         
+        logger.info('🔍 [QR_CONFIRM] Resultado da busca:', {
+            encontrados: guestResult.rows.length
+        });
+        
         if (guestResult.rows.length === 0) {
+            logger.warn('⚠️ [QR_CONFIRM] QR Code não encontrado:', {
+                qrTokenPrefix: qrToken ? qrToken.substring(0, 16) + '...' : 'null'
+            });
             return res.status(404).json({ 
                 success: false, 
                 message: 'QR Code inválido ou não encontrado' 
@@ -563,18 +575,23 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
         `, [guest.id]);
         
         // Registrar histórico de confirmação (Melhoria 7)
-        const { logConfirmationHistory } = require('../utils/confirmationHistory');
-        await logConfirmationHistory({
-            guestId: guest.id,
-            guestListId: guest.guest_list_id,
-            action: 'checked_in',
-            previousStatus,
-            newStatus: 'checked_in',
-            confirmedBy: guest.name || 'Sistema',
-            confirmationMethod: 'qr_code',
-            req,
-            notes: `Confirmado via QR Code (token: ${qrToken.substring(0, 16)}...)`
-        }).catch(err => logger.warn('Erro ao registrar histórico:', err));
+        try {
+            const { logConfirmationHistory } = require('../utils/confirmationHistory');
+            await logConfirmationHistory({
+                guestId: guest.id,
+                guestListId: guest.guest_list_id,
+                action: 'checked_in',
+                previousStatus,
+                newStatus: 'checked_in',
+                confirmedBy: guest.name || 'Sistema',
+                confirmationMethod: 'qr_code',
+                req,
+                notes: `Confirmado via QR Code (token: ${qrToken.substring(0, 16)}...)`
+            }).catch(err => logger.warn('Erro ao registrar histórico (não crítico):', err));
+        } catch (histErr) {
+            // Erro ao registrar histórico não deve impedir a confirmação
+            logger.warn('Erro ao registrar histórico (não crítico):', histErr);
+        }
         
         logger.info('✅ [QR_CONFIRM] Presença confirmada via QR Code:', {
             guestId: guest.id,
@@ -589,10 +606,23 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
         });
         
     } catch (error) {
-        logger.error('❌ [QR_CONFIRM] Erro ao confirmar via QR Code:', error);
+        logger.error('❌ [QR_CONFIRM] Erro ao confirmar via QR Code:', {
+            error: error.message,
+            stack: error.stack,
+            name: error.name,
+            code: error.code
+        });
+        
+        // Se já enviou resposta, não enviar novamente
+        if (res.headersSent) {
+            logger.warn('⚠️ [QR_CONFIRM] Resposta já foi enviada, ignorando erro');
+            return;
+        }
+        
         res.status(500).json({ 
             success: false, 
-            message: 'Erro ao confirmar presença. Tente novamente.' 
+            message: 'Erro ao confirmar presença. Tente novamente.',
+            ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {})
         });
     } finally {
         client.release();
