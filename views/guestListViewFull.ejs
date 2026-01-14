@@ -489,10 +489,10 @@
                                     <i class="fas fa-eye"></i> Ver Detalhes
                                 </button>
                                 <% if (guest.status !== 'checked_in') { %>
-                                    <button onclick="confirmarChegada(<%= guest.id %>, '<%= (displayName || '').replace(/'/g, "\\'") %>')" 
-                                            style="padding: 6px 12px; background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; border-radius: 6px; color: #000; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
-                                        <i class="fas fa-check"></i> Confirmar Chegada
-                                    </button>
+                                <button onclick="confirmarChegada(<%= guest.id %>, <%= JSON.stringify(displayName || '') %>)" 
+                                        style="padding: 6px 12px; background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; border-radius: 6px; color: #000; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
+                                    <i class="fas fa-check"></i> Confirmar Chegada
+                                </button>
                                 <% } %>
                             </div>
                         </div>
