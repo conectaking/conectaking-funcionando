@@ -896,10 +896,8 @@
                             // QR Code escaneado com sucesso
                             console.log('✅ QR Code escaneado:', decodedText);
                             
-                            // Parar o scanner imediatamente após escanear
-                            if (window.qrCodeScanner) {
-                                window.qrCodeScanner.stop().catch(err => console.warn('Erro ao parar scanner:', err));
-                            }
+                            // FECHAR SCANNER IMEDIATAMENTE - antes de processar
+                            window.closeQRScanner();
                             
                             // Tocar som de confirmação
                             try {
@@ -922,6 +920,7 @@
                                 console.log('Som de confirmação não disponível:', e);
                             }
                             
+                            // Processar QR Code após fechar scanner
                             window.handleQRCodeScanned(decodedText);
                         },
                         (errorMessage) => {
@@ -1186,6 +1185,10 @@
                 
                 if (!token) {
                     console.error('❌ QR Code vazio');
+                    // Garantir que scanner está fechado
+                    if (window.qrScannerModal) {
+                        window.closeQRScanner();
+                    }
                     alert('❌ QR Code inválido. Verifique se o QR Code está correto.');
                     return;
                 }
@@ -1207,14 +1210,20 @@
                 // Validar token (deve ter pelo menos 32 caracteres hexadecimais - 64 é o esperado)
                 if (!token || token.length < 32) {
                     console.error('❌ Token inválido (muito curto):', token.length);
+                    // Garantir que scanner está fechado
+                    if (window.qrScannerModal) {
+                        window.closeQRScanner();
+                    }
                     alert('❌ QR Code inválido. O token está muito curto. Verifique se o QR Code está correto.');
                     return;
                 }
                 
                 console.log('✅ Token extraído:', token.substring(0, 20) + '... (tamanho: ' + token.length + ')');
                 
-                // Fechar scanner ANTES de processar (para evitar múltiplas leituras)
-                window.closeQRScanner();
+                // Garantir que scanner está fechado (já fechado no callback, mas garantir)
+                if (window.qrScannerModal) {
+                    window.closeQRScanner();
+                }
                 
                 // Mostrar loading
                 loadingModal = document.createElement('div');
@@ -1286,6 +1295,10 @@
                     }, 500);
                 } else {
                     console.error('❌ API retornou sucesso=false:', data);
+                    // Garantir que scanner está fechado
+                    if (window.qrScannerModal) {
+                        window.closeQRScanner();
+                    }
                     alert(`❌ ${data.message || 'Erro ao confirmar presença'}`);
                 }
             } catch (error) {
@@ -1333,12 +1346,17 @@
                     errorDetails = 'Tente escanear o QR Code novamente.';
                 }
                 
+                // Garantir que scanner está fechado (não reabrir)
+                if (window.qrScannerModal) {
+                    window.closeQRScanner();
+                }
+                
                 // Mostrar alerta com mensagem clara
                 const fullMessage = errorDetails ? `${errorMessage}\n\n${errorDetails}` : errorMessage;
                 console.log('📢 Exibindo mensagem de erro:', fullMessage);
                 alert(fullMessage);
                 
-                // Resetar flags para permitir nova tentativa
+                // Resetar flags para permitir nova tentativa (scanner já está fechado)
                 window.isScanning = false;
                 window.isInitializingScanner = false;
             }
