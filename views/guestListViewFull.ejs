@@ -1130,9 +1130,14 @@
         window.closeQRScanner = function() {
             // Parar scanner primeiro
             if (window.qrCodeScanner) {
-                window.qrCodeScanner.stop().then(() => {
+                const scannerInstance = window.qrCodeScanner; // Guardar referência antes de setar null
+                window.qrCodeScanner = null; // Setar null primeiro para evitar problemas
+                
+                scannerInstance.stop().then(() => {
                     try {
-                        window.qrCodeScanner.clear();
+                        if (scannerInstance && scannerInstance.clear) {
+                            scannerInstance.clear();
+                        }
                     } catch (clearErr) {
                         console.warn('Erro ao limpar scanner:', clearErr);
                     }
@@ -1144,14 +1149,13 @@
                     }
                     // Tentar limpar mesmo se parar falhou
                     try {
-                        if (window.qrCodeScanner && window.qrCodeScanner.clear) {
-                            window.qrCodeScanner.clear();
+                        if (scannerInstance && scannerInstance.clear) {
+                            scannerInstance.clear();
                         }
                     } catch (clearErr) {
                         console.warn('Erro ao limpar scanner após falha ao parar:', clearErr);
                     }
                 });
-                window.qrCodeScanner = null;
             }
             
             // Remover modal
