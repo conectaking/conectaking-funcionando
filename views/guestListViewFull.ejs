@@ -1271,23 +1271,32 @@
                     loadingModal.remove();
                 }
                 
-                // Mostrar mensagem de erro mais específica
+                // Mostrar mensagem de erro mais específica e útil (visível na tela, não só no console)
                 let errorMessage = 'Erro ao processar QR Code. Tente novamente.';
+                let errorDetails = '';
+                
                 if (error.message) {
                     if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
-                        errorMessage = '❌ Erro de conexão. Verifique sua internet e tente novamente.';
-                    } else if (error.message.includes('404')) {
-                        errorMessage = '❌ QR Code não encontrado. Verifique se o QR Code está correto.';
-                    } else if (error.message.includes('400')) {
-                        errorMessage = '❌ QR Code inválido ou expirado. Verifique se o QR Code está correto.';
-                    } else if (error.message.includes('500')) {
-                        errorMessage = '❌ Erro no servidor. Tente novamente mais tarde.';
+                        errorMessage = '❌ Erro de conexão';
+                        errorDetails = 'Verifique sua internet e tente novamente.';
+                    } else if (error.message.includes('404') || error.message.includes('não encontrado') || error.message.includes('não encontrado')) {
+                        errorMessage = '❌ QR Code não encontrado';
+                        errorDetails = 'Este QR Code não está cadastrado no sistema. Verifique se o QR Code está correto ou se o convidado foi cadastrado.';
+                    } else if (error.message.includes('400') || error.message.includes('inválido') || error.message.includes('expirado')) {
+                        errorMessage = '❌ QR Code inválido ou expirado';
+                        errorDetails = 'Este QR Code não pode ser usado. Verifique se o QR Code está correto ou se ainda é válido.';
+                    } else if (error.message.includes('500') || error.message.includes('servidor')) {
+                        errorMessage = '❌ Erro no servidor';
+                        errorDetails = 'Tente novamente mais tarde. Se o problema persistir, entre em contato com o suporte.';
                     } else {
-                        errorMessage = `❌ ${error.message}`;
+                        errorMessage = `❌ Erro: ${error.message}`;
+                        errorDetails = 'Tente escanear o QR Code novamente.';
                     }
                 }
                 
-                alert(errorMessage);
+                // Mostrar alerta com mensagem clara
+                const fullMessage = errorDetails ? `${errorMessage}\n\n${errorDetails}` : errorMessage;
+                alert(fullMessage);
                 
                 // Resetar flags para permitir nova tentativa
                 window.isScanning = false;

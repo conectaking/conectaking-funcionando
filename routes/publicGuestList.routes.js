@@ -501,30 +501,46 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
     try {
         const { qrToken } = req.params;
         
+        // Normalizar token (remover espaços e caracteres especiais)
+        const normalizedToken = (qrToken || '').trim();
+        
+        if (!normalizedToken || normalizedToken.length < 32) {
+            logger.warn('⚠️ [QR_CONFIRM] Token inválido (muito curto):', {
+                length: normalizedToken ? normalizedToken.length : 0
+            });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'QR Code inválido. O token está muito curto.' 
+            });
+        }
+        
         logger.info('🔍 [QR_CONFIRM] Recebida requisição de confirmação QR Code:', {
-            qrTokenLength: qrToken ? qrToken.length : 0,
-            qrTokenPrefix: qrToken ? qrToken.substring(0, 16) + '...' : 'null'
+            qrTokenLength: normalizedToken.length,
+            qrTokenPrefix: normalizedToken.substring(0, 16) + '...'
         });
         
         // Buscar convidado pelo qr_token (Melhoria 15: Validação de Token com expiração)
+        // IMPORTANTE: Buscar exatamente como está armazenado (case-sensitive)
         const guestResult = await client.query(`
             SELECT g.*, gli.public_view_token, gli.profile_item_id, gli.event_date
             FROM guests g
             INNER JOIN guest_list_items gli ON gli.id = g.guest_list_id
             WHERE g.qr_token = $1
-        `, [qrToken]);
+        `, [normalizedToken]);
         
         logger.info('🔍 [QR_CONFIRM] Resultado da busca:', {
-            encontrados: guestResult.rows.length
+            encontrados: guestResult.rows.length,
+            tokenLength: normalizedToken.length
         });
         
         if (guestResult.rows.length === 0) {
             logger.warn('⚠️ [QR_CONFIRM] QR Code não encontrado:', {
-                qrTokenPrefix: qrToken ? qrToken.substring(0, 16) + '...' : 'null'
+                qrTokenPrefix: normalizedToken.substring(0, 16) + '...',
+                tokenLength: normalizedToken.length
             });
             return res.status(404).json({ 
                 success: false, 
-                message: 'QR Code inválido ou não encontrado' 
+                message: 'QR Code não encontrado. Verifique se o QR Code está correto ou se o convidado foi cadastrado.' 
             });
         }
         
@@ -586,7 +602,7 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
                 confirmedBy: guest.name || 'Sistema',
                 confirmationMethod: 'qr_code',
                 req,
-                notes: `Confirmado via QR Code (token: ${qrToken.substring(0, 16)}...)`
+                notes: `Confirmado via QR Code (token: ${normalizedToken.substring(0, 16)}...)`
             }).catch(err => logger.warn('Erro ao registrar histórico (não crítico):', err));
         } catch (histErr) {
             // Erro ao registrar histórico não deve impedir a confirmação
@@ -596,7 +612,7 @@ router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
         logger.info('✅ [QR_CONFIRM] Presença confirmada via QR Code:', {
             guestId: guest.id,
             name: guest.name,
-            qrToken: qrToken.substring(0, 16) + '...'
+            qrToken: normalizedToken.substring(0, 16) + '...'
         });
         
         res.json({
