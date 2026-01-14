@@ -518,6 +518,9 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             decorative_bar_color
         } = req.body;
         
+        // LOG DEBUG: Verificar se decorative_bar_color está sendo recebido
+        logger.info(`🎨 [GUEST_LIST] decorative_bar_color recebido: ${decorative_bar_color || 'undefined/null'} (tipo: ${typeof decorative_bar_color})`);
+        
         // Verificar se a lista pertence ao usuário
         // Aceita tanto item_type = 'guest_list' quanto 'digital_form' (formulário convertido)
         const checkResult = await client.query(`
@@ -973,10 +976,22 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             
             // IMPORTANTE: Sincronizar decorative_bar_color em digital_form_items
             const hasDecorativeBarColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'decorative_bar_color');
+            logger.info(`🔍 [GUEST_LIST] Verificando sincronização de decorative_bar_color:`, {
+                decorative_bar_color_undefined: decorative_bar_color === undefined,
+                decorative_bar_color_value: decorative_bar_color || 'null',
+                hasDecorativeBarColor: hasDecorativeBarColor,
+                columnCheckResults: digitalFormColumnCheck.rows.map(r => r.column_name)
+            });
             if (decorative_bar_color !== undefined && hasDecorativeBarColor) {
                 digitalFormUpdateFields.push(`decorative_bar_color = $${digitalFormParamIndex++}`);
                 digitalFormUpdateValues.push(decorative_bar_color || null);
                 logger.info(`🎨 [GUEST_LIST] Sincronizando decorative_bar_color (${decorative_bar_color || 'null'}) para digital_form_items`);
+            } else {
+                logger.warn(`⚠️ [GUEST_LIST] decorative_bar_color NÃO será sincronizado:`, {
+                    decorative_bar_color_undefined: decorative_bar_color === undefined,
+                    decorative_bar_color_value: decorative_bar_color || 'null',
+                    hasDecorativeBarColor: hasDecorativeBarColor
+                });
             }
             
             if (digitalFormUpdateFields.length > 0) {
