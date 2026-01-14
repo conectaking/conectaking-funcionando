@@ -1119,109 +1119,48 @@
             return true;
         }
         
-        // Função para confirmar presença via CPF, Email ou Nome (definir como global imediatamente)
-        window.confirmByCPF = async function() {
+        // Função para filtrar lista em tempo real (sem mensagens de alerta)
+        window.filterGuestList = function() {
             const searchInput = document.getElementById('cpf-search-input');
-            const searchTerm = searchInput?.value?.trim();
+            const searchTerm = (searchInput?.value || '').trim().toLowerCase();
+            const cleanSearch = searchTerm.replace(/\D/g, ''); // Para busca por CPF
             
-            if (!searchTerm || searchTerm.length < 2) {
-                alert('❌ Por favor, digite pelo menos 2 caracteres (CPF, Email ou Nome) para buscar.');
-                if (searchInput) {
-                    searchInput.style.borderColor = '#d32f2f';
-                    setTimeout(() => {
-                        searchInput.style.borderColor = '#2C2C2F';
-                    }, 3000);
-                }
-                return;
-            }
+            // Buscar todas as linhas da tabela na aba ativa
+            const activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) return;
             
-            // Se for apenas números e tiver 11 dígitos, validar CPF
-            const cleanSearch = searchTerm.replace(/\D/g, '');
-            if (cleanSearch.length === 11 && /^\d+$/.test(searchTerm.replace(/[.\-]/g, ''))) {
-                if (!validateCPF(searchTerm)) {
-                    alert('❌ CPF inválido. Verifique os dígitos.');
-                    if (searchInput) {
-                        searchInput.style.borderColor = '#d32f2f';
-                        setTimeout(() => {
-                            searchInput.style.borderColor = '#2C2C2F';
-                        }, 3000);
-                    }
-                    return;
-                }
-            }
+            const tableRows = activeTab.querySelectorAll('.table-row');
             
-            // Verificar se tem token da lista
-            const token = '<%= token %>';
-            if (!token) {
-                alert('❌ Token da lista não encontrado.');
-                return;
-            }
-            
-            try {
-                // Mostrar loading
-                const loadingModal = document.createElement('div');
-                loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;';
-                loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Buscando convidado...</div>';
-                document.body.appendChild(loadingModal);
+            tableRows.forEach(row => {
+                if (!row.dataset) return;
                 
-                // Confirmar via API (enviar termo de busca)
-                const response = await fetch('/guest-list/confirm/cpf', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        search: searchTerm, // Enviar termo de busca (CPF, Email ou Nome)
-                        token: token
-                    })
-                });
+                const searchName = (row.dataset.searchName || '').toLowerCase();
+                const searchEmail = (row.dataset.searchEmail || '').toLowerCase();
+                const searchCpf = (row.dataset.searchCpf || '').toLowerCase();
                 
-                const data = await response.json();
-                loadingModal.remove();
+                let matches = false;
                 
-                if (data.success) {
-                    alert(`✅ ${data.message}\n\nNome: ${data.guest.name}`);
-                    // Limpar input
-                    if (searchInput) searchInput.value = '';
-                    // Recarregar página para atualizar estatísticas
-                    location.reload();
-                } else if (data.partial && data.matches > 1) {
-                    // Múltiplos resultados encontrados
-                    let message = `❌ ${data.message || 'Múltiplos convidados encontrados'}`;
-                    if (data.suggestions && data.suggestions.length > 0) {
-                        message += '\n\nEncontrados:\n';
-                        data.suggestions.forEach((s, i) => {
-                            message += `${i + 1}. ${s.name}${s.email && s.email !== '-' ? ' (' + s.email + ')' : ''}\n`;
-                        });
-                        message += '\nDigite mais caracteres para refinar a busca.';
-                    }
-                    alert(message);
-                    if (searchInput) {
-                        searchInput.focus();
-                        searchInput.style.borderColor = '#FFC700';
-                        setTimeout(() => {
-                            searchInput.style.borderColor = '#2C2C2F';
-                        }, 3000);
-                    }
+                if (!searchTerm || searchTerm.length === 0) {
+                    // Se não há termo de busca, mostrar todos
+                    matches = true;
                 } else {
-                    alert(`❌ ${data.message || 'Nenhum convidado encontrado'}`);
-                    if (searchInput) {
-                        searchInput.style.borderColor = '#d32f2f';
-                        setTimeout(() => {
-                            searchInput.style.borderColor = '#2C2C2F';
-                        }, 3000);
-                    }
+                    // Verificar se corresponde a nome, email ou CPF
+                    matches = searchName.includes(searchTerm) || 
+                              searchEmail.includes(searchTerm) ||
+                              (cleanSearch.length >= 3 && searchCpf.includes(cleanSearch));
                 }
-            } catch (error) {
-                console.error('❌ Erro ao buscar convidado:', error);
-                alert('❌ Erro ao buscar convidado. Tente novamente.');
-                if (searchInput) {
-                    searchInput.style.borderColor = '#d32f2f';
-                    setTimeout(() => {
-                        searchInput.style.borderColor = '#2C2C2F';
-                    }, 3000);
+                
+                if (matches) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
                 }
-            }
+            });
+        };
+        
+        // Manter função antiga para compatibilidade, mas agora só filtra
+        window.confirmByCPF = function() {
+            window.filterGuestList();
         };
         
         // Form fields para mapear labels
