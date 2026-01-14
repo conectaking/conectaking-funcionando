@@ -1074,12 +1074,12 @@
         };
         
         // Form fields para mapear labels
-        const formFields = <%= JSON.stringify(typeof formFields !== 'undefined' ? formFields : []) %>;
+        const formFields = <%- JSON.stringify(typeof formFields !== 'undefined' ? formFields : []) %>;
         const profileItemId = <%= profileItemId %>;
         const token = '<%= token %>';
         
         // Dados de todos os convidados para o modal
-        const allGuests = <%= JSON.stringify([...registeredGuests, ...(checkedInGuests || []), ...(notArrivedGuests || [])]) %>;
+        const allGuests = <%- JSON.stringify([...registeredGuests, ...(checkedInGuests || []), ...(notArrivedGuests || [])]) %>;
         
         // Função para confirmar chegada (portaria) - Definir como global
         window.confirmarChegada = async function(guestId, guestName) {
