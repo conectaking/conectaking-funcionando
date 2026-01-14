@@ -327,28 +327,45 @@
         <% } %>
         
         <% if (showGuestListInfo) { %>
-        <div class="info-box" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(69, 160, 73, 0.15)); border-left: 4px solid #4caf50; padding: 24px; border-radius: 12px; margin: 24px 0;">
-            <strong style="display: flex; align-items: center; gap: 8px; color: #2e7d32; font-size: 18px; margin-bottom: 12px;">
-                <i class="fas fa-check-circle"></i> Parabéns! Inscrição Confirmada
-            </strong>
-            <p style="color: #1b5e20; font-size: 16px; line-height: 1.6; margin: 0;">
-                🎉 Sua inscrição foi realizada com sucesso! Você foi adicionado à nossa lista de convidados.<br><br>
-                <strong>Aguarde o nosso contato</strong> - entraremos em contato em breve para mais informações.
-            </p>
+        <div class="info-box" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(69, 160, 73, 0.2)); border: 2px solid rgba(76, 175, 80, 0.4); padding: 32px; border-radius: 20px; margin: 32px 0; box-shadow: 0 8px 24px rgba(76, 175, 80, 0.2); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(76, 175, 80, 0.1); border-radius: 50%; z-index: 0;"></div>
+            <div style="position: absolute; bottom: -30px; left: -30px; width: 100px; height: 100px; background: rgba(69, 160, 73, 0.1); border-radius: 50%; z-index: 0;"></div>
+            <div style="position: relative; z-index: 1;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 16px;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #4caf50, #45a049); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);">
+                        <i class="fas fa-check-circle" style="font-size: 32px; color: white;"></i>
+                    </div>
+                    <strong style="color: #2e7d32; font-size: 24px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        🎉 Parabéns! Inscrição Confirmada
+                    </strong>
+                </div>
+                <p style="color: #1b5e20; font-size: 18px; line-height: 1.8; margin: 0; text-align: center; font-weight: 500;">
+                    Sua inscrição foi realizada com <strong style="color: #2e7d32;">sucesso</strong>!<br>
+                    Você foi adicionado à nossa lista de convidados e aguardamos você no evento!<br><br>
+                    <span style="font-size: 16px; color: #2e7d32; font-weight: 600;">✨ Aguarde o nosso contato - entraremos em contato em breve para mais informações.</span>
+                </p>
+            </div>
         </div>
         <% } %>
         
         <% if (showGuestListInfo && typeof qrToken !== 'undefined' && qrToken) { %>
-        <!-- QR Code de Confirmação de Presença -->
-        <div id="qr-code-section" style="background: linear-gradient(135deg, rgba(<%= primaryColor ? parseInt(primaryColor.slice(1, 3), 16) + ',' + parseInt(primaryColor.slice(3, 5), 16) + ',' + parseInt(primaryColor.slice(5, 7), 16) : '74,144,226' %>, 0.05), rgba(<%= secondaryColor ? parseInt(secondaryColor.slice(1, 3), 16) + ',' + parseInt(secondaryColor.slice(3, 5), 16) + ',' + parseInt(secondaryColor.slice(5, 7), 16) : '107,163,240' %>, 0.08)); border: 2px solid rgba(<%= primaryColor ? parseInt(primaryColor.slice(1, 3), 16) + ',' + parseInt(primaryColor.slice(3, 5), 16) + ',' + parseInt(primaryColor.slice(5, 7), 16) : '74,144,226' %>, 0.3); border-radius: 20px; padding: 32px; margin: 32px 0; text-align: center;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 24px;">
-                <i class="fas fa-qrcode" style="font-size: 28px; color: <%= primaryColor || '#4A90E2' %>;"></i>
-                <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #202124;">QR Code de Confirmação</h2>
-            </div>
+        <!-- QR Code de Confirmação de Presença - Design Premium -->
+        <div id="qr-code-section" style="background: linear-gradient(135deg, rgba(<%= primaryColor ? parseInt(primaryColor.slice(1, 3), 16) + ',' + parseInt(primaryColor.slice(3, 5), 16) + ',' + parseInt(primaryColor.slice(5, 7), 16) : '74,144,226' %>, 0.08), rgba(<%= secondaryColor ? parseInt(secondaryColor.slice(1, 3), 16) + ',' + parseInt(secondaryColor.slice(3, 5), 16) + ',' + parseInt(secondaryColor.slice(5, 7), 16) : '107,163,240' %>, 0.12)); border: 3px solid rgba(<%= primaryColor ? parseInt(primaryColor.slice(1, 3), 16) + ',' + parseInt(primaryColor.slice(3, 5), 16) + ',' + parseInt(primaryColor.slice(5, 7), 16) : '74,144,226' %>, 0.4); border-radius: 24px; padding: 40px; margin: 40px 0; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.15); position: relative; overflow: hidden;">
+            <!-- Decoração de fundo -->
+            <div style="position: absolute; top: -30px; right: -30px; width: 200px; height: 200px; background: rgba(<%= primaryColor ? parseInt(primaryColor.slice(1, 3), 16) + ',' + parseInt(primaryColor.slice(3, 5), 16) + ',' + parseInt(primaryColor.slice(5, 7), 16) : '74,144,226' %>, 0.1); border-radius: 50%; z-index: 0;"></div>
+            <div style="position: absolute; bottom: -20px; left: -20px; width: 150px; height: 150px; background: rgba(<%= secondaryColor ? parseInt(secondaryColor.slice(1, 3), 16) + ',' + parseInt(secondaryColor.slice(3, 5), 16) + ',' + parseInt(secondaryColor.slice(5, 7), 16) : '107,163,240' %>, 0.1); border-radius: 50%; z-index: 0;"></div>
             
-            <div style="background: rgba(255,255,255,0.9); border-radius: 16px; padding: 24px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                <div id="qrcode-container" style="display: flex; justify-content: center; align-items: center;"></div>
-            </div>
+            <div style="position: relative; z-index: 1;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 32px;">
+                    <div style="width: 56px; height: 56px; background: linear-gradient(135deg, <%= primaryColor || '#4A90E2' %>, <%= secondaryColor || '#6BA3F0' %>); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);">
+                        <i class="fas fa-qrcode" style="font-size: 32px; color: white;"></i>
+                    </div>
+                    <h2 style="margin: 0; font-size: 28px; font-weight: 800; color: #202124; text-shadow: 0 2px 4px rgba(0,0,0,0.1); letter-spacing: -0.5px;">QR Code de Confirmação</h2>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.98)); border-radius: 20px; padding: 32px; margin-bottom: 24px; display: flex; justify-content: center; align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.8); border: 2px solid rgba(255,255,255,0.5);">
+                    <div id="qrcode-container" style="display: flex; justify-content: center; align-items: center;"></div>
+                </div>
             
             <!-- Aviso Importante -->
             <div style="background: linear-gradient(135deg, rgba(255, 199, 0, 0.15), rgba(255, 199, 0, 0.25)); border: 2px solid rgba(255, 199, 0, 0.4); border-radius: 12px; padding: 20px; margin: 20px 0;">
@@ -362,42 +379,62 @@
                 </p>
             </div>
             
-            <!-- Informações do Evento no QR Code -->
-            <% if (eventTitle || eventDate || eventAddress) { %>
-            <div style="background: white; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left; border: 1px solid rgba(0,0,0,0.1);">
-                <h3 style="font-size: 16px; font-weight: 600; color: #5f6368; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Informações do Evento</h3>
-                <% if (eventTitle) { %>
-                <div style="margin-bottom: 10px;">
-                    <strong style="color: #202124; font-size: 18px;"><%= eventTitle %></strong>
-                </div>
-                <% } %>
-                <% if (eventDate) { %>
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #5f6368;">
-                    <i class="fas fa-calendar"></i>
-                    <span><%= new Date(eventDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
-                </div>
-                <% } %>
-                <% if (eventAddress) { %>
-                <div style="display: flex; align-items: flex-start; gap: 8px; color: #5f6368;">
-                    <i class="fas fa-map-marker-alt" style="margin-top: 4px;"></i>
-                    <span><%= eventAddress %></span>
+                <!-- Informações do Evento no QR Code - Design Premium -->
+                <% if (eventTitle || eventDate || eventAddress) { %>
+                <div style="background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,249,250,0.98)); border-radius: 16px; padding: 28px; margin: 24px 0; text-align: left; border: 2px solid rgba(<%= primaryColor ? parseInt(primaryColor.slice(1, 3), 16) + ',' + parseInt(primaryColor.slice(3, 5), 16) + ',' + parseInt(primaryColor.slice(5, 7), 16) : '74,144,226' %>, 0.2); box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid rgba(<%= primaryColor ? parseInt(primaryColor.slice(1, 3), 16) + ',' + parseInt(primaryColor.slice(3, 5), 16) + ',' + parseInt(primaryColor.slice(5, 7), 16) : '74,144,226' %>, 0.2);">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, <%= primaryColor || '#4A90E2' %>, <%= secondaryColor || '#6BA3F0' %>); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-info-circle" style="font-size: 24px; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 18px; font-weight: 700; color: #202124; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Informações do Evento</h3>
+                    </div>
+                    <% if (eventTitle) { %>
+                    <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(<%= primaryColor ? parseInt(primaryColor.slice(1, 3), 16) + ',' + parseInt(primaryColor.slice(3, 5), 16) + ',' + parseInt(primaryColor.slice(5, 7), 16) : '74,144,226' %>, 0.1), rgba(<%= secondaryColor ? parseInt(secondaryColor.slice(1, 3), 16) + ',' + parseInt(secondaryColor.slice(3, 5), 16) + ',' + parseInt(secondaryColor.slice(5, 7), 16) : '107,163,240' %>, 0.1)); border-radius: 12px; border-left: 4px solid <%= primaryColor || '#4A90E2' %>;">
+                        <div style="font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 600;">Nome do Evento</div>
+                        <strong style="color: #202124; font-size: 22px; font-weight: 700; line-height: 1.3;"><%= eventTitle %></strong>
+                    </div>
+                    <% } %>
+                    <% if (eventDate) { %>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 16px; background: rgba(255,255,255,0.6); border-radius: 10px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #FF6B6B, #FF8787); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i class="fas fa-calendar-alt" style="font-size: 18px; color: white;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 600;">Data do Evento</div>
+                            <span style="color: #202124; font-size: 16px; font-weight: 600;"><%= new Date(eventDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+                        </div>
+                    </div>
+                    <% } %>
+                    <% if (eventAddress) { %>
+                    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: rgba(255,255,255,0.6); border-radius: 10px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4ECDC4, #44A08D); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                            <i class="fas fa-map-marker-alt" style="font-size: 18px; color: white;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 600;">Local do Evento</div>
+                            <span style="color: #202124; font-size: 16px; font-weight: 600; line-height: 1.5;"><%= eventAddress %></span>
+                        </div>
+                    </div>
+                    <% } %>
                 </div>
                 <% } %>
             </div>
-            <% } %>
             
-            <!-- Botões de Ação (com Preview - Melhoria 5) -->
-            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px;">
-                <button onclick="showQRCodePreview()" class="btn" style="background: linear-gradient(135deg, <%= primaryColor || '#4A90E2' %> 0%, <%= secondaryColor || '#6BA3F0' %> 100%); color: white; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(74, 144, 226, 0.4);">
-                    <i class="fas fa-eye"></i> Ver Preview
-                </button>
-                <button onclick="downloadQRCode()" class="btn" style="background: rgba(255,255,255,0.1); color: <%= primaryColor || '#4A90E2' %>; border: 2px solid <%= primaryColor || '#4A90E2' %>; padding: 14px 28px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s;">
-                    <i class="fas fa-download"></i> Baixar
-                </button>
-                <button onclick="shareQRCode()" class="btn btn-secondary" style="background: #f8f9fa; color: #5f6368; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s;">
-                    <i class="fab fa-whatsapp"></i> Compartilhar
-                </button>
-            </div>
+                <!-- Botões de Ação Premium -->
+                <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 32px;">
+                    <button onclick="showQRCodePreview()" class="btn" style="background: linear-gradient(135deg, <%= primaryColor || '#4A90E2' %> 0%, <%= secondaryColor || '#6BA3F0' %> 100%); color: white; border: none; padding: 16px 32px; border-radius: 14px; font-weight: 700; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: all 0.3s; box-shadow: 0 6px 24px rgba(74, 144, 226, 0.4); transform: translateY(0);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(74, 144, 226, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 24px rgba(74, 144, 226, 0.4)';">
+                        <i class="fas fa-eye" style="font-size: 18px;"></i> Ver Preview
+                    </button>
+                    <button onclick="downloadQRCode()" class="btn" style="background: white; color: <%= primaryColor || '#4A90E2' %>; border: 3px solid <%= primaryColor || '#4A90E2' %>; padding: 16px 32px; border-radius: 14px; font-weight: 700; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: all 0.3s; box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(0);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)'; this.style.background='<%= primaryColor || '#4A90E2' %>'; this.style.color='white';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(0,0,0,0.1)'; this.style.background='white'; this.style.color='<%= primaryColor || '#4A90E2' %>';">
+                        <i class="fas fa-download" style="font-size: 18px;"></i> Baixar PNG
+                    </button>
+                    <button onclick="downloadQRCodePDF()" class="btn" style="background: linear-gradient(135deg, #DC143C, #FF6347); color: white; border: none; padding: 16px 32px; border-radius: 14px; font-weight: 700; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: all 0.3s; box-shadow: 0 6px 24px rgba(220, 20, 60, 0.4); transform: translateY(0);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(220, 20, 60, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 24px rgba(220, 20, 60, 0.4)';">
+                        <i class="fas fa-file-pdf" style="font-size: 18px;"></i> Baixar PDF
+                    </button>
+                    <button onclick="shareQRCode()" class="btn btn-secondary" style="background: linear-gradient(135deg, #25D366, #20BA5A); color: white; border: none; padding: 16px 32px; border-radius: 14px; font-weight: 700; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: all 0.3s; box-shadow: 0 6px 24px rgba(37, 211, 102, 0.4); transform: translateY(0);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(37, 211, 102, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 24px rgba(37, 211, 102, 0.4)';">
+                        <i class="fab fa-whatsapp" style="font-size: 18px;"></i> Compartilhar
+                    </button>
+                </div>
         </div>
         <% } %>
         
@@ -602,17 +639,22 @@
             const qrCodeDataUrl = canvas ? canvas.toDataURL('image/png') : (img ? img.src : '');
             if (!qrCodeDataUrl) return;
             modal.innerHTML = `
-                <div style="background: white; border-radius: 20px; padding: 32px; max-width: 600px; width: 100%; text-align: center; position: relative;">
-                    <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.1); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; color: #333;">×</button>
-                    <h2 style="margin: 0 0 24px 0; color: #202124; font-size: 24px; font-weight: 700;">Preview do QR Code</h2>
-                    <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; display: inline-block; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                        <img src="${qrCodeDataUrl}" style="max-width: 400px; width: 100%; height: auto;" alt="QR Code Preview">
+                <div style="background: white; border-radius: 24px; padding: 40px; max-width: 700px; width: 100%; text-align: center; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.1); border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 22px; color: #333; transition: all 0.3s;" onmouseover="this.style.background='rgba(0,0,0,0.2)'; this.style.transform='rotate(90deg)';" onmouseout="this.style.background='rgba(0,0,0,0.1)'; this.style.transform='rotate(0deg)';">×</button>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 28px;">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, ${primaryColor || '#4A90E2'}, ${secondaryColor || '#6BA3F0'}); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-qrcode" style="font-size: 24px; color: white;"></i>
+                        </div>
+                        <h2 style="margin: 0; color: #202124; font-size: 28px; font-weight: 800;">Preview do QR Code</h2>
                     </div>
-                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                        <button onclick="downloadQRCode(); this.closest('div[style*=\\'position: fixed\\']').remove();" style="padding: 12px 24px; background: linear-gradient(135deg, ${primaryColor || '#4A90E2'} 0%, ${secondaryColor || '#6BA3F0'} 100%); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                    <div style="background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,249,250,0.98)); border-radius: 20px; padding: 32px; margin-bottom: 28px; display: inline-block; box-shadow: 0 8px 32px rgba(0,0,0,0.12); border: 3px solid ${primaryColor || '#4A90E2'}40;">
+                        <img src="${qrCodeDataUrl}" style="max-width: 450px; width: 100%; height: auto; border-radius: 12px;" alt="QR Code Preview">
+                    </div>
+                    <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                        <button onclick="downloadQRCode(); this.closest('div[style*=\\'position: fixed\\']').remove();" style="padding: 14px 28px; background: linear-gradient(135deg, ${primaryColor || '#4A90E2'} 0%, ${secondaryColor || '#6BA3F0'} 100%); color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 6px 24px rgba(74, 144, 226, 0.4); transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(74, 144, 226, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 24px rgba(74, 144, 226, 0.4)';">
                             <i class="fas fa-download"></i> Baixar PNG
                         </button>
-                        <button onclick="downloadQRCodePDF(); this.closest('div[style*=\\'position: fixed\\']').remove();" style="padding: 12px 24px; background: #f8f9fa; color: #5f6368; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                        <button onclick="downloadQRCodePDF(); this.closest('div[style*=\\'position: fixed\\']').remove();" style="padding: 14px 28px; background: linear-gradient(135deg, #DC143C, #FF6347); color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 6px 24px rgba(220, 20, 60, 0.4); transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(220, 20, 60, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 24px rgba(220, 20, 60, 0.4)';">
                             <i class="fas fa-file-pdf"></i> Baixar PDF
                         </button>
                     </div>
@@ -621,7 +663,27 @@
             document.body.appendChild(modal);
         }
         
-        // Função para baixar QR Code como PNG personalizado (estilo Simpla)
+        // Função auxiliar para quebrar texto em múltiplas linhas
+        function wrapText(context, text, maxWidth, fontSize) {
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = words[0];
+            
+            for (let i = 1; i < words.length; i++) {
+                const word = words[i];
+                const width = context.measureText(currentLine + ' ' + word).width;
+                if (width < maxWidth) {
+                    currentLine += ' ' + word;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+        
+        // Função para baixar QR Code como PNG personalizado (estilo Simpla melhorado)
         function downloadQRCode() {
             const container = document.getElementById('qrcode-container');
             if (!container) return;
@@ -633,7 +695,7 @@
             // Criar canvas personalizado com design estilo Simpla
             const finalCanvas = document.createElement('canvas');
             finalCanvas.width = 800;
-            finalCanvas.height = 1000;
+            finalCanvas.height = 1100; // Aumentado para acomodar mais conteúdo
             const ctx = finalCanvas.getContext('2d');
             
             // Cor de fundo branco
@@ -649,83 +711,108 @@
             gradient.addColorStop(0, `rgb(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b})`);
             gradient.addColorStop(1, `rgb(${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b})`);
             ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, finalCanvas.width, 120);
+            ctx.fillRect(0, 0, finalCanvas.width, 130);
             
             // Título no header
             ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 32px Inter, sans-serif';
+            ctx.font = 'bold 36px Inter, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('Confirmação de Presença', finalCanvas.width / 2, 40);
+            ctx.fillText('Confirmação de Presença', finalCanvas.width / 2, 45);
             
             // Subtítulo
-            ctx.font = '18px Inter, sans-serif';
-            ctx.fillText('Apresente este QR Code na portaria', finalCanvas.width / 2, 75);
+            ctx.font = '20px Inter, sans-serif';
+            ctx.fillText('Apresente este QR Code na portaria', finalCanvas.width / 2, 80);
             
             // Nome da pessoa (se disponível) - estilo Simpla
-            let yPos = 180;
+            let yPos = 200;
             if (personName && personName.trim() !== '') {
                 ctx.fillStyle = '#202124';
-                ctx.font = 'bold 36px Inter, sans-serif';
+                ctx.font = 'bold 40px Inter, sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(personName, finalCanvas.width / 2, yPos);
-                yPos += 50;
+                const nameLines = wrapText(ctx, personName, finalCanvas.width - 100, 40);
+                nameLines.forEach((line, index) => {
+                    ctx.fillText(line, finalCanvas.width / 2, yPos + (index * 45));
+                });
+                yPos += nameLines.length * 45 + 20;
             }
             
             // Função para desenhar o resto do conteúdo e fazer download
             function drawRemainingContentAndDownload(qrImageElement) {
-                // QR Code centralizado
-                const qrSize = 400;
+                // QR Code centralizado com borda decorativa
+                const qrSize = 380;
                 const qrX = (finalCanvas.width - qrSize) / 2;
                 const qrY = yPos;
+                
+                // Borda decorativa ao redor do QR Code
+                ctx.strokeStyle = `rgb(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b})`;
+                ctx.lineWidth = 8;
+                ctx.strokeRect(qrX - 20, qrY - 20, qrSize + 40, qrSize + 40);
                 
                 // Desenhar QR Code
                 ctx.drawImage(qrImageElement, qrX, qrY, qrSize, qrSize);
                 
-                yPos += qrSize + 40;
+                yPos += qrSize + 60;
                 
-                // Informações do evento
-                ctx.fillStyle = '#202124';
-                ctx.font = 'bold 28px Inter, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(eventTitle, finalCanvas.width / 2, yPos);
-                yPos += 40;
+                // Card de informações do evento com fundo destacado
+                const cardY = yPos;
+                const cardHeight = 200;
                 
+                // Fundo do card com gradiente sutil
+                const cardGradient = ctx.createLinearGradient(0, cardY, 0, cardY + cardHeight);
+                cardGradient.addColorStop(0, `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, 0.08)`);
+                cardGradient.addColorStop(1, `rgba(${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b}, 0.05)`);
+                ctx.fillStyle = cardGradient;
+                ctx.fillRect(40, cardY, finalCanvas.width - 80, cardHeight);
+                
+                // Borda do card
+                ctx.strokeStyle = `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, 0.3)`;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(40, cardY, finalCanvas.width - 80, cardHeight);
+                
+                let infoY = cardY + 30;
+                
+                // Nome do Evento - DESTACADO
+                if (eventTitle) {
+                    ctx.fillStyle = '#202124';
+                    ctx.font = 'bold 32px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    const titleLines = wrapText(ctx, eventTitle, finalCanvas.width - 120, 32);
+                    titleLines.forEach((line, index) => {
+                        ctx.fillText(line, finalCanvas.width / 2, infoY + (index * 38));
+                    });
+                    infoY += titleLines.length * 38 + 20;
+                }
+                
+                // Data do Evento
                 if (eventDate) {
                     ctx.fillStyle = '#5f6368';
-                    ctx.font = '20px Inter, sans-serif';
-                    ctx.fillText('📅 ' + eventDate, finalCanvas.width / 2, yPos);
-                    yPos += 35;
+                    ctx.font = 'bold 22px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('📅 ' + eventDate, finalCanvas.width / 2, infoY);
+                    infoY += 35;
                 }
                 
+                // Endereço do Evento - DESTACADO
                 if (eventAddress) {
-                    ctx.fillStyle = '#5f6368';
-                    ctx.font = '18px Inter, sans-serif';
-                    const maxWidth = finalCanvas.width - 80;
-                    const words = eventAddress.split(' ');
-                    let line = '📍 ';
-                    let lines = [];
-                    words.forEach(word => {
-                        const testLine = line + word + ' ';
-                        const metrics = ctx.measureText(testLine);
-                        if (metrics.width > maxWidth && line !== '📍 ') {
-                            lines.push(line);
-                            line = word + ' ';
-                        } else {
-                            line = testLine;
-                        }
+                    ctx.fillStyle = '#202124';
+                    ctx.font = 'bold 20px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    const maxWidth = finalCanvas.width - 120;
+                    const addressLines = wrapText(ctx, '📍 ' + eventAddress, maxWidth, 20);
+                    addressLines.forEach((line, index) => {
+                        ctx.fillText(line, finalCanvas.width / 2, infoY + (index * 28));
                     });
-                    lines.push(line);
-                    lines.forEach((line, index) => {
-                        ctx.fillText(line.trim(), finalCanvas.width / 2, yPos + (index * 25));
-                    });
-                    yPos += lines.length * 25 + 20;
+                    infoY += addressLines.length * 28 + 15;
                 }
+                
+                yPos = cardY + cardHeight + 30;
                 
                 // Instruções finais
                 ctx.fillStyle = '#9aa0a6';
                 ctx.font = '16px Inter, sans-serif';
-                ctx.fillText('Token: ' + qrToken.substring(0, 16) + '...', finalCanvas.width / 2, yPos + 20);
+                ctx.fillText('Apresente este QR Code na portaria do evento', finalCanvas.width / 2, yPos);
+                ctx.fillText('Token: ' + qrToken.substring(0, 16) + '...', finalCanvas.width / 2, yPos + 25);
                 
                 // Footer
                 ctx.fillStyle = '#f8f9fa';
@@ -743,6 +830,26 @@
                 link.download = fileName;
                 link.href = finalCanvas.toDataURL('image/png', 0.95);
                 link.click();
+            }
+            
+            // Função auxiliar para quebrar texto em múltiplas linhas
+            function wrapText(context, text, maxWidth, fontSize) {
+                const words = text.split(' ');
+                const lines = [];
+                let currentLine = words[0];
+                
+                for (let i = 1; i < words.length; i++) {
+                    const word = words[i];
+                    const width = context.measureText(currentLine + ' ' + word).width;
+                    if (width < maxWidth) {
+                        currentLine += ' ' + word;
+                    } else {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    }
+                }
+                lines.push(currentLine);
+                return lines;
             }
             
             // Desenhar QR Code e fazer download
@@ -778,16 +885,36 @@
             window.open(whatsappUrl, '_blank');
         }
         
-        // Função para baixar QR Code como PDF (premium design com nome da pessoa)
+        // Função para baixar QR Code como PDF (premium design melhorado)
         function downloadQRCodePDF() {
-            // Aguardar carregamento da biblioteca PDF
-            function tryDownloadPDF() {
+            const container = document.getElementById('qrcode-container');
+            if (!container) {
+                alert('QR Code não encontrado. Por favor, aguarde o carregamento.');
+                return;
+            }
+            
+            const canvas = container.querySelector('canvas');
+            const img = container.querySelector('img');
+            if (!canvas && !img) {
+                alert('QR Code não encontrado. Por favor, aguarde o carregamento.');
+                return;
+            }
+            
+            // Função para tentar fazer download do PDF
+            function tryDownloadPDF(attempt = 0) {
+                const maxAttempts = 25; // 5 segundos máximo
+                
                 // Verificar múltiplas formas de acesso à biblioteca jsPDF
                 let jsPDFLib = null;
-                if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
-                    jsPDFLib = window.jspdf.jsPDF;
-                } else if (typeof window.jspdf !== 'undefined' && window.jspdf.default) {
-                    jsPDFLib = window.jspdf.default;
+                if (typeof window.jspdf !== 'undefined') {
+                    if (window.jspdf.jsPDF) {
+                        jsPDFLib = window.jspdf.jsPDF;
+                    } else if (window.jspdf.default) {
+                        jsPDFLib = window.jspdf.default;
+                    } else {
+                        // Tentar usar diretamente
+                        jsPDFLib = window.jspdf;
+                    }
                 } else if (typeof jsPDF !== 'undefined') {
                     jsPDFLib = jsPDF;
                 } else if (typeof window.jsPDF !== 'undefined') {
@@ -795,102 +922,137 @@
                 }
                 
                 if (!jsPDFLib) {
-                    // Tentar novamente após um delay
-                    setTimeout(tryDownloadPDF, 200);
-                    return;
+                    if (attempt < maxAttempts) {
+                        setTimeout(() => tryDownloadPDF(attempt + 1), 200);
+                        return;
+                    } else {
+                        alert('Biblioteca PDF não carregada. Por favor, recarregue a página e tente novamente.');
+                        return;
+                    }
                 }
                 
-                const container = document.getElementById('qrcode-container');
-                if (!container) return;
-                
-                const canvas = container.querySelector('canvas');
-                const img = container.querySelector('img');
-                if (!canvas && !img) return;
-                
-                const qrCodeImage = canvas ? canvas.toDataURL('image/png') : img.src;
-                const doc = new jsPDFLib({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: [210, 297] // A4
-                });
-                
-                // Cores
-                const primaryRgb = hexToRgb(primaryColor);
-                const secondaryRgb = hexToRgb(secondaryColor);
-                
-                // Header com gradiente (estilo Simpla)
-                doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b);
-                doc.rect(0, 0, 210, 50, 'F');
-                
-                // Título no header
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(26);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Confirmação de Presença', 105, 20, { align: 'center' });
-                
-                // Subtítulo
-                doc.setFontSize(12);
-                doc.setTextColor(255, 255, 255);
-                doc.setFont('helvetica', 'normal');
-                doc.text('Apresente este QR Code na portaria', 105, 30, { align: 'center' });
-                
-                // Nome da pessoa (se disponível) - estilo Simpla
-                let yPos = 65;
-                if (personName && personName.trim() !== '') {
-                    doc.setTextColor(0, 0, 0);
-                    doc.setFontSize(22);
+                try {
+                    const qrCodeImage = canvas ? canvas.toDataURL('image/png') : img.src;
+                    const doc = new jsPDFLib({
+                        orientation: 'portrait',
+                        unit: 'mm',
+                        format: [210, 297] // A4
+                    });
+                    
+                    // Cores
+                    const primaryRgb = hexToRgb(primaryColor);
+                    const secondaryRgb = hexToRgb(secondaryColor);
+                    
+                    // Header com gradiente (estilo Simpla melhorado)
+                    doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+                    doc.rect(0, 0, 210, 55, 'F');
+                    
+                    // Título no header
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(28);
                     doc.setFont('helvetica', 'bold');
-                    doc.text(personName, 105, yPos, { align: 'center', maxWidth: 190 });
-                    yPos += 15;
-                }
-                
-                // QR Code centralizado
-                const qrSize = 80; // mm
-                const qrX = (210 - qrSize) / 2;
-                doc.addImage(qrCodeImage, 'PNG', qrX, yPos, qrSize, qrSize);
-                
-                yPos += qrSize + 20;
-                
-                // Informações do Evento
-                doc.setTextColor(0, 0, 0);
-                doc.setFontSize(20);
-                doc.setFont('helvetica', 'bold');
-                doc.text(eventTitle, 105, yPos, { align: 'center', maxWidth: 190 });
-                yPos += 12;
-                
-                if (eventDate) {
-                    doc.setFontSize(12);
+                    doc.text('Confirmação de Presença', 105, 22, { align: 'center' });
+                    
+                    // Subtítulo
+                    doc.setFontSize(13);
+                    doc.setTextColor(255, 255, 255);
                     doc.setFont('helvetica', 'normal');
-                    doc.setTextColor(95, 99, 104);
-                    doc.text('📅 ' + eventDate, 105, yPos, { align: 'center', maxWidth: 190 });
-                    yPos += 10;
+                    doc.text('Apresente este QR Code na portaria', 105, 32, { align: 'center' });
+                    
+                    // Nome da pessoa (se disponível) - estilo Simpla
+                    let yPos = 70;
+                    if (personName && personName.trim() !== '') {
+                        doc.setTextColor(0, 0, 0);
+                        doc.setFontSize(24);
+                        doc.setFont('helvetica', 'bold');
+                        const nameLines = doc.splitTextToSize(personName, 190);
+                        doc.text(nameLines, 105, yPos, { align: 'center' });
+                        yPos += nameLines.length * 10 + 8;
+                    }
+                    
+                    // QR Code centralizado com borda
+                    const qrSize = 75; // mm
+                    const qrX = (210 - qrSize) / 2;
+                    
+                    // Borda decorativa
+                    doc.setDrawColor(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+                    doc.setLineWidth(1);
+                    doc.rect(qrX - 5, yPos - 5, qrSize + 10, qrSize + 10);
+                    
+                    doc.addImage(qrCodeImage, 'PNG', qrX, yPos, qrSize, qrSize);
+                    
+                    yPos += qrSize + 25;
+                    
+                    // Card de informações do evento
+                    const cardY = yPos;
+                    const cardHeight = 60;
+                    
+                    // Fundo do card
+                    doc.setFillColor(248, 249, 250);
+                    doc.rect(15, cardY - 5, 180, cardHeight, 'F');
+                    
+                    // Borda do card
+                    doc.setDrawColor(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+                    doc.setLineWidth(0.5);
+                    doc.rect(15, cardY - 5, 180, cardHeight);
+                    
+                    let infoY = cardY + 8;
+                    
+                    // Nome do Evento - DESTACADO
+                    if (eventTitle) {
+                        doc.setTextColor(0, 0, 0);
+                        doc.setFontSize(18);
+                        doc.setFont('helvetica', 'bold');
+                        const titleLines = doc.splitTextToSize(eventTitle, 180);
+                        doc.text(titleLines, 105, infoY, { align: 'center' });
+                        infoY += titleLines.length * 8 + 6;
+                    }
+                    
+                    // Data do Evento
+                    if (eventDate) {
+                        doc.setFontSize(11);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(95, 99, 104);
+                        doc.text('📅 ' + eventDate, 105, infoY, { align: 'center', maxWidth: 180 });
+                        infoY += 8;
+                    }
+                    
+                    // Endereço do Evento - DESTACADO
+                    if (eventAddress) {
+                        doc.setFontSize(11);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(0, 0, 0);
+                        const addressLines = doc.splitTextToSize('📍 ' + eventAddress, 180);
+                        doc.text(addressLines, 105, infoY, { align: 'center' });
+                        infoY += addressLines.length * 6;
+                    }
+                    
+                    yPos = cardY + cardHeight + 15;
+                    
+                    // Instruções
+                    doc.setFontSize(10);
+                    doc.setTextColor(100, 100, 100);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text('Apresente este QR Code na portaria do evento', 105, yPos, { align: 'center' });
+                    doc.text('Token: ' + qrToken.substring(0, 16) + '...', 105, yPos + 6, { align: 'center' });
+                    
+                    // Footer
+                    doc.setFillColor(248, 249, 250);
+                    doc.rect(0, 280, 210, 17, 'F');
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    doc.text('King Forms - Sistema de Confirmação de Presença', 105, 287, { align: 'center' });
+                    doc.text('© 2026 Conecta King. Todos os direitos reservados.', 105, 292, { align: 'center' });
+                    
+                    // Salvar
+                    const fileName = personName && personName.trim() !== '' 
+                        ? `QR-Code-${personName.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.pdf`
+                        : `QR-Code-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.pdf`;
+                    doc.save(fileName);
+                } catch (error) {
+                    console.error('Erro ao gerar PDF:', error);
+                    alert('Erro ao gerar PDF. Por favor, tente novamente ou recarregue a página.');
                 }
-                
-                if (eventAddress) {
-                    doc.setFontSize(11);
-                    doc.setTextColor(95, 99, 104);
-                    doc.text('📍 ' + eventAddress, 105, yPos, { align: 'center', maxWidth: 180 });
-                    yPos += 15;
-                }
-                
-                // Instruções
-                doc.setFontSize(10);
-                doc.setTextColor(100, 100, 100);
-                doc.text('Token: ' + qrToken.substring(0, 16) + '...', 105, yPos + 10, { align: 'center' });
-                
-                // Footer
-                doc.setFillColor(248, 249, 250);
-                doc.rect(0, 280, 210, 17, 'F');
-                doc.setFontSize(8);
-                doc.setTextColor(150, 150, 150);
-                doc.text('King Forms - Sistema de Confirmação de Presença', 105, 288, { align: 'center' });
-                doc.text('© 2026 Conecta King. Todos os direitos reservados.', 105, 293, { align: 'center' });
-                
-                // Salvar
-                const fileName = personName && personName.trim() !== '' 
-                    ? `QR-Code-${personName.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.pdf`
-                    : `QR-Code-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.pdf`;
-                doc.save(fileName);
             }
             
             // Iniciar tentativa de download
