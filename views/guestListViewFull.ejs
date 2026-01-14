@@ -107,7 +107,7 @@
             background: #2C2C2F;
             padding: 16px;
             display: grid;
-            grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr;
+            grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1fr 1fr;
             gap: 16px;
             font-weight: 600;
             color: #ECECEC;
@@ -116,7 +116,7 @@
         .table-row {
             padding: 16px;
             display: grid;
-            grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr;
+            grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1fr 1fr;
             gap: 16px;
             border-bottom: 1px solid #2C2C2F;
             align-items: center;
@@ -352,7 +352,7 @@
             </h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <!-- Botão Escanear QR Code -->
-                <button id="qr-scanner-btn" onclick="if(typeof window.openQRScanner==='function'){window.openQRScanner();}else{alert('Erro: Scanner não disponível. Recarregue a página.');}" style="background: linear-gradient(135deg, #FFC700 0%, #FFB700 100%); color: #000; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.3);">
+                <button id="qr-scanner-btn" style="background: linear-gradient(135deg, #FFC700 0%, #FFB700 100%); color: #000; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.3);">
                     <i class="fas fa-qrcode" style="font-size: 20px;"></i>
                     Ler QR Code
                 </button>
@@ -360,7 +360,7 @@
                 <!-- Busca por CPF -->
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="cpf-search-input" placeholder="Digite o CPF (apenas números)" style="flex: 1; padding: 16px; border-radius: 12px; background: #0D0D0F; border: 2px solid #2C2C2F; color: #ECECEC; font-size: 16px; font-weight: 600; letter-spacing: 2px;" maxlength="14" oninput="this.value = formatCPF(this.value)">
-                    <button id="cpf-search-btn" onclick="if(typeof window.confirmByCPF==='function'){window.confirmByCPF();}else{alert('Erro: Busca não disponível. Recarregue a página.');}" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3); white-space: nowrap;">
+                    <button id="cpf-search-btn" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3); white-space: nowrap;">
                         <i class="fas fa-search"></i> Buscar
                     </button>
                 </div>
@@ -386,6 +386,7 @@
                     <div>Nome Completo</div>
                     <div>Email</div>
                     <div>WhatsApp</div>
+                    <div>CPF</div>
                     <div>Status</div>
                     <div>Data</div>
                 </div>
@@ -464,6 +465,18 @@
                         displayEmail = (displayEmail && displayEmail.trim()) ? displayEmail.trim() : '-';
                         displayWhatsapp = (displayWhatsapp && displayWhatsapp.trim()) ? displayWhatsapp.trim() : '-';
                         
+                        // Formatar CPF
+                        let displayCPF = guest.document || '';
+                        if (displayCPF) {
+                            const cleanCPF = displayCPF.replace(/\D/g, '');
+                            if (cleanCPF.length === 11) {
+                                displayCPF = cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                            } else {
+                                displayCPF = displayCPF.trim();
+                            }
+                        }
+                        displayCPF = displayCPF || '-';
+                        
                         // Determinar status e data
                         let statusText = 'Inscrito';
                         let statusClass = 'status-registered';
@@ -483,6 +496,7 @@
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
+                            <div data-label="CPF"><%= displayCPF %></div>
                             <div data-label="Status"><span class="status-badge <%= statusClass %>"><%= statusText %></span></div>
                             <div data-label="Data" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                 <span><%= dateToShow ? new Date(dateToShow).toLocaleString('pt-BR') : '-' %></span>
@@ -510,6 +524,7 @@
                     <div>Nome Completo</div>
                     <div>Email</div>
                     <div>WhatsApp</div>
+                    <div>CPF</div>
                     <div>Status</div>
                     <div>Conferido em</div>
                 </div>
@@ -574,11 +589,24 @@
                         displayName = (displayName && displayName.trim() && displayName.toLowerCase() !== 'visitante') ? displayName.trim() : 'Sem nome';
                         displayEmail = (displayEmail && displayEmail.trim()) ? displayEmail.trim() : '-';
                         displayWhatsapp = (displayWhatsapp && displayWhatsapp.trim()) ? displayWhatsapp.trim() : '-';
+                        
+                        // Formatar CPF
+                        let displayCPF = guest.document || '';
+                        if (displayCPF) {
+                            const cleanCPF = displayCPF.replace(/\D/g, '');
+                            if (cleanCPF.length === 11) {
+                                displayCPF = cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                            } else {
+                                displayCPF = displayCPF.trim();
+                            }
+                        }
+                        displayCPF = displayCPF || '-';
                     %>
                         <div class="table-row">
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
+                            <div data-label="CPF"><%= displayCPF %></div>
                             <div data-label="Status"><span class="status-badge status-checked_in">Chegou</span></div>
                             <div data-label="Data" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                 <span><%= guest.checked_in_at ? new Date(guest.checked_in_at).toLocaleString('pt-BR') : '-' %></span>
@@ -599,6 +627,8 @@
         // Variáveis globais para QR Code Scanner
         window.qrCodeScanner = null;
         window.qrScannerModal = null;
+        window.isScanning = false; // Flag para evitar múltiplas chamadas simultâneas
+        window.isInitializingScanner = false; // Flag para evitar múltiplas inicializações
         
         // Função para formatar CPF - DEFINIR PRIMEIRO para uso inline no HTML
         window.formatCPF = function(value) {
@@ -611,6 +641,14 @@
         
         // Função para abrir o scanner de QR Code (definir como global imediatamente)
         window.openQRScanner = function() {
+            // Evitar múltiplas chamadas simultâneas
+            if (window.isScanning || window.isInitializingScanner || window.qrScannerModal) {
+                console.warn('⚠️ Scanner já está aberto ou sendo inicializado, ignorando chamada duplicada');
+                return;
+            }
+            
+            window.isScanning = true;
+            
             // Criar modal
             const modal = document.createElement('div');
             modal.id = 'qr-scanner-modal';
@@ -672,10 +710,9 @@
                         console.log('✅ Permissão de câmera concedida');
                     } catch (permErr) {
                         console.warn('⚠️ Permissão de câmera não concedida ou erro ao solicitar:', permErr);
-                        // Se for NotAllowedError, relançar para ser tratado acima
+                        // Se for NotAllowedError, relançar para ser tratado acima (SEM alert aqui - será tratado acima)
                         if (permErr.name === 'NotAllowedError' || permErr.name === 'PermissionDeniedError') {
                             const errorMsg = 'Permissão de câmera negada. Por favor, permita o acesso à câmera nas configurações do navegador e recarregue a página.';
-                            alert(errorMsg);
                             throw new Error(errorMsg);
                         }
                         // Continuar mesmo sem permissão, mas pode não ter labels
@@ -687,7 +724,7 @@
                     return videoDevices;
                 } catch (err) {
                     console.error('❌ Erro ao listar câmeras:', err);
-                    // Se for erro de permissão, relançar para ser tratado acima
+                    // Se for erro de permissão, relançar para ser tratado acima (SEM alert aqui)
                     if (err.message && err.message.includes('Permissão')) {
                         throw err;
                     }
@@ -841,11 +878,19 @@
             
             // Função principal para inicializar o scanner (com seleção de câmera)
             const initScanner = async () => {
+                // Evitar múltiplas inicializações simultâneas
+                if (window.isInitializingScanner) {
+                    console.warn('⚠️ Scanner já está sendo inicializado, ignorando chamada duplicada');
+                    return;
+                }
+                
                 if (typeof Html5Qrcode === 'undefined') {
                     console.warn('Html5Qrcode não disponível, tentando novamente...');
                     setTimeout(initScanner, 500);
                     return;
                 }
+                
+                window.isInitializingScanner = true;
                 
                 try {
                     // Listar câmeras disponíveis
@@ -854,10 +899,11 @@
                         cameras = await listCameras();
                     } catch (listErr) {
                         console.error('❌ Erro ao listar câmeras:', listErr);
-                        // Se for erro de permissão, mostrar mensagem e fechar
+                        // Se for erro de permissão, mostrar mensagem APENAS UMA VEZ e fechar
                         if (listErr.message && listErr.message.includes('Permissão')) {
                             alert(listErr.message);
                             window.closeQRScanner();
+                            window.isInitializingScanner = false;
                             return;
                         }
                         // Se não for erro de permissão, tentar usar câmera padrão
@@ -914,6 +960,7 @@
                     }
                     
                     document.body.appendChild(cameraSelectModal);
+                    window.isInitializingScanner = false;
                     
                     return;
                 } else if (cameras.length === 1) {
@@ -930,11 +977,13 @@
                         console.warn('⚠️ deviceId inválido ou vazio, usando facingMode como fallback');
                         startScannerWithCamera({ facingMode: "environment" });
                     }
+                    window.isInitializingScanner = false;
                     return;
                 } else {
                     // Se não houver câmeras, tentar usar facingMode (mobile/desktop)
                     console.log('📷 Nenhuma câmera encontrada na lista, tentando usar câmera padrão com facingMode...');
                     startScannerWithCamera({ facingMode: "environment" });
+                    window.isInitializingScanner = false;
                     return;
                 }
                 } catch (err) {
@@ -942,6 +991,7 @@
                     const errorMsg = err?.message || 'Erro desconhecido ao inicializar scanner';
                     alert('Erro ao inicializar scanner: ' + errorMsg + '. Tente recarregar a página.');
                     window.closeQRScanner();
+                    window.isInitializingScanner = false;
                 }
             };
             
@@ -981,6 +1031,9 @@
                 window.qrScannerModal.remove();
                 window.qrScannerModal = null;
             }
+            // Resetar flags
+            window.isScanning = false;
+            window.isInitializingScanner = false;
         };
         
         // Função para processar QR Code escaneado (definir como global imediatamente)

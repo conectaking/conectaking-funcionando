@@ -69,7 +69,8 @@ const securityHeaders = (req, res, next) => {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     
     // Permissions-Policy (antigo Feature-Policy)
-    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    // Permitir câmera para o próprio domínio (necessário para QR Code scanner)
+    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(self)');
     
     next();
 };
