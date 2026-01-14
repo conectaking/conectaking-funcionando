@@ -269,7 +269,7 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
             SELECT column_name 
             FROM information_schema.columns 
             WHERE table_name = 'guest_list_items' 
-            AND column_name IN ('form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'enable_whatsapp', 'enable_guest_list_submit')
+            AND column_name IN ('form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'enable_whatsapp', 'enable_guest_list_submit', 'card_color', 'decorative_bar_color')
         `);
         const hasFormLogoUrl = logoColumnsCheck.rows.some(r => r.column_name === 'form_logo_url');
         const hasButtonLogoUrl = logoColumnsCheck.rows.some(r => r.column_name === 'button_logo_url');
@@ -277,6 +277,8 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
         const hasShowLogoCorner = logoColumnsCheck.rows.some(r => r.column_name === 'show_logo_corner');
         const hasEnableWhatsapp = logoColumnsCheck.rows.some(r => r.column_name === 'enable_whatsapp');
         const hasEnableGuestListSubmit = logoColumnsCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+        const hasCardColor = logoColumnsCheck.rows.some(r => r.column_name === 'card_color');
+        const hasDecorativeBarColor = logoColumnsCheck.rows.some(r => r.column_name === 'decorative_bar_color');
         
         // Construir SELECT dinamicamente
         let selectFields = `
@@ -319,6 +321,8 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
         if (hasShowLogoCorner) selectFields += ', gli.show_logo_corner';
         if (hasEnableWhatsapp) selectFields += ', gli.enable_whatsapp';
         if (hasEnableGuestListSubmit) selectFields += ', gli.enable_guest_list_submit';
+        if (hasCardColor) selectFields += ', gli.card_color';
+        if (hasDecorativeBarColor) selectFields += ', gli.decorative_bar_color';
         
         // Buscar lista de convidados associada
         let result = await client.query(`
