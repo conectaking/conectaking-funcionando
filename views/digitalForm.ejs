@@ -274,7 +274,7 @@
                     <form id="digital-form" class="digital-form">
                         <div style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e8eaed;">
                             <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text-color, #202124); letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px;">
-                                <div style="width: 6px; height: 32px; background: <%= decorativeBarColor %>; border-radius: 3px;"></div>
+                                <div style="width: 6px; height: 32px; background: linear-gradient(180deg, <%= primaryColor %>, <%= secondaryColor %>); border-radius: 3px;"></div>
                                 Preencha os dados
                             </h2>
                             <p style="margin: 12px 0 0 18px; color: #5f6368; font-size: 14px;">Todos os campos marcados com * são obrigatórios</p>
@@ -431,6 +431,8 @@
         const itemId = <%= itemId || item.id %>;
         const slug = '<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>';
         const pageTimestamp = <%= typeof _timestamp !== 'undefined' ? _timestamp : Date.now() %>;
+        // Cor das barras decorativas para uso no JavaScript
+        const decorativeBarColor = '<%= decorativeBarColor %>';
         
         // LOG DETALHADO NO CLIENTE
         console.log('🔍 [FORM/CLIENT] Dados recebidos do servidor:', {
@@ -552,8 +554,9 @@
                 console.log(`🔄 [PUBLIC] Processando campo ${index + 1}/${fields.length}:`, normalizedField.label, '- Tipo:', normalizedField.type);
                 console.log(`🔍 [PUBLIC] Campo completo:`, normalizedField);
                 
+                // Usar decorativeBarColor para as barras pequenas (3px) ao lado dos labels
                 let fieldHTML = `<label for="field-${index}" style="display: flex; align-items: flex-start; gap: 8px;">
-                    <span style="width: 3px; height: 18px; background: linear-gradient(180deg, var(--decorative-bar-color, var(--primary-color, #4A90E2)), rgba(74, 144, 226, 0.6)); border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
+                    <span style="width: 3px; height: 18px; background: ${decorativeBarColor}; border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
                     <span style="flex: 1;">${normalizedField.label} ${normalizedField.required ? '<span class="required">*</span>' : ''}</span>
                 </label>`;
                 
