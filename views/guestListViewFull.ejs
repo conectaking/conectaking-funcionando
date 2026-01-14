@@ -670,8 +670,10 @@
                     }
                     
                     window.qrCodeScanner = new Html5Qrcode("qr-reader");
+                    
+                    console.log('📷 Iniciando scanner QR Code...');
                     window.qrCodeScanner.start(
-                        { facingMode: "environment" }, // Usar câmera traseira
+                        { facingMode: "environment" }, // Câmera traseira
                         {
                             fps: 10,
                             qrbox: { width: 250, height: 250 },
