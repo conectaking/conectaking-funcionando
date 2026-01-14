@@ -1422,93 +1422,99 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
         
         if (response_id) {
             try {
-                const responseRes = await client.query(
-                    'SELECT response_data, responder_name, responder_email, responder_phone, submitted_at FROM digital_form_responses WHERE id = $1',
-                    [response_id]
-                );
-                if (responseRes.rows.length > 0) {
-                    responseData = responseRes.rows[0];
-                    // Parsear response_data se for string
-                    if (typeof responseData.response_data === 'string') {
-                        try {
-                            responseData.response_data = JSON.parse(responseData.response_data);
-                        } catch (e) {
-                            // Se não conseguir parsear, usar como está
+                // Converter response_id para inteiro se for string
+                const responseIdInt = parseInt(response_id, 10);
+                if (isNaN(responseIdInt)) {
+                    logger.warn('⚠️ response_id inválido na página de sucesso:', response_id);
+                } else {
+                    const responseRes = await client.query(
+                        'SELECT response_data, responder_name, responder_email, responder_phone, submitted_at FROM digital_form_responses WHERE id = $1',
+                        [responseIdInt]
+                    );
+                    if (responseRes.rows.length > 0) {
+                        responseData = responseRes.rows[0];
+                        // Parsear response_data se for string
+                        if (typeof responseData.response_data === 'string') {
+                            try {
+                                responseData.response_data = JSON.parse(responseData.response_data);
+                            } catch (e) {
+                                // Se não conseguir parsear, usar como está
+                            }
                         }
                     }
-                }
-                
-                // Buscar convidado associado a esta resposta (via guest_list_id e nome/email)
-                const enableGuestListSubmit = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
-                if (enableGuestListSubmit) {
-                    try {
-                        // Buscar guest_list_item_id para este profile_item_id
-                        const guestListItemRes = await client.query(
-                            'SELECT id FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
-                            [itemIdInt]
-                        );
-                        
-                        if (guestListItemRes.rows.length > 0) {
-                            const guestListItemId = guestListItemRes.rows[0].id;
+                    
+                    // Buscar convidado associado a esta resposta (via guest_list_id e nome/email)
+                    const enableGuestListSubmit = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
+                    if (enableGuestListSubmit) {
+                        try {
+                            // Buscar guest_list_item_id para este profile_item_id
+                            const guestListItemRes = await client.query(
+                                'SELECT id FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
+                                [itemIdInt]
+                            );
                             
-                            // Buscar o convidado mais recente associado a esta resposta (por nome ou email)
-                            let guestRes = null;
-                            if (responseData && responseData.responder_name) {
-                                guestRes = await client.query(
-                                    `SELECT id, qr_token FROM guests 
-                                     WHERE guest_list_id = $1 
-                                     AND (name = $2 OR email = $3)
-                                     ORDER BY created_at DESC LIMIT 1`,
-                                    [guestListItemId, responseData.responder_name, responseData.responder_email || responseData.responder_name]
-                                );
-                            } else if (responseData && responseData.response_data) {
-                                // Tentar buscar por nome no response_data (buscar em qualquer chave que possa conter o nome)
-                                let nameFromData = null;
-                                if (responseData.response_data.name) {
-                                    nameFromData = responseData.response_data.name;
-                                } else if (responseData.response_data.nome) {
-                                    nameFromData = responseData.response_data.nome;
-                                } else {
-                                    // Tentar encontrar qualquer campo que possa ser o nome
-                                    const allValues = Object.values(responseData.response_data);
-                                    for (const value of allValues) {
-                                        if (typeof value === 'string' && value.trim().length > 0 && value.trim().length < 100) {
-                                            nameFromData = value.trim();
-                                            break;
-                                        }
-                                    }
-                                }
+                            if (guestListItemRes.rows.length > 0) {
+                                const guestListItemId = guestListItemRes.rows[0].id;
                                 
-                                if (nameFromData && typeof nameFromData === 'string') {
+                                // Buscar o convidado mais recente associado a esta resposta (por nome ou email)
+                                let guestRes = null;
+                                if (responseData && responseData.responder_name) {
                                     guestRes = await client.query(
                                         `SELECT id, qr_token FROM guests 
                                          WHERE guest_list_id = $1 
-                                         AND (name = $2 OR name ILIKE $2)
+                                         AND (name = $2 OR email = $3)
                                          ORDER BY created_at DESC LIMIT 1`,
-                                        [guestListItemId, nameFromData]
+                                        [guestListItemId, responseData.responder_name, responseData.responder_email || responseData.responder_name]
                                     );
+                                } else if (responseData && responseData.response_data) {
+                                    // Tentar buscar por nome no response_data (buscar em qualquer chave que possa conter o nome)
+                                    let nameFromData = null;
+                                    if (responseData.response_data.name) {
+                                        nameFromData = responseData.response_data.name;
+                                    } else if (responseData.response_data.nome) {
+                                        nameFromData = responseData.response_data.nome;
+                                    } else {
+                                        // Tentar encontrar qualquer campo que possa ser o nome
+                                        const allValues = Object.values(responseData.response_data);
+                                        for (const value of allValues) {
+                                            if (typeof value === 'string' && value.trim().length > 0 && value.trim().length < 100) {
+                                                nameFromData = value.trim();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (nameFromData && typeof nameFromData === 'string') {
+                                        guestRes = await client.query(
+                                            `SELECT id, qr_token FROM guests 
+                                             WHERE guest_list_id = $1 
+                                             AND (name = $2 OR name ILIKE $2)
+                                             ORDER BY created_at DESC LIMIT 1`,
+                                            [guestListItemId, nameFromData]
+                                        );
+                                    }
+                                }
+                                
+                                if (guestRes && guestRes.rows.length > 0) {
+                                    guestId = guestRes.rows[0].id;
+                                    qrToken = guestRes.rows[0].qr_token;
+                                    
+                                    // Buscar dados do evento
+                                    const eventRes = await client.query(
+                                        `SELECT event_title, event_date, event_location, event_address 
+                                         FROM guest_list_items 
+                                         WHERE id = $1`,
+                                        [guestListItemId]
+                                    );
+                                    
+                                    if (eventRes.rows.length > 0) {
+                                        eventData = eventRes.rows[0];
+                                    }
                                 }
                             }
-                            
-                            if (guestRes && guestRes.rows.length > 0) {
-                                guestId = guestRes.rows[0].id;
-                                qrToken = guestRes.rows[0].qr_token;
-                                
-                                // Buscar dados do evento
-                                const eventRes = await client.query(
-                                    `SELECT event_title, event_date, event_location, event_address 
-                                     FROM guest_list_items 
-                                     WHERE id = $1`,
-                                    [guestListItemId]
-                                );
-                                
-                                if (eventRes.rows.length > 0) {
-                                    eventData = eventRes.rows[0];
-                                }
-                            }
+                        } catch (err) {
+                            logger.warn('Erro ao buscar convidado e QR token:', err);
                         }
-                    } catch (err) {
-                        logger.warn('Erro ao buscar convidado e QR token:', err);
                     }
                 }
             } catch (err) {
@@ -1532,8 +1538,8 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             showWhatsAppInfo: formData.enable_whatsapp !== false && formData.whatsapp_number,
             whatsappNumber: formData.whatsapp_number,
             showGuestListInfo: enableGuestListSubmitBool && qrToken,
-            guestId: guestId,
-            qrToken: qrToken,
+            guestId: guestId || null,
+            qrToken: qrToken || null,
             eventTitle: eventData?.event_title || formData.form_title || 'Evento',
             eventDate: eventData?.event_date || null,
             eventAddress: eventData?.event_location || eventData?.event_address || null,
