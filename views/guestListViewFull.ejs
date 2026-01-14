@@ -1168,13 +1168,24 @@
         // Função para processar QR Code escaneado (definir como global imediatamente)
         window.handleQRCodeScanned = async function(qrToken) {
             let loadingModal = null;
+            
             try {
+                console.log('📱 QR Code escaneado:', qrToken);
+                
                 // O QR Code contém apenas o token (hex de 64 caracteres)
                 // Extrair token do QR Code (pode ser uma URL completa ou apenas o token)
-                let token = qrToken.trim();
+                let token = (qrToken || '').trim();
+                
+                if (!token) {
+                    console.error('❌ QR Code vazio');
+                    alert('❌ QR Code inválido. Verifique se o QR Code está correto.');
+                    return;
+                }
                 
                 // Se for uma URL, extrair o token
-                if (token.includes('/confirm/')) {
+                if (token.includes('/confirm/qr/')) {
+                    token = token.split('/confirm/qr/')[1].split('/')[0].split('?')[0];
+                } else if (token.includes('/confirm/')) {
                     token = token.split('/confirm/')[1].split('/')[0].split('?')[0];
                 } else if (token.includes('/')) {
                     // Tentar extrair o token da URL
@@ -1182,52 +1193,80 @@
                     token = parts[parts.length - 1].split('?')[0];
                 }
                 
-                // Validar token (deve ter pelo menos 32 caracteres hexadecimais)
+                // Remover espaços e caracteres especiais que podem ter vindo do scan
+                token = token.trim();
+                
+                // Validar token (deve ter pelo menos 32 caracteres hexadecimais - 64 é o esperado)
                 if (!token || token.length < 32) {
-                    alert('❌ QR Code inválido. Verifique se o QR Code está correto.');
-                    // Não fechar o scanner se o token for inválido, permitir nova tentativa
+                    console.error('❌ Token inválido (muito curto):', token.length);
+                    alert('❌ QR Code inválido. O token está muito curto. Verifique se o QR Code está correto.');
                     return;
                 }
+                
+                console.log('✅ Token extraído:', token.substring(0, 20) + '... (tamanho: ' + token.length + ')');
                 
                 // Fechar scanner ANTES de processar (para evitar múltiplas leituras)
                 window.closeQRScanner();
                 
                 // Mostrar loading
                 loadingModal = document.createElement('div');
+                loadingModal.id = 'qr-confirm-loading';
                 loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;';
                 loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Confirmando presença...</div>';
                 document.body.appendChild(loadingModal);
                 
                 // Confirmar via API
-                const response = await fetch(`/guest-list/confirm/qr/${token}`, {
+                console.log('🔄 Enviando requisição para API...');
+                const response = await fetch(`/guest-list/confirm/qr/${encodeURIComponent(token)}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 });
                 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Erro ao processar requisição' }));
-                    throw new Error(errorData.message || `Erro HTTP: ${response.status}`);
+                console.log('📡 Resposta da API:', response.status, response.statusText);
+                
+                // Tentar parsear JSON da resposta
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonErr) {
+                    console.error('❌ Erro ao parsear JSON da resposta:', jsonErr);
+                    const text = await response.text();
+                    console.error('📄 Resposta em texto:', text);
+                    throw new Error(`Erro ao processar resposta do servidor (status: ${response.status})`);
                 }
                 
-                const data = await response.json();
-                
+                // Remover loading
                 if (loadingModal && loadingModal.parentElement) {
                     loadingModal.remove();
                 }
                 
+                if (!response.ok) {
+                    console.error('❌ Erro na API:', data);
+                    throw new Error(data.message || data.error || `Erro HTTP: ${response.status}`);
+                }
+                
                 if (data.success) {
+                    console.log('✅ Presença confirmada com sucesso!', data.guest);
                     alert(`✅ ${data.message}\n\nNome: ${data.guest.name}`);
                     // Recarregar página para atualizar estatísticas
-                    location.reload();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
                 } else {
+                    console.error('❌ API retornou sucesso=false:', data);
                     alert(`❌ ${data.message || 'Erro ao confirmar presença'}`);
                 }
             } catch (error) {
-                console.error('Erro ao processar QR Code:', error);
+                console.error('❌ Erro ao processar QR Code:', error);
+                console.error('Stack:', error.stack);
                 
                 // Remover loading se ainda estiver visível
+                const existingLoading = document.getElementById('qr-confirm-loading');
+                if (existingLoading && existingLoading.parentElement) {
+                    existingLoading.remove();
+                }
                 if (loadingModal && loadingModal.parentElement) {
                     loadingModal.remove();
                 }
@@ -1235,10 +1274,14 @@
                 // Mostrar mensagem de erro mais específica
                 let errorMessage = 'Erro ao processar QR Code. Tente novamente.';
                 if (error.message) {
-                    if (error.message.includes('fetch') || error.message.includes('network')) {
+                    if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
                         errorMessage = '❌ Erro de conexão. Verifique sua internet e tente novamente.';
-                    } else if (error.message.includes('HTTP')) {
-                        errorMessage = `❌ Erro no servidor: ${error.message}`;
+                    } else if (error.message.includes('404')) {
+                        errorMessage = '❌ QR Code não encontrado. Verifique se o QR Code está correto.';
+                    } else if (error.message.includes('400')) {
+                        errorMessage = '❌ QR Code inválido ou expirado. Verifique se o QR Code está correto.';
+                    } else if (error.message.includes('500')) {
+                        errorMessage = '❌ Erro no servidor. Tente novamente mais tarde.';
                     } else {
                         errorMessage = `❌ ${error.message}`;
                     }
