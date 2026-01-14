@@ -738,23 +738,27 @@
                     // Normalizar o parâmetro da câmera (pode ser string deviceId ou objeto config)
                     let cameraConfig;
                     if (typeof cameraIdOrConfig === 'string') {
-                        // Se for string, verificar se não está vazia
-                        if (cameraIdOrConfig && cameraIdOrConfig.trim() !== '') {
-                            cameraConfig = cameraIdOrConfig;
+                        // Se for string, verificar se não está vazia e não é 'default'
+                        if (cameraIdOrConfig && cameraIdOrConfig.trim() !== '' && cameraIdOrConfig.trim() !== 'default') {
+                            cameraConfig = cameraIdOrConfig.trim();
                         } else {
-                            // Se estiver vazia, usar facingMode
+                            // Se estiver vazia ou for 'default', usar facingMode
+                            console.warn('⚠️ deviceId inválido ou vazio, usando facingMode');
                             cameraConfig = { facingMode: "environment" };
                         }
-                    } else if (cameraIdOrConfig && typeof cameraIdOrConfig === 'object') {
+                    } else if (cameraIdOrConfig && typeof cameraIdOrConfig === 'object' && !Array.isArray(cameraIdOrConfig)) {
+                        // Se for objeto válido, usar diretamente
                         cameraConfig = cameraIdOrConfig;
                     } else {
-                        // Fallback padrão
+                        // Fallback padrão - sempre usar facingMode se não houver configuração válida
+                        console.warn('⚠️ cameraIdOrConfig inválido, usando facingMode como fallback');
                         cameraConfig = { facingMode: "environment" };
                     }
                     
-                    // Validar que cameraConfig não está vazio
-                    if (!cameraConfig || (typeof cameraConfig === 'string' && cameraConfig.trim() === '')) {
-                        throw new Error('cameraIdOrConfig is required');
+                    // Validar que cameraConfig não está vazio (sempre deve ter um valor válido neste ponto)
+                    if (!cameraConfig) {
+                        console.error('❌ cameraConfig está vazio após normalização, usando fallback');
+                        cameraConfig = { facingMode: "environment" };
                     }
                     
                     window.qrCodeScanner.start(
@@ -914,20 +918,22 @@
                     return;
                 } else if (cameras.length === 1) {
                     // Se houver apenas uma câmera, usar diretamente
-                    console.log('📷 Usando única câmera disponível:', cameras[0].label);
+                    console.log('📷 Usando única câmera disponível:', cameras[0].label || 'Câmera padrão');
                     // Verificar se deviceId existe e é válido
                     const deviceId = cameras[0].deviceId;
-                    if (deviceId && deviceId.trim() !== '') {
+                    // IMPORTANTE: Sempre validar deviceId antes de usar
+                    if (deviceId && typeof deviceId === 'string' && deviceId.trim() !== '' && deviceId !== 'default') {
+                        console.log('📷 Usando deviceId:', deviceId.substring(0, 20) + '...');
                         startScannerWithCamera(deviceId);
                     } else {
-                        // Se deviceId estiver vazio, usar facingMode como fallback
-                        console.warn('⚠️ deviceId vazio, usando facingMode como fallback');
+                        // Se deviceId estiver vazio ou inválido, usar facingMode como fallback
+                        console.warn('⚠️ deviceId inválido ou vazio, usando facingMode como fallback');
                         startScannerWithCamera({ facingMode: "environment" });
                     }
                     return;
                 } else {
-                    // Se não houver câmeras, tentar usar facingMode (mobile)
-                    console.log('📷 Nenhuma câmera encontrada, tentando usar câmera padrão...');
+                    // Se não houver câmeras, tentar usar facingMode (mobile/desktop)
+                    console.log('📷 Nenhuma câmera encontrada na lista, tentando usar câmera padrão com facingMode...');
                     startScannerWithCamera({ facingMode: "environment" });
                     return;
                 }

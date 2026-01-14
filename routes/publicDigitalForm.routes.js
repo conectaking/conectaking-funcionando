@@ -1445,12 +1445,21 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
         let guestId = null;
         let eventData = null;
         
-        if (response_id) {
+        // IMPORTANTE: response_id pode vir duplicado na query string, pegar o primeiro válido
+        let responseIdValue = response_id;
+        if (Array.isArray(response_id)) {
+            responseIdValue = response_id[0];
+        } else if (typeof response_id === 'string' && response_id.includes(',')) {
+            // Se vier como string com vírgula, pegar o primeiro
+            responseIdValue = response_id.split(',')[0];
+        }
+        
+        if (responseIdValue) {
             try {
                 // Converter response_id para inteiro se for string
-                const responseIdInt = parseInt(response_id, 10);
+                const responseIdInt = parseInt(responseIdValue, 10);
                 if (isNaN(responseIdInt)) {
-                    logger.warn('⚠️ response_id inválido na página de sucesso:', response_id);
+                    logger.warn('⚠️ response_id inválido na página de sucesso:', responseIdValue);
                 } else {
                     // Buscar resposta incluindo guest_id se existir
                     const responseRes = await client.query(

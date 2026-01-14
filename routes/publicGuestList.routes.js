@@ -653,11 +653,13 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
             // Busca parcial: usar LIKE para encontrar CPFs que começam com os dígitos informados
             // IMPORTANTE: Remover caracteres não numéricos do campo document antes de comparar
             // Usar REGEXP_REPLACE para remover todos os caracteres não numéricos
+            // IMPORTANTE: Usar LENGTH para garantir que o documento tenha pelo menos o número de dígitos informados
             guestResult = await client.query(`
                 SELECT * FROM guests
                 WHERE guest_list_id = $1 
                 AND document IS NOT NULL 
                 AND document != ''
+                AND LENGTH(REGEXP_REPLACE(document, '[^0-9]', '', 'g')) >= $4
                 AND REGEXP_REPLACE(document, '[^0-9]', '', 'g') LIKE $2
                 ORDER BY 
                     CASE 
@@ -666,12 +668,14 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
                     END,
                     created_at DESC
                 LIMIT 10
-            `, [guestList.id, cleanCpf + '%', cleanCpf]);
+            `, [guestList.id, cleanCpf + '%', cleanCpf, cleanCpf.length]);
             
             logger.info('🔍 [CPF_SEARCH] Busca parcial:', {
                 cleanCpf,
+                cleanCpfLength: cleanCpf.length,
                 found: guestResult.rows.length,
-                guestListId: guestList.id
+                guestListId: guestList.id,
+                query: `LIKE '${cleanCpf}%'`
             });
             
             // Se encontrou múltiplos resultados, retornar lista para o usuário escolher
