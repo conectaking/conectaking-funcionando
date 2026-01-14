@@ -513,7 +513,9 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             show_logo_corner,
             // IMPORTANTE: Incluir portaria_slug e cadastro_slug
             portaria_slug,
-            cadastro_slug
+            cadastro_slug,
+            // IMPORTANTE: Incluir decorative_bar_color
+            decorative_bar_color
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
@@ -884,12 +886,13 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             }
         }
         
-        // IMPORTANTE: Também atualizar enable_whatsapp, enable_guest_list_submit, campos de logo, form_title e form_fields em digital_form_items
+        // IMPORTANTE: Também atualizar enable_whatsapp, enable_guest_list_submit, campos de logo, form_title, form_fields e decorative_bar_color em digital_form_items
         // Isso garante que a página pública tenha acesso a esses valores
         if (enable_whatsapp !== undefined || enable_guest_list_submit !== undefined || 
             form_logo_url !== undefined || button_logo_url !== undefined || 
             button_logo_size !== undefined || show_logo_corner !== undefined ||
-            event_title !== undefined || custom_form_fields !== undefined) {
+            event_title !== undefined || custom_form_fields !== undefined ||
+            decorative_bar_color !== undefined) {
             const digitalFormUpdateFields = [];
             const digitalFormUpdateValues = [];
             let digitalFormParamIndex = 1;
@@ -899,7 +902,7 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'digital_form_items' 
-                AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit', 'form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'form_title', 'form_fields')
+                AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit', 'form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'form_title', 'form_fields', 'decorative_bar_color')
             `);
             const hasEnableWhatsapp = digitalFormColumnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
             const hasEnableGuestListSubmit = digitalFormColumnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
@@ -966,6 +969,14 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 digitalFormUpdateFields.push(`form_fields = $${digitalFormParamIndex++}::jsonb`);
                 digitalFormUpdateValues.push(formFieldsJSON);
                 logger.info(`📋 [GUEST_LIST] Sincronizando custom_form_fields (${formFieldsArray.length} campos) para form_fields em digital_form_items`);
+            }
+            
+            // IMPORTANTE: Sincronizar decorative_bar_color em digital_form_items
+            const hasDecorativeBarColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'decorative_bar_color');
+            if (decorative_bar_color !== undefined && hasDecorativeBarColor) {
+                digitalFormUpdateFields.push(`decorative_bar_color = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(decorative_bar_color || null);
+                logger.info(`🎨 [GUEST_LIST] Sincronizando decorative_bar_color (${decorative_bar_color || 'null'}) para digital_form_items`);
             }
             
             if (digitalFormUpdateFields.length > 0) {
