@@ -362,7 +362,6 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
                 COALESCE(gli.background_opacity, 1.0) as background_opacity,
                 gli.event_date,
                 gli.event_location,
-                gli.event_address,
                 gli.event_description`;
             
             if (hasFormLogoUrl) selectFields += ', gli.form_logo_url';
@@ -400,7 +399,6 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
                     COALESCE(gli.background_opacity, 1.0) as background_opacity,
                     gli.event_date,
                     gli.event_location,
-                    gli.event_address,
                     gli.event_description
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
@@ -610,7 +608,6 @@ router.get('/verify/qr/:qrToken', asyncHandler(async (req, res) => {
                 gli.event_date,
                 gli.event_title,
                 gli.event_location,
-                gli.event_address,
                 pi.title as form_title
             FROM guests g
             INNER JOIN guest_list_items gli ON gli.id = g.guest_list_id
@@ -663,7 +660,7 @@ router.get('/verify/qr/:qrToken', asyncHandler(async (req, res) => {
             event: {
                 title: guest.event_title || guest.form_title || 'Evento',
                 date: guest.event_date,
-                location: guest.event_location || guest.event_address
+                location: guest.event_location || ''
             },
             alreadyCheckedIn: guest.status === 'checked_in'
         });

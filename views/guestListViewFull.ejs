@@ -680,10 +680,10 @@
                             <span><%= new Date(guestList.event_date).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
                         </div>
                         <% } %>
-                        <% if (typeof guestList !== 'undefined' && guestList && (guestList.event_location || guestList.event_address)) { %>
+                        <% if (typeof guestList !== 'undefined' && guestList && guestList.event_location) { %>
                         <div class="header-info-item">
                             <i class="fas fa-map-marker-alt"></i>
-                            <span><%= guestList.event_location || guestList.event_address %></span>
+                            <span><%= guestList.event_location %></span>
                         </div>
                         <% } %>
                     </div>
