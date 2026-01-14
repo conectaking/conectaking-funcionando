@@ -439,6 +439,52 @@
         const primaryColor = '<%- typeof primaryColor !== 'undefined' ? primaryColor : "#4A90E2" %>';
         const secondaryColor = '<%- typeof secondaryColor !== 'undefined' ? secondaryColor : "#6BA3F0" %>';
         
+        // Dados disponíveis no cliente
+        <% 
+            let personNameValue = '';
+            if (typeof responseData !== 'undefined' && responseData && responseData.responder_name) {
+                personNameValue = responseData.responder_name;
+            } else if (typeof submittedData !== 'undefined' && submittedData) {
+                // Tentar encontrar o nome nos dados submetidos
+                if (submittedData.name) personNameValue = submittedData.name;
+                else if (submittedData.nome) personNameValue = submittedData.nome;
+                else if (submittedData.data_name) personNameValue = submittedData.data_name;
+                else if (submittedData.data_nome) personNameValue = submittedData.data_nome;
+                // Procurar em todas as chaves
+                if (!personNameValue) {
+                    Object.keys(submittedData).forEach(key => {
+                        const keyLower = key.toLowerCase();
+                        if ((keyLower.includes('name') || keyLower.includes('nome')) && !personNameValue) {
+                            const value = submittedData[key];
+                            if (value && typeof value === 'string' && value.trim().length >= 2) {
+                                personNameValue = value;
+                            }
+                        }
+                    });
+                }
+            }
+            if (!personNameValue && typeof responseData !== 'undefined' && responseData && responseData.response_data) {
+                const responseDataObj = responseData.response_data;
+                if (responseDataObj.name) personNameValue = responseDataObj.name;
+                else if (responseDataObj.nome) personNameValue = responseDataObj.nome;
+                else if (responseDataObj.data_name) personNameValue = responseDataObj.data_name;
+                else if (responseDataObj.data_nome) personNameValue = responseDataObj.data_nome;
+                // Procurar em todas as chaves
+                if (!personNameValue && typeof responseDataObj === 'object') {
+                    Object.keys(responseDataObj).forEach(key => {
+                        const keyLower = key.toLowerCase();
+                        if ((keyLower.includes('name') || keyLower.includes('nome')) && !personNameValue) {
+                            const value = responseDataObj[key];
+                            if (value && typeof value === 'string' && value.trim().length >= 2) {
+                                personNameValue = value;
+                            }
+                        }
+                    });
+                }
+            }
+        %>
+        const personName = '<%- personNameValue || "" %>';
+        
         console.log('🔍 Debug QR Code:', {
             showGuestListInfo: <%= showGuestListInfo %>,
             qrToken: qrToken ? qrToken.substring(0, 10) + '...' : 'null',
@@ -575,7 +621,7 @@
             document.body.appendChild(modal);
         }
         
-        // Função para baixar QR Code como PNG (com compressão - Melhoria 13)
+        // Função para baixar QR Code como PNG personalizado (estilo Simpla)
         function downloadQRCode() {
             const container = document.getElementById('qrcode-container');
             if (!container) return;
@@ -584,28 +630,135 @@
             const img = container.querySelector('img');
             if (!canvas && !img) return;
             
-            let qrCodeDataUrl;
-            if (canvas) {
-                // Compressão de imagem (Melhoria 13)
-                const compressedCanvas = document.createElement('canvas');
-                compressedCanvas.width = canvas.width;
-                compressedCanvas.height = canvas.height;
-                const ctx = compressedCanvas.getContext('2d');
-                
-                // Desenhar imagem original no canvas de compressão
-                ctx.drawImage(canvas, 0, 0);
-                
-                // Obter dados comprimidos (qualidade 0.85 para reduzir tamanho mantendo qualidade)
-                qrCodeDataUrl = compressedCanvas.toDataURL('image/png', 0.85);
-            } else {
-                qrCodeDataUrl = img.src;
+            // Criar canvas personalizado com design estilo Simpla
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = 800;
+            finalCanvas.height = 1000;
+            const ctx = finalCanvas.getContext('2d');
+            
+            // Cor de fundo branco
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+            
+            // Converter cores hex para RGB
+            const primaryRgb = hexToRgb(primaryColor);
+            const secondaryRgb = hexToRgb(secondaryColor);
+            
+            // Header com gradiente (estilo Simpla)
+            const gradient = ctx.createLinearGradient(0, 0, finalCanvas.width, 0);
+            gradient.addColorStop(0, `rgb(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b})`);
+            gradient.addColorStop(1, `rgb(${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b})`);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, finalCanvas.width, 120);
+            
+            // Título no header
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 32px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Confirmação de Presença', finalCanvas.width / 2, 40);
+            
+            // Subtítulo
+            ctx.font = '18px Inter, sans-serif';
+            ctx.fillText('Apresente este QR Code na portaria', finalCanvas.width / 2, 75);
+            
+            // Nome da pessoa (se disponível) - estilo Simpla
+            let yPos = 180;
+            if (personName && personName.trim() !== '') {
+                ctx.fillStyle = '#202124';
+                ctx.font = 'bold 36px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(personName, finalCanvas.width / 2, yPos);
+                yPos += 50;
             }
             
-            // Criar link de download
-            const link = document.createElement('a');
-            link.download = `QR-Code-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.png`;
-            link.href = qrCodeDataUrl;
-            link.click();
+            // Função para desenhar o resto do conteúdo e fazer download
+            function drawRemainingContentAndDownload(qrImageElement) {
+                // QR Code centralizado
+                const qrSize = 400;
+                const qrX = (finalCanvas.width - qrSize) / 2;
+                const qrY = yPos;
+                
+                // Desenhar QR Code
+                ctx.drawImage(qrImageElement, qrX, qrY, qrSize, qrSize);
+                
+                yPos += qrSize + 40;
+                
+                // Informações do evento
+                ctx.fillStyle = '#202124';
+                ctx.font = 'bold 28px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(eventTitle, finalCanvas.width / 2, yPos);
+                yPos += 40;
+                
+                if (eventDate) {
+                    ctx.fillStyle = '#5f6368';
+                    ctx.font = '20px Inter, sans-serif';
+                    ctx.fillText('📅 ' + eventDate, finalCanvas.width / 2, yPos);
+                    yPos += 35;
+                }
+                
+                if (eventAddress) {
+                    ctx.fillStyle = '#5f6368';
+                    ctx.font = '18px Inter, sans-serif';
+                    const maxWidth = finalCanvas.width - 80;
+                    const words = eventAddress.split(' ');
+                    let line = '📍 ';
+                    let lines = [];
+                    words.forEach(word => {
+                        const testLine = line + word + ' ';
+                        const metrics = ctx.measureText(testLine);
+                        if (metrics.width > maxWidth && line !== '📍 ') {
+                            lines.push(line);
+                            line = word + ' ';
+                        } else {
+                            line = testLine;
+                        }
+                    });
+                    lines.push(line);
+                    lines.forEach((line, index) => {
+                        ctx.fillText(line.trim(), finalCanvas.width / 2, yPos + (index * 25));
+                    });
+                    yPos += lines.length * 25 + 20;
+                }
+                
+                // Instruções finais
+                ctx.fillStyle = '#9aa0a6';
+                ctx.font = '16px Inter, sans-serif';
+                ctx.fillText('Token: ' + qrToken.substring(0, 16) + '...', finalCanvas.width / 2, yPos + 20);
+                
+                // Footer
+                ctx.fillStyle = '#f8f9fa';
+                ctx.fillRect(0, finalCanvas.height - 60, finalCanvas.width, 60);
+                ctx.fillStyle = '#9aa0a6';
+                ctx.font = '14px Inter, sans-serif';
+                ctx.fillText('King Forms - Sistema de Confirmação de Presença', finalCanvas.width / 2, finalCanvas.height - 35);
+                ctx.fillText('© 2026 Conecta King. Todos os direitos reservados.', finalCanvas.width / 2, finalCanvas.height - 15);
+                
+                // Fazer download
+                const link = document.createElement('a');
+                const fileName = personName && personName.trim() !== '' 
+                    ? `QR-Code-${personName.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.png`
+                    : `QR-Code-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.png`;
+                link.download = fileName;
+                link.href = finalCanvas.toDataURL('image/png', 0.95);
+                link.click();
+            }
+            
+            // Desenhar QR Code e fazer download
+            if (canvas) {
+                drawRemainingContentAndDownload(canvas);
+            } else if (img) {
+                const imgElement = new Image();
+                imgElement.crossOrigin = 'anonymous';
+                imgElement.onload = function() {
+                    drawRemainingContentAndDownload(imgElement);
+                };
+                imgElement.onerror = function() {
+                    alert('Erro ao carregar imagem do QR Code. Por favor, tente novamente.');
+                };
+                imgElement.src = img.src;
+            }
         }
         
         // Função para compartilhar QR Code via WhatsApp
@@ -625,78 +778,123 @@
             window.open(whatsappUrl, '_blank');
         }
         
-        // Função para baixar QR Code como PDF (premium design)
+        // Função para baixar QR Code como PDF (premium design com nome da pessoa)
         function downloadQRCodePDF() {
-            if (typeof window.jspdf === 'undefined') {
-                alert('Biblioteca PDF não carregada. Por favor, recarregue a página.');
-                return;
-            }
-            
-            const { jsPDF } = window.jspdf;
-            const container = document.getElementById('qrcode-container');
-            if (!container) return;
-            
-            const canvas = container.querySelector('canvas');
-            const img = container.querySelector('img');
-            if (!canvas && !img) return;
-            
-            const qrCodeImage = canvas ? canvas.toDataURL('image/png') : img.src;
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: [210, 297] // A4
-            });
-            
-            // Cores
-            const primaryRgb = hexToRgb(primaryColor);
-            const secondaryRgb = hexToRgb(secondaryColor);
-            
-            // Header com gradiente
-            doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b);
-            doc.rect(0, 0, 210, 40, 'F');
-            
-            // Título
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(24);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Confirmação de Presença', 105, 20, { align: 'center' });
-            
-            // QR Code
-            doc.addImage(qrCodeImage, 'PNG', 55, 50, 100, 100);
-            
-            // Informações do Evento
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.text(eventTitle, 105, 160, { align: 'center' });
-            
-            if (eventDate) {
+            // Aguardar carregamento da biblioteca PDF
+            function tryDownloadPDF() {
+                // Verificar múltiplas formas de acesso à biblioteca jsPDF
+                let jsPDFLib = null;
+                if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
+                    jsPDFLib = window.jspdf.jsPDF;
+                } else if (typeof window.jspdf !== 'undefined' && window.jspdf.default) {
+                    jsPDFLib = window.jspdf.default;
+                } else if (typeof jsPDF !== 'undefined') {
+                    jsPDFLib = jsPDF;
+                } else if (typeof window.jsPDF !== 'undefined') {
+                    jsPDFLib = window.jsPDF;
+                }
+                
+                if (!jsPDFLib) {
+                    // Tentar novamente após um delay
+                    setTimeout(tryDownloadPDF, 200);
+                    return;
+                }
+                
+                const container = document.getElementById('qrcode-container');
+                if (!container) return;
+                
+                const canvas = container.querySelector('canvas');
+                const img = container.querySelector('img');
+                if (!canvas && !img) return;
+                
+                const qrCodeImage = canvas ? canvas.toDataURL('image/png') : img.src;
+                const doc = new jsPDFLib({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: [210, 297] // A4
+                });
+                
+                // Cores
+                const primaryRgb = hexToRgb(primaryColor);
+                const secondaryRgb = hexToRgb(secondaryColor);
+                
+                // Header com gradiente (estilo Simpla)
+                doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+                doc.rect(0, 0, 210, 50, 'F');
+                
+                // Título no header
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(26);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Confirmação de Presença', 105, 20, { align: 'center' });
+                
+                // Subtítulo
                 doc.setFontSize(12);
+                doc.setTextColor(255, 255, 255);
                 doc.setFont('helvetica', 'normal');
-                doc.text('📅 ' + eventDate, 105, 175, { align: 'center' });
+                doc.text('Apresente este QR Code na portaria', 105, 30, { align: 'center' });
+                
+                // Nome da pessoa (se disponível) - estilo Simpla
+                let yPos = 65;
+                if (personName && personName.trim() !== '') {
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(22);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(personName, 105, yPos, { align: 'center', maxWidth: 190 });
+                    yPos += 15;
+                }
+                
+                // QR Code centralizado
+                const qrSize = 80; // mm
+                const qrX = (210 - qrSize) / 2;
+                doc.addImage(qrCodeImage, 'PNG', qrX, yPos, qrSize, qrSize);
+                
+                yPos += qrSize + 20;
+                
+                // Informações do Evento
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(20);
+                doc.setFont('helvetica', 'bold');
+                doc.text(eventTitle, 105, yPos, { align: 'center', maxWidth: 190 });
+                yPos += 12;
+                
+                if (eventDate) {
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(95, 99, 104);
+                    doc.text('📅 ' + eventDate, 105, yPos, { align: 'center', maxWidth: 190 });
+                    yPos += 10;
+                }
+                
+                if (eventAddress) {
+                    doc.setFontSize(11);
+                    doc.setTextColor(95, 99, 104);
+                    doc.text('📍 ' + eventAddress, 105, yPos, { align: 'center', maxWidth: 180 });
+                    yPos += 15;
+                }
+                
+                // Instruções
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text('Token: ' + qrToken.substring(0, 16) + '...', 105, yPos + 10, { align: 'center' });
+                
+                // Footer
+                doc.setFillColor(248, 249, 250);
+                doc.rect(0, 280, 210, 17, 'F');
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text('King Forms - Sistema de Confirmação de Presença', 105, 288, { align: 'center' });
+                doc.text('© 2026 Conecta King. Todos os direitos reservados.', 105, 293, { align: 'center' });
+                
+                // Salvar
+                const fileName = personName && personName.trim() !== '' 
+                    ? `QR-Code-${personName.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.pdf`
+                    : `QR-Code-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.pdf`;
+                doc.save(fileName);
             }
             
-            if (eventAddress) {
-                doc.setFontSize(11);
-                doc.text('📍 ' + eventAddress, 105, 185, { align: 'center', maxWidth: 180 });
-            }
-            
-            // Instruções
-            doc.setFontSize(10);
-            doc.setTextColor(100, 100, 100);
-            doc.text('Apresente este QR Code na portaria do evento', 105, 250, { align: 'center' });
-            doc.text('Token: ' + qrToken.substring(0, 16) + '...', 105, 260, { align: 'center' });
-            
-            // Footer
-            doc.setFillColor(240, 240, 240);
-            doc.rect(0, 280, 210, 17, 'F');
-            doc.setFontSize(8);
-            doc.setTextColor(150, 150, 150);
-            doc.text('King Forms - Sistema de Confirmação de Presença', 105, 290, { align: 'center' });
-            doc.text('© 2026 Conecta King. Todos os direitos reservados.', 105, 295, { align: 'center' });
-            
-            // Salvar
-            doc.save(`QR-Code-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.pdf`);
+            // Iniciar tentativa de download
+            tryDownloadPDF();
         }
         
         // Função auxiliar para converter hex para RGB
@@ -709,34 +907,34 @@
             } : { r: 74, g: 144, b: 226 };
         }
         
-        // Adicionar opção de download PDF ao botão
-        document.addEventListener('DOMContentLoaded', function() {
-            const downloadBtn = document.querySelector('button[onclick="downloadQRCode()"]');
-            if (downloadBtn && typeof window.jspdf !== 'undefined') {
-                // Adicionar menu dropdown
-                downloadBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    const menu = document.createElement('div');
-                    menu.style.cssText = 'position: absolute; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;';
-                    menu.innerHTML = `
-                        <button onclick="downloadQRCode()" style="display: block; width: 100%; padding: 8px 16px; text-align: left; border: none; background: none; cursor: pointer; border-radius: 4px; margin-bottom: 4px;">📷 Baixar PNG</button>
-                        <button onclick="downloadQRCodePDF()" style="display: block; width: 100%; padding: 8px 16px; text-align: left; border: none; background: none; cursor: pointer; border-radius: 4px;">📄 Baixar PDF</button>
-                    `;
-                    const rect = downloadBtn.getBoundingClientRect();
-                    menu.style.position = 'fixed';
-                    menu.style.top = (rect.bottom + 5) + 'px';
-                    menu.style.left = rect.left + 'px';
-                    document.body.appendChild(menu);
-                    
-                    setTimeout(() => {
-                        document.addEventListener('click', function closeMenu() {
-                            menu.remove();
-                            document.removeEventListener('click', closeMenu);
-                        });
-                    }, 100);
-                };
+        // Aguardar carregamento da biblioteca PDF
+        let pdfLibraryLoaded = false;
+        function checkPDFLibrary() {
+            if (typeof window.jspdf !== 'undefined' || typeof jsPDF !== 'undefined' || typeof window.jsPDF !== 'undefined') {
+                pdfLibraryLoaded = true;
+                return true;
             }
-        });
+            return false;
+        }
+        
+        // Verificar periodicamente se a biblioteca foi carregada
+        let pdfCheckAttempts = 0;
+        const maxPDFCheckAttempts = 50;
+        function waitForPDFLibrary() {
+            pdfCheckAttempts++;
+            if (checkPDFLibrary() || pdfCheckAttempts >= maxPDFCheckAttempts) {
+                pdfLibraryLoaded = true;
+                return;
+            }
+            setTimeout(waitForPDFLibrary, 200);
+        }
+        
+        // Iniciar verificação quando a página carregar
+        if (document.readyState === 'loading') {
+            window.addEventListener('load', waitForPDFLibrary);
+        } else {
+            waitForPDFLibrary();
+        }
         <% } %>
     </script>
 </body>
