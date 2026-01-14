@@ -217,6 +217,32 @@ router.get('/view-confirmed/:token', asyncHandler(async (req, res) => {
         
         const guestList = listResult.rows[0];
         
+        // Garantir valores padrão
+        if (!guestList.primary_color) guestList.primary_color = '#FFC700';
+        if (!guestList.secondary_color) guestList.secondary_color = '#FFB700';
+        if (!guestList.text_color) guestList.text_color = '#ECECEC';
+        if (!guestList.background_color) guestList.background_color = '#0D0D0F';
+        if (guestList.background_opacity === null || guestList.background_opacity === undefined) guestList.background_opacity = 1.0;
+        if (!guestList.theme_confirmacao) guestList.theme_confirmacao = 'default';
+        
+        // Aplicar tema pré-definido se selecionado
+        if (guestList.theme_confirmacao && guestList.theme_confirmacao !== 'default') {
+            const themes = {
+                dark: { primary: '#FFC700', secondary: '#FFB700', text: '#ECECEC', background: '#0D0D0F' },
+                light: { primary: '#4A90E2', secondary: '#357ABD', text: '#333333', background: '#FFFFFF' },
+                premium: { primary: '#667EEA', secondary: '#764BA2', text: '#FFFFFF', background: '#1A1A2E' },
+                modern: { primary: '#F093FB', secondary: '#F5576C', text: '#FFFFFF', background: '#0D0D0F' },
+                elegant: { primary: '#D4AF37', secondary: '#B8860B', text: '#ECECEC', background: '#1C1C1C' }
+            };
+            
+            if (themes[guestList.theme_confirmacao] && !guestList.primary_color_override) {
+                guestList.primary_color = themes[guestList.theme_confirmacao].primary;
+                guestList.secondary_color = themes[guestList.theme_confirmacao].secondary;
+                guestList.text_color = themes[guestList.theme_confirmacao].text;
+                guestList.background_color = themes[guestList.theme_confirmacao].background;
+            }
+        }
+        
         // Buscar convidados confirmados e conferidos
         const confirmedResult = await client.query(`
             SELECT id, name, email, phone, status, confirmed_at, created_at
@@ -369,6 +395,17 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
             if (hasButtonLogoSize) selectFields += ', gli.button_logo_size';
             if (hasShowLogoCorner) selectFields += ', gli.show_logo_corner';
             
+            // Adicionar campos de tema se existirem
+            const themeColumnsCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'guest_list_items' 
+                AND column_name IN ('theme_portaria', 'theme_confirmacao')
+            `);
+            const existingThemeColumns = themeColumnsCheck.rows.map(r => r.column_name);
+            if (existingThemeColumns.includes('theme_portaria')) selectFields += ', gli.theme_portaria';
+            if (existingThemeColumns.includes('theme_confirmacao')) selectFields += ', gli.theme_confirmacao';
+            
             listResult = await client.query(`
                 SELECT ${selectFields}
                 FROM guest_list_items gli
@@ -399,7 +436,8 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
                     COALESCE(gli.background_opacity, 1.0) as background_opacity,
                     gli.event_date,
                     gli.event_location,
-                    gli.event_description
+                    gli.event_description,
+                    COALESCE(gli.theme_portaria, 'default') as theme_portaria
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
                 INNER JOIN users u ON u.id = pi.user_id
@@ -426,6 +464,25 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         if (!guestList.text_color) guestList.text_color = '#ECECEC';
         if (!guestList.background_color) guestList.background_color = '#0D0D0F';
         if (guestList.background_opacity === null || guestList.background_opacity === undefined) guestList.background_opacity = 1.0;
+        if (!guestList.theme_portaria) guestList.theme_portaria = 'default';
+        
+        // Aplicar tema pré-definido se selecionado
+        if (guestList.theme_portaria && guestList.theme_portaria !== 'default') {
+            const themes = {
+                dark: { primary: '#FFC700', secondary: '#FFB700', text: '#ECECEC', background: '#0D0D0F' },
+                light: { primary: '#4A90E2', secondary: '#357ABD', text: '#333333', background: '#FFFFFF' },
+                premium: { primary: '#667EEA', secondary: '#764BA2', text: '#FFFFFF', background: '#1A1A2E' },
+                modern: { primary: '#F093FB', secondary: '#F5576C', text: '#FFFFFF', background: '#0D0D0F' },
+                elegant: { primary: '#D4AF37', secondary: '#B8860B', text: '#ECECEC', background: '#1C1C1C' }
+            };
+            
+            if (themes[guestList.theme_portaria] && !guestList.primary_color_override) {
+                guestList.primary_color = themes[guestList.theme_portaria].primary;
+                guestList.secondary_color = themes[guestList.theme_portaria].secondary;
+                guestList.text_color = themes[guestList.theme_portaria].text;
+                guestList.background_color = themes[guestList.theme_portaria].background;
+            }
+        }
         
         // Parsear custom_form_fields se for string
         if (guestList.custom_form_fields && typeof guestList.custom_form_fields === 'string') {
