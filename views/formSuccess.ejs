@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <% if (showGuestListInfo && typeof qrToken !== 'undefined' && qrToken) { %>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <% } %>
     <style>
@@ -452,18 +452,9 @@
                 
                 console.log('🔄 Tentando gerar QR Code... (tentativa ' + qrCodeAttempts + '/' + maxQRCodeAttempts + ')');
                 
-                // Verificar se a biblioteca está disponível (pode ser QRCode ou window.QRCode)
-                // A biblioteca qrcode@1.5.3 expõe QRCode como variável global
-                let QRCodeLib = null;
-                if (typeof QRCode !== 'undefined') {
-                    QRCodeLib = QRCode;
-                } else if (typeof window !== 'undefined' && typeof window.QRCode !== 'undefined') {
-                    QRCodeLib = window.QRCode;
-                } else if (typeof global !== 'undefined' && typeof global.QRCode !== 'undefined') {
-                    QRCodeLib = global.QRCode;
-                }
-                
-                if (!QRCodeLib) {
+                // Verificar se a biblioteca qrcodejs está disponível
+                // A biblioteca qrcodejs expõe QRCode como construtor global
+                if (typeof QRCode === 'undefined') {
                     console.warn('⚠️ Biblioteca QRCode ainda não carregou, aguardando...');
                     setTimeout(generateQRCode, 200);
                     return;
@@ -485,25 +476,25 @@
                 console.log('✅ Gerando QR Code com token:', qrCodeData.substring(0, 20) + '...');
                 
                 try {
-                    QRCodeLib.toCanvas(canvas, qrCodeData, {
+                    // Limpar canvas anterior se houver
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Usar qrcodejs que usa new QRCode() para criar o QR code
+                    // Esta biblioteca cria o QR code diretamente no canvas
+                    new QRCode(canvas, {
+                        text: qrCodeData,
                         width: 300,
-                        margin: 2,
-                        color: {
-                            dark: '#000000',
-                            light: '#FFFFFF'
-                        },
-                        errorCorrectionLevel: 'M'
-                    }, function (error) {
-                        if (error) {
-                            console.error('❌ Erro ao gerar QR Code:', error);
-                            canvas.parentElement.innerHTML = '<p style="color: red; padding: 20px;">Erro ao gerar QR Code: ' + error.message + '. Tente recarregar a página.</p>';
-                        } else {
-                            console.log('✅ QR Code gerado com sucesso!');
-                        }
+                        height: 300,
+                        colorDark: '#000000',
+                        colorLight: '#FFFFFF',
+                        correctLevel: QRCode.CorrectLevel.M
                     });
+                    
+                    console.log('✅ QR Code gerado com sucesso!');
                 } catch (err) {
-                    console.error('❌ Erro ao chamar QRCode.toCanvas:', err);
-                    canvas.parentElement.innerHTML = '<p style="color: red; padding: 20px;">Erro ao gerar QR Code. Tente recarregar a página.</p>';
+                    console.error('❌ Erro ao gerar QR Code:', err);
+                    canvas.parentElement.innerHTML = '<p style="color: red; padding: 20px;">Erro ao gerar QR Code: ' + (err.message || err.toString()) + '. Tente recarregar a página.</p>';
                 }
             }
             
