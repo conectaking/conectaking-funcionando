@@ -1498,8 +1498,8 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
                                     if (guestListItemRes.rows.length > 0) {
                                         const guestListItemId = guestListItemRes.rows[0].id;
                                         const eventRes = await client.query(
-                                            `SELECT event_title, event_date, event_location, event_address 
-                                             FROM guest_list_items 
+                                            `SELECT event_title, event_date, event_location
+                                             FROM guest_list_items
                                              WHERE id = $1`,
                                             [guestListItemId]
                                         );
@@ -1576,7 +1576,7 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
                                     
                                     // Buscar dados do evento
                                     const eventRes = await client.query(
-                                        `SELECT event_title, event_date, event_location, event_address 
+                                        `SELECT event_title, event_date, event_location
                                          FROM guest_list_items 
                                          WHERE id = $1`,
                                         [guestListItemId]
