@@ -329,8 +329,25 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         
         // Buscar lista pelo public_view_token, confirmation_token ou portaria_slug
         // IMPORTANTE: Incluir campos de logo e banner para personalização
-        const listResult = await client.query(`
-            SELECT 
+        // Usar abordagem segura verificando se as colunas existem
+        let listResult;
+        try {
+            // Primeiro, verificar quais colunas de logo existem
+            const logoColumnsCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'guest_list_items' 
+                AND column_name IN ('form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner')
+            `);
+            
+            const existingLogoColumns = logoColumnsCheck.rows.map(r => r.column_name);
+            const hasFormLogoUrl = existingLogoColumns.includes('form_logo_url');
+            const hasButtonLogoUrl = existingLogoColumns.includes('button_logo_url');
+            const hasButtonLogoSize = existingLogoColumns.includes('button_logo_size');
+            const hasShowLogoCorner = existingLogoColumns.includes('show_logo_corner');
+            
+            // Construir SELECT dinamicamente
+            let selectFields = `
                 gli.*,
                 pi.id as profile_item_id,
                 pi.title,
@@ -343,23 +360,58 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
                 gli.header_image_url,
                 gli.background_image_url,
                 COALESCE(gli.background_opacity, 1.0) as background_opacity,
-                gli.form_logo_url,
-                gli.button_logo_url,
-                gli.button_logo_size,
-                gli.show_logo_corner,
                 gli.event_date,
                 gli.event_location,
                 gli.event_address,
-                gli.event_description
-            FROM guest_list_items gli
-            INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-            INNER JOIN users u ON u.id = pi.user_id
-            WHERE (
-                gli.public_view_token = $1 
-                OR gli.confirmation_token = $1 
-                OR gli.portaria_slug = $1
-            ) AND pi.is_active = true
-        `, [token]);
+                gli.event_description`;
+            
+            if (hasFormLogoUrl) selectFields += ', gli.form_logo_url';
+            if (hasButtonLogoUrl) selectFields += ', gli.button_logo_url';
+            if (hasButtonLogoSize) selectFields += ', gli.button_logo_size';
+            if (hasShowLogoCorner) selectFields += ', gli.show_logo_corner';
+            
+            listResult = await client.query(`
+                SELECT ${selectFields}
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                INNER JOIN users u ON u.id = pi.user_id
+                WHERE (
+                    gli.public_view_token = $1 
+                    OR gli.confirmation_token = $1 
+                    OR gli.portaria_slug = $1
+                ) AND pi.is_active = true
+            `, [token]);
+        } catch (queryError) {
+            // Se der erro, tentar query mais simples sem campos de logo
+            logger.warn('Erro ao buscar com campos de logo, tentando query simples:', queryError);
+            listResult = await client.query(`
+                SELECT 
+                    gli.*,
+                    pi.id as profile_item_id,
+                    pi.title,
+                    pi.user_id,
+                    u.profile_slug,
+                    COALESCE(gli.primary_color, '#FFC700') as primary_color,
+                    COALESCE(gli.secondary_color, '#FFB700') as secondary_color,
+                    COALESCE(gli.text_color, '#ECECEC') as text_color,
+                    COALESCE(gli.background_color, '#0D0D0F') as background_color,
+                    gli.header_image_url,
+                    gli.background_image_url,
+                    COALESCE(gli.background_opacity, 1.0) as background_opacity,
+                    gli.event_date,
+                    gli.event_location,
+                    gli.event_address,
+                    gli.event_description
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                INNER JOIN users u ON u.id = pi.user_id
+                WHERE (
+                    gli.public_view_token = $1 
+                    OR gli.confirmation_token = $1 
+                    OR gli.portaria_slug = $1
+                ) AND pi.is_active = true
+            `, [token]);
+        }
         
         if (listResult.rows.length === 0) {
             return res.status(404).render('error', {

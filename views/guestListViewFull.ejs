@@ -19,24 +19,24 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            <% if (guestList.background_image_url) { %>
+            <% if (typeof guestList !== 'undefined' && guestList && guestList.background_image_url) { %>
             background-image: url('<%= guestList.background_image_url %>');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-            background-color: <%= guestList.background_color || '#0D0D0F' %>;
-            <% if (guestList.background_opacity !== undefined && guestList.background_opacity < 1) { %>
+            background-color: <%= (typeof guestList !== 'undefined' && guestList && guestList.background_color) ? guestList.background_color : '#0D0D0F' %>;
+            <% if (typeof guestList !== 'undefined' && guestList && guestList.background_opacity !== undefined && parseFloat(guestList.background_opacity) < 1) { %>
             position: relative;
             <% } %>
             <% } else { %>
-            background: linear-gradient(135deg, <%= guestList.background_color || '#0D0D0F' %> 0%, #1C1C21 100%);
+            background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.background_color) ? guestList.background_color : '#0D0D0F' %> 0%, #1C1C21 100%);
             <% } %>
             min-height: 100vh;
             padding: 0;
-            color: <%= guestList.text_color || '#ECECEC' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>;
         }
         
-        <% if (guestList.background_image_url && guestList.background_opacity !== undefined && guestList.background_opacity < 1) { %>
+        <% if (typeof guestList !== 'undefined' && guestList && guestList.background_image_url && guestList.background_opacity !== undefined && parseFloat(guestList.background_opacity) < 1) { %>
         body::before {
             content: '';
             position: fixed;
@@ -44,7 +44,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: <%= guestList.background_color || '#0D0D0F' %>;
+            background-color: <%= (typeof guestList !== 'undefined' && guestList && guestList.background_color) ? guestList.background_color : '#0D0D0F' %>;
             opacity: <%= 1 - (parseFloat(guestList.background_opacity) || 0) %>;
             z-index: -1;
         }
@@ -66,14 +66,14 @@
         }
         
         .header {
-            <% if (guestList.header_image_url) { %>
+            <% if (typeof guestList !== 'undefined' && guestList && guestList.header_image_url) { %>
             background: linear-gradient(135deg, rgba(0,0,0,0.6), rgba(0,0,0,0.4));
             background-image: url('<%= guestList.header_image_url %>');
             background-size: cover;
             background-position: center;
             background-blend-mode: overlay;
             <% } else { %>
-            background: linear-gradient(135deg, <%= guestList.primary_color || '#FFC700' %> 0%, <%= guestList.secondary_color || '#FFB700' %> 100%);
+            background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %> 0%, <%= (typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700' %> 100%);
             <% } %>
             margin-bottom: 0;
             padding: 40px 30px;
@@ -193,7 +193,7 @@
             padding: 14px 28px;
             background: transparent;
             border: none;
-            color: <%= guestList.text_color || '#A1A1A1' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#A1A1A1' %>;
             font-size: 16px;
             font-weight: 700;
             cursor: pointer;
@@ -205,13 +205,13 @@
         }
         
         .tab-button.active {
-            color: <%= guestList.primary_color || '#FFC700' %>;
-            border-bottom-color: <%= guestList.primary_color || '#FFC700' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>;
+            border-bottom-color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>;
             background: rgba(255,255,255,0.05);
         }
         
         .tab-button:hover {
-            color: <%= guestList.primary_color || '#FFC700' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>;
             background: rgba(255,255,255,0.03);
         }
         
@@ -239,13 +239,23 @@
         }
         
         .table-header {
-            background: linear-gradient(135deg, rgba(<%= guestList.primary_color ? parseInt(guestList.primary_color.slice(1, 3), 16) + ',' + parseInt(guestList.primary_color.slice(3, 5), 16) + ',' + parseInt(guestList.primary_color.slice(5, 7), 16) : '255,199,0' %>, 0.2), rgba(<%= guestList.secondary_color ? parseInt(guestList.secondary_color.slice(1, 3), 16) + ',' + parseInt(guestList.secondary_color.slice(3, 5), 16) + ',' + parseInt(guestList.secondary_color.slice(5, 7), 16) : '255,183,0' %>, 0.15));
+            <% 
+                const primaryRgb = (typeof guestList !== 'undefined' && guestList && guestList.primary_color) 
+                    ? guestList.primary_color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i)
+                    : null;
+                const secondaryRgb = (typeof guestList !== 'undefined' && guestList && guestList.secondary_color)
+                    ? guestList.secondary_color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i)
+                    : null;
+                const primaryRgbStr = primaryRgb ? `${parseInt(primaryRgb[1], 16)},${parseInt(primaryRgb[2], 16)},${parseInt(primaryRgb[3], 16)}` : '255,199,0';
+                const secondaryRgbStr = secondaryRgb ? `${parseInt(secondaryRgb[1], 16)},${parseInt(secondaryRgb[2], 16)},${parseInt(secondaryRgb[3], 16)}` : '255,183,0';
+            %>
+            background: linear-gradient(135deg, rgba(<%= primaryRgbStr %>, 0.2), rgba(<%= secondaryRgbStr %>, 0.15));
             padding: 20px;
             display: grid;
             grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1fr 1fr;
             gap: 16px;
             font-weight: 700;
-            color: <%= guestList.text_color || '#ECECEC' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>;
             font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -351,7 +361,13 @@
         }
         
         .table-row:hover {
-            background: rgba(<%= guestList.primary_color ? parseInt(guestList.primary_color.slice(1, 3), 16) + ',' + parseInt(guestList.primary_color.slice(3, 5), 16) + ',' + parseInt(guestList.primary_color.slice(5, 7), 16) : '255,199,0' %>, 0.1);
+            <% 
+                const hoverRgb = (typeof guestList !== 'undefined' && guestList && guestList.primary_color)
+                    ? guestList.primary_color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i)
+                    : null;
+                const hoverRgbStr = hoverRgb ? `${parseInt(hoverRgb[1], 16)},${parseInt(hoverRgb[2], 16)},${parseInt(hoverRgb[3], 16)}` : '255,199,0';
+            %>
+            background: rgba(<%= hoverRgbStr %>, 0.1);
             transform: translateX(4px);
         }
         
@@ -388,13 +404,13 @@
             font-size: 80px;
             margin-bottom: 24px;
             opacity: 0.2;
-            color: <%= guestList.primary_color || '#FFC700' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>;
         }
         
         .empty-state p {
             font-size: 18px;
             font-weight: 600;
-            color: <%= guestList.text_color || '#A1A1A1' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#A1A1A1' %>;
         }
         
         .main-content {
@@ -429,7 +445,7 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, <%= guestList.primary_color || '#FFC700' %>, <%= guestList.secondary_color || '#FFB700' %>);
+            background: linear-gradient(90deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>, <%= (typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700' %>);
         }
         
         .stat-card:hover {
@@ -441,21 +457,21 @@
         .stat-card .stat-icon {
             font-size: 36px;
             margin-bottom: 12px;
-            color: <%= guestList.primary_color || '#FFC700' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>;
             opacity: 0.9;
         }
         
         .stat-card .stat-value {
             font-size: 48px;
             font-weight: 900;
-            color: <%= guestList.primary_color || '#FFC700' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>;
             margin: 8px 0;
             text-shadow: 0 2px 8px rgba(255, 199, 0, 0.3);
             line-height: 1;
         }
         
         .stat-card .stat-label {
-            color: <%= guestList.text_color || '#A1A1A1' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#A1A1A1' %>;
             font-size: 15px;
             font-weight: 600;
             text-transform: uppercase;
@@ -639,32 +655,32 @@
 <body>
     <div class="container">
         <!-- Banner/Header Image (se configurado) -->
-        <% if (guestList.header_image_url) { %>
+        <% if (typeof guestList !== 'undefined' && guestList && guestList.header_image_url) { %>
         <img src="<%= guestList.header_image_url %>" alt="Banner do Evento" class="header-banner">
         <% } %>
         
         <!-- Header Premium com Logo -->
         <div class="header">
             <div class="header-content">
-                <% if (guestList.form_logo_url) { %>
+                <% if (typeof guestList !== 'undefined' && guestList && guestList.form_logo_url) { %>
                 <div class="header-logo">
                     <img src="<%= guestList.form_logo_url %>" alt="Logo do Evento">
                 </div>
                 <% } %>
                 <div class="header-text">
-                    <h1><i class="fas fa-users"></i> <%= guestList.event_title || 'Lista de Convidados' %></h1>
+                    <h1><i class="fas fa-users"></i> <%= (typeof guestList !== 'undefined' && guestList && guestList.event_title) ? guestList.event_title : 'Lista de Convidados' %></h1>
                     <p class="header-subtitle">Visualização completa para portaria</p>
-                    <% if (guestList.event_description) { %>
+                    <% if (typeof guestList !== 'undefined' && guestList && guestList.event_description) { %>
                     <p style="margin-top: 8px; font-size: 15px; color: rgba(255,255,255,0.8);"><%= guestList.event_description %></p>
                     <% } %>
                     <div class="header-info">
-                        <% if (guestList.event_date) { %>
+                        <% if (typeof guestList !== 'undefined' && guestList && guestList.event_date) { %>
                         <div class="header-info-item">
                             <i class="fas fa-calendar-alt"></i>
                             <span><%= new Date(guestList.event_date).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
                         </div>
                         <% } %>
-                        <% if (guestList.event_location || guestList.event_address) { %>
+                        <% if (typeof guestList !== 'undefined' && guestList && (guestList.event_location || guestList.event_address)) { %>
                         <div class="header-info-item">
                             <i class="fas fa-map-marker-alt"></i>
                             <span><%= guestList.event_location || guestList.event_address %></span>
@@ -679,41 +695,47 @@
             <div class="stats-summary">
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-user-plus"></i></div>
-                    <div class="stat-value"><%= registeredGuests.length %></div>
+                    <div class="stat-value"><%= typeof registeredGuests !== 'undefined' ? registeredGuests.length : 0 %></div>
                     <div class="stat-label">Cadastrados</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                    <div class="stat-value"><%= notArrivedGuests ? notArrivedGuests.length : registeredGuests.filter(g => g.status === 'registered').length %></div>
+                    <div class="stat-value"><%= typeof notArrivedGuests !== 'undefined' && notArrivedGuests ? notArrivedGuests.length : (typeof registeredGuests !== 'undefined' ? registeredGuests.filter(g => g.status === 'registered').length : 0) %></div>
                     <div class="stat-label">Não Chegou</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="stat-value"><%= checkedInGuests.length %></div>
+                    <div class="stat-value"><%= typeof checkedInGuests !== 'undefined' ? checkedInGuests.length : 0 %></div>
                     <div class="stat-label">Chegou</div>
                 </div>
             </div>
         
         <!-- Seção de Confirmação Rápida (QR Code e CPF) - Design Premium -->
-        <div class="quick-confirm-section" style="background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)); backdrop-filter: blur(10px); border: 2px solid rgba(<%= guestList.primary_color ? parseInt(guestList.primary_color.slice(1, 3), 16) + ',' + parseInt(guestList.primary_color.slice(3, 5), 16) + ',' + parseInt(guestList.primary_color.slice(5, 7), 16) : '255,199,0' %>, 0.4); border-radius: 24px; padding: 32px; margin-bottom: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(<%= guestList.primary_color ? parseInt(guestList.primary_color.slice(1, 3), 16) + ',' + parseInt(guestList.primary_color.slice(3, 5), 16) + ',' + parseInt(guestList.primary_color.slice(5, 7), 16) : '255,199,0' %>, 0.1), transparent); border-radius: 50%;"></div>
+        <% 
+            const quickPrimaryRgb = (typeof guestList !== 'undefined' && guestList && guestList.primary_color)
+                ? guestList.primary_color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i)
+                : null;
+            const quickPrimaryRgbStr = quickPrimaryRgb ? `${parseInt(quickPrimaryRgb[1], 16)},${parseInt(quickPrimaryRgb[2], 16)},${parseInt(quickPrimaryRgb[3], 16)}` : '255,199,0';
+        %>
+        <div class="quick-confirm-section" style="background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)); backdrop-filter: blur(10px); border: 2px solid rgba(<%= quickPrimaryRgbStr %>, 0.4); border-radius: 24px; padding: 32px; margin-bottom: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(<%= quickPrimaryRgbStr %>, 0.1), transparent); border-radius: 50%;"></div>
             <div style="position: relative; z-index: 1;">
-                <h2 style="font-size: 24px; font-weight: 800; color: <%= guestList.primary_color || '#FFC700' %>; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, <%= guestList.primary_color || '#FFC700' %>, <%= guestList.secondary_color || '#FFB700' %>); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(255, 199, 0, 0.4);">
+                <h2 style="font-size: 24px; font-weight: 800; color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>, <%= (typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700' %>); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(255, 199, 0, 0.4);">
                         <i class="fas fa-bolt" style="font-size: 24px; color: #000;"></i>
                     </div>
                     Confirmação Rápida
                 </h2>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                     <!-- Botão Escanear QR Code -->
-                    <button id="qr-scanner-btn" style="background: linear-gradient(135deg, <%= guestList.primary_color || '#FFC700' %> 0%, <%= guestList.secondary_color || '#FFB700' %> 100%); color: #000; border: none; padding: 18px 28px; border-radius: 16px; font-weight: 800; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 6px 24px rgba(255, 199, 0, 0.4); transform: translateY(0);" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 30px rgba(255, 199, 0, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 24px rgba(255, 199, 0, 0.4)';">
+                    <button id="qr-scanner-btn" style="background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %> 0%, <%= (typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700' %> 100%); color: #000; border: none; padding: 18px 28px; border-radius: 16px; font-weight: 800; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 6px 24px rgba(255, 199, 0, 0.4); transform: translateY(0);" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 30px rgba(255, 199, 0, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 24px rgba(255, 199, 0, 0.4)';">
                         <i class="fas fa-qrcode" style="font-size: 24px;"></i>
                         Ler QR Code
                     </button>
                     
                     <!-- Busca por CPF, Email ou Nome -->
                     <div style="display: flex; gap: 12px;">
-                        <input type="text" id="cpf-search-input" placeholder="Digite CPF, Email ou Nome" style="flex: 1; padding: 18px 20px; border-radius: 16px; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,0.1); color: <%= guestList.text_color || '#ECECEC' %>; font-size: 16px; font-weight: 600; transition: all 0.3s;" maxlength="100" onfocus="this.style.borderColor='rgba(255,199,0,0.5)'; this.style.background='rgba(0,0,0,0.4)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(0,0,0,0.3)';">
+                        <input type="text" id="cpf-search-input" placeholder="Digite CPF, Email ou Nome" style="flex: 1; padding: 18px 20px; border-radius: 16px; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,0.1); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>; font-size: 16px; font-weight: 600; transition: all 0.3s;" maxlength="100" onfocus="this.style.borderColor='rgba(255,199,0,0.5)'; this.style.background='rgba(0,0,0,0.4)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(0,0,0,0.3)';">
                         <button id="cpf-search-btn" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 18px 28px; border-radius: 16px; font-weight: 800; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s; box-shadow: 0 6px 24px rgba(37, 211, 102, 0.4); white-space: nowrap; transform: translateY(0);" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 30px rgba(37, 211, 102, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 24px rgba(37, 211, 102, 0.4)';">
                             <i class="fas fa-search" style="font-size: 20px;"></i> Buscar
                         </button>
@@ -751,7 +773,7 @@
                         <p>Nenhum convidado cadastrado</p>
                     </div>
                 <% } else { %>
-                    <% registeredGuests.forEach(guest => { 
+                    <% (typeof registeredGuests !== 'undefined' && registeredGuests ? registeredGuests : []).forEach(guest => { 
                         // Extrair nome, email e whatsapp (tentar também de custom_responses se necessário)
                         let displayName = guest.name || '';
                         let displayEmail = guest.email || '';
@@ -923,13 +945,13 @@
                     <div>Status</div>
                     <div>Conferido em</div>
                 </div>
-                <% if (checkedInGuests.length === 0) { %>
+                <% if (typeof checkedInGuests === 'undefined' || !checkedInGuests || checkedInGuests.length === 0) { %>
                     <div class="empty-state">
                         <i class="fas fa-check-double"></i>
                         <p>Nenhum convidado conferido</p>
                     </div>
                 <% } else { %>
-                    <% checkedInGuests.forEach(guest => {
+                    <% (typeof checkedInGuests !== 'undefined' && checkedInGuests ? checkedInGuests : []).forEach(guest => {
                         // Extrair nome, email e whatsapp corretamente
                         let displayName = guest.name || '';
                         let displayEmail = guest.email || '';
