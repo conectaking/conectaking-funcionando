@@ -1147,20 +1147,37 @@ router.post('/:slug/form/:itemId/submit',
         // IMPORTANTE: Se sendMode for 'whatsapp-only', não salvar no sistema
         let result = null;
         if (shouldSaveToSystem && sendMode !== 'whatsapp-only') {
-            result = await client.query(`
-                INSERT INTO digital_form_responses (
-                    profile_item_id, response_data, responder_name, responder_email, responder_phone
-                ) VALUES ($1, $2::jsonb, $3, $4, $5)
-                RETURNING id, submitted_at
-            `, [
-                itemIdInt,
-                JSON.stringify(response_data),
-                responder_name || null,
-                responder_email || null,
-                responder_phone || null
-            ]);
-            
-            logger.info('✅ [SUBMIT] Resposta salva no sistema (digital_form_responses)');
+            // Salvar resposta incluindo guest_id se disponível
+            if (response_guest_id) {
+                result = await client.query(`
+                    INSERT INTO digital_form_responses (
+                        profile_item_id, response_data, responder_name, responder_email, responder_phone, guest_id
+                    ) VALUES ($1, $2::jsonb, $3, $4, $5, $6)
+                    RETURNING id, submitted_at, guest_id
+                `, [
+                    itemIdInt,
+                    JSON.stringify(response_data),
+                    responder_name || null,
+                    responder_email || null,
+                    responder_phone || null,
+                    response_guest_id
+                ]);
+                logger.info('✅ [SUBMIT] Resposta salva no sistema com guest_id:', response_guest_id);
+            } else {
+                result = await client.query(`
+                    INSERT INTO digital_form_responses (
+                        profile_item_id, response_data, responder_name, responder_email, responder_phone
+                    ) VALUES ($1, $2::jsonb, $3, $4, $5)
+                    RETURNING id, submitted_at
+                `, [
+                    itemIdInt,
+                    JSON.stringify(response_data),
+                    responder_name || null,
+                    responder_email || null,
+                    responder_phone || null
+                ]);
+                logger.info('✅ [SUBMIT] Resposta salva no sistema (digital_form_responses)');
+            }
         } else {
             logger.info('ℹ️ [SUBMIT] Resposta NÃO salva no sistema (modo: whatsapp-only)');
             // Criar resultado mockado para compatibilidade
