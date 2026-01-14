@@ -429,9 +429,9 @@
         
         if (!qrCodeData || qrCodeData.trim() === '') {
             console.error('❌ QR Token está vazio!');
-            const canvasContainer = document.getElementById('qrcode-canvas')?.parentElement;
-            if (canvasContainer) {
-                canvasContainer.innerHTML = '<p style="color: red; padding: 20px;">Erro: QR Token não encontrado. Por favor, entre em contato com o suporte.</p>';
+            const container = document.getElementById('qrcode-container');
+            if (container) {
+                container.innerHTML = '<p style="color: red; padding: 20px;">Erro: QR Token não encontrado. Por favor, entre em contato com o suporte.</p>';
             }
         } else {
             // Função para gerar QR Code (aguarda DOM e biblioteca estarem prontos)
@@ -443,9 +443,9 @@
                 
                 if (qrCodeAttempts > maxQRCodeAttempts) {
                     console.error('❌ Limite de tentativas excedido. Biblioteca QRCode não carregou.');
-                    const canvasContainer = document.getElementById('qrcode-canvas')?.parentElement;
-                    if (canvasContainer) {
-                        canvasContainer.innerHTML = '<p style="color: red; padding: 20px;">Erro: Não foi possível carregar a biblioteca de QR Code. Por favor, recarregue a página.</p>';
+                    const container = document.getElementById('qrcode-container');
+                    if (container) {
+                        container.innerHTML = '<p style="color: red; padding: 20px;">Erro: Não foi possível carregar a biblioteca de QR Code. Por favor, recarregue a página.</p>';
                     }
                     return;
                 }
@@ -511,16 +511,28 @@
             }
         }
         
+        // Função auxiliar para obter o canvas do QR Code
+        function getQRCodeCanvas() {
+            const container = document.getElementById('qrcode-container');
+            if (!container) return null;
+            // A biblioteca qrcodejs cria um canvas dentro do container
+            return container.querySelector('canvas') || container.querySelector('img');
+        }
+        
         // Função para mostrar preview do QR Code (Melhoria 5)
         function showQRCodePreview() {
-            const canvas = document.getElementById('qrcode-canvas');
-            if (!canvas) return;
+            const container = document.getElementById('qrcode-container');
+            if (!container) return;
             
             const modal = document.createElement('div');
             modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
             modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
             
-            const qrCodeDataUrl = canvas.toDataURL('image/png');
+            // Pegar o canvas ou img do container
+            const canvas = container.querySelector('canvas');
+            const img = container.querySelector('img');
+            const qrCodeDataUrl = canvas ? canvas.toDataURL('image/png') : (img ? img.src : '');
+            if (!qrCodeDataUrl) return;
             modal.innerHTML = `
                 <div style="background: white; border-radius: 20px; padding: 32px; max-width: 600px; width: 100%; text-align: center; position: relative;">
                     <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.1); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; color: #333;">×</button>
