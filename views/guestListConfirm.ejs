@@ -136,6 +136,62 @@
             transform: none;
         }
         
+        .btn-delete {
+            padding: 12px 20px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-delete:hover {
+            background: #b71c1c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(211, 47, 47, 0.4);
+        }
+        
+        .btn-delete:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-delete-small {
+            padding: 8px 12px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-delete-small:hover {
+            background: #b71c1c;
+        }
+        
+        .admin-actions {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(211, 47, 47, 0.1);
+            border: 1px solid rgba(211, 47, 47, 0.3);
+            border-radius: 12px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        
         .alert {
             padding: 16px;
             border-radius: 12px;
@@ -241,6 +297,14 @@
             </div>
         </div>
         
+        <% if (!viewOnly) { %>
+        <div class="admin-actions">
+            <button type="button" class="btn-delete" id="delete-all-btn">
+                <i class="fas fa-trash-alt"></i> Excluir Todos os Convidados
+            </button>
+        </div>
+        <% } %>
+        
         <div class="guests-list">
             <% if (guests.length === 0) { %>
             <div class="empty-state">
@@ -274,14 +338,19 @@
                         </div>
                     </div>
                     <% if (!viewOnly) { %>
-                    <input 
-                        type="checkbox" 
-                        class="guest-checkbox" 
-                        name="guest_ids" 
-                        value="<%= guest.id %>"
-                        <%= (guest.status === 'confirmed' || guest.status === 'checked_in') ? 'checked disabled' : '' %>
-                        data-guest-id="<%= guest.id %>"
-                    >
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input 
+                            type="checkbox" 
+                            class="guest-checkbox" 
+                            name="guest_ids" 
+                            value="<%= guest.id %>"
+                            <%= (guest.status === 'confirmed' || guest.status === 'checked_in') ? 'checked disabled' : '' %>
+                            data-guest-id="<%= guest.id %>"
+                        >
+                        <button type="button" class="btn-delete-small delete-guest-btn" data-guest-id="<%= guest.id %>" data-guest-name="<%= guest.name || 'Convidado' %>">
+                            <i class="fas fa-times"></i> Excluir
+                        </button>
+                    </div>
                     <% } else { %>
                     <div style="color: #25D366; font-size: 24px;">
                         <i class="fas fa-check-circle"></i>
@@ -304,6 +373,92 @@
         const form = document.getElementById('confirmation-form');
         const confirmBtn = document.getElementById('confirm-btn');
         const token = '<%= token %>';
+        const profileItemId = <%= typeof profileItemId !== 'undefined' ? profileItemId : 'null' %>;
+        
+        // Função para excluir todos os convidados
+        const deleteAllBtn = document.getElementById('delete-all-btn');
+        if (deleteAllBtn && profileItemId) {
+            deleteAllBtn.addEventListener('click', async () => {
+                if (!confirm('Tem certeza que deseja excluir TODOS os convidados? Esta ação não pode ser desfeita.')) {
+                    return;
+                }
+                
+                deleteAllBtn.disabled = true;
+                deleteAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+                
+                try {
+                    const response = await fetch(`/api/guest-lists/${profileItemId}/guests`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        alert(`Todos os convidados foram excluídos com sucesso (${result.deleted_count || 0} excluídos).`);
+                        location.reload();
+                    } else {
+                        throw new Error(result.message || 'Erro ao excluir convidados');
+                    }
+                } catch (error) {
+                    alert('Erro ao excluir convidados: ' + error.message);
+                    deleteAllBtn.disabled = false;
+                    deleteAllBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Todos os Convidados';
+                }
+            });
+        }
+        
+        // Função para excluir convidado individual
+        document.querySelectorAll('.delete-guest-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const guestId = parseInt(btn.dataset.guestId);
+                const guestName = btn.dataset.guestName || 'este convidado';
+                
+                if (!confirm(`Tem certeza que deseja excluir ${guestName}? Esta ação não pode ser desfeita.`)) {
+                    return;
+                }
+                
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                try {
+                    const response = await fetch(`/api/guest-lists/${profileItemId}/guests/${guestId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        // Remover o item da lista
+                        const guestItem = btn.closest('.guest-item');
+                        guestItem.style.transition = 'opacity 0.3s';
+                        guestItem.style.opacity = '0';
+                        setTimeout(() => {
+                            guestItem.remove();
+                            // Atualizar contadores
+                            const totalCount = parseInt(document.getElementById('total-count').textContent);
+                            document.getElementById('total-count').textContent = Math.max(0, totalCount - 1);
+                            // Verificar se a lista está vazia
+                            const remainingItems = document.querySelectorAll('.guest-item');
+                            if (remainingItems.length === 0) {
+                                location.reload();
+                            }
+                        }, 300);
+                    } else {
+                        throw new Error(result.message || 'Erro ao excluir convidado');
+                    }
+                } catch (error) {
+                    alert('Erro ao excluir convidado: ' + error.message);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-times"></i> Excluir';
+                }
+            });
+        });
         
         if (form) {
             form.addEventListener('submit', async (e) => {
