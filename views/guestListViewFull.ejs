@@ -658,7 +658,7 @@
                         }
                     %>
                         <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
-                            <div style="display: flex; align-items: center; justify-content: center;">
+                            <div data-label="Selecionar" style="display: flex; align-items: center; justify-content: center;">
                                 <input type="checkbox" class="guest-checkbox guest-select-checkbox" data-guest-id="<%= guest.id %>" data-guest-name="<%= displayName || 'Convidado' %>">
                             </div>
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
@@ -817,7 +817,7 @@
                         displayCPF = displayCPF || '-';
                     %>
                         <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
-                            <div style="display: flex; align-items: center; justify-content: center;">
+                            <div data-label="Selecionar" style="display: flex; align-items: center; justify-content: center;">
                                 <input type="checkbox" class="guest-checkbox guest-select-checkbox" data-guest-id="<%= guest.id %>" data-guest-name="<%= displayName || 'Convidado' %>">
                             </div>
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
