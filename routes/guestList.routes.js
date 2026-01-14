@@ -1067,6 +1067,14 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 });
             }
             
+            // IMPORTANTE: Sincronizar separator_line_color em digital_form_items
+            const hasSeparatorLineColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'separator_line_color');
+            if (separator_line_color !== undefined && hasSeparatorLineColor) {
+                digitalFormUpdateFields.push(`separator_line_color = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(separator_line_color || '#e8eaed');
+                logger.info(`🎨 [GUEST_LIST] Sincronizando separator_line_color (${separator_line_color || '#e8eaed'}) para digital_form_items`);
+            }
+            
             if (digitalFormUpdateFields.length > 0) {
                 digitalFormUpdateValues.push(listId);
                 await client.query(`
