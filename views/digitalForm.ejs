@@ -42,12 +42,18 @@
             // LOG FINAL DAS CORES QUE SERÃO USADAS
             console.log('✅ [EJS] Cores finais que serão aplicadas:', {
                 primaryColor: primaryColor,
-                secondaryColor: secondaryColor
+                secondaryColor: secondaryColor,
+                decorative_bar_color: formData.decorative_bar_color
             });
         %>
         <%
             // Cor das barrinhas decorativas (padrão: cor primária)
             const decorativeBarColor = formData.decorative_bar_color || primaryColor;
+            console.log('🎨 [EJS] decorative_bar_color:', {
+                received: formData.decorative_bar_color,
+                primaryColor: primaryColor,
+                final: decorativeBarColor
+            });
         %>
         :root {
             --primary-color: <%= primaryColor %>;
