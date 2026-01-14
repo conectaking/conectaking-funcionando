@@ -652,11 +652,31 @@
             let lastScanTime = 0;
             const SCAN_RATE_LIMIT_MS = 1000; // Máximo 1 scan por segundo
             
-            // Aguardar um pouco para garantir que a biblioteca está carregada
-            const initScanner = () => {
+            // Função para listar câmeras disponíveis (precisa de permissão primeiro)
+            const listCameras = async () => {
+                try {
+                    // Primeiro, solicitar permissão básica de câmera para obter labels
+                    try {
+                        await navigator.mediaDevices.getUserMedia({ video: true });
+                    } catch (e) {
+                        console.warn('Permissão de câmera não concedida ainda:', e);
+                    }
+                    
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    console.log('📷 Câmeras disponíveis:', videoDevices.length);
+                    return videoDevices;
+                } catch (err) {
+                    console.error('❌ Erro ao listar câmeras:', err);
+                    return [];
+                }
+            };
+            
+            // Função para iniciar o scanner com uma câmera específica
+            const startScannerWithCamera = async (cameraIdOrConfig) => {
                 if (typeof Html5Qrcode === 'undefined') {
                     console.warn('Html5Qrcode não disponível, tentando novamente...');
-                    setTimeout(initScanner, 500);
+                    setTimeout(() => startScannerWithCamera(cameraIdOrConfig), 500);
                     return;
                 }
                 
@@ -671,9 +691,9 @@
                     
                     window.qrCodeScanner = new Html5Qrcode("qr-reader");
                     
-                    console.log('📷 Iniciando scanner QR Code...');
+                    console.log('📷 Iniciando scanner QR Code com câmera:', cameraIdOrConfig);
                     window.qrCodeScanner.start(
-                        { facingMode: "environment" }, // Câmera traseira
+                        cameraIdOrConfig,
                         {
                             fps: 10,
                             qrbox: { width: 250, height: 250 },
@@ -742,6 +762,70 @@
                     console.error('❌ Erro ao criar scanner:', err);
                     alert('Erro ao inicializar scanner: ' + (err.message || 'Erro desconhecido') + '. Tente recarregar a página.');
                     window.closeQRScanner();
+                }
+            };
+            
+            // Função principal para inicializar o scanner (com seleção de câmera)
+            const initScanner = async () => {
+                if (typeof Html5Qrcode === 'undefined') {
+                    console.warn('Html5Qrcode não disponível, tentando novamente...');
+                    setTimeout(initScanner, 500);
+                    return;
+                }
+                
+                // Listar câmeras disponíveis
+                const cameras = await listCameras();
+                
+                // Se houver múltiplas câmeras, mostrar seletor
+                if (cameras.length > 1) {
+                    // Criar modal de seleção de câmera
+                    const cameraSelectModal = document.createElement('div');
+                    cameraSelectModal.id = 'camera-select-modal';
+                    cameraSelectModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+                    
+                    let cameraOptionsHTML = cameras.map((camera, index) => {
+                        const label = camera.label || `Câmera ${index + 1}`;
+                        return `
+                            <button onclick="window.selectCamera('${camera.deviceId}', ${index})" style="width: 100%; padding: 16px; margin-bottom: 12px; background: #1C1C21; border: 2px solid #2C2C2F; border-radius: 12px; color: #ECECEC; font-size: 16px; font-weight: 600; cursor: pointer; text-align: left; transition: all 0.3s;" onmouseover="this.style.borderColor='#FFC700'; this.style.background='#2C2C2F';" onmouseout="this.style.borderColor='#2C2C2F'; this.style.background='#1C1C21';">
+                                <i class="fas fa-camera" style="margin-right: 12px; color: #FFC700;"></i> ${label}
+                            </button>
+                        `;
+                    }).join('');
+                    
+                    cameraSelectModal.innerHTML = `
+                        <div style="background: #1C1C21; border: 2px solid #FFC700; border-radius: 20px; padding: 32px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+                            <h2 style="color: #FFC700; font-size: 24px; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; gap: 12px;">
+                                <i class="fas fa-video"></i> Selecionar Câmera
+                            </h2>
+                            <div style="margin-bottom: 24px;">
+                                ${cameraOptionsHTML}
+                            </div>
+                            <button onclick="document.getElementById('camera-select-modal').remove(); window.closeQRScanner();" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #ECECEC; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(cameraSelectModal);
+                    
+                    // Função global para selecionar câmera
+                    window.selectCamera = (deviceId, index) => {
+                        const cameraSelectModal = document.getElementById('camera-select-modal');
+                        if (cameraSelectModal) cameraSelectModal.remove();
+                        startScannerWithCamera(deviceId);
+                    };
+                    
+                    return;
+                } else if (cameras.length === 1) {
+                    // Se houver apenas uma câmera, usar diretamente
+                    console.log('📷 Usando única câmera disponível:', cameras[0].label);
+                    startScannerWithCamera(cameras[0].deviceId);
+                    return;
+                } else {
+                    // Se não houver câmeras, tentar usar facingMode (mobile)
+                    console.log('📷 Nenhuma câmera encontrada, tentando usar câmera padrão...');
+                    startScannerWithCamera({ facingMode: "environment" });
+                    return;
                 }
             };
             
