@@ -195,6 +195,28 @@
                 width: 100%;
                 justify-content: center;
             }
+            
+            #qr-code-section {
+                padding: 24px 16px !important;
+            }
+            
+            #qr-code-section > div:first-of-type {
+                padding: 16px !important;
+            }
+            
+            #qrcode-container {
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                width: 100% !important;
+            }
+            
+            #qrcode-container canvas,
+            #qrcode-container img {
+                max-width: 100% !important;
+                height: auto !important;
+                margin: 0 auto !important;
+            }
         }
     </style>
 </head>
@@ -324,8 +346,8 @@
                 <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #202124;">QR Code de Confirmação</h2>
             </div>
             
-            <div style="background: rgba(255,255,255,0.9); border-radius: 16px; padding: 24px; margin-bottom: 20px; display: inline-block; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                <div id="qrcode-container" style="display: inline-block;"></div>
+            <div style="background: rgba(255,255,255,0.9); border-radius: 16px; padding: 24px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                <div id="qrcode-container" style="display: flex; justify-content: center; align-items: center;"></div>
             </div>
             
             <!-- Aviso Importante -->
