@@ -2613,6 +2613,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const whatsappNum = whatsappNumber.replace(/\D/g, '');
         const whatsappUrl = `https://wa.me/${whatsappNum}?text=${encodeURIComponent(message)}`;
         
+        // Limpar carrinho após enviar para WhatsApp
+        if (productCart[itemId]) {
+            productCart[itemId] = {};
+            localStorage.setItem('productCart', JSON.stringify(productCart));
+            
+            // Atualizar contagem do carrinho
+            updateCartCount();
+            
+            // Atualizar conteúdo do modal se estiver aberto
+            const modal = document.querySelector('.product-catalog-modal-overlay');
+            if (modal) {
+                const modalItemId = modal.dataset.itemId || itemId;
+                const modalWhatsapp = modal.dataset.whatsapp || whatsappNumber;
+                const modalProducts = modal.dataset.products ? JSON.parse(modal.dataset.products) : products;
+                updateProductCatalogContent(modal, modalItemId, modalWhatsapp, modalProducts);
+            }
+        }
+        
         window.open(whatsappUrl, '_blank');
     }
     

@@ -609,6 +609,17 @@
         // Tracking
         trackCheckout();
 
+        // Limpar carrinho após enviar para WhatsApp
+        Cart.clear();
+        
+        // Fechar sidebar do carrinho se estiver aberto
+        if (cartSidebar) {
+            cartSidebar.classList.remove('open');
+        }
+        if (cartOverlay) {
+            cartOverlay.classList.remove('show');
+        }
+
         // Redirecionar
         window.open(whatsappURL, '_blank');
     }
