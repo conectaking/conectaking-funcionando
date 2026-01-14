@@ -703,7 +703,8 @@
                             window.qrCodeScanner.clear();
                         } catch (e) {
                             // Ignorar erros de "scanner is not running" - isso é esperado
-                            if (!e.message || !e.message.includes('not running') && !e.message.includes('not paused')) {
+                            const errorMsg = e?.message || e?.toString() || '';
+                            if (!errorMsg.includes('not running') && !errorMsg.includes('not paused') && !errorMsg.includes('Cannot stop')) {
                                 console.warn('Erro ao limpar scanner anterior:', e);
                             }
                         }
@@ -792,12 +793,15 @@
                     ).catch((err) => {
                         console.error('❌ Erro ao iniciar scanner:', err);
                         let errorMsg = 'Erro ao acessar a câmera.';
-                        if (err.name === 'NotAllowedError' || err.message.includes('permission')) {
+                        const errMessage = err?.message || err?.toString() || '';
+                        const errName = err?.name || '';
+                        
+                        if (errName === 'NotAllowedError' || errMessage.includes('permission') || errMessage.includes('Permission denied')) {
                             errorMsg = 'Permissão de câmera negada. Por favor, permita o acesso à câmera nas configurações do navegador.';
-                        } else if (err.name === 'NotFoundError' || err.message.includes('camera')) {
+                        } else if (errName === 'NotFoundError' || errMessage.includes('camera') || errMessage.includes('No camera')) {
                             errorMsg = 'Nenhuma câmera encontrada. Verifique se há uma câmera disponível.';
-                        } else if (err.message) {
-                            errorMsg = 'Erro: ' + err.message;
+                        } else if (errMessage) {
+                            errorMsg = 'Erro: ' + errMessage;
                         }
                         alert(errorMsg);
                         window.closeQRScanner();

@@ -651,14 +651,16 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
         let guestResult;
         if (isPartial && cleanCpf.length < 11) {
             // Busca parcial: usar LIKE para encontrar CPFs que começam com os dígitos informados
+            // IMPORTANTE: Remover caracteres não numéricos do campo document antes de comparar
             guestResult = await client.query(`
                 SELECT * FROM guests
                 WHERE guest_list_id = $1 
                 AND document IS NOT NULL 
-                AND document LIKE $2
+                AND document != ''
+                AND REPLACE(REPLACE(REPLACE(document, '.', ''), '-', ''), ' ', '') LIKE $2
                 ORDER BY 
                     CASE 
-                        WHEN document = $3 THEN 1  -- Priorizar match exato
+                        WHEN REPLACE(REPLACE(REPLACE(document, '.', ''), '-', ''), ' ', '') = $3 THEN 1  -- Priorizar match exato
                         ELSE 2
                     END,
                     created_at DESC
@@ -679,10 +681,13 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
                 });
             }
         } else {
-            // Busca exata
+            // Busca exata - remover formatação do CPF no banco antes de comparar
             guestResult = await client.query(`
                 SELECT * FROM guests
-                WHERE guest_list_id = $1 AND document = $2
+                WHERE guest_list_id = $1 
+                AND document IS NOT NULL 
+                AND document != ''
+                AND REPLACE(REPLACE(REPLACE(document, '.', ''), '-', ''), ' ', '') = $2
             `, [guestList.id, cleanCpf]);
         }
         
