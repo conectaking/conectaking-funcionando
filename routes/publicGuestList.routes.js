@@ -328,13 +328,29 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         const { token } = req.params;
         
         // Buscar lista pelo public_view_token, confirmation_token ou portaria_slug
+        // IMPORTANTE: Incluir campos de logo e banner para personalização
         const listResult = await client.query(`
             SELECT 
                 gli.*,
                 pi.id as profile_item_id,
                 pi.title,
                 pi.user_id,
-                u.profile_slug
+                u.profile_slug,
+                COALESCE(gli.primary_color, '#FFC700') as primary_color,
+                COALESCE(gli.secondary_color, '#FFB700') as secondary_color,
+                COALESCE(gli.text_color, '#ECECEC') as text_color,
+                COALESCE(gli.background_color, '#0D0D0F') as background_color,
+                gli.header_image_url,
+                gli.background_image_url,
+                COALESCE(gli.background_opacity, 1.0) as background_opacity,
+                gli.form_logo_url,
+                gli.button_logo_url,
+                gli.button_logo_size,
+                gli.show_logo_corner,
+                gli.event_date,
+                gli.event_location,
+                gli.event_address,
+                gli.event_description
             FROM guest_list_items gli
             INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
             INNER JOIN users u ON u.id = pi.user_id
