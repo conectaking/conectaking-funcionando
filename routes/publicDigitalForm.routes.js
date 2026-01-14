@@ -375,6 +375,8 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
             show_logo_corner: formData.show_logo_corner,
             form_title: formData.form_title,
             form_description: formData.form_description,
+            decorative_bar_color: formData.decorative_bar_color,
+            primary_color: formData.primary_color,
             updated_at: formData.updated_at,
             itemId: itemIdInt,
             timestamp: Date.now()
