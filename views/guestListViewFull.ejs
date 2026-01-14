@@ -107,7 +107,7 @@
             background: #2C2C2F;
             padding: 16px;
             display: grid;
-            grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1fr 1fr;
+            grid-template-columns: 40px 2fr 1.5fr 1.2fr 1fr 1fr 1fr;
             gap: 16px;
             font-weight: 600;
             color: #ECECEC;
@@ -116,10 +116,94 @@
         .table-row {
             padding: 16px;
             display: grid;
-            grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1fr 1fr;
+            grid-template-columns: 40px 2fr 1.5fr 1.2fr 1fr 1fr 1fr;
             gap: 16px;
             border-bottom: 1px solid #2C2C2F;
             align-items: center;
+        }
+        
+        .guest-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #FFC700;
+        }
+        
+        .admin-controls {
+            background: rgba(211, 47, 47, 0.1);
+            border: 1px solid rgba(211, 47, 47, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .admin-controls-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .admin-controls-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .btn-delete-admin {
+            padding: 10px 20px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-delete-admin:hover {
+            background: #b71c1c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(211, 47, 47, 0.4);
+        }
+        
+        .btn-delete-admin:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-delete-guest {
+            padding: 6px 12px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        
+        .btn-delete-guest:hover {
+            background: #b71c1c;
+        }
+        
+        .btn-delete-guest:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
         .table-row:last-child {
@@ -293,6 +377,17 @@
                 padding: 12px;
             }
             
+            .admin-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .admin-controls-left,
+            .admin-controls-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
             .table-header {
                 display: none;
             }
@@ -308,6 +403,16 @@
                 color: #FFC700;
                 display: inline-block;
                 min-width: 100px;
+            }
+            
+            .table-row > div:first-child {
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .table-row > div:first-child::before {
+                content: "Selecionar: ";
             }
             
             .status-badge {
@@ -366,14 +471,32 @@
             </div>
         </div>
         
+        <!-- Controles de Exclusão (Admin) -->
+        <div class="admin-controls" id="admin-controls" style="display: none;">
+            <div class="admin-controls-left">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #ECECEC; font-weight: 600;">
+                    <input type="checkbox" id="select-all-checkbox" style="width: 20px; height: 20px; accent-color: #FFC700; cursor: pointer;">
+                    Selecionar Todos
+                </label>
+            </div>
+            <div class="admin-controls-right">
+                <button type="button" class="btn-delete-admin" id="delete-selected-btn" style="display: none;">
+                    <i class="fas fa-trash-alt"></i> Excluir Selecionados (<span id="selected-count">0</span>)
+                </button>
+                <button type="button" class="btn-delete-admin" id="delete-all-btn">
+                    <i class="fas fa-trash"></i> Excluir Todos
+                </button>
+            </div>
+        </div>
+        
         <div class="tabs">
-            <button class="tab-button active" onclick="switchTab('registered')">
+            <button class="tab-button active" onclick="switchTab('registered', event)">
                 <i class="fas fa-user-plus"></i> Cadastrados (<%= registeredGuests.length %>)
             </button>
-            <button class="tab-button" onclick="switchTab('checked_in')">
+            <button class="tab-button" onclick="switchTab('checked_in', event)">
                 <i class="fas fa-check-circle"></i> Quem Chegou (<%= checkedInGuests.length %>)
             </button>
-            <button class="tab-button" onclick="switchTab('not_arrived')">
+            <button class="tab-button" onclick="switchTab('not_arrived', event)">
                 <i class="fas fa-clock"></i> Quem Não Chegou (<%= notArrivedGuests ? notArrivedGuests.length : 0 %>)
             </button>
         </div>
@@ -382,6 +505,9 @@
         <div id="tab-registered" class="tab-content active">
             <div class="guests-table">
                 <div class="table-header">
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                        <input type="checkbox" id="select-all-header" class="guest-checkbox" style="cursor: pointer;">
+                    </div>
                     <div>Nome Completo</div>
                     <div>Email</div>
                     <div>WhatsApp</div>
@@ -531,7 +657,10 @@
                             dateToShow = guest.confirmed_at || guest.created_at;
                         }
                     %>
-                        <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>">
+                        <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
+                            <div style="display: flex; align-items: center; justify-content: center;">
+                                <input type="checkbox" class="guest-checkbox guest-select-checkbox" data-guest-id="<%= guest.id %>" data-guest-name="<%= displayName || 'Convidado' %>">
+                            </div>
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
@@ -542,6 +671,9 @@
                                 <button onclick="viewGuestDetailsPortaria(<%= guest.id %>)" 
                                         style="padding: 6px 12px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
                                     <i class="fas fa-eye"></i> Ver Detalhes
+                                </button>
+                                <button type="button" class="btn-delete-guest delete-guest-btn" data-guest-id="<%= guest.id %>" data-guest-name="<%= displayName || 'Convidado' %>">
+                                    <i class="fas fa-times"></i> Excluir
                                 </button>
                                 <% if (guest.status !== 'checked_in') { %>
                                 <button onclick="confirmarChegada(<%= guest.id %>, <%= JSON.stringify(displayName || '') %>)" 
@@ -560,6 +692,9 @@
         <div id="tab-checked_in" class="tab-content">
             <div class="guests-table">
                 <div class="table-header">
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                        <input type="checkbox" class="guest-checkbox select-all-tab-checkbox" data-tab="checked_in" style="cursor: pointer;">
+                    </div>
                     <div>Nome Completo</div>
                     <div>Email</div>
                     <div>WhatsApp</div>
@@ -681,7 +816,10 @@
                         }
                         displayCPF = displayCPF || '-';
                     %>
-                        <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>">
+                        <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
+                            <div style="display: flex; align-items: center; justify-content: center;">
+                                <input type="checkbox" class="guest-checkbox guest-select-checkbox" data-guest-id="<%= guest.id %>" data-guest-name="<%= displayName || 'Convidado' %>">
+                            </div>
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
@@ -692,6 +830,9 @@
                                 <button onclick="viewGuestDetailsPortaria(<%= guest.id %>)" 
                                         style="padding: 6px 12px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
                                     <i class="fas fa-eye"></i> Ver Detalhes
+                                </button>
+                                <button type="button" class="btn-delete-guest delete-guest-btn" data-guest-id="<%= guest.id %>" data-guest-name="<%= displayName || 'Convidado' %>">
+                                    <i class="fas fa-times"></i> Excluir
                                 </button>
                             </div>
                         </div>
@@ -1803,7 +1944,7 @@
             return formatted || fieldIdStr;
         }
         
-        function switchTab(tabName) {
+        function switchTab(tabName, eventElement) {
             // Remover active de todas as tabs
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('active');
@@ -1813,10 +1954,21 @@
             });
             
             // Ativar tab selecionada
-            event.target.classList.add('active');
+            const targetElement = (eventElement && eventElement.target) || (window.event && window.event.target) || null;
+            if (targetElement) {
+                targetElement.classList.add('active');
+            }
             const tabId = tabName === 'checked_in' ? 'checked_in' : tabName === 'not_arrived' ? 'not_arrived' : tabName;
-            document.getElementById(`tab-${tabId}`).classList.add('active');
+            const tabElement = document.getElementById(`tab-${tabId}`);
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
+            // Atualizar contador ao trocar de aba
+            setTimeout(updateSelectedCount, 100);
         }
+        
+        // Tornar switchTab global para uso em onclick
+        window.switchTab = switchTab;
         
         // Função para inicializar event listeners (pode ser chamada imediatamente ou no DOMContentLoaded)
         function initEventListeners() {
@@ -1913,6 +2065,264 @@
         }, 500);
         
         // Validação removida - agora aceita CPF, Email ou Nome
+        
+        // ==========================================================
+        // FUNCIONALIDADES DE EXCLUSÃO E SELEÇÃO MÚLTIPLA
+        // ==========================================================
+        
+        // Mostrar controles de admin quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminControls = document.getElementById('admin-controls');
+            if (adminControls) {
+                adminControls.style.display = 'flex';
+            }
+        });
+        
+        // Função para atualizar contador de selecionados
+        function updateSelectedCount() {
+            const activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) return;
+            
+            const selectedCheckboxes = activeTab.querySelectorAll('.guest-select-checkbox:checked');
+            const selectedCount = selectedCheckboxes.length;
+            const selectedCountSpan = document.getElementById('selected-count');
+            const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+            
+            if (selectedCountSpan) {
+                selectedCountSpan.textContent = selectedCount;
+            }
+            
+            if (deleteSelectedBtn) {
+                if (selectedCount > 0) {
+                    deleteSelectedBtn.style.display = 'inline-flex';
+                } else {
+                    deleteSelectedBtn.style.display = 'none';
+                }
+            }
+            
+            // Atualizar checkbox "Selecionar Todos" do header da aba ativa
+            const activeTabHeaderCheckbox = activeTab.querySelector('.table-header .select-all-tab-checkbox');
+            if (activeTabHeaderCheckbox) {
+                const allCheckboxes = activeTab.querySelectorAll('.guest-select-checkbox');
+                const allChecked = allCheckboxes.length > 0 && selectedCount === allCheckboxes.length;
+                activeTabHeaderCheckbox.checked = allChecked;
+            }
+            
+            // Atualizar checkbox "Selecionar Todos" global
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            if (selectAllCheckbox) {
+                const allCheckboxesAllTabs = document.querySelectorAll('.guest-select-checkbox');
+                const allCheckedAllTabs = allCheckboxesAllTabs.length > 0 && 
+                    document.querySelectorAll('.guest-select-checkbox:checked').length === allCheckboxesAllTabs.length;
+                selectAllCheckbox.checked = allCheckedAllTabs;
+            }
+        }
+        
+        // Event listener para checkboxes individuais
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('guest-select-checkbox')) {
+                updateSelectedCount();
+            }
+        });
+        
+        // Event listener para "Selecionar Todos" do header
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('select-all-tab-checkbox')) {
+                const activeTab = document.querySelector('.tab-content.active');
+                if (!activeTab) return;
+                
+                const isChecked = e.target.checked;
+                const checkboxes = activeTab.querySelectorAll('.guest-select-checkbox');
+                checkboxes.forEach(cb => cb.checked = isChecked);
+                updateSelectedCount();
+            }
+        });
+        
+        // Event listener para "Selecionar Todos" global
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+                const activeTab = document.querySelector('.tab-content.active');
+                if (activeTab) {
+                    const checkboxes = activeTab.querySelectorAll('.guest-select-checkbox');
+                    checkboxes.forEach(cb => cb.checked = isChecked);
+                    
+                    // Atualizar checkbox do header da aba também
+                    const tabHeaderCheckbox = activeTab.querySelector('.select-all-tab-checkbox');
+                    if (tabHeaderCheckbox) {
+                        tabHeaderCheckbox.checked = isChecked;
+                    }
+                }
+                updateSelectedCount();
+            });
+        }
+        
+        // Função para excluir convidado individual
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.delete-guest-btn')) {
+                const btn = e.target.closest('.delete-guest-btn');
+                const guestId = parseInt(btn.dataset.guestId);
+                const guestName = btn.dataset.guestName || 'este convidado';
+                
+                if (!confirm(`Tem certeza que deseja excluir ${guestName}? Esta ação não pode ser desfeita.`)) {
+                    return;
+                }
+                
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                fetch(`/api/guest-lists/${profileItemId}/guests/${guestId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        // Remover o item da lista
+                        const guestItem = btn.closest('.table-row');
+                        if (guestItem) {
+                            guestItem.style.transition = 'opacity 0.3s';
+                            guestItem.style.opacity = '0';
+                            setTimeout(() => {
+                                guestItem.remove();
+                                updateSelectedCount();
+                                // Recarregar página se não houver mais itens
+                                const remainingItems = document.querySelectorAll('.table-row');
+                                if (remainingItems.length === 0) {
+                                    location.reload();
+                                }
+                            }, 300);
+                        }
+                    } else {
+                        throw new Error(result.message || 'Erro ao excluir convidado');
+                    }
+                })
+                .catch(error => {
+                    alert('Erro ao excluir convidado: ' + error.message);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-times"></i> Excluir';
+                });
+            }
+        });
+        
+        // Função para excluir selecionados
+        const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+        if (deleteSelectedBtn) {
+            deleteSelectedBtn.addEventListener('click', async function() {
+                const activeTab = document.querySelector('.tab-content.active');
+                if (!activeTab) return;
+                
+                const selectedCheckboxes = activeTab.querySelectorAll('.guest-select-checkbox:checked');
+                const guestIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.guestId));
+                
+                if (guestIds.length === 0) {
+                    alert('Selecione pelo menos um convidado para excluir');
+                    return;
+                }
+                
+                if (!confirm(`Tem certeza que deseja excluir ${guestIds.length} convidado(s) selecionado(s)? Esta ação não pode ser desfeita.`)) {
+                    return;
+                }
+                
+                deleteSelectedBtn.disabled = true;
+                deleteSelectedBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+                
+                try {
+                    // Excluir um por um (ou fazer requisição em lote se a API suportar)
+                    const deletePromises = guestIds.map(guestId => 
+                        fetch(`/api/guest-lists/${profileItemId}/guests/${guestId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                    );
+                    
+                    const results = await Promise.all(deletePromises);
+                    const jsonResults = await Promise.all(results.map(r => r.json()));
+                    
+                    // Verificar se todas foram bem-sucedidas
+                    const allSuccess = jsonResults.every(r => r.success !== false);
+                    
+                    if (allSuccess) {
+                        // Remover itens da lista
+                        selectedCheckboxes.forEach(cb => {
+                            const guestItem = cb.closest('.table-row');
+                            if (guestItem) {
+                                guestItem.style.transition = 'opacity 0.3s';
+                                guestItem.style.opacity = '0';
+                                setTimeout(() => {
+                                    guestItem.remove();
+                                    updateSelectedCount();
+                                }, 300);
+                            }
+                        });
+                        
+                        // Recarregar página após um pequeno delay para verificar se não há mais itens
+                        setTimeout(() => {
+                            const remainingItems = activeTab.querySelectorAll('.table-row');
+                            if (remainingItems.length === 0) {
+                                location.reload();
+                            }
+                        }, 400);
+                    } else {
+                        throw new Error('Alguns convidados não puderam ser excluídos');
+                    }
+                } catch (error) {
+                    alert('Erro ao excluir convidados: ' + error.message);
+                } finally {
+                    deleteSelectedBtn.disabled = false;
+                    deleteSelectedBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Selecionados (<span id="selected-count">0</span>)';
+                    updateSelectedCount();
+                }
+            });
+        }
+        
+        // Função para excluir todos
+        const deleteAllBtn = document.getElementById('delete-all-btn');
+        if (deleteAllBtn && profileItemId) {
+            deleteAllBtn.addEventListener('click', async function() {
+                if (!confirm('Tem certeza que deseja excluir TODOS os convidados? Esta ação não pode ser desfeita.')) {
+                    return;
+                }
+                
+                deleteAllBtn.disabled = true;
+                deleteAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+                
+                try {
+                    const response = await fetch(`/api/guest-lists/${profileItemId}/guests`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success) {
+                        alert(`Todos os convidados foram excluídos com sucesso (${result.deleted_count || 0} excluídos).`);
+                        location.reload();
+                    } else {
+                        throw new Error(result.message || 'Erro ao excluir convidados');
+                    }
+                } catch (error) {
+                    alert('Erro ao excluir convidados: ' + error.message);
+                    deleteAllBtn.disabled = false;
+                    deleteAllBtn.innerHTML = '<i class="fas fa-trash"></i> Excluir Todos';
+                }
+            });
+        }
+        
+        
+        // Inicializar contador ao carregar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updateSelectedCount);
+        } else {
+            updateSelectedCount();
+        }
     </script>
 </body>
 </html>
