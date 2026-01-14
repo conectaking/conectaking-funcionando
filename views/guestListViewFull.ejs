@@ -566,6 +566,11 @@
                 gap: 12px !important;
             }
             
+            .quick-confirm-section > div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            
             .quick-confirm-section button {
                 width: 100% !important;
                 padding: 14px 20px !important;
@@ -577,32 +582,57 @@
                 width: 100% !important;
                 padding: 14px 16px !important;
                 font-size: 15px !important;
-                margin-bottom: 8px;
+                margin-bottom: 0 !important;
             }
             
-            .quick-confirm-section > div > div {
+            .quick-confirm-section > div > div[style*="display: flex"] {
                 display: flex !important;
                 flex-direction: column !important;
-                gap: 8px !important;
+                gap: 10px !important;
+                width: 100% !important;
             }
             
-            .quick-confirm-section > div > div button {
+            .quick-confirm-section #cpf-search-btn {
                 width: 100% !important;
                 padding: 14px 20px !important;
                 font-size: 15px !important;
             }
             
+            /* Filtros e Ordenação - Mobile */
+            div[style*="background: rgba(255,255,255,0.05)"][style*="backdrop-filter"] {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 12px !important;
+                padding: 16px !important;
+            }
+            
+            div[style*="background: rgba(255,255,255,0.05)"] > div[style*="display: flex"] {
+                flex-direction: column !important;
+                width: 100% !important;
+                gap: 12px !important;
+            }
+            
+            div[style*="background: rgba(255,255,255,0.05)"] select,
+            div[style*="background: rgba(255,255,255,0.05)"] button {
+                width: 100% !important;
+                min-width: auto !important;
+            }
+            
             .tabs {
                 flex-wrap: wrap;
-                gap: 4px;
-                margin-bottom: 16px;
+                gap: 6px;
+                margin-bottom: 20px;
+                padding: 8px;
             }
             
             .tab-button {
-                padding: 10px 16px;
-                font-size: 14px;
+                padding: 12px 16px;
+                font-size: 13px;
                 flex: 1;
-                min-width: calc(50% - 4px);
+                min-width: calc(50% - 3px);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             
             .table-header,
@@ -2605,11 +2635,27 @@
                 content.classList.remove('active');
             });
             
-            // Ativar tab selecionada
-            const targetElement = (eventElement && eventElement.target) || (window.event && window.event.target) || null;
-            if (targetElement) {
-                targetElement.classList.add('active');
+            // Encontrar o botão correto (pode ser o próprio botão ou encontrar pelo tabName)
+            let targetButton = null;
+            if (eventElement && eventElement.target) {
+                // Se o evento veio de um elemento filho (ex: ícone), encontrar o botão pai
+                targetButton = eventElement.target.closest('.tab-button') || eventElement.target;
+            } else {
+                // Tentar encontrar pelo tabName
+                const buttons = document.querySelectorAll('.tab-button');
+                buttons.forEach(btn => {
+                    const onclick = btn.getAttribute('onclick') || '';
+                    if (onclick.includes(`'${tabName}'`) || onclick.includes(`"${tabName}"`)) {
+                        targetButton = btn;
+                    }
+                });
             }
+            
+            if (targetButton && targetButton.classList) {
+                targetButton.classList.add('active');
+            }
+            
+            // Ativar conteúdo da tab
             const tabId = tabName === 'checked_in' ? 'checked_in' : tabName === 'not_arrived' ? 'not_arrived' : tabName;
             const tabElement = document.getElementById(`tab-${tabId}`);
             if (tabElement) {
@@ -2618,7 +2664,9 @@
             
             // Aplicar filtro após mudar de aba
             setTimeout(() => {
-                filterGuests();
+                if (typeof filterGuests === 'function') {
+                    filterGuests();
+                }
             }, 50);
         }
         
