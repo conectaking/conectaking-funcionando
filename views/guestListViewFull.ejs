@@ -1264,6 +1264,292 @@
             window.isInitializingScanner = false;
         };
         
+        // Função para mostrar modal de confirmação com ficha do cliente
+        function showGuestConfirmationModal(guestData, token) {
+            const modal = document.createElement('div');
+            modal.id = 'guest-confirmation-modal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10002; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px);';
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    // Não permitir fechar clicando fora - precisa confirmar ou cancelar
+                    return;
+                }
+            };
+            
+            const guest = guestData.guest;
+            const event = guestData.event;
+            const isAlreadyCheckedIn = guestData.alreadyCheckedIn;
+            
+            // Formatar data do evento
+            let eventDateFormatted = '';
+            if (event.date) {
+                try {
+                    const date = new Date(event.date);
+                    eventDateFormatted = date.toLocaleDateString('pt-BR', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (e) {
+                    eventDateFormatted = event.date;
+                }
+            }
+            
+            // Formatar CPF se existir
+            let cpfFormatted = guest.cpf || 'Não informado';
+            if (guest.cpf && guest.cpf.length === 11) {
+                cpfFormatted = guest.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            }
+            
+            modal.innerHTML = `
+                <div style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border-radius: 24px; padding: 0; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative; animation: slideUp 0.3s ease-out;">
+                    <style>
+                        @keyframes slideUp {
+                            from { opacity: 0; transform: translateY(30px); }
+                            to { opacity: 1; transform: translateY(0); }
+                        }
+                    </style>
+                    
+                    <!-- Header com gradiente -->
+                    <div style="background: linear-gradient(135deg, #FFC700 0%, #FFB700 100%); padding: 32px; border-radius: 24px 24px 0 0; text-align: center; position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.2); border-radius: 50%;"></div>
+                        <div style="position: absolute; bottom: -30px; left: -30px; width: 150px; height: 150px; background: rgba(255,255,255,0.15); border-radius: 50%;"></div>
+                        <div style="position: relative; z-index: 1;">
+                            <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 4px solid white; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+                                <i class="fas fa-user-check" style="font-size: 40px; color: white;"></i>
+                            </div>
+                            <h2 style="margin: 0; color: #000; font-size: 28px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                ${isAlreadyCheckedIn ? '✅ Cliente já confirmado' : '🔍 Verificar Cliente'}
+                            </h2>
+                            <p style="margin: 12px 0 0 0; color: rgba(0,0,0,0.7); font-size: 16px; font-weight: 600;">
+                                Confirma, é esse cliente mesmo?
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Conteúdo da Ficha -->
+                    <div style="padding: 32px;">
+                        <!-- Card de Informações Pessoais -->
+                        <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 2px solid #e8eaed;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #e8eaed;">
+                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #4A90E2, #6BA3F0); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-id-card" style="font-size: 24px; color: white;"></i>
+                                </div>
+                                <h3 style="margin: 0; font-size: 20px; font-weight: 700; color: #202124;">Dados Pessoais</h3>
+                            </div>
+                            
+                            <div style="display: grid; gap: 16px;">
+                                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 10px;">
+                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #FF6B6B, #FF8787); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <i class="fas fa-user" style="font-size: 18px; color: white;"></i>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 600;">Nome Completo</div>
+                                        <div style="font-size: 18px; color: #202124; font-weight: 700;">${guest.name || 'Não informado'}</div>
+                                    </div>
+                                </div>
+                                
+                                ${guest.email ? `
+                                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 10px;">
+                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4ECDC4, #44A08D); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <i class="fas fa-envelope" style="font-size: 18px; color: white;"></i>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 600;">E-mail</div>
+                                        <div style="font-size: 16px; color: #202124; font-weight: 600;">${guest.email}</div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                ${guest.whatsapp ? `
+                                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 10px;">
+                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #25D366, #20BA5A); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <i class="fab fa-whatsapp" style="font-size: 18px; color: white;"></i>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 600;">WhatsApp</div>
+                                        <div style="font-size: 16px; color: #202124; font-weight: 600;">${guest.whatsapp}</div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 10px;">
+                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <i class="fas fa-id-badge" style="font-size: 18px; color: white;"></i>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 600;">CPF</div>
+                                        <div style="font-size: 16px; color: #202124; font-weight: 600;">${cpfFormatted}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Card de Informações do Evento -->
+                        ${event.title ? `
+                        <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.05), rgba(107, 163, 240, 0.08)); border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 2px solid rgba(74, 144, 226, 0.2);">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #4A90E2, #6BA3F0); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-calendar-alt" style="font-size: 24px; color: white;"></i>
+                                </div>
+                                <h3 style="margin: 0; font-size: 20px; font-weight: 700; color: #202124;">Informações do Evento</h3>
+                            </div>
+                            
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 600;">Nome do Evento</div>
+                                <div style="font-size: 18px; color: #202124; font-weight: 700;">${event.title}</div>
+                            </div>
+                            
+                            ${eventDateFormatted ? `
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 600;">Data e Hora</div>
+                                <div style="font-size: 16px; color: #202124; font-weight: 600;">📅 ${eventDateFormatted}</div>
+                            </div>
+                            ` : ''}
+                            
+                            ${event.location ? `
+                            <div>
+                                <div style="font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 600;">Local</div>
+                                <div style="font-size: 16px; color: #202124; font-weight: 600;">📍 ${event.location}</div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Status Atual -->
+                        ${isAlreadyCheckedIn ? `
+                        <div style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(69, 160, 73, 0.15)); border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 2px solid rgba(76, 175, 80, 0.3);">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="fas fa-check-circle" style="font-size: 24px; color: #4caf50;"></i>
+                                <div>
+                                    <div style="font-size: 14px; color: #2e7d32; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Status</div>
+                                    <div style="font-size: 18px; color: #1b5e20; font-weight: 700;">Presença já confirmada anteriormente</div>
+                                    ${guest.checked_in_at ? `
+                                    <div style="font-size: 12px; color: #2e7d32; margin-top: 4px;">Confirmado em: ${new Date(guest.checked_in_at).toLocaleString('pt-BR')}</div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Botões de Ação -->
+                        <div style="display: flex; gap: 12px; margin-top: 24px;">
+                            <button id="cancel-confirm-btn" style="flex: 1; padding: 16px 24px; background: #f8f9fa; color: #5f6368; border: 2px solid #e8eaed; border-radius: 14px; font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#e8eaed'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#f8f9fa'; this.style.transform='translateY(0)';">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                            <button id="confirm-presence-btn" style="flex: 1; padding: 16px 24px; background: linear-gradient(135deg, #4caf50, #45a049); color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 6px 24px rgba(76, 175, 80, 0.4);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(76, 175, 80, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 24px rgba(76, 175, 80, 0.4)';" ${isAlreadyCheckedIn ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
+                                <i class="fas fa-check"></i> ${isAlreadyCheckedIn ? 'Já Confirmado' : 'Sim, Confirmar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Event listeners
+            document.getElementById('cancel-confirm-btn').onclick = function() {
+                modal.remove();
+            };
+            
+            if (!isAlreadyCheckedIn) {
+                document.getElementById('confirm-presence-btn').onclick = async function() {
+                    // Desabilitar botão durante confirmação
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirmando...';
+                    
+                    // Chamar função de confirmação
+                    await confirmGuestPresence(token, guest.id);
+                    modal.remove();
+                };
+            }
+        }
+        
+        // Função para confirmar presença após confirmação do usuário
+        async function confirmGuestPresence(token, guestId) {
+            let loadingModal = null;
+            
+            try {
+                // Mostrar loading
+                loadingModal = document.createElement('div');
+                loadingModal.id = 'qr-confirm-loading';
+                loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10003; display: flex; align-items: center; justify-content: center;';
+                loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Confirmando presença...</div>';
+                document.body.appendChild(loadingModal);
+                
+                // Confirmar via API
+                console.log('🔄 Confirmando presença...');
+                const response = await fetch(`/guest-list/confirm/qr/${encodeURIComponent(token)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // Remover loading
+                if (loadingModal && loadingModal.parentElement) {
+                    loadingModal.remove();
+                }
+                
+                if (!response.ok) {
+                    let errorData = null;
+                    try {
+                        const text = await response.text();
+                        try {
+                            errorData = JSON.parse(text);
+                        } catch (e) {
+                            errorData = { message: text || `Erro HTTP ${response.status}` };
+                        }
+                    } catch (e) {
+                        errorData = { message: `Erro HTTP ${response.status}` };
+                    }
+                    throw new Error(errorData?.message || `Erro HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('✅ Presença confirmada com sucesso!', data.guest);
+                    
+                    // Mostrar mensagem de sucesso
+                    const successModal = document.createElement('div');
+                    successModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10004; display: flex; align-items: center; justify-content: center;';
+                    successModal.innerHTML = `
+                        <div style="background: white; border-radius: 24px; padding: 40px; text-align: center; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #4caf50, #45a049); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 8px 24px rgba(76, 175, 80, 0.4);">
+                                <i class="fas fa-check" style="font-size: 40px; color: white;"></i>
+                            </div>
+                            <h2 style="margin: 0 0 12px 0; color: #202124; font-size: 24px; font-weight: 700;">✅ Presença Confirmada!</h2>
+                            <p style="margin: 0 0 24px 0; color: #5f6368; font-size: 16px;">${data.message}</p>
+                            <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove(); setTimeout(() => location.reload(), 300);" style="padding: 12px 32px; background: linear-gradient(135deg, #4caf50, #45a049); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer;">
+                                OK
+                            </button>
+                        </div>
+                    `;
+                    document.body.appendChild(successModal);
+                    
+                    // Recarregar página após 2 segundos
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    throw new Error(data.message || 'Erro ao confirmar presença');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao confirmar presença:', error);
+                
+                // Remover loading se ainda estiver visível
+                if (loadingModal && loadingModal.parentElement) {
+                    loadingModal.remove();
+                }
+                
+                alert(`❌ Erro ao confirmar presença: ${error.message}`);
+            }
+        }
+        
         // Função para processar QR Code escaneado (definir como global imediatamente)
         window.handleQRCodeScanned = async function(qrToken) {
             let loadingModal = null;
@@ -1319,80 +1605,51 @@
                 
                 // Mostrar loading
                 loadingModal = document.createElement('div');
-                loadingModal.id = 'qr-confirm-loading';
+                loadingModal.id = 'qr-verify-loading';
                 loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;';
-                loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Confirmando presença...</div>';
+                loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Verificando QR Code...</div>';
                 document.body.appendChild(loadingModal);
                 
-                // Confirmar via API
-                console.log('🔄 Enviando requisição para API...');
-                const response = await fetch(`/guest-list/confirm/qr/${encodeURIComponent(token)}`, {
-                    method: 'POST',
+                // PRIMEIRO: Buscar dados do cliente (sem confirmar ainda)
+                console.log('🔄 Buscando dados do cliente...');
+                const verifyResponse = await fetch(`/guest-list/verify/qr/${encodeURIComponent(token)}`, {
+                    method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 });
-                
-                console.log('📡 Resposta da API:', response.status, response.statusText);
                 
                 // Remover loading
                 if (loadingModal && loadingModal.parentElement) {
                     loadingModal.remove();
                 }
                 
-                // Verificar status HTTP ANTES de tentar parsear JSON
-                if (!response.ok) {
-                    // Tentar obter mensagem de erro do JSON
+                if (!verifyResponse.ok) {
                     let errorData = null;
                     try {
-                        const text = await response.text();
-                        console.error('❌ Resposta de erro (texto):', text);
+                        const text = await verifyResponse.text();
                         try {
                             errorData = JSON.parse(text);
                         } catch (e) {
-                            // Se não for JSON, usar o texto como mensagem
-                            errorData = { message: text || `Erro HTTP ${response.status}` };
+                            errorData = { message: text || `Erro HTTP ${verifyResponse.status}` };
                         }
                     } catch (e) {
-                        errorData = { message: `Erro HTTP ${response.status}` };
+                        errorData = { message: `Erro HTTP ${verifyResponse.status}` };
                     }
-                    
-                    const errorMessage = errorData?.message || errorData?.error || `Erro HTTP ${response.status}`;
-                    console.error('❌ Erro na API:', response.status, errorMessage);
-                    
-                    // Criar erro com informações do status
-                    const error = new Error(errorMessage);
-                    error.status = response.status;
-                    error.data = errorData;
-                    throw error;
+                    throw new Error(errorData?.message || `Erro HTTP ${verifyResponse.status}`);
                 }
                 
-                // Tentar parsear JSON da resposta (só se response.ok for true)
-                let data;
-                try {
-                    data = await response.json();
-                } catch (jsonErr) {
-                    console.error('❌ Erro ao parsear JSON da resposta:', jsonErr);
-                    const text = await response.text();
-                    console.error('📄 Resposta em texto:', text);
-                    throw new Error(`Erro ao processar resposta do servidor (status: ${response.status})`);
+                const verifyData = await verifyResponse.json();
+                
+                if (!verifyData.success) {
+                    throw new Error(verifyData.message || 'Erro ao verificar QR Code');
                 }
                 
-                if (data.success) {
-                    console.log('✅ Presença confirmada com sucesso!', data.guest);
-                    alert(`✅ ${data.message}\n\nNome: ${data.guest.name}`);
-                    // Recarregar página para atualizar estatísticas
-                    setTimeout(() => {
-                        location.reload();
-                    }, 500);
-                } else {
-                    console.error('❌ API retornou sucesso=false:', data);
-                    // Garantir que scanner está fechado
-                    if (window.qrScannerModal) {
-                        window.closeQRScanner();
-                    }
-                    alert(`❌ ${data.message || 'Erro ao confirmar presença'}`);
-                }
+                // Mostrar modal de confirmação com ficha do cliente
+                console.log('✅ Dados do cliente carregados:', verifyData);
+                showGuestConfirmationModal(verifyData, token);
+                
+                return; // Não continuar com o código antigo
             } catch (error) {
                 console.error('❌ Erro ao processar QR Code:', error);
                 console.error('Stack:', error.stack);

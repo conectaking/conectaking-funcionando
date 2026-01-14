@@ -494,6 +494,115 @@ router.post('/view-full/:token/checkin/:guestId', asyncHandler(async (req, res) 
 }));
 
 /**
+ * GET /guest-list/verify/qr/:qrToken - Verificar dados do cliente pelo QR Code (sem confirmar)
+ */
+router.get('/verify/qr/:qrToken', asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const { qrToken } = req.params;
+        
+        // Normalizar token (remover espaços e caracteres especiais)
+        const normalizedToken = (qrToken || '').trim();
+        
+        if (!normalizedToken || normalizedToken.length < 32) {
+            logger.warn('⚠️ [QR_VERIFY] Token inválido (muito curto):', {
+                length: normalizedToken ? normalizedToken.length : 0
+            });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'QR Code inválido. O token está muito curto.' 
+            });
+        }
+        
+        logger.info('🔍 [QR_VERIFY] Verificando QR Code:', {
+            qrTokenLength: normalizedToken.length,
+            qrTokenPrefix: normalizedToken.substring(0, 16) + '...'
+        });
+        
+        // Buscar convidado pelo qr_token
+        const guestResult = await client.query(`
+            SELECT 
+                g.*, 
+                gli.public_view_token, 
+                gli.profile_item_id, 
+                gli.event_date,
+                gli.event_title,
+                gli.event_location,
+                gli.event_address,
+                pi.title as form_title
+            FROM guests g
+            INNER JOIN guest_list_items gli ON gli.id = g.guest_list_id
+            LEFT JOIN profile_items pi ON pi.id = gli.profile_item_id
+            WHERE g.qr_token = $1
+        `, [normalizedToken]);
+        
+        if (guestResult.rows.length === 0) {
+            logger.warn('⚠️ [QR_VERIFY] QR Code não encontrado:', {
+                qrTokenPrefix: normalizedToken.substring(0, 16) + '...'
+            });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'QR Code não encontrado. Verifique se o QR Code está correto ou se o convidado foi cadastrado.' 
+            });
+        }
+        
+        const guest = guestResult.rows[0];
+        
+        // Validação de Token com expiração
+        if (guest.event_date) {
+            const eventDate = new Date(guest.event_date);
+            const now = new Date();
+            const expirationDate = new Date(eventDate);
+            expirationDate.setDate(expirationDate.getDate() + 30);
+            
+            if (now > expirationDate) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'QR Code expirado. Este código não pode mais ser usado para confirmar presença.',
+                    expired: true
+                });
+            }
+        }
+        
+        // Retornar dados do cliente (sem confirmar ainda)
+        res.json({
+            success: true,
+            guest: {
+                id: guest.id,
+                name: guest.name,
+                email: guest.email,
+                whatsapp: guest.whatsapp,
+                cpf: guest.cpf,
+                status: guest.status,
+                checked_in_at: guest.checked_in_at,
+                created_at: guest.created_at,
+                guest_list_id: guest.guest_list_id
+            },
+            event: {
+                title: guest.event_title || guest.form_title || 'Evento',
+                date: guest.event_date,
+                location: guest.event_location || guest.event_address
+            },
+            alreadyCheckedIn: guest.status === 'checked_in'
+        });
+        
+    } catch (error) {
+        logger.error('❌ [QR_VERIFY] Erro ao verificar QR Code:', {
+            error: error.message,
+            stack: error.stack
+        });
+        
+        res.status(500).json({ 
+            success: false, 
+            message: 'Erro ao verificar QR Code. Tente novamente.',
+            ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {})
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
  * POST /guest-list/confirm/qr/:qrToken - Confirmar presença via QR Code
  */
 router.post('/confirm/qr/:qrToken', asyncHandler(async (req, res) => {
