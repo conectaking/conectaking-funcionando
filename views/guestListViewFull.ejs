@@ -661,12 +661,21 @@
                 }
                 
                 try {
+                    const qrReaderElement = document.getElementById("qr-reader");
+                    if (!qrReaderElement) {
+                        console.error('Elemento qr-reader não encontrado');
+                        alert('Erro: Elemento do scanner não encontrado. Recarregue a página.');
+                        window.closeQRScanner();
+                        return;
+                    }
+                    
                     window.qrCodeScanner = new Html5Qrcode("qr-reader");
                     window.qrCodeScanner.start(
                         { facingMode: "environment" }, // Usar câmera traseira
                         {
                             fps: 10,
-                            qrbox: { width: 250, height: 250 }
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0
                         },
                         (decodedText, decodedResult) => {
                             // Rate Limiting (Melhoria 14)
@@ -678,7 +687,12 @@
                             lastScanTime = now;
                             
                             // QR Code escaneado com sucesso
-                            console.log('QR Code escaneado:', decodedText);
+                            console.log('✅ QR Code escaneado:', decodedText);
+                            
+                            // Parar o scanner imediatamente após escanear
+                            if (window.qrCodeScanner) {
+                                window.qrCodeScanner.stop().catch(err => console.warn('Erro ao parar scanner:', err));
+                            }
                             
                             // Tocar som de confirmação
                             try {
@@ -704,34 +718,47 @@
                             window.handleQRCodeScanned(decodedText);
                         },
                         (errorMessage) => {
-                            // Erro ignorado (scanner continua tentando)
+                            // Erro ignorado (scanner continua tentando) - apenas logar se for erro crítico
+                            if (errorMessage && !errorMessage.includes('NotFoundException')) {
+                                console.debug('Scanner:', errorMessage);
+                            }
                         }
                     ).catch((err) => {
-                        console.error('Erro ao iniciar scanner:', err);
-                        alert('Erro ao acessar a câmera. Verifique as permissões do navegador.');
+                        console.error('❌ Erro ao iniciar scanner:', err);
+                        let errorMsg = 'Erro ao acessar a câmera.';
+                        if (err.name === 'NotAllowedError' || err.message.includes('permission')) {
+                            errorMsg = 'Permissão de câmera negada. Por favor, permita o acesso à câmera nas configurações do navegador.';
+                        } else if (err.name === 'NotFoundError' || err.message.includes('camera')) {
+                            errorMsg = 'Nenhuma câmera encontrada. Verifique se há uma câmera disponível.';
+                        } else if (err.message) {
+                            errorMsg = 'Erro: ' + err.message;
+                        }
+                        alert(errorMsg);
                         window.closeQRScanner();
                     });
                 } catch (err) {
-                    console.error('Erro ao criar scanner:', err);
-                    alert('Erro ao inicializar scanner. Tente recarregar a página.');
+                    console.error('❌ Erro ao criar scanner:', err);
+                    alert('Erro ao inicializar scanner: ' + (err.message || 'Erro desconhecido') + '. Tente recarregar a página.');
                     window.closeQRScanner();
                 }
             };
             
             // Tentar inicializar imediatamente ou aguardar
             if (typeof Html5Qrcode !== 'undefined') {
-                initScanner();
+                // Aguardar um pouco para garantir que o DOM está pronto
+                setTimeout(initScanner, 100);
             } else {
-                // Aguardar até 5 segundos para a biblioteca carregar
+                // Aguardar até 10 segundos para a biblioteca carregar
                 let attempts = 0;
+                const maxAttempts = 20; // 20 * 500ms = 10 segundos
                 const checkLibrary = setInterval(() => {
                     attempts++;
                     if (typeof Html5Qrcode !== 'undefined') {
                         clearInterval(checkLibrary);
-                        initScanner();
-                    } else if (attempts > 10) {
+                        setTimeout(initScanner, 100);
+                    } else if (attempts >= maxAttempts) {
                         clearInterval(checkLibrary);
-                        alert('Biblioteca de scanner não carregou. Recarregue a página e tente novamente.');
+                        alert('❌ Biblioteca de scanner QR Code não carregou. Verifique sua conexão com a internet e recarregue a página.');
                         window.closeQRScanner();
                     }
                 }, 500);
@@ -842,11 +869,9 @@
         window.confirmByCPF = async function() {
             const cpfInput = document.getElementById('cpf-search-input');
             const cpf = cpfInput?.value?.trim();
-            const cleanCPF = cpf.replace(/\D/g, '');
             
-            // Validação em tempo real
-            if (!cpf || cleanCPF.length !== 11) {
-                alert('❌ Por favor, digite um CPF válido com 11 dígitos.');
+            if (!cpf) {
+                alert('❌ Por favor, digite pelo menos os primeiros dígitos do CPF.');
                 if (cpfInput) {
                     cpfInput.style.borderColor = '#d32f2f';
                     setTimeout(() => {
@@ -856,7 +881,22 @@
                 return;
             }
             
-            if (!validateCPF(cpf)) {
+            const cleanCPF = cpf.replace(/\D/g, '');
+            
+            // Permitir busca com pelo menos 3 dígitos (busca parcial)
+            if (cleanCPF.length < 3) {
+                alert('❌ Por favor, digite pelo menos 3 dígitos do CPF para buscar.');
+                if (cpfInput) {
+                    cpfInput.style.borderColor = '#d32f2f';
+                    setTimeout(() => {
+                        cpfInput.style.borderColor = '#2C2C2F';
+                    }, 3000);
+                }
+                return;
+            }
+            
+            // Se tiver 11 dígitos, validar CPF completo
+            if (cleanCPF.length === 11 && !validateCPF(cpf)) {
                 alert('❌ CPF inválido. Verifique os dígitos.');
                 if (cpfInput) {
                     cpfInput.style.borderColor = '#d32f2f';
@@ -881,15 +921,16 @@
                 loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Buscando convidado...</div>';
                 document.body.appendChild(loadingModal);
                 
-                // Confirmar via API
+                // Confirmar via API (enviar CPF limpo)
                 const response = await fetch('/guest-list/confirm/cpf', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        cpf: cpf,
-                        token: token
+                        cpf: cleanCPF, // Enviar apenas números
+                        token: token,
+                        partial: cleanCPF.length < 11 // Indicar se é busca parcial
                     })
                 });
                 
@@ -902,12 +943,42 @@
                     if (cpfInput) cpfInput.value = '';
                     // Recarregar página para atualizar estatísticas
                     location.reload();
+                } else if (data.partial && data.matches > 1) {
+                    // Múltiplos resultados encontrados - pedir mais dígitos
+                    let message = `❌ ${data.message || 'Múltiplos convidados encontrados'}`;
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        message += '\n\nEncontrados:\n';
+                        data.suggestions.forEach((s, i) => {
+                            message += `${i + 1}. ${s.name} (CPF: ${s.cpf})\n`;
+                        });
+                        message += '\nDigite mais dígitos do CPF para refinar a busca.';
+                    }
+                    alert(message);
+                    if (cpfInput) {
+                        cpfInput.focus();
+                        cpfInput.style.borderColor = '#FFC700';
+                        setTimeout(() => {
+                            cpfInput.style.borderColor = '#2C2C2F';
+                        }, 3000);
+                    }
                 } else {
                     alert(`❌ ${data.message || 'CPF não encontrado na lista'}`);
+                    if (cpfInput) {
+                        cpfInput.style.borderColor = '#d32f2f';
+                        setTimeout(() => {
+                            cpfInput.style.borderColor = '#2C2C2F';
+                        }, 3000);
+                    }
                 }
             } catch (error) {
-                console.error('Erro ao buscar por CPF:', error);
+                console.error('❌ Erro ao buscar por CPF:', error);
                 alert('❌ Erro ao buscar convidado. Tente novamente.');
+                if (cpfInput) {
+                    cpfInput.style.borderColor = '#d32f2f';
+                    setTimeout(() => {
+                        cpfInput.style.borderColor = '#2C2C2F';
+                    }, 3000);
+                }
             }
         };
         
@@ -1331,6 +1402,19 @@
                 cpfBtn.setAttribute('tabindex', '0');
                 cpfBtn.setAttribute('role', 'button');
                 cpfBtn.setAttribute('aria-label', 'Buscar convidado por CPF');
+            }
+            
+            // Permitir buscar ao pressionar Enter no campo de CPF
+            const cpfInput = document.getElementById('cpf-search-input');
+            if (cpfInput) {
+                cpfInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (typeof window.confirmByCPF === 'function') {
+                            window.confirmByCPF();
+                        }
+                    }
+                });
             }
             
             // Validação de CPF em tempo real e permitir confirmar ao pressionar Enter

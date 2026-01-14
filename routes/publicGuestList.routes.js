@@ -612,20 +612,26 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
         
         // Limpar CPF (remover pontos, traços, espaços)
         const cleanCpf = cpf.replace(/\D/g, '');
+        const isPartial = req.body.partial === true || cleanCpf.length < 11;
         
-        if (cleanCpf.length !== 11) {
+        // Permitir busca com pelo menos 3 dígitos
+        if (cleanCpf.length < 3) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'CPF inválido. Digite um CPF com 11 dígitos.' 
+                message: 'Digite pelo menos 3 dígitos do CPF para buscar.' 
             });
         }
         
-        // Buscar lista pelo token
+        // Buscar lista pelo token (incluindo portaria_slug)
         const listResult = await client.query(`
             SELECT gli.id, gli.profile_item_id
             FROM guest_list_items gli
             INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-            WHERE (gli.public_view_token = $1 OR gli.confirmation_token = $1) AND pi.is_active = true
+            WHERE (
+                gli.public_view_token = $1 
+                OR gli.confirmation_token = $1 
+                OR gli.portaria_slug = $1
+            ) AND pi.is_active = true
         `, [token]);
         
         if (listResult.rows.length === 0) {
@@ -637,11 +643,44 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
         
         const guestList = listResult.rows[0];
         
-        // Buscar convidado pelo CPF na lista
-        const guestResult = await client.query(`
-            SELECT * FROM guests
-            WHERE guest_list_id = $1 AND document = $2
-        `, [guestList.id, cleanCpf]);
+        // Buscar convidado pelo CPF na lista (busca exata ou parcial)
+        let guestResult;
+        if (isPartial && cleanCpf.length < 11) {
+            // Busca parcial: usar LIKE para encontrar CPFs que começam com os dígitos informados
+            guestResult = await client.query(`
+                SELECT * FROM guests
+                WHERE guest_list_id = $1 
+                AND document IS NOT NULL 
+                AND document LIKE $2
+                ORDER BY 
+                    CASE 
+                        WHEN document = $3 THEN 1  -- Priorizar match exato
+                        ELSE 2
+                    END,
+                    created_at DESC
+                LIMIT 10
+            `, [guestList.id, cleanCpf + '%', cleanCpf]);
+            
+            // Se encontrou múltiplos resultados, retornar lista para o usuário escolher
+            if (guestResult.rows.length > 1) {
+                return res.json({
+                    success: false,
+                    partial: true,
+                    message: `Encontrados ${guestResult.rows.length} convidados com CPF iniciando em ${cleanCpf.substring(0, 3)}***. Digite mais dígitos para refinar a busca.`,
+                    matches: guestResult.rows.length,
+                    suggestions: guestResult.rows.slice(0, 5).map(g => ({
+                        name: g.name,
+                        cpf: g.document ? g.document.substring(0, 3) + '***.***-**' : 'N/A'
+                    }))
+                });
+            }
+        } else {
+            // Busca exata
+            guestResult = await client.query(`
+                SELECT * FROM guests
+                WHERE guest_list_id = $1 AND document = $2
+            `, [guestList.id, cleanCpf]);
+        }
         
         if (guestResult.rows.length === 0) {
             return res.status(404).json({ 
