@@ -692,6 +692,7 @@
         </div>
         
         <div class="main-content">
+            <!-- Stats Summary - Seção Superior -->
             <div class="stats-summary">
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-user-plus"></i></div>
@@ -744,12 +745,36 @@
             </div>
         </div>
         
+        <!-- Filtros e Ordenação -->
+        <div style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1;">
+                <label style="color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>; font-weight: 600; white-space: nowrap;">
+                    <i class="fas fa-filter"></i> Filtrar:
+                </label>
+                <select id="status-filter" style="padding: 10px 16px; border-radius: 12px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.1); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; min-width: 180px;" onchange="filterGuests()" onfocus="this.style.borderColor='rgba(255,199,0,0.5)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)';">
+                    <option value="all">Todos os Convidados</option>
+                    <option value="not_confirmed" selected>Faltam Confirmar (Primeiro)</option>
+                    <option value="registered">Apenas Inscritos</option>
+                    <option value="confirmed">Confirmados</option>
+                    <option value="checked_in">Já Chegaram</option>
+                </select>
+                <select id="sort-order" style="padding: 10px 16px; border-radius: 12px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.1); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; min-width: 180px;" onchange="sortGuests()" onfocus="this.style.borderColor='rgba(255,199,0,0.5)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)';">
+                    <option value="name">Ordenar por Nome</option>
+                    <option value="date">Ordenar por Data</option>
+                    <option value="status">Ordenar por Status</option>
+                </select>
+            </div>
+            <button onclick="resetFilters()" style="padding: 10px 20px; border-radius: 12px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,199,0,0.2)'; this.style.borderColor='rgba(255,199,0,0.5)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+                <i class="fas fa-redo"></i> Resetar
+            </button>
+        </div>
+        
         <div class="tabs">
             <button class="tab-button active" onclick="switchTab('registered', event)">
-                <i class="fas fa-user-plus"></i> Cadastrados (<%= registeredGuests.length %>)
+                <i class="fas fa-user-plus"></i> Cadastrados (<%= typeof registeredGuests !== 'undefined' ? registeredGuests.length : 0 %>)
             </button>
             <button class="tab-button" onclick="switchTab('checked_in', event)">
-                <i class="fas fa-check-circle"></i> Quem Chegou (<%= checkedInGuests.length %>)
+                <i class="fas fa-check-circle"></i> Quem Chegou (<%= typeof checkedInGuests !== 'undefined' ? checkedInGuests.length : 0 %>)
             </button>
             <button class="tab-button" onclick="switchTab('not_arrived', event)">
                 <i class="fas fa-clock"></i> Quem Não Chegou (<%= typeof notArrivedGuests !== 'undefined' && notArrivedGuests ? notArrivedGuests.length : 0 %>)
@@ -897,19 +922,22 @@
                         // Determinar status e data
                         let statusText = 'Inscrito';
                         let statusClass = 'status-registered';
+                        let statusValue = 'registered';
                         let dateToShow = guest.created_at;
                         
                         if (guest.status === 'checked_in') {
                             statusText = 'Chegou';
                             statusClass = 'status-checked_in';
+                            statusValue = 'checked_in';
                             dateToShow = guest.checked_in_at || guest.created_at;
                         } else if (guest.status === 'confirmed') {
                             statusText = 'Confirmado';
                             statusClass = 'status-confirmed';
+                            statusValue = 'confirmed';
                             dateToShow = guest.confirmed_at || guest.created_at;
                         }
                     %>
-                        <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
+                        <div class="table-row" data-status="<%= statusValue %>" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
@@ -1059,7 +1087,7 @@
                         }
                         displayCPF = displayCPF || '-';
                     %>
-                        <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
+                        <div class="table-row" data-status="checked_in" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
@@ -1172,9 +1200,19 @@
                         // Status e data
                         let statusText = 'Inscrito';
                         let statusClass = 'status-registered';
+                        let statusValue = 'registered';
+                        if (guest.status === 'checked_in') {
+                            statusText = 'Chegou';
+                            statusClass = 'status-checked_in';
+                            statusValue = 'checked_in';
+                        } else if (guest.status === 'confirmed') {
+                            statusText = 'Confirmado';
+                            statusClass = 'status-confirmed';
+                            statusValue = 'confirmed';
+                        }
                         let dateToShow = guest.created_at;
                     %>
-                        <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
+                        <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>" data-status="<%= statusValue %>">
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
@@ -2581,6 +2619,123 @@
         
         // Tornar switchTab global para uso em onclick
         window.switchTab = switchTab;
+        
+        // Função para filtrar convidados por status
+        function filterGuests() {
+            const filterValue = document.getElementById('status-filter').value;
+            const rows = document.querySelectorAll('.table-row');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const statusValue = row.getAttribute('data-status') || '';
+                let shouldShow = false;
+                
+                switch(filterValue) {
+                    case 'all':
+                        shouldShow = true;
+                        break;
+                    case 'not_confirmed':
+                        // Mostrar apenas os que não confirmaram (registered) - PRIMEIRO
+                        shouldShow = statusValue === 'registered' || statusValue === '';
+                        break;
+                    case 'registered':
+                        shouldShow = statusValue === 'registered' || statusValue === '';
+                        break;
+                    case 'confirmed':
+                        shouldShow = statusValue === 'confirmed';
+                        break;
+                    case 'checked_in':
+                        shouldShow = statusValue === 'checked_in';
+                        break;
+                    default:
+                        shouldShow = true;
+                }
+                
+                row.style.display = shouldShow ? '' : 'none';
+                if (shouldShow) visibleCount++;
+            });
+            
+            // Atualizar contador se houver
+            console.log(`✅ Filtro aplicado: ${filterValue}, ${visibleCount} convidados visíveis`);
+        }
+        
+        // Função para ordenar convidados
+        function sortGuests() {
+            const sortValue = document.getElementById('sort-order').value;
+            const table = document.querySelector('.guests-table');
+            if (!table) return;
+            
+            const rows = Array.from(document.querySelectorAll('.table-row'));
+            const tbody = table.querySelector('tbody') || table;
+            
+            rows.sort((a, b) => {
+                switch(sortValue) {
+                    case 'name':
+                        const nameA = (a.querySelector('[data-label="Nome Completo"]')?.textContent || '').trim().toLowerCase();
+                        const nameB = (b.querySelector('[data-label="Nome Completo"]')?.textContent || '').trim().toLowerCase();
+                        return nameA.localeCompare(nameB, 'pt-BR');
+                    
+                    case 'date':
+                        const dateA = a.querySelector('[data-label="Data"]')?.textContent || '';
+                        const dateB = b.querySelector('[data-label="Data"]')?.textContent || '';
+                        return new Date(dateB) - new Date(dateA); // Mais recente primeiro
+                    
+                    case 'status':
+                        const statusA = a.querySelector('.status-badge')?.textContent.trim().toLowerCase() || '';
+                        const statusB = b.querySelector('.status-badge')?.textContent.trim().toLowerCase() || '';
+                        // Ordem: chegou > confirmado > inscrito
+                        const statusOrder = { 'chegou': 1, 'confirmado': 2, 'inscrito': 3, 'cadastrado': 3 };
+                        return (statusOrder[statusA] || 99) - (statusOrder[statusB] || 99);
+                    
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Reordenar no DOM
+            rows.forEach(row => {
+                if (row.parentNode) {
+                    row.parentNode.removeChild(row);
+                }
+            });
+            
+            rows.forEach(row => {
+                tbody.appendChild(row);
+            });
+            
+            console.log(`✅ Ordenação aplicada: ${sortValue}`);
+        }
+        
+        // Função para resetar filtros
+        function resetFilters() {
+            document.getElementById('status-filter').value = 'not_confirmed';
+            document.getElementById('sort-order').value = 'name';
+            
+            // Mostrar todos os convidados
+            document.querySelectorAll('.table-row').forEach(row => {
+                row.style.display = '';
+            });
+            
+            // Reordenar por nome
+            sortGuests();
+            
+            console.log('✅ Filtros resetados');
+        }
+        
+        // Tornar funções globais
+        window.filterGuests = filterGuests;
+        window.sortGuests = sortGuests;
+        window.resetFilters = resetFilters;
+        
+        // Aplicar filtro inicial (mostrar os que faltam confirmar primeiro)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ordenar inicialmente por status (não confirmados primeiro)
+            setTimeout(() => {
+                document.getElementById('sort-order').value = 'status';
+                sortGuests();
+                filterGuests(); // Aplicar filtro inicial
+            }, 100);
+        });
         
         // Função para inicializar event listeners (pode ser chamada imediatamente ou no DOMContentLoaded)
         function initEventListeners() {
