@@ -500,14 +500,16 @@
             }
             
             // Aguardar DOM e biblioteca estarem prontos
+            // Usar window.onload para garantir que todos os scripts foram carregados
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                    console.log('📄 DOM carregado, aguardando biblioteca...');
-                    setTimeout(generateQRCode, 500); // Aguardar um pouco mais para garantir que a biblioteca carregou
+                window.addEventListener('load', function() {
+                    console.log('📄 Página totalmente carregada, iniciando geração de QR Code...');
+                    setTimeout(generateQRCode, 100);
                 });
             } else {
+                // Se a página já carregou, aguardar um pouco e tentar
                 console.log('📄 DOM já está pronto, aguardando biblioteca...');
-                setTimeout(generateQRCode, 500); // DOM já está pronto
+                setTimeout(generateQRCode, 100);
             }
         }
         

@@ -1352,6 +1352,18 @@
             let displayName = guest.name || '';
             let displayEmail = guest.email || '';
             let displayWhatsapp = guest.whatsapp || guest.phone || '';
+            let displayCPF = guest.document || '';
+            
+            // Formatar CPF
+            if (displayCPF) {
+                const cleanCPF = displayCPF.replace(/\D/g, '');
+                if (cleanCPF.length === 11) {
+                    displayCPF = cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                } else {
+                    displayCPF = displayCPF.trim();
+                }
+            }
+            displayCPF = displayCPF || '-';
             
             // Tentar extrair de custom_responses se necessário
             try {
@@ -1489,6 +1501,10 @@
                         <div>
                             <strong style="color: #FFC700; display: block; margin-bottom: 4px;">WhatsApp:</strong>
                             <span style="color: #25D366; font-weight: 600;">${displayWhatsapp}</span>
+                        </div>
+                        <div>
+                            <strong style="color: #FFC700; display: block; margin-bottom: 4px;">CPF:</strong>
+                            <span style="color: #ECECEC;">${displayCPF}</span>
                         </div>
                     </div>
                 </div>
