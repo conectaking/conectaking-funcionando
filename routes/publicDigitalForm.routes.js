@@ -1537,7 +1537,7 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             formTitle: formData.form_title || 'Formulário',
             showWhatsAppInfo: formData.enable_whatsapp !== false && formData.whatsapp_number,
             whatsappNumber: formData.whatsapp_number,
-            showGuestListInfo: enableGuestListSubmitBool && qrToken,
+            showGuestListInfo: enableGuestListSubmitBool,
             guestId: guestId || null,
             qrToken: qrToken || null,
             eventTitle: eventData?.event_title || formData.form_title || 'Evento',

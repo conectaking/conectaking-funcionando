@@ -695,10 +695,17 @@
                     // Limpar qualquer scanner anterior antes de criar novo
                     if (window.qrCodeScanner) {
                         try {
-                            await window.qrCodeScanner.stop().catch(() => {});
+                            // Verificar se o scanner está rodando antes de tentar parar
+                            const isScanning = window.qrCodeScanner.getState && window.qrCodeScanner.getState() === Html5QrcodeScannerState.SCANNING;
+                            if (isScanning) {
+                                await window.qrCodeScanner.stop().catch(() => {});
+                            }
                             window.qrCodeScanner.clear();
                         } catch (e) {
-                            console.warn('Erro ao limpar scanner anterior:', e);
+                            // Ignorar erros de "scanner is not running" - isso é esperado
+                            if (!e.message || !e.message.includes('not running') && !e.message.includes('not paused')) {
+                                console.warn('Erro ao limpar scanner anterior:', e);
+                            }
                         }
                         window.qrCodeScanner = null;
                     }
@@ -708,9 +715,26 @@
                     console.log('📷 Iniciando scanner QR Code com câmera:', cameraIdOrConfig);
                     
                     // Normalizar o parâmetro da câmera (pode ser string deviceId ou objeto config)
-                    const cameraConfig = typeof cameraIdOrConfig === 'string' 
-                        ? cameraIdOrConfig 
-                        : (cameraIdOrConfig || { facingMode: "environment" });
+                    let cameraConfig;
+                    if (typeof cameraIdOrConfig === 'string') {
+                        // Se for string, verificar se não está vazia
+                        if (cameraIdOrConfig && cameraIdOrConfig.trim() !== '') {
+                            cameraConfig = cameraIdOrConfig;
+                        } else {
+                            // Se estiver vazia, usar facingMode
+                            cameraConfig = { facingMode: "environment" };
+                        }
+                    } else if (cameraIdOrConfig && typeof cameraIdOrConfig === 'object') {
+                        cameraConfig = cameraIdOrConfig;
+                    } else {
+                        // Fallback padrão
+                        cameraConfig = { facingMode: "environment" };
+                    }
+                    
+                    // Validar que cameraConfig não está vazio
+                    if (!cameraConfig || (typeof cameraConfig === 'string' && cameraConfig.trim() === '')) {
+                        throw new Error('cameraIdOrConfig is required');
+                    }
                     
                     window.qrCodeScanner.start(
                         cameraConfig,
@@ -851,7 +875,15 @@
                 } else if (cameras.length === 1) {
                     // Se houver apenas uma câmera, usar diretamente
                     console.log('📷 Usando única câmera disponível:', cameras[0].label);
-                    startScannerWithCamera(cameras[0].deviceId);
+                    // Verificar se deviceId existe e é válido
+                    const deviceId = cameras[0].deviceId;
+                    if (deviceId && deviceId.trim() !== '') {
+                        startScannerWithCamera(deviceId);
+                    } else {
+                        // Se deviceId estiver vazio, usar facingMode como fallback
+                        console.warn('⚠️ deviceId vazio, usando facingMode como fallback');
+                        startScannerWithCamera({ facingMode: "environment" });
+                    }
                     return;
                 } else {
                     // Se não houver câmeras, tentar usar facingMode (mobile)

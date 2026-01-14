@@ -437,12 +437,16 @@ router.post('/view-full/:token/checkin/:guestId', asyncHandler(async (req, res) 
     try {
         const { token, guestId } = req.params;
         
-        // Buscar lista pelo token
+        // Buscar lista pelo token (incluindo portaria_slug)
         const listResult = await client.query(`
             SELECT gli.*, pi.id as profile_item_id
             FROM guest_list_items gli
             INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
-            WHERE (gli.public_view_token = $1 OR gli.confirmation_token = $1) AND pi.is_active = true
+            WHERE (
+                gli.public_view_token = $1 
+                OR gli.confirmation_token = $1 
+                OR gli.portaria_slug = $1
+            ) AND pi.is_active = true
         `, [token]);
         
         if (listResult.rows.length === 0) {

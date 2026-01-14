@@ -215,7 +215,9 @@
         <% if (responseId) { %>
         <div class="response-id">
             <strong>Número de Referência</strong>
-            #<%= responseId %>
+            <span style="font-family: 'Courier New', monospace; font-size: 18px; font-weight: 700; color: <%= primaryColor || '#4A90E2' %>;">
+                REF-<%= String(responseId).padStart(6, '0') %>
+            </span>
         </div>
         <% } %>
         
