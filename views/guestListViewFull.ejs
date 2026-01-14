@@ -491,7 +491,7 @@
                             dateToShow = guest.confirmed_at || guest.created_at;
                         }
                     %>
-                        <div class="table-row">
+                        <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>">
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
@@ -601,7 +601,7 @@
                         }
                         displayCPF = displayCPF || '-';
                     %>
-                        <div class="table-row">
+                        <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>">
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
@@ -1644,54 +1644,43 @@
                 console.error('❌ Botão QR Code não encontrado');
             }
             
-            // Adicionar event listener ao botão CPF
+            // Adicionar event listener ao botão de busca
             const cpfBtn = document.getElementById('cpf-search-btn');
             if (cpfBtn) {
-                console.log('✅ Botão CPF encontrado');
                 cpfBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('🔘 Botão CPF clicado');
-                    if (typeof window.confirmByCPF === 'function') {
-                        window.confirmByCPF();
-                    } else {
-                        console.error('❌ confirmByCPF não está definida');
-                        alert('Erro: Busca por CPF não está disponível. Recarregue a página.');
+                    if (typeof window.filterGuestList === 'function') {
+                        window.filterGuestList();
                     }
                 }, { once: false });
-                
-                // Navegação por teclado (acessibilidade)
-                cpfBtn.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        cpfBtn.click();
-                    }
-                });
+
                 cpfBtn.setAttribute('tabindex', '0');
                 cpfBtn.setAttribute('role', 'button');
-                cpfBtn.setAttribute('aria-label', 'Buscar convidado por CPF, Email ou Nome');
-            } else {
-                console.error('❌ Botão CPF não encontrado');
+                cpfBtn.setAttribute('aria-label', 'Filtrar lista por CPF, Email ou Nome');
             }
-            
-            // Permitir buscar ao pressionar Enter no campo de CPF
+
+            // Filtrar em tempo real enquanto digita
             const cpfInput = document.getElementById('cpf-search-input');
             if (cpfInput) {
-                console.log('✅ Input CPF encontrado');
+                // Filtrar em tempo real
+                cpfInput.addEventListener('input', function() {
+                    if (typeof window.filterGuestList === 'function') {
+                        window.filterGuestList();
+                    }
+                });
+                
+                // Permitir buscar ao pressionar Enter
                 cpfInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        console.log('🔘 Enter pressionado no campo CPF');
-                        if (typeof window.confirmByCPF === 'function') {
-                            window.confirmByCPF();
+                        if (typeof window.filterGuestList === 'function') {
+                            window.filterGuestList();
                         }
                     }
                 });
-                
-                // Acessibilidade
-                cpfInput.setAttribute('aria-label', 'Digite CPF, Email ou Nome para buscar convidado');
-            } else {
-                console.error('❌ Input CPF não encontrado');
+
+                cpfInput.setAttribute('aria-label', 'Digite CPF, Email ou Nome para filtrar a lista');
             }
             
             console.log('✅ Event listeners inicializados');
