@@ -1502,6 +1502,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             text_color,
             card_color,
             decorative_bar_color,
+            separator_line_color,
             is_active, 
             display_order,
             is_listed,

@@ -518,9 +518,10 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             // IMPORTANTE: Incluir portaria_slug e cadastro_slug
             portaria_slug,
             cadastro_slug,
-            // IMPORTANTE: Incluir decorative_bar_color e card_color
+            // IMPORTANTE: Incluir decorative_bar_color, card_color e separator_line_color
             decorative_bar_color,
-            card_color
+            card_color,
+            separator_line_color
         } = req.body;
         
         // LOG DEBUG: Verificar se decorative_bar_color está sendo recebido
