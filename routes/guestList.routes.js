@@ -269,7 +269,7 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
             SELECT column_name 
             FROM information_schema.columns 
             WHERE table_name = 'guest_list_items' 
-            AND column_name IN ('form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'enable_whatsapp', 'enable_guest_list_submit', 'card_color', 'decorative_bar_color')
+            AND column_name IN ('form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'enable_whatsapp', 'enable_guest_list_submit', 'card_color', 'decorative_bar_color', 'separator_line_color')
         `);
         const hasFormLogoUrl = logoColumnsCheck.rows.some(r => r.column_name === 'form_logo_url');
         const hasButtonLogoUrl = logoColumnsCheck.rows.some(r => r.column_name === 'button_logo_url');
@@ -323,6 +323,8 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
         if (hasEnableGuestListSubmit) selectFields += ', gli.enable_guest_list_submit';
         if (hasCardColor) selectFields += ', gli.card_color';
         if (hasDecorativeBarColor) selectFields += ', gli.decorative_bar_color';
+        const hasSeparatorLineColor = logoColumnsCheck.rows.some(r => r.column_name === 'separator_line_color');
+        if (hasSeparatorLineColor) selectFields += ', gli.separator_line_color';
         
         // Buscar lista de convidados associada
         let result = await client.query(`
@@ -650,6 +652,48 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 logger.warn('Erro ao verificar coluna card_color:', err.message);
             }
         }
+        // IMPORTANTE: Verificar se a coluna decorative_bar_color existe antes de tentar atualizar
+        if (decorative_bar_color !== undefined) {
+            try {
+                const columnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND column_name = 'decorative_bar_color'
+                `);
+                
+                if (columnCheck.rows.length > 0) {
+                    guestListUpdateFields.push(`decorative_bar_color = $${guestListParamIndex++}`);
+                    guestListUpdateValues.push(decorative_bar_color || null);
+                    logger.info(`🎨 [GUEST_LIST] Salvando decorative_bar_color: "${decorative_bar_color || 'null'}"`);
+                } else {
+                    logger.warn('Coluna decorative_bar_color não existe na tabela guest_list_items.');
+                }
+            } catch (err) {
+                logger.warn('Erro ao verificar coluna decorative_bar_color:', err.message);
+            }
+        }
+        // IMPORTANTE: Verificar se a coluna separator_line_color existe antes de tentar atualizar
+        if (separator_line_color !== undefined) {
+            try {
+                const columnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND column_name = 'separator_line_color'
+                `);
+                
+                if (columnCheck.rows.length > 0) {
+                    guestListUpdateFields.push(`separator_line_color = $${guestListParamIndex++}`);
+                    guestListUpdateValues.push(separator_line_color || '#e8eaed');
+                    logger.info(`🎨 [GUEST_LIST] Salvando separator_line_color: "${separator_line_color || '#e8eaed'}"`);
+                } else {
+                    logger.warn('Coluna separator_line_color não existe na tabela guest_list_items.');
+                }
+            } catch (err) {
+                logger.warn('Erro ao verificar coluna separator_line_color:', err.message);
+            }
+        }
         if (header_image_url !== undefined) {
             guestListUpdateFields.push(`header_image_url = $${guestListParamIndex++}`);
             guestListUpdateValues.push(header_image_url || null);
@@ -917,13 +961,13 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             }
         }
         
-        // IMPORTANTE: Também atualizar enable_whatsapp, enable_guest_list_submit, campos de logo, form_title, form_fields, card_color e decorative_bar_color em digital_form_items
+        // IMPORTANTE: Também atualizar enable_whatsapp, enable_guest_list_submit, campos de logo, form_title, form_fields, card_color, decorative_bar_color e separator_line_color em digital_form_items
         // Isso garante que a página pública tenha acesso a esses valores
         if (enable_whatsapp !== undefined || enable_guest_list_submit !== undefined || 
             form_logo_url !== undefined || button_logo_url !== undefined || 
             button_logo_size !== undefined || show_logo_corner !== undefined ||
             event_title !== undefined || custom_form_fields !== undefined ||
-            decorative_bar_color !== undefined || card_color !== undefined) {
+            decorative_bar_color !== undefined || card_color !== undefined || separator_line_color !== undefined) {
             const digitalFormUpdateFields = [];
             const digitalFormUpdateValues = [];
             let digitalFormParamIndex = 1;

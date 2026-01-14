@@ -1915,6 +1915,21 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                     console.warn(`⚠️ [DECORATIVE_BAR_COLOR] Coluna decorative_bar_color não existe na tabela digital_form_items`);
                 }
             }
+            // Verificar se coluna separator_line_color existe antes de atualizar
+            if (separator_line_color !== undefined) {
+                const separatorLineColorCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'separator_line_color'
+                `);
+                if (separatorLineColorCheck.rows.length > 0) {
+                    updateFormFields.push(`separator_line_color = $${formParamIndex++}`);
+                    updateFormValues.push(separator_line_color || '#e8eaed');
+                    console.log(`🎨 [SEPARATOR_LINE_COLOR] Valor a ser salvo: "${separator_line_color || '#e8eaed'}"`);
+                } else {
+                    console.warn(`⚠️ [SEPARATOR_LINE_COLOR] Coluna separator_line_color não existe na tabela digital_form_items`);
+                }
+            }
             // Verificar se coluna pastor_button_name existe antes de atualizar
             if (pastor_button_name !== undefined) {
                 const pastorButtonNameCheck = await client.query(`
