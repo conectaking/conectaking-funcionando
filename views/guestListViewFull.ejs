@@ -1226,7 +1226,39 @@
                 
                 console.log('📡 Resposta da API:', response.status, response.statusText);
                 
-                // Tentar parsear JSON da resposta
+                // Remover loading
+                if (loadingModal && loadingModal.parentElement) {
+                    loadingModal.remove();
+                }
+                
+                // Verificar status HTTP ANTES de tentar parsear JSON
+                if (!response.ok) {
+                    // Tentar obter mensagem de erro do JSON
+                    let errorData = null;
+                    try {
+                        const text = await response.text();
+                        console.error('❌ Resposta de erro (texto):', text);
+                        try {
+                            errorData = JSON.parse(text);
+                        } catch (e) {
+                            // Se não for JSON, usar o texto como mensagem
+                            errorData = { message: text || `Erro HTTP ${response.status}` };
+                        }
+                    } catch (e) {
+                        errorData = { message: `Erro HTTP ${response.status}` };
+                    }
+                    
+                    const errorMessage = errorData?.message || errorData?.error || `Erro HTTP ${response.status}`;
+                    console.error('❌ Erro na API:', response.status, errorMessage);
+                    
+                    // Criar erro com informações do status
+                    const error = new Error(errorMessage);
+                    error.status = response.status;
+                    error.data = errorData;
+                    throw error;
+                }
+                
+                // Tentar parsear JSON da resposta (só se response.ok for true)
                 let data;
                 try {
                     data = await response.json();
@@ -1235,16 +1267,6 @@
                     const text = await response.text();
                     console.error('📄 Resposta em texto:', text);
                     throw new Error(`Erro ao processar resposta do servidor (status: ${response.status})`);
-                }
-                
-                // Remover loading
-                if (loadingModal && loadingModal.parentElement) {
-                    loadingModal.remove();
-                }
-                
-                if (!response.ok) {
-                    console.error('❌ Erro na API:', data);
-                    throw new Error(data.message || data.error || `Erro HTTP: ${response.status}`);
                 }
                 
                 if (data.success) {
@@ -1275,27 +1297,37 @@
                 let errorMessage = 'Erro ao processar QR Code. Tente novamente.';
                 let errorDetails = '';
                 
-                if (error.message) {
-                    if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
-                        errorMessage = '❌ Erro de conexão';
-                        errorDetails = 'Verifique sua internet e tente novamente.';
-                    } else if (error.message.includes('404') || error.message.includes('não encontrado') || error.message.includes('não encontrado')) {
-                        errorMessage = '❌ QR Code não encontrado';
-                        errorDetails = 'Este QR Code não está cadastrado no sistema. Verifique se o QR Code está correto ou se o convidado foi cadastrado.';
-                    } else if (error.message.includes('400') || error.message.includes('inválido') || error.message.includes('expirado')) {
-                        errorMessage = '❌ QR Code inválido ou expirado';
-                        errorDetails = 'Este QR Code não pode ser usado. Verifique se o QR Code está correto ou se ainda é válido.';
-                    } else if (error.message.includes('500') || error.message.includes('servidor')) {
-                        errorMessage = '❌ Erro no servidor';
-                        errorDetails = 'Tente novamente mais tarde. Se o problema persistir, entre em contato com o suporte.';
-                    } else {
-                        errorMessage = `❌ Erro: ${error.message}`;
-                        errorDetails = 'Tente escanear o QR Code novamente.';
-                    }
+                // Verificar status HTTP primeiro (mais confiável)
+                const status = error.status || (error.message.match(/HTTP (\d+)/) ? parseInt(error.message.match(/HTTP (\d+)/)[1]) : null);
+                const errorMsg = error.message || '';
+                const errorData = error.data || {};
+                
+                console.log('🔍 Analisando erro:', { status, errorMsg, errorData });
+                
+                if (status === 404 || errorMsg.toLowerCase().includes('não encontrado') || errorMsg.toLowerCase().includes('not found')) {
+                    errorMessage = '❌ QR Code não encontrado';
+                    errorDetails = errorData.message || 'Este QR Code não está cadastrado no sistema. Verifique se o QR Code está correto ou se o convidado foi cadastrado.';
+                } else if (status === 400 || errorMsg.toLowerCase().includes('inválido') || errorMsg.toLowerCase().includes('invalid') || errorMsg.toLowerCase().includes('expirado') || errorMsg.toLowerCase().includes('expired')) {
+                    errorMessage = '❌ QR Code inválido ou expirado';
+                    errorDetails = errorData.message || 'Este QR Code não pode ser usado. Verifique se o QR Code está correto ou se ainda é válido.';
+                } else if (status === 500 || errorMsg.toLowerCase().includes('servidor') || errorMsg.toLowerCase().includes('server')) {
+                    errorMessage = '❌ Erro no servidor';
+                    errorDetails = 'Tente novamente mais tarde. Se o problema persistir, entre em contato com o suporte.';
+                } else if (errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+                    errorMessage = '❌ Erro de conexão';
+                    errorDetails = 'Verifique sua internet e tente novamente.';
+                } else if (errorData.message) {
+                    // Usar mensagem do servidor se disponível
+                    errorMessage = `❌ ${errorData.message}`;
+                    errorDetails = 'Tente escanear o QR Code novamente.';
+                } else if (errorMsg) {
+                    errorMessage = `❌ ${errorMsg}`;
+                    errorDetails = 'Tente escanear o QR Code novamente.';
                 }
                 
                 // Mostrar alerta com mensagem clara
                 const fullMessage = errorDetails ? `${errorMessage}\n\n${errorDetails}` : errorMessage;
+                console.log('📢 Exibindo mensagem de erro:', fullMessage);
                 alert(fullMessage);
                 
                 // Resetar flags para permitir nova tentativa
