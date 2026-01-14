@@ -422,6 +422,13 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         
         const guestList = listResult.rows[0];
         
+        // Garantir que campos opcionais existam com valores padrão
+        if (!guestList.primary_color) guestList.primary_color = '#FFC700';
+        if (!guestList.secondary_color) guestList.secondary_color = '#FFB700';
+        if (!guestList.text_color) guestList.text_color = '#ECECEC';
+        if (!guestList.background_color) guestList.background_color = '#0D0D0F';
+        if (guestList.background_opacity === null || guestList.background_opacity === undefined) guestList.background_opacity = 1.0;
+        
         // Parsear custom_form_fields se for string
         if (guestList.custom_form_fields && typeof guestList.custom_form_fields === 'string') {
             try {
@@ -469,28 +476,35 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         `, [guestList.id]);
         
         // Separar por status para as abas específicas
-        const registeredResult = { rows: allGuestsResult.rows.filter(g => g.status === 'registered') };
-        const confirmedResult = { rows: allGuestsResult.rows.filter(g => g.status === 'confirmed') };
-        const checkedInResult = { rows: allGuestsResult.rows.filter(g => g.status === 'checked_in') };
+        const registeredResult = { rows: (allGuestsResult.rows || []).filter(g => g.status === 'registered') };
+        const confirmedResult = { rows: (allGuestsResult.rows || []).filter(g => g.status === 'confirmed') };
+        const checkedInResult = { rows: (allGuestsResult.rows || []).filter(g => g.status === 'checked_in') };
         
         // Para a aba "Cadastrados" (registered), usar TODOS os convidados
-        const registeredGuests = allGuestsResult.rows;
+        const registeredGuests = allGuestsResult.rows || [];
+        
+        // Garantir que formFields seja sempre um array
+        if (!Array.isArray(formFields)) {
+            formFields = [];
+        }
         
         res.render('guestListViewFull', {
             guestList,
             registeredGuests: registeredGuests, // TODOS os convidados (para aba Cadastrados)
-            confirmedGuests: confirmedResult.rows,
-            checkedInGuests: checkedInResult.rows,
-            notArrivedGuests: registeredResult.rows, // Quem não chegou (status registered)
+            confirmedGuests: confirmedResult.rows || [],
+            checkedInGuests: checkedInResult.rows || [],
+            notArrivedGuests: registeredResult.rows || [], // Quem não chegou (status registered)
             token: token,
             profileItemId: guestList.profile_item_id,
             formFields: formFields // Campos do formulário para mapear labels
         });
     } catch (error) {
         logger.error('Erro ao carregar visualização completa:', error);
-        res.status(500).render('error', {
-            message: 'Erro ao carregar página',
-            title: 'Erro'
+        logger.error('Stack trace:', error.stack);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor',
+            error: process.env.NODE_ENV !== 'production' ? error.message : undefined
         });
     } finally {
         client.release();
