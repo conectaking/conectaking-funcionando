@@ -2113,6 +2113,134 @@ router.get('/public/register/:token', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * DELETE /api/guest-lists/:id/guests - Excluir todos os convidados de uma lista
+ */
+router.delete('/:id/guests', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const listId = parseInt(req.params.id, 10);
+        
+        if (isNaN(listId)) {
+            return res.status(400).json({ message: 'ID da lista inválido' });
+        }
+        
+        // Verificar se a lista pertence ao usuário
+        let checkResult = await client.query(`
+            SELECT gli.id as guest_list_item_id
+            FROM profile_items pi
+            INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+            WHERE pi.id = $1 AND pi.user_id = $2
+        `, [listId, userId]);
+        
+        // Se não encontrar, tentar buscar pelo id da guest_list_items
+        if (checkResult.rows.length === 0) {
+            checkResult = await client.query(`
+                SELECT gli.id as guest_list_item_id
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                WHERE gli.id = $1 AND pi.user_id = $2
+            `, [listId, userId]);
+        }
+        
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Lista não encontrada' });
+        }
+        
+        const guestListItemId = checkResult.rows[0].guest_list_item_id;
+        
+        // Excluir todos os convidados da lista
+        const deleteResult = await client.query(`
+            DELETE FROM guests WHERE guest_list_id = $1
+        `, [guestListItemId]);
+        
+        logger.info(`✅ Todos os convidados da lista ${listId} foram excluídos`);
+        
+        res.json({ 
+            success: true, 
+            message: 'Todos os convidados foram excluídos com sucesso',
+            deleted_count: deleteResult.rowCount || 0
+        });
+    } catch (error) {
+        logger.error('Erro ao excluir todos os convidados:', error);
+        res.status(500).json({ message: 'Erro ao excluir convidados', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
+ * PUT /api/guest-lists/:id/reset-tokens - Redefinir tokens da lista (registration, confirmation, public_view)
+ */
+router.put('/:id/reset-tokens', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const listId = parseInt(req.params.id, 10);
+        
+        if (isNaN(listId)) {
+            return res.status(400).json({ message: 'ID da lista inválido' });
+        }
+        
+        // Verificar se a lista pertence ao usuário
+        let checkResult = await client.query(`
+            SELECT gli.id as guest_list_item_id
+            FROM profile_items pi
+            INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+            WHERE pi.id = $1 AND pi.user_id = $2
+        `, [listId, userId]);
+        
+        // Se não encontrar, tentar buscar pelo id da guest_list_items
+        if (checkResult.rows.length === 0) {
+            checkResult = await client.query(`
+                SELECT gli.id as guest_list_item_id
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                WHERE gli.id = $1 AND pi.user_id = $2
+            `, [listId, userId]);
+        }
+        
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Lista não encontrada' });
+        }
+        
+        const guestListItemId = checkResult.rows[0].guest_list_item_id;
+        
+        // Gerar novos tokens
+        const newRegistrationToken = crypto.randomBytes(16).toString('hex');
+        const newConfirmationToken = crypto.randomBytes(16).toString('hex');
+        const newPublicViewToken = crypto.randomBytes(16).toString('hex');
+        
+        // Atualizar tokens na tabela guest_list_items
+        await client.query(`
+            UPDATE guest_list_items 
+            SET registration_token = $1, 
+                confirmation_token = $2, 
+                public_view_token = $3,
+                updated_at = NOW()
+            WHERE id = $4
+        `, [newRegistrationToken, newConfirmationToken, newPublicViewToken, guestListItemId]);
+        
+        logger.info(`✅ Tokens da lista ${listId} foram redefinidos`);
+        
+        res.json({ 
+            success: true, 
+            message: 'Tokens redefinidos com sucesso',
+            tokens: {
+                registration_token: newRegistrationToken,
+                confirmation_token: newConfirmationToken,
+                public_view_token: newPublicViewToken
+            }
+        });
+    } catch (error) {
+        logger.error('Erro ao redefinir tokens:', error);
+        res.status(500).json({ message: 'Erro ao redefinir tokens', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
  * DELETE /api/guest-lists/:id - Deletar lista de convidados
  */
 router.delete('/:id', protectUser, asyncHandler(async (req, res) => {
