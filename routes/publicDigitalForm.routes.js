@@ -1116,7 +1116,7 @@ router.post('/:slug/form/:itemId/submit',
                         itemId: itemIdInt, 
                         guestListItemId,
                         guestId: savedGuestId,
-                        qrToken: savedQrToken
+                        qrToken: savedQrToken ? savedQrToken.substring(0, 10) + '...' : 'null'
                     });
                     
                     // Armazenar guestId e qrToken para passar para a página de sucesso
@@ -1427,8 +1427,9 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
                 if (isNaN(responseIdInt)) {
                     logger.warn('⚠️ response_id inválido na página de sucesso:', response_id);
                 } else {
+                    // Buscar resposta incluindo guest_id se existir
                     const responseRes = await client.query(
-                        'SELECT response_data, responder_name, responder_email, responder_phone, submitted_at FROM digital_form_responses WHERE id = $1',
+                        'SELECT response_data, responder_name, responder_email, responder_phone, submitted_at, guest_id FROM digital_form_responses WHERE id = $1',
                         [responseIdInt]
                     );
                     if (responseRes.rows.length > 0) {
@@ -1516,6 +1517,7 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
                             logger.warn('Erro ao buscar convidado e QR token:', err);
                         }
                     }
+                    }
                 }
             } catch (err) {
                 logger.warn('Erro ao buscar dados da resposta:', err);
@@ -1530,6 +1532,15 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
         } else if (formData.enable_whatsapp !== false) {
             successMessage = 'Formulário enviado com sucesso! Verifique o WhatsApp para continuar o atendimento.';
         }
+        
+        // Log para debug
+        logger.info('📋 [SUCCESS] Renderizando página de sucesso:', {
+            response_id: response_id,
+            enableGuestListSubmitBool,
+            guestId: guestId || null,
+            qrToken: qrToken ? qrToken.substring(0, 10) + '...' : null,
+            hasQrToken: !!qrToken
+        });
         
         res.render('formSuccess', {
             message: successMessage,
