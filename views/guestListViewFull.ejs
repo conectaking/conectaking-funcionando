@@ -932,6 +932,17 @@
                         }
                     ).catch((err) => {
                         console.error('❌ Erro ao iniciar scanner:', err);
+                        
+                        // Limpar scanner se foi criado
+                        if (window.qrCodeScanner) {
+                            try {
+                                window.qrCodeScanner.clear();
+                            } catch (clearErr) {
+                                console.warn('Erro ao limpar scanner após falha:', clearErr);
+                            }
+                            window.qrCodeScanner = null;
+                        }
+                        
                         let errorMsg = 'Erro ao acessar a câmera.';
                         const errMessage = err?.message || err?.toString() || '';
                         const errName = err?.name || '';
@@ -946,11 +957,26 @@
                             errorMsg = 'Erro: ' + errMessage;
                         }
                         alert(errorMsg);
+                        
+                        // Fechar scanner e resetar flags para permitir nova tentativa
                         window.closeQRScanner();
                     });
                 } catch (err) {
                     console.error('❌ Erro ao criar scanner:', err);
+                    
+                    // Limpar scanner se foi criado
+                    if (window.qrCodeScanner) {
+                        try {
+                            window.qrCodeScanner.clear();
+                        } catch (clearErr) {
+                            console.warn('Erro ao limpar scanner após exceção:', clearErr);
+                        }
+                        window.qrCodeScanner = null;
+                    }
+                    
                     alert('Erro ao inicializar scanner: ' + (err.message || 'Erro desconhecido') + '. Tente recarregar a página.');
+                    
+                    // Fechar scanner e resetar flags
                     window.closeQRScanner();
                 }
             };
@@ -1098,25 +1124,50 @@
         
         // Função para fechar o scanner (definir como global imediatamente)
         window.closeQRScanner = function() {
+            // Parar scanner primeiro
             if (window.qrCodeScanner) {
                 window.qrCodeScanner.stop().then(() => {
-                    window.qrCodeScanner.clear();
+                    try {
+                        window.qrCodeScanner.clear();
+                    } catch (clearErr) {
+                        console.warn('Erro ao limpar scanner:', clearErr);
+                    }
                 }).catch((err) => {
-                    console.error('Erro ao parar scanner:', err);
+                    // Ignorar erros de "not running" - isso é esperado
+                    const errorMsg = err?.message || err?.toString() || '';
+                    if (!errorMsg.includes('not running') && !errorMsg.includes('not paused')) {
+                        console.error('Erro ao parar scanner:', err);
+                    }
+                    // Tentar limpar mesmo se parar falhou
+                    try {
+                        if (window.qrCodeScanner && window.qrCodeScanner.clear) {
+                            window.qrCodeScanner.clear();
+                        }
+                    } catch (clearErr) {
+                        console.warn('Erro ao limpar scanner após falha ao parar:', clearErr);
+                    }
                 });
                 window.qrCodeScanner = null;
             }
+            
+            // Remover modal
             if (window.qrScannerModal) {
-                window.qrScannerModal.remove();
+                try {
+                    window.qrScannerModal.remove();
+                } catch (removeErr) {
+                    console.warn('Erro ao remover modal:', removeErr);
+                }
                 window.qrScannerModal = null;
             }
-            // Resetar flags
+            
+            // Resetar flags SEMPRE (importante para permitir reabertura)
             window.isScanning = false;
             window.isInitializingScanner = false;
         };
         
         // Função para processar QR Code escaneado (definir como global imediatamente)
         window.handleQRCodeScanned = async function(qrToken) {
+            let loadingModal = null;
             try {
                 // O QR Code contém apenas o token (hex de 64 caracteres)
                 // Extrair token do QR Code (pode ser uma URL completa ou apenas o token)
@@ -1134,14 +1185,15 @@
                 // Validar token (deve ter pelo menos 32 caracteres hexadecimais)
                 if (!token || token.length < 32) {
                     alert('❌ QR Code inválido. Verifique se o QR Code está correto.');
+                    // Não fechar o scanner se o token for inválido, permitir nova tentativa
                     return;
                 }
                 
-                // Fechar scanner
+                // Fechar scanner ANTES de processar (para evitar múltiplas leituras)
                 window.closeQRScanner();
                 
                 // Mostrar loading
-                const loadingModal = document.createElement('div');
+                loadingModal = document.createElement('div');
                 loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;';
                 loadingModal.innerHTML = '<div style="color: white; font-size: 24px; font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Confirmando presença...</div>';
                 document.body.appendChild(loadingModal);
@@ -1154,8 +1206,16 @@
                     }
                 });
                 
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Erro ao processar requisição' }));
+                    throw new Error(errorData.message || `Erro HTTP: ${response.status}`);
+                }
+                
                 const data = await response.json();
-                loadingModal.remove();
+                
+                if (loadingModal && loadingModal.parentElement) {
+                    loadingModal.remove();
+                }
                 
                 if (data.success) {
                     alert(`✅ ${data.message}\n\nNome: ${data.guest.name}`);
@@ -1166,7 +1226,29 @@
                 }
             } catch (error) {
                 console.error('Erro ao processar QR Code:', error);
-                alert('❌ Erro ao processar QR Code. Tente novamente.');
+                
+                // Remover loading se ainda estiver visível
+                if (loadingModal && loadingModal.parentElement) {
+                    loadingModal.remove();
+                }
+                
+                // Mostrar mensagem de erro mais específica
+                let errorMessage = 'Erro ao processar QR Code. Tente novamente.';
+                if (error.message) {
+                    if (error.message.includes('fetch') || error.message.includes('network')) {
+                        errorMessage = '❌ Erro de conexão. Verifique sua internet e tente novamente.';
+                    } else if (error.message.includes('HTTP')) {
+                        errorMessage = `❌ Erro no servidor: ${error.message}`;
+                    } else {
+                        errorMessage = `❌ ${error.message}`;
+                    }
+                }
+                
+                alert(errorMessage);
+                
+                // Resetar flags para permitir nova tentativa
+                window.isScanning = false;
+                window.isInitializingScanner = false;
             }
         };
         
