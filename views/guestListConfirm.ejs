@@ -189,7 +189,10 @@
             border: 1px solid rgba(211, 47, 47, 0.3);
             border-radius: 12px;
             display: flex;
-            justify-content: flex-end;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
         }
         
         .alert {
@@ -299,9 +302,20 @@
         
         <% if (!viewOnly) { %>
         <div class="admin-actions">
-            <button type="button" class="btn-delete" id="delete-all-btn">
-                <i class="fas fa-trash-alt"></i> Excluir Todos os Convidados
-            </button>
+            <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #ECECEC; font-weight: 600;">
+                    <input type="checkbox" id="select-all-checkbox" style="width: 20px; height: 20px; accent-color: #FFC700; cursor: pointer;">
+                    Selecionar Todos
+                </label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button type="button" class="btn-delete" id="delete-selected-btn" style="display: none;">
+                    <i class="fas fa-trash-alt"></i> Excluir Selecionados (<span id="selected-count">0</span>)
+                </button>
+                <button type="button" class="btn-delete" id="delete-all-btn">
+                    <i class="fas fa-trash"></i> Excluir Todos
+                </button>
+            </div>
         </div>
         <% } %>
         
@@ -375,6 +389,135 @@
         const token = '<%= token %>';
         const profileItemId = <%= typeof profileItemId !== 'undefined' ? profileItemId : 'null' %>;
         
+        // ==========================================================
+        // FUNCIONALIDADES DE EXCLUSÃO E SELEÇÃO MÚLTIPLA
+        // ==========================================================
+        
+        // Função para atualizar contador de selecionados
+        function updateSelectedCount() {
+            if (!form) return;
+            
+            const selectedCheckboxes = form.querySelectorAll('input[name="guest_ids"]:checked:not(:disabled)');
+            const selectedCount = selectedCheckboxes.length;
+            const selectedCountSpan = document.getElementById('selected-count');
+            const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            
+            if (selectedCountSpan) {
+                selectedCountSpan.textContent = selectedCount;
+            }
+            
+            if (deleteSelectedBtn) {
+                if (selectedCount > 0) {
+                    deleteSelectedBtn.style.display = 'inline-flex';
+                } else {
+                    deleteSelectedBtn.style.display = 'none';
+                }
+            }
+            
+            // Atualizar checkbox "Selecionar Todos"
+            if (selectAllCheckbox && form) {
+                const allCheckboxes = form.querySelectorAll('input[name="guest_ids"]:not(:disabled)');
+                const allChecked = allCheckboxes.length > 0 && selectedCount === allCheckboxes.length;
+                selectAllCheckbox.checked = allChecked;
+            }
+        }
+        
+        // Event listener para checkboxes individuais
+        if (form) {
+            form.addEventListener('change', function(e) {
+                if (e.target.name === 'guest_ids') {
+                    updateSelectedCount();
+                }
+            });
+        }
+        
+        // Event listener para "Selecionar Todos"
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        if (selectAllCheckbox && form) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+                const checkboxes = form.querySelectorAll('input[name="guest_ids"]:not(:disabled)');
+                checkboxes.forEach(cb => cb.checked = isChecked);
+                updateSelectedCount();
+            });
+        }
+        
+        // Função para excluir selecionados
+        const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+        if (deleteSelectedBtn && profileItemId) {
+            deleteSelectedBtn.addEventListener('click', async function() {
+                if (!form) return;
+                
+                const selectedCheckboxes = form.querySelectorAll('input[name="guest_ids"]:checked:not(:disabled)');
+                const guestIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+                
+                if (guestIds.length === 0) {
+                    alert('Selecione pelo menos um convidado para excluir');
+                    return;
+                }
+                
+                if (!confirm(`Tem certeza que deseja excluir ${guestIds.length} convidado(s) selecionado(s)? Esta ação não pode ser desfeita.`)) {
+                    return;
+                }
+                
+                deleteSelectedBtn.disabled = true;
+                deleteSelectedBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+                
+                try {
+                    // Excluir um por um
+                    const deletePromises = guestIds.map(guestId => 
+                        fetch(`/api/guest-lists/${profileItemId}/guests/${guestId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                    );
+                    
+                    const results = await Promise.all(deletePromises);
+                    const jsonResults = await Promise.all(results.map(r => r.json()));
+                    
+                    // Verificar se todas foram bem-sucedidas
+                    const allSuccess = jsonResults.every(r => r.success !== false);
+                    
+                    if (allSuccess) {
+                        // Remover itens da lista
+                        selectedCheckboxes.forEach(cb => {
+                            const guestItem = cb.closest('.guest-item');
+                            if (guestItem) {
+                                guestItem.style.transition = 'opacity 0.3s';
+                                guestItem.style.opacity = '0';
+                                setTimeout(() => {
+                                    guestItem.remove();
+                                    updateSelectedCount();
+                                    // Atualizar contador total
+                                    const totalCount = parseInt(document.getElementById('total-count').textContent);
+                                    document.getElementById('total-count').textContent = Math.max(0, totalCount - 1);
+                                }, 300);
+                            }
+                        });
+                        
+                        // Recarregar página após um pequeno delay se não houver mais itens
+                        setTimeout(() => {
+                            const remainingItems = document.querySelectorAll('.guest-item');
+                            if (remainingItems.length === 0) {
+                                location.reload();
+                            }
+                        }, 400);
+                    } else {
+                        throw new Error('Alguns convidados não puderam ser excluídos');
+                    }
+                } catch (error) {
+                    alert('Erro ao excluir convidados: ' + error.message);
+                } finally {
+                    deleteSelectedBtn.disabled = false;
+                    deleteSelectedBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Selecionados (<span id="selected-count">0</span>)';
+                    updateSelectedCount();
+                }
+            });
+        }
+        
         // Função para excluir todos os convidados
         const deleteAllBtn = document.getElementById('delete-all-btn');
         if (deleteAllBtn && profileItemId) {
@@ -405,9 +548,16 @@
                 } catch (error) {
                     alert('Erro ao excluir convidados: ' + error.message);
                     deleteAllBtn.disabled = false;
-                    deleteAllBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Todos os Convidados';
+                    deleteAllBtn.innerHTML = '<i class="fas fa-trash"></i> Excluir Todos';
                 }
             });
+        }
+        
+        // Inicializar contador ao carregar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updateSelectedCount);
+        } else {
+            updateSelectedCount();
         }
         
         // Função para excluir convidado individual
@@ -449,6 +599,7 @@
                                 location.reload();
                             }
                         }, 300);
+                        updateSelectedCount();
                     } else {
                         throw new Error(result.message || 'Erro ao excluir convidado');
                     }
