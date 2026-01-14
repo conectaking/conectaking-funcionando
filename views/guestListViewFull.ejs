@@ -655,6 +655,16 @@
             // Função para listar câmeras disponíveis
             const listCameras = async () => {
                 try {
+                    // IMPORTANTE: Primeiro solicitar permissão de câmera para obter labels (especialmente no mobile)
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        // Parar o stream imediatamente, só precisamos da permissão
+                        stream.getTracks().forEach(track => track.stop());
+                    } catch (permErr) {
+                        console.warn('⚠️ Permissão de câmera não concedida ou erro ao solicitar:', permErr);
+                        // Continuar mesmo sem permissão, mas pode não ter labels
+                    }
+                    
                     const devices = await navigator.mediaDevices.enumerateDevices();
                     const videoDevices = devices.filter(device => device.kind === 'videoinput');
                     console.log('📷 Câmeras disponíveis:', videoDevices.length);
@@ -682,11 +692,28 @@
                         return;
                     }
                     
+                    // Limpar qualquer scanner anterior antes de criar novo
+                    if (window.qrCodeScanner) {
+                        try {
+                            await window.qrCodeScanner.stop().catch(() => {});
+                            window.qrCodeScanner.clear();
+                        } catch (e) {
+                            console.warn('Erro ao limpar scanner anterior:', e);
+                        }
+                        window.qrCodeScanner = null;
+                    }
+                    
                     window.qrCodeScanner = new Html5Qrcode("qr-reader");
                     
                     console.log('📷 Iniciando scanner QR Code com câmera:', cameraIdOrConfig);
+                    
+                    // Normalizar o parâmetro da câmera (pode ser string deviceId ou objeto config)
+                    const cameraConfig = typeof cameraIdOrConfig === 'string' 
+                        ? cameraIdOrConfig 
+                        : (cameraIdOrConfig || { facingMode: "environment" });
+                    
                     window.qrCodeScanner.start(
-                        cameraIdOrConfig,
+                        cameraConfig,
                         {
                             fps: 10,
                             qrbox: { width: 250, height: 250 },

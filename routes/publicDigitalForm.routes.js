@@ -1416,6 +1416,10 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
         
         // Buscar dados completos da resposta se tiver response_id
         let responseData = null;
+        let qrToken = null;
+        let guestId = null;
+        let eventData = null;
+        
         if (response_id) {
             try {
                 const responseRes = await client.query(
@@ -1433,14 +1437,89 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
                         }
                     }
                 }
+                
+                // Buscar convidado associado a esta resposta (via guest_list_id e nome/email)
+                const enableGuestListSubmit = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
+                if (enableGuestListSubmit) {
+                    try {
+                        // Buscar guest_list_item_id para este profile_item_id
+                        const guestListItemRes = await client.query(
+                            'SELECT id FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
+                            [itemIdInt]
+                        );
+                        
+                        if (guestListItemRes.rows.length > 0) {
+                            const guestListItemId = guestListItemRes.rows[0].id;
+                            
+                            // Buscar o convidado mais recente associado a esta resposta (por nome ou email)
+                            let guestRes = null;
+                            if (responseData && responseData.responder_name) {
+                                guestRes = await client.query(
+                                    `SELECT id, qr_token FROM guests 
+                                     WHERE guest_list_id = $1 
+                                     AND (name = $2 OR email = $3)
+                                     ORDER BY created_at DESC LIMIT 1`,
+                                    [guestListItemId, responseData.responder_name, responseData.responder_email || responseData.responder_name]
+                                );
+                            } else if (responseData && responseData.response_data) {
+                                // Tentar buscar por nome no response_data (buscar em qualquer chave que possa conter o nome)
+                                let nameFromData = null;
+                                if (responseData.response_data.name) {
+                                    nameFromData = responseData.response_data.name;
+                                } else if (responseData.response_data.nome) {
+                                    nameFromData = responseData.response_data.nome;
+                                } else {
+                                    // Tentar encontrar qualquer campo que possa ser o nome
+                                    const allValues = Object.values(responseData.response_data);
+                                    for (const value of allValues) {
+                                        if (typeof value === 'string' && value.trim().length > 0 && value.trim().length < 100) {
+                                            nameFromData = value.trim();
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                if (nameFromData && typeof nameFromData === 'string') {
+                                    guestRes = await client.query(
+                                        `SELECT id, qr_token FROM guests 
+                                         WHERE guest_list_id = $1 
+                                         AND (name = $2 OR name ILIKE $2)
+                                         ORDER BY created_at DESC LIMIT 1`,
+                                        [guestListItemId, nameFromData]
+                                    );
+                                }
+                            }
+                            
+                            if (guestRes && guestRes.rows.length > 0) {
+                                guestId = guestRes.rows[0].id;
+                                qrToken = guestRes.rows[0].qr_token;
+                                
+                                // Buscar dados do evento
+                                const eventRes = await client.query(
+                                    `SELECT event_title, event_date, event_location, event_address 
+                                     FROM guest_list_items 
+                                     WHERE id = $1`,
+                                    [guestListItemId]
+                                );
+                                
+                                if (eventRes.rows.length > 0) {
+                                    eventData = eventRes.rows[0];
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        logger.warn('Erro ao buscar convidado e QR token:', err);
+                    }
+                }
             } catch (err) {
                 logger.warn('Erro ao buscar dados da resposta:', err);
             }
         }
 
         // Determinar mensagem personalizada baseada no tipo de envio
+        const enableGuestListSubmitBool = formData.enable_guest_list_submit === true || formData.enable_guest_list_submit === 'true' || formData.enable_guest_list_submit === 1 || formData.enable_guest_list_submit === '1';
         let successMessage = 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.';
-        if (formData.enable_guest_list_submit === true) {
+        if (enableGuestListSubmitBool) {
             successMessage = 'Parabéns! Sua inscrição foi realizada com sucesso. Você foi adicionado à nossa lista de convidados.';
         } else if (formData.enable_whatsapp !== false) {
             successMessage = 'Formulário enviado com sucesso! Verifique o WhatsApp para continuar o atendimento.';
@@ -1452,7 +1531,12 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             formTitle: formData.form_title || 'Formulário',
             showWhatsAppInfo: formData.enable_whatsapp !== false && formData.whatsapp_number,
             whatsappNumber: formData.whatsapp_number,
-            showGuestListInfo: formData.enable_guest_list_submit === true,
+            showGuestListInfo: enableGuestListSubmitBool && qrToken,
+            guestId: guestId,
+            qrToken: qrToken,
+            eventTitle: eventData?.event_title || formData.form_title || 'Evento',
+            eventDate: eventData?.event_date || null,
+            eventAddress: eventData?.event_location || eventData?.event_address || null,
             formUrl: `/${slug}/form/${itemId}`,
             primaryColor: formData.primary_color || '#4A90E2',
             secondaryColor: formData.secondary_color || formData.primary_color || '#6BA3F0',

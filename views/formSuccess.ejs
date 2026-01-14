@@ -410,37 +410,57 @@
         
         <% if (showGuestListInfo && qrToken) { %>
         // Gerar QR Code
-        const qrToken = '<%= qrToken %>';
-        const eventTitle = '<%= eventTitle || "Evento" %>';
-        const eventDate = '<%= eventDate ? new Date(eventDate).toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : "" %>';
-        const eventAddress = '<%= eventAddress || "" %>';
-        const primaryColor = '<%= primaryColor || "#4A90E2" %>';
-        const secondaryColor = '<%= secondaryColor || "#6BA3F0" %>';
+        const qrToken = '<%- qrToken %>';
+        const eventTitle = '<%- typeof eventTitle !== 'undefined' ? eventTitle : "Evento" %>';
+        const eventDate = '<%- typeof eventDate !== 'undefined' && eventDate ? eventDate : "" %>';
+        const eventAddress = '<%- typeof eventAddress !== 'undefined' ? eventAddress : "" %>';
+        const primaryColor = '<%- typeof primaryColor !== 'undefined' ? primaryColor : "#4A90E2" %>';
+        const secondaryColor = '<%- typeof secondaryColor !== 'undefined' ? secondaryColor : "#6BA3F0" %>';
         
         // URL para confirmação via QR Code
         // O QR Code contém apenas o token, que será lido pelo scanner
         const qrCodeData = qrToken;
         
-        // Gerar QR Code no canvas
-        if (typeof QRCode !== 'undefined') {
-            const canvas = document.getElementById('qrcode-canvas');
-            if (canvas) {
-                QRCode.toCanvas(canvas, qrCodeData, {
-                    width: 300,
-                    margin: 2,
-                    color: {
-                        dark: '#000000',
-                        light: '#FFFFFF'
-                    }
-                }, function (error) {
-                    if (error) {
-                        console.error('Erro ao gerar QR Code:', error);
-                        canvas.parentElement.innerHTML = '<p style="color: red;">Erro ao gerar QR Code. Tente recarregar a página.</p>';
-                    } else {
-                        console.log('QR Code gerado com sucesso');
-                    }
-                });
+        // Função para gerar QR Code (aguarda DOM e biblioteca estarem prontos)
+        function generateQRCode() {
+            if (typeof QRCode === 'undefined') {
+                console.warn('Biblioteca QRCode ainda não carregou, aguardando...');
+                setTimeout(generateQRCode, 200);
+                return;
             }
+            
+            const canvas = document.getElementById('qrcode-canvas');
+            if (!canvas) {
+                console.warn('Canvas do QR Code não encontrado, aguardando DOM...');
+                setTimeout(generateQRCode, 200);
+                return;
+            }
+            
+            console.log('Gerando QR Code com token:', qrCodeData);
+            QRCode.toCanvas(canvas, qrCodeData, {
+                width: 300,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('Erro ao gerar QR Code:', error);
+                    canvas.parentElement.innerHTML = '<p style="color: red;">Erro ao gerar QR Code. Tente recarregar a página.</p>';
+                } else {
+                    console.log('QR Code gerado com sucesso');
+                }
+            });
+        }
+        
+        // Aguardar DOM e biblioteca estarem prontos
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(generateQRCode, 500); // Aguardar um pouco mais para garantir que a biblioteca carregou
+            });
+        } else {
+            setTimeout(generateQRCode, 500); // DOM já está pronto
         }
         
         // Função para mostrar preview do QR Code (Melhoria 5)
