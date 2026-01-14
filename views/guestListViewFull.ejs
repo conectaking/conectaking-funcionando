@@ -350,7 +350,7 @@
             </h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <!-- Botão Escanear QR Code -->
-                <button id="qr-scanner-btn" style="background: linear-gradient(135deg, #FFC700 0%, #FFB700 100%); color: #000; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.3);">
+                <button id="qr-scanner-btn" onclick="if(typeof window.openQRScanner==='function'){window.openQRScanner();}else{alert('Erro: Scanner não disponível. Recarregue a página.');}" style="background: linear-gradient(135deg, #FFC700 0%, #FFB700 100%); color: #000; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.3);">
                     <i class="fas fa-qrcode" style="font-size: 20px;"></i>
                     Ler QR Code
                 </button>
@@ -358,7 +358,7 @@
                 <!-- Busca por CPF -->
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="cpf-search-input" placeholder="Digite o CPF (apenas números)" style="flex: 1; padding: 16px; border-radius: 12px; background: #0D0D0F; border: 2px solid #2C2C2F; color: #ECECEC; font-size: 16px; font-weight: 600; letter-spacing: 2px;" maxlength="14" oninput="this.value = formatCPF(this.value)">
-                    <button id="cpf-search-btn" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3); white-space: nowrap;">
+                    <button id="cpf-search-btn" onclick="if(typeof window.confirmByCPF==='function'){window.confirmByCPF();}else{alert('Erro: Busca não disponível. Recarregue a página.');}" style="background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%); color: white; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3); white-space: nowrap;">
                         <i class="fas fa-search"></i> Buscar
                     </button>
                 </div>
@@ -1354,72 +1354,122 @@
             document.getElementById(`tab-${tabId}`).classList.add('active');
         }
         
-            // Permitir confirmar por CPF ao pressionar Enter e adicionar event listeners
-        document.addEventListener('DOMContentLoaded', function() {
+        // Função para inicializar event listeners (pode ser chamada imediatamente ou no DOMContentLoaded)
+        function initEventListeners() {
+            console.log('🔧 Inicializando event listeners...');
+            
             // Adicionar event listener ao botão QR Code
             const qrBtn = document.getElementById('qr-scanner-btn');
             if (qrBtn) {
-                qrBtn.addEventListener('click', function(e) {
+                console.log('✅ Botão QR Code encontrado');
+                // Remover listeners anteriores se existirem
+                const newQrBtn = qrBtn.cloneNode(true);
+                qrBtn.parentNode.replaceChild(newQrBtn, qrBtn);
+                
+                newQrBtn.addEventListener('click', function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 Botão QR Code clicado');
                     if (typeof window.openQRScanner === 'function') {
                         window.openQRScanner();
                     } else {
-                        console.error('openQRScanner não está definida');
+                        console.error('❌ openQRScanner não está definida');
                         alert('Erro: Scanner QR Code não está disponível. Recarregue a página.');
                     }
                 });
                 
                 // Navegação por teclado (acessibilidade)
-                qrBtn.addEventListener('keydown', function(e) {
+                newQrBtn.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        qrBtn.click();
+                        newQrBtn.click();
                     }
                 });
-                qrBtn.setAttribute('tabindex', '0');
-                qrBtn.setAttribute('role', 'button');
-                qrBtn.setAttribute('aria-label', 'Abrir scanner de QR Code');
+                newQrBtn.setAttribute('tabindex', '0');
+                newQrBtn.setAttribute('role', 'button');
+                newQrBtn.setAttribute('aria-label', 'Abrir scanner de QR Code');
+            } else {
+                console.error('❌ Botão QR Code não encontrado');
             }
             
             // Adicionar event listener ao botão CPF
             const cpfBtn = document.getElementById('cpf-search-btn');
             if (cpfBtn) {
-                cpfBtn.addEventListener('click', function(e) {
+                console.log('✅ Botão CPF encontrado');
+                // Remover listeners anteriores se existirem
+                const newCpfBtn = cpfBtn.cloneNode(true);
+                cpfBtn.parentNode.replaceChild(newCpfBtn, cpfBtn);
+                
+                newCpfBtn.addEventListener('click', function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 Botão CPF clicado');
                     if (typeof window.confirmByCPF === 'function') {
                         window.confirmByCPF();
                     } else {
-                        console.error('confirmByCPF não está definida');
+                        console.error('❌ confirmByCPF não está definida');
                         alert('Erro: Busca por CPF não está disponível. Recarregue a página.');
                     }
                 });
                 
                 // Navegação por teclado (acessibilidade)
-                cpfBtn.addEventListener('keydown', function(e) {
+                newCpfBtn.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        cpfBtn.click();
+                        newCpfBtn.click();
                     }
                 });
-                cpfBtn.setAttribute('tabindex', '0');
-                cpfBtn.setAttribute('role', 'button');
-                cpfBtn.setAttribute('aria-label', 'Buscar convidado por CPF');
+                newCpfBtn.setAttribute('tabindex', '0');
+                newCpfBtn.setAttribute('role', 'button');
+                newCpfBtn.setAttribute('aria-label', 'Buscar convidado por CPF');
+            } else {
+                console.error('❌ Botão CPF não encontrado');
             }
             
             // Permitir buscar ao pressionar Enter no campo de CPF
             const cpfInput = document.getElementById('cpf-search-input');
             if (cpfInput) {
+                console.log('✅ Input CPF encontrado');
                 cpfInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
+                        console.log('🔘 Enter pressionado no campo CPF');
                         if (typeof window.confirmByCPF === 'function') {
                             window.confirmByCPF();
                         }
                     }
                 });
+                
+                // Acessibilidade
+                cpfInput.setAttribute('aria-label', 'Digite o CPF para buscar convidado');
+                cpfInput.setAttribute('aria-describedby', 'cpf-help-text');
+            } else {
+                console.error('❌ Input CPF não encontrado');
             }
             
-            // Validação de CPF em tempo real e permitir confirmar ao pressionar Enter
+            console.log('✅ Event listeners inicializados');
+        }
+        
+        // Inicializar imediatamente se o DOM já estiver pronto, senão aguardar DOMContentLoaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initEventListeners);
+        } else {
+            // DOM já está pronto
+            initEventListeners();
+        }
+        
+        // Fallback: tentar novamente após um pequeno delay (para mobile)
+        setTimeout(function() {
+            const qrBtn = document.getElementById('qr-scanner-btn');
+            const cpfBtn = document.getElementById('cpf-search-btn');
+            if (qrBtn && !qrBtn.onclick) {
+                console.log('🔄 Reinicializando event listeners (fallback mobile)...');
+                initEventListeners();
+            }
+        }, 500);
+        
+        // Validação de CPF em tempo real (executar após DOM estar pronto)
+        function initCPFValidation() {
             const cpfInput = document.getElementById('cpf-search-input');
             if (cpfInput) {
                 // Validação visual em tempo real
@@ -1438,24 +1488,15 @@
                         this.style.boxShadow = 'none';
                     }
                 });
-                
-                cpfInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (typeof window.confirmByCPF === 'function') {
-                            window.confirmByCPF();
-                        } else {
-                            console.error('confirmByCPF não está definida');
-                            alert('Erro: Busca por CPF não está disponível. Recarregue a página.');
-                        }
-                    }
-                });
-                
-                // Acessibilidade
-                cpfInput.setAttribute('aria-label', 'Digite o CPF para buscar convidado');
-                cpfInput.setAttribute('aria-describedby', 'cpf-help-text');
             }
-        });
+        }
+        
+        // Inicializar validação de CPF
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCPFValidation);
+        } else {
+            initCPFValidation();
+        }
     </script>
 </body>
 </html>
