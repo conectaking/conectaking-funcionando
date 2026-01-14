@@ -325,7 +325,7 @@
             </div>
             
             <div style="background: rgba(255,255,255,0.9); border-radius: 16px; padding: 24px; margin-bottom: 20px; display: inline-block; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                <canvas id="qrcode-canvas" style="max-width: 300px; max-height: 300px; width: 100%; height: auto;"></canvas>
+                <div id="qrcode-container" style="display: inline-block;"></div>
             </div>
             
             <!-- Aviso Importante -->
@@ -460,29 +460,28 @@
                     return;
                 }
                 
-                const canvas = document.getElementById('qrcode-canvas');
-                if (!canvas) {
-                    console.warn('⚠️ Canvas do QR Code não encontrado, aguardando DOM...');
+                const container = document.getElementById('qrcode-container');
+                if (!container) {
+                    console.warn('⚠️ Container do QR Code não encontrado, aguardando DOM...');
                     setTimeout(generateQRCode, 200);
                     return;
                 }
                 
                 if (!qrCodeData || qrCodeData.trim() === '') {
                     console.error('❌ qrCodeData está vazio!');
-                    canvas.parentElement.innerHTML = '<p style="color: red; padding: 20px;">Erro: Dados do QR Code não encontrados.</p>';
+                    container.innerHTML = '<p style="color: red; padding: 20px;">Erro: Dados do QR Code não encontrados.</p>';
                     return;
                 }
                 
                 console.log('✅ Gerando QR Code com token:', qrCodeData.substring(0, 20) + '...');
                 
                 try {
-                    // Limpar canvas anterior se houver
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    // Limpar container anterior se houver
+                    container.innerHTML = '';
                     
                     // Usar qrcodejs que usa new QRCode() para criar o QR code
-                    // Esta biblioteca cria o QR code diretamente no canvas
-                    new QRCode(canvas, {
+                    // Esta biblioteca cria o QR code diretamente no container
+                    new QRCode(container, {
                         text: qrCodeData,
                         width: 300,
                         height: 300,
@@ -494,7 +493,7 @@
                     console.log('✅ QR Code gerado com sucesso!');
                 } catch (err) {
                     console.error('❌ Erro ao gerar QR Code:', err);
-                    canvas.parentElement.innerHTML = '<p style="color: red; padding: 20px;">Erro ao gerar QR Code: ' + (err.message || err.toString()) + '. Tente recarregar a página.</p>';
+                    container.innerHTML = '<p style="color: red; padding: 20px;">Erro ao gerar QR Code: ' + (err.message || err.toString()) + '. Tente recarregar a página.</p>';
                 }
             }
             
