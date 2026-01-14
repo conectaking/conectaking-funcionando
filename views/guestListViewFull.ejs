@@ -652,16 +652,9 @@
             let lastScanTime = 0;
             const SCAN_RATE_LIMIT_MS = 1000; // Máximo 1 scan por segundo
             
-            // Função para listar câmeras disponíveis (precisa de permissão primeiro)
+            // Função para listar câmeras disponíveis
             const listCameras = async () => {
                 try {
-                    // Primeiro, solicitar permissão básica de câmera para obter labels
-                    try {
-                        await navigator.mediaDevices.getUserMedia({ video: true });
-                    } catch (e) {
-                        console.warn('Permissão de câmera não concedida ainda:', e);
-                    }
-                    
                     const devices = await navigator.mediaDevices.enumerateDevices();
                     const videoDevices = devices.filter(device => device.kind === 'videoinput');
                     console.log('📷 Câmeras disponíveis:', videoDevices.length);
@@ -1446,11 +1439,7 @@
             const qrBtn = document.getElementById('qr-scanner-btn');
             if (qrBtn) {
                 console.log('✅ Botão QR Code encontrado');
-                // Remover listeners anteriores se existirem
-                const newQrBtn = qrBtn.cloneNode(true);
-                qrBtn.parentNode.replaceChild(newQrBtn, qrBtn);
-                
-                newQrBtn.addEventListener('click', function(e) {
+                qrBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('🔘 Botão QR Code clicado');
@@ -1460,18 +1449,18 @@
                         console.error('❌ openQRScanner não está definida');
                         alert('Erro: Scanner QR Code não está disponível. Recarregue a página.');
                     }
-                });
+                }, { once: false });
                 
                 // Navegação por teclado (acessibilidade)
-                newQrBtn.addEventListener('keydown', function(e) {
+                qrBtn.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        newQrBtn.click();
+                        qrBtn.click();
                     }
                 });
-                newQrBtn.setAttribute('tabindex', '0');
-                newQrBtn.setAttribute('role', 'button');
-                newQrBtn.setAttribute('aria-label', 'Abrir scanner de QR Code');
+                qrBtn.setAttribute('tabindex', '0');
+                qrBtn.setAttribute('role', 'button');
+                qrBtn.setAttribute('aria-label', 'Abrir scanner de QR Code');
             } else {
                 console.error('❌ Botão QR Code não encontrado');
             }
@@ -1480,11 +1469,7 @@
             const cpfBtn = document.getElementById('cpf-search-btn');
             if (cpfBtn) {
                 console.log('✅ Botão CPF encontrado');
-                // Remover listeners anteriores se existirem
-                const newCpfBtn = cpfBtn.cloneNode(true);
-                cpfBtn.parentNode.replaceChild(newCpfBtn, cpfBtn);
-                
-                newCpfBtn.addEventListener('click', function(e) {
+                cpfBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('🔘 Botão CPF clicado');
@@ -1494,18 +1479,18 @@
                         console.error('❌ confirmByCPF não está definida');
                         alert('Erro: Busca por CPF não está disponível. Recarregue a página.');
                     }
-                });
+                }, { once: false });
                 
                 // Navegação por teclado (acessibilidade)
-                newCpfBtn.addEventListener('keydown', function(e) {
+                cpfBtn.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        newCpfBtn.click();
+                        cpfBtn.click();
                     }
                 });
-                newCpfBtn.setAttribute('tabindex', '0');
-                newCpfBtn.setAttribute('role', 'button');
-                newCpfBtn.setAttribute('aria-label', 'Buscar convidado por CPF');
+                cpfBtn.setAttribute('tabindex', '0');
+                cpfBtn.setAttribute('role', 'button');
+                cpfBtn.setAttribute('aria-label', 'Buscar convidado por CPF');
             } else {
                 console.error('❌ Botão CPF não encontrado');
             }
