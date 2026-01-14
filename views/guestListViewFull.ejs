@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- IMPORTANTE: Permitir acesso à câmera -->
+    <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=()">
     <title>Lista de Convidados - <%= guestList.event_title || 'Evento' %></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -656,12 +658,26 @@
             const listCameras = async () => {
                 try {
                     // IMPORTANTE: Primeiro solicitar permissão de câmera para obter labels (especialmente no mobile)
+                    // Usar constraints mais específicos para melhor compatibilidade
                     try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            video: {
+                                facingMode: { ideal: 'environment' },
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 }
+                            }
+                        });
                         // Parar o stream imediatamente, só precisamos da permissão
                         stream.getTracks().forEach(track => track.stop());
+                        console.log('✅ Permissão de câmera concedida');
                     } catch (permErr) {
                         console.warn('⚠️ Permissão de câmera não concedida ou erro ao solicitar:', permErr);
+                        // Se for NotAllowedError, relançar para ser tratado acima
+                        if (permErr.name === 'NotAllowedError' || permErr.name === 'PermissionDeniedError') {
+                            const errorMsg = 'Permissão de câmera negada. Por favor, permita o acesso à câmera nas configurações do navegador e recarregue a página.';
+                            alert(errorMsg);
+                            throw new Error(errorMsg);
+                        }
                         // Continuar mesmo sem permissão, mas pode não ter labels
                     }
                     
@@ -671,6 +687,10 @@
                     return videoDevices;
                 } catch (err) {
                     console.error('❌ Erro ao listar câmeras:', err);
+                    // Se for erro de permissão, relançar para ser tratado acima
+                    if (err.message && err.message.includes('Permissão')) {
+                        throw err;
+                    }
                     return [];
                 }
             };
@@ -796,10 +816,12 @@
                         const errMessage = err?.message || err?.toString() || '';
                         const errName = err?.name || '';
                         
-                        if (errName === 'NotAllowedError' || errMessage.includes('permission') || errMessage.includes('Permission denied')) {
-                            errorMsg = 'Permissão de câmera negada. Por favor, permita o acesso à câmera nas configurações do navegador.';
-                        } else if (errName === 'NotFoundError' || errMessage.includes('camera') || errMessage.includes('No camera')) {
-                            errorMsg = 'Nenhuma câmera encontrada. Verifique se há uma câmera disponível.';
+                        if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errMessage.includes('permission') || errMessage.includes('Permission denied')) {
+                            errorMsg = 'Permissão de câmera negada.\n\nPor favor:\n1. Clique no ícone de cadeado/câmera na barra de endereços\n2. Permita o acesso à câmera\n3. Recarregue a página e tente novamente';
+                        } else if (errName === 'NotFoundError' || errMessage.includes('camera') || errMessage.includes('No camera') || errMessage.includes('not found')) {
+                            errorMsg = 'Nenhuma câmera encontrada. Verifique se há uma câmera disponível e conectada.';
+                        } else if (errMessage.includes('getUserMedia')) {
+                            errorMsg = 'Erro ao acessar a câmera. Verifique se o navegador suporta acesso à câmera e se a permissão foi concedida.';
                         } else if (errMessage) {
                             errorMsg = 'Erro: ' + errMessage;
                         }
@@ -821,8 +843,22 @@
                     return;
                 }
                 
-                // Listar câmeras disponíveis
-                const cameras = await listCameras();
+                try {
+                    // Listar câmeras disponíveis
+                    let cameras;
+                    try {
+                        cameras = await listCameras();
+                    } catch (listErr) {
+                        console.error('❌ Erro ao listar câmeras:', listErr);
+                        // Se for erro de permissão, mostrar mensagem e fechar
+                        if (listErr.message && listErr.message.includes('Permissão')) {
+                            alert(listErr.message);
+                            window.closeQRScanner();
+                            return;
+                        }
+                        // Se não for erro de permissão, tentar usar câmera padrão
+                        cameras = [];
+                    }
                 
                 // Se houver múltiplas câmeras, mostrar seletor
                 if (cameras.length > 1) {
@@ -894,6 +930,12 @@
                     console.log('📷 Nenhuma câmera encontrada, tentando usar câmera padrão...');
                     startScannerWithCamera({ facingMode: "environment" });
                     return;
+                }
+                } catch (err) {
+                    console.error('❌ Erro ao inicializar scanner:', err);
+                    const errorMsg = err?.message || 'Erro desconhecido ao inicializar scanner';
+                    alert('Erro ao inicializar scanner: ' + errorMsg + '. Tente recarregar a página.');
+                    window.closeQRScanner();
                 }
             };
             

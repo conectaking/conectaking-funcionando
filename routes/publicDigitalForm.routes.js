@@ -1051,7 +1051,15 @@ router.post('/:slug/form/:itemId/submit',
                         whatsapp: responder_phone || response_data.whatsapp || response_data.phone || response_data.telefone || response_data['Telefone/WhatsApp'] || '',
                         email: responder_email || response_data.email || response_data['Email'] || null,
                         phone: response_data.phone || response_data.telefone || response_data['Telefone'] || null,
-                        document: response_data.document || response_data.cpf || response_data.cnpj || response_data['CPF'] || response_data['CNPJ'] || null,
+                        document: (() => {
+                            // Buscar CPF/CNPJ de múltiplos campos possíveis
+                            const doc = response_data.document || response_data.cpf || response_data.cnpj || response_data['CPF'] || response_data['CNPJ'] || null;
+                            // IMPORTANTE: Remover formatação (pontos, traços, espaços) antes de salvar
+                            if (doc && typeof doc === 'string') {
+                                return doc.replace(/[.\-\s]/g, '').trim();
+                            }
+                            return doc;
+                        })(),
                         address: response_data.address || response_data.endereco || response_data['Endereço'] || response_data['Endereço completo'] || null,
                         neighborhood: response_data.neighborhood || response_data.bairro || response_data['Bairro'] || null,
                         city: response_data.city || response_data.cidade || response_data['Cidade'] || null,

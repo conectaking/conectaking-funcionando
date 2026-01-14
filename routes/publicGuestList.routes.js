@@ -652,20 +652,27 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
         if (isPartial && cleanCpf.length < 11) {
             // Busca parcial: usar LIKE para encontrar CPFs que começam com os dígitos informados
             // IMPORTANTE: Remover caracteres não numéricos do campo document antes de comparar
+            // Usar REGEXP_REPLACE para remover todos os caracteres não numéricos
             guestResult = await client.query(`
                 SELECT * FROM guests
                 WHERE guest_list_id = $1 
                 AND document IS NOT NULL 
                 AND document != ''
-                AND REPLACE(REPLACE(REPLACE(document, '.', ''), '-', ''), ' ', '') LIKE $2
+                AND REGEXP_REPLACE(document, '[^0-9]', '', 'g') LIKE $2
                 ORDER BY 
                     CASE 
-                        WHEN REPLACE(REPLACE(REPLACE(document, '.', ''), '-', ''), ' ', '') = $3 THEN 1  -- Priorizar match exato
+                        WHEN REGEXP_REPLACE(document, '[^0-9]', '', 'g') = $3 THEN 1  -- Priorizar match exato
                         ELSE 2
                     END,
                     created_at DESC
                 LIMIT 10
             `, [guestList.id, cleanCpf + '%', cleanCpf]);
+            
+            logger.info('🔍 [CPF_SEARCH] Busca parcial:', {
+                cleanCpf,
+                found: guestResult.rows.length,
+                guestListId: guestList.id
+            });
             
             // Se encontrou múltiplos resultados, retornar lista para o usuário escolher
             if (guestResult.rows.length > 1) {
@@ -682,13 +689,20 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
             }
         } else {
             // Busca exata - remover formatação do CPF no banco antes de comparar
+            // Usar REGEXP_REPLACE para remover todos os caracteres não numéricos
             guestResult = await client.query(`
                 SELECT * FROM guests
                 WHERE guest_list_id = $1 
                 AND document IS NOT NULL 
                 AND document != ''
-                AND REPLACE(REPLACE(REPLACE(document, '.', ''), '-', ''), ' ', '') = $2
+                AND REGEXP_REPLACE(document, '[^0-9]', '', 'g') = $2
             `, [guestList.id, cleanCpf]);
+            
+            logger.info('🔍 [CPF_SEARCH] Busca exata:', {
+                cleanCpf,
+                found: guestResult.rows.length,
+                guestListId: guestList.id
+            });
         }
         
         if (guestResult.rows.length === 0) {
