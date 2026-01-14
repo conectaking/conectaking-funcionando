@@ -49,10 +49,16 @@
         <%
             // Cor das barrinhas decorativas (padrão: cor primária)
             const decorativeBarColor = formData.decorative_bar_color || primaryColor;
+            // Cor da linha separadora (padrão: #e8eaed)
+            const separatorLineColor = formData.separator_line_color || '#e8eaed';
             console.log('🎨 [EJS] decorative_bar_color:', {
                 received: formData.decorative_bar_color,
                 primaryColor: primaryColor,
                 final: decorativeBarColor
+            });
+            console.log('🎨 [EJS] separator_line_color:', {
+                received: formData.separator_line_color,
+                final: separatorLineColor
             });
         %>
         :root {
@@ -62,6 +68,7 @@
             --background-color: <%= formData.background_color || '#FFFFFF' %>;
             --card-color: <%= formData.card_color || '#FFFFFF' %>;
             --decorative-bar-color: <%= decorativeBarColor %>;
+            --separator-line-color: <%= separatorLineColor %>;
             --theme: <%= formData.theme || 'light' %>;
         }
         
@@ -272,7 +279,7 @@
 
                     <!-- Formulário -->
                     <form id="digital-form" class="digital-form">
-                        <div style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e8eaed;">
+                        <div style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid <%= separatorLineColor %>;">
                             <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text-color, #202124); letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px;">
                                 <div style="width: 6px; height: 32px; background: linear-gradient(180deg, <%= primaryColor %>, <%= secondaryColor %>); border-radius: 3px;"></div>
                                 Preencha os dados
