@@ -159,6 +159,32 @@ router.get('/confirm/:identifier', asyncHandler(async (req, res) => {
         
         const guestList = listResult.rows[0];
         
+        // Garantir valores padrão
+        if (!guestList.primary_color) guestList.primary_color = '#FFC700';
+        if (!guestList.secondary_color) guestList.secondary_color = '#FFB700';
+        if (!guestList.text_color) guestList.text_color = '#ECECEC';
+        if (!guestList.background_color) guestList.background_color = '#0D0D0F';
+        if (guestList.background_opacity === null || guestList.background_opacity === undefined) guestList.background_opacity = 1.0;
+        if (!guestList.theme_confirmacao) guestList.theme_confirmacao = 'default';
+        
+        // Aplicar tema pré-definido se selecionado
+        if (guestList.theme_confirmacao && guestList.theme_confirmacao !== 'default') {
+            const themes = {
+                dark: { primary: '#FFC700', secondary: '#FFB700', text: '#ECECEC', background: '#0D0D0F' },
+                light: { primary: '#4A90E2', secondary: '#357ABD', text: '#333333', background: '#FFFFFF' },
+                premium: { primary: '#667EEA', secondary: '#764BA2', text: '#FFFFFF', background: '#1A1A2E' },
+                modern: { primary: '#F093FB', secondary: '#F5576C', text: '#FFFFFF', background: '#0D0D0F' },
+                elegant: { primary: '#D4AF37', secondary: '#B8860B', text: '#ECECEC', background: '#1C1C1C' }
+            };
+            
+            if (themes[guestList.theme_confirmacao] && !guestList.primary_color_override) {
+                guestList.primary_color = themes[guestList.theme_confirmacao].primary;
+                guestList.secondary_color = themes[guestList.theme_confirmacao].secondary;
+                guestList.text_color = themes[guestList.theme_confirmacao].text;
+                guestList.background_color = themes[guestList.theme_confirmacao].background;
+            }
+        }
+        
         // Buscar convidados para confirmação (status: registered)
         const guestsResult = await client.query(`
             SELECT id, name, email, phone, status, created_at
@@ -437,7 +463,8 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
                     gli.event_date,
                     gli.event_location,
                     gli.event_description,
-                    COALESCE(gli.theme_portaria, 'default') as theme_portaria
+                    COALESCE(gli.theme_portaria, 'default') as theme_portaria,
+                    COALESCE(gli.theme_confirmacao, 'default') as theme_confirmacao
                 FROM guest_list_items gli
                 INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
                 INNER JOIN users u ON u.id = pi.user_id
