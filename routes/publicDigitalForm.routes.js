@@ -1390,7 +1390,8 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
         // Buscar dados do formulário (primeiro de digital_form_items)
         const formRes = await client.query(
             `SELECT dfi.form_title, dfi.enable_whatsapp, dfi.enable_guest_list_submit, 
-                    dfi.whatsapp_number, dfi.primary_color, dfi.secondary_color
+                    dfi.whatsapp_number, dfi.primary_color, dfi.secondary_color,
+                    dfi.background_color, dfi.background_image_url, dfi.background_opacity
              FROM digital_form_items dfi
              INNER JOIN profile_items pi ON pi.id = dfi.profile_item_id
              WHERE dfi.profile_item_id = $1 AND pi.user_id = $2
@@ -1631,6 +1632,9 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             formUrl: `/${slug}/form/${itemId}`,
             primaryColor: formData.primary_color || '#4A90E2',
             secondaryColor: formData.secondary_color || formData.primary_color || '#6BA3F0',
+            backgroundColor: formData.background_color || '#FFFFFF',
+            backgroundImageUrl: formData.background_image_url || null,
+            backgroundOpacity: formData.background_opacity || 1.0,
             autoRedirect: false,
             submittedData: submittedData,
             responseData: responseData

@@ -21,13 +21,38 @@
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            <% if (typeof backgroundImageUrl !== 'undefined' && backgroundImageUrl) { %>
+            background-image: url('<%= backgroundImageUrl %>');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: <%= backgroundColor || '#FFFFFF' %>;
+            <% if (typeof backgroundOpacity !== 'undefined' && parseFloat(backgroundOpacity) < 1) { %>
+            position: relative;
+            <% } %>
+            <% } else { %>
             background: linear-gradient(135deg, <%= primaryColor || '#4A90E2' %> 0%, <%= secondaryColor || '#6BA3F0' %> 100%);
+            <% } %>
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
+        
+        <% if (typeof backgroundImageUrl !== 'undefined' && backgroundImageUrl && typeof backgroundOpacity !== 'undefined' && parseFloat(backgroundOpacity) < 1) { %>
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: <%= backgroundColor || '#FFFFFF' %>;
+            opacity: <%= 1 - (parseFloat(backgroundOpacity) || 0) %>;
+            z-index: -1;
+        }
+        <% } %>
         
         .success-container {
             background: white;

@@ -317,4 +317,145 @@ router.put('/:id/customize-confirmacao', protectUser, asyncHandler(async (req, r
     }
 }));
 
+/**
+ * GET /api/guest-lists/:id/customize-inscricao - Página de personalização da inscrição (formSuccess)
+ */
+router.get('/:id/customize-inscricao', protectUser, asyncHandler(async (req, res) => {
+    const listId = parseInt(req.params.id, 10);
+    const userId = req.user.userId;
+    
+    const client = await db.pool.connect();
+    try {
+        // Buscar dados do formulário (digital_form_items)
+        const result = await client.query(`
+            SELECT dfi.*, pi.id as profile_item_id, pi.user_id
+            FROM digital_form_items dfi
+            INNER JOIN profile_items pi ON pi.id = dfi.profile_item_id
+            WHERE pi.id = $1 AND pi.user_id = $2
+            ORDER BY COALESCE(dfi.updated_at, '1970-01-01'::timestamp) DESC, dfi.id DESC
+            LIMIT 1
+        `, [listId, userId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).render('error', {
+                message: 'Formulário não encontrado',
+                title: 'Erro'
+            });
+        }
+        
+        const formData = result.rows[0];
+        
+        // Buscar profile_slug do usuário para construir URL de preview
+        const userSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
+        const profileSlug = userSlugRes.rows[0]?.profile_slug || userId;
+        
+        // Garantir valores padrão
+        if (!formData.primary_color) formData.primary_color = '#4A90E2';
+        if (!formData.secondary_color) formData.secondary_color = '#6BA3F0';
+        if (!formData.background_color) formData.background_color = '#FFFFFF';
+        if (!formData.background_opacity) formData.background_opacity = 1.0;
+        
+        res.render('guestListCustomizeInscricao', {
+            formData,
+            profileItemId: listId,
+            profileSlug: profileSlug
+        });
+    } catch (error) {
+        logger.error('Erro ao carregar página de personalização da inscrição:', error);
+        res.status(500).render('error', {
+            message: 'Erro ao carregar página',
+            title: 'Erro'
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
+ * PUT /api/guest-lists/:id/customize-inscricao - Salvar personalização da inscrição
+ */
+router.put('/:id/customize-inscricao', protectUser, asyncHandler(async (req, res) => {
+    const listId = parseInt(req.params.id, 10);
+    const userId = req.user.userId;
+    
+    const client = await db.pool.connect();
+    try {
+        // Verificar se o formulário pertence ao usuário
+        const checkResult = await client.query(`
+            SELECT dfi.id, pi.user_id
+            FROM digital_form_items dfi
+            INNER JOIN profile_items pi ON pi.id = dfi.profile_item_id
+            WHERE pi.id = $1 AND pi.user_id = $2
+            ORDER BY COALESCE(dfi.updated_at, '1970-01-01'::timestamp) DESC, dfi.id DESC
+            LIMIT 1
+        `, [listId, userId]);
+        
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Formulário não encontrado' });
+        }
+        
+        const formItemId = checkResult.rows[0].id;
+        
+        const {
+            primary_color,
+            secondary_color,
+            background_color,
+            background_image_url,
+            background_opacity
+        } = req.body;
+        
+        // Construir query dinamicamente
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+        
+        if (primary_color !== undefined) {
+            updateFields.push(`primary_color = $${paramIndex++}`);
+            updateValues.push(primary_color || '#4A90E2');
+        }
+        if (secondary_color !== undefined) {
+            updateFields.push(`secondary_color = $${paramIndex++}`);
+            updateValues.push(secondary_color || '#6BA3F0');
+        }
+        if (background_color !== undefined) {
+            // Verificar se coluna existe
+            const colorColumnCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'digital_form_items' AND column_name = 'background_color'
+            `);
+            if (colorColumnCheck.rows.length > 0) {
+                updateFields.push(`background_color = $${paramIndex++}`);
+                updateValues.push(background_color || '#FFFFFF');
+            }
+        }
+        if (background_image_url !== undefined) {
+            updateFields.push(`background_image_url = $${paramIndex++}`);
+            updateValues.push(background_image_url || null);
+        }
+        if (background_opacity !== undefined) {
+            updateFields.push(`background_opacity = $${paramIndex++}`);
+            updateValues.push(background_opacity !== undefined ? parseFloat(background_opacity) : 1.0);
+        }
+        
+        updateFields.push(`updated_at = NOW()`);
+        updateValues.push(formItemId);
+        
+        if (updateFields.length > 1) {
+            await client.query(`
+                UPDATE digital_form_items 
+                SET ${updateFields.join(', ')}
+                WHERE id = $${paramIndex}
+            `, updateValues);
+        }
+        
+        res.json({ success: true, message: 'Personalização salva com sucesso!' });
+    } catch (error) {
+        logger.error('Erro ao salvar personalização da inscrição:', error);
+        res.status(500).json({ message: 'Erro ao salvar personalização', error: error.message });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;

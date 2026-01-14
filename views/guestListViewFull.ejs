@@ -752,8 +752,8 @@
                     <i class="fas fa-filter"></i> Filtrar:
                 </label>
                 <select id="status-filter" style="padding: 10px 16px; border-radius: 12px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.1); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; min-width: 180px;" onchange="filterGuests()" onfocus="this.style.borderColor='rgba(255,199,0,0.5)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)';">
-                    <option value="all">Todos os Convidados</option>
-                    <option value="not_confirmed" selected>Faltam Confirmar (Primeiro)</option>
+                    <option value="all" selected>Todos os Convidados</option>
+                    <option value="not_confirmed">Faltam Confirmar</option>
                     <option value="registered">Apenas Inscritos</option>
                     <option value="confirmed">Confirmados</option>
                     <option value="checked_in">Já Chegaram</option>
@@ -2615,6 +2615,11 @@
             if (tabElement) {
                 tabElement.classList.add('active');
             }
+            
+            // Aplicar filtro após mudar de aba
+            setTimeout(() => {
+                filterGuests();
+            }, 50);
         }
         
         // Tornar switchTab global para uso em onclick
@@ -2623,7 +2628,42 @@
         // Função para filtrar convidados por status
         function filterGuests() {
             const filterValue = document.getElementById('status-filter').value;
-            const rows = document.querySelectorAll('.table-row');
+            // Filtrar apenas nas abas visíveis (active)
+            const activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) {
+                // Se não houver aba ativa, filtrar todas as linhas
+                const rows = document.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    const statusValue = row.getAttribute('data-status') || '';
+                    let shouldShow = false;
+                    
+                    switch(filterValue) {
+                        case 'all':
+                            shouldShow = true;
+                            break;
+                        case 'not_confirmed':
+                            shouldShow = statusValue === 'registered' || statusValue === '';
+                            break;
+                        case 'registered':
+                            shouldShow = statusValue === 'registered' || statusValue === '';
+                            break;
+                        case 'confirmed':
+                            shouldShow = statusValue === 'confirmed';
+                            break;
+                        case 'checked_in':
+                            shouldShow = statusValue === 'checked_in';
+                            break;
+                        default:
+                            shouldShow = true;
+                    }
+                    
+                    row.style.display = shouldShow ? '' : 'none';
+                });
+                return;
+            }
+            
+            // Filtrar apenas na aba ativa
+            const rows = activeTab.querySelectorAll('.table-row');
             let visibleCount = 0;
             
             rows.forEach(row => {
@@ -2635,7 +2675,7 @@
                         shouldShow = true;
                         break;
                     case 'not_confirmed':
-                        // Mostrar apenas os que não confirmaram (registered) - PRIMEIRO
+                        // Mostrar apenas os que não confirmaram (registered)
                         shouldShow = statusValue === 'registered' || statusValue === '';
                         break;
                     case 'registered':
@@ -2655,7 +2695,6 @@
                 if (shouldShow) visibleCount++;
             });
             
-            // Atualizar contador se houver
             console.log(`✅ Filtro aplicado: ${filterValue}, ${visibleCount} convidados visíveis`);
         }
         
@@ -2727,13 +2766,15 @@
         window.sortGuests = sortGuests;
         window.resetFilters = resetFilters;
         
-        // Aplicar filtro inicial (mostrar os que faltam confirmar primeiro)
+        // Aplicar filtro inicial (mostrar todos)
         document.addEventListener('DOMContentLoaded', function() {
-            // Ordenar inicialmente por status (não confirmados primeiro)
             setTimeout(() => {
-                document.getElementById('sort-order').value = 'status';
+                // Garantir que o filtro está em "all"
+                document.getElementById('status-filter').value = 'all';
+                // Ordenar por nome por padrão
+                document.getElementById('sort-order').value = 'name';
                 sortGuests();
-                filterGuests(); // Aplicar filtro inicial
+                filterGuests(); // Aplicar filtro inicial (mostrar todos)
             }, 100);
         });
         
