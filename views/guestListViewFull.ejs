@@ -958,6 +958,10 @@
                         }
                         alert(errorMsg);
                         
+                        // Resetar flags antes de fechar
+                        window.isScanning = false;
+                        window.isInitializingScanner = false;
+                        
                         // Fechar scanner e resetar flags para permitir nova tentativa
                         window.closeQRScanner();
                     });
