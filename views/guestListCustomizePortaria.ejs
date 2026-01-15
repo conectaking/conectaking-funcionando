@@ -270,8 +270,13 @@
 </head>
 <body>
     <div class="header-actions" style="max-width: 1400px; margin: 0 auto 24px;">
-        <a href="javascript:history.back()" class="back-button">
-            <i class="fas fa-arrow-left"></i> Voltar
+        <% 
+            // Determinar URL de voltar: para view-full da portaria (menu de confirmação de presença)
+            const portariaSlug = guestList.portaria_slug || guestList.public_view_token;
+            const backUrl = portariaSlug ? `/guest-list/view-full/${portariaSlug}` : `javascript:history.back()`;
+        %>
+        <a href="<%= backUrl %>" class="back-button">
+            <i class="fas fa-arrow-left"></i> Voltar para Confirmação de Presença
         </a>
         <h1 style="color: #FFC700; margin: 0; font-size: 20px; font-weight: 700;">
             <i class="fas fa-paint-brush"></i> Personalizar Portaria
