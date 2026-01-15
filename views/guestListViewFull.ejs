@@ -737,6 +737,30 @@
             .empty-state {
                 padding: 40px 20px;
             }
+            
+            /* Correção adicional para garantir cores corretas nas abas no mobile */
+            .tab-button:not(.active) {
+                color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#A1A1A1' %> !important;
+                background: transparent !important;
+                border-bottom-color: transparent !important;
+            }
+            
+            .tab-button.active {
+                color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %> !important;
+                background: rgba(255,255,255,0.05) !important;
+                border-bottom-color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %> !important;
+            }
+            
+            /* Garantir que o conteúdo da tab seja visível */
+            .tab-content:not(.active) {
+                display: none !important;
+            }
+            
+            .tab-content.active {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
         }
     </style>
 </head>
@@ -1853,20 +1877,13 @@
             const event = guestData.event;
             const isAlreadyCheckedIn = guestData.alreadyCheckedIn;
             
-            // Formatar data do evento
+            // Formatar data do evento (usando timezone de Brasília)
             let eventDateFormatted = '';
             if (event.date) {
                 try {
-                    const date = new Date(event.date);
-                    eventDateFormatted = date.toLocaleDateString('pt-BR', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
+                    eventDateFormatted = formatDateOnlyBrasilia(event.date);
                 } catch (e) {
+                    console.error('Erro ao formatar data do evento:', e);
                     eventDateFormatted = event.date;
                 }
             }
