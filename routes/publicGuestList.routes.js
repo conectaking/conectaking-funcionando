@@ -568,6 +568,37 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         // Para a aba "Cadastrados" (registered), usar TODOS os convidados
         const registeredGuests = allGuestsResult.rows || [];
         
+        // Log detalhado dos resultados
+        logger.info('📊 [GUEST-LIST-VIEW-FULL] Resultados da filtragem:', {
+            total: allGuestsResult.rows.length,
+            checkedIn: checkedInResult.rows.length,
+            notArrived: notArrivedResult.rows.length,
+            registered: registeredResult.rows.length,
+            confirmed: confirmedResult.rows.length
+        });
+        
+        // Log de exemplo dos primeiros convidados de cada categoria
+        if (checkedInResult.rows.length > 0) {
+            logger.info('📊 [GUEST-LIST-VIEW-FULL] Primeiro checkedIn:', {
+                id: checkedInResult.rows[0].id,
+                name: checkedInResult.rows[0].name,
+                status: checkedInResult.rows[0].status,
+                checked_in_at: checkedInResult.rows[0].checked_in_at
+            });
+        } else {
+            logger.warn('⚠️ [GUEST-LIST-VIEW-FULL] Nenhum convidado checked_in encontrado!');
+        }
+        
+        if (notArrivedResult.rows.length > 0) {
+            logger.info('📊 [GUEST-LIST-VIEW-FULL] Primeiro notArrived:', {
+                id: notArrivedResult.rows[0].id,
+                name: notArrivedResult.rows[0].name,
+                status: notArrivedResult.rows[0].status
+            });
+        } else {
+            logger.warn('⚠️ [GUEST-LIST-VIEW-FULL] Nenhum convidado notArrived encontrado!');
+        }
+        
         // Log para debug
         logger.info('📊 [GUEST-LIST-VIEW-FULL] Estatísticas de convidados:', {
             total: allGuestsResult.rows.length,

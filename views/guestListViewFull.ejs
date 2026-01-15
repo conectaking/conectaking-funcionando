@@ -832,12 +832,12 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                    <div class="stat-value"><%= typeof notArrivedGuests !== 'undefined' && notArrivedGuests ? notArrivedGuests.length : (typeof registeredGuests !== 'undefined' ? registeredGuests.filter(g => g.status === 'registered').length : 0) %></div>
+                    <div class="stat-value"><%= (typeof notArrivedGuests !== 'undefined' && notArrivedGuests && Array.isArray(notArrivedGuests)) ? notArrivedGuests.length : (typeof registeredGuests !== 'undefined' && Array.isArray(registeredGuests) ? registeredGuests.filter(g => g.status === 'registered').length : 0) %></div>
                     <div class="stat-label">Não Chegou</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="stat-value"><%= typeof checkedInGuests !== 'undefined' ? checkedInGuests.length : 0 %></div>
+                    <div class="stat-value"><%= (typeof checkedInGuests !== 'undefined' && checkedInGuests && Array.isArray(checkedInGuests)) ? checkedInGuests.length : 0 %></div>
                     <div class="stat-label">Chegou</div>
                 </div>
             </div>
@@ -909,10 +909,10 @@
                 <i class="fas fa-user-plus"></i> Cadastrados (<%= typeof registeredGuests !== 'undefined' ? registeredGuests.length : 0 %>)
             </button>
             <button class="tab-button" onclick="switchTab('checked_in', event)">
-                <i class="fas fa-check-circle"></i> Quem Chegou (<%= typeof checkedInGuests !== 'undefined' ? checkedInGuests.length : 0 %>)
+                <i class="fas fa-check-circle"></i> Quem Chegou (<%= (typeof checkedInGuests !== 'undefined' && checkedInGuests && Array.isArray(checkedInGuests)) ? checkedInGuests.length : 0 %>)
             </button>
             <button class="tab-button" onclick="switchTab('not_arrived', event)">
-                <i class="fas fa-clock"></i> Quem Não Chegou (<%= typeof notArrivedGuests !== 'undefined' && notArrivedGuests ? notArrivedGuests.length : 0 %>)
+                <i class="fas fa-clock"></i> Quem Não Chegou (<%= (typeof notArrivedGuests !== 'undefined' && notArrivedGuests && Array.isArray(notArrivedGuests)) ? notArrivedGuests.length : 0 %>)
             </button>
         </div>
         
@@ -1099,6 +1099,7 @@
         
         <!-- Tab: Conferidos -->
         <div id="tab-checked_in" class="tab-content">
+            <!-- DEBUG: checkedInGuests count: <%= (typeof checkedInGuests !== 'undefined' && checkedInGuests && Array.isArray(checkedInGuests)) ? checkedInGuests.length : 'undefined/not-array' %> -->
             <div class="guests-table">
                 <div class="table-header">
                     <div>Nome Completo</div>
@@ -1108,13 +1109,24 @@
                     <div>Status</div>
                     <div>Conferido em</div>
                 </div>
-                <% if (typeof checkedInGuests === 'undefined' || !checkedInGuests || checkedInGuests.length === 0) { %>
+                <% 
+                    // Garantir que checkedInGuests seja um array válido
+                    let checkedInGuestsArray = [];
+                    if (typeof checkedInGuests !== 'undefined' && checkedInGuests) {
+                        if (Array.isArray(checkedInGuests)) {
+                            checkedInGuestsArray = checkedInGuests;
+                        } else if (checkedInGuests.rows && Array.isArray(checkedInGuests.rows)) {
+                            checkedInGuestsArray = checkedInGuests.rows;
+                        }
+                    }
+                %>
+                <% if (!checkedInGuestsArray || checkedInGuestsArray.length === 0) { %>
                     <div class="empty-state">
                         <i class="fas fa-check-double"></i>
                         <p>Nenhum convidado conferido</p>
                     </div>
                 <% } else { %>
-                    <% (typeof checkedInGuests !== 'undefined' && checkedInGuests ? checkedInGuests : []).forEach(guest => {
+                    <% checkedInGuestsArray.forEach(guest => {
                         // Extrair nome, email e whatsapp corretamente
                         let displayName = guest.name || '';
                         let displayEmail = guest.email || '';
@@ -1243,6 +1255,7 @@
         
         <!-- Tab: Quem Não Chegou -->
         <div id="tab-not_arrived" class="tab-content">
+            <!-- DEBUG: notArrivedGuests count: <%= (typeof notArrivedGuests !== 'undefined' && notArrivedGuests && Array.isArray(notArrivedGuests)) ? notArrivedGuests.length : 'undefined/not-array' %> -->
             <div class="guests-table">
                 <div class="table-header">
                     <div>Nome Completo</div>
@@ -1252,13 +1265,24 @@
                     <div>Status</div>
                     <div>Data</div>
                 </div>
-                <% if (typeof notArrivedGuests === 'undefined' || !notArrivedGuests || notArrivedGuests.length === 0) { %>
+                <% 
+                    // Garantir que notArrivedGuests seja um array válido
+                    let notArrivedGuestsArray = [];
+                    if (typeof notArrivedGuests !== 'undefined' && notArrivedGuests) {
+                        if (Array.isArray(notArrivedGuests)) {
+                            notArrivedGuestsArray = notArrivedGuests;
+                        } else if (notArrivedGuests.rows && Array.isArray(notArrivedGuests.rows)) {
+                            notArrivedGuestsArray = notArrivedGuests.rows;
+                        }
+                    }
+                %>
+                <% if (!notArrivedGuestsArray || notArrivedGuestsArray.length === 0) { %>
                     <div class="empty-state">
                         <i class="fas fa-clock"></i>
                         <p>Todos os convidados já chegaram!</p>
                     </div>
                 <% } else { %>
-                    <% notArrivedGuests.forEach(guest => {
+                    <% notArrivedGuestsArray.forEach(guest => {
                         // Extrair nome, email e whatsapp
                         let displayName = guest.name || '';
                         let displayEmail = guest.email || '';
