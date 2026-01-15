@@ -623,13 +623,33 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         const guestListHasEnableWhatsapp = guestListColumnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
         const guestListHasEnableGuestListSubmit = guestListColumnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
         
-        // Construir SELECT dinamicamente baseado nas colunas disponíveis
+        // Verificar se guest_list_items tem as colunas de cores decorativas
+        const guestListColorColumnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'guest_list_items' 
+            AND column_name IN ('card_color', 'decorative_bar_color', 'separator_line_color')
+        `);
+        const guestListHasCardColor = guestListColorColumnsCheck.rows.some(r => r.column_name === 'card_color');
+        const guestListHasDecorativeBarColor = guestListColorColumnsCheck.rows.some(r => r.column_name === 'decorative_bar_color');
+        const guestListHasSeparatorLineColor = guestListColorColumnsCheck.rows.some(r => r.column_name === 'separator_line_color');
+        
+        // Construir SELECT dinamicamente baseado nas colunas disponíveis (incluindo cores decorativas)
         let guestListSelectFields = 'primary_color, secondary_color, text_color, background_color, header_image_url, background_image_url, background_opacity, theme, updated_at, id';
         if (guestListHasEnableWhatsapp) {
             guestListSelectFields += ', enable_whatsapp';
         }
         if (guestListHasEnableGuestListSubmit) {
             guestListSelectFields += ', enable_guest_list_submit';
+        }
+        if (guestListHasCardColor) {
+            guestListSelectFields += ', card_color';
+        }
+        if (guestListHasDecorativeBarColor) {
+            guestListSelectFields += ', decorative_bar_color';
+        }
+        if (guestListHasSeparatorLineColor) {
+            guestListSelectFields += ', separator_line_color';
         }
         
         const guestListRes = await client.query(
@@ -666,16 +686,15 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 profile_item_id: itemIdInt
             });
             
-            // IMPORTANTE: NÃO MESCLAR CORES ENTRE SISTEMAS!
-            // King Forms (digital_form_items) e Portaria (guest_list_items) devem ter cores COMPLETAMENTE SEPARADAS
-            // Apenas mesclar enable_whatsapp e enable_guest_list_submit (configurações funcionais, não visuais)
-            // NÃO mesclar cores, backgrounds, themes, etc. - cada sistema tem suas próprias cores!
+            // IMPORTANTE: Quando existe dados em guest_list_items, significa que o formulário está em modo "Lista de Convidados"
+            // Nesse caso, as cores de guest_list_items devem ter prioridade porque foram salvas pelo usuário
+            // Mas como as cores também foram sincronizadas para digital_form_items, vamos usar as de digital_form_items primeiro
+            // e só usar guest_list_items como fallback se digital_form_items não tiver as cores decorativas
+            logger.info(`🎨 [FORM/PUBLIC] Formulário em modo Lista de Convidados: Usando cores de digital_form_items (que foram sincronizadas de guest_list_items)`);
             
-            logger.info(`🎨 [FORM/PUBLIC] CORES SEPARADAS: Usando APENAS cores de digital_form_items, ignorando guest_list_items`);
-            
-            // IMPORTANTE: Garantir que as cores de digital_form_items tenham valores padrão se não existirem
-            // NÃO usar cores de guest_list_items - sistemas completamente separados!
-            // Isso inclui: primary_color, secondary_color, text_color, background_color, decorative_bar_color, separator_line_color
+            // IMPORTANTE: Usar cores de digital_form_items primeiro (que foram sincronizadas de guest_list_items)
+            // Se não existirem em digital_form_items, usar guest_list_items como fallback
+            // Isso garante que as cores personalizadas sejam aplicadas no formulário público
             if (!formData.primary_color || formData.primary_color === null || formData.primary_color === 'null') {
                 formData.primary_color = '#4A90E2';
                 logger.info(`🎨 [FORM/PUBLIC] primary_color não encontrado em digital_form_items, usando padrão: #4A90E2`);
@@ -692,19 +711,36 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 formData.background_color = '#FFFFFF';
                 logger.info(`🎨 [FORM/PUBLIC] background_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
             }
-            // IMPORTANTE: decorative_bar_color, separator_line_color e card_color também devem vir APENAS de digital_form_items
-            // Se não existirem, usar valores padrão como fallback (não buscar de guest_list_items)
+            // IMPORTANTE: decorative_bar_color e separator_line_color - usar digital_form_items primeiro, depois guest_list_items como fallback
             if (!formData.decorative_bar_color || formData.decorative_bar_color === null || formData.decorative_bar_color === 'null' || formData.decorative_bar_color === '') {
-                formData.decorative_bar_color = formData.primary_color || '#4A90E2';
-                logger.info(`🎨 [FORM/PUBLIC] decorative_bar_color não encontrado em digital_form_items, usando primary_color: ${formData.decorative_bar_color}`);
+                // Tentar usar de guest_list_items se existir
+                if (guestListHasDecorativeBarColor && guestListData.decorative_bar_color) {
+                    formData.decorative_bar_color = guestListData.decorative_bar_color;
+                    logger.info(`🎨 [FORM/PUBLIC] decorative_bar_color não encontrado em digital_form_items, usando de guest_list_items: ${formData.decorative_bar_color}`);
+                } else {
+                    formData.decorative_bar_color = formData.primary_color || '#4A90E2';
+                    logger.info(`🎨 [FORM/PUBLIC] decorative_bar_color não encontrado em digital_form_items nem guest_list_items, usando primary_color: ${formData.decorative_bar_color}`);
+                }
             }
             if (!formData.separator_line_color || formData.separator_line_color === null || formData.separator_line_color === 'null' || formData.separator_line_color === '') {
-                formData.separator_line_color = formData.primary_color || '#4A90E2';
-                logger.info(`🎨 [FORM/PUBLIC] separator_line_color não encontrado em digital_form_items, usando primary_color: ${formData.separator_line_color}`);
+                // Tentar usar de guest_list_items se existir
+                if (guestListHasSeparatorLineColor && guestListData.separator_line_color) {
+                    formData.separator_line_color = guestListData.separator_line_color;
+                    logger.info(`🎨 [FORM/PUBLIC] separator_line_color não encontrado em digital_form_items, usando de guest_list_items: ${formData.separator_line_color}`);
+                } else {
+                    formData.separator_line_color = formData.primary_color || '#4A90E2';
+                    logger.info(`🎨 [FORM/PUBLIC] separator_line_color não encontrado em digital_form_items nem guest_list_items, usando primary_color: ${formData.separator_line_color}`);
+                }
             }
             if (!formData.card_color || formData.card_color === null || formData.card_color === 'null' || formData.card_color === '') {
-                formData.card_color = '#FFFFFF';
-                logger.info(`🎨 [FORM/PUBLIC] card_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
+                // Tentar usar de guest_list_items se existir
+                if (guestListHasCardColor && guestListData.card_color) {
+                    formData.card_color = guestListData.card_color;
+                    logger.info(`🎨 [FORM/PUBLIC] card_color não encontrado em digital_form_items, usando de guest_list_items: ${formData.card_color}`);
+                } else {
+                    formData.card_color = '#FFFFFF';
+                    logger.info(`🎨 [FORM/PUBLIC] card_color não encontrado em digital_form_items nem guest_list_items, usando padrão: #FFFFFF`);
+                }
             }
             
             // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items

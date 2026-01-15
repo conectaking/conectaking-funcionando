@@ -1047,12 +1047,54 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 logger.info(`📋 [GUEST_LIST] Sincronizando custom_form_fields (${formFieldsArray.length} campos) para form_fields em digital_form_items`);
             }
             
-            // IMPORTANTE: NÃO SINCRONIZAR CORES ENTRE SISTEMAS!
-            // decorative_bar_color e separator_line_color são cores visuais e devem ser COMPLETAMENTE SEPARADAS
-            // Portaria (guest_list_items) e King Forms (digital_form_items) têm suas próprias cores independentes
-            // Apenas sincronizar dados funcionais (enable_whatsapp, enable_guest_list_submit, logos, form_fields, form_title)
-            logger.info(`🎨 [GUEST_LIST] CORES SEPARADAS: NÃO sincronizando decorative_bar_color e separator_line_color para digital_form_items`);
-            logger.info(`🎨 [GUEST_LIST] Cada sistema (Portaria e King Forms) mantém suas próprias cores independentes`);
+            // IMPORTANTE: Sincronizar cores para digital_form_items quando o formulário está sendo usado como "Lista de Convidados"
+            // Isso garante que as cores personalizadas apareçam no formulário público
+            // Verificar se as colunas existem antes de sincronizar
+            const hasCardColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'card_color');
+            const hasDecorativeBarColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'decorative_bar_color');
+            const hasSeparatorLineColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'separator_line_color');
+            
+            if (card_color !== undefined && hasCardColor) {
+                digitalFormUpdateFields.push(`card_color = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(card_color || '#FFFFFF');
+                logger.info(`🎨 [GUEST_LIST] Sincronizando card_color para digital_form_items: ${card_color || '#FFFFFF'}`);
+            }
+            if (decorative_bar_color !== undefined && hasDecorativeBarColor) {
+                digitalFormUpdateFields.push(`decorative_bar_color = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(decorative_bar_color || primary_color || '#4A90E2');
+                logger.info(`🎨 [GUEST_LIST] Sincronizando decorative_bar_color para digital_form_items: ${decorative_bar_color || primary_color || '#4A90E2'}`);
+            }
+            if (separator_line_color !== undefined && hasSeparatorLineColor) {
+                digitalFormUpdateFields.push(`separator_line_color = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(separator_line_color || primary_color || '#4A90E2');
+                logger.info(`🎨 [GUEST_LIST] Sincronizando separator_line_color para digital_form_items: ${separator_line_color || primary_color || '#4A90E2'}`);
+            }
+            
+            // Sincronizar também primary_color e secondary_color se existirem
+            if (primary_color !== undefined) {
+                const hasPrimaryColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'primary_color');
+                if (hasPrimaryColor) {
+                    digitalFormUpdateFields.push(`primary_color = $${digitalFormParamIndex++}`);
+                    digitalFormUpdateValues.push(primary_color || '#4A90E2');
+                    logger.info(`🎨 [GUEST_LIST] Sincronizando primary_color para digital_form_items: ${primary_color || '#4A90E2'}`);
+                }
+            }
+            if (secondary_color !== undefined) {
+                const hasSecondaryColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'secondary_color');
+                if (hasSecondaryColor) {
+                    digitalFormUpdateFields.push(`secondary_color = $${digitalFormParamIndex++}`);
+                    digitalFormUpdateValues.push(secondary_color || null);
+                    logger.info(`🎨 [GUEST_LIST] Sincronizando secondary_color para digital_form_items: ${secondary_color || null}`);
+                }
+            }
+            if (text_color !== undefined) {
+                const hasTextColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'text_color');
+                if (hasTextColor) {
+                    digitalFormUpdateFields.push(`text_color = $${digitalFormParamIndex++}`);
+                    digitalFormUpdateValues.push(text_color || '#333333');
+                    logger.info(`🎨 [GUEST_LIST] Sincronizando text_color para digital_form_items: ${text_color || '#333333'}`);
+                }
+            }
             
             if (digitalFormUpdateFields.length > 0) {
                 digitalFormUpdateValues.push(listId);
