@@ -197,12 +197,20 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
         updateFields.push(`updated_at = NOW()`);
         updateValues.push(guestListItemId);
         
+        console.log(`💾 [CUSTOMIZE-PORTARIA] Atualizando guest_list_items ID ${guestListItemId} com ${updateFields.length - 1} campos`);
+        console.log(`💾 [CUSTOMIZE-PORTARIA] Campos:`, updateFields.filter(f => !f.includes('updated_at')));
+        
         if (updateFields.length > 1) {
-            await client.query(`
+            const updateQuery = `
                 UPDATE guest_list_items 
                 SET ${updateFields.join(', ')}
                 WHERE id = $${paramIndex}
-            `, updateValues);
+                RETURNING *
+            `;
+            const result = await client.query(updateQuery, updateValues);
+            console.log(`✅ [CUSTOMIZE-PORTARIA] Atualização bem-sucedida. Registros afetados: ${result.rowCount}`);
+        } else {
+            console.warn(`⚠️ [CUSTOMIZE-PORTARIA] Nenhum campo para atualizar`);
         }
         
         res.json({ success: true, message: 'Personalização salva com sucesso!' });

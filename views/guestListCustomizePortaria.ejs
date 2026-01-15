@@ -357,7 +357,7 @@
                 <i class="fas fa-eye"></i> Preview
             </h2>
             <div class="preview-frame">
-                <iframe id="preview-iframe" src="/guest-list/view-full/<%= guestList.portaria_slug || guestList.public_view_token %>"></iframe>
+                <iframe id="preview-iframe" src="/guest-list/view-full/<%= guestList.portaria_slug || guestList.public_view_token %>" sandbox="allow-same-origin allow-scripts"></iframe>
             </div>
         </div>
     </div>
@@ -459,8 +459,25 @@
                     body: formData
                 });
                 
-                const data = await response.json();
-                if (data.url) {
+                console.log('📥 Resposta do upload:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok
+                });
+                
+                // Verificar se a resposta é JSON antes de fazer parse
+                const contentType = response.headers.get('content-type');
+                let data;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error('Resposta não é JSON:', text);
+                    throw new Error(`Resposta inválida do servidor: ${text.substring(0, 200)}`);
+                }
+                
+                if (response.ok && data.url) {
                     const urlField = type === 'header_image' ? 'header_image_url' : 
                                    type === 'logo_image' ? 'form_logo_url' : 
                                    'background_image_url';
@@ -474,10 +491,16 @@
                         preview.src = data.url;
                         preview.parentElement.classList.add('has-image');
                     }
+                    console.log('✅ Imagem enviada com sucesso:', data.url);
+                } else {
+                    const errorMessage = data.message || data.error || 'Erro desconhecido';
+                    console.error('❌ Erro no upload:', data);
+                    alert('❌ Erro ao fazer upload: ' + errorMessage);
                 }
             } catch (error) {
-                console.error('Erro ao fazer upload:', error);
-                alert('Erro ao fazer upload da imagem');
+                console.error('❌ Erro ao fazer upload:', error);
+                console.error('❌ Stack trace:', error.stack);
+                alert('❌ Erro ao fazer upload da imagem: ' + (error.message || 'Erro de conexão. Verifique sua internet e tente novamente.'));
             }
         }
         
