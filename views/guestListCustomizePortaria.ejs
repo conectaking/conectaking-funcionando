@@ -393,13 +393,7 @@
                         <input type="text" id="qr_code_button_text_color_text" value="<%= guestList.qr_code_button_text_color || '#000000' %>" onchange="updateColorFromText('qr_code_button_text_color', this.value)">
                     </div>
                     
-                    <label style="margin-top: 16px;">Cor do Texto "Confirmação Rápida"</label>
-                    <div class="color-input-wrapper">
-                        <input type="color" id="quick_confirm_title_color" value="<%= guestList.quick_confirm_title_color || '#FFFFFF' %>" onchange="updateColor('quick_confirm_title_color', this.value)">
-                        <input type="text" id="quick_confirm_title_color_text" value="<%= guestList.quick_confirm_title_color || '#FFFFFF' %>" onchange="updateColorFromText('quick_confirm_title_color', this.value)">
-                    </div>
-                    
-                    <label style="margin-top: 12px;">Cor do Ícone "Confirmação Rápida" (raio)</label>
+                    <label style="margin-top: 16px;">Cor do Ícone "Confirmação Rápida" (raio/flash)</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="quick_confirm_icon_color" value="<%= guestList.quick_confirm_icon_color || '#FFC700' %>" onchange="updateColor('quick_confirm_icon_color', this.value)">
                         <input type="text" id="quick_confirm_icon_color_text" value="<%= guestList.quick_confirm_icon_color || '#FFC700' %>" onchange="updateColorFromText('quick_confirm_icon_color', this.value)">
@@ -654,7 +648,6 @@
                 search_button_color_secondary: document.getElementById('search_button_color_secondary')?.value || null,
                 search_button_text_color: document.getElementById('search_button_text_color')?.value || null,
                 search_input_text_color: document.getElementById('search_input_text_color')?.value || null,
-                quick_confirm_title_color: document.getElementById('quick_confirm_title_color')?.value || null,
                 quick_confirm_icon_color: document.getElementById('quick_confirm_icon_color')?.value || null,
                 stats_number_color: document.getElementById('stats_number_color')?.value || null
             };
