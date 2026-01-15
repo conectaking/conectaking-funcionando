@@ -538,7 +538,7 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
 
         let formData = formRes.rows[0];
         
-        // LOG CRÍTICO: Verificar form_fields e CORES logo após buscar do banco
+        // LOG CRÍTICO: Verificar form_fields e CORES logo após buscar do banco (incluindo card_color e decorative_bar_color)
         logger.info('🔍 [FORM/PUBLIC] Dados do banco (digital_form_items) - RAW:', {
             id: formData.id,
             profile_item_id: formData.profile_item_id,
@@ -551,6 +551,12 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             background_color_type: typeof formData.background_color,
             text_color: formData.text_color,
             text_color_type: typeof formData.text_color,
+            card_color: formData.card_color,
+            card_color_type: typeof formData.card_color,
+            decorative_bar_color: formData.decorative_bar_color,
+            decorative_bar_color_type: typeof formData.decorative_bar_color,
+            separator_line_color: formData.separator_line_color,
+            separator_line_color_type: typeof formData.separator_line_color,
             theme: formData.theme,
             has_form_fields: !!formData.form_fields,
             form_fields_type: typeof formData.form_fields,
@@ -642,15 +648,19 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 formData.background_color = '#FFFFFF';
                 logger.info(`🎨 [FORM/PUBLIC] background_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
             }
-            // IMPORTANTE: decorative_bar_color e separator_line_color também devem vir APENAS de digital_form_items
-            // Se não existirem, usar primary_color como fallback (não buscar de guest_list_items)
-            if (!formData.decorative_bar_color || formData.decorative_bar_color === null || formData.decorative_bar_color === 'null') {
+            // IMPORTANTE: decorative_bar_color, separator_line_color e card_color também devem vir APENAS de digital_form_items
+            // Se não existirem, usar valores padrão como fallback (não buscar de guest_list_items)
+            if (!formData.decorative_bar_color || formData.decorative_bar_color === null || formData.decorative_bar_color === 'null' || formData.decorative_bar_color === '') {
                 formData.decorative_bar_color = formData.primary_color || '#4A90E2';
                 logger.info(`🎨 [FORM/PUBLIC] decorative_bar_color não encontrado em digital_form_items, usando primary_color: ${formData.decorative_bar_color}`);
             }
-            if (!formData.separator_line_color || formData.separator_line_color === null || formData.separator_line_color === 'null') {
+            if (!formData.separator_line_color || formData.separator_line_color === null || formData.separator_line_color === 'null' || formData.separator_line_color === '') {
                 formData.separator_line_color = formData.primary_color || '#4A90E2';
                 logger.info(`🎨 [FORM/PUBLIC] separator_line_color não encontrado em digital_form_items, usando primary_color: ${formData.separator_line_color}`);
+            }
+            if (!formData.card_color || formData.card_color === null || formData.card_color === 'null' || formData.card_color === '') {
+                formData.card_color = '#FFFFFF';
+                logger.info(`🎨 [FORM/PUBLIC] card_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
             }
             
             // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
@@ -694,9 +704,23 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             } else {
                 formData.enable_whatsapp = true; // Default
             }
+            // IMPORTANTE: Garantir valores padrão para card_color e decorative_bar_color quando não há guest_list_items
+            if (!formData.card_color || formData.card_color === null || formData.card_color === 'null' || formData.card_color === '') {
+                formData.card_color = '#FFFFFF';
+            }
+            if (!formData.decorative_bar_color || formData.decorative_bar_color === null || formData.decorative_bar_color === 'null' || formData.decorative_bar_color === '') {
+                formData.decorative_bar_color = formData.primary_color || '#4A90E2';
+            }
+            if (!formData.separator_line_color || formData.separator_line_color === null || formData.separator_line_color === 'null' || formData.separator_line_color === '') {
+                formData.separator_line_color = formData.primary_color || '#4A90E2';
+            }
+            
             logger.info(`ℹ️ [FORM/PUBLIC] Cores e configurações que serão usadas (de digital_form_items):`, {
                 primary_color: formData.primary_color,
                 secondary_color: formData.secondary_color,
+                card_color: formData.card_color,
+                decorative_bar_color: formData.decorative_bar_color,
+                separator_line_color: formData.separator_line_color,
                 enable_whatsapp: formData.enable_whatsapp,
                 enable_guest_list_submit: formData.enable_guest_list_submit
             });
@@ -792,7 +816,18 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         const profileSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
         const profileSlug = profileSlugRes.rows[0]?.profile_slug || slug;
 
-        // LOG FINAL ANTES DE RENDERIZAR - MUITO DETALHADO
+        // IMPORTANTE: Garantir que card_color e decorative_bar_color existam mesmo se não vieram do banco
+        if (!formData.card_color || formData.card_color === null || formData.card_color === 'null' || formData.card_color === '') {
+            formData.card_color = '#FFFFFF';
+        }
+        if (!formData.decorative_bar_color || formData.decorative_bar_color === null || formData.decorative_bar_color === 'null' || formData.decorative_bar_color === '') {
+            formData.decorative_bar_color = formData.primary_color || '#4A90E2';
+        }
+        if (!formData.separator_line_color || formData.separator_line_color === null || formData.separator_line_color === 'null' || formData.separator_line_color === '') {
+            formData.separator_line_color = formData.primary_color || '#4A90E2';
+        }
+        
+        // LOG FINAL ANTES DE RENDERIZAR - MUITO DETALHADO (incluindo card_color e decorative_bar_color)
         logger.info('🎨 [FORM/PUBLIC] Renderizando página com dados:', {
             itemId: itemIdInt,
             form_title: formData.form_title,
@@ -806,6 +841,12 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             secondary_color: formData.secondary_color,
             secondary_color_type: typeof formData.secondary_color,
             text_color: formData.text_color,
+            card_color: formData.card_color,
+            card_color_type: typeof formData.card_color,
+            decorative_bar_color: formData.decorative_bar_color,
+            decorative_bar_color_type: typeof formData.decorative_bar_color,
+            separator_line_color: formData.separator_line_color,
+            separator_line_color_type: typeof formData.separator_line_color,
             theme: formData.theme,
             enable_whatsapp: formData.enable_whatsapp,
             enable_guest_list_submit: formData.enable_guest_list_submit,
