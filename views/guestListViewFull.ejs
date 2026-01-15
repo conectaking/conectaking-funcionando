@@ -2896,57 +2896,92 @@
         
         // Função para obter label do campo pelo ID
         function getFieldLabel(fieldId) {
-            if (!formFields || !Array.isArray(formFields)) {
-                // Se não tiver formFields, tentar formatar o fieldId de forma mais amigável
-                return fieldId.toString().replace(/^field_\d+_/, '').replace(/^field_/, '').replace(/_/g, ' ') || fieldId;
+            const fieldIdStr = fieldId.toString();
+            
+            // Se não tiver formFields, tentar formatar o ID de forma amigável
+            if (!formFields || !Array.isArray(formFields) || formFields.length === 0) {
+                // Se for apenas um número, retornar "Campo [número]"
+                if (/^\d+$/.test(fieldIdStr)) {
+                    return `Campo ${fieldIdStr}`;
+                }
+                return fieldIdStr.replace(/^field_\d+_/, '').replace(/^field_/, '').replace(/_/g, ' ') || 'Campo';
             }
             
-            // Se fieldId for apenas um número (string ou número), tentar usar como índice direto
-            const fieldIdStr = fieldId.toString();
+            // PRIORIDADE 1: ID no formato "field_TIMESTAMP_INDEX" (ex: "field_1768361340392_0")
+            // Extrair o último número após o último underscore
+            const timestampMatch = fieldIdStr.match(/field[_-]\d+[_-](\d+)$/i);
+            if (timestampMatch && timestampMatch[1]) {
+                const index = parseInt(timestampMatch[1]);
+                console.log(`🔍 [getFieldLabel] Campo "${fieldIdStr}" -> extraído índice ${index} do formato field_TIMESTAMP_INDEX`);
+                if (index >= 0 && index < formFields.length) {
+                    const field = formFields[index];
+                    if (field) {
+                        const label = field.label || field.question || field.placeholder || field.name || field.title || `Campo ${index + 1}`;
+                        console.log(`✅ [getFieldLabel] Label encontrado: "${label}"`);
+                        return label;
+                    }
+                }
+            }
+            
+            // PRIORIDADE 2: ID é apenas um número (0, 1, 2, etc) - buscar pelo índice
             if (/^\d+$/.test(fieldIdStr)) {
                 const index = parseInt(fieldIdStr);
-                if (index >= 0 && index < formFields.length && formFields[index] && formFields[index].label) {
-                    return formFields[index].label;
+                if (index >= 0 && index < formFields.length && formFields[index]) {
+                    const field = formFields[index];
+                    if (field) {
+                        const label = field.label || field.question || field.placeholder || field.name || field.title || `Campo ${index + 1}`;
+                        return label;
+                    }
                 }
             }
             
-            // Tentar encontrar pelo ID exato
-            let field = formFields.find(f => {
-                if (!f.id) return false;
-                return f.id === fieldId || 
-                       f.id.toString() === fieldIdStr || 
-                       f.id.toString() === fieldIdStr.toString();
-            });
-            if (field && field.label) return field.label;
-            
-            // Tentar encontrar pelo ID sem prefixo
-            const fieldIdClean = fieldIdStr.replace(/^field_/, '').replace(/_/g, '');
-            field = formFields.find(f => {
-                if (!f.id) return false;
-                const fId = f.id.toString().replace(/^field_/, '').replace(/_/g, '');
-                return fId === fieldIdClean || fId.includes(fieldIdClean) || fieldIdClean.includes(fId);
-            });
-            if (field && field.label) return field.label;
-            
-            // Tentar encontrar pelo índice (se fieldId for field_0, field_1, etc)
-            const match = fieldIdStr.match(/field_(\d+)/);
+            // PRIORIDADE 3: ID é "field_0", "field_1", etc - extrair o número e buscar pelo índice
+            const match = fieldIdStr.match(/field[_-](\d+)$/i);
             if (match && match[1]) {
                 const index = parseInt(match[1]);
-                if (index >= 0 && index < formFields.length && formFields[index] && formFields[index].label) {
-                    return formFields[index].label;
+                if (index >= 0 && index < formFields.length) {
+                    const field = formFields[index];
+                    if (field) {
+                        return field.label || field.question || field.name || `Campo ${index + 1}`;
+                    }
                 }
             }
             
-            // Tentar encontrar pelo índice se fieldId começar com número após "field_"
-            const match2 = fieldIdStr.match(/^(\d+)/);
-            if (match2 && match2[1]) {
-                const index = parseInt(match2[1]);
-                if (index >= 0 && index < formFields.length && formFields[index] && formFields[index].label) {
-                    return formFields[index].label;
-                }
+            // PRIORIDADE 4: Tentar encontrar pelo ID exato
+            let field = formFields.find(f => {
+                if (!f.id) return false;
+                const fId = (f.id || '').toString();
+                return fId === fieldIdStr || fId === `field_${fieldIdStr}` || fId === `field${fieldIdStr}`;
+            });
+            if (field) {
+                return field.label || field.question || field.name || fieldIdStr;
             }
             
-            // Se não encontrou, retornar o ID formatado (remover "field_" e números)
+            // PRIORIDADE 5: Tentar encontrar pelo ID sem prefixo
+            const fieldIdClean = fieldIdStr.replace(/^field[_-]?\d+[_-]?/i, '').replace(/[_-]/g, '');
+            field = formFields.find(f => {
+                if (!f.id) return false;
+                const fId = (f.id || '').toString().replace(/^field[_-]?/i, '').replace(/[_-]/g, '');
+                return fId === fieldIdClean;
+            });
+            if (field) {
+                return field.label || field.question || field.name || fieldIdStr;
+            }
+            
+            // PRIORIDADE 6: Tentar encontrar pelo label (se o fieldId for parecido com algum label)
+            const fieldIdLower = fieldIdStr.toLowerCase();
+            field = formFields.find(f => {
+                const label = (f.label || f.question || f.name || '').toLowerCase();
+                return label.includes(fieldIdLower) || fieldIdLower.includes(label);
+            });
+            if (field) {
+                return field.label || field.question || field.name || fieldIdStr;
+            }
+            
+            // Se não encontrou, retornar o ID formatado
+            if (/^\d+$/.test(fieldIdStr)) {
+                return `Campo ${parseInt(fieldIdStr) + 1}`;
+            }
             const formatted = fieldIdStr.replace(/^field_\d+_/, '').replace(/^field_/, '').replace(/_/g, ' ');
             return formatted || fieldIdStr;
         }
