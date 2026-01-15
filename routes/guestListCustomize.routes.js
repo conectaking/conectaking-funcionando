@@ -35,7 +35,20 @@ router.get('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
         
         const guestList = result.rows[0];
         
-        // Garantir valores padrão
+        // IMPORTANTE: CORES COMPLETAMENTE SEPARADAS!
+        // "Personalizar Portaria" usa APENAS cores de guest_list_items, NUNCA de digital_form_items
+        // Se as cores não existirem em guest_list_items, usar valores padrão da Portaria
+        // NÃO buscar de digital_form_items - sistemas completamente separados
+        logger.info(`🎨 [CUSTOMIZE-PORTARIA] Usando APENAS cores de guest_list_items (Portaria), ignorando digital_form_items (King Forms)`);
+        logger.info(`🎨 [CUSTOMIZE-PORTARIA] Cores de guest_list_items:`, {
+            primary_color: guestList.primary_color,
+            secondary_color: guestList.secondary_color,
+            background_color: guestList.background_color,
+            text_color: guestList.text_color
+        });
+        
+        // Garantir valores padrão (apenas se não existirem em guest_list_items)
+        // NÃO usar digital_form_items como fallback - sistemas separados
         if (!guestList.primary_color) guestList.primary_color = '#FFC700';
         if (!guestList.secondary_color) guestList.secondary_color = '#FFB700';
         if (!guestList.text_color) guestList.text_color = '#ECECEC';
