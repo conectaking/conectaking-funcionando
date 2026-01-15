@@ -1546,17 +1546,23 @@ router.post('/:slug/form/:itemId/submit',
         }
         
         // IMPORTANTE: Marcar link único como usado APÓS cadastro bem-sucedido (sistema separado)
-        // Verificar se o token é um link único (buscar no referer ou na sessão)
-        // Extrair token do referer se o formulário foi acessado via link único
-        let uniqueToken = null;
-        const referer = req.headers.referer || '';
-        if (referer.includes('/form/share/')) {
-            const tokenMatch = referer.match(/\/form\/share\/([^\/\?]+)/);
-            if (tokenMatch && tokenMatch[1] && tokenMatch[1].startsWith('unique_')) {
-                uniqueToken = tokenMatch[1];
-                logger.info(`🔗 [UNIQUE_LINKS] Token único detectado no referer: ${uniqueToken}`);
+        // Buscar token único do payload ou do referer
+        let uniqueToken = req.body.unique_token || null;
+        
+        // Se não veio no payload, tentar extrair do referer
+        if (!uniqueToken) {
+            const referer = req.headers.referer || '';
+            if (referer.includes('/form/share/')) {
+                const tokenMatch = referer.match(/\/form\/share\/([^\/\?]+)/);
+                if (tokenMatch && tokenMatch[1] && tokenMatch[1].startsWith('unique_')) {
+                    uniqueToken = tokenMatch[1];
+                    logger.info(`🔗 [UNIQUE_LINKS] Token único detectado no referer: ${uniqueToken}`);
+                }
             }
+        } else {
+            logger.info(`🔗 [UNIQUE_LINKS] Token único recebido no payload: ${uniqueToken}`);
         }
+        
         if (uniqueToken && uniqueToken.startsWith('unique_')) {
             try {
                 // Usar guest_id se disponível, senão usar responseId
