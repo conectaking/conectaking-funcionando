@@ -1130,24 +1130,25 @@
                     <% for (var i = 0; i < checkedInArray.length; i++) { 
                         var guest = checkedInArray[i];
                         // Extrair nome, email e whatsapp corretamente
-                        let displayName = guest.name || '';
-                        let displayEmail = guest.email || '';
-                        let displayWhatsapp = guest.whatsapp || guest.phone || '';
+                        var displayName = guest.name || '';
+                        var displayEmail = guest.email || '';
+                        var displayWhatsapp = guest.whatsapp || guest.phone || '';
                         
                         if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') || 
                             !displayEmail || displayEmail.trim() === '' || 
                             !displayWhatsapp || displayWhatsapp.trim() === '') {
                             try {
-                                const customResponses = typeof guest.custom_responses === 'string' 
+                                var customResponses = typeof guest.custom_responses === 'string' 
                                     ? JSON.parse(guest.custom_responses) 
                                     : (guest.custom_responses || {});
                                 
                                 if (typeof formFields !== 'undefined' && Array.isArray(formFields)) {
-                                    formFields.forEach(field => {
+                                    for (var f = 0; f < formFields.length; f++) {
+                                        var field = formFields[f];
                                         if (field.id && customResponses[field.id]) {
-                                            const value = customResponses[field.id];
-                                            const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
-                                            const label = (field.label || '').toLowerCase();
+                                            var value = customResponses[field.id];
+                                            var valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                            var label = (field.label || '').toLowerCase();
                                             
                                             if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') && 
                                                 (label.includes('nome') || label.includes('name'))) {
@@ -1162,20 +1163,22 @@
                                                 displayEmail = valueStr;
                                             }
                                         }
-                                    });
+                                    }
                                 }
                                 
                                 // Fallback
                                 if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante')) {
-                                    Object.keys(customResponses).forEach(key => {
-                                        const keyLower = key.toLowerCase();
-                                        const value = customResponses[key];
-                                        const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                    var keys = Object.keys(customResponses);
+                                    for (var k = 0; k < keys.length; k++) {
+                                        var key = keys[k];
+                                        var keyLower = key.toLowerCase();
+                                        var value = customResponses[key];
+                                        var valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
                                         if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') && 
                                             (keyLower.includes('nome') || keyLower.includes('name'))) {
                                             displayName = valueStr;
                                         }
-                                    });
+                                    }
                                 }
                             } catch (e) {}
                         }
@@ -1185,49 +1188,52 @@
                         displayWhatsapp = (displayWhatsapp && displayWhatsapp.trim()) ? displayWhatsapp.trim() : '-';
                         
                         // Formatar CPF - buscar de document ou custom_responses
-                        let displayCPF = guest.document || '';
+                        var displayCPF = guest.document || '';
                         
                         // Se não tiver CPF em document, tentar buscar em custom_responses
                         if (!displayCPF || displayCPF.trim() === '') {
                             try {
-                                const customResponses = typeof guest.custom_responses === 'string' 
+                                var customResponses = typeof guest.custom_responses === 'string' 
                                     ? JSON.parse(guest.custom_responses) 
                                     : (guest.custom_responses || {});
                                 
                                 // Procurar nos formFields primeiro
                                 if (typeof formFields !== 'undefined' && Array.isArray(formFields)) {
-                                    formFields.forEach(field => {
+                                    for (var f = 0; f < formFields.length; f++) {
+                                        var field = formFields[f];
                                         if (field.id && customResponses[field.id]) {
-                                            const value = customResponses[field.id];
-                                            const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
-                                            const label = (field.label || '').toLowerCase();
+                                            var value = customResponses[field.id];
+                                            var valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                            var label = (field.label || '').toLowerCase();
                                             
                                             if ((!displayCPF || displayCPF.trim() === '') && 
                                                 (label.includes('cpf') || label.includes('documento') || label.includes('document'))) {
                                                 displayCPF = valueStr;
                                             }
                                         }
-                                    });
+                                    }
                                 }
                                 
                                 // Fallback: procurar por chaves nos customResponses
                                 if (!displayCPF || displayCPF.trim() === '') {
-                                    Object.keys(customResponses).forEach(key => {
-                                        const keyLower = key.toLowerCase();
-                                        const value = customResponses[key];
-                                        const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                    var keys = Object.keys(customResponses);
+                                    for (var k = 0; k < keys.length; k++) {
+                                        var key = keys[k];
+                                        var keyLower = key.toLowerCase();
+                                        var value = customResponses[key];
+                                        var valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
                                         
                                         if ((!displayCPF || displayCPF.trim() === '') && 
                                             (keyLower.includes('cpf') || keyLower.includes('documento') || keyLower.includes('document'))) {
                                             displayCPF = valueStr;
                                         }
-                                    });
+                                    }
                                 }
                             } catch (e) {}
                         }
                         
                         if (displayCPF) {
-                            const cleanCPF = displayCPF.replace(/\D/g, '');
+                            var cleanCPF = displayCPF.replace(/\D/g, '');
                             if (cleanCPF.length === 11) {
                                 displayCPF = cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
                             } else {
@@ -1288,25 +1294,26 @@
                     <% for (var j = 0; j < notArrivedArray.length; j++) { 
                         var guest = notArrivedArray[j];
                         // Extrair nome, email e whatsapp
-                        let displayName = guest.name || '';
-                        let displayEmail = guest.email || '';
-                        let displayWhatsapp = guest.whatsapp || guest.phone || '';
+                        var displayName = guest.name || '';
+                        var displayEmail = guest.email || '';
+                        var displayWhatsapp = guest.whatsapp || guest.phone || '';
                         
                         // Tentar extrair de custom_responses se necessário
                         if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') || 
                             !displayEmail || displayEmail.trim() === '' || 
                             !displayWhatsapp || displayWhatsapp.trim() === '') {
                             try {
-                                const customResponses = typeof guest.custom_responses === 'string' 
+                                var customResponses = typeof guest.custom_responses === 'string' 
                                     ? JSON.parse(guest.custom_responses) 
                                     : (guest.custom_responses || {});
                                 
                                 if (typeof formFields !== 'undefined' && Array.isArray(formFields)) {
-                                    formFields.forEach(field => {
+                                    for (var f = 0; f < formFields.length; f++) {
+                                        var field = formFields[f];
                                         if (field.id && customResponses[field.id]) {
-                                            const value = customResponses[field.id];
-                                            const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
-                                            const label = (field.label || '').toLowerCase();
+                                            var value = customResponses[field.id];
+                                            var valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                            var label = (field.label || '').toLowerCase();
                                             
                                             if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') && 
                                                 (label.includes('nome') || label.includes('name'))) {
@@ -1321,14 +1328,16 @@
                                                 displayWhatsapp = valueStr;
                                             }
                                         }
-                                    });
+                                    }
                                 }
                                 
                                 // Fallback: procurar por chaves
-                                Object.keys(customResponses).forEach(key => {
-                                    const keyLower = key.toLowerCase();
-                                    const value = customResponses[key];
-                                    const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
+                                var keys = Object.keys(customResponses);
+                                for (var k = 0; k < keys.length; k++) {
+                                    var key = keys[k];
+                                    var keyLower = key.toLowerCase();
+                                    var value = customResponses[key];
+                                    var valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
                                     
                                     if ((!displayName || displayName.trim() === '' || displayName.toLowerCase() === 'visitante') && 
                                         (keyLower.includes('nome') || keyLower.includes('name'))) {
@@ -1342,7 +1351,7 @@
                                         (keyLower.includes('whatsapp') || keyLower.includes('telefone') || keyLower.includes('phone'))) {
                                         displayWhatsapp = valueStr;
                                     }
-                                });
+                                }
                             } catch (e) {}
                         }
                         
@@ -1351,9 +1360,9 @@
                         displayWhatsapp = (displayWhatsapp && displayWhatsapp.trim()) ? displayWhatsapp.trim() : '-';
                         
                         // Formatar CPF
-                        let displayCPF = guest.document || '';
+                        var displayCPF = guest.document || '';
                         if (displayCPF) {
-                            const cleanCPF = displayCPF.replace(/\D/g, '');
+                            var cleanCPF = displayCPF.replace(/\D/g, '');
                             if (cleanCPF.length === 11) {
                                 displayCPF = cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
                             }
@@ -1361,9 +1370,9 @@
                         displayCPF = displayCPF || '-';
                         
                         // Status e data
-                        let statusText = 'Inscrito';
-                        let statusClass = 'status-registered';
-                        let statusValue = 'registered';
+                        var statusText = 'Inscrito';
+                        var statusClass = 'status-registered';
+                        var statusValue = 'registered';
                         if (guest.status === 'checked_in') {
                             statusText = 'Chegou';
                             statusClass = 'status-checked_in';
@@ -1373,7 +1382,7 @@
                             statusClass = 'status-confirmed';
                             statusValue = 'confirmed';
                         }
-                        let dateToShow = guest.created_at;
+                        var dateToShow = guest.created_at;
                     %>
                         <div class="table-row" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>" data-status="<%= statusValue %>">
                             <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
