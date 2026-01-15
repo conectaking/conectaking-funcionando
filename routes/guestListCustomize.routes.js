@@ -175,21 +175,31 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
         const updateValues = [];
         let paramIndex = 1;
         
+        // IMPORTANTE: CORES COMPLETAMENTE SEPARADAS!
+        // Salvar cores APENAS em guest_list_items (Portaria)
+        // NÃO sincronizar para digital_form_items (King Forms)
+        // Cada sistema mantém suas próprias cores independentes
+        logger.info(`🎨 [CUSTOMIZE-PORTARIA] Salvando cores APENAS em guest_list_items (Portaria), NÃO sincronizando para digital_form_items`);
+        
         if (primary_color !== undefined) {
             updateFields.push(`primary_color = $${paramIndex++}`);
             updateValues.push(primary_color);
+            logger.info(`🎨 [CUSTOMIZE-PORTARIA] Salvando primary_color APENAS em guest_list_items: ${primary_color} (NÃO afeta King Forms)`);
         }
         if (secondary_color !== undefined) {
             updateFields.push(`secondary_color = $${paramIndex++}`);
             updateValues.push(secondary_color);
+            logger.info(`🎨 [CUSTOMIZE-PORTARIA] Salvando secondary_color APENAS em guest_list_items: ${secondary_color} (NÃO afeta King Forms)`);
         }
         if (text_color !== undefined) {
             updateFields.push(`text_color = $${paramIndex++}`);
             updateValues.push(text_color);
+            logger.info(`🎨 [CUSTOMIZE-PORTARIA] Salvando text_color APENAS em guest_list_items: ${text_color} (NÃO afeta King Forms)`);
         }
         if (background_color !== undefined) {
             updateFields.push(`background_color = $${paramIndex++}`);
             updateValues.push(background_color);
+            logger.info(`🎨 [CUSTOMIZE-PORTARIA] Salvando background_color APENAS em guest_list_items: ${background_color} (NÃO afeta King Forms)`);
         }
         if (background_image_url !== undefined) {
             updateFields.push(`background_image_url = $${paramIndex++}`);

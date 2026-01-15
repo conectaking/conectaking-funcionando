@@ -1986,9 +1986,16 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                     updateFormFields.push(`background_color = $${formParamIndex++}`);
                     updateFormValues.push(background_color || '#FFFFFF');
                     console.log(`🎨 [DIGITAL_FORM] BACKGROUND_COLOR: Salvando APENAS em digital_form_items: "${background_color || '#FFFFFF'}"`);
-                    console.log(`🎨 [DIGITAL_FORM] IMPORTANTE: Esta cor NÃO afeta guest_list_items (portaria) - sistemas separados!`);
+                    console.log(`🎨 [DIGITAL_FORM] IMPORTANTE: Esta cor NÃO afeta guest_list_items (portaria) - sistemas COMPLETAMENTE separados!`);
+                    console.log(`🎨 [DIGITAL_FORM] Personalizar Portaria mantém suas próprias cores independentes em guest_list_items`);
                 }
             }
+            
+            // IMPORTANTE: CORES COMPLETAMENTE SEPARADAS!
+            // NÃO atualizar guest_list_items quando salvar no King Forms
+            // Cada sistema (King Forms/digital_form_items e Portaria/guest_list_items) mantém suas próprias cores
+            // Não há sincronização de cores entre sistemas
+            console.log(`🎨 [DIGITAL_FORM] CORES SEPARADAS: King Forms não sincroniza cores para guest_list_items (Portaria)`);
             
             // Adicionar enable_whatsapp e enable_guest_list_submit se existirem
             if (enable_whatsapp !== undefined) {
