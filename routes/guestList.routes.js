@@ -1047,33 +1047,12 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 logger.info(`📋 [GUEST_LIST] Sincronizando custom_form_fields (${formFieldsArray.length} campos) para form_fields em digital_form_items`);
             }
             
-            // IMPORTANTE: Sincronizar decorative_bar_color em digital_form_items
-            const hasDecorativeBarColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'decorative_bar_color');
-            logger.info(`🔍 [GUEST_LIST] Verificando sincronização de decorative_bar_color:`, {
-                decorative_bar_color_undefined: decorative_bar_color === undefined,
-                decorative_bar_color_value: decorative_bar_color || 'null',
-                hasDecorativeBarColor: hasDecorativeBarColor,
-                columnCheckResults: digitalFormColumnCheck.rows.map(r => r.column_name)
-            });
-            if (decorative_bar_color !== undefined && hasDecorativeBarColor) {
-                digitalFormUpdateFields.push(`decorative_bar_color = $${digitalFormParamIndex++}`);
-                digitalFormUpdateValues.push(decorative_bar_color || null);
-                logger.info(`🎨 [GUEST_LIST] Sincronizando decorative_bar_color (${decorative_bar_color || 'null'}) para digital_form_items`);
-            } else {
-                logger.warn(`⚠️ [GUEST_LIST] decorative_bar_color NÃO será sincronizado:`, {
-                    decorative_bar_color_undefined: decorative_bar_color === undefined,
-                    decorative_bar_color_value: decorative_bar_color || 'null',
-                    hasDecorativeBarColor: hasDecorativeBarColor
-                });
-            }
-            
-            // IMPORTANTE: Sincronizar separator_line_color em digital_form_items
-            const hasSeparatorLineColor = digitalFormColumnCheck.rows.some(r => r.column_name === 'separator_line_color');
-            if (separator_line_color !== undefined && hasSeparatorLineColor) {
-                digitalFormUpdateFields.push(`separator_line_color = $${digitalFormParamIndex++}`);
-                digitalFormUpdateValues.push(separator_line_color || '#e8eaed');
-                logger.info(`🎨 [GUEST_LIST] Sincronizando separator_line_color (${separator_line_color || '#e8eaed'}) para digital_form_items`);
-            }
+            // IMPORTANTE: NÃO SINCRONIZAR CORES ENTRE SISTEMAS!
+            // decorative_bar_color e separator_line_color são cores visuais e devem ser COMPLETAMENTE SEPARADAS
+            // Portaria (guest_list_items) e King Forms (digital_form_items) têm suas próprias cores independentes
+            // Apenas sincronizar dados funcionais (enable_whatsapp, enable_guest_list_submit, logos, form_fields, form_title)
+            logger.info(`🎨 [GUEST_LIST] CORES SEPARADAS: NÃO sincronizando decorative_bar_color e separator_line_color para digital_form_items`);
+            logger.info(`🎨 [GUEST_LIST] Cada sistema (Portaria e King Forms) mantém suas próprias cores independentes`);
             
             if (digitalFormUpdateFields.length > 0) {
                 digitalFormUpdateValues.push(listId);
