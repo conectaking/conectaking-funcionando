@@ -689,6 +689,8 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 primary_color_type: typeof guestListData.primary_color,
                 secondary_color: guestListData.secondary_color,
                 secondary_color_type: typeof guestListData.secondary_color,
+                background_color: guestListData.background_color,
+                background_color_type: typeof guestListData.background_color,
                 enable_whatsapp: guestListData.enable_whatsapp,
                 enable_guest_list_submit: guestListData.enable_guest_list_submit,
                 updated_at: guestListData.updated_at,
@@ -697,43 +699,73 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             });
             
             // IMPORTANTE: CORES COMPLETAMENTE SEPARADAS!
-            // King Forms usa APENAS cores de digital_form_items (não buscar de guest_list_items)
-            // Portaria usa APENAS cores de guest_list_items (não buscar de digital_form_items)
-            // Quando existe guest_list_items, apenas mesclar enable_whatsapp e enable_guest_list_submit (configurações funcionais, não cores)
+            // Se item_type é 'digital_form' (King Forms): usar APENAS cores de digital_form_items (IGNORAR guest_list_items)
+            // Se item_type é 'guest_list' (Portaria): usar APENAS cores de guest_list_items (IGNORAR digital_form_items)
             // NÃO mesclar cores entre sistemas - cada um mantém suas próprias cores independentes
-            logger.info(`🎨 [FORM/PUBLIC] CORES SEPARADAS: Usando APENAS cores de digital_form_items (King Forms), NÃO mesclando com guest_list_items (Portaria)`);
+            if (item.item_type === 'guest_list') {
+                // É Portaria: usar cores de guest_list_items
+                logger.info(`🎨 [FORM/PUBLIC] Item é Portaria (guest_list): usando cores de guest_list_items`);
+                if (guestListData.primary_color) formData.primary_color = guestListData.primary_color;
+                if (guestListData.secondary_color) formData.secondary_color = guestListData.secondary_color;
+                if (guestListData.text_color) formData.text_color = guestListData.text_color;
+                if (guestListData.background_color) {
+                    formData.background_color = guestListData.background_color;
+                    logger.info(`🎨 [FORM/PUBLIC] background_color de Portaria (guest_list_items): ${guestListData.background_color}`);
+                }
+                if (guestListData.background_image_url) formData.background_image_url = guestListData.background_image_url;
+                if (guestListData.background_opacity !== null && guestListData.background_opacity !== undefined) {
+                    formData.background_opacity = guestListData.background_opacity;
+                }
+                if (guestListData.header_image_url) formData.header_image_url = guestListData.header_image_url;
+                if (guestListData.theme) formData.theme = guestListData.theme;
+                if (guestListHasCardColor && guestListData.card_color) formData.card_color = guestListData.card_color;
+                if (guestListHasDecorativeBarColor && guestListData.decorative_bar_color) formData.decorative_bar_color = guestListData.decorative_bar_color;
+                if (guestListHasSeparatorLineColor && guestListData.separator_line_color) formData.separator_line_color = guestListData.separator_line_color;
+            } else {
+                // É King Forms (digital_form): usar APENAS cores de digital_form_items, NÃO mesclar com guest_list_items
+                logger.info(`🎨 [FORM/PUBLIC] Item é King Forms (digital_form): usando APENAS cores de digital_form_items, IGNORANDO guest_list_items.background_color: ${guestListData.background_color}`);
+                // NÃO mesclar cores - usar apenas as de digital_form_items (que já estão em formData)
+            }
             
-            // IMPORTANTE: Garantir valores padrão para cores se não existirem em digital_form_items
-            // NÃO buscar de guest_list_items - sistemas completamente separados
-            if (!formData.primary_color || formData.primary_color === null || formData.primary_color === 'null') {
-                formData.primary_color = '#4A90E2';
-                logger.info(`🎨 [FORM/PUBLIC] primary_color não encontrado em digital_form_items, usando padrão: #4A90E2`);
+            // IMPORTANTE: Garantir valores padrão para cores se não existirem em digital_form_items (apenas se for King Forms)
+            // Se for Portaria, já foram mesclados acima de guest_list_items
+            if (item.item_type === 'digital_form') {
+                // King Forms: garantir valores padrão se não existirem em digital_form_items
+                // NÃO usar guest_list_items como fallback
+                if (!formData.primary_color || formData.primary_color === null || formData.primary_color === 'null') {
+                    formData.primary_color = '#4A90E2';
+                    logger.info(`🎨 [FORM/PUBLIC] King Forms: primary_color não encontrado em digital_form_items, usando padrão: #4A90E2`);
+                }
+                if (!formData.secondary_color || formData.secondary_color === null || formData.secondary_color === 'null') {
+                    formData.secondary_color = formData.primary_color || '#4A90E2';
+                    logger.info(`🎨 [FORM/PUBLIC] King Forms: secondary_color não encontrado em digital_form_items, usando primary_color: ${formData.secondary_color}`);
+                }
+                if (!formData.text_color || formData.text_color === null || formData.text_color === 'null') {
+                    formData.text_color = '#333333';
+                    logger.info(`🎨 [FORM/PUBLIC] King Forms: text_color não encontrado em digital_form_items, usando padrão: #333333`);
+                }
+                if (!formData.background_color || formData.background_color === null || formData.background_color === 'null') {
+                    formData.background_color = '#FFFFFF';
+                    logger.info(`🎨 [FORM/PUBLIC] King Forms: background_color não encontrado em digital_form_items, usando padrão: #FFFFFF (IGNORANDO guest_list_items.background_color: ${guestListData.background_color})`);
+                }
             }
-            if (!formData.secondary_color || formData.secondary_color === null || formData.secondary_color === 'null') {
-                formData.secondary_color = formData.primary_color || '#4A90E2';
-                logger.info(`🎨 [FORM/PUBLIC] secondary_color não encontrado em digital_form_items, usando primary_color: ${formData.secondary_color}`);
-            }
-            if (!formData.text_color || formData.text_color === null || formData.text_color === 'null') {
-                formData.text_color = '#333333';
-                logger.info(`🎨 [FORM/PUBLIC] text_color não encontrado em digital_form_items, usando padrão: #333333`);
-            }
-            if (!formData.background_color || formData.background_color === null || formData.background_color === 'null') {
-                formData.background_color = '#FFFFFF';
-                logger.info(`🎨 [FORM/PUBLIC] background_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
-            }
-            // IMPORTANTE: decorative_bar_color, separator_line_color e card_color - usar APENAS digital_form_items
-            // NÃO buscar de guest_list_items - sistemas completamente separados
-            if (!formData.decorative_bar_color || formData.decorative_bar_color === null || formData.decorative_bar_color === 'null' || formData.decorative_bar_color === '') {
-                formData.decorative_bar_color = formData.primary_color || '#4A90E2';
-                logger.info(`🎨 [FORM/PUBLIC] decorative_bar_color não encontrado em digital_form_items, usando primary_color: ${formData.decorative_bar_color}`);
-            }
-            if (!formData.separator_line_color || formData.separator_line_color === null || formData.separator_line_color === 'null' || formData.separator_line_color === '') {
-                formData.separator_line_color = formData.primary_color || '#4A90E2';
-                logger.info(`🎨 [FORM/PUBLIC] separator_line_color não encontrado em digital_form_items, usando primary_color: ${formData.separator_line_color}`);
-            }
-            if (!formData.card_color || formData.card_color === null || formData.card_color === 'null' || formData.card_color === '') {
-                formData.card_color = '#FFFFFF';
-                logger.info(`🎨 [FORM/PUBLIC] card_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
+            // IMPORTANTE: decorative_bar_color, separator_line_color e card_color - usar APENAS digital_form_items (se King Forms) ou guest_list_items (se Portaria)
+            // King Forms: usar apenas digital_form_items (NÃO buscar de guest_list_items)
+            // Portaria: já foi mesclado acima de guest_list_items
+            if (item.item_type === 'digital_form') {
+                // King Forms: usar apenas digital_form_items, NÃO mesclar com guest_list_items
+                if (!formData.decorative_bar_color || formData.decorative_bar_color === null || formData.decorative_bar_color === 'null' || formData.decorative_bar_color === '') {
+                    formData.decorative_bar_color = formData.primary_color || '#4A90E2';
+                    logger.info(`🎨 [FORM/PUBLIC] King Forms: decorative_bar_color não encontrado em digital_form_items, usando primary_color: ${formData.decorative_bar_color}`);
+                }
+                if (!formData.separator_line_color || formData.separator_line_color === null || formData.separator_line_color === 'null' || formData.separator_line_color === '') {
+                    formData.separator_line_color = formData.primary_color || '#4A90E2';
+                    logger.info(`🎨 [FORM/PUBLIC] King Forms: separator_line_color não encontrado em digital_form_items, usando primary_color: ${formData.separator_line_color}`);
+                }
+                if (!formData.card_color || formData.card_color === null || formData.card_color === 'null' || formData.card_color === '') {
+                    formData.card_color = '#FFFFFF';
+                    logger.info(`🎨 [FORM/PUBLIC] King Forms: card_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
+                }
             }
             
             // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
