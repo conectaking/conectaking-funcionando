@@ -177,19 +177,27 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             updateValues.push(header_image_url || null);
         }
         if (form_logo_url !== undefined) {
-            // Verificar se a coluna existe antes de atualizar
-            const formLogoColumnCheck = await client.query(`
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'guest_list_items' 
-                AND column_name = 'form_logo_url'
-            `);
-            if (formLogoColumnCheck.rows.length > 0) {
-                updateFields.push(`form_logo_url = $${paramIndex++}`);
-                updateValues.push(form_logo_url || null);
-                console.log(`🖼️ [CUSTOMIZE-PORTARIA] Salvando form_logo_url: ${form_logo_url || 'null'}`);
-            } else {
-                console.warn(`⚠️ [CUSTOMIZE-PORTARIA] Coluna form_logo_url não existe na tabela guest_list_items. Ignorando.`);
+            // Verificar se a coluna existe antes de atualizar (case-insensitive)
+            try {
+                const formLogoColumnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND LOWER(column_name) = LOWER('form_logo_url')
+                `);
+                if (formLogoColumnCheck.rows.length > 0) {
+                    // Usar o nome exato da coluna como está no banco
+                    const actualColumnName = formLogoColumnCheck.rows[0].column_name;
+                    updateFields.push(`"${actualColumnName}" = $${paramIndex++}`);
+                    updateValues.push(form_logo_url || null);
+                    console.log(`🖼️ [CUSTOMIZE-PORTARIA] Salvando ${actualColumnName}: ${form_logo_url || 'null'}`);
+                } else {
+                    console.warn(`⚠️ [CUSTOMIZE-PORTARIA] Coluna form_logo_url não existe na tabela guest_list_items. Ignorando.`);
+                    console.warn(`⚠️ [CUSTOMIZE-PORTARIA] Execute a migration 081_add_form_logo_url_to_guest_list.sql para adicionar a coluna.`);
+                }
+            } catch (checkError) {
+                console.error(`❌ [CUSTOMIZE-PORTARIA] Erro ao verificar coluna form_logo_url:`, checkError);
+                // Continuar sem essa coluna se houver erro na verificação
             }
         }
         if (theme_portaria !== undefined) {
@@ -211,6 +219,7 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
         
         console.log(`💾 [CUSTOMIZE-PORTARIA] Atualizando guest_list_items ID ${guestListItemId} com ${updateFields.length - 1} campos`);
         console.log(`💾 [CUSTOMIZE-PORTARIA] Campos:`, updateFields.filter(f => !f.includes('updated_at')));
+        console.log(`💾 [CUSTOMIZE-PORTARIA] Valores:`, updateValues.slice(0, -1)); // Todos exceto o último (ID)
         
         if (updateFields.length > 1) {
             const updateQuery = `
@@ -219,8 +228,18 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
                 WHERE id = $${paramIndex}
                 RETURNING *
             `;
-            const result = await client.query(updateQuery, updateValues);
-            console.log(`✅ [CUSTOMIZE-PORTARIA] Atualização bem-sucedida. Registros afetados: ${result.rowCount}`);
+            
+            console.log(`🔍 [CUSTOMIZE-PORTARIA] Query SQL:`, updateQuery.replace(/\$\d+/g, '?'));
+            
+            try {
+                const result = await client.query(updateQuery, updateValues);
+                console.log(`✅ [CUSTOMIZE-PORTARIA] Atualização bem-sucedida. Registros afetados: ${result.rowCount}`);
+            } catch (queryError) {
+                console.error(`❌ [CUSTOMIZE-PORTARIA] Erro na query SQL:`, queryError);
+                console.error(`❌ [CUSTOMIZE-PORTARIA] Query:`, updateQuery);
+                console.error(`❌ [CUSTOMIZE-PORTARIA] Valores:`, updateValues);
+                throw queryError; // Re-throw para ser capturado pelo catch externo
+            }
         } else {
             console.warn(`⚠️ [CUSTOMIZE-PORTARIA] Nenhum campo para atualizar`);
         }
@@ -228,7 +247,21 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
         res.json({ success: true, message: 'Personalização salva com sucesso!' });
     } catch (error) {
         logger.error('Erro ao salvar personalização da portaria:', error);
-        res.status(500).json({ message: 'Erro ao salvar personalização', error: error.message });
+        logger.error('Stack trace:', error.stack);
+        console.error('❌ [CUSTOMIZE-PORTARIA] Erro completo:', {
+            message: error.message,
+            code: error.code,
+            detail: error.detail,
+            hint: error.hint,
+            position: error.position
+        });
+        res.status(500).json({ 
+            success: false,
+            message: 'Erro ao salvar personalização', 
+            error: error.message,
+            detail: error.detail,
+            hint: error.hint
+        });
     } finally {
         client.release();
     }
@@ -300,19 +333,27 @@ router.put('/:id/customize-confirmacao', protectUser, asyncHandler(async (req, r
             updateValues.push(header_image_url || null);
         }
         if (form_logo_url !== undefined) {
-            // Verificar se a coluna existe antes de atualizar
-            const formLogoColumnCheck = await client.query(`
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'guest_list_items' 
-                AND column_name = 'form_logo_url'
-            `);
-            if (formLogoColumnCheck.rows.length > 0) {
-                updateFields.push(`form_logo_url = $${paramIndex++}`);
-                updateValues.push(form_logo_url || null);
-                console.log(`🖼️ [CUSTOMIZE-CONFIRMACAO] Salvando form_logo_url: ${form_logo_url || 'null'}`);
-            } else {
-                console.warn(`⚠️ [CUSTOMIZE-CONFIRMACAO] Coluna form_logo_url não existe na tabela guest_list_items. Ignorando.`);
+            // Verificar se a coluna existe antes de atualizar (case-insensitive)
+            try {
+                const formLogoColumnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'guest_list_items' 
+                    AND LOWER(column_name) = LOWER('form_logo_url')
+                `);
+                if (formLogoColumnCheck.rows.length > 0) {
+                    // Usar o nome exato da coluna como está no banco
+                    const actualColumnName = formLogoColumnCheck.rows[0].column_name;
+                    updateFields.push(`"${actualColumnName}" = $${paramIndex++}`);
+                    updateValues.push(form_logo_url || null);
+                    console.log(`🖼️ [CUSTOMIZE-CONFIRMACAO] Salvando ${actualColumnName}: ${form_logo_url || 'null'}`);
+                } else {
+                    console.warn(`⚠️ [CUSTOMIZE-CONFIRMACAO] Coluna form_logo_url não existe na tabela guest_list_items. Ignorando.`);
+                    console.warn(`⚠️ [CUSTOMIZE-CONFIRMACAO] Execute a migration 081_add_form_logo_url_to_guest_list.sql para adicionar a coluna.`);
+                }
+            } catch (checkError) {
+                console.error(`❌ [CUSTOMIZE-CONFIRMACAO] Erro ao verificar coluna form_logo_url:`, checkError);
+                // Continuar sem essa coluna se houver erro na verificação
             }
         }
         if (theme_confirmacao !== undefined) {
