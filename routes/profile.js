@@ -1944,9 +1944,18 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                     WHERE table_name = 'digital_form_items' AND column_name = 'separator_line_color'
                 `);
                 if (separatorLineColorCheck.rows.length > 0) {
+                    // Tratar string vazia ou 'null' como valor válido (usar o que veio)
+                    // Não usar fallback automático - usar apenas se realmente não existir
+                    const valueToSave = (separator_line_color && 
+                                         typeof separator_line_color === 'string' && 
+                                         separator_line_color.trim() !== '' && 
+                                         separator_line_color !== 'null' && 
+                                         separator_line_color !== 'undefined') 
+                                         ? separator_line_color.trim() 
+                                         : (separator_line_color !== null && separator_line_color !== undefined ? separator_line_color : '#e8eaed');
                     updateFormFields.push(`separator_line_color = $${formParamIndex++}`);
-                    updateFormValues.push(separator_line_color || '#e8eaed');
-                    console.log(`🎨 [SEPARATOR_LINE_COLOR] Valor a ser salvo: "${separator_line_color || '#e8eaed'}"`);
+                    updateFormValues.push(valueToSave);
+                    console.log(`🎨 [SEPARATOR_LINE_COLOR] Valor a ser salvo: "${valueToSave}" (recebido: "${separator_line_color}")`);
                 } else {
                     console.warn(`⚠️ [SEPARATOR_LINE_COLOR] Coluna separator_line_color não existe na tabela digital_form_items`);
                 }
