@@ -272,10 +272,11 @@
     <div class="header-actions" style="max-width: 1400px; margin: 0 auto 24px;">
         <% 
             // Determinar URL de voltar: para view-full da portaria (menu de confirmação de presença)
-            const portariaSlug = guestList.portaria_slug || guestList.public_view_token;
-            const backUrl = portariaSlug ? `/guest-list/view-full/${portariaSlug}` : `javascript:history.back()`;
+            // Usar portaria_slug, public_view_token ou confirmation_token como fallback
+            const portariaSlug = guestList.portaria_slug || guestList.public_view_token || guestList.confirmation_token;
+            const backUrl = portariaSlug ? `/guest-list/view-full/${portariaSlug}` : null;
         %>
-        <a href="<%= backUrl %>" class="back-button">
+        <a href="<%= backUrl || '#' %>" class="back-button" onclick="<%= backUrl ? '' : 'event.preventDefault(); if(document.referrer && !document.referrer.includes(\'customize-portaria\')){window.location.href=document.referrer;}else{history.back();}return false;' %>">
             <i class="fas fa-arrow-left"></i> Voltar para Confirmação de Presença
         </a>
         <h1 style="color: #FFC700; margin: 0; font-size: 20px; font-weight: 700;">
