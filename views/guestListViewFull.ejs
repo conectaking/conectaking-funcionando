@@ -2883,13 +2883,8 @@
                 }
             });
             
-            // Resetar filtro para "all" ao mudar de aba e garantir visibilidade
+            // Garantir visibilidade ao mudar de aba
             setTimeout(() => {
-                const statusFilter = document.getElementById('status-filter');
-                if (statusFilter) {
-                    statusFilter.value = 'all';
-                }
-                
                 // PRIMEIRO: Garantir que todas as linhas da aba ativa sejam visíveis
                 if (tabElement) {
                     const rows = tabElement.querySelectorAll('.table-row');
@@ -2915,7 +2910,7 @@
                     console.error('❌ [TAB] tabElement é null, não é possível processar linhas');
                 }
                 
-                // DEPOIS: Aplicar filtro (que deve mostrar todos já que está em 'all')
+                // DEPOIS: Aplicar busca se houver termo de busca
                 if (typeof filterGuests === 'function') {
                     filterGuests();
                 }
@@ -2925,9 +2920,8 @@
         // Tornar switchTab global para uso em onclick
         window.switchTab = switchTab;
         
-        // Função para filtrar convidados por status
+        // Função para filtrar convidados (apenas busca por texto, sem filtro de status)
         function filterGuests() {
-            const filterValue = document.getElementById('status-filter')?.value || 'all';
             // Filtrar apenas nas abas visíveis (active)
             const activeTab = document.querySelector('.tab-content.active');
             if (!activeTab) {
@@ -2937,9 +2931,6 @@
             
             // Filtrar apenas na aba ativa
             const rows = activeTab.querySelectorAll('.table-row');
-            let visibleCount = 0;
-            
-            console.log(`🔍 Filtrando ${rows.length} linhas na aba ativa (${activeTab.id}) com filtro: ${filterValue}`);
             
             // Se não há linhas, não fazer nada
             if (rows.length === 0) {
@@ -2947,53 +2938,35 @@
                 return;
             }
             
+            // Buscar pelo texto do input de busca
+            const searchInput = document.getElementById('cpf-search-input');
+            const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            
+            let visibleCount = 0;
+            
             rows.forEach(row => {
-                // PRIMEIRO: Garantir que a linha está visível (resetar estilos)
+                // Garantir que a linha está visível (resetar estilos)
                 row.style.display = '';
                 row.style.visibility = 'visible';
                 row.style.opacity = '1';
                 
-                const statusValue = row.getAttribute('data-status') || '';
-                const statusBadge = row.querySelector('.status-badge');
-                const statusText = statusBadge ? statusBadge.textContent.trim().toLowerCase() : '';
-                const statusClass = statusBadge ? statusBadge.className : '';
-                
-                // Determinar status baseado em múltiplos fatores
-                const isCheckedIn = statusValue === 'checked_in' || statusText === 'chegou' || statusClass.includes('checked_in');
-                const isRegistered = statusValue === 'registered' || statusValue === '' || statusText === 'inscrito' || statusText === 'cadastrado' || statusClass.includes('registered');
-                const isConfirmed = statusValue === 'confirmed' || statusText === 'confirmado' || statusClass.includes('confirmed');
-                
-                let shouldShow = false;
-                
-                // Se o filtro é 'all', mostrar TODAS as linhas
-                if (filterValue === 'all') {
-                    shouldShow = true;
-                } else {
-                    // Aplicar filtro específico baseado no status real
-                    switch(filterValue) {
-                        case 'not_confirmed':
-                            // Mostrar apenas os que não confirmaram e não chegaram (registered)
-                            shouldShow = (statusValue === 'registered' || (isRegistered && !isCheckedIn && !isConfirmed));
-                            break;
-                        case 'registered':
-                            // Mostrar apenas os que são registered (não confirmados, não chegaram)
-                            shouldShow = (statusValue === 'registered' || (isRegistered && !isCheckedIn && !isConfirmed));
-                            break;
-                        case 'confirmed':
-                            // Mostrar apenas os confirmados (mas não os que já chegaram)
-                            shouldShow = (statusValue === 'confirmed' || (isConfirmed && !isCheckedIn));
-                            break;
-                        case 'checked_in':
-                            // Mostrar apenas os que chegaram
-                            shouldShow = (statusValue === 'checked_in' || isCheckedIn);
-                            break;
-                        default:
-                            shouldShow = true;
-                    }
+                // Se não há termo de busca, mostrar todas as linhas
+                if (!searchTerm) {
+                    visibleCount++;
+                    return;
                 }
                 
-                // Aplicar visibilidade
-                if (shouldShow) {
+                // Buscar nos atributos de busca
+                const searchName = row.getAttribute('data-search-name') || '';
+                const searchEmail = row.getAttribute('data-search-email') || '';
+                const searchCpf = row.getAttribute('data-search-cpf') || '';
+                
+                // Verificar se o termo de busca está em algum campo
+                const matches = searchName.includes(searchTerm) || 
+                               searchEmail.includes(searchTerm) || 
+                               searchCpf.includes(searchTerm);
+                
+                if (matches) {
                     row.style.display = '';
                     row.style.visibility = 'visible';
                     row.style.opacity = '1';
@@ -3003,25 +2976,31 @@
                 }
             });
             
-            console.log(`✅ Filtro aplicado: ${filterValue}, ${visibleCount} de ${rows.length} convidados visíveis na aba ${activeTab.id}`);
+            console.log(`✅ Busca aplicada: "${searchTerm}", ${visibleCount} de ${rows.length} convidados visíveis na aba ${activeTab.id}`);
             
             // Verificar se há empty-state e ajustar
             const emptyState = activeTab.querySelector('.empty-state');
             if (visibleCount > 0 && emptyState) {
                 emptyState.style.display = 'none';
-            } else if (visibleCount === 0 && emptyState) {
+            } else if (visibleCount === 0 && emptyState && searchTerm) {
+                // Só mostrar empty-state se houver busca e nenhum resultado
                 emptyState.style.display = 'block';
+            } else if (visibleCount === 0 && !searchTerm && rows.length === 0) {
+                // Se não há busca e não há linhas, mostrar empty-state
+                if (emptyState) emptyState.style.display = 'block';
             }
         }
         
         // Função para ordenar convidados
         function sortGuests() {
-            const sortValue = document.getElementById('sort-order').value;
-            const table = document.querySelector('.guests-table');
-            if (!table) return;
+            const sortOrderSelect = document.getElementById('sort-order');
+            const sortValue = sortOrderSelect ? sortOrderSelect.value : 'name'; // Padrão: ordenar por nome
+            const activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) return;
             
-            const rows = Array.from(document.querySelectorAll('.table-row'));
-            const tbody = table.querySelector('tbody') || table;
+            const rows = Array.from(activeTab.querySelectorAll('.table-row'));
+            const table = activeTab.querySelector('.guests-table');
+            if (!table) return;
             
             rows.sort((a, b) => {
                 switch(sortValue) {
@@ -3047,7 +3026,8 @@
                 }
             });
             
-            // Reordenar no DOM
+            // Reordenar no DOM dentro da aba ativa
+            const tableContainer = table.parentNode;
             rows.forEach(row => {
                 if (row.parentNode) {
                     row.parentNode.removeChild(row);
@@ -3055,26 +3035,32 @@
             });
             
             rows.forEach(row => {
-                tbody.appendChild(row);
+                table.appendChild(row);
             });
             
-            console.log(`✅ Ordenação aplicada: ${sortValue}`);
+            console.log(`✅ Ordenação aplicada: ${sortValue} na aba ${activeTab.id}`);
         }
         
-        // Função para resetar filtros
+        // Função para resetar busca
         function resetFilters() {
-            document.getElementById('status-filter').value = 'not_confirmed';
-            document.getElementById('sort-order').value = 'name';
+            const searchInput = document.getElementById('cpf-search-input');
+            if (searchInput) {
+                searchInput.value = '';
+            }
             
-            // Mostrar todos os convidados
-            document.querySelectorAll('.table-row').forEach(row => {
-                row.style.display = '';
-            });
+            // Mostrar todos os convidados na aba ativa
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab) {
+                const rows = activeTab.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    row.style.display = '';
+                    row.style.visibility = 'visible';
+                    row.style.opacity = '1';
+                });
+            }
             
-            // Reordenar por nome
-            sortGuests();
-            
-            console.log('✅ Filtros resetados');
+            filterGuests();
+            console.log('✅ Busca resetada');
         }
         
         // Tornar funções globais
@@ -3128,18 +3114,6 @@
                     registeredTab.style.display = 'block';
                 }
                 
-                // Garantir que o filtro está em "all"
-                const statusFilter = document.getElementById('status-filter');
-                if (statusFilter) {
-                    statusFilter.value = 'all';
-                }
-                
-                // Ordenar por nome por padrão
-                const sortOrder = document.getElementById('sort-order');
-                if (sortOrder) {
-                    sortOrder.value = 'name';
-                }
-                
                 // Garantir que todas as linhas da aba ativa sejam visíveis
                 const activeTab = document.querySelector('.tab-content.active');
                 if (activeTab) {
@@ -3153,7 +3127,7 @@
                 }
                 
                 sortGuests();
-                filterGuests(); // Aplicar filtro inicial (mostrar todos)
+                filterGuests(); // Aplicar busca inicial (mostrar todos se não houver busca)
             }, 100);
         });
         
