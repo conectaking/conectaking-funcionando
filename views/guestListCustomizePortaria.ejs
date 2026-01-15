@@ -358,6 +358,42 @@
                     </div>
                 </div>
                 
+                <!-- Personalização de Textos e Cores Específicas -->
+                <div class="form-group" style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                    <label class="section-title">
+                        <i class="fas fa-text-width"></i> Personalização de Textos e Botões
+                    </label>
+                    
+                    <label style="margin-top: 12px;">Título "Inscrição no Curso"</label>
+                    <input type="text" id="event_title_custom" name="event_title_custom" value="<%= guestList.event_title_custom || guestList.event_title || 'Inscrição no Curso' %>" placeholder="Ex: Inscrição no Curso" style="margin-bottom: 8px;">
+                    <label style="margin-top: 8px; font-size: 12px;">Cor do Texto do Título</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="title_text_color" value="<%= guestList.title_text_color || '#FFFFFF' %>" onchange="updateColor('title_text_color', this.value)">
+                        <input type="text" id="title_text_color_text" value="<%= guestList.title_text_color || '#FFFFFF' %>" onchange="updateColorFromText('title_text_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 16px;">Texto do Botão QR Code</label>
+                    <input type="text" id="qr_code_button_text" name="qr_code_button_text" value="<%= guestList.qr_code_button_text || 'Ler QR Code' %>" placeholder="Ex: Ler QR Code">
+                    
+                    <label style="margin-top: 16px;">Cor do Botão de Busca</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="search_button_color" value="<%= guestList.search_button_color || '#25D366' %>" onchange="updateColor('search_button_color', this.value)">
+                        <input type="text" id="search_button_color_text" value="<%= guestList.search_button_color || '#25D366' %>" onchange="updateColorFromText('search_button_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 12px;">Cor do Texto do Botão de Busca</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="search_button_text_color" value="<%= guestList.search_button_text_color || '#FFFFFF' %>" onchange="updateColor('search_button_text_color', this.value)">
+                        <input type="text" id="search_button_text_color_text" value="<%= guestList.search_button_text_color || '#FFFFFF' %>" onchange="updateColorFromText('search_button_text_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 16px;">Cor do Texto "Digite CPF, Email ou Nome"</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="search_input_text_color" value="<%= guestList.search_input_text_color || '#666666' %>" onchange="updateColor('search_input_text_color', this.value)">
+                        <input type="text" id="search_input_text_color_text" value="<%= guestList.search_input_text_color || '#666666' %>" onchange="updateColorFromText('search_input_text_color', this.value)">
+                    </div>
+                </div>
+                
                 <button type="submit" class="btn-save">
                     <i class="fas fa-save"></i> Salvar Personalização
                 </button>
@@ -564,7 +600,14 @@
                 background_opacity: parseFloat(document.getElementById('background_opacity').value) || 1.0,
                 header_image_url: document.getElementById('header_image_url').value,
                 form_logo_url: document.getElementById('form_logo_url').value,
-                theme_portaria: document.getElementById('theme_portaria').value
+                theme_portaria: document.getElementById('theme_portaria').value,
+                // Novos campos de personalização
+                event_title_custom: document.getElementById('event_title_custom')?.value || null,
+                title_text_color: document.getElementById('title_text_color')?.value || null,
+                qr_code_button_text: document.getElementById('qr_code_button_text')?.value || null,
+                search_button_color: document.getElementById('search_button_color')?.value || null,
+                search_button_text_color: document.getElementById('search_button_text_color')?.value || null,
+                search_input_text_color: document.getElementById('search_input_text_color')?.value || null
             };
             
             try {

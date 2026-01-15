@@ -128,7 +128,14 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             background_opacity,
             header_image_url,
             form_logo_url,
-            theme_portaria
+            theme_portaria,
+            // Novos campos de personalização
+            event_title_custom,
+            title_text_color,
+            qr_code_button_text,
+            search_button_color,
+            search_button_text_color,
+            search_input_text_color
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
@@ -211,6 +218,40 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             if (columnCheck.rows.length > 0) {
                 updateFields.push(`theme_portaria = $${paramIndex++}`);
                 updateValues.push(theme_portaria);
+            }
+        }
+        
+        // Novos campos de personalização - verificar se existem antes de atualizar
+        const customFields = [
+            { field: 'event_title_custom', value: event_title_custom },
+            { field: 'title_text_color', value: title_text_color },
+            { field: 'qr_code_button_text', value: qr_code_button_text },
+            { field: 'search_button_color', value: search_button_color },
+            { field: 'search_button_text_color', value: search_button_text_color },
+            { field: 'search_input_text_color', value: search_input_text_color }
+        ];
+        
+        for (const customField of customFields) {
+            if (customField.value !== undefined) {
+                try {
+                    const columnCheck = await client.query(`
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'guest_list_items' 
+                        AND LOWER(column_name) = LOWER($1)
+                    `, [customField.field]);
+                    
+                    if (columnCheck.rows.length > 0) {
+                        const actualColumnName = columnCheck.rows[0].column_name;
+                        updateFields.push(`"${actualColumnName}" = $${paramIndex++}`);
+                        updateValues.push(customField.value || null);
+                        console.log(`🎨 [CUSTOMIZE-PORTARIA] Salvando ${actualColumnName}: ${customField.value || 'null'}`);
+                    } else {
+                        console.warn(`⚠️ [CUSTOMIZE-PORTARIA] Coluna ${customField.field} não existe. Será criada na próxima migration.`);
+                    }
+                } catch (checkError) {
+                    console.error(`❌ [CUSTOMIZE-PORTARIA] Erro ao verificar coluna ${customField.field}:`, checkError);
+                }
             }
         }
         
