@@ -140,6 +140,7 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             search_button_color_secondary,
             search_button_text_color,
             search_input_text_color,
+            quick_confirm_title_color,
             quick_confirm_icon_color,
             stats_number_color
         } = req.body;
@@ -239,6 +240,7 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             { field: 'search_button_color_secondary', value: search_button_color_secondary },
             { field: 'search_button_text_color', value: search_button_text_color },
             { field: 'search_input_text_color', value: search_input_text_color },
+            { field: 'quick_confirm_title_color', value: quick_confirm_title_color },
             { field: 'quick_confirm_icon_color', value: quick_confirm_icon_color },
             { field: 'stats_number_color', value: stats_number_color }
         ];
