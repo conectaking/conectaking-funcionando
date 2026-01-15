@@ -177,8 +177,20 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             updateValues.push(header_image_url || null);
         }
         if (form_logo_url !== undefined) {
-            updateFields.push(`form_logo_url = $${paramIndex++}`);
-            updateValues.push(form_logo_url || null);
+            // Verificar se a coluna existe antes de atualizar
+            const formLogoColumnCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'guest_list_items' 
+                AND column_name = 'form_logo_url'
+            `);
+            if (formLogoColumnCheck.rows.length > 0) {
+                updateFields.push(`form_logo_url = $${paramIndex++}`);
+                updateValues.push(form_logo_url || null);
+                console.log(`🖼️ [CUSTOMIZE-PORTARIA] Salvando form_logo_url: ${form_logo_url || 'null'}`);
+            } else {
+                console.warn(`⚠️ [CUSTOMIZE-PORTARIA] Coluna form_logo_url não existe na tabela guest_list_items. Ignorando.`);
+            }
         }
         if (theme_portaria !== undefined) {
             // Verificar se a coluna existe antes de atualizar
@@ -288,8 +300,20 @@ router.put('/:id/customize-confirmacao', protectUser, asyncHandler(async (req, r
             updateValues.push(header_image_url || null);
         }
         if (form_logo_url !== undefined) {
-            updateFields.push(`form_logo_url = $${paramIndex++}`);
-            updateValues.push(form_logo_url || null);
+            // Verificar se a coluna existe antes de atualizar
+            const formLogoColumnCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'guest_list_items' 
+                AND column_name = 'form_logo_url'
+            `);
+            if (formLogoColumnCheck.rows.length > 0) {
+                updateFields.push(`form_logo_url = $${paramIndex++}`);
+                updateValues.push(form_logo_url || null);
+                console.log(`🖼️ [CUSTOMIZE-CONFIRMACAO] Salvando form_logo_url: ${form_logo_url || 'null'}`);
+            } else {
+                console.warn(`⚠️ [CUSTOMIZE-CONFIRMACAO] Coluna form_logo_url não existe na tabela guest_list_items. Ignorando.`);
+            }
         }
         if (theme_confirmacao !== undefined) {
             // Verificar se a coluna existe antes de atualizar
