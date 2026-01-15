@@ -538,11 +538,20 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
 
         let formData = formRes.rows[0];
         
-        // LOG CRÍTICO: Verificar form_fields logo após buscar do banco
+        // LOG CRÍTICO: Verificar form_fields e CORES logo após buscar do banco
         logger.info('🔍 [FORM/PUBLIC] Dados do banco (digital_form_items) - RAW:', {
             id: formData.id,
             profile_item_id: formData.profile_item_id,
             form_title: formData.form_title,
+            primary_color: formData.primary_color,
+            primary_color_type: typeof formData.primary_color,
+            secondary_color: formData.secondary_color,
+            secondary_color_type: typeof formData.secondary_color,
+            background_color: formData.background_color,
+            background_color_type: typeof formData.background_color,
+            text_color: formData.text_color,
+            text_color_type: typeof formData.text_color,
+            theme: formData.theme,
             has_form_fields: !!formData.form_fields,
             form_fields_type: typeof formData.form_fields,
             form_fields_isArray: Array.isArray(formData.form_fields),
@@ -613,6 +622,25 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             // NÃO mesclar cores, backgrounds, themes, etc. - cada sistema tem suas próprias cores!
             
             logger.info(`🎨 [FORM/PUBLIC] CORES SEPARADAS: Usando APENAS cores de digital_form_items, ignorando guest_list_items`);
+            
+            // IMPORTANTE: Garantir que as cores de digital_form_items tenham valores padrão se não existirem
+            // NÃO usar cores de guest_list_items - sistemas completamente separados!
+            if (!formData.primary_color || formData.primary_color === null || formData.primary_color === 'null') {
+                formData.primary_color = '#4A90E2';
+                logger.info(`🎨 [FORM/PUBLIC] primary_color não encontrado em digital_form_items, usando padrão: #4A90E2`);
+            }
+            if (!formData.secondary_color || formData.secondary_color === null || formData.secondary_color === 'null') {
+                formData.secondary_color = formData.primary_color || '#4A90E2';
+                logger.info(`🎨 [FORM/PUBLIC] secondary_color não encontrado em digital_form_items, usando primary_color: ${formData.secondary_color}`);
+            }
+            if (!formData.text_color || formData.text_color === null || formData.text_color === 'null') {
+                formData.text_color = '#333333';
+                logger.info(`🎨 [FORM/PUBLIC] text_color não encontrado em digital_form_items, usando padrão: #333333`);
+            }
+            if (!formData.background_color || formData.background_color === null || formData.background_color === 'null') {
+                formData.background_color = '#FFFFFF';
+                logger.info(`🎨 [FORM/PUBLIC] background_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
+            }
             
             // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
             // IMPORTANTE: Respeitar valores false - converter corretamente para booleano
