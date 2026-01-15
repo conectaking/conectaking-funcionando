@@ -29,22 +29,52 @@ function sanitizeFormDataForRender(formData) {
     }
     
     // Sanitizar form_fields (labels, placeholders, etc)
-    if (Array.isArray(sanitized.form_fields)) {
-        sanitized.form_fields = sanitized.form_fields.map(field => {
-            const sanitizedField = { ...field };
-            if (sanitizedField.label) {
-                sanitizedField.label = escapeHtml(String(sanitizedField.label));
+    // CRÍTICO: Garantir que form_fields seja preservado
+    if (sanitized.form_fields) {
+        if (Array.isArray(sanitized.form_fields)) {
+            sanitized.form_fields = sanitized.form_fields.map(field => {
+                const sanitizedField = { ...field };
+                if (sanitizedField.label) {
+                    sanitizedField.label = escapeHtml(String(sanitizedField.label));
+                }
+                if (sanitizedField.placeholder) {
+                    sanitizedField.placeholder = escapeHtml(String(sanitizedField.placeholder));
+                }
+                if (Array.isArray(sanitizedField.options)) {
+                    sanitizedField.options = sanitizedField.options.map(opt => 
+                        typeof opt === 'string' ? escapeHtml(opt) : opt
+                    );
+                }
+                return sanitizedField;
+            });
+        } else if (typeof sanitized.form_fields === 'string') {
+            // Se ainda for string, tentar parsear
+            try {
+                const parsed = JSON.parse(sanitized.form_fields);
+                if (Array.isArray(parsed)) {
+                    sanitized.form_fields = parsed.map(field => {
+                        const sanitizedField = { ...field };
+                        if (sanitizedField.label) {
+                            sanitizedField.label = escapeHtml(String(sanitizedField.label));
+                        }
+                        if (sanitizedField.placeholder) {
+                            sanitizedField.placeholder = escapeHtml(String(sanitizedField.placeholder));
+                        }
+                        if (Array.isArray(sanitizedField.options)) {
+                            sanitizedField.options = sanitizedField.options.map(opt => 
+                                typeof opt === 'string' ? escapeHtml(opt) : opt
+                            );
+                        }
+                        return sanitizedField;
+                    });
+                }
+            } catch (e) {
+                logger.error('❌ [SANITIZE] Erro ao parsear form_fields na sanitização:', e);
             }
-            if (sanitizedField.placeholder) {
-                sanitizedField.placeholder = escapeHtml(String(sanitizedField.placeholder));
-            }
-            if (Array.isArray(sanitizedField.options)) {
-                sanitizedField.options = sanitizedField.options.map(opt => 
-                    typeof opt === 'string' ? escapeHtml(opt) : opt
-                );
-            }
-            return sanitizedField;
-        });
+        }
+    } else {
+        // Se não existe, garantir que seja array vazio
+        sanitized.form_fields = [];
     }
     
     return sanitized;
@@ -508,6 +538,20 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
 
         let formData = formRes.rows[0];
         
+        // LOG CRÍTICO: Verificar form_fields logo após buscar do banco
+        logger.info('🔍 [FORM/PUBLIC] Dados do banco (digital_form_items) - RAW:', {
+            id: formData.id,
+            profile_item_id: formData.profile_item_id,
+            form_title: formData.form_title,
+            has_form_fields: !!formData.form_fields,
+            form_fields_type: typeof formData.form_fields,
+            form_fields_isArray: Array.isArray(formData.form_fields),
+            form_fields_isNull: formData.form_fields === null,
+            form_fields_isUndefined: formData.form_fields === undefined,
+            form_fields_value: formData.form_fields === null ? 'NULL' : (formData.form_fields === undefined ? 'UNDEFINED' : (typeof formData.form_fields === 'string' ? formData.form_fields.substring(0, 500) : (Array.isArray(formData.form_fields) ? JSON.stringify(formData.form_fields.slice(0, 3)) : String(formData.form_fields)))),
+            form_fields_length: Array.isArray(formData.form_fields) ? formData.form_fields.length : (typeof formData.form_fields === 'string' ? formData.form_fields.length : 'N/A')
+        });
+        
         // IMPORTANTE: Sempre verificar se existe dados em guest_list_items (mesmo que item_type não seja guest_list)
         // Isso é necessário porque o item pode estar como digital_form mas ter dados salvos em guest_list_items
         // Verificar se guest_list_items tem as colunas enable_whatsapp e enable_guest_list_submit
@@ -719,22 +763,43 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         }
         
         // Garantir que form_fields seja um array (pode vir como string JSON do PostgreSQL)
+        logger.info('🔍 [FORM/PUBLIC] Verificando form_fields ANTES do processamento:', {
+            exists: !!formData.form_fields,
+            type: typeof formData.form_fields,
+            isArray: Array.isArray(formData.form_fields),
+            rawValue: typeof formData.form_fields === 'string' ? formData.form_fields.substring(0, 500) : formData.form_fields,
+            length: Array.isArray(formData.form_fields) ? formData.form_fields.length : 'N/A'
+        });
+        
         if (formData.form_fields) {
             if (typeof formData.form_fields === 'string') {
                 try {
-                    formData.form_fields = JSON.parse(formData.form_fields);
+                    const parsed = JSON.parse(formData.form_fields);
+                    formData.form_fields = parsed;
+                    logger.info('✅ [FORM/PUBLIC] form_fields parseado com sucesso:', {
+                        length: Array.isArray(parsed) ? parsed.length : 'N/A',
+                        isArray: Array.isArray(parsed)
+                    });
                 } catch (e) {
-                    logger.error('Erro ao parsear form_fields:', e);
+                    logger.error('❌ [FORM/PUBLIC] Erro ao parsear form_fields:', e);
                     formData.form_fields = [];
                 }
             }
             // Garantir que seja um array
             if (!Array.isArray(formData.form_fields)) {
+                logger.warn('⚠️ [FORM/PUBLIC] form_fields não é um array após processamento, convertendo para array vazio');
                 formData.form_fields = [];
             }
         } else {
+            logger.warn('⚠️ [FORM/PUBLIC] form_fields está undefined/null, inicializando como array vazio');
             formData.form_fields = [];
         }
+        
+        logger.info('📋 [FORM/PUBLIC] form_fields APÓS processamento:', {
+            length: formData.form_fields.length,
+            isArray: Array.isArray(formData.form_fields),
+            firstFields: formData.form_fields.length > 0 ? formData.form_fields.slice(0, 3).map(f => ({ id: f?.id, label: f?.label, type: f?.type })) : []
+        });
 
         // Buscar profile_slug
         const profileSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
@@ -804,6 +869,23 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
         
         // Sanitizar dados antes de renderizar (prevenir XSS)
         const sanitizedFormData = sanitizeFormDataForRender(formData);
+        
+        // CRÍTICO: Garantir que form_fields está presente após sanitização
+        if (!sanitizedFormData.form_fields || !Array.isArray(sanitizedFormData.form_fields)) {
+            logger.error('❌ [FORM/PUBLIC] ATENÇÃO: form_fields foi perdido durante sanitização!', {
+                hasFormFields: !!sanitizedFormData.form_fields,
+                isArray: Array.isArray(sanitizedFormData.form_fields),
+                originalLength: formData.form_fields ? formData.form_fields.length : 0
+            });
+            // Restaurar form_fields original se foi perdido
+            sanitizedFormData.form_fields = formData.form_fields || [];
+        }
+        
+        logger.info('🎯 [FORM/PUBLIC] Dados FINAIS antes de renderizar:', {
+            form_fields_count: sanitizedFormData.form_fields ? sanitizedFormData.form_fields.length : 0,
+            form_fields_isArray: Array.isArray(sanitizedFormData.form_fields),
+            form_title: sanitizedFormData.form_title
+        });
         
         // Renderizar página com cache busting
         res.render('digitalForm', {

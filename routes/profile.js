@@ -1666,16 +1666,24 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         }
 
         // Atualizar ou criar digital_form_items
-        // Garantir que form_fields seja sempre um array válido
-        const formFieldsArray = Array.isArray(form_fields) ? form_fields : (form_fields ? [form_fields] : []);
-        const formFieldsJSON = JSON.stringify(formFieldsArray);
+        // IMPORTANTE: Só processar form_fields se for explicitamente enviado
+        let formFieldsArray = [];
+        let formFieldsJSON = '[]';
         
-        console.log(`📝 [DIGITAL_FORM] Processando form_fields:`, {
-            itemId: itemId,
-            receivedType: typeof form_fields,
-            isArray: Array.isArray(form_fields),
-            fieldsCount: formFieldsArray.length
-        });
+        if (form_fields !== undefined) {
+            // Garantir que form_fields seja sempre um array válido
+            formFieldsArray = Array.isArray(form_fields) ? form_fields : (form_fields ? [form_fields] : []);
+            formFieldsJSON = JSON.stringify(formFieldsArray);
+            
+            console.log(`📝 [DIGITAL_FORM] Processando form_fields:`, {
+                itemId: itemId,
+                receivedType: typeof form_fields,
+                isArray: Array.isArray(form_fields),
+                fieldsCount: formFieldsArray.length
+            });
+        } else {
+            console.log(`📝 [DIGITAL_FORM] form_fields não foi enviado no request, será preservado do banco`);
+        }
         
         // Verificar se já existe registro em digital_form_items
         // IMPORTANTE: Se houver múltiplos registros, vamos manter apenas o mais recente
@@ -1855,14 +1863,19 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 updateFormFields.push(`banner_image_url = $${formParamIndex++}`);
                 updateFormValues.push(banner_image_url || null);
             }
-            // Sempre atualizar form_fields (mesmo que seja array vazio)
-            updateFormFields.push(`form_fields = $${formParamIndex++}::jsonb`);
-            updateFormValues.push(formFieldsJSON);
-            console.log(`📝 [DIGITAL_FORM] Salvando form_fields:`, {
-                itemId: itemId,
-                formFieldsCount: formFieldsArray.length,
-                formFieldsJSON: formFieldsJSON.substring(0, 200) + (formFieldsJSON.length > 200 ? '...' : '')
-            });
+            // IMPORTANTE: Só atualizar form_fields se for explicitamente enviado
+            // Se não for enviado, preservar o valor existente no banco
+            if (form_fields !== undefined) {
+                updateFormFields.push(`form_fields = $${formParamIndex++}::jsonb`);
+                updateFormValues.push(formFieldsJSON);
+                console.log(`📝 [DIGITAL_FORM] Salvando form_fields:`, {
+                    itemId: itemId,
+                    formFieldsCount: formFieldsArray.length,
+                    formFieldsJSON: formFieldsJSON.substring(0, 200) + (formFieldsJSON.length > 200 ? '...' : '')
+                });
+            } else {
+                console.log(`📝 [DIGITAL_FORM] form_fields não foi enviado, preservando valor existente no banco`);
+            }
             if (theme !== undefined) {
                 updateFormFields.push(`theme = $${formParamIndex++}`);
                 updateFormValues.push(theme || 'light');
