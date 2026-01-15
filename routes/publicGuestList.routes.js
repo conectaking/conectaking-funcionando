@@ -562,8 +562,20 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         const confirmedResult = { rows: (allGuestsResult.rows || []).filter(g => g.status === 'confirmed') };
         const checkedInResult = { rows: (allGuestsResult.rows || []).filter(g => g.status === 'checked_in') };
         
+        // "Quem Não Chegou" = todos que NÃO têm status 'checked_in' (registered, confirmed, etc)
+        const notArrivedResult = { rows: (allGuestsResult.rows || []).filter(g => g.status !== 'checked_in') };
+        
         // Para a aba "Cadastrados" (registered), usar TODOS os convidados
         const registeredGuests = allGuestsResult.rows || [];
+        
+        // Log para debug
+        console.log('📊 [GUEST-LIST-VIEW-FULL] Estatísticas de convidados:', {
+            total: allGuestsResult.rows.length,
+            checkedIn: checkedInResult.rows.length,
+            notArrived: notArrivedResult.rows.length,
+            registered: registeredResult.rows.length,
+            confirmed: confirmedResult.rows.length
+        });
         
         // Garantir que formFields seja sempre um array
         if (!Array.isArray(formFields)) {
@@ -608,12 +620,26 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
             }
         };
         
+        // Garantir que os arrays não sejam undefined
+        const checkedInGuestsArray = Array.isArray(checkedInResult.rows) ? checkedInResult.rows : [];
+        const notArrivedGuestsArray = Array.isArray(notArrivedResult.rows) ? notArrivedResult.rows : [];
+        const confirmedGuestsArray = Array.isArray(confirmedResult.rows) ? confirmedResult.rows : [];
+        const registeredGuestsArray = Array.isArray(registeredGuests) ? registeredGuests : [];
+        
+        logger.info('📊 [GUEST-LIST-VIEW-FULL] Arrays preparados para renderização:', {
+            checkedInGuests: checkedInGuestsArray.length,
+            notArrivedGuests: notArrivedGuestsArray.length,
+            confirmedGuests: confirmedGuestsArray.length,
+            registeredGuests: registeredGuestsArray.length,
+            guestListId: guestList.id
+        });
+        
         res.render('guestListViewFull', {
             guestList,
-            registeredGuests: registeredGuests, // TODOS os convidados (para aba Cadastrados)
-            confirmedGuests: confirmedResult.rows || [],
-            checkedInGuests: checkedInResult.rows || [],
-            notArrivedGuests: registeredResult.rows || [], // Quem não chegou (status registered)
+            registeredGuests: registeredGuestsArray, // TODOS os convidados (para aba Cadastrados)
+            confirmedGuests: confirmedGuestsArray,
+            checkedInGuests: checkedInGuestsArray,
+            notArrivedGuests: notArrivedGuestsArray, // Quem não chegou = todos que NÃO têm status 'checked_in'
             token: token,
             profileItemId: guestList.profile_item_id,
             formFields: formFields, // Campos do formulário para mapear labels

@@ -2983,6 +2983,24 @@
         // Aplicar filtro inicial (mostrar todos)
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
+                // Debug: verificar quantas linhas existem em cada aba
+                const registeredTab = document.getElementById('tab-registered');
+                const checkedInTab = document.getElementById('tab-checked_in');
+                const notArrivedTab = document.getElementById('tab-not_arrived');
+                
+                if (registeredTab) {
+                    const registeredRows = registeredTab.querySelectorAll('.table-row');
+                    console.log('📊 [INIT] Aba Cadastrados:', registeredRows.length, 'linhas');
+                }
+                if (checkedInTab) {
+                    const checkedInRows = checkedInTab.querySelectorAll('.table-row');
+                    console.log('📊 [INIT] Aba Quem Chegou:', checkedInRows.length, 'linhas');
+                }
+                if (notArrivedTab) {
+                    const notArrivedRows = notArrivedTab.querySelectorAll('.table-row');
+                    console.log('📊 [INIT] Aba Quem Não Chegou:', notArrivedRows.length, 'linhas');
+                }
+                
                 // Garantir que o filtro está em "all"
                 document.getElementById('status-filter').value = 'all';
                 // Ordenar por nome por padrão
