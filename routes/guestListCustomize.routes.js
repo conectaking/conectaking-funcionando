@@ -133,9 +133,16 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             event_title_custom,
             title_text_color,
             qr_code_button_text,
+            qr_code_button_color,
+            qr_code_button_color_secondary,
+            qr_code_button_text_color,
             search_button_color,
+            search_button_color_secondary,
             search_button_text_color,
-            search_input_text_color
+            search_input_text_color,
+            quick_confirm_title_color,
+            quick_confirm_icon_color,
+            stats_number_color
         } = req.body;
         
         // Verificar se a lista pertence ao usuário
@@ -226,9 +233,16 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             { field: 'event_title_custom', value: event_title_custom },
             { field: 'title_text_color', value: title_text_color },
             { field: 'qr_code_button_text', value: qr_code_button_text },
+            { field: 'qr_code_button_color', value: qr_code_button_color },
+            { field: 'qr_code_button_color_secondary', value: qr_code_button_color_secondary },
+            { field: 'qr_code_button_text_color', value: qr_code_button_text_color },
             { field: 'search_button_color', value: search_button_color },
+            { field: 'search_button_color_secondary', value: search_button_color_secondary },
             { field: 'search_button_text_color', value: search_button_text_color },
-            { field: 'search_input_text_color', value: search_input_text_color }
+            { field: 'search_input_text_color', value: search_input_text_color },
+            { field: 'quick_confirm_title_color', value: quick_confirm_title_color },
+            { field: 'quick_confirm_icon_color', value: quick_confirm_icon_color },
+            { field: 'stats_number_color', value: stats_number_color }
         ];
         
         for (const customField of customFields) {

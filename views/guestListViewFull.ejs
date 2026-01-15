@@ -503,7 +503,7 @@
         .stat-card .stat-value {
             font-size: 48px;
             font-weight: 900;
-            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>;
+            color: <%= (typeof guestList !== 'undefined' && guestList && guestList.stats_number_color) ? guestList.stats_number_color : ((typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700') %>;
             margin: 8px 0;
             text-shadow: 0 2px 8px rgba(255, 199, 0, 0.3);
             line-height: 1;
@@ -841,7 +841,7 @@
                 </h2>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                     <!-- Botão Escanear QR Code -->
-                    <button id="qr-scanner-btn" class="animated-button" style="background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %> 0%, <%= (typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700' %> 100%); color: #000; border: none; padding: 18px 28px; border-radius: 16px; font-weight: 800; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 6px 24px rgba(255, 199, 0, 0.4); position: relative; overflow: hidden;">
+                    <button id="qr-scanner-btn" class="animated-button" style="background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_color) ? guestList.qr_code_button_color : ((typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700') %> 0%, <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_color_secondary) ? guestList.qr_code_button_color_secondary : ((typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700') %> 100%); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_text_color) ? guestList.qr_code_button_text_color : '#000000' %>; border: none; padding: 18px 28px; border-radius: 16px; font-weight: 800; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 6px 24px rgba(255, 199, 0, 0.4); position: relative; overflow: hidden;">
                         <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 12px;">
                             <i class="fas fa-qrcode" style="font-size: 24px;"></i>
                             <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_text) ? guestList.qr_code_button_text : 'Ler QR Code' %>

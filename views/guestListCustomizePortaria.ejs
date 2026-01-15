@@ -375,10 +375,52 @@
                     <label style="margin-top: 16px;">Texto do Botão QR Code</label>
                     <input type="text" id="qr_code_button_text" name="qr_code_button_text" value="<%= guestList.qr_code_button_text || 'Ler QR Code' %>" placeholder="Ex: Ler QR Code">
                     
+                    <label style="margin-top: 12px;">Cor do Botão QR Code</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="qr_code_button_color" value="<%= guestList.qr_code_button_color || '#FFC700' %>" onchange="updateColor('qr_code_button_color', this.value)">
+                        <input type="text" id="qr_code_button_color_text" value="<%= guestList.qr_code_button_color || '#FFC700' %>" onchange="updateColorFromText('qr_code_button_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 8px; font-size: 12px;">Cor Secundária (para degradê)</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="qr_code_button_color_secondary" value="<%= guestList.qr_code_button_color_secondary || '#FFB700' %>" onchange="updateColor('qr_code_button_color_secondary', this.value)">
+                        <input type="text" id="qr_code_button_color_secondary_text" value="<%= guestList.qr_code_button_color_secondary || '#FFB700' %>" onchange="updateColorFromText('qr_code_button_color_secondary', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 12px;">Cor do Texto do Botão QR Code</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="qr_code_button_text_color" value="<%= guestList.qr_code_button_text_color || '#000000' %>" onchange="updateColor('qr_code_button_text_color', this.value)">
+                        <input type="text" id="qr_code_button_text_color_text" value="<%= guestList.qr_code_button_text_color || '#000000' %>" onchange="updateColorFromText('qr_code_button_text_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 16px;">Cor do Texto "Confirmação Rápida"</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="quick_confirm_title_color" value="<%= guestList.quick_confirm_title_color || '#FFFFFF' %>" onchange="updateColor('quick_confirm_title_color', this.value)">
+                        <input type="text" id="quick_confirm_title_color_text" value="<%= guestList.quick_confirm_title_color || '#FFFFFF' %>" onchange="updateColorFromText('quick_confirm_title_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 12px;">Cor do Ícone "Confirmação Rápida" (raio)</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="quick_confirm_icon_color" value="<%= guestList.quick_confirm_icon_color || '#FFC700' %>" onchange="updateColor('quick_confirm_icon_color', this.value)">
+                        <input type="text" id="quick_confirm_icon_color_text" value="<%= guestList.quick_confirm_icon_color || '#FFC700' %>" onchange="updateColorFromText('quick_confirm_icon_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 16px;">Cor dos Números dos Cards (19, 1, 18)</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="stats_number_color" value="<%= guestList.stats_number_color || '#FFC700' %>" onchange="updateColor('stats_number_color', this.value)">
+                        <input type="text" id="stats_number_color_text" value="<%= guestList.stats_number_color || '#FFC700' %>" onchange="updateColorFromText('stats_number_color', this.value)">
+                    </div>
+                    
                     <label style="margin-top: 16px;">Cor do Botão de Busca</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="search_button_color" value="<%= guestList.search_button_color || '#25D366' %>" onchange="updateColor('search_button_color', this.value)">
                         <input type="text" id="search_button_color_text" value="<%= guestList.search_button_color || '#25D366' %>" onchange="updateColorFromText('search_button_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 8px; font-size: 12px;">Cor Secundária (para degradê)</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="search_button_color_secondary" value="<%= guestList.search_button_color_secondary || '#20BA5A' %>" onchange="updateColor('search_button_color_secondary', this.value)">
+                        <input type="text" id="search_button_color_secondary_text" value="<%= guestList.search_button_color_secondary || '#20BA5A' %>" onchange="updateColorFromText('search_button_color_secondary', this.value)">
                     </div>
                     
                     <label style="margin-top: 12px;">Cor do Texto do Botão de Busca</label>
@@ -605,9 +647,16 @@
                 event_title_custom: document.getElementById('event_title_custom')?.value || null,
                 title_text_color: document.getElementById('title_text_color')?.value || null,
                 qr_code_button_text: document.getElementById('qr_code_button_text')?.value || null,
+                qr_code_button_color: document.getElementById('qr_code_button_color')?.value || null,
+                qr_code_button_color_secondary: document.getElementById('qr_code_button_color_secondary')?.value || null,
+                qr_code_button_text_color: document.getElementById('qr_code_button_text_color')?.value || null,
                 search_button_color: document.getElementById('search_button_color')?.value || null,
+                search_button_color_secondary: document.getElementById('search_button_color_secondary')?.value || null,
                 search_button_text_color: document.getElementById('search_button_text_color')?.value || null,
-                search_input_text_color: document.getElementById('search_input_text_color')?.value || null
+                search_input_text_color: document.getElementById('search_input_text_color')?.value || null,
+                quick_confirm_title_color: document.getElementById('quick_confirm_title_color')?.value || null,
+                quick_confirm_icon_color: document.getElementById('quick_confirm_icon_color')?.value || null,
+                stats_number_color: document.getElementById('stats_number_color')?.value || null
             };
             
             try {
