@@ -1051,7 +1051,7 @@
                         }
                     %>
                         <div class="table-row" data-status="<%= statusValue %>" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
-                            <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
+                            <div data-label="Nome Completo" style="font-weight: 600;"><span style="color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>; margin-right: 8px; font-weight: 700;"><%= guestNumber %>.</span><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
                             <div data-label="CPF"><%= displayCPF %></div>
@@ -1215,7 +1215,7 @@
                         displayCPF = displayCPF || '-';
                     %>
                         <div class="table-row" data-status="checked_in" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
-                            <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
+                            <div data-label="Nome Completo" style="font-weight: 600;"><span style="color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>; margin-right: 8px; font-weight: 700;"><%= guestNumber %>.</span><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
                             <div data-label="CPF"><%= displayCPF %></div>
@@ -1250,7 +1250,8 @@
                         <p>Todos os convidados já chegaram!</p>
                     </div>
                 <% } else { %>
-                    <% (typeof notArrivedGuests !== 'undefined' && notArrivedGuests ? notArrivedGuests : []).forEach(guest => { 
+                    <% (typeof notArrivedGuests !== 'undefined' && notArrivedGuests ? notArrivedGuests : []).forEach(function(guest, index) {
+                        var guestNumber = index + 1; 
                         // Extrair nome, email e whatsapp (tentar também de custom_responses se necessário)
                         let displayName = guest.name || '';
                         let displayEmail = guest.email || '';
