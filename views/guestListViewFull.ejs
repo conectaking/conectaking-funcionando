@@ -2875,6 +2875,13 @@
                 const statusValue = row.getAttribute('data-status') || '';
                 const statusBadge = row.querySelector('.status-badge');
                 const statusText = statusBadge ? statusBadge.textContent.trim().toLowerCase() : '';
+                const statusClass = statusBadge ? statusBadge.className : '';
+                
+                // Determinar status baseado em múltiplos fatores
+                const isCheckedIn = statusValue === 'checked_in' || statusText === 'chegou' || statusClass.includes('checked_in');
+                const isRegistered = statusValue === 'registered' || statusValue === '' || statusText === 'inscrito' || statusText === 'cadastrado' || statusClass.includes('registered');
+                const isConfirmed = statusValue === 'confirmed' || statusText === 'confirmado' || statusClass.includes('confirmed');
+                
                 let shouldShow = false;
                 
                 switch(filterValue) {
@@ -2883,16 +2890,16 @@
                         break;
                     case 'not_confirmed':
                         // Mostrar apenas os que não confirmaram (registered)
-                        shouldShow = statusValue === 'registered' || statusValue === '' || statusText === 'inscrito' || statusText === 'cadastrado';
+                        shouldShow = isRegistered && !isCheckedIn && !isConfirmed;
                         break;
                     case 'registered':
-                        shouldShow = statusValue === 'registered' || statusValue === '' || statusText === 'inscrito' || statusText === 'cadastrado';
+                        shouldShow = isRegistered && !isCheckedIn && !isConfirmed;
                         break;
                     case 'confirmed':
-                        shouldShow = statusValue === 'confirmed' || statusText === 'confirmado';
+                        shouldShow = isConfirmed && !isCheckedIn;
                         break;
                     case 'checked_in':
-                        shouldShow = statusValue === 'checked_in' || statusText === 'chegou';
+                        shouldShow = isCheckedIn;
                         break;
                     default:
                         shouldShow = true;
