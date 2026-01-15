@@ -12,9 +12,22 @@ const protectUser = (req, res, next) => {
     }
     
     let token;
+    
+    // Aceitar token via header Authorization (padrão)
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+    // Aceitar token via query string (para páginas de personalização abertas em nova aba)
+    else if (req.query.token) {
+        token = req.query.token;
+    }
+    // Aceitar token via cookie (fallback)
+    else if (req.cookies && req.cookies.token) {
+        token = req.cookies.token;
+    }
+    
+    if (token) {
         try {
-            token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, config.jwt.secret);
             
             req.user = decoded; 
@@ -24,7 +37,8 @@ const protectUser = (req, res, next) => {
         } catch (error) {
             logger.warn('Token inválido ou expirado', { 
                 error: error.message,
-                ip: req.ip 
+                ip: req.ip,
+                path: req.path
             });
             return res.status(401).json({ 
                 success: false,
