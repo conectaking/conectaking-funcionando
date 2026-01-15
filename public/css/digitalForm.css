@@ -576,8 +576,9 @@ body {
 .form-group select:hover {
     border-color: #bdc1c6;
     background: white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    transform: translateY(-1px);
+    /* REMOVIDO: box-shadow no hover dos inputs */
+    box-shadow: none !important;
+    transform: none;
 }
 
 .theme-dark .form-group input:hover,
@@ -593,16 +594,18 @@ body {
     outline: none;
     border-color: var(--primary-color, #4A90E2);
     background: white;
-    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.12), 0 4px 12px rgba(74, 144, 226, 0.15);
+    /* REMOVIDO: box-shadow excessivo no focus - apenas outline sutil */
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1) !important;
     border-width: 2px;
-    transform: translateY(-2px);
+    transform: none;
 }
 
 .theme-dark .form-group input:focus,
 .theme-dark .form-group textarea:focus,
 .theme-dark .form-group select:focus {
     background: #2C2C2F;
-    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0,0,0,0.3);
+    /* REMOVIDO: box-shadow excessivo no focus - apenas outline sutil */
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2) !important;
 }
 
 .form-group textarea {
@@ -674,7 +677,9 @@ body {
 .theme-dark .checkbox-label:hover {
     background: #353539;
     border-color: var(--primary-color, #4A90E2);
-    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+    /* REMOVIDO: box-shadow no hover */
+    box-shadow: none !important;
+    transform: none;
 }
 
 .radio-label input[type="radio"],
@@ -716,18 +721,21 @@ body {
 }
 
 /* Fallback para navegadores sem suporte a :has() - usar JS para adicionar classe .checked */
+/* REMOVIDO: Sombras excessivas - design mais limpo */
 .radio-label.checked,
 .checkbox-label.checked {
     border-color: var(--primary-color, #4A90E2);
-    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(74, 144, 226, 0.05));
-    box-shadow: 0 0 0 2px var(--primary-color, #4A90E2), 0 4px 12px rgba(74, 144, 226, 0.2);
-    transform: translateY(-2px);
+    background: rgba(74, 144, 226, 0.08);
+    /* REMOVIDO: box-shadow para evitar "quadrados feios" */
+    box-shadow: none !important;
+    transform: none;
 }
 
 .theme-dark .radio-label.checked,
 .theme-dark .checkbox-label.checked {
-    background: linear-gradient(135deg, rgba(74, 144, 226, 0.25), rgba(74, 144, 226, 0.15));
-    box-shadow: 0 0 0 2px var(--primary-color, #4A90E2), 0 4px 12px rgba(74, 144, 226, 0.3);
+    background: rgba(74, 144, 226, 0.15);
+    /* REMOVIDO: box-shadow */
+    box-shadow: none !important;
 }
 
 /* Submit Button Premium - Estilo Checkout */

@@ -436,45 +436,20 @@
             z-index: 2;
         }
         
-        /* Hover effect nos botões - mais animado */
+        /* Hover effect nos botões - simplificado (sem sombras excessivas) */
         .submit-btn:hover,
         button.submit-btn:hover,
         #form-submit-btn:hover,
         #whatsapp-submit-btn:hover,
         #pastor-message-btn:hover {
-            transform: translateY(-3px) scale(1.02) !important;
-            -webkit-transform: translateY(-3px) scale(1.02) !important;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3) !important;
+            transform: translateY(-2px) !important;
+            -webkit-transform: translateY(-2px) !important;
+            /* REMOVIDO: box-shadow excessivo - mantendo apenas o que já estava inline */
             transition: all 0.3s ease !important;
         }
         
-        /* Animação de pulse suave nos botões (mesmo quando não está em hover) */
-        .submit-btn,
-        button.submit-btn,
-        #form-submit-btn,
-        #whatsapp-submit-btn,
-        #pastor-message-btn {
-            animation: buttonPulse 3s ease-in-out infinite !important;
-            -webkit-animation: buttonPulse 3s ease-in-out infinite !important;
-        }
-        
-        @keyframes buttonPulse {
-            0%, 100% {
-                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            }
-            50% {
-                box-shadow: 0 6px 30px rgba(0,0,0,0.3);
-            }
-        }
-        
-        @-webkit-keyframes buttonPulse {
-            0%, 100% {
-                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            }
-            50% {
-                box-shadow: 0 6px 30px rgba(0,0,0,0.3);
-            }
-        }
+        /* REMOVIDO: Animação de pulse nos botões (mudando sombras constantemente) */
+        /* Botões mantêm apenas shine e hover simples */
         
         /* Animações nos cards e elementos de formulário */
         .form-group {
@@ -515,68 +490,9 @@
             }
         }
         
-        /* Animação nos inputs quando focados */
-        input:focus,
-        textarea:focus,
-        select:focus {
-            animation: inputFocus 0.3s ease-out !important;
-            -webkit-animation: inputFocus 0.3s ease-out !important;
-        }
+        /* REMOVIDO: Animações de scale nos inputs - simplificando */
         
-        @keyframes inputFocus {
-            from {
-                transform: scale(1);
-            }
-            to {
-                transform: scale(1.01);
-            }
-        }
-        
-        @-webkit-keyframes inputFocus {
-            from {
-                -webkit-transform: scale(1);
-            }
-            to {
-                -webkit-transform: scale(1.01);
-            }
-        }
-        
-        /* Animação na linha separadora */
-        div[style*="border-bottom"][style*="separator_line_color"],
-        div[style*="border-bottom"] {
-            position: relative;
-        }
-        
-        div[style*="border-bottom"][style*="separator_line_color"]::after,
-        div[style*="border-bottom"]::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: <%= primaryColor %>;
-            animation: lineGrow 2s ease-in-out infinite alternate !important;
-            -webkit-animation: lineGrow 2s ease-in-out infinite alternate !important;
-        }
-        
-        @keyframes lineGrow {
-            from {
-                width: 0;
-            }
-            to {
-                width: 30%;
-            }
-        }
-        
-        @-webkit-keyframes lineGrow {
-            from {
-                width: 0;
-            }
-            to {
-                width: 30%;
-            }
-        }
+        /* REMOVIDO: Animação na linha separadora - mantendo apenas design limpo */
         
         /* Media queries para garantir que as animações funcionem no mobile */
         @media (max-width: 768px) {
@@ -592,13 +508,12 @@
                 -webkit-animation-play-state: running !important;
             }
             
-            /* Aumentar intensidade das animações no mobile para melhor visibilidade */
+            /* No mobile: garantir que apenas shine funcione (sem pulse) */
             .form-group label span[style*="background"],
             label span[style*="background"][style*="3px"],
             label span[style*="background"][style*="height: 18px"],
             .form-group label > span:first-of-type {
-                animation: barPulse 2s ease-in-out infinite !important;
-                -webkit-animation: barPulse 2s ease-in-out infinite !important;
+                /* Apenas shine, sem pulse - sem sombras */
                 animation-play-state: running !important;
                 -webkit-animation-play-state: running !important;
             }
