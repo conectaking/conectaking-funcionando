@@ -1520,6 +1520,8 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         }
 
         console.log(`📝 PUT /api/profile/items/digital_form/${itemId} - userId: ${userId}`);
+        console.log(`📝 [DIGITAL_FORM] Body recebido:`, JSON.stringify(req.body, null, 2));
+        console.log(`📝 [DIGITAL_FORM] enable_guest_list_submit recebido:`, enable_guest_list_submit, typeof enable_guest_list_submit);
 
         // Verificar se o item pertence ao usuário (pode ser digital_form ou guest_list que será convertido)
         const checkRes = await client.query(
@@ -1684,6 +1686,11 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
              LIMIT 1`,
             [itemId]
         );
+        
+        console.log(`🔍 [DIGITAL_FORM] Registro existente encontrado? ${formCheck.rows.length > 0 ? 'SIM' : 'NÃO'}`);
+        if (formCheck.rows.length > 0) {
+            console.log(`🔍 [DIGITAL_FORM] ID do registro existente: ${formCheck.rows[0].id}`);
+        }
         
         // Se houver múltiplos registros, deletar os antigos
         const allFormsCheck = await client.query(
@@ -2013,6 +2020,8 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                     WHERE id = $${whereParamIndex}
                     RETURNING *
                 `;
+                console.log(`🔍 [DIGITAL_FORM] Query de UPDATE:`, formUpdateQuery);
+                console.log(`🔍 [DIGITAL_FORM] Valores:`, updateFormValues);
                 const updateResult = await client.query(formUpdateQuery, updateFormValues);
                 console.log(`✅ [DIGITAL_FORM] UPDATE executado no registro ID ${latestFormId} para item ${itemId}`);
                 
@@ -2158,10 +2167,13 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 insertParams.push(...extraParams);
             }
             
+            console.log(`🔍 [DIGITAL_FORM] Criando novo registro com campos:`, insertFields);
+            console.log(`🔍 [DIGITAL_FORM] Valores:`, insertParams);
             await client.query(`
                 INSERT INTO digital_form_items (${insertFields})
                 VALUES (${insertValues})
             `, insertParams);
+            console.log(`✅ [DIGITAL_FORM] Novo registro criado com sucesso para item ${itemId}`);
         }
 
         // Buscar dados atualizados
@@ -2215,6 +2227,10 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
     } catch (error) {
         console.error(`❌ Erro ao atualizar Formulário King ${req.params.id}:`, error);
         console.error(`❌ Stack trace:`, error.stack);
+        console.error(`❌ Error name:`, error.name);
+        console.error(`❌ Error code:`, error.code);
+        console.error(`❌ Error detail:`, error.detail);
+        console.error(`❌ Error hint:`, error.hint);
         res.status(500).json({ 
             message: 'Erro ao salvar configuração', 
             error: error.message 
