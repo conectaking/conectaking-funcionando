@@ -274,11 +274,11 @@
         }
         
         .tab-content {
-            display: none;
+            display: none !important;
         }
         
         .tab-content.active {
-            display: block;
+            display: block !important;
             animation: fadeIn 0.3s;
         }
         
@@ -2767,6 +2767,16 @@
         function switchTab(tabName, eventElement) {
             console.log('🔄 [TAB] Mudando para aba:', tabName);
             
+            // Mapear nomes de abas para IDs
+            const tabIdMap = {
+                'registered': 'tab-registered',
+                'checked_in': 'tab-checked_in',
+                'not_arrived': 'tab-not_arrived'
+            };
+            
+            const tabId = tabIdMap[tabName] || `tab-${tabName}`;
+            console.log('🔍 [TAB] ID da aba:', tabId);
+            
             // Remover active de todas as tabs e resetar estilos
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('active');
@@ -2775,11 +2785,14 @@
                 btn.style.background = '';
                 btn.style.borderBottomColor = '';
             });
+            
+            // Ocultar todas as abas primeiro
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
+                content.style.display = 'none';
             });
             
-            // Encontrar o botão correto (pode ser o próprio botão ou encontrar pelo tabName)
+            // Encontrar o botão correto
             let targetButton = null;
             if (eventElement && eventElement.target) {
                 // Se o evento veio de um elemento filho (ex: ícone), encontrar o botão pai
@@ -2803,23 +2816,30 @@
             }
             
             // Ativar conteúdo da tab
-            const tabId = tabName === 'checked_in' ? 'checked_in' : tabName === 'not_arrived' ? 'not_arrived' : tabName;
-            const tabElement = document.getElementById(`tab-${tabId}`);
+            const tabElement = document.getElementById(tabId);
+            console.log('🔍 [TAB] Elemento encontrado:', tabElement ? 'SIM' : 'NÃO', 'ID:', tabId);
+            
             if (tabElement) {
                 tabElement.classList.add('active');
-                // Garantir que o conteúdo seja visível
+                // Garantir que o conteúdo seja visível com !important
                 tabElement.style.display = 'block';
+                tabElement.style.visibility = 'visible';
+                tabElement.style.opacity = '1';
+                console.log('✅ [TAB] Aba ativada e tornada visível:', tabName);
+            } else {
+                console.error('❌ [TAB] ERRO: Elemento não encontrado para ID:', tabId);
+                // Tentar encontrar por outro método
+                const allTabs = document.querySelectorAll('.tab-content');
+                console.log('🔍 [TAB] Todas as abas encontradas:', Array.from(allTabs).map(t => t.id));
             }
             
             // Ocultar outras tabs explicitamente
             document.querySelectorAll('.tab-content').forEach(content => {
-                if (content.id !== `tab-${tabId}`) {
+                if (content.id !== tabId) {
                     content.classList.remove('active');
                     content.style.display = 'none';
                 }
             });
-            
-            console.log('✅ [TAB] Aba ativada:', tabName, 'Elemento:', tabElement ? 'encontrado' : 'não encontrado');
             
             // Resetar filtro para "all" ao mudar de aba e garantir visibilidade
             setTimeout(() => {
@@ -2831,6 +2851,8 @@
                 // PRIMEIRO: Garantir que todas as linhas da aba ativa sejam visíveis
                 if (tabElement) {
                     const rows = tabElement.querySelectorAll('.table-row');
+                    console.log(`🔍 [TAB] Encontradas ${rows.length} linhas na aba ${tabName}`);
+                    
                     rows.forEach(row => {
                         row.style.display = '';
                         row.style.visibility = 'visible';
@@ -2842,7 +2864,13 @@
                     const emptyState = tabElement.querySelector('.empty-state');
                     if (rows.length > 0 && emptyState) {
                         emptyState.style.display = 'none';
+                        console.log('✅ [TAB] Empty-state ocultado porque há linhas');
+                    } else if (rows.length === 0 && emptyState) {
+                        emptyState.style.display = 'block';
+                        console.log('ℹ️ [TAB] Empty-state mantido porque não há linhas');
                     }
+                } else {
+                    console.error('❌ [TAB] tabElement é null, não é possível processar linhas');
                 }
                 
                 // DEPOIS: Aplicar filtro (que deve mostrar todos já que está em 'all')
@@ -2857,7 +2885,7 @@
         
         // Função para filtrar convidados por status
         function filterGuests() {
-            const filterValue = document.getElementById('status-filter').value;
+            const filterValue = document.getElementById('status-filter')?.value || 'all';
             // Filtrar apenas nas abas visíveis (active)
             const activeTab = document.querySelector('.tab-content.active');
             if (!activeTab) {
@@ -2871,7 +2899,18 @@
             
             console.log(`🔍 Filtrando ${rows.length} linhas na aba ativa (${activeTab.id}) com filtro: ${filterValue}`);
             
+            // Se não há linhas, não fazer nada
+            if (rows.length === 0) {
+                console.log('ℹ️ Nenhuma linha encontrada na aba ativa');
+                return;
+            }
+            
             rows.forEach(row => {
+                // PRIMEIRO: Garantir que a linha está visível (resetar estilos)
+                row.style.display = '';
+                row.style.visibility = 'visible';
+                row.style.opacity = '1';
+                
                 const statusValue = row.getAttribute('data-status') || '';
                 const statusBadge = row.querySelector('.status-badge');
                 const statusText = statusBadge ? statusBadge.textContent.trim().toLowerCase() : '';
@@ -2884,32 +2923,50 @@
                 
                 let shouldShow = false;
                 
-                switch(filterValue) {
-                    case 'all':
-                        shouldShow = true;
-                        break;
-                    case 'not_confirmed':
-                        // Mostrar apenas os que não confirmaram (registered)
-                        shouldShow = isRegistered && !isCheckedIn && !isConfirmed;
-                        break;
-                    case 'registered':
-                        shouldShow = isRegistered && !isCheckedIn && !isConfirmed;
-                        break;
-                    case 'confirmed':
-                        shouldShow = isConfirmed && !isCheckedIn;
-                        break;
-                    case 'checked_in':
-                        shouldShow = isCheckedIn;
-                        break;
-                    default:
-                        shouldShow = true;
+                // Se o filtro é 'all', mostrar TODAS as linhas
+                if (filterValue === 'all') {
+                    shouldShow = true;
+                } else {
+                    // Aplicar filtro específico
+                    switch(filterValue) {
+                        case 'not_confirmed':
+                            // Mostrar apenas os que não confirmaram (registered)
+                            shouldShow = isRegistered && !isCheckedIn && !isConfirmed;
+                            break;
+                        case 'registered':
+                            shouldShow = isRegistered && !isCheckedIn && !isConfirmed;
+                            break;
+                        case 'confirmed':
+                            shouldShow = isConfirmed && !isCheckedIn;
+                            break;
+                        case 'checked_in':
+                            shouldShow = isCheckedIn;
+                            break;
+                        default:
+                            shouldShow = true;
+                    }
                 }
                 
-                row.style.display = shouldShow ? '' : 'none';
-                if (shouldShow) visibleCount++;
+                // Aplicar visibilidade
+                if (shouldShow) {
+                    row.style.display = '';
+                    row.style.visibility = 'visible';
+                    row.style.opacity = '1';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
             });
             
             console.log(`✅ Filtro aplicado: ${filterValue}, ${visibleCount} de ${rows.length} convidados visíveis na aba ${activeTab.id}`);
+            
+            // Verificar se há empty-state e ajustar
+            const emptyState = activeTab.querySelector('.empty-state');
+            if (visibleCount > 0 && emptyState) {
+                emptyState.style.display = 'none';
+            } else if (visibleCount === 0 && emptyState) {
+                emptyState.style.display = 'block';
+            }
         }
         
         // Função para ordenar convidados
@@ -2988,23 +3045,68 @@
                 const checkedInTab = document.getElementById('tab-checked_in');
                 const notArrivedTab = document.getElementById('tab-not_arrived');
                 
+                console.log('📊 [INIT] Verificando abas...');
+                
                 if (registeredTab) {
                     const registeredRows = registeredTab.querySelectorAll('.table-row');
                     console.log('📊 [INIT] Aba Cadastrados:', registeredRows.length, 'linhas');
+                    registeredRows.forEach((row, idx) => {
+                        console.log(`  - Linha ${idx + 1}:`, row.getAttribute('data-status'), row.querySelector('[data-label="Nome Completo"]')?.textContent);
+                    });
+                } else {
+                    console.error('❌ [INIT] Aba Cadastrados não encontrada!');
                 }
+                
                 if (checkedInTab) {
                     const checkedInRows = checkedInTab.querySelectorAll('.table-row');
                     console.log('📊 [INIT] Aba Quem Chegou:', checkedInRows.length, 'linhas');
+                    checkedInRows.forEach((row, idx) => {
+                        console.log(`  - Linha ${idx + 1}:`, row.getAttribute('data-status'), row.querySelector('[data-label="Nome Completo"]')?.textContent);
+                    });
+                } else {
+                    console.error('❌ [INIT] Aba Quem Chegou não encontrada!');
                 }
+                
                 if (notArrivedTab) {
                     const notArrivedRows = notArrivedTab.querySelectorAll('.table-row');
                     console.log('📊 [INIT] Aba Quem Não Chegou:', notArrivedRows.length, 'linhas');
+                    notArrivedRows.forEach((row, idx) => {
+                        console.log(`  - Linha ${idx + 1}:`, row.getAttribute('data-status'), row.querySelector('[data-label="Nome Completo"]')?.textContent);
+                    });
+                } else {
+                    console.error('❌ [INIT] Aba Quem Não Chegou não encontrada!');
+                }
+                
+                // Garantir que a aba registered está ativa e visível
+                if (registeredTab) {
+                    registeredTab.classList.add('active');
+                    registeredTab.style.display = 'block';
                 }
                 
                 // Garantir que o filtro está em "all"
-                document.getElementById('status-filter').value = 'all';
+                const statusFilter = document.getElementById('status-filter');
+                if (statusFilter) {
+                    statusFilter.value = 'all';
+                }
+                
                 // Ordenar por nome por padrão
-                document.getElementById('sort-order').value = 'name';
+                const sortOrder = document.getElementById('sort-order');
+                if (sortOrder) {
+                    sortOrder.value = 'name';
+                }
+                
+                // Garantir que todas as linhas da aba ativa sejam visíveis
+                const activeTab = document.querySelector('.tab-content.active');
+                if (activeTab) {
+                    const rows = activeTab.querySelectorAll('.table-row');
+                    rows.forEach(row => {
+                        row.style.display = '';
+                        row.style.visibility = 'visible';
+                        row.style.opacity = '1';
+                    });
+                    console.log(`✅ [INIT] ${rows.length} linhas tornadas visíveis na aba ativa`);
+                }
+                
                 sortGuests();
                 filterGuests(); // Aplicar filtro inicial (mostrar todos)
             }, 100);
