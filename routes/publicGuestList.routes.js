@@ -690,12 +690,26 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
             guestListId: guestList.id
         });
         
+        // Garantir que todos os arrays sejam arrays válidos (não undefined, não null)
+        const finalCheckedInGuests = Array.isArray(checkedInGuestsArray) ? checkedInGuestsArray : [];
+        const finalNotArrivedGuests = Array.isArray(notArrivedGuestsArray) ? notArrivedGuestsArray : [];
+        const finalConfirmedGuests = Array.isArray(confirmedGuestsArray) ? confirmedGuestsArray : [];
+        const finalRegisteredGuests = Array.isArray(registeredGuestsArray) ? registeredGuestsArray : [];
+        
+        logger.info('📊 [GUEST-LIST-VIEW-FULL] Arrays finais para renderização:', {
+            checkedInGuests: finalCheckedInGuests.length,
+            notArrivedGuests: finalNotArrivedGuests.length,
+            confirmedGuests: finalConfirmedGuests.length,
+            registeredGuests: finalRegisteredGuests.length,
+            guestListId: guestList.id
+        });
+        
         res.render('guestListViewFull', {
             guestList,
-            registeredGuests: registeredGuestsArray, // TODOS os convidados (para aba Cadastrados)
-            confirmedGuests: confirmedGuestsArray,
-            checkedInGuests: checkedInGuestsArray,
-            notArrivedGuests: notArrivedGuestsArray, // Quem não chegou = todos que NÃO têm status 'checked_in'
+            registeredGuests: finalRegisteredGuests, // TODOS os convidados (para aba Cadastrados)
+            confirmedGuests: finalConfirmedGuests,
+            checkedInGuests: finalCheckedInGuests,
+            notArrivedGuests: finalNotArrivedGuests, // Quem não chegou = todos que NÃO têm status 'checked_in'
             token: token,
             profileItemId: guestList.profile_item_id,
             formFields: formFields, // Campos do formulário para mapear labels
