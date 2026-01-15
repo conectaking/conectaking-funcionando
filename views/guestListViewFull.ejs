@@ -1391,7 +1391,7 @@
                         }
                     %>
                         <div class="table-row" data-status="<%= statusValue %>" data-search-name="<%= (displayName || '').toLowerCase() %>" data-search-email="<%= (displayEmail || '').toLowerCase() %>" data-search-cpf="<%= (displayCPF || '').replace(/\D/g, '').toLowerCase() %>" data-guest-id="<%= guest.id %>">
-                            <div data-label="Nome Completo" style="font-weight: 600;"><%= displayName %></div>
+                            <div data-label="Nome Completo" style="font-weight: 600;"><span style="color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>; margin-right: 8px; font-weight: 700;"><%= guestNumber %>.</span><%= displayName %></div>
                             <div data-label="Email"><%= displayEmail %></div>
                             <div data-label="WhatsApp"><%= displayWhatsapp %></div>
                             <div data-label="CPF"><%= displayCPF %></div>
