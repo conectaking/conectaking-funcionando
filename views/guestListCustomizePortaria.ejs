@@ -365,6 +365,15 @@
     <script>
         const profileItemId = <%= profileItemId %>;
         
+        // Obter token da URL (query string) ou do localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        let authToken = urlParams.get('token') || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+        
+        // Se não tiver token, mostrar erro
+        if (!authToken) {
+            alert('Erro: Token de autenticação não encontrado. Por favor, feche esta página e tente novamente.');
+        }
+        
         // Selecionar tema ativo
         document.querySelector(`[data-theme="<%= guestList.theme_portaria || 'default' %>"]`)?.classList.add('active');
         
@@ -411,12 +420,25 @@
             const file = input.files[0];
             if (!file) return;
             
+            // Verificar se ainda temos o token
+            if (!authToken) {
+                authToken = urlParams.get('token') || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+            }
+            
+            if (!authToken) {
+                alert('Erro: Token de autenticação não encontrado. Por favor, faça login novamente.');
+                return;
+            }
+            
             const formData = new FormData();
             formData.append('image', file);
             
             try {
                 const response = await fetch('/api/upload/image', {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
                     body: formData
                 });
                 
@@ -458,9 +480,22 @@
             };
             
             try {
+                // Verificar se ainda temos o token
+                if (!authToken) {
+                    authToken = urlParams.get('token') || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+                }
+                
+                if (!authToken) {
+                    alert('Erro: Token de autenticação não encontrado. Por favor, faça login novamente.');
+                    return;
+                }
+                
                 const response = await fetch(`/api/guest-lists/${profileItemId}/customize-portaria`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
                     body: JSON.stringify(formData)
                 });
                 
