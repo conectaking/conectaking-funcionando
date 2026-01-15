@@ -109,6 +109,108 @@
         .form-header {
             background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
             background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Efeito animado de rotação - igual ao da portaria */
+        /* IMPORTANTE: Garantir que a animação funcione no desktop E mobile */
+        header.form-header::before,
+        .form-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            /* Forçar animação em todos os navegadores, incluindo mobile */
+            animation: rotateGradient 20s linear infinite !important;
+            -webkit-animation: rotateGradient 20s linear infinite !important;
+            -moz-animation: rotateGradient 20s linear infinite !important;
+            -o-animation: rotateGradient 20s linear infinite !important;
+            z-index: 0;
+            /* Garantir que o elemento seja sempre visível */
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        @keyframes rotateGradient {
+            from { 
+                transform: rotate(0deg);
+                -webkit-transform: rotate(0deg);
+                -moz-transform: rotate(0deg);
+            }
+            to { 
+                transform: rotate(360deg);
+                -webkit-transform: rotate(360deg);
+                -moz-transform: rotate(360deg);
+            }
+        }
+        
+        /* WebKit prefix para keyframes (Safari, Chrome mobile) */
+        @-webkit-keyframes rotateGradient {
+            from { -webkit-transform: rotate(0deg); }
+            to { -webkit-transform: rotate(360deg); }
+        }
+        
+        /* Moz prefix para keyframes (Firefox) */
+        @-moz-keyframes rotateGradient {
+            from { -moz-transform: rotate(0deg); }
+            to { -moz-transform: rotate(360deg); }
+        }
+        
+        /* Garantir que o conteúdo do header fique acima do efeito animado */
+        header.form-header .container,
+        .form-header .container {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Media queries para garantir que o efeito funcione no mobile */
+        /* IMPORTANTE: No mobile, o efeito DEVE aparecer animado, não estático */
+        @media (max-width: 768px) {
+            header.form-header,
+            .form-header {
+                /* Garantir que o header tenha overflow hidden no mobile também */
+                overflow: hidden !important;
+                position: relative !important;
+            }
+            
+            header.form-header::before,
+            .form-header::before {
+                /* No mobile, manter a animação ativa e visível */
+                animation: rotateGradient 20s linear infinite !important;
+                -webkit-animation: rotateGradient 20s linear infinite !important;
+                -moz-animation: rotateGradient 20s linear infinite !important;
+                /* Garantir que o elemento seja visível no mobile */
+                opacity: 1 !important;
+                visibility: visible !important;
+                display: block !important;
+                /* Aumentar um pouco a opacidade no mobile para melhor visibilidade */
+                background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%) !important;
+            }
+        }
+        
+        /* Suporte adicional para navegadores mobile */
+        @media (max-width: 480px) {
+            header.form-header::before,
+            .form-header::before {
+                /* Em telas muito pequenas, garantir ainda mais visibilidade */
+                background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%) !important;
+                animation: rotateGradient 20s linear infinite !important;
+                -webkit-animation: rotateGradient 20s linear infinite !important;
+            }
+        }
+        
+        /* Suporte para navegadores que podem desabilitar animações */
+        @media (prefers-reduced-motion: no-preference) {
+            header.form-header::before,
+            .form-header::before {
+                animation: rotateGradient 20s linear infinite !important;
+                -webkit-animation: rotateGradient 20s linear infinite !important;
+                -moz-animation: rotateGradient 20s linear infinite !important;
+            }
         }
         
         /* Aplicar gradiente em todos os elementos que usam cor primária */
@@ -212,8 +314,8 @@
     <% } %>
     
     <!-- Header -->
-    <header class="form-header" style="background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important; background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;">
-        <div class="container">
+    <header class="form-header" style="background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important; background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important; position: relative !important; overflow: hidden !important;">
+        <div class="container" style="position: relative; z-index: 1;">
             <% if (typeof profileSlug !== 'undefined' && profileSlug) { %>
             <a href="/<%= profileSlug %>" class="back-btn">
                 <i class="fas fa-arrow-left"></i>
