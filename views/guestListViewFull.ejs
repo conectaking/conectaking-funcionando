@@ -3078,38 +3078,18 @@
                     visibleIndex++;
                     const nameCell = row.querySelector('[data-label="Nome Completo"]');
                     if (nameCell) {
-                        // Extrair o nome sem o número
-                        let nameWithoutNumber = '';
+                        // Extrair o nome sem o número - método simples e robusto
+                        // Pegar todo o textContent e remover qualquer número no início
+                        let fullText = nameCell.textContent || nameCell.innerText || '';
+                        // Remover número no início (formato: "1. Nome" ou "10. Nome")
+                        let nameWithoutNumber = fullText.replace(/^\d+\.\s*/, '').trim();
                         
-                        // Se tem span com número, pegar apenas os nós de texto após o span
-                        const existingSpan = nameCell.querySelector('span');
-                        if (existingSpan) {
-                            // Pegar todos os nós de texto após o span
-                            let textNodes = [];
-                            let node = existingSpan.nextSibling;
-                            while (node) {
-                                if (node.nodeType === Node.TEXT_NODE) {
-                                    textNodes.push(node.textContent);
-                                }
-                                node = node.nextSibling;
-                            }
-                            nameWithoutNumber = textNodes.join('').trim();
-                            
-                            // Se não encontrou texto após o span, tentar remover número do textContent
-                            if (!nameWithoutNumber) {
-                                nameWithoutNumber = (nameCell.textContent || '').replace(/^\d+\.\s*/, '').trim();
-                            }
-                        } else {
-                            // Se não tem span, remover número do início do texto
-                            nameWithoutNumber = (nameCell.textContent || '').replace(/^\d+\.\s*/, '').trim();
+                        // Se por algum motivo não conseguiu extrair, usar o texto completo
+                        if (!nameWithoutNumber || nameWithoutNumber === '') {
+                            nameWithoutNumber = fullText.trim();
                         }
                         
-                        // Se ainda não tem nome, usar o textContent completo sem número
-                        if (!nameWithoutNumber) {
-                            nameWithoutNumber = (nameCell.textContent || '').replace(/^\d+\.\s*/, '').trim();
-                        }
-                        
-                        // Limpar célula
+                        // Limpar célula completamente
                         nameCell.innerHTML = '';
                         
                         // Adicionar novo número
