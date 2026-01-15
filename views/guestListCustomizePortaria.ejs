@@ -271,22 +271,35 @@
 <body>
     <div class="header-actions" style="max-width: 1400px; margin: 0 auto 24px;">
         <% 
-            // Determinar URL de voltar: 
-            // 1. Se estiver dentro de iframe (vindo da responsesList.html), usar comunicação com o pai para voltar à aba "Inscritos"
-            // 2. Caso contrário, tentar voltar para a página de confirmação de presença (responsesList.html) ou página pública
-            const currentProfileItemId = profileItemId || guestList.profile_item_id;
-            const responsesListUrl = currentProfileItemId ? `responsesList.html?itemId=${currentProfileItemId}` : null;
+            // Determinar se está dentro de iframe (vindo da responsesList.html)
+            // Se estiver dentro de iframe, esconder o botão "Voltar" (não é necessário)
+            const isInIframe = true; // Assumir que sempre está em iframe quando acessado via responsesList.html
         %>
-        <a href="<%= responsesListUrl || '#' %>" class="back-button" onclick="handleVoltarClick(event, '<%= responsesListUrl || '' %>');">
-            <i class="fas fa-arrow-left"></i> Voltar
-        </a>
+        <div id="back-button-container" style="display: none;">
+            <a href="#" class="back-button" onclick="handleVoltarClick(event, '');">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
         <h1 style="color: #FFC700; margin: 0; font-size: 20px; font-weight: 700;">
             <i class="fas fa-paint-brush"></i> Personalizar Portaria
         </h1>
     </div>
     
     <script>
-        // Função para lidar com o clique no botão "Voltar"
+        // Detectar se está dentro de iframe e esconder botão "Voltar"
+        (function() {
+            // Verificar se estamos dentro de um iframe
+            if (window.self !== window.top) {
+                // Estamos dentro de um iframe - esconder o botão "Voltar" completamente
+                const backButtonContainer = document.getElementById('back-button-container');
+                if (backButtonContainer) {
+                    backButtonContainer.style.display = 'none';
+                }
+                console.log('✅ [CUSTOMIZE_PORTARIA] Detectado iframe - botão "Voltar" escondido');
+            }
+        })();
+        
+        // Função para lidar com o clique no botão "Voltar" (se necessário)
         function handleVoltarClick(event, responsesListUrl) {
             event.preventDefault();
             
