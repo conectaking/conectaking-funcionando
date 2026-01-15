@@ -284,6 +284,424 @@
             pointer-events: none;
         }
         <% } %>
+        
+        /* ============================================
+           ANIMAÇÕES MELHORADAS - KING FORMS
+           Efeitos animados em barras, botões e elementos gráficos
+           Funcionam em desktop E mobile
+           ============================================ */
+        
+        /* Animação nas barras decorativas ao lado dos labels */
+        /* IMPORTANTE: Usar seletores mais específicos para pegar as barras inline */
+        .form-group label span[style*="background"],
+        label span[style*="background"][style*="3px"],
+        label span[style*="background"][style*="height: 18px"],
+        .form-group label > span:first-of-type {
+            position: relative !important;
+            overflow: hidden !important;
+            animation: barPulse 2s ease-in-out infinite !important;
+            -webkit-animation: barPulse 2s ease-in-out infinite !important;
+            display: inline-block !important;
+        }
+        
+        @keyframes barPulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scaleY(1);
+                box-shadow: 0 0 8px currentColor;
+            }
+            50% {
+                opacity: 0.8;
+                transform: scaleY(1.1);
+                box-shadow: 0 0 12px currentColor, 0 0 16px currentColor;
+            }
+        }
+        
+        @-webkit-keyframes barPulse {
+            0%, 100% {
+                opacity: 1;
+                -webkit-transform: scaleY(1);
+                box-shadow: 0 0 8px currentColor;
+            }
+            50% {
+                opacity: 0.8;
+                -webkit-transform: scaleY(1.1);
+                box-shadow: 0 0 12px currentColor, 0 0 16px currentColor;
+            }
+        }
+        
+        /* Efeito shine (brilho animado) nas barras decorativas */
+        .form-group label span[style*="background"]::before,
+        label span[style*="background"][style*="3px"]::before,
+        label span[style*="background"][style*="height: 18px"]::before,
+        .form-group label > span:first-of-type::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: -100% !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent) !important;
+            animation: shine 3s ease-in-out infinite !important;
+            -webkit-animation: shine 3s ease-in-out infinite !important;
+            z-index: 1 !important;
+            pointer-events: none !important;
+        }
+        
+        @keyframes shine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        @-webkit-keyframes shine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        /* Animação na barra principal ao lado do título "Preencha os dados" */
+        h2 div[style*="background"][style*="6px"] {
+            position: relative;
+            overflow: hidden;
+            animation: mainBarGlow 2.5s ease-in-out infinite !important;
+            -webkit-animation: mainBarGlow 2.5s ease-in-out infinite !important;
+        }
+        
+        h2 div[style*="background"][style*="6px"]::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            animation: mainBarShine 3.5s ease-in-out infinite !important;
+            -webkit-animation: mainBarShine 3.5s ease-in-out infinite !important;
+        }
+        
+        @keyframes mainBarGlow {
+            0%, 100% {
+                box-shadow: 0 0 10px currentColor;
+                opacity: 1;
+            }
+            50% {
+                box-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+                opacity: 0.9;
+            }
+        }
+        
+        @-webkit-keyframes mainBarGlow {
+            0%, 100% {
+                box-shadow: 0 0 10px currentColor;
+                opacity: 1;
+            }
+            50% {
+                box-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+                opacity: 0.9;
+            }
+        }
+        
+        @keyframes mainBarShine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        @-webkit-keyframes mainBarShine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        /* Animações nos botões - efeitos premium */
+        .submit-btn,
+        button.submit-btn,
+        #form-submit-btn,
+        #whatsapp-submit-btn,
+        #pastor-message-btn {
+            position: relative !important;
+            overflow: hidden !important;
+            transition: all 0.3s ease !important;
+            transform-style: preserve-3d !important;
+        }
+        
+        /* Efeito de brilho animado nos botões */
+        .submit-btn::before,
+        button.submit-btn::before,
+        #form-submit-btn::before,
+        #whatsapp-submit-btn::before,
+        #pastor-message-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: buttonShine 3s ease-in-out infinite !important;
+            -webkit-animation: buttonShine 3s ease-in-out infinite !important;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        @keyframes buttonShine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        @-webkit-keyframes buttonShine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        /* Conteúdo do botão acima do efeito shine */
+        .submit-btn > *,
+        button.submit-btn > * {
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* Hover effect nos botões - mais animado */
+        .submit-btn:hover,
+        button.submit-btn:hover,
+        #form-submit-btn:hover,
+        #whatsapp-submit-btn:hover,
+        #pastor-message-btn:hover {
+            transform: translateY(-3px) scale(1.02) !important;
+            -webkit-transform: translateY(-3px) scale(1.02) !important;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3) !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        /* Animação de pulse suave nos botões (mesmo quando não está em hover) */
+        .submit-btn,
+        button.submit-btn,
+        #form-submit-btn,
+        #whatsapp-submit-btn,
+        #pastor-message-btn {
+            animation: buttonPulse 3s ease-in-out infinite !important;
+            -webkit-animation: buttonPulse 3s ease-in-out infinite !important;
+        }
+        
+        @keyframes buttonPulse {
+            0%, 100% {
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            }
+            50% {
+                box-shadow: 0 6px 30px rgba(0,0,0,0.3);
+            }
+        }
+        
+        @-webkit-keyframes buttonPulse {
+            0%, 100% {
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            }
+            50% {
+                box-shadow: 0 6px 30px rgba(0,0,0,0.3);
+            }
+        }
+        
+        /* Animações nos cards e elementos de formulário */
+        .form-group {
+            animation: fadeInUp 0.5s ease-out !important;
+            -webkit-animation: fadeInUp 0.5s ease-out !important;
+            animation-fill-mode: both !important;
+            -webkit-animation-fill-mode: both !important;
+        }
+        
+        /* Delay progressivo para cada campo aparecer em sequência */
+        .form-group:nth-child(1) { animation-delay: 0.1s !important; }
+        .form-group:nth-child(2) { animation-delay: 0.2s !important; }
+        .form-group:nth-child(3) { animation-delay: 0.3s !important; }
+        .form-group:nth-child(4) { animation-delay: 0.4s !important; }
+        .form-group:nth-child(5) { animation-delay: 0.5s !important; }
+        .form-group:nth-child(6) { animation-delay: 0.6s !important; }
+        .form-group:nth-child(n+7) { animation-delay: 0.7s !important; }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @-webkit-keyframes fadeInUp {
+            from {
+                opacity: 0;
+                -webkit-transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                -webkit-transform: translateY(0);
+            }
+        }
+        
+        /* Animação nos inputs quando focados */
+        input:focus,
+        textarea:focus,
+        select:focus {
+            animation: inputFocus 0.3s ease-out !important;
+            -webkit-animation: inputFocus 0.3s ease-out !important;
+        }
+        
+        @keyframes inputFocus {
+            from {
+                transform: scale(1);
+            }
+            to {
+                transform: scale(1.01);
+            }
+        }
+        
+        @-webkit-keyframes inputFocus {
+            from {
+                -webkit-transform: scale(1);
+            }
+            to {
+                -webkit-transform: scale(1.01);
+            }
+        }
+        
+        /* Animação na linha separadora */
+        div[style*="border-bottom"][style*="separator_line_color"],
+        div[style*="border-bottom"] {
+            position: relative;
+        }
+        
+        div[style*="border-bottom"][style*="separator_line_color"]::after,
+        div[style*="border-bottom"]::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: <%= primaryColor %>;
+            animation: lineGrow 2s ease-in-out infinite alternate !important;
+            -webkit-animation: lineGrow 2s ease-in-out infinite alternate !important;
+        }
+        
+        @keyframes lineGrow {
+            from {
+                width: 0;
+            }
+            to {
+                width: 30%;
+            }
+        }
+        
+        @-webkit-keyframes lineGrow {
+            from {
+                width: 0;
+            }
+            to {
+                width: 30%;
+            }
+        }
+        
+        /* Media queries para garantir que as animações funcionem no mobile */
+        @media (max-width: 768px) {
+            /* Garantir que todas as animações funcionem no mobile */
+            .form-group label span[style*="background"],
+            h2 div[style*="background"][style*="6px"],
+            .submit-btn,
+            button.submit-btn,
+            #form-submit-btn,
+            #whatsapp-submit-btn,
+            #pastor-message-btn {
+                animation-play-state: running !important;
+                -webkit-animation-play-state: running !important;
+            }
+            
+            /* Aumentar intensidade das animações no mobile para melhor visibilidade */
+            .form-group label span[style*="background"],
+            label span[style*="background"][style*="3px"],
+            label span[style*="background"][style*="height: 18px"],
+            .form-group label > span:first-of-type {
+                animation: barPulse 2s ease-in-out infinite !important;
+                -webkit-animation: barPulse 2s ease-in-out infinite !important;
+                animation-play-state: running !important;
+                -webkit-animation-play-state: running !important;
+            }
+            
+            .submit-btn::before,
+            button.submit-btn::before,
+            #form-submit-btn::before,
+            #whatsapp-submit-btn::before,
+            #pastor-message-btn::before {
+                animation: buttonShine 3s ease-in-out infinite !important;
+                -webkit-animation: buttonShine 3s ease-in-out infinite !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* Em telas muito pequenas, manter animações ativas */
+            .form-group label span[style*="background"],
+            label span[style*="background"][style*="3px"],
+            label span[style*="background"][style*="height: 18px"],
+            .form-group label > span:first-of-type,
+            h2 div[style*="background"][style*="6px"],
+            .submit-btn,
+            button.submit-btn,
+            #form-submit-btn,
+            #whatsapp-submit-btn,
+            #pastor-message-btn {
+                animation-play-state: running !important;
+                -webkit-animation-play-state: running !important;
+            }
+            
+            /* Garantir que os efeitos shine nas barras funcionem no mobile */
+            .form-group label span[style*="background"]::before,
+            label span[style*="background"][style*="3px"]::before {
+                animation: shine 3s ease-in-out infinite !important;
+                -webkit-animation: shine 3s ease-in-out infinite !important;
+                animation-play-state: running !important;
+                -webkit-animation-play-state: running !important;
+            }
+        }
+        
+        /* Garantir que animações não sejam desabilitadas por preferências do usuário */
+        @media (prefers-reduced-motion: no-preference) {
+            .form-group label span[style*="background"],
+            label span[style*="background"][style*="3px"],
+            label span[style*="background"][style*="height: 18px"],
+            .form-group label > span:first-of-type,
+            h2 div[style*="background"][style*="6px"],
+            .submit-btn,
+            button.submit-btn,
+            #form-submit-btn,
+            #whatsapp-submit-btn,
+            #pastor-message-btn,
+            .form-group {
+                animation-play-state: running !important;
+                -webkit-animation-play-state: running !important;
+            }
+        }
     </style>
 </head>
 <body class="digital-form-page theme-<%= formData.theme || 'light' %>" data-form-id="<%= item.id %>" data-whatsapp="<%= formData.whatsapp_number || '' %>" style="<% if (formData.background_color && !formData.background_image_url) { %>background-color: <%= formData.background_color %> !important;<% } %>">
