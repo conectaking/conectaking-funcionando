@@ -53,8 +53,13 @@
             const mainBarColor = formData.separator_line_color || primaryColor;
             // Cor das barras laterais das opções (radio/checkbox) - usar separator_line_color (padrão: cor primária)
             const optionBarColor = formData.separator_line_color || primaryColor;
-            // Cor da linha separadora (padrão: #e8eaed) - mantida para compatibilidade
-            const separatorLineColor = '#e8eaed';
+            // Cor da linha separadora - usar separator_line_color do banco, fallback para #e8eaed se não existir
+            const separatorLineColor = (formData.separator_line_color && 
+                                        formData.separator_line_color !== 'null' && 
+                                        formData.separator_line_color !== 'undefined' &&
+                                        formData.separator_line_color.trim() !== '') 
+                                        ? formData.separator_line_color 
+                                        : '#e8eaed';
             console.log('🎨 [EJS] decorative_bar_color:', {
                 received: formData.decorative_bar_color,
                 primaryColor: primaryColor,
