@@ -651,6 +651,8 @@ body {
     background: #f8f9fa;
     position: relative;
     font-weight: 500;
+    /* REMOVIDO: box-shadow para evitar "quadrados feios" */
+    box-shadow: none !important;
 }
 
 .theme-dark .radio-label,
@@ -663,8 +665,9 @@ body {
 .checkbox-label:hover {
     border-color: var(--primary-color, #4A90E2);
     background: white;
-    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
-    transform: translateY(-2px);
+    /* REMOVIDO: box-shadow no hover - mantendo apenas transição suave */
+    box-shadow: none !important;
+    transform: none;
 }
 
 .theme-dark .radio-label:hover,
