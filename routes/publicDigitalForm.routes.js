@@ -538,7 +538,24 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
 
         let formData = formRes.rows[0];
         
+        // IMPORTANTE: Inicializar campos de cores se não existirem no resultado (mesmo que sejam NULL ou não retornados)
+        // Isso garante que os campos sempre existam no objeto, mesmo que sejam NULL
+        if (!('card_color' in formData)) {
+            formData.card_color = null;
+        }
+        if (!('decorative_bar_color' in formData)) {
+            formData.decorative_bar_color = null;
+        }
+        if (!('separator_line_color' in formData)) {
+            formData.separator_line_color = null;
+        }
+        
         // LOG CRÍTICO: Verificar form_fields e CORES logo após buscar do banco (incluindo card_color e decorative_bar_color)
+        // IMPORTANTE: Verificar se as colunas existem no objeto retornado
+        const hasCardColor = 'card_color' in formData;
+        const hasDecorativeBarColor = 'decorative_bar_color' in formData;
+        const hasSeparatorLineColor = 'separator_line_color' in formData;
+        
         logger.info('🔍 [FORM/PUBLIC] Dados do banco (digital_form_items) - RAW:', {
             id: formData.id,
             profile_item_id: formData.profile_item_id,
@@ -551,12 +568,15 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             background_color_type: typeof formData.background_color,
             text_color: formData.text_color,
             text_color_type: typeof formData.text_color,
-            card_color: formData.card_color,
-            card_color_type: typeof formData.card_color,
-            decorative_bar_color: formData.decorative_bar_color,
-            decorative_bar_color_type: typeof formData.decorative_bar_color,
-            separator_line_color: formData.separator_line_color,
-            separator_line_color_type: typeof formData.separator_line_color,
+            card_color: hasCardColor ? formData.card_color : 'COLUNA_NÃO_EXISTE_NO_BANCO',
+            card_color_type: hasCardColor ? typeof formData.card_color : 'N/A',
+            card_color_exists: hasCardColor,
+            decorative_bar_color: hasDecorativeBarColor ? formData.decorative_bar_color : 'COLUNA_NÃO_EXISTE_NO_BANCO',
+            decorative_bar_color_type: hasDecorativeBarColor ? typeof formData.decorative_bar_color : 'N/A',
+            decorative_bar_color_exists: hasDecorativeBarColor,
+            separator_line_color: hasSeparatorLineColor ? formData.separator_line_color : 'COLUNA_NÃO_EXISTE_NO_BANCO',
+            separator_line_color_type: hasSeparatorLineColor ? typeof formData.separator_line_color : 'N/A',
+            separator_line_color_exists: hasSeparatorLineColor,
             theme: formData.theme,
             has_form_fields: !!formData.form_fields,
             form_fields_type: typeof formData.form_fields,
@@ -564,8 +584,32 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             form_fields_isNull: formData.form_fields === null,
             form_fields_isUndefined: formData.form_fields === undefined,
             form_fields_value: formData.form_fields === null ? 'NULL' : (formData.form_fields === undefined ? 'UNDEFINED' : (typeof formData.form_fields === 'string' ? formData.form_fields.substring(0, 500) : (Array.isArray(formData.form_fields) ? JSON.stringify(formData.form_fields.slice(0, 3)) : String(formData.form_fields)))),
-            form_fields_length: Array.isArray(formData.form_fields) ? formData.form_fields.length : (typeof formData.form_fields === 'string' ? formData.form_fields.length : 'N/A')
+            form_fields_length: Array.isArray(formData.form_fields) ? formData.form_fields.length : (typeof formData.form_fields === 'string' ? formData.form_fields.length : 'N/A'),
+            // Log todas as chaves disponíveis para debug
+            available_keys: Object.keys(formData).filter(k => k.includes('color') || k.includes('Color') || k.includes('theme'))
         });
+        
+        // Se as colunas não existem no objeto retornado, verificar se existem no banco
+        if (!hasCardColor || !hasDecorativeBarColor || !hasSeparatorLineColor) {
+            logger.warn('⚠️ [FORM/PUBLIC] Colunas de cores ausentes no resultado da query! Verificando se existem no banco...');
+            try {
+                const columnCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' 
+                    AND column_name IN ('card_color', 'decorative_bar_color', 'separator_line_color')
+                `);
+                const existingColumns = columnCheck.rows.map(r => r.column_name);
+                logger.info('🔍 [FORM/PUBLIC] Colunas que existem no banco:', {
+                    card_color_exists: existingColumns.includes('card_color'),
+                    decorative_bar_color_exists: existingColumns.includes('decorative_bar_color'),
+                    separator_line_color_exists: existingColumns.includes('separator_line_color'),
+                    all_existing_columns: existingColumns
+                });
+            } catch (err) {
+                logger.error('❌ [FORM/PUBLIC] Erro ao verificar colunas:', err);
+            }
+        }
         
         // IMPORTANTE: Sempre verificar se existe dados em guest_list_items (mesmo que item_type não seja guest_list)
         // Isso é necessário porque o item pode estar como digital_form mas ter dados salvos em guest_list_items
