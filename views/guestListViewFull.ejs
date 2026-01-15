@@ -789,7 +789,7 @@
                         <% if (typeof guestList !== 'undefined' && guestList && guestList.event_date) { %>
                         <div class="header-info-item">
                             <i class="fas fa-calendar-alt"></i>
-                            <span><%= formatDateOnlyBrasilia(guestList.event_date) %></span>
+                            <span><%= guestList.event_date ? (typeof formatDateOnlyBrasilia === 'function' ? formatDateOnlyBrasilia(guestList.event_date) : new Date(guestList.event_date).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })) : '-' %></span>
                         </div>
                         <% } %>
                         <% if (typeof guestList !== 'undefined' && guestList && guestList.event_location) { %>
@@ -1060,7 +1060,7 @@
                             <div data-label="CPF"><%= displayCPF %></div>
                             <div data-label="Status"><span class="status-badge <%= statusClass %>"><%= statusText %></span></div>
                             <div data-label="Data" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <span><%= dateToShow ? new Date(dateToShow).toLocaleString('pt-BR') : '-' %></span>
+                                <span><%= dateToShow ? (typeof formatDateBrasilia === 'function' ? formatDateBrasilia(dateToShow) : new Date(dateToShow).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })) : '-' %></span>
                                 <button onclick="viewGuestDetailsPortaria(<%= guest.id %>)" 
                                         style="padding: 6px 12px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
                                     <i class="fas fa-eye"></i> Ver Detalhes
@@ -1210,7 +1210,7 @@
                             <div data-label="CPF"><%= displayCPF %></div>
                             <div data-label="Status"><span class="status-badge status-checked_in">Chegou</span></div>
                             <div data-label="Data" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <span><%= guest.checked_in_at ? formatDateBrasilia(guest.checked_in_at) : '-' %></span>
+                                <span><%= guest.checked_in_at ? (typeof formatDateBrasilia === 'function' ? formatDateBrasilia(guest.checked_in_at) : new Date(guest.checked_in_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })) : '-' %></span>
                                 <button onclick="viewGuestDetailsPortaria(<%= guest.id %>)" 
                                         style="padding: 6px 12px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
                                     <i class="fas fa-eye"></i> Ver Detalhes
@@ -1335,7 +1335,7 @@
                             <div data-label="CPF"><%= displayCPF %></div>
                             <div data-label="Status"><span class="status-badge <%= statusClass %>"><%= statusText %></span></div>
                             <div data-label="Data" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <span><%= dateToShow ? new Date(dateToShow).toLocaleString('pt-BR') : '-' %></span>
+                                <span><%= dateToShow ? (typeof formatDateBrasilia === 'function' ? formatDateBrasilia(dateToShow) : new Date(dateToShow).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })) : '-' %></span>
                                 <button onclick="viewGuestDetailsPortaria(<%= guest.id %>)" 
                                         style="padding: 6px 12px; background: linear-gradient(135deg, #4A90E2, #357ABD); border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap;">
                                     <i class="fas fa-eye"></i> Ver Detalhes

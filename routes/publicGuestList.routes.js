@@ -570,6 +570,44 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
             formFields = [];
         }
         
+        // Função helper para formatar data no timezone de Brasília
+        const formatDateBrasilia = (dateString) => {
+            if (!dateString) return '-';
+            try {
+                const date = new Date(dateString);
+                // Converter para timezone de Brasília (America/Sao_Paulo = UTC-3)
+                return date.toLocaleString('pt-BR', { 
+                    timeZone: 'America/Sao_Paulo',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch (e) {
+                console.error('Erro ao formatar data:', e);
+                return dateString;
+            }
+        };
+        
+        const formatDateOnlyBrasilia = (dateString) => {
+            if (!dateString) return '-';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('pt-BR', { 
+                    timeZone: 'America/Sao_Paulo',
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            } catch (e) {
+                console.error('Erro ao formatar data:', e);
+                return dateString;
+            }
+        };
+        
         res.render('guestListViewFull', {
             guestList,
             registeredGuests: registeredGuests, // TODOS os convidados (para aba Cadastrados)
@@ -578,7 +616,9 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
             notArrivedGuests: registeredResult.rows || [], // Quem não chegou (status registered)
             token: token,
             profileItemId: guestList.profile_item_id,
-            formFields: formFields // Campos do formulário para mapear labels
+            formFields: formFields, // Campos do formulário para mapear labels
+            formatDateBrasilia: formatDateBrasilia, // Função helper para formatar datas
+            formatDateOnlyBrasilia: formatDateOnlyBrasilia // Função helper para formatar apenas data
         });
     } catch (error) {
         logger.error('Erro ao carregar visualização completa:', error);
