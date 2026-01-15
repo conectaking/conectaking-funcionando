@@ -1052,43 +1052,13 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 logger.info(`📋 [GUEST_LIST] Sincronizando custom_form_fields (${formFieldsArray.length} campos) para form_fields em digital_form_items`);
             }
             
-            // IMPORTANTE: Sincronizar cores para digital_form_items quando o formulário está sendo usado como "Lista de Convidados"
-            // Isso garante que as cores personalizadas apareçam no formulário público
-            // As variáveis hasCardColor, hasDecorativeBarColor, hasSeparatorLineColor já foram declaradas acima
-            
-            if (card_color !== undefined && hasCardColor) {
-                digitalFormUpdateFields.push(`card_color = $${digitalFormParamIndex++}`);
-                digitalFormUpdateValues.push(card_color || '#FFFFFF');
-                logger.info(`🎨 [GUEST_LIST] Sincronizando card_color para digital_form_items: ${card_color || '#FFFFFF'}`);
-            }
-            if (decorative_bar_color !== undefined && hasDecorativeBarColor) {
-                digitalFormUpdateFields.push(`decorative_bar_color = $${digitalFormParamIndex++}`);
-                digitalFormUpdateValues.push(decorative_bar_color || primary_color || '#4A90E2');
-                logger.info(`🎨 [GUEST_LIST] Sincronizando decorative_bar_color para digital_form_items: ${decorative_bar_color || primary_color || '#4A90E2'}`);
-            }
-            if (separator_line_color !== undefined && hasSeparatorLineColor) {
-                digitalFormUpdateFields.push(`separator_line_color = $${digitalFormParamIndex++}`);
-                digitalFormUpdateValues.push(separator_line_color || primary_color || '#4A90E2');
-                logger.info(`🎨 [GUEST_LIST] Sincronizando separator_line_color para digital_form_items: ${separator_line_color || primary_color || '#4A90E2'}`);
-            }
-            
-            // Sincronizar também primary_color e secondary_color se existirem
-            // As variáveis hasPrimaryColor, hasSecondaryColor, hasTextColor já foram declaradas acima
-            if (primary_color !== undefined && hasPrimaryColor) {
-                digitalFormUpdateFields.push(`primary_color = $${digitalFormParamIndex++}`);
-                digitalFormUpdateValues.push(primary_color || '#4A90E2');
-                logger.info(`🎨 [GUEST_LIST] Sincronizando primary_color para digital_form_items: ${primary_color || '#4A90E2'}`);
-            }
-            if (secondary_color !== undefined && hasSecondaryColor) {
-                digitalFormUpdateFields.push(`secondary_color = $${digitalFormParamIndex++}`);
-                digitalFormUpdateValues.push(secondary_color || null);
-                logger.info(`🎨 [GUEST_LIST] Sincronizando secondary_color para digital_form_items: ${secondary_color || null}`);
-            }
-            if (text_color !== undefined && hasTextColor) {
-                digitalFormUpdateFields.push(`text_color = $${digitalFormParamIndex++}`);
-                digitalFormUpdateValues.push(text_color || '#333333');
-                logger.info(`🎨 [GUEST_LIST] Sincronizando text_color para digital_form_items: ${text_color || '#333333'}`);
-            }
+            // IMPORTANTE: CORES COMPLETAMENTE SEPARADAS!
+            // NÃO sincronizar cores de guest_list_items (Portaria) para digital_form_items (King Forms)
+            // Cada sistema mantém suas próprias cores independentes
+            // Portaria personaliza portaria, King Forms personaliza King Forms
+            // Apenas sincronizar dados funcionais (enable_whatsapp, enable_guest_list_submit, logos, form_fields, form_title)
+            logger.info(`🎨 [GUEST_LIST] CORES SEPARADAS: NÃO sincronizando cores de Portaria para King Forms`);
+            logger.info(`🎨 [GUEST_LIST] Cada sistema (Portaria/guest_list_items e King Forms/digital_form_items) mantém suas próprias cores independentes`);
             
             if (digitalFormUpdateFields.length > 0) {
                 digitalFormUpdateValues.push(listId);

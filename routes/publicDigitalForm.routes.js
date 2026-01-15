@@ -248,37 +248,47 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
                 item_type: item.item_type
             });
             
-            // Mesclar dados: SEMPRE priorizar cores de guest_list_items se existirem
-            // Isso garante que as cores salvas em guest_list_items sejam usadas
-            if (guestListData.primary_color) {
-                formData.primary_color = guestListData.primary_color;
-                logger.info(`🎨 [FORM/SHARE] primary_color atualizado de guest_list_items: ${guestListData.primary_color}`);
-            }
-            if (guestListData.secondary_color) {
-                formData.secondary_color = guestListData.secondary_color;
-                logger.info(`🎨 [FORM/SHARE] secondary_color atualizado de guest_list_items: ${guestListData.secondary_color}`);
-            }
-            if (guestListData.text_color) {
-                formData.text_color = guestListData.text_color;
-            }
-            if (guestListData.background_color) {
-                formData.background_color = guestListData.background_color;
-            }
-            if (guestListData.header_image_url) {
-                formData.header_image_url = guestListData.header_image_url;
-            }
-            if (guestListData.background_image_url) {
-                formData.background_image_url = guestListData.background_image_url;
-            }
-            if (guestListData.background_opacity !== null && guestListData.background_opacity !== undefined) {
-                formData.background_opacity = guestListData.background_opacity;
-            }
-            if (guestListData.theme) {
-                formData.theme = guestListData.theme;
-            }
-            if (hasGuestListCardColor && guestListData.card_color) {
-                formData.card_color = guestListData.card_color;
-                logger.info(`🎨 [FORM/SHARE] card_color atualizado de guest_list_items: ${guestListData.card_color}`);
+            // IMPORTANTE: CORES COMPLETAMENTE SEPARADAS!
+            // Se o item_type é 'digital_form' (King Forms): usar APENAS cores de digital_form_items
+            // Se o item_type é 'guest_list' (Portaria): usar APENAS cores de guest_list_items
+            // NÃO mesclar cores entre sistemas
+            if (item.item_type === 'guest_list') {
+                // É Portaria: usar cores de guest_list_items
+                logger.info(`🎨 [FORM/SHARE] Item é Portaria (guest_list): usando cores de guest_list_items`);
+                if (guestListData.primary_color) {
+                    formData.primary_color = guestListData.primary_color;
+                    logger.info(`🎨 [FORM/SHARE] primary_color de Portaria: ${guestListData.primary_color}`);
+                }
+                if (guestListData.secondary_color) {
+                    formData.secondary_color = guestListData.secondary_color;
+                    logger.info(`🎨 [FORM/SHARE] secondary_color de Portaria: ${guestListData.secondary_color}`);
+                }
+                if (guestListData.text_color) {
+                    formData.text_color = guestListData.text_color;
+                }
+                if (guestListData.background_color) {
+                    formData.background_color = guestListData.background_color;
+                }
+                if (guestListData.header_image_url) {
+                    formData.header_image_url = guestListData.header_image_url;
+                }
+                if (guestListData.background_image_url) {
+                    formData.background_image_url = guestListData.background_image_url;
+                }
+                if (guestListData.background_opacity !== null && guestListData.background_opacity !== undefined) {
+                    formData.background_opacity = guestListData.background_opacity;
+                }
+                if (guestListData.theme) {
+                    formData.theme = guestListData.theme;
+                }
+                if (hasGuestListCardColor && guestListData.card_color) {
+                    formData.card_color = guestListData.card_color;
+                    logger.info(`🎨 [FORM/SHARE] card_color de Portaria: ${guestListData.card_color}`);
+                }
+            } else {
+                // É King Forms (digital_form): usar APENAS cores de digital_form_items, NÃO mesclar com guest_list_items
+                logger.info(`🎨 [FORM/SHARE] Item é King Forms (digital_form): usando APENAS cores de digital_form_items, ignorando guest_list_items`);
+                // Não mesclar cores - usar apenas as de digital_form_items (que já estão em formData)
             }
             
             // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
@@ -686,15 +696,15 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 profile_item_id: itemIdInt
             });
             
-            // IMPORTANTE: Quando existe dados em guest_list_items, significa que o formulário está em modo "Lista de Convidados"
-            // Nesse caso, as cores de guest_list_items devem ter prioridade porque foram salvas pelo usuário
-            // Mas como as cores também foram sincronizadas para digital_form_items, vamos usar as de digital_form_items primeiro
-            // e só usar guest_list_items como fallback se digital_form_items não tiver as cores decorativas
-            logger.info(`🎨 [FORM/PUBLIC] Formulário em modo Lista de Convidados: Usando cores de digital_form_items (que foram sincronizadas de guest_list_items)`);
+            // IMPORTANTE: CORES COMPLETAMENTE SEPARADAS!
+            // King Forms usa APENAS cores de digital_form_items (não buscar de guest_list_items)
+            // Portaria usa APENAS cores de guest_list_items (não buscar de digital_form_items)
+            // Quando existe guest_list_items, apenas mesclar enable_whatsapp e enable_guest_list_submit (configurações funcionais, não cores)
+            // NÃO mesclar cores entre sistemas - cada um mantém suas próprias cores independentes
+            logger.info(`🎨 [FORM/PUBLIC] CORES SEPARADAS: Usando APENAS cores de digital_form_items (King Forms), NÃO mesclando com guest_list_items (Portaria)`);
             
-            // IMPORTANTE: Usar cores de digital_form_items primeiro (que foram sincronizadas de guest_list_items)
-            // Se não existirem em digital_form_items, usar guest_list_items como fallback
-            // Isso garante que as cores personalizadas sejam aplicadas no formulário público
+            // IMPORTANTE: Garantir valores padrão para cores se não existirem em digital_form_items
+            // NÃO buscar de guest_list_items - sistemas completamente separados
             if (!formData.primary_color || formData.primary_color === null || formData.primary_color === 'null') {
                 formData.primary_color = '#4A90E2';
                 logger.info(`🎨 [FORM/PUBLIC] primary_color não encontrado em digital_form_items, usando padrão: #4A90E2`);
@@ -711,36 +721,19 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 formData.background_color = '#FFFFFF';
                 logger.info(`🎨 [FORM/PUBLIC] background_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
             }
-            // IMPORTANTE: decorative_bar_color e separator_line_color - usar digital_form_items primeiro, depois guest_list_items como fallback
+            // IMPORTANTE: decorative_bar_color, separator_line_color e card_color - usar APENAS digital_form_items
+            // NÃO buscar de guest_list_items - sistemas completamente separados
             if (!formData.decorative_bar_color || formData.decorative_bar_color === null || formData.decorative_bar_color === 'null' || formData.decorative_bar_color === '') {
-                // Tentar usar de guest_list_items se existir
-                if (guestListHasDecorativeBarColor && guestListData.decorative_bar_color) {
-                    formData.decorative_bar_color = guestListData.decorative_bar_color;
-                    logger.info(`🎨 [FORM/PUBLIC] decorative_bar_color não encontrado em digital_form_items, usando de guest_list_items: ${formData.decorative_bar_color}`);
-                } else {
-                    formData.decorative_bar_color = formData.primary_color || '#4A90E2';
-                    logger.info(`🎨 [FORM/PUBLIC] decorative_bar_color não encontrado em digital_form_items nem guest_list_items, usando primary_color: ${formData.decorative_bar_color}`);
-                }
+                formData.decorative_bar_color = formData.primary_color || '#4A90E2';
+                logger.info(`🎨 [FORM/PUBLIC] decorative_bar_color não encontrado em digital_form_items, usando primary_color: ${formData.decorative_bar_color}`);
             }
             if (!formData.separator_line_color || formData.separator_line_color === null || formData.separator_line_color === 'null' || formData.separator_line_color === '') {
-                // Tentar usar de guest_list_items se existir
-                if (guestListHasSeparatorLineColor && guestListData.separator_line_color) {
-                    formData.separator_line_color = guestListData.separator_line_color;
-                    logger.info(`🎨 [FORM/PUBLIC] separator_line_color não encontrado em digital_form_items, usando de guest_list_items: ${formData.separator_line_color}`);
-                } else {
-                    formData.separator_line_color = formData.primary_color || '#4A90E2';
-                    logger.info(`🎨 [FORM/PUBLIC] separator_line_color não encontrado em digital_form_items nem guest_list_items, usando primary_color: ${formData.separator_line_color}`);
-                }
+                formData.separator_line_color = formData.primary_color || '#4A90E2';
+                logger.info(`🎨 [FORM/PUBLIC] separator_line_color não encontrado em digital_form_items, usando primary_color: ${formData.separator_line_color}`);
             }
             if (!formData.card_color || formData.card_color === null || formData.card_color === 'null' || formData.card_color === '') {
-                // Tentar usar de guest_list_items se existir
-                if (guestListHasCardColor && guestListData.card_color) {
-                    formData.card_color = guestListData.card_color;
-                    logger.info(`🎨 [FORM/PUBLIC] card_color não encontrado em digital_form_items, usando de guest_list_items: ${formData.card_color}`);
-                } else {
-                    formData.card_color = '#FFFFFF';
-                    logger.info(`🎨 [FORM/PUBLIC] card_color não encontrado em digital_form_items nem guest_list_items, usando padrão: #FFFFFF`);
-                }
+                formData.card_color = '#FFFFFF';
+                logger.info(`🎨 [FORM/PUBLIC] card_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
             }
             
             // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
@@ -762,10 +755,13 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 logger.info(`ℹ️ [FORM/PUBLIC] enable_guest_list_submit é null/undefined em guest_list_items, mantendo valor de digital_form_items: ${formData.enable_guest_list_submit}`);
             }
             
-            logger.info(`🎨 [FORM/PUBLIC] Dados finais após mesclar guest_list_items:`, {
+            logger.info(`🎨 [FORM/PUBLIC] Dados finais (cores de digital_form_items apenas, enable_whatsapp/enable_guest_list_submit de guest_list_items):`, {
                 primary_color: formData.primary_color,
                 secondary_color: formData.secondary_color,
                 text_color: formData.text_color,
+                card_color: formData.card_color,
+                decorative_bar_color: formData.decorative_bar_color,
+                separator_line_color: formData.separator_line_color,
                 enable_whatsapp: formData.enable_whatsapp,
                 enable_whatsapp_type: typeof formData.enable_whatsapp,
                 enable_guest_list_submit: formData.enable_guest_list_submit,
