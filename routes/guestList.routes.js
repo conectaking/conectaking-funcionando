@@ -618,6 +618,12 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             guestListUpdateFields.push(`use_custom_form = $${guestListParamIndex++}`);
             guestListUpdateValues.push(use_custom_form);
         }
+        // IMPORTANTE: CORES COMPLETAMENTE SEPARADAS!
+        // Quando atualizar guest_list_items, aceitar cores APENAS se vierem de "Personalizar Portaria"
+        // Se vierem do King Forms (via formPageEdit.js), as cores NÃO devem ser enviadas
+        // Mas se por algum motivo forem enviadas, vamos ignorá-las aqui também
+        // Na prática, cores devem ser atualizadas APENAS via PUT /api/guest-lists/:id/customize-portaria
+        
         if (primary_color !== undefined) {
             guestListUpdateFields.push(`primary_color = $${guestListParamIndex++}`);
             guestListUpdateValues.push(primary_color);
