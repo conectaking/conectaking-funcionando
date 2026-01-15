@@ -366,19 +366,39 @@
         const profileItemId = <%= profileItemId %>;
         
         // Obter token da URL (query string) ou do localStorage
+        // Usar variável global para garantir acesso em todas as funções
         const urlParams = new URLSearchParams(window.location.search);
-        let authToken = urlParams.get('token') || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+        window.urlParams = urlParams; // Tornar global para acesso em funções
+        let authToken = urlParams.get('token');
+        
+        // Se o token veio da URL, pode estar codificado - tentar decodificar
+        if (authToken) {
+            try {
+                // Tentar decodificar se necessário
+                authToken = decodeURIComponent(authToken);
+            } catch (e) {
+                console.warn('Aviso ao decodificar token da URL:', e);
+            }
+        }
+        
+        // Se não tiver token na URL, tentar do localStorage
+        if (!authToken) {
+            authToken = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+        }
         
         console.log('🔑 Token obtido:', {
             fromUrl: !!urlParams.get('token'),
             fromLocalStorage: !!localStorage.getItem('conectaKingToken') || !!localStorage.getItem('token'),
             hasToken: !!authToken,
-            tokenLength: authToken ? authToken.length : 0
+            tokenLength: authToken ? authToken.length : 0,
+            tokenPreview: authToken ? authToken.substring(0, 20) + '...' : 'none'
         });
         
         // Se não tiver token, mostrar erro e tentar obter novamente
         if (!authToken) {
             console.error('❌ Token não encontrado na URL nem no localStorage');
+            console.error('❌ URL completa:', window.location.href);
+            console.error('❌ Query params:', window.location.search);
             alert('Erro: Token de autenticação não encontrado.\n\nPor favor:\n1. Feche esta página\n2. Volte para a página de edição do formulário\n3. Clique novamente em "Personalizar Link da Portaria"');
         } else {
             // Salvar token no localStorage para uso futuro
@@ -434,7 +454,14 @@
             
             // Verificar se ainda temos o token
             if (!authToken) {
-                authToken = urlParams.get('token') || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+                const currentUrlParams = new URLSearchParams(window.location.search);
+                let tokenFromUrl = currentUrlParams.get('token');
+                if (tokenFromUrl) {
+                    try {
+                        tokenFromUrl = decodeURIComponent(tokenFromUrl);
+                    } catch (e) {}
+                }
+                authToken = tokenFromUrl || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
             }
             
             if (!authToken) {
@@ -528,7 +555,14 @@
             try {
                 // Verificar se ainda temos o token
                 if (!authToken) {
-                    authToken = urlParams.get('token') || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+                    const currentUrlParams = new URLSearchParams(window.location.search);
+                    let tokenFromUrl = currentUrlParams.get('token');
+                    if (tokenFromUrl) {
+                        try {
+                            tokenFromUrl = decodeURIComponent(tokenFromUrl);
+                        } catch (e) {}
+                    }
+                    authToken = tokenFromUrl || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
                 }
                 
                 if (!authToken) {
