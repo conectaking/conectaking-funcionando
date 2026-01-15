@@ -10,8 +10,48 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <% if (showGuestListInfo && typeof qrToken !== 'undefined' && qrToken) { %>
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <% } %>
+    <!-- Carregar jsPDF sempre, não apenas quando há QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" 
+            onerror="console.error('❌ Erro ao carregar jsPDF do CDN principal'); 
+                     var script = document.createElement('script'); 
+                     script.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'; 
+                     script.onload = function() { console.log('✅ jsPDF carregado via CDN alternativo'); }; 
+                     document.head.appendChild(script);"></script>
+    <script>
+        // Aguardar carregamento da biblioteca jsPDF
+        window.jsPDFReady = false;
+        function checkJsPDFReady() {
+            if (typeof window.jspdf !== 'undefined') {
+                window.jsPDFReady = true;
+                console.log('✅ jsPDF carregado e pronto para uso');
+                console.log('📚 jsPDF disponível em:', typeof window.jspdf);
+                if (window.jspdf.jsPDF) {
+                    console.log('✅ window.jspdf.jsPDF disponível');
+                }
+                return true;
+            }
+            return false;
+        }
+        
+        // Verificar imediatamente
+        if (checkJsPDFReady()) {
+            // Já está carregado
+        } else {
+            // Aguardar carregamento
+            let attempts = 0;
+            const maxAttempts = 25;
+            const checkInterval = setInterval(function() {
+                attempts++;
+                if (checkJsPDFReady() || attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    if (!window.jsPDFReady) {
+                        console.warn('⚠️ jsPDF não foi carregado após', maxAttempts, 'tentativas');
+                    }
+                }
+            }, 200);
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -1021,7 +1061,9 @@
         }
         
         // Função para baixar QR Code como PDF (premium design melhorado)
-        function downloadQRCodePDF() {
+        // Tornar função global
+        window.downloadQRCodePDF = function() {
+            console.log('📥 downloadQRCodePDF chamado');
             const container = document.getElementById('qrcode-container');
             if (!container) {
                 alert('QR Code não encontrado. Por favor, aguarde o carregamento.');
@@ -1035,44 +1077,63 @@
                 return;
             }
             
+            console.log('✅ QR Code encontrado, iniciando download do PDF...');
+            
             // Função para tentar fazer download do PDF
             function tryDownloadPDF(attempt = 0) {
-                const maxAttempts = 25; // 5 segundos máximo
+                const maxAttempts = 30; // 6 segundos máximo
                 
                 // Verificar múltiplas formas de acesso à biblioteca jsPDF
                 let jsPDFLib = null;
+                let jsPDFConstructor = null;
+                
+                // Tentar diferentes formas de acesso à biblioteca
                 if (typeof window.jspdf !== 'undefined') {
+                    // Versão UMD (2.5.1)
                     if (window.jspdf.jsPDF) {
-                        jsPDFLib = window.jspdf.jsPDF;
-                    } else if (window.jspdf.default) {
-                        jsPDFLib = window.jspdf.default;
-                    } else {
-                        // Tentar usar diretamente
-                        jsPDFLib = window.jspdf;
+                        jsPDFConstructor = window.jspdf.jsPDF;
+                        console.log('✅ jsPDF encontrado via window.jspdf.jsPDF');
+                    } else if (window.jspdf.default && window.jspdf.default.jsPDF) {
+                        jsPDFConstructor = window.jspdf.default.jsPDF;
+                        console.log('✅ jsPDF encontrado via window.jspdf.default.jsPDF');
+                    } else if (typeof window.jspdf === 'function') {
+                        jsPDFConstructor = window.jspdf;
+                        console.log('✅ jsPDF encontrado via window.jspdf (função)');
                     }
                 } else if (typeof jsPDF !== 'undefined') {
-                    jsPDFLib = jsPDF;
+                    jsPDFConstructor = jsPDF;
+                    console.log('✅ jsPDF encontrado via jsPDF global');
                 } else if (typeof window.jsPDF !== 'undefined') {
-                    jsPDFLib = window.jsPDF;
+                    jsPDFConstructor = window.jsPDF;
+                    console.log('✅ jsPDF encontrado via window.jsPDF');
                 }
                 
-                if (!jsPDFLib) {
+                if (!jsPDFConstructor) {
                     if (attempt < maxAttempts) {
+                        console.log(`⏳ Tentativa ${attempt + 1}/${maxAttempts} - Aguardando jsPDF...`);
                         setTimeout(() => tryDownloadPDF(attempt + 1), 200);
                         return;
                     } else {
-                        alert('Biblioteca PDF não carregada. Por favor, recarregue a página e tente novamente.');
+                        console.error('❌ jsPDF não encontrado após', maxAttempts, 'tentativas');
+                        alert('Biblioteca PDF não carregada. Por favor, recarregue a página e tente novamente.\n\nSe o problema persistir, verifique sua conexão com a internet.');
                         return;
                     }
                 }
                 
+                jsPDFLib = jsPDFConstructor;
+                
                 try {
+                    console.log('📄 Iniciando geração do PDF...');
                     const qrCodeImage = canvas ? canvas.toDataURL('image/png') : img.src;
+                    
+                    // Criar instância do jsPDF
                     const doc = new jsPDFLib({
                         orientation: 'portrait',
                         unit: 'mm',
                         format: [210, 297] // A4
                     });
+                    
+                    console.log('✅ Instância do jsPDF criada com sucesso');
                     
                     // Cores
                     const primaryRgb = hexToRgb(primaryColor);
@@ -1183,15 +1244,24 @@
                     const fileName = personName && personName.trim() !== '' 
                         ? `QR-Code-${personName.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.pdf`
                         : `QR-Code-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.pdf`;
+                    
+                    console.log('💾 Salvando PDF:', fileName);
                     doc.save(fileName);
+                    console.log('✅ PDF salvo com sucesso!');
                 } catch (error) {
-                    console.error('Erro ao gerar PDF:', error);
-                    alert('Erro ao gerar PDF. Por favor, tente novamente ou recarregue a página.');
+                    console.error('❌ Erro ao gerar PDF:', error);
+                    console.error('Stack trace:', error.stack);
+                    alert('Erro ao gerar PDF: ' + (error.message || 'Erro desconhecido') + '\n\nPor favor, tente novamente ou recarregue a página.');
                 }
             }
             
             // Iniciar tentativa de download
             tryDownloadPDF();
+        };
+        
+        // Garantir que a função esteja disponível globalmente
+        if (typeof window.downloadQRCodePDF === 'undefined') {
+            window.downloadQRCodePDF = downloadQRCodePDF;
         }
         
         // Função auxiliar para converter hex para RGB
