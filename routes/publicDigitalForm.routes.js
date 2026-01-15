@@ -953,6 +953,40 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             sanitizedFormData.form_fields = formData.form_fields || [];
         }
         
+        // CRÍTICO: Garantir que as cores estejam sempre presentes no objeto final (mesmo que sejam null/undefined)
+        // Isso garante que o template EJS sempre tenha acesso a esses campos
+        if (!('card_color' in sanitizedFormData)) {
+            sanitizedFormData.card_color = formData.card_color || '#FFFFFF';
+            logger.info('🔧 [FORM/PUBLIC] card_color adicionado ao objeto final:', sanitizedFormData.card_color);
+        }
+        if (!('decorative_bar_color' in sanitizedFormData)) {
+            sanitizedFormData.decorative_bar_color = formData.decorative_bar_color || formData.primary_color || '#4A90E2';
+            logger.info('🔧 [FORM/PUBLIC] decorative_bar_color adicionado ao objeto final:', sanitizedFormData.decorative_bar_color);
+        }
+        if (!('separator_line_color' in sanitizedFormData)) {
+            sanitizedFormData.separator_line_color = formData.separator_line_color || formData.primary_color || '#4A90E2';
+            logger.info('🔧 [FORM/PUBLIC] separator_line_color adicionado ao objeto final:', sanitizedFormData.separator_line_color);
+        }
+        
+        // Garantir valores padrão se forem null/undefined/vazios
+        if (!sanitizedFormData.card_color || sanitizedFormData.card_color === 'null' || sanitizedFormData.card_color === '') {
+            sanitizedFormData.card_color = '#FFFFFF';
+        }
+        if (!sanitizedFormData.decorative_bar_color || sanitizedFormData.decorative_bar_color === 'null' || sanitizedFormData.decorative_bar_color === '') {
+            sanitizedFormData.decorative_bar_color = sanitizedFormData.primary_color || '#4A90E2';
+        }
+        if (!sanitizedFormData.separator_line_color || sanitizedFormData.separator_line_color === 'null' || sanitizedFormData.separator_line_color === '') {
+            sanitizedFormData.separator_line_color = sanitizedFormData.primary_color || '#4A90E2';
+        }
+        
+        logger.info('🎨 [FORM/PUBLIC] Cores FINAIS no objeto sanitizado que será enviado para o template:', {
+            card_color: sanitizedFormData.card_color,
+            decorative_bar_color: sanitizedFormData.decorative_bar_color,
+            separator_line_color: sanitizedFormData.separator_line_color,
+            primary_color: sanitizedFormData.primary_color,
+            secondary_color: sanitizedFormData.secondary_color
+        });
+        
         logger.info('🎯 [FORM/PUBLIC] Dados FINAIS antes de renderizar:', {
             form_fields_count: sanitizedFormData.form_fields ? sanitizedFormData.form_fields.length : 0,
             form_fields_isArray: Array.isArray(sanitizedFormData.form_fields),
