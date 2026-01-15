@@ -569,13 +569,38 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         const registeredGuests = allGuestsResult.rows || [];
         
         // Log para debug
-        console.log('📊 [GUEST-LIST-VIEW-FULL] Estatísticas de convidados:', {
+        logger.info('📊 [GUEST-LIST-VIEW-FULL] Estatísticas de convidados:', {
             total: allGuestsResult.rows.length,
             checkedIn: checkedInResult.rows.length,
             notArrived: notArrivedResult.rows.length,
             registered: registeredResult.rows.length,
-            confirmed: confirmedResult.rows.length
+            confirmed: confirmedResult.rows.length,
+            guestListId: guestList.id
         });
+        
+        // Log detalhado dos status
+        const statusCounts = {};
+        allGuestsResult.rows.forEach(guest => {
+            const status = guest.status || 'unknown';
+            statusCounts[status] = (statusCounts[status] || 0) + 1;
+        });
+        logger.info('📊 [GUEST-LIST-VIEW-FULL] Distribuição de status:', statusCounts);
+        
+        // Log de exemplo dos primeiros convidados de cada categoria
+        if (checkedInResult.rows.length > 0) {
+            logger.info('📊 [GUEST-LIST-VIEW-FULL] Exemplo checkedIn:', {
+                id: checkedInResult.rows[0].id,
+                name: checkedInResult.rows[0].name,
+                status: checkedInResult.rows[0].status
+            });
+        }
+        if (notArrivedResult.rows.length > 0) {
+            logger.info('📊 [GUEST-LIST-VIEW-FULL] Exemplo notArrived:', {
+                id: notArrivedResult.rows[0].id,
+                name: notArrivedResult.rows[0].name,
+                status: notArrivedResult.rows[0].status
+            });
+        }
         
         // Garantir que formFields seja sempre um array
         if (!Array.isArray(formFields)) {
