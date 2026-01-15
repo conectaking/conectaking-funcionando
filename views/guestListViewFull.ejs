@@ -910,7 +910,8 @@
                         <p>Nenhum convidado cadastrado</p>
                     </div>
                 <% } else { %>
-                    <% (typeof registeredGuests !== 'undefined' && registeredGuests ? registeredGuests : []).forEach(guest => { 
+                    <% (typeof registeredGuests !== 'undefined' && registeredGuests ? registeredGuests : []).forEach(function(guest, index) {
+                        var guestNumber = index + 1; 
                         // Extrair nome, email e whatsapp (tentar também de custom_responses se necessário)
                         let displayName = guest.name || '';
                         let displayEmail = guest.email || '';
@@ -1091,7 +1092,8 @@
                         <p>Nenhum convidado conferido</p>
                     </div>
                 <% } else { %>
-                    <% (typeof checkedInGuests !== 'undefined' && checkedInGuests ? checkedInGuests : []).forEach(guest => { 
+                    <% (typeof checkedInGuests !== 'undefined' && checkedInGuests ? checkedInGuests : []).forEach(function(guest, index) {
+                        var guestNumber = index + 1; 
                         // Extrair nome, email e whatsapp (tentar também de custom_responses se necessário)
                         let displayName = guest.name || '';
                         let displayEmail = guest.email || '';
