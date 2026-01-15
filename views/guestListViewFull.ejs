@@ -2917,6 +2917,11 @@
                 if (typeof filterGuests === 'function') {
                     filterGuests();
                 }
+                
+                // Recalcular números sequenciais após mudança de aba
+                if (typeof updateRowNumbers === 'function') {
+                    updateRowNumbers();
+                }
             }, 150);
         }
         
@@ -2981,6 +2986,9 @@
             
             console.log(`✅ Busca aplicada: "${searchTerm}", ${visibleCount} de ${rows.length} convidados visíveis na aba ${activeTab.id}`);
             
+            // Recalcular números sequenciais após filtro
+            updateRowNumbers();
+            
             // Verificar se há empty-state e ajustar
             const emptyState = activeTab.querySelector('.empty-state');
             if (visibleCount > 0 && emptyState) {
@@ -3008,8 +3016,9 @@
             rows.sort((a, b) => {
                 switch(sortValue) {
                     case 'name':
-                        const nameA = (a.querySelector('[data-label="Nome Completo"]')?.textContent || '').trim().toLowerCase();
-                        const nameB = (b.querySelector('[data-label="Nome Completo"]')?.textContent || '').trim().toLowerCase();
+                        // Extrair apenas o nome, ignorando o número no início
+                        const nameA = (a.querySelector('[data-label="Nome Completo"]')?.textContent || '').replace(/^\d+\.\s*/, '').trim().toLowerCase();
+                        const nameB = (b.querySelector('[data-label="Nome Completo"]')?.textContent || '').replace(/^\d+\.\s*/, '').trim().toLowerCase();
                         return nameA.localeCompare(nameB, 'pt-BR');
                     
                     case 'date':
@@ -3041,7 +3050,83 @@
                 table.appendChild(row);
             });
             
+            // Recalcular números sequenciais após ordenação
+            updateRowNumbers();
+            
             console.log(`✅ Ordenação aplicada: ${sortValue} na aba ${activeTab.id}`);
+        }
+        
+        // Função para atualizar números sequenciais das linhas visíveis
+        function updateRowNumbers() {
+            const activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) return;
+            
+            const rows = Array.from(activeTab.querySelectorAll('.table-row'));
+            // Obter cor primária de um elemento existente ou usar padrão
+            const firstNumberSpan = activeTab.querySelector('[data-label="Nome Completo"] span[style*="color"]');
+            const primaryColor = firstNumberSpan ? window.getComputedStyle(firstNumberSpan).color : '<%= (typeof guestList !== "undefined" && guestList && guestList.primary_color) ? guestList.primary_color : "#FFC700" %>';
+            
+            let visibleIndex = 0;
+            rows.forEach(row => {
+                // Só numerar linhas visíveis
+                const isVisible = row.style.display !== 'none' && 
+                                 row.style.visibility !== 'hidden' && 
+                                 row.style.opacity !== '0' &&
+                                 window.getComputedStyle(row).display !== 'none';
+                
+                if (isVisible) {
+                    visibleIndex++;
+                    const nameCell = row.querySelector('[data-label="Nome Completo"]');
+                    if (nameCell) {
+                        // Extrair o nome sem o número
+                        let nameWithoutNumber = '';
+                        
+                        // Se tem span com número, pegar apenas os nós de texto após o span
+                        const existingSpan = nameCell.querySelector('span');
+                        if (existingSpan) {
+                            // Pegar todos os nós de texto após o span
+                            let textNodes = [];
+                            let node = existingSpan.nextSibling;
+                            while (node) {
+                                if (node.nodeType === Node.TEXT_NODE) {
+                                    textNodes.push(node.textContent);
+                                }
+                                node = node.nextSibling;
+                            }
+                            nameWithoutNumber = textNodes.join('').trim();
+                            
+                            // Se não encontrou texto após o span, tentar remover número do textContent
+                            if (!nameWithoutNumber) {
+                                nameWithoutNumber = (nameCell.textContent || '').replace(/^\d+\.\s*/, '').trim();
+                            }
+                        } else {
+                            // Se não tem span, remover número do início do texto
+                            nameWithoutNumber = (nameCell.textContent || '').replace(/^\d+\.\s*/, '').trim();
+                        }
+                        
+                        // Se ainda não tem nome, usar o textContent completo sem número
+                        if (!nameWithoutNumber) {
+                            nameWithoutNumber = (nameCell.textContent || '').replace(/^\d+\.\s*/, '').trim();
+                        }
+                        
+                        // Limpar célula
+                        nameCell.innerHTML = '';
+                        
+                        // Adicionar novo número
+                        const numberSpan = document.createElement('span');
+                        numberSpan.style.color = '<%= (typeof guestList !== "undefined" && guestList && guestList.primary_color) ? guestList.primary_color : "#FFC700" %>';
+                        numberSpan.style.marginRight = '8px';
+                        numberSpan.style.fontWeight = '700';
+                        numberSpan.textContent = visibleIndex + '.';
+                        
+                        // Adicionar número + nome
+                        nameCell.appendChild(numberSpan);
+                        nameCell.appendChild(document.createTextNode(nameWithoutNumber));
+                    }
+                }
+            });
+            
+            console.log(`✅ Números sequenciais atualizados: ${visibleIndex} linhas visíveis numeradas`);
         }
         
         // Função para resetar busca
@@ -3070,6 +3155,7 @@
         window.filterGuests = filterGuests;
         window.sortGuests = sortGuests;
         window.resetFilters = resetFilters;
+        window.updateRowNumbers = updateRowNumbers;
         
         // Aplicar filtro inicial (mostrar todos)
         document.addEventListener('DOMContentLoaded', function() {
@@ -3131,6 +3217,7 @@
                 
                 sortGuests();
                 filterGuests(); // Aplicar busca inicial (mostrar todos se não houver busca)
+                updateRowNumbers(); // Garantir numeração correta na inicialização
             }, 100);
         });
         
