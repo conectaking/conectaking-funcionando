@@ -625,6 +625,7 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             
             // IMPORTANTE: Garantir que as cores de digital_form_items tenham valores padrão se não existirem
             // NÃO usar cores de guest_list_items - sistemas completamente separados!
+            // Isso inclui: primary_color, secondary_color, text_color, background_color, decorative_bar_color, separator_line_color
             if (!formData.primary_color || formData.primary_color === null || formData.primary_color === 'null') {
                 formData.primary_color = '#4A90E2';
                 logger.info(`🎨 [FORM/PUBLIC] primary_color não encontrado em digital_form_items, usando padrão: #4A90E2`);
@@ -640,6 +641,16 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             if (!formData.background_color || formData.background_color === null || formData.background_color === 'null') {
                 formData.background_color = '#FFFFFF';
                 logger.info(`🎨 [FORM/PUBLIC] background_color não encontrado em digital_form_items, usando padrão: #FFFFFF`);
+            }
+            // IMPORTANTE: decorative_bar_color e separator_line_color também devem vir APENAS de digital_form_items
+            // Se não existirem, usar primary_color como fallback (não buscar de guest_list_items)
+            if (!formData.decorative_bar_color || formData.decorative_bar_color === null || formData.decorative_bar_color === 'null') {
+                formData.decorative_bar_color = formData.primary_color || '#4A90E2';
+                logger.info(`🎨 [FORM/PUBLIC] decorative_bar_color não encontrado em digital_form_items, usando primary_color: ${formData.decorative_bar_color}`);
+            }
+            if (!formData.separator_line_color || formData.separator_line_color === null || formData.separator_line_color === 'null') {
+                formData.separator_line_color = formData.primary_color || '#4A90E2';
+                logger.info(`🎨 [FORM/PUBLIC] separator_line_color não encontrado em digital_form_items, usando primary_color: ${formData.separator_line_color}`);
             }
             
             // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
@@ -724,38 +735,18 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             hasEnableGuestListSubmit: hasEnableGuestListSubmit
         });
         
-        // IMPORTANTE: Aplicar fallback de secondary_color APENAS se não foi encontrado em guest_list_items
-        // Isso garante que valores de guest_list_items não sejam sobrescritos pelo fallback
-        const hasGuestListData = guestListRes.rows.length > 0;
-        const hasGuestListSecondaryColor = hasGuestListData && 
-            guestListRes.rows[0].secondary_color && 
-            guestListRes.rows[0].secondary_color !== null &&
-            guestListRes.rows[0].secondary_color !== 'null' &&
-            guestListRes.rows[0].secondary_color !== 'undefined' &&
-            (typeof guestListRes.rows[0].secondary_color !== 'string' || guestListRes.rows[0].secondary_color.trim() !== '');
-        
-        logger.info(`[SECONDARY_COLOR] Verificação:`, {
-            hasGuestListData: hasGuestListData,
-            hasGuestListSecondaryColor: hasGuestListSecondaryColor,
-            current_secondary_color: formData.secondary_color,
-            tipo: typeof formData.secondary_color
-        });
-        
-        // Aplicar fallback APENAS se não veio de guest_list_items
-        if (!hasGuestListSecondaryColor) {
-            if (!formData.secondary_color || 
-                formData.secondary_color === 'null' || 
-                formData.secondary_color === 'undefined' ||
-                formData.secondary_color === null ||
-                formData.secondary_color === undefined ||
-                (typeof formData.secondary_color === 'string' && formData.secondary_color.trim() === '')) {
-                formData.secondary_color = formData.primary_color || '#4A90E2';
-                logger.info(`[SECONDARY_COLOR] Usando fallback (primary_color): ${formData.secondary_color}`);
-            } else {
-                logger.info(`[SECONDARY_COLOR] Usando valor de digital_form_items: ${formData.secondary_color}`);
-            }
+        // IMPORTANTE: CORES COMPLETAMENTE SEPARADAS - NÃO usar valores de guest_list_items para cores!
+        // Aplicar fallback APENAS se não existir em digital_form_items
+        if (!formData.secondary_color || 
+            formData.secondary_color === 'null' || 
+            formData.secondary_color === 'undefined' ||
+            formData.secondary_color === null ||
+            formData.secondary_color === undefined ||
+            (typeof formData.secondary_color === 'string' && formData.secondary_color.trim() === '')) {
+            formData.secondary_color = formData.primary_color || '#4A90E2';
+            logger.info(`🎨 [FORM/PUBLIC] secondary_color não encontrado em digital_form_items, usando primary_color como fallback: ${formData.secondary_color}`);
         } else {
-            logger.info(`[SECONDARY_COLOR] Usando valor de guest_list_items (não aplicar fallback): ${formData.secondary_color}`);
+            logger.info(`🎨 [FORM/PUBLIC] secondary_color usando valor de digital_form_items: ${formData.secondary_color}`);
         }
         
         // Garantir que form_fields seja um array (pode vir como string JSON do PostgreSQL)
