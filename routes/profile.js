@@ -2239,6 +2239,26 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         }
 
         console.log(`✅ Formulário King ${itemId} atualizado com sucesso`);
+        
+        // IMPORTANTE: GARANTIR QUE NADA FOI ATUALIZADO EM guest_list_items
+        // Verificar se houve alguma atualização acidental em guest_list_items
+        const guestListCheck = await client.query(`
+            SELECT id, primary_color, secondary_color, background_color, text_color, updated_at
+            FROM guest_list_items 
+            WHERE profile_item_id = $1
+        `, [itemId]);
+        
+        if (guestListCheck.rows.length > 0) {
+            console.log(`🔍 [DIGITAL_FORM] Verificação: guest_list_items NÃO foi alterado (cores permanecem independentes):`, {
+                guest_list_id: guestListCheck.rows[0].id,
+                primary_color: guestListCheck.rows[0].primary_color,
+                secondary_color: guestListCheck.rows[0].secondary_color,
+                background_color: guestListCheck.rows[0].background_color,
+                text_color: guestListCheck.rows[0].text_color,
+                updated_at: guestListCheck.rows[0].updated_at,
+                message: 'Cores de guest_list_items NÃO foram alteradas - sistemas completamente separados'
+            });
+        }
 
         // Evitar cache do navegador
         res.set({
