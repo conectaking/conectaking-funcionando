@@ -113,20 +113,110 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
     res.set('X-Timestamp', now.toString());
     res.set('X-No-Cache', '1');
     
+    // VALIDAÇÃO DE LINK ÚNICO (apenas para tokens que começam com "unique_")
+    // Sistema separado - não afeta tokens normais existentes
+    if (token && token.startsWith('unique_')) {
+        try {
+            const validationResult = await db.query(
+                'SELECT is_unique_link_valid($1) as is_valid',
+                [token]
+            );
+
+            const isValid = validationResult.rows[0].is_valid;
+
+            if (!isValid) {
+                // Buscar motivo da invalidação
+                const linkInfo = await db.query(`
+                    SELECT 
+                        status,
+                        expires_at,
+                        current_uses,
+                        max_uses
+                    FROM unique_form_links
+                    WHERE token = $1
+                `, [token]);
+
+                let reason = 'Link inválido';
+                let title = 'Link Indisponível';
+
+                if (linkInfo.rows.length === 0) {
+                    reason = 'Link não encontrado';
+                    title = 'Link não encontrado';
+                } else {
+                    const link = linkInfo.rows[0];
+                    if (link.status === 'used' || link.current_uses >= link.max_uses) {
+                        reason = 'Este link já foi utilizado. Cada link pode ser usado apenas uma vez.';
+                        title = 'Link já foi utilizado';
+                    } else if (link.status === 'expired' || new Date(link.expires_at) < new Date()) {
+                        reason = 'Este link expirou. Links únicos têm validade limitada por segurança.';
+                        title = 'Link expirado';
+                    } else if (link.status === 'deactivated') {
+                        reason = 'Este link foi desativado pelo administrador.';
+                        title = 'Link desativado';
+                    }
+                }
+
+                logger.warn(`❌ [UNIQUE_LINKS] Link único inválido: ${token}, motivo: ${reason}`);
+
+                // Renderizar página de erro amigável
+                return res.status(400).render('formError', {
+                    title: title,
+                    message: reason,
+                    errorCode: 'UNIQUE_LINK_INVALID'
+                });
+            }
+
+            logger.info(`✅ [UNIQUE_LINKS] Link único válido: ${token}`);
+        } catch (error) {
+            logger.error(`❌ [UNIQUE_LINKS] Erro ao validar link único: ${token}`, error);
+            // Em caso de erro, permitir continuar (fallback)
+        }
+    }
+    
     const client = await db.pool.connect();
     
     try {
-        // Buscar formulário pelo share_token ou cadastro_slug (pode ser digital_form ou guest_list)
-        // Primeiro tentar pelo share_token
-        let itemRes = await client.query(
-            `SELECT pi.* 
-             FROM profile_items pi
-             WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
-            [token]
-        );
+        // Buscar formulário pelo unique_token, share_token ou cadastro_slug
+        // PRIORIDADE 1: Tentar buscar por unique_token (sistema separado)
+        let itemRes = null;
+        let uniqueLinkData = null;
+        
+        if (token && token.startsWith('unique_')) {
+            const uniqueLinkRes = await client.query(`
+                SELECT ufl.*, pi.*
+                FROM unique_form_links ufl
+                INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
+                WHERE ufl.token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
+            `, [token]);
+            
+            if (uniqueLinkRes.rows.length > 0) {
+                uniqueLinkData = uniqueLinkRes.rows[0];
+                // Extrair apenas campos de profile_items para manter compatibilidade
+                itemRes = {
+                    rows: [{
+                        id: uniqueLinkData.profile_item_id,
+                        user_id: uniqueLinkData.user_id,
+                        item_type: uniqueLinkData.item_type,
+                        is_active: uniqueLinkData.is_active,
+                        share_token: uniqueLinkData.share_token
+                    }]
+                };
+                logger.info(`🔗 [UNIQUE_LINKS] Formulário encontrado via link único: ${token}, itemId: ${uniqueLinkData.profile_item_id}`);
+            }
+        }
+        
+        // PRIORIDADE 2: Tentar pelo share_token (sistema normal - não modificar)
+        if (!itemRes || itemRes.rows.length === 0) {
+            itemRes = await client.query(
+                `SELECT pi.* 
+                 FROM profile_items pi
+                 WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
+                [token]
+            );
+        }
 
-        // Se não encontrar pelo share_token, tentar pelo cadastro_slug
-        if (itemRes.rows.length === 0) {
+        // PRIORIDADE 3: Tentar pelo cadastro_slug (sistema normal - não modificar)
+        if (!itemRes || itemRes.rows.length === 0) {
             itemRes = await client.query(
                 `SELECT pi.* 
                  FROM profile_items pi
@@ -136,7 +226,7 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
             );
         }
 
-        if (itemRes.rows.length === 0) {
+        if (!itemRes || itemRes.rows.length === 0) {
             return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>O link compartilhável é inválido ou expirou.</p>');
         }
 
@@ -144,6 +234,12 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         const userId = item.user_id;
         const itemIdInt = item.id;
         const isGuestList = item.item_type === 'guest_list';
+        
+        // Armazenar dados do unique_link para usar após cadastro (sistema separado)
+        if (uniqueLinkData) {
+            res.locals.uniqueLinkToken = token;
+            res.locals.uniqueLinkData = uniqueLinkData;
+        }
 
         // Buscar dados do formulário com verificação de colunas
         const columnCheck = await client.query(`
@@ -1447,6 +1543,41 @@ router.post('/:slug/form/:itemId/submit',
                     submitted_at: new Date()
                 }]
             };
+        }
+        
+        // IMPORTANTE: Marcar link único como usado APÓS cadastro bem-sucedido (sistema separado)
+        // Verificar se o token é um link único (buscar no referer ou na sessão)
+        // Extrair token do referer se o formulário foi acessado via link único
+        let uniqueToken = null;
+        const referer = req.headers.referer || '';
+        if (referer.includes('/form/share/')) {
+            const tokenMatch = referer.match(/\/form\/share\/([^\/\?]+)/);
+            if (tokenMatch && tokenMatch[1] && tokenMatch[1].startsWith('unique_')) {
+                uniqueToken = tokenMatch[1];
+                logger.info(`🔗 [UNIQUE_LINKS] Token único detectado no referer: ${uniqueToken}`);
+            }
+        }
+        if (uniqueToken && uniqueToken.startsWith('unique_')) {
+            try {
+                // Usar guest_id se disponível, senão usar responseId
+                const linkGuestId = response_guest_id || (result && result.rows && result.rows[0] ? result.rows[0].guest_id : null);
+                
+                const markUsedResult = await client.query(
+                    'SELECT mark_unique_link_as_used($1, $2) as success',
+                    [uniqueToken, linkGuestId]
+                );
+
+                const marked = markUsedResult.rows[0].success;
+                
+                if (marked) {
+                    logger.info(`✅ [UNIQUE_LINKS] Link único marcado como usado: ${uniqueToken}, guestId: ${linkGuestId}`);
+                } else {
+                    logger.warn(`⚠️ [UNIQUE_LINKS] Link único não pôde ser marcado como usado (já usado?): ${uniqueToken}`);
+                }
+            } catch (linkError) {
+                logger.error(`❌ [UNIQUE_LINKS] Erro ao marcar link único como usado: ${uniqueToken}`, linkError);
+                // Não falhar a requisição se marcar link falhar
+            }
         }
 
         // Registrar evento 'submit' de analytics

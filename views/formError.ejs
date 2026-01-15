@@ -175,10 +175,10 @@
             <i class="fas fa-exclamation-triangle"></i>
         </div>
         
-        <h1>Erro ao Enviar Formulário</h1>
+        <h1><%= title || 'Erro ao Enviar Formulário' %></h1>
         
         <div class="error-message">
-            <%= errorMessage || 'Ocorreu um erro ao enviar o formulário. Por favor, tente novamente.' %>
+            <%= message || errorMessage || 'Ocorreu um erro ao enviar o formulário. Por favor, tente novamente.' %>
         </div>
         
         <div class="actions">

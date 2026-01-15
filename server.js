@@ -48,6 +48,7 @@ const guestListCustomizeRoutes = require('./routes/guestListCustomize.routes');
 const publicContractRoutes = require('./routes/publicContract.routes');
 const webhooksRoutes = require('./routes/webhooks.routes');
 const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
+const uniqueLinksRoutes = require('./routes/uniqueLinks.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize } = require('./middleware/security');
 
@@ -398,6 +399,7 @@ const publicDigitalFormAnalyticsRoutes = require('./routes/publicDigitalFormAnal
 const publicDigitalFormRoutes = require('./routes/publicDigitalForm.routes');
 app.use('/', publicDigitalFormAnalyticsRoutes);
 app.use('/', publicDigitalFormRoutes);
+app.use('/api/unique-links', uniqueLinksRoutes);
 
 // Rota pública de produto individual (deve vir antes de publicProfileRoutes)
 const publicProductRoutes = require('./routes/publicProduct');
