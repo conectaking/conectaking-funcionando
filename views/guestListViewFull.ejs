@@ -249,6 +249,25 @@
             background: rgba(255,255,255,0.05);
         }
         
+        /* Cores específicas para cada aba quando ativa */
+        .tab-button[onclick*="registered"].active {
+            color: #25D366 !important;
+            border-bottom-color: #25D366 !important;
+            background: rgba(37, 211, 102, 0.1) !important;
+        }
+        
+        .tab-button[onclick*="checked_in"].active {
+            color: #25D366 !important;
+            border-bottom-color: #25D366 !important;
+            background: rgba(37, 211, 102, 0.1) !important;
+        }
+        
+        .tab-button[onclick*="not_arrived"].active {
+            color: #DC2626 !important;
+            border-bottom-color: #DC2626 !important;
+            background: rgba(220, 38, 38, 0.1) !important;
+        }
+        
         .tab-button:hover {
             color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>;
             background: rgba(255,255,255,0.03);
@@ -833,9 +852,9 @@
         <div class="quick-confirm-section" style="background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)); backdrop-filter: blur(10px); border: 2px solid rgba(<%= quickPrimaryRgbStr %>, 0.4); border-radius: 24px; padding: 32px; margin-bottom: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
             <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(<%= quickPrimaryRgbStr %>, 0.1), transparent); border-radius: 50%;"></div>
             <div style="position: relative; z-index: 1;">
-                <h2 style="font-size: 24px; font-weight: 800; color: <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %>, <%= (typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700' %>); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(255, 199, 0, 0.4);">
-                        <i class="fas fa-bolt" style="font-size: 24px; color: #000;"></i>
+                <h2 style="font-size: 24px; font-weight: 800; color: <%= (typeof guestList !== 'undefined' && guestList && guestList.quick_confirm_title_color) ? guestList.quick_confirm_title_color : ((typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700') %>; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.quick_confirm_icon_color) ? guestList.quick_confirm_icon_color : ((typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700') %>, <%= (typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700' %>); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(255, 199, 0, 0.4);">
+                        <i class="fas fa-bolt" style="font-size: 24px; color: <%= (typeof guestList !== 'undefined' && guestList && guestList.quick_confirm_icon_color) ? guestList.quick_confirm_icon_color : '#000000' %>;"></i>
                     </div>
                     Confirmação Rápida
                 </h2>
@@ -2802,12 +2821,35 @@
             
             console.log('✅ [TAB] Aba ativada:', tabName, 'Elemento:', tabElement ? 'encontrado' : 'não encontrado');
             
-            // Aplicar filtro após mudar de aba
+            // Resetar filtro para "all" ao mudar de aba e garantir visibilidade
             setTimeout(() => {
+                const statusFilter = document.getElementById('status-filter');
+                if (statusFilter) {
+                    statusFilter.value = 'all';
+                }
+                
+                // PRIMEIRO: Garantir que todas as linhas da aba ativa sejam visíveis
+                if (tabElement) {
+                    const rows = tabElement.querySelectorAll('.table-row');
+                    rows.forEach(row => {
+                        row.style.display = '';
+                        row.style.visibility = 'visible';
+                        row.style.opacity = '1';
+                    });
+                    console.log(`✅ ${rows.length} linhas tornadas visíveis na aba ${tabName}`);
+                    
+                    // Verificar se há empty-state e ocultá-lo se houver linhas
+                    const emptyState = tabElement.querySelector('.empty-state');
+                    if (rows.length > 0 && emptyState) {
+                        emptyState.style.display = 'none';
+                    }
+                }
+                
+                // DEPOIS: Aplicar filtro (que deve mostrar todos já que está em 'all')
                 if (typeof filterGuests === 'function') {
                     filterGuests();
                 }
-            }, 50);
+            }, 150);
         }
         
         // Tornar switchTab global para uso em onclick
@@ -2819,34 +2861,7 @@
             // Filtrar apenas nas abas visíveis (active)
             const activeTab = document.querySelector('.tab-content.active');
             if (!activeTab) {
-                // Se não houver aba ativa, filtrar todas as linhas
-                const rows = document.querySelectorAll('.table-row');
-                rows.forEach(row => {
-                    const statusValue = row.getAttribute('data-status') || '';
-                    let shouldShow = false;
-                    
-                    switch(filterValue) {
-                        case 'all':
-                            shouldShow = true;
-                            break;
-                        case 'not_confirmed':
-                            shouldShow = statusValue === 'registered' || statusValue === '';
-                            break;
-                        case 'registered':
-                            shouldShow = statusValue === 'registered' || statusValue === '';
-                            break;
-                        case 'confirmed':
-                            shouldShow = statusValue === 'confirmed';
-                            break;
-                        case 'checked_in':
-                            shouldShow = statusValue === 'checked_in';
-                            break;
-                        default:
-                            shouldShow = true;
-                    }
-                    
-                    row.style.display = shouldShow ? '' : 'none';
-                });
+                console.warn('⚠️ Nenhuma aba ativa encontrada');
                 return;
             }
             
@@ -2854,8 +2869,12 @@
             const rows = activeTab.querySelectorAll('.table-row');
             let visibleCount = 0;
             
+            console.log(`🔍 Filtrando ${rows.length} linhas na aba ativa (${activeTab.id}) com filtro: ${filterValue}`);
+            
             rows.forEach(row => {
                 const statusValue = row.getAttribute('data-status') || '';
+                const statusBadge = row.querySelector('.status-badge');
+                const statusText = statusBadge ? statusBadge.textContent.trim().toLowerCase() : '';
                 let shouldShow = false;
                 
                 switch(filterValue) {
@@ -2864,16 +2883,16 @@
                         break;
                     case 'not_confirmed':
                         // Mostrar apenas os que não confirmaram (registered)
-                        shouldShow = statusValue === 'registered' || statusValue === '';
+                        shouldShow = statusValue === 'registered' || statusValue === '' || statusText === 'inscrito' || statusText === 'cadastrado';
                         break;
                     case 'registered':
-                        shouldShow = statusValue === 'registered' || statusValue === '';
+                        shouldShow = statusValue === 'registered' || statusValue === '' || statusText === 'inscrito' || statusText === 'cadastrado';
                         break;
                     case 'confirmed':
-                        shouldShow = statusValue === 'confirmed';
+                        shouldShow = statusValue === 'confirmed' || statusText === 'confirmado';
                         break;
                     case 'checked_in':
-                        shouldShow = statusValue === 'checked_in';
+                        shouldShow = statusValue === 'checked_in' || statusText === 'chegou';
                         break;
                     default:
                         shouldShow = true;
@@ -2883,7 +2902,7 @@
                 if (shouldShow) visibleCount++;
             });
             
-            console.log(`✅ Filtro aplicado: ${filterValue}, ${visibleCount} convidados visíveis`);
+            console.log(`✅ Filtro aplicado: ${filterValue}, ${visibleCount} de ${rows.length} convidados visíveis na aba ${activeTab.id}`);
         }
         
         // Função para ordenar convidados
