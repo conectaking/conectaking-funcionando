@@ -2098,6 +2098,24 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 extraParams.push(card_color || '#FFFFFF');
             }
             
+            // Adicionar enable_whatsapp se existir e for enviado
+            if (hasEnableWhatsapp && enable_whatsapp !== undefined) {
+                extraFields += ', enable_whatsapp';
+                extraValues += `, $${paramIdx++}`;
+                const enableWhatsappValue = enable_whatsapp === true || enable_whatsapp === 'true' || enable_whatsapp === 1 || enable_whatsapp === '1';
+                extraParams.push(enableWhatsappValue);
+                console.log(`💾 [DIGITAL_FORM] Criando registro com enable_whatsapp: ${enableWhatsappValue}`);
+            }
+            
+            // Adicionar enable_guest_list_submit se existir e for enviado
+            if (hasEnableGuestListSubmit && enable_guest_list_submit !== undefined) {
+                extraFields += ', enable_guest_list_submit';
+                extraValues += `, $${paramIdx++}`;
+                const enableGuestListSubmitValue = enable_guest_list_submit === true || enable_guest_list_submit === 'true' || enable_guest_list_submit === 1 || enable_guest_list_submit === '1';
+                extraParams.push(enableGuestListSubmitValue);
+                console.log(`💾 [DIGITAL_FORM] Criando registro com enable_guest_list_submit: ${enableGuestListSubmitValue}`);
+            }
+            
             // Construir lista de campos e valores dinamicamente
             let insertFields = 'profile_item_id, form_title, form_logo_url, form_description, prayer_requests_text, meetings_text, welcome_text, whatsapp_number, display_format, banner_image_url, header_image_url, background_image_url, background_opacity, form_fields, theme, primary_color';
             let insertValues = '$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15, $16';
@@ -2196,7 +2214,11 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
         res.json(responseData);
     } catch (error) {
         console.error(`❌ Erro ao atualizar Formulário King ${req.params.id}:`, error);
-        res.status(500).json({ message: 'Erro ao atualizar Formulário King.', error: error.message });
+        console.error(`❌ Stack trace:`, error.stack);
+        res.status(500).json({ 
+            message: 'Erro ao salvar configuração', 
+            error: error.message 
+        });
     } finally {
         client.release();
     }
