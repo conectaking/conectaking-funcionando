@@ -631,55 +631,77 @@
                 font-size: 20px !important;
             }
             
-            .quick-confirm-section > div {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 16px !important;
-            }
-            
-            .quick-confirm-section > div[style*="grid-template-columns"] {
-                grid-template-columns: 1fr !important;
-                gap: 16px !important;
-            }
-            
-            .quick-confirm-section button {
-                width: 100% !important;
-                padding: 16px 20px !important;
-                font-size: 16px !important;
-                justify-content: center !important;
-                border-radius: 14px !important;
-                min-height: 52px !important;
-            }
-            
-            .quick-confirm-section button i {
-                font-size: 20px !important;
-            }
-            
-            .quick-confirm-section #cpf-search-input {
-                width: 100% !important;
-                padding: 16px 18px !important;
-                font-size: 15px !important;
-                margin-bottom: 0 !important;
-                border-radius: 14px !important;
-            }
-            
-            .quick-confirm-section > div > div[style*="display: flex"] {
+            /* IMPORTANTE: Layout responsivo para Confirmação Rápida */
+            .quick-confirm-controls {
                 display: flex !important;
                 flex-direction: column !important;
                 gap: 12px !important;
                 width: 100% !important;
             }
             
-            .quick-confirm-section #cpf-search-btn {
+            .quick-confirm-controls button,
+            .quick-confirm-controls #cpf-search-input {
                 width: 100% !important;
-                padding: 16px 20px !important;
-                font-size: 16px !important;
-                border-radius: 14px !important;
-                min-height: 52px !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            
+            .quick-confirm-controls {
+                grid-template-columns: 1fr !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            
+            .quick-confirm-section button {
+                padding: 14px 18px !important;
+                font-size: 15px !important;
+                justify-content: center !important;
+                border-radius: 12px !important;
+                min-height: 48px !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            
+            .quick-confirm-section button i {
+                font-size: 18px !important;
+                flex-shrink: 0 !important;
+            }
+            
+            .quick-confirm-section #cpf-search-input {
+                padding: 14px 16px !important;
+                font-size: 15px !important;
+                margin-bottom: 0 !important;
+                border-radius: 12px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            
+            .quick-confirm-section #cpf-search-btn {
+                padding: 14px 18px !important;
+                font-size: 15px !important;
+                border-radius: 12px !important;
+                min-height: 48px !important;
+                max-width: 100% !important;
             }
             
             .quick-confirm-section #cpf-search-btn i {
-                font-size: 18px !important;
+                font-size: 16px !important;
+            }
+            
+            /* Garantir que botão QR Code não corte no mobile */
+            #qr-scanner-btn {
+                min-width: 100% !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            
+            #qr-scanner-btn span {
+                white-space: normal !important;
+                word-break: break-word !important;
+                line-height: 1.3 !important;
+                text-align: center !important;
             }
             
             /* Filtros e Ordenação - Mobile */
@@ -884,24 +906,23 @@
                     </div>
                     Confirmação Rápida
                 </h2>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="quick-confirm-controls" style="display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: stretch;">
                     <!-- Botão Escanear QR Code -->
-                    <button id="qr-scanner-btn" class="animated-button" style="background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_color) ? guestList.qr_code_button_color : ((typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700') %> 0%, <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_color_secondary) ? guestList.qr_code_button_color_secondary : ((typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700') %> 100%); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_text_color) ? guestList.qr_code_button_text_color : '#000000' %>; border: none; padding: 18px 28px; border-radius: 16px; font-weight: 800; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; box-shadow: 0 6px 24px rgba(255, 199, 0, 0.4); position: relative; overflow: hidden;">
-                        <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 12px;">
-                            <i class="fas fa-qrcode" style="font-size: 24px;"></i>
-                            <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_text) ? guestList.qr_code_button_text : 'Ler QR Code' %>
+                    <button id="qr-scanner-btn" class="animated-button" style="background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_color) ? guestList.qr_code_button_color : ((typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700') %> 0%, <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_color_secondary) ? guestList.qr_code_button_color_secondary : ((typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700') %> 100%); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_text_color) ? guestList.qr_code_button_text_color : '#000000' %>; border: none; padding: 16px 20px; border-radius: 14px; font-weight: 700; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 16px rgba(255, 199, 0, 0.3); position: relative; overflow: hidden; white-space: nowrap; min-width: 140px; max-width: 180px;">
+                        <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-qrcode" style="font-size: 20px; flex-shrink: 0;"></i>
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><%= (typeof guestList !== 'undefined' && guestList && guestList.qr_code_button_text) ? guestList.qr_code_button_text : 'Ler QR Code' %></span>
                         </span>
                     </button>
                     
                     <!-- Busca por CPF, Email ou Nome -->
-                    <div style="display: flex; gap: 12px;">
-                        <input type="text" id="cpf-search-input" placeholder="Digite CPF, Email ou Nome" style="flex: 1; padding: 18px 20px; border-radius: 16px; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,0.1); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.search_input_text_color) ? guestList.search_input_text_color : ((typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC') %>; font-size: 16px; font-weight: 600; transition: all 0.3s;" maxlength="100" onfocus="this.style.borderColor='rgba(255,199,0,0.5)'; this.style.background='rgba(0,0,0,0.4)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(0,0,0,0.3)';">
-                        <button id="cpf-search-btn" class="animated-button" style="background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.search_button_color) ? guestList.search_button_color : '#25D366' %> 0%, <%= (typeof guestList !== 'undefined' && guestList && guestList.search_button_color_secondary) ? guestList.search_button_color_secondary : '#20BA5A' %> 100%); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.search_button_text_color) ? guestList.search_button_text_color : '#FFFFFF' %>; border: none; padding: 18px 28px; border-radius: 16px; font-weight: 800; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s; box-shadow: 0 6px 24px rgba(37, 211, 102, 0.4); white-space: nowrap; position: relative; overflow: hidden;">
-                            <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-search" style="font-size: 20px;"></i> Buscar
-                            </span>
-                        </button>
-                    </div>
+                    <input type="text" id="cpf-search-input" placeholder="Digite CPF, Email ou Nome" style="flex: 1; min-width: 0; padding: 16px 18px; border-radius: 14px; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,0.1); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.search_input_text_color) ? guestList.search_input_text_color : ((typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC') %>; font-size: 15px; font-weight: 600; transition: all 0.3s;" maxlength="100" onfocus="this.style.borderColor='rgba(255,199,0,0.5)'; this.style.background='rgba(0,0,0,0.4)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(0,0,0,0.3)';">
+                    
+                    <button id="cpf-search-btn" class="animated-button" style="background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.search_button_color) ? guestList.search_button_color : '#25D366' %> 0%, <%= (typeof guestList !== 'undefined' && guestList && guestList.search_button_color_secondary) ? guestList.search_button_color_secondary : '#20BA5A' %> 100%); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.search_button_text_color) ? guestList.search_button_text_color : '#FFFFFF' %>; border: none; padding: 16px 20px; border-radius: 14px; font-weight: 700; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3); white-space: nowrap; min-width: 120px; max-width: 160px;">
+                        <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-search" style="font-size: 18px; flex-shrink: 0;"></i> Buscar
+                        </span>
+                    </button>
                 </div>
             </div>
         </div>

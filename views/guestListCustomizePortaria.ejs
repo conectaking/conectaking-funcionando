@@ -21,12 +21,56 @@
             color: #ECECEC;
         }
         
+        .header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+        
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: rgba(255, 199, 0, 0.1);
+            border: 2px solid rgba(255, 199, 0, 0.3);
+            border-radius: 12px;
+            color: #FFC700;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 199, 0, 0.2);
+            border-color: rgba(255, 199, 0, 0.5);
+            transform: translateX(-4px);
+        }
+        
+        .back-button i {
+            font-size: 16px;
+        }
+        
         .container {
             max-width: 1400px;
             margin: 0 auto;
             display: grid;
             grid-template-columns: 400px 1fr;
             gap: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
         }
         
         .sidebar {
@@ -225,11 +269,16 @@
     </style>
 </head>
 <body>
+    <div class="header-actions" style="max-width: 1400px; margin: 0 auto 24px;">
+        <a href="javascript:history.back()" class="back-button">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+        <h1 style="color: #FFC700; margin: 0; font-size: 20px; font-weight: 700;">
+            <i class="fas fa-paint-brush"></i> Personalizar Portaria
+        </h1>
+    </div>
     <div class="container">
         <div class="sidebar">
-            <h1 style="color: #FFC700; margin-bottom: 24px; font-size: 24px;">
-                <i class="fas fa-paint-brush"></i> Personalizar Portaria
-            </h1>
             
             <form id="customize-form">
                 <!-- Temas Pré-definidos -->
