@@ -434,7 +434,12 @@
             formData.append('image', file);
             
             try {
-                const response = await fetch('/api/upload/image', {
+                // Determinar URL base (usar URL completa se necessário)
+                const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'https://conectaking-api.onrender.com' 
+                    : '';
+                
+                const response = await fetch(`${apiBaseUrl}/api/upload/image`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${authToken}`
@@ -490,7 +495,12 @@
                     return;
                 }
                 
-                const response = await fetch(`/api/guest-lists/${profileItemId}/customize-portaria`, {
+                // Determinar URL base (usar URL completa se necessário)
+                const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'https://conectaking-api.onrender.com' 
+                    : '';
+                
+                const response = await fetch(`${apiBaseUrl}/api/guest-lists/${profileItemId}/customize-portaria`, {
                     method: 'PUT',
                     headers: { 
                         'Content-Type': 'application/json',
