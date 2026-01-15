@@ -880,29 +880,6 @@
             </div>
         </div>
         
-        <!-- Filtros e Ordenação -->
-        <div style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1;">
-                <label style="color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>; font-weight: 600; white-space: nowrap;">
-                    <i class="fas fa-filter"></i> Filtrar:
-                </label>
-                <select id="status-filter" style="padding: 10px 16px; border-radius: 12px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.1); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; min-width: 180px;" onchange="filterGuests()" onfocus="this.style.borderColor='rgba(255,199,0,0.5)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)';">
-                    <option value="all" selected>Todos os Convidados</option>
-                    <option value="not_confirmed">Faltam Confirmar</option>
-                    <option value="registered">Apenas Inscritos</option>
-                    <option value="confirmed">Confirmados</option>
-                    <option value="checked_in">Já Chegaram</option>
-                </select>
-                <select id="sort-order" style="padding: 10px 16px; border-radius: 12px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.1); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; min-width: 180px;" onchange="sortGuests()" onfocus="this.style.borderColor='rgba(255,199,0,0.5)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)';">
-                    <option value="name">Ordenar por Nome</option>
-                    <option value="date">Ordenar por Data</option>
-                    <option value="status">Ordenar por Status</option>
-                </select>
-            </div>
-            <button onclick="resetFilters()" style="padding: 10px 20px; border-radius: 12px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); color: <%= (typeof guestList !== 'undefined' && guestList && guestList.text_color) ? guestList.text_color : '#ECECEC' %>; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; white-space: nowrap;" onmouseover="this.style.background='rgba(255,199,0,0.2)'; this.style.borderColor='rgba(255,199,0,0.5)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
-                <i class="fas fa-redo"></i> Resetar
-            </button>
-        </div>
         
         <div class="tabs">
             <button class="tab-button active" onclick="switchTab('registered', event)">
