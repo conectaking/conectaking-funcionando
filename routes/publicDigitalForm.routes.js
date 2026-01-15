@@ -607,44 +607,12 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
                 profile_item_id: itemIdInt
             });
             
-            // Mesclar dados: SEMPRE priorizar cores de guest_list_items se existirem
-            // IMPORTANTE: Aplicar mesmo se o valor for null (para limpar valores antigos)
-            // Isso garante que as cores salvas em guest_list_items sejam usadas
-            if (guestListData.primary_color !== undefined && guestListData.primary_color !== null) {
-                formData.primary_color = guestListData.primary_color;
-                logger.info(`🎨 [FORM/PUBLIC] primary_color atualizado de guest_list_items: ${guestListData.primary_color}`);
-            }
-            // IMPORTANTE: Aplicar secondary_color mesmo se for null (pode ser intencional)
-            // Mas verificar se não é string vazia
-            if (guestListData.secondary_color !== undefined) {
-                if (guestListData.secondary_color === null || 
-                    (typeof guestListData.secondary_color === 'string' && guestListData.secondary_color.trim() === '')) {
-                    // Se for null ou vazio, usar primary_color como fallback
-                    formData.secondary_color = guestListData.primary_color || formData.primary_color || '#4A90E2';
-                    logger.info(`🎨 [FORM/PUBLIC] secondary_color era null/vazio, usando primary_color: ${formData.secondary_color}`);
-                } else {
-                    formData.secondary_color = guestListData.secondary_color;
-                    logger.info(`🎨 [FORM/PUBLIC] secondary_color atualizado de guest_list_items: ${guestListData.secondary_color}`);
-                }
-            }
-            if (guestListData.text_color) {
-                formData.text_color = guestListData.text_color;
-            }
-            if (guestListData.background_color) {
-                formData.background_color = guestListData.background_color;
-            }
-            if (guestListData.header_image_url) {
-                formData.header_image_url = guestListData.header_image_url;
-            }
-            if (guestListData.background_image_url) {
-                formData.background_image_url = guestListData.background_image_url;
-            }
-            if (guestListData.background_opacity !== null && guestListData.background_opacity !== undefined) {
-                formData.background_opacity = guestListData.background_opacity;
-            }
-            if (guestListData.theme) {
-                formData.theme = guestListData.theme;
-            }
+            // IMPORTANTE: NÃO MESCLAR CORES ENTRE SISTEMAS!
+            // King Forms (digital_form_items) e Portaria (guest_list_items) devem ter cores COMPLETAMENTE SEPARADAS
+            // Apenas mesclar enable_whatsapp e enable_guest_list_submit (configurações funcionais, não visuais)
+            // NÃO mesclar cores, backgrounds, themes, etc. - cada sistema tem suas próprias cores!
+            
+            logger.info(`🎨 [FORM/PUBLIC] CORES SEPARADAS: Usando APENAS cores de digital_form_items, ignorando guest_list_items`);
             
             // IMPORTANTE: Mesclar enable_whatsapp e enable_guest_list_submit se existirem em guest_list_items
             // IMPORTANTE: Respeitar valores false - converter corretamente para booleano

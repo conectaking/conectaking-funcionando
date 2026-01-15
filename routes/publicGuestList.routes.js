@@ -485,6 +485,7 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         
         const guestList = listResult.rows[0];
         
+        // IMPORTANTE: Portaria usa APENAS cores de guest_list_items, NUNCA de digital_form_items
         // Garantir que campos opcionais existam com valores padrão
         if (!guestList.primary_color) guestList.primary_color = '#FFC700';
         if (!guestList.secondary_color) guestList.secondary_color = '#FFB700';
@@ -492,6 +493,14 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
         if (!guestList.background_color) guestList.background_color = '#0D0D0F';
         if (guestList.background_opacity === null || guestList.background_opacity === undefined) guestList.background_opacity = 1.0;
         if (!guestList.theme_portaria) guestList.theme_portaria = 'default';
+        
+        logger.info(`🎨 [PORTARIA] Cores carregadas APENAS de guest_list_items:`, {
+            primary_color: guestList.primary_color,
+            secondary_color: guestList.secondary_color,
+            text_color: guestList.text_color,
+            background_color: guestList.background_color,
+            profile_item_id: guestList.profile_item_id
+        });
         
         // Aplicar tema pré-definido se selecionado
         if (guestList.theme_portaria && guestList.theme_portaria !== 'default') {

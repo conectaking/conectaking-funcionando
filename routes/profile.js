@@ -1884,7 +1884,8 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 updateFormFields.push(`primary_color = $${formParamIndex++}`);
                 const primaryColorValue = primary_color && primary_color.trim() ? primary_color.trim() : '#4A90E2';
                 updateFormValues.push(primaryColorValue);
-                console.log(`🎨 [PRIMARY_COLOR] Recebido no backend: "${primary_color}", tipo: ${typeof primary_color}, valor a salvar: "${primaryColorValue}"`);
+                console.log(`🎨 [DIGITAL_FORM] PRIMARY_COLOR: Salvando APENAS em digital_form_items: "${primaryColorValue}"`);
+                console.log(`🎨 [DIGITAL_FORM] IMPORTANTE: Esta cor NÃO afeta guest_list_items (portaria) - sistemas separados!`);
             }
             // Verificar se coluna secondary_color existe antes de atualizar
             if (secondary_color !== undefined) {
@@ -1984,6 +1985,8 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 if (colorColumnCheck.rows.length > 0) {
                     updateFormFields.push(`background_color = $${formParamIndex++}`);
                     updateFormValues.push(background_color || '#FFFFFF');
+                    console.log(`🎨 [DIGITAL_FORM] BACKGROUND_COLOR: Salvando APENAS em digital_form_items: "${background_color || '#FFFFFF'}"`);
+                    console.log(`🎨 [DIGITAL_FORM] IMPORTANTE: Esta cor NÃO afeta guest_list_items (portaria) - sistemas separados!`);
                 }
             }
             
