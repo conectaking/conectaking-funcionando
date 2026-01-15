@@ -1109,26 +1109,14 @@
                     <div>Status</div>
                     <div>Conferido em</div>
                 </div>
-                <% 
-                    var checkedInArray = [];
-                    try {
-                        if (typeof checkedInGuests !== 'undefined' && checkedInGuests !== null) {
-                            if (Array.isArray(checkedInGuests)) {
-                                checkedInArray = checkedInGuests;
-                            }
-                        }
-                    } catch(e) {
-                        checkedInArray = [];
-                    }
-                %>
-                <% if (checkedInArray.length === 0) { %>
+                <% if (!checkedInGuests || !Array.isArray(checkedInGuests) || checkedInGuests.length === 0) { %>
                     <div class="empty-state">
                         <i class="fas fa-check-double"></i>
                         <p>Nenhum convidado conferido</p>
                     </div>
                 <% } else { %>
-                    <% for (var i = 0; i < checkedInArray.length; i++) { 
-                        var guest = checkedInArray[i];
+                    <% for (var i = 0; i < checkedInGuests.length; i++) { 
+                        var guest = checkedInGuests[i];
                         // Extrair nome, email e whatsapp corretamente
                         var displayName = guest.name || '';
                         var displayEmail = guest.email || '';
@@ -1256,7 +1244,7 @@
                                 </button>
                             </div>
                         </div>
-                    <% } %>
+                    <% }); %>
                 <% } %>
             </div>
         </div>
@@ -1273,26 +1261,14 @@
                     <div>Status</div>
                     <div>Data</div>
                 </div>
-                <% 
-                    var notArrivedArray = [];
-                    try {
-                        if (typeof notArrivedGuests !== 'undefined' && notArrivedGuests !== null) {
-                            if (Array.isArray(notArrivedGuests)) {
-                                notArrivedArray = notArrivedGuests;
-                            }
-                        }
-                    } catch(e) {
-                        notArrivedArray = [];
-                    }
-                %>
-                <% if (notArrivedArray.length === 0) { %>
+                <% if (!notArrivedGuests || !Array.isArray(notArrivedGuests) || notArrivedGuests.length === 0) { %>
                     <div class="empty-state">
                         <i class="fas fa-clock"></i>
                         <p>Todos os convidados já chegaram!</p>
                     </div>
                 <% } else { %>
-                    <% for (var j = 0; j < notArrivedArray.length; j++) { 
-                        var guest = notArrivedArray[j];
+                    <% for (var j = 0; j < notArrivedGuests.length; j++) { 
+                        var guest = notArrivedGuests[j];
                         // Extrair nome, email e whatsapp
                         var displayName = guest.name || '';
                         var displayEmail = guest.email || '';
@@ -1402,7 +1378,7 @@
                                 </button>
                             </div>
                         </div>
-                    <% } %>
+                    <% }); %>
                 <% } %>
             </div>
         </div>
