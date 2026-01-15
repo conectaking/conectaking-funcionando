@@ -271,18 +271,69 @@
 <body>
     <div class="header-actions" style="max-width: 1400px; margin: 0 auto 24px;">
         <% 
-            // Determinar URL de voltar: para view-full da portaria (menu de confirmação de presença)
-            // Usar portaria_slug, public_view_token ou confirmation_token como fallback
-            const portariaSlug = guestList.portaria_slug || guestList.public_view_token || guestList.confirmation_token;
-            const backUrl = portariaSlug ? `/guest-list/view-full/${portariaSlug}` : null;
+            // Determinar URL de voltar: 
+            // 1. Se estiver dentro de iframe (vindo da responsesList.html), usar comunicação com o pai para voltar à aba "Inscritos"
+            // 2. Caso contrário, tentar voltar para a página de confirmação de presença (responsesList.html) ou página pública
+            const currentProfileItemId = profileItemId || guestList.profile_item_id;
+            const responsesListUrl = currentProfileItemId ? `responsesList.html?itemId=${currentProfileItemId}` : null;
         %>
-        <a href="<%= backUrl || '#' %>" class="back-button" onclick="<%= backUrl ? '' : 'event.preventDefault(); if(document.referrer && !document.referrer.includes(\'customize-portaria\')){window.location.href=document.referrer;}else{history.back();}return false;' %>">
-            <i class="fas fa-arrow-left"></i> Voltar para Confirmação de Presença
+        <a href="<%= responsesListUrl || '#' %>" class="back-button" onclick="handleVoltarClick(event, '<%= responsesListUrl || '' %>');">
+            <i class="fas fa-arrow-left"></i> Voltar
         </a>
         <h1 style="color: #FFC700; margin: 0; font-size: 20px; font-weight: 700;">
             <i class="fas fa-paint-brush"></i> Personalizar Portaria
         </h1>
     </div>
+    
+    <script>
+        // Função para lidar com o clique no botão "Voltar"
+        function handleVoltarClick(event, responsesListUrl) {
+            event.preventDefault();
+            
+            // Verificar se estamos dentro de um iframe (vindo da responsesList.html)
+            if (window.self !== window.top) {
+                // Estamos dentro de um iframe - comunicar com o pai para voltar à aba "Inscritos"
+                try {
+                    // Tentar enviar mensagem para o pai pedindo para mudar para a aba "Inscritos"
+                    if (window.parent) {
+                        window.parent.postMessage({ 
+                            type: 'customize-portaria-back',
+                            action: 'switch-tab',
+                            tab: 'registered'
+                        }, '*');
+                        
+                        // Como fallback, tentar encontrar e clicar na aba "Inscritos" no pai
+                        try {
+                            const parentDocument = window.parent.document;
+                            const registeredTab = parentDocument.querySelector('.tab-btn[data-tab="registered"]');
+                            if (registeredTab) {
+                                registeredTab.click();
+                            }
+                        } catch (e) {
+                            console.log('Não foi possível acessar o documento pai diretamente, usando postMessage');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Erro ao comunicar com o pai:', e);
+                    // Fallback: tentar navegar para responsesList.html
+                    if (responsesListUrl) {
+                        window.parent.location.href = responsesListUrl;
+                    } else {
+                        history.back();
+                    }
+                }
+            } else {
+                // Não estamos em um iframe - navegação normal
+                if (responsesListUrl) {
+                    window.location.href = responsesListUrl;
+                } else if (document.referrer && !document.referrer.includes('customize-portaria')) {
+                    window.location.href = document.referrer;
+                } else {
+                    history.back();
+                }
+            }
+        }
+    </script>
     <div class="container">
         <div class="sidebar">
             
