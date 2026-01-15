@@ -369,9 +369,21 @@
         const urlParams = new URLSearchParams(window.location.search);
         let authToken = urlParams.get('token') || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
         
-        // Se não tiver token, mostrar erro
+        console.log('🔑 Token obtido:', {
+            fromUrl: !!urlParams.get('token'),
+            fromLocalStorage: !!localStorage.getItem('conectaKingToken') || !!localStorage.getItem('token'),
+            hasToken: !!authToken,
+            tokenLength: authToken ? authToken.length : 0
+        });
+        
+        // Se não tiver token, mostrar erro e tentar obter novamente
         if (!authToken) {
-            alert('Erro: Token de autenticação não encontrado. Por favor, feche esta página e tente novamente.');
+            console.error('❌ Token não encontrado na URL nem no localStorage');
+            alert('Erro: Token de autenticação não encontrado.\n\nPor favor:\n1. Feche esta página\n2. Volte para a página de edição do formulário\n3. Clique novamente em "Personalizar Link da Portaria"');
+        } else {
+            // Salvar token no localStorage para uso futuro
+            localStorage.setItem('conectaKingToken', authToken);
+            console.log('✅ Token salvo no localStorage');
         }
         
         // Selecionar tema ativo
@@ -472,13 +484,19 @@
         document.getElementById('customize-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            // Desabilitar botão durante o salvamento
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            
             const formData = {
                 primary_color: document.getElementById('primary_color').value,
                 secondary_color: document.getElementById('secondary_color').value,
                 text_color: document.getElementById('text_color').value,
                 background_color: document.getElementById('background_color').value,
                 background_image_url: document.getElementById('background_image_url').value,
-                background_opacity: document.getElementById('background_opacity').value,
+                background_opacity: parseFloat(document.getElementById('background_opacity').value) || 1.0,
                 header_image_url: document.getElementById('header_image_url').value,
                 form_logo_url: document.getElementById('form_logo_url').value,
                 theme_portaria: document.getElementById('theme_portaria').value
@@ -491,16 +509,27 @@
                 }
                 
                 if (!authToken) {
-                    alert('Erro: Token de autenticação não encontrado. Por favor, faça login novamente.');
+                    alert('Erro: Token de autenticação não encontrado. Por favor, feche esta página e abra novamente através do botão "Personalizar Link da Portaria".');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
                     return;
                 }
+                
+                console.log('💾 Salvando personalização...', {
+                    profileItemId: profileItemId,
+                    hasToken: !!authToken,
+                    tokenLength: authToken.length
+                });
                 
                 // Determinar URL base (usar URL completa se necessário)
                 const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'https://conectaking-api.onrender.com' 
                     : '';
                 
-                const response = await fetch(`${apiBaseUrl}/api/guest-lists/${profileItemId}/customize-portaria`, {
+                const url = `${apiBaseUrl}/api/guest-lists/${profileItemId}/customize-portaria`;
+                console.log('📤 Enviando requisição PUT para:', url);
+                
+                const response = await fetch(url, {
                     method: 'PUT',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -509,17 +538,45 @@
                     body: JSON.stringify(formData)
                 });
                 
-                const data = await response.json();
-                if (data.success) {
-                    alert('Personalização salva com sucesso!');
-                    // Recarregar preview
-                    document.getElementById('preview-iframe').src = document.getElementById('preview-iframe').src;
+                console.log('📥 Resposta recebida:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    headers: Object.fromEntries(response.headers.entries())
+                });
+                
+                // Verificar se a resposta é JSON antes de fazer parse
+                const contentType = response.headers.get('content-type');
+                let data;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
                 } else {
-                    alert('Erro ao salvar: ' + (data.message || 'Erro desconhecido'));
+                    const text = await response.text();
+                    console.error('Resposta não é JSON:', text);
+                    throw new Error(`Resposta inválida do servidor: ${text.substring(0, 200)}`);
+                }
+                
+                if (response.ok && data.success) {
+                    alert('✅ Personalização salva com sucesso!');
+                    // Recarregar preview
+                    const iframe = document.getElementById('preview-iframe');
+                    if (iframe) {
+                        iframe.src = iframe.src.split('?')[0] + '?t=' + Date.now();
+                    }
+                } else {
+                    const errorMessage = data.message || data.error || 'Erro desconhecido';
+                    console.error('❌ Erro ao salvar:', data);
+                    alert('❌ Erro ao salvar: ' + errorMessage);
                 }
             } catch (error) {
-                console.error('Erro:', error);
-                alert('Erro ao salvar personalização');
+                console.error('❌ Erro ao salvar personalização:', error);
+                console.error('❌ Stack trace:', error.stack);
+                alert('❌ Erro ao salvar personalização: ' + (error.message || 'Erro de conexão. Verifique sua internet e tente novamente.'));
+            } finally {
+                // Reabilitar botão
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
             }
         });
     </script>
