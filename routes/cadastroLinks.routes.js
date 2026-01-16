@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { protectUser } = require('../middleware/auth');
+const { protectUser } = require('../middleware/protectUser');
 const { asyncHandler } = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
 
