@@ -612,6 +612,9 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
 router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
     const { slug, token } = req.params;
     
+    // LOG CRÍTICO: Confirmar que a rota está sendo chamada
+    logger.info(`🔍 [ROUTE] Rota /:slug/form/share/:token chamada - slug: "${slug}", token: "${token}"`);
+    
     const client = await db.pool.connect();
     
     try {
@@ -683,7 +686,7 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 } else {
                     // Tentar buscar apenas pelo custom_slug (sem verificar slug do usuário) para debug
                     const debugRes = await client.query(`
-                        SELECT ufl.custom_slug, ufl.token, u.profile_slug
+                        SELECT ufl.custom_slug, ufl.token, u.profile_slug, u.id as user_id
                         FROM unique_form_links ufl
                         INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
                         INNER JOIN users u ON pi.user_id = u.id
@@ -693,15 +696,59 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                     
                     logger.warn(`⚠️ [UNIQUE_LINKS] Link não encontrado com slug "${slug}". Links com custom_slug="${token}" encontrados:`, debugRes.rows);
                     
-                    return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" não existe ou não corresponde ao usuário "${slug}".</p>`);
+                    // Se encontrou links mas com slug diferente, sugerir o slug correto
+                    if (debugRes.rows.length > 0) {
+                        const foundSlug = debugRes.rows[0].profile_slug;
+                        logger.error(`❌ [UNIQUE_LINKS] Slug incorreto! Esperado: "${slug}", mas o link pertence ao usuário: "${foundSlug}"`);
+                        return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" existe, mas pertence ao usuário "${foundSlug}", não "${slug}".</p><p><strong>URL correta:</strong> /${foundSlug}/form/share/${token}</p>`);
+                    }
+                    
+                    // Verificar se a coluna custom_slug existe
+                    try {
+                        const columnCheck = await client.query(`
+                            SELECT column_name 
+                            FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'unique_form_links'
+                            AND column_name = 'custom_slug'
+                        `);
+                        
+                        if (columnCheck.rows.length === 0) {
+                            return res.status(500).send('<h1>500 - Funcionalidade não disponível</h1><p>A coluna custom_slug não existe. Execute a migration 088 primeiro.</p>');
+                        }
+                    } catch (colError) {
+                        logger.error(`❌ [UNIQUE_LINKS] Erro ao verificar coluna custom_slug:`, colError);
+                    }
+                    
+                    return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" não existe.</p><p><strong>Dica:</strong> Verifique se o link foi criado corretamente e se o slug "${slug}" está correto.</p>`);
                 }
             } catch (customSlugError) {
                 // Se erro for de coluna não existe
                 if (customSlugError.code === '42703' || customSlugError.message.includes('custom_slug')) {
-                    logger.error(`❌ [UNIQUE_LINKS] Coluna custom_slug não existe. Execute a migration 088 primeiro.`);
-                    return res.status(500).send('<h1>500 - Erro de configuração</h1><p>A funcionalidade de links personalizados não está disponível. Execute a migration 088.</p>');
+                    logger.error(`❌ [UNIQUE_LINKS] Coluna custom_slug não existe. Execute a migration 088 primeiro.`, {
+                        error: customSlugError.message,
+                        code: customSlugError.code,
+                        slug,
+                        token
+                    });
+                    return res.status(500).send(`
+                        <h1>500 - Erro de configuração</h1>
+                        <p>A funcionalidade de links personalizados não está disponível.</p>
+                        <p><strong>Passos para corrigir:</strong></p>
+                        <ol>
+                            <li>Execute a migration 088: <code>psql -U seu_usuario -d seu_banco -f migrations/088_add_custom_slug_to_unique_form_links.sql</code></li>
+                            <li>Reinicie o servidor</li>
+                            <li>Tente acessar o link novamente</li>
+                        </ol>
+                    `);
                 } else {
-                    logger.error(`❌ [UNIQUE_LINKS] Erro ao buscar por custom_slug:`, customSlugError);
+                    logger.error(`❌ [UNIQUE_LINKS] Erro ao buscar por custom_slug:`, {
+                        error: customSlugError.message,
+                        code: customSlugError.code,
+                        stack: customSlugError.stack,
+                        slug,
+                        token
+                    });
                     throw customSlugError;
                 }
             }
