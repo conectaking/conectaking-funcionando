@@ -217,6 +217,7 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         }
 
         // PRIORIDADE 3: Tentar pelo custom_slug (links únicos personalizados)
+        // Funciona da mesma forma que cadastro_slug - SEM validação de expiração/uso, apenas busca e renderiza
         // Só tenta se o token NÃO começa com "unique_" (para evitar conflito)
         if ((!itemRes || itemRes.rows.length === 0) && !token.startsWith('unique_')) {
             try {
@@ -224,31 +225,26 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
                     SELECT ufl.*, pi.*
                     FROM unique_form_links ufl
                     INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                    WHERE ufl.custom_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
+                    WHERE ufl.custom_slug = $1 
+                    AND ufl.status = 'active'
+                    AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
+                    AND pi.is_active = true
                 `, [token]);
                 
                 if (customSlugRes.rows.length > 0) {
                     uniqueLinkData = customSlugRes.rows[0];
-                    // Validar o link único
-                    const validationResult = await client.query(
-                        'SELECT is_unique_link_valid($1) as is_valid',
-                        [uniqueLinkData.token]
-                    );
-                    
-                    if (validationResult.rows[0].is_valid) {
-                        itemRes = {
-                            rows: [{
-                                id: uniqueLinkData.profile_item_id,
-                                user_id: uniqueLinkData.user_id,
-                                item_type: uniqueLinkData.item_type,
-                                is_active: uniqueLinkData.is_active,
-                                share_token: uniqueLinkData.share_token
-                            }]
-                        };
-                        logger.info(`🔗 [UNIQUE_LINKS] Formulário encontrado via custom_slug: "${token}" (slug personalizado), token real: ${uniqueLinkData.token}, itemId: ${uniqueLinkData.profile_item_id}`);
-                    } else {
-                        logger.warn(`⚠️ [UNIQUE_LINKS] Link único encontrado via custom_slug mas inválido: ${token}`);
-                    }
+                    // NÃO validar expiração ou limite de uso - funciona como cadastro_slug (sempre ativo)
+                    // Apenas verificar se status é 'active'
+                    itemRes = {
+                        rows: [{
+                            id: uniqueLinkData.profile_item_id,
+                            user_id: uniqueLinkData.user_id,
+                            item_type: uniqueLinkData.item_type,
+                            is_active: uniqueLinkData.is_active,
+                            share_token: uniqueLinkData.share_token
+                        }]
+                    };
+                    logger.info(`🔗 [UNIQUE_LINKS] Formulário encontrado via custom_slug: "${token}" (slug personalizado), token real: ${uniqueLinkData.token}, itemId: ${uniqueLinkData.profile_item_id}`);
                 }
             } catch (customSlugError) {
                 // Se erro for de coluna não existe, apenas logar e continuar
@@ -660,6 +656,7 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                     INNER JOIN users u ON pi.user_id = u.id
                     WHERE ufl.custom_slug = $1 
                     AND u.profile_slug = $2 
+                    AND ufl.status = 'active'
                     AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
                     AND pi.is_active = true
                 `, [token, slug]);
@@ -668,25 +665,18 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 
                 if (customLinkRes.rows.length > 0) {
                     const linkData = customLinkRes.rows[0];
-                    logger.info(`✅ [UNIQUE_LINKS] Link encontrado via custom_slug: token=${linkData.token}, custom_slug=${linkData.custom_slug}, expires_at=${linkData.expires_at}`);
+                    logger.info(`✅ [UNIQUE_LINKS] Link encontrado via custom_slug: token=${linkData.token}, custom_slug=${linkData.custom_slug}, expires_at=${linkData.expires_at}, status=${linkData.status}`);
                     
-                    // Validar se o link único é válido
-                    const validationResult = await client.query(
-                        'SELECT is_unique_link_valid($1) as is_valid',
-                        [linkData.token]
-                    );
-                    
-                    const isValid = validationResult.rows[0].is_valid;
-                    logger.info(`🔍 [UNIQUE_LINKS] Validação do link: ${isValid ? 'VÁLIDO' : 'INVÁLIDO'}`);
-                    
-                    if (isValid) {
+                    // NÃO validar expiração ou limite de uso - funciona como cadastro_slug
+                    // Apenas verificar se status é 'active' (já verificado na query)
+                    if (linkData.status === 'active') {
                         actualToken = linkData.token; // Usar o token real para processar
-                        logger.info(`✅ [UNIQUE_LINKS] Usando token real: ${actualToken}`);
+                        logger.info(`✅ [UNIQUE_LINKS] Link ativo, usando token real: ${actualToken}`);
                     } else {
-                        logger.warn(`⚠️ [UNIQUE_LINKS] Link encontrado mas inválido: ${linkData.token}`);
+                        logger.warn(`⚠️ [UNIQUE_LINKS] Link encontrado mas com status '${linkData.status}' (não 'active')`);
                         return res.status(400).render('formError', {
                             title: 'Link Indisponível',
-                            message: 'Este link expirou ou já foi utilizado.',
+                            message: 'Este link foi desativado.',
                             errorCode: 'UNIQUE_LINK_INVALID'
                         });
                     }
@@ -880,26 +870,18 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                     [actualToken]
                 );
                 
-                if (!validationResult.rows[0].is_valid) {
-                    // Link foi usado completamente ou expirado
-                    let reason = 'Este link já foi usado completamente ou expirado.';
-                    let title = 'Link Indisponível';
-                    
-                    if (uniqueLinkData.current_uses >= uniqueLinkData.max_uses) {
-                        reason = `Este link já foi usado ${uniqueLinkData.max_uses} vez(es) e atingiu o limite máximo de usos.`;
-                        title = 'Link já foi usado';
-                    } else if (uniqueLinkData.status === 'expired') {
-                        reason = 'Este link expirou.';
-                        title = 'Link expirado';
-                    }
-                    
+                // NÃO validar limite de uso - links únicos agora funcionam como cadastro_slug (ilimitados)
+                // Apenas verificar se status é 'active' (já verificado na query acima)
+                // A validação de expiração pode ser mantida, mas não bloqueia o acesso
+                if (uniqueLinkData.status !== 'active') {
                     client.release();
                     return res.status(400).render('formError', {
-                        title: title,
-                        message: reason,
+                        title: 'Link Indisponível',
+                        message: 'Este link foi desativado.',
                         errorCode: 'UNIQUE_LINK_INVALID'
                     });
                 }
+                // Se status é 'active', continuar mesmo se expirou ou foi usado - funciona como cadastro_slug
             }
         } catch (uniqueError) {
             logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao buscar dados do link único:`, uniqueError);

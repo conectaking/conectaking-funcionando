@@ -26,7 +26,8 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
         return res.status(401).json({ error: 'Usuário não autenticado corretamente' });
     }
 
-    const { description, expiresInHours = null, expiresInMinutes = null, maxUses = 1, customSlug = null } = req.body;
+    // maxUses padrão: null = ilimitado (não verifica limite de uso)
+    const { description, expiresInHours = null, expiresInMinutes = null, maxUses = null, customSlug = null } = req.body;
     
     // Calcular expiresInHours se for fornecido em minutos ou horas
     // Se ambos forem null/undefined, link será criado SEM expiração
@@ -50,8 +51,10 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
         return res.status(400).json({ error: 'itemId é obrigatório' });
     }
 
-    if (maxUses < 1) {
-        return res.status(400).json({ error: 'maxUses deve ser pelo menos 1' });
+    // maxUses null/undefined = ilimitado (não verifica limite)
+    // Se fornecido, deve ser pelo menos 1
+    if (maxUses !== null && maxUses !== undefined && maxUses < 1) {
+        return res.status(400).json({ error: 'maxUses deve ser pelo menos 1, ou null para ilimitado' });
     }
 
     // Se validade for fornecida, validar
@@ -224,8 +227,11 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
     }
     
     // Inserir link único no banco
+    // max_uses null = ilimitado (não verifica limite de uso)
+    // Se maxUses for null/undefined, usar um valor muito alto (999999) para representar "ilimitado"
+    const finalMaxUses = maxUses === null || maxUses === undefined ? 999999 : maxUses;
     const insertFields = ['profile_item_id', 'token', 'description', 'expires_at', 'max_uses', 'created_by_user_id'];
-    const insertValues = [itemId, token, description || null, expiresAt, maxUses, userId];
+    const insertValues = [itemId, token, description || null, expiresAt, finalMaxUses, userId];
     
     if (hasCustomSlugColumn && finalCustomSlug !== null) {
         insertFields.push('custom_slug');
