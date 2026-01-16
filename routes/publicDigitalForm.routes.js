@@ -2111,6 +2111,54 @@ router.post('/:slug/form/:itemId/submit',
             // IMPORTANTE: Mostrar QR code e informações do evento se enable_guest_list_submit estiver ativo OU se tiver guest_id e qr_token
             const shouldShowGuestListInfo = enableGuestListSubmit || (response_guest_id && response_qr_token);
             
+            // Determinar URL do formulário para botão "Preencher Novamente"
+            // Mesma lógica da rota GET /success acima
+            let formUrlForSubmit = null;
+            const refererSubmit = req.headers.referer || req.headers.referrer || '';
+            
+            if (refererSubmit && refererSubmit.includes('/form/share/')) {
+                try {
+                    const refererUrl = new URL(refererSubmit);
+                    const refererPath = refererUrl.pathname.replace(/\/success.*$/, '');
+                    formUrlForSubmit = refererPath;
+                    logger.info(`✅ [SUBMIT] Usando URL do referer (link personalizado): ${formUrlForSubmit}`);
+                } catch (urlError) {
+                    logger.warn(`⚠️ [SUBMIT] Erro ao parsear referer URL:`, urlError.message);
+                }
+            }
+            
+            // Se não encontrou no referer, buscar link ativo no banco
+            if (!formUrlForSubmit) {
+                try {
+                    const guestListItemRes = await client.query(
+                        'SELECT id FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
+                        [itemIdInt]
+                    );
+                    
+                    if (guestListItemRes.rows.length > 0) {
+                        const guestListItemId = guestListItemRes.rows[0].id;
+                        
+                        const activeLinkRes = await client.query(
+                            `SELECT slug FROM cadastro_links 
+                             WHERE guest_list_item_id = $1 
+                             AND is_active_for_profile = TRUE 
+                             AND (expires_at IS NULL OR expires_at > NOW())
+                             AND (max_uses = 999999 OR current_uses < max_uses)
+                             LIMIT 1`,
+                            [guestListItemId]
+                        );
+                        
+                        if (activeLinkRes.rows.length > 0) {
+                            const activeLinkSlug = activeLinkRes.rows[0].slug;
+                            formUrlForSubmit = `/${slug}/form/share/${activeLinkSlug}`;
+                            logger.info(`✅ [SUBMIT] Link ativo encontrado: ${formUrlForSubmit}`);
+                        }
+                    }
+                } catch (linkError) {
+                    logger.warn(`⚠️ [SUBMIT] Erro ao buscar link ativo:`, linkError.message);
+                }
+            }
+            
             return res.render('formSuccess', {
                 message: 'Obrigado por preencher o formulário. Sua resposta foi registrada com sucesso.',
                 responseId: result && result.rows && result.rows[0] ? result.rows[0].id : null,
@@ -2123,7 +2171,7 @@ router.post('/:slug/form/:itemId/submit',
                 eventTitle: eventData?.event_title || formData.form_title || 'Evento',
                 eventDate: eventData?.event_date || eventData?.form_event_date || null,
                 eventAddress: eventData?.event_location || eventData?.event_address || null,
-                formUrl: `/${slug}/form/${itemId}`,
+                formUrl: formUrlForSubmit, // Usar link personalizado ou null
                 primaryColor: formData.primary_color || '#4A90E2',
                 secondaryColor: formData.secondary_color || formData.primary_color || '#6BA3F0',
                 autoRedirect: false
@@ -2479,6 +2527,76 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             hasQrToken: !!qrToken
         });
         
+        // Determinar URL do formulário para botão "Preencher Novamente"
+        // PRIORIDADE 1: Usar referer se for um link personalizado (contém /form/share/)
+        let formUrl = null;
+        const referer = req.headers.referer || req.headers.referrer || '';
+        
+        if (referer && referer.includes('/form/share/')) {
+            // Extrair URL do link personalizado do referer
+            try {
+                const refererUrl = new URL(referer);
+                // Pegar caminho completo do referer (incluindo /form/share/slug)
+                const refererPath = refererUrl.pathname;
+                // Remover /success se estiver no caminho
+                const cleanPath = refererPath.replace(/\/success.*$/, '');
+                formUrl = cleanPath;
+                logger.info(`✅ [SUCCESS] Usando URL do referer (link personalizado): ${formUrl}`);
+            } catch (urlError) {
+                logger.warn(`⚠️ [SUCCESS] Erro ao parsear referer URL:`, urlError.message);
+            }
+        }
+        
+        // PRIORIDADE 2: Se não encontrou no referer, buscar link ativo no banco
+        if (!formUrl) {
+            try {
+                const guestListItemRes = await client.query(
+                    'SELECT id FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
+                    [itemIdInt]
+                );
+                
+                if (guestListItemRes.rows.length > 0) {
+                    const guestListItemId = guestListItemRes.rows[0].id;
+                    
+                    const activeLinkRes = await client.query(
+                        `SELECT slug FROM cadastro_links 
+                         WHERE guest_list_item_id = $1 
+                         AND is_active_for_profile = TRUE 
+                         AND (expires_at IS NULL OR expires_at > NOW())
+                         AND (max_uses = 999999 OR current_uses < max_uses)
+                         LIMIT 1`,
+                        [guestListItemId]
+                    );
+                    
+                    if (activeLinkRes.rows.length > 0) {
+                        const activeLinkSlug = activeLinkRes.rows[0].slug;
+                        formUrl = `/${slug}/form/share/${activeLinkSlug}`;
+                        logger.info(`✅ [SUCCESS] Link ativo encontrado: ${formUrl}`);
+                    }
+                }
+            } catch (linkError) {
+                logger.warn(`⚠️ [SUCCESS] Erro ao buscar link ativo:`, linkError.message);
+            }
+        }
+        
+        // PRIORIDADE 3: Se não encontrou link ativo, usar referer completo como fallback
+        if (!formUrl && referer) {
+            try {
+                const refererUrl = new URL(referer);
+                const refererPath = refererUrl.pathname.replace(/\/success.*$/, '');
+                if (refererPath && refererPath !== '/' && refererPath.includes('/form/')) {
+                    formUrl = refererPath;
+                    logger.info(`✅ [SUCCESS] Usando referer como fallback: ${formUrl}`);
+                }
+            } catch (urlError) {
+                // Ignorar erro
+            }
+        }
+        
+        // PRIORIDADE 4: Último recurso - não mostrar botão se não houver link válido
+        // (melhor que redirecionar para link que não existe)
+        // formUrl permanece null se não encontrou nenhuma opção válida
+        
         res.render('formSuccess', {
             message: successMessage,
             responseId: response_id || null,
@@ -2491,7 +2609,7 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             eventTitle: eventData?.event_title || formData.form_title || 'Evento',
             eventDate: eventData?.event_date || null,
             eventAddress: eventData?.event_location || eventData?.event_address || null,
-            formUrl: `/${slug}/form/${itemId}`,
+            formUrl: formUrl, // Pode ser null se não encontrou link válido
             primaryColor: formData.primary_color || '#4A90E2',
             secondaryColor: formData.secondary_color || formData.primary_color || '#6BA3F0',
             backgroundColor: formData.background_color || '#FFFFFF',
