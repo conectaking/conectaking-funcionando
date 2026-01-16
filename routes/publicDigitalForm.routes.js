@@ -516,49 +516,8 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
     try {
         let actualToken = token;
         let itemRes = null;
-        let uniqueLinkData = null;
         
-        // PRIORIDADE 1: Se o token começa com "unique_", buscar por token diretamente
-        if (token && token.startsWith('unique_')) {
-            const uniqueLinkRes = await client.query(`
-                SELECT ufl.*, pi.*, u.profile_slug
-                FROM unique_form_links ufl
-                INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                INNER JOIN users u ON pi.user_id = u.id
-                WHERE ufl.token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
-            `, [token]);
-            
-            if (uniqueLinkRes.rows.length > 0) {
-                const linkData = uniqueLinkRes.rows[0];
-                logger.info(`🔍 [UNIQUE_LINKS] Link único encontrado no banco: token=${token}, slug_esperado="${slug}", slug_encontrado="${linkData.profile_slug}"`);
-                
-                // Verificar se o slug corresponde ao do usuário
-                if (linkData.profile_slug === slug) {
-                    actualToken = token; // Token correto já encontrado
-                    uniqueLinkData = linkData; // Armazenar dados do unique_link
-                    // Preparar itemRes para processamento abaixo
-                    itemRes = {
-                        rows: [{
-                            id: linkData.profile_item_id,
-                            user_id: linkData.user_id,
-                            item_type: linkData.item_type,
-                            is_active: linkData.is_active,
-                            share_token: linkData.share_token
-                        }]
-                    };
-                    logger.info(`✅ [UNIQUE_LINKS] Link único encontrado e validado via /:slug/form/share/:token: token=${token}, itemId=${linkData.profile_item_id}, slug=${linkData.profile_slug}`);
-                } else {
-                    logger.warn(`⚠️ [UNIQUE_LINKS] Link encontrado mas slug não corresponde: esperado="${slug}", encontrado="${linkData.profile_slug}"`);
-                    return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link não corresponde a este usuário. URL correta: <a href="https://conectaking.com.br/${linkData.profile_slug}/form/share/${token}">https://conectaking.com.br/${linkData.profile_slug}/form/share/${token}</a></p>`);
-                }
-            } else {
-                logger.warn(`⚠️ [UNIQUE_LINKS] Link único NÃO encontrado no banco: token=${token}, slug="${slug}"`);
-                // Se não encontrou e o token começa com "unique_", retornar 404
-                // Porque não faz sentido tentar outras prioridades para tokens unique_
-                return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link único "${token}" não existe ou foi removido.</p><p><strong>Debug:</strong> Verifique se o link foi criado corretamente no banco de dados.</p>`);
-            }
-        } else {
-            // PRIORIDADE 2: Buscar por cadastro_slug (MESMO comportamento da rota /form/share/:token)
+        // PRIORIDADE 1: Buscar por cadastro_slug (MESMO comportamento da rota /form/share/:token)
             // Isso permite que links como /adrianokigg/form/share/adriano funcionem
             logger.info(`🔍 [CADASTRO_SLUG] Buscando por cadastro_slug: "${token}", slug: "${slug}"`);
             
@@ -592,179 +551,13 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 logger.warn(`⚠️ [CADASTRO_SLUG] Erro ao buscar cadastro_slug:`, cadastroError);
             }
             
-            // Se ainda não encontrou, não há mais opções
-            if (!itemRes || itemRes.rows.length === 0) {
-                try {
-                        // Buscar custom_slug SEM verificar slug do usuário primeiro (como cadastro_slug)
-                        // Se encontrar, então verificar se o slug corresponde
-                        const customLinkRes = await client.query(`
-                            SELECT ufl.*, pi.*, u.profile_slug
-                            FROM unique_form_links ufl
-                            INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                            INNER JOIN users u ON pi.user_id = u.id
-                            WHERE ufl.custom_slug = $1 
-                            AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
-                            AND pi.is_active = true
-                        `, [token]);
-                        
-                        logger.info(`🔍 [UNIQUE_LINKS] Resultado da busca por custom_slug (sem verificar slug): ${customLinkRes.rows.length} resultado(s)`);
-                        
-                        // Se encontrou, verificar se o slug corresponde ao esperado
-                        if (customLinkRes.rows.length > 0) {
-                            const foundLink = customLinkRes.rows[0];
-                            
-                            // Verificar se o slug do link encontrado corresponde ao slug na URL
-                            if (foundLink.profile_slug === slug) {
-                                // Slug corresponde - usar o link
-                                const linkData = foundLink;
-                                logger.info(`✅ [UNIQUE_LINKS] Link encontrado via custom_slug com slug correspondente: token=${linkData.token}, custom_slug=${linkData.custom_slug}, slug=${linkData.profile_slug}`);
-                                
-                                // NÃO validar expiração, limite de uso ou status - funciona como cadastro_slug
-                                actualToken = linkData.token; // Usar o token real para processar
-                                logger.info(`✅ [UNIQUE_LINKS] Link encontrado e ativo, usando token real: ${actualToken} (status: ${linkData.status})`);
-                            } else {
-                                // Link encontrado mas slug não corresponde
-                                logger.warn(`⚠️ [UNIQUE_LINKS] Link encontrado mas slug não corresponde: esperado="${slug}", encontrado="${foundLink.profile_slug}"`);
-                                return res.status(404).send(`
-                                    <h1>404 - Link não encontrado</h1>
-                                    <p>O link personalizado "<strong>${token}</strong>" existe, mas pertence ao usuário "<strong>${foundLink.profile_slug}</strong>", não "<strong>${slug}</strong>".</p>
-                                    <p><strong>URL correta:</strong> https://conectaking.com.br/${foundLink.profile_slug}/form/share/${token}</p>
-                                `);
-                            }
-                        } else {
-                            // Tentar buscar apenas pelo custom_slug (sem verificar slug do usuário) para debug
-                            const debugRes = await client.query(`
-                                SELECT ufl.custom_slug, ufl.token, u.profile_slug, u.id as user_id
-                                FROM unique_form_links ufl
-                                INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                                INNER JOIN users u ON pi.user_id = u.id
-                                WHERE ufl.custom_slug = $1
-                                LIMIT 5
-                            `, [token]);
-                            
-                            logger.warn(`⚠️ [UNIQUE_LINKS] Link não encontrado com slug "${slug}". Links com custom_slug="${token}" encontrados:`, debugRes.rows);
-                            
-                            // Se encontrou links mas com slug diferente, sugerir o slug correto
-                            if (debugRes.rows.length > 0) {
-                                const foundSlug = debugRes.rows[0].profile_slug;
-                                logger.error(`❌ [UNIQUE_LINKS] Slug incorreto! Esperado: "${slug}", mas o link pertence ao usuário: "${foundSlug}"`);
-                                return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" existe, mas pertence ao usuário "${foundSlug}", não "${slug}".</p><p><strong>URL correta:</strong> /${foundSlug}/form/share/${token}</p>`);
-                            }
-                            
-                            // Verificar se a coluna custom_slug existe
-                            try {
-                                const columnCheck = await client.query(`
-                                    SELECT column_name 
-                                    FROM information_schema.columns 
-                                    WHERE table_schema = 'public' 
-                                    AND table_name = 'unique_form_links'
-                                    AND column_name = 'custom_slug'
-                                `);
-                                
-                                if (columnCheck.rows.length === 0) {
-                                    return res.status(500).send('<h1>500 - Funcionalidade não disponível</h1><p>A coluna custom_slug não existe. Execute a migration 088 primeiro.</p>');
-                                }
-                            } catch (colError) {
-                                logger.error(`❌ [UNIQUE_LINKS] Erro ao verificar coluna custom_slug:`, colError);
-                            }
-                            
-                            // Log detalhado para diagnóstico
-                            logger.error(`❌ [UNIQUE_LINKS] Link personalizado não encontrado - custom_slug: "${token}", slug: "${slug}"`);
-                            logger.error(`❌ [UNIQUE_LINKS] Verificando se há algum problema com a tabela ou a busca...`);
-                            
-                            // Tentar buscar todos os links únicos deste usuário para debug
-                            try {
-                                const userCheck = await client.query(`
-                                    SELECT u.id, u.profile_slug 
-                                    FROM users u 
-                                    WHERE u.profile_slug = $1 OR u.id::text = $1
-                                    LIMIT 1
-                                `, [slug]);
-                                
-                                if (userCheck.rows.length > 0) {
-                                    const userId = userCheck.rows[0].id;
-                                    const userSlug = userCheck.rows[0].profile_slug;
-                                    logger.info(`ℹ️ [UNIQUE_LINKS] Usuário encontrado: id=${userId}, profile_slug="${userSlug}"`);
-                                    
-                                    // Buscar todos os links únicos deste usuário
-                                    const allLinksRes = await client.query(`
-                                        SELECT ufl.custom_slug, ufl.token, u.profile_slug, pi.id as item_id
-                                        FROM unique_form_links ufl
-                                        INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                                        INNER JOIN users u ON pi.user_id = u.id
-                                        WHERE u.id = $1 OR u.id::text = $1
-                                        ORDER BY ufl.created_at DESC
-                                        LIMIT 10
-                                    `, [userId]);
-                                    
-                                    logger.info(`ℹ️ [UNIQUE_LINKS] Links únicos do usuário "${userSlug}":`, allLinksRes.rows.map(r => ({
-                                        custom_slug: r.custom_slug,
-                                        token: r.token ? r.token.substring(0, 20) + '...' : null,
-                                        profile_slug: r.profile_slug
-                                    })));
-                                    
-                                    return res.status(404).send(`
-                                        <h1>404 - Link não encontrado</h1>
-                                        <p>O link personalizado "<strong>${token}</strong>" não existe para o usuário "<strong>${slug}</strong>".</p>
-                                        <p><strong>Usuário encontrado:</strong> ${userSlug} (ID: ${userId})</p>
-                                        <p><strong>Links únicos do usuário:</strong> ${allLinksRes.rows.length} encontrado(s)</p>
-                                        <p><strong>Dica:</strong> Verifique se:</p>
-                                        <ul>
-                                            <li>O link foi criado corretamente com o custom_slug "${token}"</li>
-                                            <li>O slug do usuário no banco é "${userSlug}" (não "${slug}")</li>
-                                            <li>A migration 088 foi executada (para adicionar a coluna custom_slug)</li>
-                                        </ul>
-                                    `);
-                                } else {
-                                    return res.status(404).send(`
-                                        <h1>404 - Usuário não encontrado</h1>
-                                        <p>O usuário com slug "<strong>${slug}</strong>" não existe.</p>
-                                    `);
-                                }
-                            } catch (debugError) {
-                                logger.error(`❌ [UNIQUE_LINKS] Erro ao fazer debug:`, debugError);
-                            }
-                            
-                            return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" não existe.</p><p><strong>Dica:</strong> Verifique se o link foi criado corretamente e se o slug "${slug}" está correto.</p>`);
-                        }
-                    } catch (customSlugError) {
-                        // Se erro for de coluna não existe
-                        if (customSlugError.code === '42703' || customSlugError.message.includes('custom_slug')) {
-                            logger.error(`❌ [UNIQUE_LINKS] Coluna custom_slug não existe. Execute a migration 088 primeiro.`, {
-                                error: customSlugError.message,
-                                code: customSlugError.code,
-                                slug,
-                                token
-                            });
-                            return res.status(500).send(`
-                                <h1>500 - Erro de configuração</h1>
-                                <p>A funcionalidade de links personalizados não está disponível.</p>
-                                <p><strong>Passos para corrigir:</strong></p>
-                                <ol>
-                                    <li>Execute a migration 088: <code>psql -U seu_usuario -d seu_banco -f migrations/088_add_custom_slug_to_unique_form_links.sql</code></li>
-                                    <li>Reinicie o servidor</li>
-                                    <li>Tente acessar o link novamente</li>
-                                </ol>
-                            `);
-                        } else {
-                            logger.error(`❌ [UNIQUE_LINKS] Erro ao buscar por custom_slug:`, {
-                                error: customSlugError.message,
-                                code: customSlugError.code,
-                                stack: customSlugError.stack,
-                                slug,
-                                token
-                            });
-                            throw customSlugError;
-                        }
-                    }
-                }
             }
         
         // IMPORTANTE: Processar diretamente usando a mesma lógica da rota /form/share/:token
         // Isso mantém o slug na URL e evita redirecionamento
         logger.info(`🔗 [ROUTE] Processando link via /:slug/form/share/:token, token: ${actualToken}, slug: ${slug}, itemRes já definido: ${!!itemRes}`);
         
-        // Se itemRes já foi definido (por unique_ ou cadastro_slug ou custom_slug acima), usar diretamente
+        // Se itemRes já foi definido (por cadastro_slug acima), usar diretamente
         // Caso contrário, buscar dados do item usando actualToken
         if (!itemRes || !itemRes.rows || itemRes.rows.length === 0) {
             logger.info(`🔍 [ROUTE] itemRes não encontrado, buscando por actualToken: ${actualToken}`);
@@ -777,30 +570,7 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 [actualToken]
             );
             
-            // PRIORIDADE 2: Tentar buscar por unique_form_links (se actualToken foi definido por custom_slug)
-            if (!itemRes || itemRes.rows.length === 0) {
-                const uniqueRes = await client.query(`
-                    SELECT ufl.*, pi.*
-                    FROM unique_form_links ufl
-                    INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                    WHERE ufl.token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
-                `, [actualToken]);
-                
-                if (uniqueRes.rows.length > 0) {
-                    uniqueLinkData = uniqueRes.rows[0];
-                    itemRes = {
-                        rows: [{
-                            id: uniqueLinkData.profile_item_id,
-                            user_id: uniqueLinkData.user_id,
-                            item_type: uniqueLinkData.item_type,
-                            is_active: uniqueLinkData.is_active,
-                            share_token: uniqueLinkData.share_token
-                        }]
-                    };
-                }
-            }
-            
-            // PRIORIDADE 3: Tentar buscar por cadastro_slug (pode ser que actualToken seja cadastro_slug)
+            // PRIORIDADE 2: Tentar buscar por cadastro_slug (pode ser que actualToken seja cadastro_slug)
             if (!itemRes || itemRes.rows.length === 0) {
                 const cadastroRes = await client.query(`
                     SELECT pi.* 
@@ -824,7 +594,7 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         }
         
         const item = itemRes.rows[0];
-        // Extrair userId e itemId corretamente (pode vir de unique_form_links join ou profile_items)
+        // Extrair userId e itemId corretamente
         let finalUserId = item.user_id;
         const itemIdInt = item.profile_item_id || item.id;
         const isGuestList = item.item_type === 'guest_list';
@@ -842,27 +612,6 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>Dados incompletos para carregar o formulário.</p>');
         }
         
-        // Se uniqueLinkData ainda não foi definido, tentar buscar novamente (pode ser que tenha vindo de cadastro_slug)
-        if (!uniqueLinkData && actualToken !== token) {
-            try {
-                const uniqueRes = await client.query(`
-                    SELECT * FROM unique_form_links WHERE token = $1
-                `, [actualToken]);
-                
-                if (uniqueRes.rows.length > 0) {
-                    uniqueLinkData = uniqueRes.rows[0];
-                    logger.info(`✅ [UNIQUE_LINKS] Link único encontrado após processamento: token=${actualToken}, status=${uniqueLinkData.status}`);
-                }
-            } catch (uniqueError) {
-                logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao buscar dados do link único:`, uniqueError);
-            }
-        }
-        
-        // Armazenar dados do unique_link para usar após cadastro (sistema separado)
-        if (uniqueLinkData) {
-            res.locals.uniqueLinkToken = actualToken;
-            res.locals.uniqueLinkData = uniqueLinkData;
-        }
         
         // Continuar com a lógica normal de renderização do formulário
         // Buscar dados do formulário com verificação de colunas
@@ -1005,7 +754,7 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         try {
             sanitizedFormData = sanitizeFormDataForRender(formData);
         } catch (e) {
-            logger.warn('⚠️ [UNIQUE_LINKS] Erro ao sanitizar dados:', e);
+            logger.warn('⚠️ Erro ao sanitizar dados:', e);
             sanitizedFormData = formData;
         }
         
@@ -1031,7 +780,7 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         });
         
     } catch (error) {
-        logger.error('Erro ao processar link único personalizado:', {
+        logger.error('Erro ao processar link personalizado:', {
             error: error.message,
             slug,
             token,
@@ -2081,45 +1830,6 @@ router.post('/:slug/form/:itemId/submit',
             }
         }
         
-        // IMPORTANTE: Marcar link único como usado APÓS cadastro bem-sucedido (sistema separado - será removido)
-        // Buscar token único do payload ou do referer
-        let uniqueToken = req.body.unique_token || null;
-        
-        // Se não veio no payload, tentar extrair do referer
-        if (!uniqueToken) {
-            if (referer.includes('/form/share/')) {
-                const tokenMatch = referer.match(/\/form\/share\/([^\/\?]+)/);
-                if (tokenMatch && tokenMatch[1] && tokenMatch[1].startsWith('unique_')) {
-                    uniqueToken = tokenMatch[1];
-                    logger.info(`🔗 [UNIQUE_LINKS] Token único detectado no referer: ${uniqueToken}`);
-                }
-            }
-        } else {
-            logger.info(`🔗 [UNIQUE_LINKS] Token único recebido no payload: ${uniqueToken}`);
-        }
-        
-        if (uniqueToken && uniqueToken.startsWith('unique_')) {
-            try {
-                // Usar guest_id se disponível, senão usar responseId
-                const linkGuestId = response_guest_id || (result && result.rows && result.rows[0] ? result.rows[0].guest_id : null);
-                
-                const markUsedResult = await client.query(
-                    'SELECT mark_unique_link_as_used($1, $2) as success',
-                    [uniqueToken, linkGuestId]
-                );
-
-                const marked = markUsedResult.rows[0].success;
-                
-                if (marked) {
-                    logger.info(`✅ [UNIQUE_LINKS] Link único marcado como usado: ${uniqueToken}, guestId: ${linkGuestId}`);
-                } else {
-                    logger.warn(`⚠️ [UNIQUE_LINKS] Link único não pôde ser marcado como usado (já usado?): ${uniqueToken}`);
-                }
-            } catch (linkError) {
-                logger.error(`❌ [UNIQUE_LINKS] Erro ao marcar link único como usado: ${uniqueToken}`, linkError);
-                // Não falhar a requisição se marcar link falhar
-            }
-        }
 
         // Registrar evento 'submit' de analytics
         const user_ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for']?.split(',')[0];

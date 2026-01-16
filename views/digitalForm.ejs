@@ -1945,17 +1945,6 @@
             let submitSuccess = false;
             let responseId = null;
             
-            // IMPORTANTE: Extrair token único da URL se existir (sistema separado)
-            const currentUrl = window.location.href;
-            let uniqueToken = null;
-            if (currentUrl.includes('/form/share/')) {
-                const tokenMatch = currentUrl.match(/\/form\/share\/([^\/\?]+)/);
-                if (tokenMatch && tokenMatch[1] && tokenMatch[1].startsWith('unique_')) {
-                    uniqueToken = tokenMatch[1];
-                    console.log('🔗 [UNIQUE_LINKS] Token único detectado na URL:', uniqueToken);
-                }
-            }
-            
             const submitUrl = `/${slug}/form/${itemId}/submit`;
             
             // IMPORTANTE: Garantir que valores vazios sejam null, não strings vazias
@@ -1963,24 +1952,12 @@
             const finalEmail = (extractedEmail || data.email || '').trim();
             const finalPhone = (extractedPhone || data.phone || '').trim();
             
-            // IMPORTANTE: Extrair token único da URL se existir (sistema separado)
-            const currentUrl = window.location.href;
-            let uniqueToken = null;
-            if (currentUrl.includes('/form/share/')) {
-                const tokenMatch = currentUrl.match(/\/form\/share\/([^\/\?]+)/);
-                if (tokenMatch && tokenMatch[1] && tokenMatch[1].startsWith('unique_')) {
-                    uniqueToken = tokenMatch[1];
-                    console.log('🔗 [UNIQUE_LINKS] Token único detectado na URL:', uniqueToken);
-                }
-            }
-            
             const submitPayload = {
                 response_data: responseData,
                 responder_name: finalName.length >= 2 ? finalName : null,
                 responder_email: finalEmail.length > 0 && finalEmail.includes('@') ? finalEmail : null,
                 responder_phone: finalPhone.length > 0 ? finalPhone : null,
                 session_id: sessionId,
-                unique_token: uniqueToken // Adicionar token único ao payload (sistema separado)
             };
             
             console.log('📤 [SUBMIT] Payload final antes de enviar:', {
@@ -1991,13 +1968,6 @@
                 responder_name_length: submitPayload.responder_name ? submitPayload.responder_name.length : 0
             });
             
-            // Adicionar token único ao payload se existir (sistema separado)
-            const submitPayload = {
-                url: submitUrl,
-                payload: submitPayload,
-                enableGuestListSubmit,
-                enableWhatsapp
-            });
             
             try {
                 // IMPORTANTE: Adicionar timeout para evitar que o formulário fique travado
