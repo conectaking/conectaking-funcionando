@@ -226,7 +226,6 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
                     FROM unique_form_links ufl
                     INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
                     WHERE ufl.custom_slug = $1 
-                    AND ufl.status = 'active'
                     AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
                     AND pi.is_active = true
                 `, [token]);
@@ -656,7 +655,6 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                     INNER JOIN users u ON pi.user_id = u.id
                     WHERE ufl.custom_slug = $1 
                     AND u.profile_slug = $2 
-                    AND ufl.status = 'active'
                     AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
                     AND pi.is_active = true
                 `, [token, slug]);
@@ -667,19 +665,10 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                     const linkData = customLinkRes.rows[0];
                     logger.info(`✅ [UNIQUE_LINKS] Link encontrado via custom_slug: token=${linkData.token}, custom_slug=${linkData.custom_slug}, expires_at=${linkData.expires_at}, status=${linkData.status}`);
                     
-                    // NÃO validar expiração ou limite de uso - funciona como cadastro_slug
-                    // Apenas verificar se status é 'active' (já verificado na query)
-                    if (linkData.status === 'active') {
-                        actualToken = linkData.token; // Usar o token real para processar
-                        logger.info(`✅ [UNIQUE_LINKS] Link ativo, usando token real: ${actualToken}`);
-                    } else {
-                        logger.warn(`⚠️ [UNIQUE_LINKS] Link encontrado mas com status '${linkData.status}' (não 'active')`);
-                        return res.status(400).render('formError', {
-                            title: 'Link Indisponível',
-                            message: 'Este link foi desativado.',
-                            errorCode: 'UNIQUE_LINK_INVALID'
-                        });
-                    }
+                    // NÃO validar expiração, limite de uso ou status - funciona como cadastro_slug (sempre ativo se encontrado)
+                    // Se encontrou o link por custom_slug, usar diretamente (não verificar status)
+                    actualToken = linkData.token; // Usar o token real para processar
+                    logger.info(`✅ [UNIQUE_LINKS] Link encontrado, usando token real: ${actualToken} (status: ${linkData.status})`);
                 } else {
                     // Tentar buscar apenas pelo custom_slug (sem verificar slug do usuário) para debug
                     const debugRes = await client.query(`
@@ -863,25 +852,10 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             
             if (uniqueRes.rows.length > 0) {
                 uniqueLinkData = uniqueRes.rows[0];
-                
-                // Validar se o link ainda é válido
-                const validationResult = await client.query(
-                    'SELECT is_unique_link_valid($1) as is_valid',
-                    [actualToken]
-                );
-                
-                // NÃO validar limite de uso - links únicos agora funcionam como cadastro_slug (ilimitados)
-                // Apenas verificar se status é 'active' (já verificado na query acima)
-                // A validação de expiração pode ser mantida, mas não bloqueia o acesso
-                if (uniqueLinkData.status !== 'active') {
-                    client.release();
-                    return res.status(400).render('formError', {
-                        title: 'Link Indisponível',
-                        message: 'Este link foi desativado.',
-                        errorCode: 'UNIQUE_LINK_INVALID'
-                    });
-                }
-                // Se status é 'active', continuar mesmo se expirou ou foi usado - funciona como cadastro_slug
+                // NÃO validar limite de uso, expiração ou status - links únicos agora funcionam como cadastro_slug
+                // Se encontrou o link, usar diretamente (sempre ativo se encontrado)
+                logger.info(`✅ [UNIQUE_LINKS] Link único encontrado, processando: token=${actualToken}, status=${uniqueLinkData.status}`);
+                // Continuar processamento - funciona como cadastro_slug (sempre ativo)
             }
         } catch (uniqueError) {
             logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao buscar dados do link único:`, uniqueError);
