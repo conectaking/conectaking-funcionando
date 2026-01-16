@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS unique_form_links (
     guest_id INTEGER REFERENCES guests(id) ON DELETE SET NULL,
     
     -- Metadados adicionais
-    created_by_user_id INTEGER,
+    created_by_user_id VARCHAR(255), -- Tipo correto: VARCHAR para corresponder à tabela users
     notes TEXT,
     
     -- Foreign key

@@ -79,26 +79,59 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
         return res.status(400).json({ error: 'Links únicos são válidos apenas para formulários ou listas de convidados' });
     }
 
-    // Verificar se a tabela existe
+    // Verificar se a tabela existe - tentar múltiplas formas
+    let tableExists = false;
     try {
-        const tableCheck = await db.query(`
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'unique_form_links'
-            ) as table_exists
-        `);
+        // Método 1: Verificar via information_schema
+        try {
+            const tableCheck = await db.query(`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'unique_form_links'
+                ) as table_exists
+            `);
+            tableExists = tableCheck.rows[0]?.table_exists || false;
+            logger.info(`🔍 [UNIQUE_LINKS] Verificação via information_schema: ${tableExists}`);
+        } catch (schemaError) {
+            logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao verificar via information_schema:`, schemaError.message);
+        }
         
-        if (!tableCheck.rows[0]?.table_exists) {
+        // Método 2: Tentar fazer SELECT direto (se método 1 falhou ou retornou false)
+        if (!tableExists) {
+            try {
+                const directCheck = await db.query(`
+                    SELECT COUNT(*) as count FROM unique_form_links LIMIT 1
+                `);
+                tableExists = true; // Se chegou aqui, a tabela existe
+                logger.info(`✅ [UNIQUE_LINKS] Tabela existe (verificado via SELECT direto)`);
+            } catch (directError) {
+                // Erro 42P01 = relation does not exist
+                if (directError.code === '42P01') {
+                    tableExists = false;
+                    logger.warn(`⚠️ [UNIQUE_LINKS] Tabela não existe (erro 42P01): ${directError.message}`);
+                } else {
+                    // Outro erro, pode ser problema de permissão ou conexão
+                    logger.error(`❌ [UNIQUE_LINKS] Erro inesperado ao verificar tabela via SELECT:`, directError);
+                    tableExists = false;
+                }
+            }
+        }
+        
+        if (!tableExists) {
             logger.error(`❌ [UNIQUE_LINKS] Tabela unique_form_links não encontrada. Execute a migration 084 primeiro.`);
+            logger.error(`❌ [UNIQUE_LINKS] Dica: Execute: psql -U seu_usuario -d seu_banco -f migrations/084_create_unique_form_links.sql`);
             return res.status(500).json({ 
                 error: 'Tabela de links únicos não encontrada. Execute a migration 084 primeiro.' 
             });
         }
+        
+        logger.info(`✅ [UNIQUE_LINKS] Tabela unique_form_links confirmada como existente`);
     } catch (tableCheckError) {
-        logger.error(`❌ [UNIQUE_LINKS] Erro ao verificar tabela:`, tableCheckError);
+        logger.error(`❌ [UNIQUE_LINKS] Erro crítico ao verificar tabela:`, tableCheckError);
         return res.status(500).json({ 
-            error: 'Erro ao verificar tabela de links únicos' 
+            error: 'Erro ao verificar tabela de links únicos',
+            details: process.env.NODE_ENV === 'development' ? tableCheckError.message : undefined
         });
     }
 
@@ -200,22 +233,21 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
     // Buscar links únicos
     let result;
     try {
-        // Verificar se a tabela existe primeiro
-        const tableCheck = await db.query(`
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'unique_form_links'
-            ) as table_exists
-        `);
-        
-        if (!tableCheck.rows[0]?.table_exists) {
-            logger.warn(`⚠️ [UNIQUE_LINKS] Tabela unique_form_links não encontrada. Execute a migration 084 primeiro.`);
-            // Retornar array vazio se tabela não existe (sistema ainda não foi migrado)
-            return res.json({
-                success: true,
-                data: []
-            });
+        // Verificar se a tabela existe primeiro - método mais simples (sem erro)
+        try {
+            await db.query(`SELECT 1 FROM unique_form_links LIMIT 1`);
+        } catch (tableError) {
+            // Erro 42P01 = relation does not exist
+            if (tableError.code === '42P01') {
+                logger.warn(`⚠️ [UNIQUE_LINKS] Tabela unique_form_links não encontrada ao listar. Execute a migration 084 primeiro.`);
+                // Retornar array vazio se tabela não existe (sistema ainda não foi migrado)
+                return res.json({
+                    success: true,
+                    data: []
+                });
+            }
+            // Outro erro, propagar
+            throw tableError;
         }
 
         const query = `
