@@ -69,7 +69,7 @@ const config = {
         },
         api: {
             windowMs: 15 * 60 * 1000, // 15 minutos
-            max: 300 // 300 requisições por janela (aumentado de 100)
+            max: 600 // 600 requisições por janela (aumentado de 300 para reduzir rate limiting)
         }
     },
     
