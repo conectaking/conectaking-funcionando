@@ -65,7 +65,7 @@ router.get('/:itemId', protectUser, asyncHandler(async (req, res) => {
         
         const profileItem = profileItemResult.rows[0];
         
-        // 3. BUSCAR DADOS DA GUEST LIST (se aplicável)
+        // 3. BUSCAR DADOS DA GUEST LIST (se aplicável) - em paralelo com profile
         let guestListPromise = Promise.resolve({ rows: [] });
         if (profileItem.item_type === 'guest_list' || profileItem.item_type === 'digital_form') {
             guestListPromise = client.query(`
@@ -102,26 +102,7 @@ router.get('/:itemId', protectUser, asyncHandler(async (req, res) => {
             `, [itemId]);
         }
         
-        // 4. BUSCAR CONVIDADOS (paralelo) - aguardar guestList primeiro para obter guest_list_id
-        let guestsPromise = Promise.resolve({ rows: [] });
-        if (profileItem.item_type === 'guest_list' || profileItem.item_type === 'digital_form') {
-            // Aguardar guestList primeiro para ter o guest_list_item_id
-            const guestListRes = await guestListPromise;
-            if (guestListRes.rows.length > 0 && guestListRes.rows[0].guest_list_item_id) {
-                const guestListId = guestListRes.rows[0].guest_list_item_id;
-                guestsPromise = client.query(`
-                    SELECT 
-                        id, name, email, phone, document, status,
-                        registered_at, confirmed_at, checked_in_at,
-                        custom_data, notes
-                    FROM guests
-                    WHERE guest_list_id = $1
-                    ORDER BY registered_at DESC
-                `, [guestListId]);
-            }
-        }
-        
-        // 5. BUSCAR RESPOSTAS DO FORMULÁRIO DIGITAL (se aplicável)
+        // 5. BUSCAR RESPOSTAS DO FORMULÁRIO DIGITAL (se aplicável) - em paralelo
         let responsesPromise = Promise.resolve({ rows: [] });
         if (profileItem.item_type === 'digital_form') {
             responsesPromise = client.query(`
@@ -133,7 +114,7 @@ router.get('/:itemId', protectUser, asyncHandler(async (req, res) => {
             `, [itemId]);
         }
         
-        // 6. BUSCAR DADOS DO FORMULÁRIO DIGITAL (se aplicável)
+        // 5. BUSCAR DADOS DO FORMULÁRIO DIGITAL (se aplicável) - em paralelo
         let digitalFormPromise = Promise.resolve({ rows: [] });
         if (profileItem.item_type === 'digital_form') {
             digitalFormPromise = client.query(`
@@ -163,8 +144,22 @@ router.get('/:itemId', protectUser, asyncHandler(async (req, res) => {
             digitalFormPromise
         ]);
         
-        // Aguardar guests separadamente (já está configurado acima com await do guestListPromise)
-        const guestsRes = await guestsPromise;
+        // 4. BUSCAR CONVIDADOS - DEPOIS de obter guestList (dependência)
+        let guestsRes = { rows: [] };
+        if (profileItem.item_type === 'guest_list' || profileItem.item_type === 'digital_form') {
+            if (guestListRes.rows.length > 0 && guestListRes.rows[0].guest_list_item_id) {
+                const guestListId = guestListRes.rows[0].guest_list_item_id;
+                guestsRes = await client.query(`
+                    SELECT 
+                        id, name, email, phone, document, status,
+                        registered_at, confirmed_at, checked_in_at,
+                        custom_data, notes
+                    FROM guests
+                    WHERE guest_list_id = $1
+                    ORDER BY registered_at DESC
+                `, [guestListId]);
+            }
+        }
         
         // Processar resultado do perfil
         const profile = profileRes.rows.length > 0 ? profileRes.rows[0] : null;
