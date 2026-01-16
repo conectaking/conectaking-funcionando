@@ -696,8 +696,15 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 } else {
                     // PRIORIDADE 3: Buscar por custom_slug (links únicos personalizados)
                     logger.info(`🔍 [UNIQUE_LINKS] Não encontrado cadastro_slug, buscando por custom_slug: "${token}", slug: "${slug}"`);
-                    
-                    try {
+                }
+            } catch (cadastroError) {
+                logger.warn(`⚠️ [CADASTRO_SLUG] Erro ao buscar cadastro_slug:`, cadastroError);
+                // Continuar para tentar custom_slug mesmo se houver erro
+            }
+            
+            // Se ainda não encontrou, tentar custom_slug
+            if (!itemRes || itemRes.rows.length === 0) {
+                try {
                         // Buscar custom_slug SEM verificar slug do usuário primeiro (como cadastro_slug)
                         // Se encontrar, então verificar se o slug corresponde
                         const customLinkRes = await client.query(`
