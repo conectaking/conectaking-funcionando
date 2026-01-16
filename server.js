@@ -49,6 +49,7 @@ const guestListCustomizeRoutes = require('./routes/guestListCustomize.routes');
 const publicContractRoutes = require('./routes/publicContract.routes');
 const webhooksRoutes = require('./routes/webhooks.routes');
 const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
+const checkinRoutes = require('./routes/checkin.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize } = require('./middleware/security');
 
@@ -172,12 +173,19 @@ app.use(helmet({
 // Rate limiters
 // Nota: trust proxy já está configurado acima, então express-rate-limit usará X-Forwarded-For corretamente
 // Validate trust proxy está desabilitado porque estamos no Render que gerencia o proxy corretamente
+
+// Skip OPTIONS requests (CORS preflight) no rate limit
+const skipOptions = (req) => {
+    return req.method === 'OPTIONS';
+};
+
 const authLimiter = rateLimit({
     windowMs: config.rateLimit.auth.windowMs,
     max: config.rateLimit.auth.max,
     standardHeaders: true,
     legacyHeaders: false,
     validate: { trustProxy: false },
+    skip: skipOptions,
     message: 'Muitas tentativas de login/registro. Tente novamente em 15 minutos.'
 });
 
@@ -187,7 +195,54 @@ const uploadLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     validate: { trustProxy: false },
+    skip: skipOptions,
     message: 'Muitos uploads realizados. Tente novamente mais tarde.'
+});
+
+// Rate limit diferenciado para check-in (120 requisições por minuto)
+const checkinLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minuto
+    max: 120, // 120 requisições por minuto
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { trustProxy: false },
+    skip: skipOptions,
+    message: 'Muitas requisições de check-in. Aguarde um momento.',
+    handler: (req, res) => {
+        logger.warn('Rate limit de check-in excedido', {
+            ip: req.ip,
+            path: req.path,
+            method: req.method
+        });
+        res.status(429).json({
+            success: false,
+            message: 'Muitas requisições de check-in. Aguarde um momento antes de tentar novamente.',
+            retryAfter: 60
+        });
+    }
+});
+
+// Rate limit diferenciado para admin (30 requisições por minuto)
+const adminLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minuto
+    max: 30, // 30 requisições por minuto
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { trustProxy: false },
+    skip: skipOptions,
+    message: 'Muitas requisições administrativas. Aguarde um momento.',
+    handler: (req, res) => {
+        logger.warn('Rate limit administrativo excedido', {
+            ip: req.ip,
+            path: req.path,
+            method: req.method
+        });
+        res.status(429).json({
+            success: false,
+            message: 'Muitas requisições administrativas. Aguarde um momento.',
+            retryAfter: 60
+        });
+    }
 });
 
 const apiLimiter = rateLimit({
@@ -196,6 +251,7 @@ const apiLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     validate: { trustProxy: false },
+    skip: skipOptions,
     message: 'Muitas requisições. Tente novamente mais tarde.',
     handler: (req, res) => {
         logger.warn('Rate limit excedido', {
@@ -316,6 +372,36 @@ app.get('/', (req, res) => {
     });
 });
 
+// Bloquear bots e scanners - ANTES de qualquer rota
+app.use((req, res, next) => {
+    const path = req.path.toLowerCase();
+    
+    // Bloquear caminhos comuns de WordPress e scanners
+    if (path.includes('/wordpress') || 
+        path.includes('/wp-admin') || 
+        path.includes('/wp-content') ||
+        path.includes('/wp-includes') ||
+        path.includes('/setup-config.php') ||
+        path.includes('/wp-login.php') ||
+        path.includes('/phpmyadmin') ||
+        path.includes('/administrator') ||
+        path.includes('/.env') ||
+        path.includes('/config.php')) {
+        logger.warn('Tentativa de acesso bloqueada (bot/scanner)', {
+            ip: req.ip,
+            path: req.path,
+            userAgent: req.get('user-agent'),
+            method: req.method
+        });
+        return res.status(403).json({
+            success: false,
+            message: 'Acesso negado'
+        });
+    }
+    
+    next();
+});
+
 // Health check (sem rate limit)
 app.use('/api', healthRoutes);
 
@@ -331,7 +417,10 @@ app.use('/api/profile', apiLimiter, profileRoutes);
 app.use('/api/subscription', apiLimiter, subscriptionRoutes);
 app.use('/api/modules', apiLimiter, moduleAvailabilityRoutes);
 app.use('/log', loggerRoutes);
-app.use('/api/admin', apiLimiter, adminRoutes);
+// Endpoint agregado de check-in (rate limit específico - 120/min)
+app.use('/api/checkin', checkinLimiter, checkinRoutes);
+
+app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/upload/pdf', uploadLimiter, pdfUploadRoutes);
 app.use('/api/upload', uploadLimiter, uploadRoutes);
