@@ -1111,9 +1111,6 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             sanitizedFormData = formData;
         }
         
-        // Renderizar página (manter o slug original na URL)
-        client.release();
-        
         // Criar objeto item completo para renderização
         const itemForRender = {
             id: itemIdInt,
@@ -1121,6 +1118,9 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             item_type: item.item_type || item.item_type,
             is_active: item.is_active !== false
         };
+        
+        // Renderizar página (manter o slug original na URL)
+        client.release();
         
         return res.render('digitalForm', {
             item: itemForRender,
