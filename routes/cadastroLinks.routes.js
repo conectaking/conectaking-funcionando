@@ -48,6 +48,7 @@ router.get('/:id/cadastro-links', protectUser, asyncHandler(async (req, res) => 
                 cl.max_uses,
                 cl.current_uses,
                 cl.created_at,
+                COALESCE(cl.is_active_for_profile, FALSE) as is_active_for_profile,
                 CASE 
                     WHEN cl.expires_at IS NOT NULL AND cl.expires_at < NOW() THEN true
                     ELSE false
@@ -70,7 +71,8 @@ router.get('/:id/cadastro-links', protectUser, asyncHandler(async (req, res) => 
             current_uses: link.current_uses,
             created_at: link.created_at,
             isExpired: link.is_expired,
-            isUsed: link.is_used
+            isUsed: link.is_used,
+            isActiveForProfile: link.is_active_for_profile || false
         }));
         
         res.json({
@@ -415,6 +417,93 @@ router.put('/cadastro-links/:linkId', protectUser, asyncHandler(async (req, res)
         res.status(500).json({ 
             success: false,
             message: 'Erro ao editar link personalizado',
+            error: error.message 
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
+ * PUT /api/guest-lists/cadastro-links/:linkId/activate
+ * Ativar link para aparecer no cartão público
+ */
+router.put('/cadastro-links/:linkId/activate', protectUser, asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const linkId = parseInt(req.params.linkId, 10);
+    const { activate } = req.body; // true ou false
+    
+    if (isNaN(linkId)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'ID do link inválido' 
+        });
+    }
+    
+    if (typeof activate !== 'boolean') {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Parâmetro "activate" deve ser true ou false' 
+        });
+    }
+    
+    const client = await db.pool.connect();
+    
+    try {
+        // Verificar se o link pertence a um item do usuário
+        const linkCheck = await client.query(`
+            SELECT cl.id, cl.guest_list_item_id, pi.user_id
+            FROM cadastro_links cl
+            INNER JOIN guest_list_items gli ON gli.id = cl.guest_list_item_id
+            INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+            WHERE cl.id = $1 AND pi.user_id = $2
+        `, [linkId, userId]);
+        
+        if (linkCheck.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Link não encontrado ou você não tem permissão para ativá-lo' 
+            });
+        }
+        
+        const guestListItemId = linkCheck.rows[0].guest_list_item_id;
+        
+        if (activate) {
+            // Desativar todos os outros links do mesmo guest_list_item
+            await client.query(`
+                UPDATE cadastro_links 
+                SET is_active_for_profile = FALSE
+                WHERE guest_list_item_id = $1 AND id != $2
+            `, [guestListItemId, linkId]);
+            
+            // Ativar este link
+            await client.query(`
+                UPDATE cadastro_links 
+                SET is_active_for_profile = TRUE
+                WHERE id = $1
+            `, [linkId]);
+            
+            logger.info(`✅ [CADASTRO_LINKS] Link ativado para cartão público: ${linkId}`);
+        } else {
+            // Desativar este link
+            await client.query(`
+                UPDATE cadastro_links 
+                SET is_active_for_profile = FALSE
+                WHERE id = $1
+            `, [linkId]);
+            
+            logger.info(`✅ [CADASTRO_LINKS] Link desativado do cartão público: ${linkId}`);
+        }
+        
+        res.json({
+            success: true,
+            message: activate ? 'Link ativado com sucesso!' : 'Link desativado com sucesso!'
+        });
+    } catch (error) {
+        logger.error('Erro ao ativar/desativar link:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Erro ao ativar/desativar link',
             error: error.message 
         });
     } finally {

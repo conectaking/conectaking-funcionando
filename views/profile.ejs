@@ -1667,11 +1667,26 @@ if (typeof details === 'undefined' || !details) {
                                 console.error('Erro ao obter profileSlug:', e);
                                 profileSlug = '';
                             }
-                            const formUrl = profileSlug && item.id ? `/${profileSlug}/form/${item.id}` : '#';
+                            
+                            // Usar link ativo se existir, senão não mostrar link (desabilitar botão)
+                            let formUrl = '#';
+                            let hasActiveLink = false;
+                            if (profileSlug) {
+                                if (item.active_cadastro_link_slug) {
+                                    // Usar link personalizado ativo
+                                    formUrl = `/${profileSlug}/form/share/${item.active_cadastro_link_slug}`;
+                                    hasActiveLink = true;
+                                } else {
+                                    // Se não houver link ativo, desabilitar (não usar link padrão)
+                                    formUrl = '#';
+                                    hasActiveLink = false;
+                                }
+                            }
                         %>
                         <% if (displayFormat === 'banner') { %>
-                            <a href="<%= formUrl %>" class="banner-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                                <div class="banner-image-wrapper">
+                            <% if (hasActiveLink) { %>
+                                <a href="<%= formUrl %>" class="banner-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                                    <div class="banner-image-wrapper">
                                     <% if (formData.banner_image_url) { %>
                                         <img src="<%= formData.banner_image_url %>" alt="<%= item.title || 'Formulário Digital' %>" class="banner-image">
                                     <% } else { %>
@@ -1685,16 +1700,23 @@ if (typeof details === 'undefined' || !details) {
                                         </div>
                                     <% } %>
                                 </div>
-                            </a>
+                                </a>
+                            <% } else { %>
+                                <!-- Banner não exibido - nenhum link ativo -->
+                            <% } %>
                         <% } else { %>
-                            <a href="<%= formUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                                <% if (hasFormLogo) { %>
-                                    <img src="<%= formLogo %>" alt="<%= item.title || 'Formulário Digital' %>" class="profile-link-logo" style="width: <%= buttonLogoSize %>px; height: <%= buttonLogoSize %>px; object-fit: contain; border-radius: 8px;">
-                                <% } else { %>
-                                    <i class="fas fa-file-alt"></i>
-                                <% } %>
-                                <span><%= item.title || 'Formulário Digital' %></span>
-                            </a>
+                            <% if (hasActiveLink) { %>
+                                <a href="<%= formUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                                    <% if (hasFormLogo) { %>
+                                        <img src="<%= formLogo %>" alt="<%= item.title || 'Formulário Digital' %>" class="profile-link-logo" style="width: <%= buttonLogoSize %>px; height: <%= buttonLogoSize %>px; object-fit: contain; border-radius: 8px;">
+                                    <% } else { %>
+                                        <i class="fas fa-file-alt"></i>
+                                    <% } %>
+                                    <span><%= item.title || 'Formulário Digital' %></span>
+                                </a>
+                            <% } else { %>
+                                <!-- Link não ativo - não exibir no cartão público -->
+                            <% } %>
                         <% } %>
 
                     <%# ========================================================== %>

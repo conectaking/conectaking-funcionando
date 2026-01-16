@@ -336,6 +336,44 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 }
             }
             
+            // Buscar link ativo para digital_form ou guest_list
+            if ((item.item_type === 'digital_form' || item.item_type === 'guest_list')) {
+                try {
+                    // Buscar guest_list_item_id primeiro
+                    const guestListItemRes = await client.query(
+                        'SELECT id FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
+                        [item.id]
+                    );
+                    
+                    if (guestListItemRes.rows.length > 0) {
+                        const guestListItemId = guestListItemRes.rows[0].id;
+                        
+                        // Buscar link ativo para o cartão público
+                        const activeLinkRes = await client.query(
+                            `SELECT slug FROM cadastro_links 
+                             WHERE guest_list_item_id = $1 
+                             AND is_active_for_profile = TRUE 
+                             AND (expires_at IS NULL OR expires_at > NOW())
+                             AND (max_uses = 999999 OR current_uses < max_uses)
+                             LIMIT 1`,
+                            [guestListItemId]
+                        );
+                        
+                        if (activeLinkRes.rows.length > 0) {
+                            const activeLinkSlug = activeLinkRes.rows[0].slug;
+                            item.active_cadastro_link_slug = activeLinkSlug;
+                            logger.debug(`✅ [PROFILE] Link ativo encontrado para item ${item.id}: ${activeLinkSlug}`);
+                        } else {
+                            item.active_cadastro_link_slug = null;
+                            logger.debug(`ℹ️ [PROFILE] Nenhum link ativo encontrado para item ${item.id}`);
+                        }
+                    }
+                } catch (error) {
+                    logger.warn(`⚠️ [PROFILE] Erro ao buscar link ativo para item ${item.id}:`, error.message);
+                    item.active_cadastro_link_slug = null;
+                }
+            }
+            
             if (item.item_type === 'product_catalog') {
                 try {
                     const productsRes = await client.query(
