@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const db = require('../db');
 const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
-const { protectUser } = require('../middleware/auth');
+const { protectUser } = require('../middleware/protectUser');
 
 /**
  * ROTAS DE LINKS ÚNICOS
