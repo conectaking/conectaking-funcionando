@@ -52,20 +52,14 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
 
     const item = itemCheck.rows[0];
 
-    // Comparação robusta: converter ambos para número e string para garantir compatibilidade
-    const itemUserIdNum = parseInt(item.user_id) || 0;
-    const currentUserIdNum = parseInt(userId) || 0;
-    const itemUserIdStr = String(item.user_id || '').trim();
-    const currentUserIdStr = String(userId || '').trim();
+    // user_id no banco é VARCHAR (string), então comparar como string
+    const itemUserId = String(item.user_id || '').trim();
+    const currentUserId = String(userId || '').trim();
 
-    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para criar: item.user_id=${item.user_id} (tipo: ${typeof item.user_id}), userId=${userId} (tipo: ${typeof userId}), itemUserIdNum=${itemUserIdNum}, currentUserIdNum=${currentUserIdNum}`);
+    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para criar: item.user_id="${itemUserId}" (tipo: ${typeof item.user_id}), userId="${currentUserId}" (tipo: ${typeof userId}), itemId=${itemId}`);
 
-    // Comparar tanto numericamente quanto como string
-    const hasPermission = (itemUserIdNum === currentUserIdNum && itemUserIdNum > 0) || 
-                         (itemUserIdStr === currentUserIdStr && itemUserIdStr !== '');
-
-    if (!hasPermission) {
-        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao criar: item.user_id="${item.user_id}" (${typeof item.user_id}), userId="${userId}" (${typeof userId}), itemId=${itemId}`);
+    if (itemUserId !== currentUserId) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao criar: item.user_id="${itemUserId}", userId="${currentUserId}", itemId=${itemId}`);
         return res.status(403).json({ error: 'Você não tem permissão para criar links para este item' });
     }
     
@@ -128,11 +122,17 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
     logger.info(`✅ [UNIQUE_LINKS] Link único criado: ${token} para item ${itemId}`);
 
     // Buscar slug do usuário do banco de dados
-    const userRes = await db.query(
-        'SELECT profile_slug FROM users WHERE id = $1',
-        [userId]
-    );
-    const userSlug = userRes.rows[0]?.profile_slug || 'user';
+    // IMPORTANTE: user_id pode ser VARCHAR (string como "ADRIANO-KING") ou INTEGER
+    let userSlug = 'user';
+    try {
+        const userRes = await db.query(
+            'SELECT profile_slug FROM users WHERE id = $1 OR id::text = $1',
+            [userId]
+        );
+        userSlug = userRes.rows[0]?.profile_slug || 'user';
+    } catch (slugError) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao buscar slug do usuário ao criar link, usando padrão:`, slugError);
+    }
 
     // Construir URL completa do link
     const baseUrl = process.env.FRONTEND_URL || 'https://tag.conectaking.com.br';
@@ -169,20 +169,14 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
         return res.status(404).json({ error: 'Item não encontrado' });
     }
 
-    // Comparação robusta: converter ambos para número e string
-    const itemUserIdNum = parseInt(itemCheck.rows[0].user_id) || 0;
-    const currentUserIdNum = parseInt(userId) || 0;
-    const itemUserIdStr = String(itemCheck.rows[0].user_id || '').trim();
-    const currentUserIdStr = String(userId || '').trim();
+    // user_id no banco é VARCHAR (string), então comparar como string
+    const itemUserId = String(itemCheck.rows[0].user_id || '').trim();
+    const currentUserId = String(userId || '').trim();
 
-    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para listar: item.user_id=${itemCheck.rows[0].user_id} (tipo: ${typeof itemCheck.rows[0].user_id}), userId=${userId} (tipo: ${typeof userId}), itemUserIdNum=${itemUserIdNum}, currentUserIdNum=${currentUserIdNum}`);
+    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para listar: item.user_id="${itemUserId}" (tipo: ${typeof itemCheck.rows[0].user_id}), userId="${currentUserId}" (tipo: ${typeof userId}), itemId=${itemId}`);
 
-    // Comparar tanto numericamente quanto como string
-    const hasPermission = (itemUserIdNum === currentUserIdNum && itemUserIdNum > 0) || 
-                         (itemUserIdStr === currentUserIdStr && itemUserIdStr !== '');
-
-    if (!hasPermission) {
-        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada para listar: item.user_id="${itemCheck.rows[0].user_id}" (${typeof itemCheck.rows[0].user_id}), userId="${userId}" (${typeof userId}), itemId=${itemId}`);
+    if (itemUserId !== currentUserId) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada para listar: item.user_id="${itemUserId}", userId="${currentUserId}", itemId=${itemId}`);
         return res.status(403).json({ error: 'Você não tem permissão para ver links deste item' });
     }
     
@@ -245,10 +239,11 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
     }
 
     // Buscar slug do usuário do banco de dados
+    // IMPORTANTE: user_id pode ser VARCHAR (string como "ADRIANO-KING") ou INTEGER
     let userSlug = 'user';
     try {
         const userRes = await db.query(
-            'SELECT profile_slug FROM users WHERE id = $1',
+            'SELECT profile_slug FROM users WHERE id = $1 OR id::text = $1',
             [userId]
         );
         userSlug = userRes.rows[0]?.profile_slug || 'user';
@@ -313,20 +308,14 @@ router.delete('/:linkId', protectUser, asyncHandler(async (req, res) => {
         return res.status(404).json({ error: 'Link não encontrado' });
     }
 
-    // Comparação robusta: converter ambos para número e string
-    const linkUserIdNum = parseInt(linkCheck.rows[0].user_id) || 0;
-    const currentUserIdNum = parseInt(userId) || 0;
-    const linkUserIdStr = String(linkCheck.rows[0].user_id || '').trim();
-    const currentUserIdStr = String(userId || '').trim();
+    // user_id no banco é VARCHAR (string), então comparar como string
+    const linkUserId = String(linkCheck.rows[0].user_id || '').trim();
+    const currentUserId = String(userId || '').trim();
 
-    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para desativar: link.user_id=${linkCheck.rows[0].user_id} (tipo: ${typeof linkCheck.rows[0].user_id}), userId=${userId} (tipo: ${typeof userId}), linkUserIdNum=${linkUserIdNum}, currentUserIdNum=${currentUserIdNum}`);
+    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para desativar: link.user_id="${linkUserId}" (tipo: ${typeof linkCheck.rows[0].user_id}), userId="${currentUserId}" (tipo: ${typeof userId}), linkId=${linkId}`);
 
-    // Comparar tanto numericamente quanto como string
-    const hasPermission = (linkUserIdNum === currentUserIdNum && linkUserIdNum > 0) || 
-                         (linkUserIdStr === currentUserIdStr && linkUserIdStr !== '');
-
-    if (!hasPermission) {
-        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao desativar: link.user_id="${linkCheck.rows[0].user_id}" (${typeof linkCheck.rows[0].user_id}), userId="${userId}" (${typeof userId}), linkId=${linkId}`);
+    if (linkUserId !== currentUserId) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao desativar: link.user_id="${linkUserId}", userId="${currentUserId}", linkId=${linkId}`);
         return res.status(403).json({ error: 'Você não tem permissão para desativar este link' });
     }
     
