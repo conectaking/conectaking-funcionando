@@ -648,27 +648,42 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             logger.info(`🔍 [UNIQUE_LINKS] Buscando link por custom_slug: "${token}", slug: "${slug}"`);
             
             try {
+                // Buscar custom_slug SEM verificar slug do usuário primeiro (como cadastro_slug)
+                // Se encontrar, então verificar se o slug corresponde
                 const customLinkRes = await client.query(`
                     SELECT ufl.*, pi.*, u.profile_slug
                     FROM unique_form_links ufl
                     INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
                     INNER JOIN users u ON pi.user_id = u.id
                     WHERE ufl.custom_slug = $1 
-                    AND u.profile_slug = $2 
                     AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
                     AND pi.is_active = true
-                `, [token, slug]);
+                `, [token]);
                 
-                logger.info(`🔍 [UNIQUE_LINKS] Resultado da busca por custom_slug: ${customLinkRes.rows.length} resultado(s)`);
+                logger.info(`🔍 [UNIQUE_LINKS] Resultado da busca por custom_slug (sem verificar slug): ${customLinkRes.rows.length} resultado(s)`);
                 
+                // Se encontrou, verificar se o slug corresponde ao esperado
                 if (customLinkRes.rows.length > 0) {
-                    const linkData = customLinkRes.rows[0];
-                    logger.info(`✅ [UNIQUE_LINKS] Link encontrado via custom_slug: token=${linkData.token}, custom_slug=${linkData.custom_slug}, expires_at=${linkData.expires_at}, status=${linkData.status}`);
+                    const foundLink = customLinkRes.rows[0];
                     
-                    // NÃO validar expiração, limite de uso ou status - funciona como cadastro_slug (sempre ativo se encontrado)
-                    // Se encontrou o link por custom_slug, usar diretamente (não verificar status)
-                    actualToken = linkData.token; // Usar o token real para processar
-                    logger.info(`✅ [UNIQUE_LINKS] Link encontrado, usando token real: ${actualToken} (status: ${linkData.status})`);
+                    // Verificar se o slug do link encontrado corresponde ao slug na URL
+                    if (foundLink.profile_slug === slug) {
+                        // Slug corresponde - usar o link
+                        const linkData = foundLink;
+                        logger.info(`✅ [UNIQUE_LINKS] Link encontrado via custom_slug com slug correspondente: token=${linkData.token}, custom_slug=${linkData.custom_slug}, slug=${linkData.profile_slug}`);
+                        
+                        // NÃO validar expiração, limite de uso ou status - funciona como cadastro_slug
+                        actualToken = linkData.token; // Usar o token real para processar
+                        logger.info(`✅ [UNIQUE_LINKS] Link encontrado e ativo, usando token real: ${actualToken} (status: ${linkData.status})`);
+                    } else {
+                        // Link encontrado mas slug não corresponde
+                        logger.warn(`⚠️ [UNIQUE_LINKS] Link encontrado mas slug não corresponde: esperado="${slug}", encontrado="${foundLink.profile_slug}"`);
+                        return res.status(404).send(`
+                            <h1>404 - Link não encontrado</h1>
+                            <p>O link personalizado "<strong>${token}</strong>" existe, mas pertence ao usuário "<strong>${foundLink.profile_slug}</strong>", não "<strong>${slug}</strong>".</p>
+                            <p><strong>URL correta:</strong> https://conectaking.com.br/${foundLink.profile_slug}/form/share/${token}</p>
+                        `);
+                    }
                 } else {
                     // Tentar buscar apenas pelo custom_slug (sem verificar slug do usuário) para debug
                     const debugRes = await client.query(`
