@@ -42,18 +42,47 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
     );
 
     if (itemCheck.rows.length === 0) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Item não encontrado: ${itemId}`);
         return res.status(404).json({ error: 'Item não encontrado' });
     }
 
     const item = itemCheck.rows[0];
 
-    if (item.user_id !== userId) {
+    // Converter para inteiro para garantir comparação correta
+    const itemUserId = parseInt(item.user_id);
+    const currentUserId = parseInt(userId);
+
+    if (itemUserId !== currentUserId) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao criar: itemUserId=${itemUserId}, currentUserId=${currentUserId}, itemId=${itemId}`);
         return res.status(403).json({ error: 'Você não tem permissão para criar links para este item' });
     }
 
     // Verificar se o item é um formulário ou lista de convidados
     if (item.item_type !== 'digital_form' && item.item_type !== 'guest_list') {
         return res.status(400).json({ error: 'Links únicos são válidos apenas para formulários ou listas de convidados' });
+    }
+
+    // Verificar se a tabela existe
+    try {
+        const tableCheck = await db.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'unique_form_links'
+            ) as table_exists
+        `);
+        
+        if (!tableCheck.rows[0]?.table_exists) {
+            logger.error(`❌ [UNIQUE_LINKS] Tabela unique_form_links não encontrada. Execute a migration 084 primeiro.`);
+            return res.status(500).json({ 
+                error: 'Tabela de links únicos não encontrada. Execute a migration 084 primeiro.' 
+            });
+        }
+    } catch (tableCheckError) {
+        logger.error(`❌ [UNIQUE_LINKS] Erro ao verificar tabela:`, tableCheckError);
+        return res.status(500).json({ 
+            error: 'Erro ao verificar tabela de links únicos' 
+        });
     }
 
     // Gerar token único
@@ -122,34 +151,87 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
     );
 
     if (itemCheck.rows.length === 0) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Item não encontrado: ${itemId}`);
         return res.status(404).json({ error: 'Item não encontrado' });
     }
 
-    if (itemCheck.rows[0].user_id !== userId) {
+    // Converter para inteiro para garantir comparação correta
+    const itemUserId = parseInt(itemCheck.rows[0].user_id);
+    const currentUserId = parseInt(userId);
+
+    if (itemUserId !== currentUserId) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada: itemUserId=${itemUserId}, currentUserId=${currentUserId}, itemId=${itemId}`);
         return res.status(403).json({ error: 'Você não tem permissão para ver links deste item' });
     }
 
     // Buscar links únicos
-    const query = `
-        SELECT 
-            ufl.*,
-            g.name as guest_name,
-            g.email as guest_email,
-            g.whatsapp as guest_whatsapp
-        FROM unique_form_links ufl
-        LEFT JOIN guests g ON ufl.guest_id = g.id
-        WHERE ufl.profile_item_id = $1
-        ORDER BY ufl.created_at DESC
-    `;
+    let result;
+    try {
+        // Verificar se a tabela existe primeiro
+        const tableCheck = await db.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'unique_form_links'
+            ) as table_exists
+        `);
+        
+        if (!tableCheck.rows[0]?.table_exists) {
+            logger.warn(`⚠️ [UNIQUE_LINKS] Tabela unique_form_links não encontrada. Execute a migration 084 primeiro.`);
+            // Retornar array vazio se tabela não existe (sistema ainda não foi migrado)
+            return res.json({
+                success: true,
+                data: []
+            });
+        }
 
-    const result = await db.query(query, [itemId]);
+        const query = `
+            SELECT 
+                ufl.*,
+                g.name as guest_name,
+                g.email as guest_email,
+                g.whatsapp as guest_whatsapp
+            FROM unique_form_links ufl
+            LEFT JOIN guests g ON ufl.guest_id = g.id
+            WHERE ufl.profile_item_id = $1
+            ORDER BY ufl.created_at DESC
+        `;
+
+        result = await db.query(query, [itemId]);
+    } catch (queryError) {
+        logger.error(`❌ [UNIQUE_LINKS] Erro ao buscar links únicos para item ${itemId}:`, {
+            error: queryError.message,
+            stack: queryError.stack,
+            userId: userId
+        });
+        
+        // Se for erro de tabela não existe, retornar array vazio
+        if (queryError.message && queryError.message.includes('does not exist')) {
+            logger.warn(`⚠️ [UNIQUE_LINKS] Tabela unique_form_links não existe. Execute a migration 084 primeiro.`);
+            return res.json({
+                success: true,
+                data: []
+            });
+        }
+        
+        return res.status(500).json({ 
+            error: 'Erro ao buscar links únicos',
+            details: process.env.NODE_ENV === 'development' ? queryError.message : undefined
+        });
+    }
 
     // Buscar slug do usuário do banco de dados
-    const userRes = await db.query(
-        'SELECT profile_slug FROM users WHERE id = $1',
-        [userId]
-    );
-    const userSlug = userRes.rows[0]?.profile_slug || 'user';
+    let userSlug = 'user';
+    try {
+        const userRes = await db.query(
+            'SELECT profile_slug FROM users WHERE id = $1',
+            [userId]
+        );
+        userSlug = userRes.rows[0]?.profile_slug || 'user';
+    } catch (slugError) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao buscar slug do usuário, usando padrão:`, slugError);
+        // Continuar com slug padrão se houver erro
+    }
 
     const baseUrl = process.env.FRONTEND_URL || 'https://tag.conectaking.com.br';
 
@@ -203,10 +285,16 @@ router.delete('/:linkId', protectUser, asyncHandler(async (req, res) => {
     `, [linkId]);
 
     if (linkCheck.rows.length === 0) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Link não encontrado: ${linkId}`);
         return res.status(404).json({ error: 'Link não encontrado' });
     }
 
-    if (linkCheck.rows[0].user_id !== userId) {
+    // Converter para inteiro para garantir comparação correta
+    const linkUserId = parseInt(linkCheck.rows[0].user_id);
+    const currentUserId = parseInt(userId);
+
+    if (linkUserId !== currentUserId) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao desativar: linkUserId=${linkUserId}, currentUserId=${currentUserId}, linkId=${linkId}`);
         return res.status(403).json({ error: 'Você não tem permissão para desativar este link' });
     }
 
