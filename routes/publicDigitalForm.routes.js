@@ -517,11 +517,64 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         let actualToken = token;
         let itemRes = null;
         
-        // PRIORIDADE 1: Buscar por cadastro_slug (MESMO comportamento da rota /form/share/:token)
-            // Isso permite que links como /adrianokigg/form/share/adriano funcionem
-            logger.info(`🔍 [CADASTRO_SLUG] Buscando por cadastro_slug: "${token}", slug: "${slug}"`);
+        // PRIORIDADE 1: Buscar por cadastro_links.slug (links personalizados múltiplos)
+        // PRIORIDADE 2: Buscar por cadastro_slug (link único do item)
+        logger.info(`🔍 [CADASTRO_LINKS] Buscando por cadastro_links.slug ou cadastro_slug: "${token}", slug: "${slug}"`);
+        
+        let cadastroLinkData = null; // Armazenar dados do link personalizado se encontrado
+        
+        try {
+            // Primeiro, tentar buscar em cadastro_links (múltiplos links personalizados)
+            const cadastroLinksRes = await client.query(`
+                SELECT 
+                    pi.*, 
+                    u.profile_slug,
+                    cl.id as cadastro_link_id,
+                    cl.expires_at as link_expires_at,
+                    cl.max_uses as link_max_uses,
+                    cl.current_uses as link_current_uses
+                FROM profile_items pi
+                INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+                INNER JOIN users u ON pi.user_id = u.id
+                INNER JOIN cadastro_links cl ON cl.guest_list_item_id = gli.id
+                WHERE cl.slug = $1 
+                AND u.profile_slug = $2
+                AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
+                AND pi.is_active = true
+            `, [token, slug]);
             
-            try {
+            if (cadastroLinksRes.rows.length > 0) {
+                const linkRow = cadastroLinksRes.rows[0];
+                logger.info(`✅ [CADASTRO_LINKS] Link encontrado via cadastro_links: "${token}" para usuário "${slug}"`);
+                
+                // Validar expiração
+                if (linkRow.link_expires_at && new Date(linkRow.link_expires_at) < new Date()) {
+                    logger.warn(`⚠️ [CADASTRO_LINKS] Link expirado: ${token}`);
+                    return res.status(410).render('error', {
+                        message: 'Este link expirou',
+                        title: 'Link Expirado'
+                    });
+                }
+                
+                // Validar limite de usos
+                if (linkRow.link_max_uses !== 999999 && linkRow.link_current_uses >= linkRow.link_max_uses) {
+                    logger.warn(`⚠️ [CADASTRO_LINKS] Link esgotado: ${token}`);
+                    return res.status(410).render('error', {
+                        message: 'Este link atingiu o limite de usos',
+                        title: 'Link Esgotado'
+                    });
+                }
+                
+                // Armazenar dados do link para incrementar contador depois
+                cadastroLinkData = {
+                    id: linkRow.cadastro_link_id,
+                    current_uses: linkRow.link_current_uses
+                };
+                
+                actualToken = token;
+                itemRes = cadastroLinksRes;
+            } else {
+                // Se não encontrou em cadastro_links, tentar cadastro_slug (link único)
                 const cadastroSlugRes = await client.query(`
                     SELECT pi.*, u.profile_slug
                     FROM profile_items pi
@@ -536,20 +589,16 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 logger.info(`🔍 [CADASTRO_SLUG] Resultado da busca: ${cadastroSlugRes.rows.length} resultado(s)`);
                 
                 if (cadastroSlugRes.rows.length > 0) {
-                    // Encontrou cadastro_slug - usar os dados já encontrados diretamente
                     const item = cadastroSlugRes.rows[0];
                     logger.info(`✅ [CADASTRO_SLUG] Link encontrado via cadastro_slug: "${token}" para usuário "${slug}"`);
                     
-                    // Processar diretamente com os dados encontrados, pular a busca abaixo
-                    // Definir actualToken e pular para o processamento do formulário
                     actualToken = token;
-                    
-                    // Preparar itemRes para processamento abaixo
                     itemRes = cadastroSlugRes;
                 }
-            } catch (cadastroError) {
-                logger.warn(`⚠️ [CADASTRO_SLUG] Erro ao buscar cadastro_slug:`, cadastroError);
             }
+        } catch (cadastroError) {
+            logger.warn(`⚠️ [CADASTRO_LINKS] Erro ao buscar cadastro_links/cadastro_slug:`, cadastroError);
+        }
             
             }
         
@@ -1805,7 +1854,7 @@ router.post('/:slug/form/:itemId/submit',
         }
         
         // IMPORTANTE: Incrementar contador de usos do link de cadastro APÓS cadastro bem-sucedido
-        // Extrair token do referer para verificar se é cadastro_slug
+        // Extrair token do referer para verificar se é cadastro_slug ou cadastro_links.slug
         const referer = req.headers.referer || '';
         let cadastroToken = null;
         if (referer.includes('/form/share/')) {
@@ -1815,14 +1864,27 @@ router.post('/:slug/form/:itemId/submit',
                 logger.info(`🔗 [CADASTRO_LINK] Token de cadastro detectado no referer: ${cadastroToken}`);
                 
                 try {
-                    // Incrementar contador de usos
-                    await client.query(
-                        `UPDATE guest_list_items 
-                         SET cadastro_current_uses = COALESCE(cadastro_current_uses, 0) + 1
-                         WHERE cadastro_slug = $1`,
+                    // Primeiro, tentar incrementar em cadastro_links (links personalizados múltiplos)
+                    const cadastroLinkUpdate = await client.query(
+                        `UPDATE cadastro_links 
+                         SET current_uses = COALESCE(current_uses, 0) + 1
+                         WHERE slug = $1
+                         RETURNING id`,
                         [cadastroToken]
                     );
-                    logger.info(`✅ [CADASTRO_LINK] Contador de usos incrementado para link: ${cadastroToken}`);
+                    
+                    if (cadastroLinkUpdate.rows.length > 0) {
+                        logger.info(`✅ [CADASTRO_LINKS] Contador de usos incrementado para link personalizado: ${cadastroToken}`);
+                    } else {
+                        // Se não encontrou em cadastro_links, tentar cadastro_slug (link único)
+                        await client.query(
+                            `UPDATE guest_list_items 
+                             SET cadastro_current_uses = COALESCE(cadastro_current_uses, 0) + 1
+                             WHERE cadastro_slug = $1`,
+                            [cadastroToken]
+                        );
+                        logger.info(`✅ [CADASTRO_SLUG] Contador de usos incrementado para link único: ${cadastroToken}`);
+                    }
                 } catch (linkError) {
                     logger.error(`❌ [CADASTRO_LINK] Erro ao incrementar contador de usos: ${cadastroToken}`, linkError);
                     // Não falhar a requisição se incrementar contador falhar
