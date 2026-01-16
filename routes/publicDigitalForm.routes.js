@@ -599,8 +599,6 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         } catch (cadastroError) {
             logger.warn(`⚠️ [CADASTRO_LINKS] Erro ao buscar cadastro_links/cadastro_slug:`, cadastroError);
         }
-            
-            }
         
         // IMPORTANTE: Processar diretamente usando a mesma lógica da rota /form/share/:token
         // Isso mantém o slug na URL e evita redirecionamento
