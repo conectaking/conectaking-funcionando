@@ -145,8 +145,8 @@
                 Se você precisa acessar este formulário, entre em contato com o organizador do evento para obter um novo link de acesso.
             </p>
         </div>
-        <a href="/" class="back-button">
-            <i class="fas fa-arrow-left"></i> Voltar ao início
+        <a href="<%= typeof profileSlug !== 'undefined' && profileSlug ? '/' + profileSlug : '/' %>" class="back-button">
+            <i class="fas fa-arrow-left"></i> Voltar ao cartão virtual
         </a>
     </div>
 </body>

@@ -135,11 +135,13 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         if (!itemRes || itemRes.rows.length === 0) {
             const cadastroRes = await client.query(
                 `SELECT pi.*, 
+                        u.profile_slug,
                         gli.cadastro_expires_at,
                         gli.cadastro_max_uses,
                         gli.cadastro_current_uses
                  FROM profile_items pi
                  INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+                 INNER JOIN users u ON pi.user_id = u.id
                  WHERE gli.cadastro_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
                 [token]
             );
@@ -147,13 +149,16 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
             if (cadastroRes.rows.length > 0) {
                 itemRes = cadastroRes;
                 cadastroLinkData = cadastroRes.rows[0];
+                const userProfileSlug = cadastroLinkData.profile_slug;
                 
                 // Validar validade do link de cadastro
                 if (cadastroLinkData.cadastro_expires_at) {
                     const expiresAt = new Date(cadastroLinkData.cadastro_expires_at);
                     if (expiresAt < new Date()) {
                         logger.warn(`❌ [CADASTRO_LINK] Link de cadastro expirado: ${token}, expirou em: ${expiresAt.toISOString()}`);
-                        return res.status(410).render('linkExpired', {});
+                        return res.status(410).render('linkExpired', {
+                            profileSlug: userProfileSlug
+                        });
                     }
                 }
                 
@@ -163,7 +168,8 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
                 if (currentUses >= maxUses) {
                     logger.warn(`❌ [CADASTRO_LINK] Link de cadastro atingiu limite de usos: ${token}, usos: ${currentUses}/${maxUses}`);
                     return res.status(410).render('linkExpired', {
-                        reason: 'Este link atingiu o limite máximo de usos.'
+                        reason: 'Este link atingiu o limite máximo de usos.',
+                        profileSlug: userProfileSlug
                     });
                 }
             }
@@ -556,14 +562,17 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 // Validar expiração
                 if (linkRow.link_expires_at && new Date(linkRow.link_expires_at) < new Date()) {
                     logger.warn(`⚠️ [CADASTRO_LINKS] Link expirado: ${token}`);
-                    return res.status(410).render('linkExpired', {});
+                    return res.status(410).render('linkExpired', {
+                        profileSlug: linkRow.profile_slug || slug
+                    });
                 }
                 
                 // Validar limite de usos
                 if (linkRow.link_max_uses !== 999999 && linkRow.link_current_uses >= linkRow.link_max_uses) {
                     logger.warn(`⚠️ [CADASTRO_LINKS] Link esgotado: ${token}`);
                     return res.status(410).render('linkExpired', {
-                        reason: 'Este link atingiu o limite máximo de usos.'
+                        reason: 'Este link atingiu o limite máximo de usos.',
+                        profileSlug: linkRow.profile_slug || slug
                     });
                 }
                 
