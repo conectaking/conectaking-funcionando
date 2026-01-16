@@ -20,7 +20,11 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
     const userId = req.user.userId || req.user.id;
     const { description, expiresInHours = 24, maxUses = 1 } = req.body;
 
-    logger.info(`🔗 [UNIQUE_LINKS] Criando link único para item ${itemId}, userId: ${userId}`);
+    logger.info(`🔗 [UNIQUE_LINKS] Criando link único para item ${itemId}, userId: ${userId} (tipo: ${typeof userId}), req.user:`, {
+        userId: req.user.userId,
+        id: req.user.id,
+        email: req.user.email
+    });
 
     // Validar parâmetros
     if (!itemId) {
@@ -48,14 +52,24 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
 
     const item = itemCheck.rows[0];
 
-    // Converter para inteiro para garantir comparação correta
-    const itemUserId = parseInt(item.user_id);
-    const currentUserId = parseInt(userId);
+    // Comparação robusta: converter ambos para número e string para garantir compatibilidade
+    const itemUserIdNum = parseInt(item.user_id) || 0;
+    const currentUserIdNum = parseInt(userId) || 0;
+    const itemUserIdStr = String(item.user_id || '').trim();
+    const currentUserIdStr = String(userId || '').trim();
 
-    if (itemUserId !== currentUserId) {
-        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao criar: itemUserId=${itemUserId}, currentUserId=${currentUserId}, itemId=${itemId}`);
+    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para criar: item.user_id=${item.user_id} (tipo: ${typeof item.user_id}), userId=${userId} (tipo: ${typeof userId}), itemUserIdNum=${itemUserIdNum}, currentUserIdNum=${currentUserIdNum}`);
+
+    // Comparar tanto numericamente quanto como string
+    const hasPermission = (itemUserIdNum === currentUserIdNum && itemUserIdNum > 0) || 
+                         (itemUserIdStr === currentUserIdStr && itemUserIdStr !== '');
+
+    if (!hasPermission) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao criar: item.user_id="${item.user_id}" (${typeof item.user_id}), userId="${userId}" (${typeof userId}), itemId=${itemId}`);
         return res.status(403).json({ error: 'Você não tem permissão para criar links para este item' });
     }
+    
+    logger.info(`✅ [UNIQUE_LINKS] Permissão aprovada para criar link único`);
 
     // Verificar se o item é um formulário ou lista de convidados
     if (item.item_type !== 'digital_form' && item.item_type !== 'guest_list') {
@@ -155,14 +169,24 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
         return res.status(404).json({ error: 'Item não encontrado' });
     }
 
-    // Converter para inteiro para garantir comparação correta
-    const itemUserId = parseInt(itemCheck.rows[0].user_id);
-    const currentUserId = parseInt(userId);
+    // Comparação robusta: converter ambos para número e string
+    const itemUserIdNum = parseInt(itemCheck.rows[0].user_id) || 0;
+    const currentUserIdNum = parseInt(userId) || 0;
+    const itemUserIdStr = String(itemCheck.rows[0].user_id || '').trim();
+    const currentUserIdStr = String(userId || '').trim();
 
-    if (itemUserId !== currentUserId) {
-        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada: itemUserId=${itemUserId}, currentUserId=${currentUserId}, itemId=${itemId}`);
+    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para listar: item.user_id=${itemCheck.rows[0].user_id} (tipo: ${typeof itemCheck.rows[0].user_id}), userId=${userId} (tipo: ${typeof userId}), itemUserIdNum=${itemUserIdNum}, currentUserIdNum=${currentUserIdNum}`);
+
+    // Comparar tanto numericamente quanto como string
+    const hasPermission = (itemUserIdNum === currentUserIdNum && itemUserIdNum > 0) || 
+                         (itemUserIdStr === currentUserIdStr && itemUserIdStr !== '');
+
+    if (!hasPermission) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada para listar: item.user_id="${itemCheck.rows[0].user_id}" (${typeof itemCheck.rows[0].user_id}), userId="${userId}" (${typeof userId}), itemId=${itemId}`);
         return res.status(403).json({ error: 'Você não tem permissão para ver links deste item' });
     }
+    
+    logger.info(`✅ [UNIQUE_LINKS] Permissão aprovada para listar links únicos`);
 
     // Buscar links únicos
     let result;
@@ -289,14 +313,24 @@ router.delete('/:linkId', protectUser, asyncHandler(async (req, res) => {
         return res.status(404).json({ error: 'Link não encontrado' });
     }
 
-    // Converter para inteiro para garantir comparação correta
-    const linkUserId = parseInt(linkCheck.rows[0].user_id);
-    const currentUserId = parseInt(userId);
+    // Comparação robusta: converter ambos para número e string
+    const linkUserIdNum = parseInt(linkCheck.rows[0].user_id) || 0;
+    const currentUserIdNum = parseInt(userId) || 0;
+    const linkUserIdStr = String(linkCheck.rows[0].user_id || '').trim();
+    const currentUserIdStr = String(userId || '').trim();
 
-    if (linkUserId !== currentUserId) {
-        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao desativar: linkUserId=${linkUserId}, currentUserId=${currentUserId}, linkId=${linkId}`);
+    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para desativar: link.user_id=${linkCheck.rows[0].user_id} (tipo: ${typeof linkCheck.rows[0].user_id}), userId=${userId} (tipo: ${typeof userId}), linkUserIdNum=${linkUserIdNum}, currentUserIdNum=${currentUserIdNum}`);
+
+    // Comparar tanto numericamente quanto como string
+    const hasPermission = (linkUserIdNum === currentUserIdNum && linkUserIdNum > 0) || 
+                         (linkUserIdStr === currentUserIdStr && linkUserIdStr !== '');
+
+    if (!hasPermission) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao desativar: link.user_id="${linkCheck.rows[0].user_id}" (${typeof linkCheck.rows[0].user_id}), userId="${userId}" (${typeof userId}), linkId=${linkId}`);
         return res.status(403).json({ error: 'Você não tem permissão para desativar este link' });
     }
+    
+    logger.info(`✅ [UNIQUE_LINKS] Permissão aprovada para desativar link`);
 
     // Desativar link
     await db.query(
