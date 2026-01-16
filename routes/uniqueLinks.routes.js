@@ -26,7 +26,7 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
         return res.status(401).json({ error: 'Usuário não autenticado corretamente' });
     }
 
-    const { description, expiresInHours = 24, expiresInMinutes = null, maxUses = 1 } = req.body;
+    const { description, expiresInHours = 24, expiresInMinutes = null, maxUses = 1, customSlug = null } = req.body;
     
     // Calcular expiresInHours se for fornecido em minutos
     let finalExpiresInHours = expiresInHours;
@@ -162,11 +162,32 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + Math.round(finalExpiresInHours * 60));
 
+    // Validar custom_slug se fornecido
+    let finalCustomSlug = null;
+    if (customSlug && customSlug.trim()) {
+        const slug = customSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        if (slug.length < 3 || slug.length > 50) {
+            return res.status(400).json({ error: 'Slug personalizado deve ter entre 3 e 50 caracteres e conter apenas letras, números e hífens' });
+        }
+        
+        // Verificar se o slug já existe
+        const slugCheck = await db.query(
+            'SELECT id FROM unique_form_links WHERE custom_slug = $1',
+            [slug]
+        );
+        
+        if (slugCheck.rows.length > 0) {
+            return res.status(400).json({ error: 'Este slug personalizado já está em uso. Escolha outro.' });
+        }
+        
+        finalCustomSlug = slug;
+    }
+    
     // Inserir link único no banco
     const insertQuery = `
         INSERT INTO unique_form_links 
-        (profile_item_id, token, description, expires_at, max_uses, created_by_user_id)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        (profile_item_id, token, description, expires_at, max_uses, created_by_user_id, custom_slug)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
     `;
 
@@ -176,7 +197,8 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
         description || null,
         expiresAt,
         maxUses,
-        userId
+        userId,
+        finalCustomSlug
     ]);
 
     const uniqueLink = result.rows[0];
@@ -198,7 +220,9 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
 
     // Construir URL completa do link
     const baseUrl = process.env.FRONTEND_URL || 'https://tag.conectaking.com.br';
-    const fullUrl = `${baseUrl}/${userSlug}/form/share/${token}`;
+    // Se tiver custom_slug, usar ele, senão usar o token
+    const urlIdentifier = finalCustomSlug || token;
+    const fullUrl = `${baseUrl}/${userSlug}/form/share/${urlIdentifier}`;
 
     res.status(201).json({
         success: true,
