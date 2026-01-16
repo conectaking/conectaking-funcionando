@@ -639,10 +639,24 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 // Verificar se o slug corresponde ao do usuário
                 if (linkData.profile_slug === slug) {
                     actualToken = token; // Token correto já encontrado
+                    uniqueLinkData = linkData; // Armazenar dados do unique_link
+                    // Preparar itemRes para processamento abaixo
+                    itemRes = {
+                        rows: [{
+                            id: linkData.profile_item_id,
+                            user_id: linkData.user_id,
+                            item_type: linkData.item_type,
+                            is_active: linkData.is_active,
+                            share_token: linkData.share_token
+                        }]
+                    };
+                    logger.info(`✅ [UNIQUE_LINKS] Link único encontrado via /:slug/form/share/:token: token=${token}, itemId=${linkData.profile_item_id}`);
                 } else {
-                    return res.status(404).send('<h1>404 - Link não encontrado</h1><p>O link não corresponde a este usuário.</p>');
+                    logger.warn(`⚠️ [UNIQUE_LINKS] Link encontrado mas slug não corresponde: esperado="${slug}", encontrado="${linkData.profile_slug}"`);
+                    return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link não corresponde a este usuário. URL correta: <a href="https://conectaking.com.br/${linkData.profile_slug}/form/share/${token}">https://conectaking.com.br/${linkData.profile_slug}/form/share/${token}</a></p>`);
                 }
             } else {
+                logger.warn(`⚠️ [UNIQUE_LINKS] Link único não encontrado: token=${token}`);
                 return res.status(404).send('<h1>404 - Link não encontrado</h1><p>O link único não existe ou foi removido.</p>');
             }
         } else {
@@ -846,59 +860,60 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         
         // IMPORTANTE: Processar diretamente usando a mesma lógica da rota /form/share/:token
         // Isso mantém o slug na URL e evita redirecionamento
-        logger.info(`🔗 [ROUTE] Processando link via /:slug/form/share/:token, token: ${actualToken}, slug: ${slug}`);
+        logger.info(`🔗 [ROUTE] Processando link via /:slug/form/share/:token, token: ${actualToken}, slug: ${slug}, itemRes já definido: ${!!itemRes}`);
         
-        // Buscar dados do item usando actualToken
-        // Se actualToken ainda é o token original, pode ser cadastro_slug, share_token ou custom_slug
-        let itemRes = null;
-        let uniqueLinkData = null;
-        
-        // PRIORIDADE 1: Tentar buscar por share_token direto
-        if (!itemRes || itemRes.rows.length === 0) {
+        // Se itemRes já foi definido (por unique_ ou cadastro_slug ou custom_slug acima), usar diretamente
+        // Caso contrário, buscar dados do item usando actualToken
+        if (!itemRes || !itemRes.rows || itemRes.rows.length === 0) {
+            logger.info(`🔍 [ROUTE] itemRes não encontrado, buscando por actualToken: ${actualToken}`);
+            
+            // PRIORIDADE 1: Tentar buscar por share_token direto
             itemRes = await client.query(
                 `SELECT pi.* 
                  FROM profile_items pi
                  WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
                 [actualToken]
             );
-        }
-        
-        // PRIORIDADE 2: Tentar buscar por unique_form_links (se actualToken foi definido por custom_slug ou unique_)
-        if (!itemRes || itemRes.rows.length === 0) {
-            const uniqueRes = await client.query(`
-                SELECT ufl.*, pi.*
-                FROM unique_form_links ufl
-                INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                WHERE ufl.token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
-            `, [actualToken]);
             
-            if (uniqueRes.rows.length > 0) {
-                uniqueLinkData = uniqueRes.rows[0];
-                itemRes = {
-                    rows: [{
-                        id: uniqueLinkData.profile_item_id,
-                        user_id: uniqueLinkData.user_id,
-                        item_type: uniqueLinkData.item_type,
-                        is_active: uniqueLinkData.is_active,
-                        share_token: uniqueLinkData.share_token
-                    }]
-                };
+            // PRIORIDADE 2: Tentar buscar por unique_form_links (se actualToken foi definido por custom_slug)
+            if (!itemRes || itemRes.rows.length === 0) {
+                const uniqueRes = await client.query(`
+                    SELECT ufl.*, pi.*
+                    FROM unique_form_links ufl
+                    INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
+                    WHERE ufl.token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
+                `, [actualToken]);
+                
+                if (uniqueRes.rows.length > 0) {
+                    uniqueLinkData = uniqueRes.rows[0];
+                    itemRes = {
+                        rows: [{
+                            id: uniqueLinkData.profile_item_id,
+                            user_id: uniqueLinkData.user_id,
+                            item_type: uniqueLinkData.item_type,
+                            is_active: uniqueLinkData.is_active,
+                            share_token: uniqueLinkData.share_token
+                        }]
+                    };
+                }
             }
-        }
-        
-        // PRIORIDADE 3: Tentar buscar por cadastro_slug (pode ser que actualToken seja cadastro_slug)
-        if (!itemRes || itemRes.rows.length === 0) {
-            const cadastroRes = await client.query(`
-                SELECT pi.* 
-                FROM profile_items pi
-                INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-                WHERE gli.cadastro_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
-                [actualToken]
-            );
             
-            if (cadastroRes.rows.length > 0) {
-                itemRes = cadastroRes;
+            // PRIORIDADE 3: Tentar buscar por cadastro_slug (pode ser que actualToken seja cadastro_slug)
+            if (!itemRes || itemRes.rows.length === 0) {
+                const cadastroRes = await client.query(`
+                    SELECT pi.* 
+                    FROM profile_items pi
+                    INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+                    WHERE gli.cadastro_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
+                    [actualToken]
+                );
+                
+                if (cadastroRes.rows.length > 0) {
+                    itemRes = cadastroRes;
+                }
             }
+        } else {
+            logger.info(`✅ [ROUTE] Usando itemRes já encontrado anteriormente`);
         }
         
         if (itemRes.rows.length === 0) {
