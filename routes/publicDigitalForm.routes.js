@@ -526,6 +526,7 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         try {
             // Primeiro, tentar buscar em cadastro_links (múltiplos links personalizados)
             // O slug do link é único, então não precisamos verificar o profile_slug
+            logger.info(`🔍 [CADASTRO_LINKS] Buscando link personalizado com slug: "${token}"`);
             const cadastroLinksRes = await client.query(`
                 SELECT 
                     pi.*, 
@@ -542,6 +543,8 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
                 AND pi.is_active = true
             `, [token]);
+            
+            logger.info(`🔍 [CADASTRO_LINKS] Resultado da busca em cadastro_links: ${cadastroLinksRes.rows.length} resultado(s)`);
             
             if (cadastroLinksRes.rows.length > 0) {
                 const linkRow = cadastroLinksRes.rows[0];
@@ -575,17 +578,33 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 itemRes = cadastroLinksRes;
             } else {
                 // Se não encontrou em cadastro_links, tentar cadastro_slug (link único)
-                // Verificar se o profile_slug corresponde (para links únicos, o slug do usuário pode estar na URL)
-                const cadastroSlugRes = await client.query(`
+                // Para cadastro_slug, o slug na URL pode não corresponder ao profile_slug
+                // Então vamos buscar primeiro sem verificar o profile_slug, e depois validar se encontrou
+                let cadastroSlugRes = await client.query(`
                     SELECT pi.*, u.profile_slug
                     FROM profile_items pi
                     INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
                     INNER JOIN users u ON pi.user_id = u.id
                     WHERE gli.cadastro_slug = $1 
-                    AND (u.profile_slug = $2 OR $2 IS NULL OR $2 = '')
                     AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
                     AND pi.is_active = true
-                `, [token, slug]);
+                `, [token]);
+                
+                // Se encontrou mas o profile_slug não corresponde, ainda assim usar (slug pode estar incorreto na URL mas o token é válido)
+                // Só fazer fallback se não encontrou nada
+                if (cadastroSlugRes.rows.length === 0 && slug) {
+                    // Tentar novamente verificando o profile_slug como fallback
+                    cadastroSlugRes = await client.query(`
+                        SELECT pi.*, u.profile_slug
+                        FROM profile_items pi
+                        INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+                        INNER JOIN users u ON pi.user_id = u.id
+                        WHERE gli.cadastro_slug = $1 
+                        AND u.profile_slug = $2
+                        AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
+                        AND pi.is_active = true
+                    `, [token, slug]);
+                }
                 
                 logger.info(`🔍 [CADASTRO_SLUG] Resultado da busca: ${cadastroSlugRes.rows.length} resultado(s)`);
                 
