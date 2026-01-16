@@ -640,36 +640,70 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             }
         } else {
             // PRIORIDADE 2: Buscar por custom_slug
-            const customLinkRes = await client.query(`
-                SELECT ufl.*, pi.*, u.profile_slug
-                FROM unique_form_links ufl
-                INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                INNER JOIN users u ON pi.user_id = u.id
-                WHERE ufl.custom_slug = $1 
-                AND u.profile_slug = $2 
-                AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
-                AND pi.is_active = true
-            `, [token, slug]);
+            logger.info(`🔍 [UNIQUE_LINKS] Buscando link por custom_slug: "${token}", slug: "${slug}"`);
             
-            if (customLinkRes.rows.length > 0) {
-                const linkData = customLinkRes.rows[0];
-                // Validar se o link único é válido
-                const validationResult = await client.query(
-                    'SELECT is_unique_link_valid($1) as is_valid',
-                    [linkData.token]
-                );
+            try {
+                const customLinkRes = await client.query(`
+                    SELECT ufl.*, pi.*, u.profile_slug
+                    FROM unique_form_links ufl
+                    INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
+                    INNER JOIN users u ON pi.user_id = u.id
+                    WHERE ufl.custom_slug = $1 
+                    AND u.profile_slug = $2 
+                    AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
+                    AND pi.is_active = true
+                `, [token, slug]);
                 
-                if (validationResult.rows[0].is_valid) {
-                    actualToken = linkData.token; // Usar o token real para processar
+                logger.info(`🔍 [UNIQUE_LINKS] Resultado da busca por custom_slug: ${customLinkRes.rows.length} resultado(s)`);
+                
+                if (customLinkRes.rows.length > 0) {
+                    const linkData = customLinkRes.rows[0];
+                    logger.info(`✅ [UNIQUE_LINKS] Link encontrado via custom_slug: token=${linkData.token}, custom_slug=${linkData.custom_slug}, expires_at=${linkData.expires_at}`);
+                    
+                    // Validar se o link único é válido
+                    const validationResult = await client.query(
+                        'SELECT is_unique_link_valid($1) as is_valid',
+                        [linkData.token]
+                    );
+                    
+                    const isValid = validationResult.rows[0].is_valid;
+                    logger.info(`🔍 [UNIQUE_LINKS] Validação do link: ${isValid ? 'VÁLIDO' : 'INVÁLIDO'}`);
+                    
+                    if (isValid) {
+                        actualToken = linkData.token; // Usar o token real para processar
+                        logger.info(`✅ [UNIQUE_LINKS] Usando token real: ${actualToken}`);
+                    } else {
+                        logger.warn(`⚠️ [UNIQUE_LINKS] Link encontrado mas inválido: ${linkData.token}`);
+                        return res.status(400).render('formError', {
+                            title: 'Link Indisponível',
+                            message: 'Este link expirou ou já foi utilizado.',
+                            errorCode: 'UNIQUE_LINK_INVALID'
+                        });
+                    }
                 } else {
-                    return res.status(400).render('formError', {
-                        title: 'Link Indisponível',
-                        message: 'Este link expirou ou já foi utilizado.',
-                        errorCode: 'UNIQUE_LINK_INVALID'
-                    });
+                    // Tentar buscar apenas pelo custom_slug (sem verificar slug do usuário) para debug
+                    const debugRes = await client.query(`
+                        SELECT ufl.custom_slug, ufl.token, u.profile_slug
+                        FROM unique_form_links ufl
+                        INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
+                        INNER JOIN users u ON pi.user_id = u.id
+                        WHERE ufl.custom_slug = $1
+                        LIMIT 5
+                    `, [token]);
+                    
+                    logger.warn(`⚠️ [UNIQUE_LINKS] Link não encontrado com slug "${slug}". Links com custom_slug="${token}" encontrados:`, debugRes.rows);
+                    
+                    return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" não existe ou não corresponde ao usuário "${slug}".</p>`);
                 }
-            } else {
-                return res.status(404).send('<h1>404 - Link não encontrado</h1><p>O link personalizado não existe ou expirou.</p>');
+            } catch (customSlugError) {
+                // Se erro for de coluna não existe
+                if (customSlugError.code === '42703' || customSlugError.message.includes('custom_slug')) {
+                    logger.error(`❌ [UNIQUE_LINKS] Coluna custom_slug não existe. Execute a migration 088 primeiro.`);
+                    return res.status(500).send('<h1>500 - Erro de configuração</h1><p>A funcionalidade de links personalizados não está disponível. Execute a migration 088.</p>');
+                } else {
+                    logger.error(`❌ [UNIQUE_LINKS] Erro ao buscar por custom_slug:`, customSlugError);
+                    throw customSlugError;
+                }
             }
         }
         

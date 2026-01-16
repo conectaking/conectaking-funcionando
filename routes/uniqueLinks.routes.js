@@ -26,15 +26,19 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
         return res.status(401).json({ error: 'Usuário não autenticado corretamente' });
     }
 
-    const { description, expiresInHours = 24, expiresInMinutes = null, maxUses = 1, customSlug = null } = req.body;
+    const { description, expiresInHours = null, expiresInMinutes = null, maxUses = 1, customSlug = null } = req.body;
     
-    // Calcular expiresInHours se for fornecido em minutos
-    let finalExpiresInHours = expiresInHours;
+    // Calcular expiresInHours se for fornecido em minutos ou horas
+    // Se ambos forem null/undefined, link será criado SEM expiração
+    let finalExpiresInHours = null;
     if (expiresInMinutes !== null && expiresInMinutes !== undefined) {
         finalExpiresInHours = expiresInMinutes / 60;
+    } else if (expiresInHours !== null && expiresInHours !== undefined) {
+        finalExpiresInHours = expiresInHours;
     }
+    // Se ambos forem null/undefined, finalExpiresInHours permanece null = sem expiração
 
-    logger.info(`🔗 [UNIQUE_LINKS] Criando link único para item ${itemId}, userId: ${userId} (tipo: ${typeof userId}), validade: ${finalExpiresInHours}h (${expiresInMinutes ? expiresInMinutes + 'min' : expiresInHours + 'h'}), req.user:`, {
+    logger.info(`🔗 [UNIQUE_LINKS] Criando link único para item ${itemId}, userId: ${userId} (tipo: ${typeof userId}), validade: ${finalExpiresInHours !== null ? finalExpiresInHours + 'h' : 'SEM EXPIRAÇÃO'}, custom_slug: ${customSlug || 'não informado'}, req.user:`, {
         userId: req.user.userId,
         id: req.user.id,
         user_id: req.user.user_id,
@@ -50,12 +54,15 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
         return res.status(400).json({ error: 'maxUses deve ser pelo menos 1' });
     }
 
-    if (finalExpiresInHours < 0.0167) { // Mínimo de 1 minuto (0.0167 horas)
-        return res.status(400).json({ error: 'Validade deve ser de pelo menos 1 minuto' });
-    }
-    
-    if (finalExpiresInHours > 8760) { // Máximo de 1 ano (8760 horas)
-        return res.status(400).json({ error: 'Validade não pode ser superior a 1 ano' });
+    // Se validade for fornecida, validar
+    if (finalExpiresInHours !== null && finalExpiresInHours !== undefined) {
+        if (finalExpiresInHours < 0.0167) { // Mínimo de 1 minuto (0.0167 horas)
+            return res.status(400).json({ error: 'Validade deve ser de pelo menos 1 minuto' });
+        }
+        
+        if (finalExpiresInHours > 8760) { // Máximo de 1 ano (8760 horas)
+            return res.status(400).json({ error: 'Validade não pode ser superior a 1 ano' });
+        }
     }
 
     // Verificar se o item existe e pertence ao usuário
@@ -158,9 +165,15 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
     // Gerar token único
     const token = `unique_${crypto.randomBytes(16).toString('hex')}`;
 
-    // Calcular data de expiração
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + Math.round(finalExpiresInHours * 60));
+    // Calcular data de expiração (NULL se não fornecida = link sem expiração)
+    let expiresAt = null;
+    if (finalExpiresInHours !== null && finalExpiresInHours !== undefined) {
+        expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + Math.round(finalExpiresInHours * 60));
+        logger.info(`🔗 [UNIQUE_LINKS] Link com expiração: ${finalExpiresInHours}h (${expiresAt.toISOString()})`);
+    } else {
+        logger.info(`🔗 [UNIQUE_LINKS] Link SEM expiração (válido até ser excluído)`);
+    }
 
     // Validar custom_slug se fornecido
     let finalCustomSlug = null;
@@ -389,15 +402,21 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
             status = 'used';
         }
 
+        // Verificar se tem expiração (expires_at pode ser NULL)
+        const hasExpiration = link.expires_at !== null && link.expires_at !== undefined;
+        const isExpired = hasExpiration ? new Date(link.expires_at) < new Date() : false;
+        const timeRemaining = hasExpiration && new Date(link.expires_at) > new Date() 
+            ? Math.max(0, Math.ceil((new Date(link.expires_at) - new Date()) / (1000 * 60 * 60)))
+            : (hasExpiration ? 0 : null); // null = sem expiração
+
         return {
             ...link,
             fullUrl,
             status,
-            isExpired: new Date(link.expires_at) < new Date(),
+            isExpired,
             isUsed: link.current_uses >= link.max_uses,
-            timeRemaining: new Date(link.expires_at) > new Date() 
-                ? Math.max(0, Math.ceil((new Date(link.expires_at) - new Date()) / (1000 * 60 * 60)))
-                : 0
+            timeRemaining,
+            hasExpiration
         };
     });
 
