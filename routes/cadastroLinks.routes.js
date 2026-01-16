@@ -231,6 +231,180 @@ router.post('/:id/cadastro-links', protectUser, asyncHandler(async (req, res) =>
 }));
 
 /**
+ * PUT /api/guest-lists/cadastro-links/:linkId
+ * Editar um link personalizado
+ */
+router.put('/cadastro-links/:linkId', protectUser, asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const linkId = parseInt(req.params.linkId, 10);
+    const { slug, description, expiresInHours, expiresInMinutes, expiresAt, maxUses, currentUses } = req.body;
+    
+    if (isNaN(linkId)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'ID do link inválido' 
+        });
+    }
+    
+    const client = await db.pool.connect();
+    
+    try {
+        // Verificar se o link pertence a um item do usuário
+        const linkCheck = await client.query(`
+            SELECT cl.id, cl.slug, pi.user_id
+            FROM cadastro_links cl
+            INNER JOIN guest_list_items gli ON gli.id = cl.guest_list_item_id
+            INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+            WHERE cl.id = $1 AND pi.user_id = $2
+        `, [linkId, userId]);
+        
+        if (linkCheck.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Link não encontrado ou você não tem permissão para editá-lo' 
+            });
+        }
+        
+        const currentLink = linkCheck.rows[0];
+        
+        // Preparar campos para atualização
+        const updates = [];
+        const values = [];
+        let paramIndex = 1;
+        
+        // Atualizar slug se fornecido
+        if (slug !== undefined && slug !== null) {
+            const normalizedSlug = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+            
+            if (!normalizedSlug || normalizedSlug.length < 3) {
+                return res.status(400).json({ 
+                    success: false,
+                    message: 'Slug inválido. Use apenas letras minúsculas, números e hífens. Mínimo 3 caracteres.' 
+                });
+            }
+            
+            if (!/^[a-z0-9-]+$/.test(normalizedSlug)) {
+                return res.status(400).json({ 
+                    success: false,
+                    message: 'Slug inválido. Use apenas letras minúsculas, números e hífens.' 
+                });
+            }
+            
+            // Verificar se o slug já existe (exceto para o link atual)
+            if (normalizedSlug !== currentLink.slug) {
+                const slugCheck = await client.query(`
+                    SELECT id FROM cadastro_links WHERE slug = $1 AND id != $2
+                `, [normalizedSlug, linkId]);
+                
+                if (slugCheck.rows.length > 0) {
+                    return res.status(400).json({ 
+                        success: false,
+                        message: 'Este slug já está em uso. Escolha outro.' 
+                    });
+                }
+            }
+            
+            updates.push(`slug = $${paramIndex++}`);
+            values.push(normalizedSlug);
+        }
+        
+        // Atualizar descrição
+        if (description !== undefined) {
+            updates.push(`description = $${paramIndex++}`);
+            values.push(description && description.trim() ? description.trim() : null);
+        }
+        
+        // Atualizar expires_at
+        if (expiresAt !== undefined && expiresAt !== null) {
+            // Se for uma string "null" ou vazia, definir como NULL
+            if (expiresAt === 'null' || expiresAt === '' || expiresAt === null) {
+                updates.push(`expires_at = NULL`);
+            } else {
+                // Se for um objeto Date ou string ISO, converter
+                const dateValue = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
+                updates.push(`expires_at = $${paramIndex++}`);
+                values.push(dateValue);
+            }
+        } else if (expiresInHours !== undefined && expiresInHours !== null) {
+            const expiresAtValue = new Date(Date.now() + (expiresInHours * 60 * 60 * 1000));
+            updates.push(`expires_at = $${paramIndex++}`);
+            values.push(expiresAtValue);
+        } else if (expiresInMinutes !== undefined && expiresInMinutes !== null) {
+            const expiresAtValue = new Date(Date.now() + (expiresInMinutes * 60 * 1000));
+            updates.push(`expires_at = $${paramIndex++}`);
+            values.push(expiresAtValue);
+        }
+        
+        // Atualizar max_uses
+        if (maxUses !== undefined) {
+            const maxUsesValue = maxUses && maxUses !== 999999 && maxUses !== null ? parseInt(maxUses) : 999999;
+            updates.push(`max_uses = $${paramIndex++}`);
+            values.push(maxUsesValue);
+        }
+        
+        // Atualizar current_uses (permitir reset do contador)
+        if (currentUses !== undefined && currentUses !== null) {
+            updates.push(`current_uses = $${paramIndex++}`);
+            values.push(parseInt(currentUses) || 0);
+        }
+        
+        if (updates.length === 0) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Nenhum campo para atualizar' 
+            });
+        }
+        
+        // Adicionar linkId aos values
+        values.push(linkId);
+        
+        // Atualizar o link
+        const updateQuery = `
+            UPDATE cadastro_links 
+            SET ${updates.join(', ')}
+            WHERE id = $${paramIndex}
+            RETURNING *
+        `;
+        
+        const result = await client.query(updateQuery, values);
+        
+        const updatedLink = result.rows[0];
+        
+        logger.info(`✅ [CADASTRO_LINKS] Link editado: ${linkId} -> ${updatedLink.slug}`);
+        
+        res.json({
+            success: true,
+            data: {
+                id: updatedLink.id,
+                slug: updatedLink.slug,
+                description: updatedLink.description,
+                expires_at: updatedLink.expires_at,
+                max_uses: updatedLink.max_uses,
+                current_uses: updatedLink.current_uses
+            }
+        });
+    } catch (error) {
+        logger.error('Erro ao editar link personalizado:', error);
+        
+        // Verificar se é erro de constraint única
+        if (error.code === '23505') {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Este slug já está em uso. Escolha outro.' 
+            });
+        }
+        
+        res.status(500).json({ 
+            success: false,
+            message: 'Erro ao editar link personalizado',
+            error: error.message 
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
  * DELETE /api/guest-lists/cadastro-links/:linkId
  * Deletar um link personalizado
  */
