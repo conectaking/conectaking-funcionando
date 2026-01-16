@@ -344,9 +344,10 @@ app.use('/api/ia-king', apiLimiter, iaKingRoutes);
 app.use('/api/ia-king', apiLimiter, iaKingTrainingRoutes);
 app.use('/api/ai-core', apiLimiter, aiCoreRoutes); // Nova ConectaKing AI Core
 app.use('/api/contracts', apiLimiter, contractsRoutes);
-app.use('/api/guest-lists', apiLimiter, guestListRoutes);
-app.use('/api/guest-lists', apiLimiter, guestListCustomizeRoutes);
+// IMPORTANTE: cadastroLinksRoutes deve vir ANTES de guestListRoutes para que rotas específicas como /:id/cadastro-links sejam processadas antes da rota genérica /:id
 app.use('/api/guest-lists', apiLimiter, cadastroLinksRoutes);
+app.use('/api/guest-lists', apiLimiter, guestListCustomizeRoutes);
+app.use('/api/guest-lists', apiLimiter, guestListRoutes);
 app.use('/guest-list', publicGuestListRoutes);
 app.use('/api/webhooks', apiLimiter, webhooksRoutes);
 app.use('/api/push', apiLimiter, pushNotificationsRoutes);
