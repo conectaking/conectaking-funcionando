@@ -118,10 +118,12 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     
     try {
+        // Inicializar itemRes como null
+        let itemRes = null;
+        
         // Buscar formulário pelo share_token ou cadastro_slug
         // PRIORIDADE 1: Tentar pelo share_token (sistema normal)
-        if (!itemRes || itemRes.rows.length === 0) {
-            itemRes = await client.query(
+        itemRes = await client.query(
                 `SELECT pi.* 
                  FROM profile_items pi
                  WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
@@ -2207,21 +2209,38 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     
     try {
-        // Buscar usuário por slug
-        const userRes = await client.query(
-            'SELECT id FROM users WHERE profile_slug = $1 OR id = $1',
-            [slug]
-        );
-        
-        if (userRes.rows.length === 0) {
-            return res.status(404).send('<h1>404 - Perfil não encontrado</h1>');
-        }
-
-        const userId = userRes.rows[0].id;
         const itemIdInt = parseInt(itemId, 10);
 
         if (isNaN(itemIdInt)) {
             return res.status(400).send('<h1>400 - ID do formulário inválido</h1>');
+        }
+
+        // PRIORIDADE 1: Buscar userId pelo itemId primeiro (mais confiável)
+        let userId = null;
+        const itemCheck = await client.query(
+            'SELECT user_id FROM profile_items WHERE id = $1 AND (item_type = \'digital_form\' OR item_type = \'guest_list\') AND is_active = true',
+            [itemIdInt]
+        );
+        
+        if (itemCheck.rows.length > 0) {
+            userId = itemCheck.rows[0].user_id;
+            logger.info(`✅ [SUCCESS] userId encontrado via itemId: ${userId} para itemId: ${itemIdInt}`);
+        } else {
+            // PRIORIDADE 2: Se não encontrou pelo itemId, tentar buscar pelo slug
+            logger.info(`⚠️ [SUCCESS] Item não encontrado pelo itemId, tentando buscar pelo slug: "${slug}"`);
+            const userRes = await client.query(
+                'SELECT id FROM users WHERE profile_slug = $1 OR id = $1',
+                [slug]
+            );
+            
+            if (userRes.rows.length === 0) {
+                return res.status(404).send('<h1>404 - Perfil não encontrado</h1>');
+            }
+            userId = userRes.rows[0].id;
+        }
+
+        if (!userId) {
+            return res.status(404).send('<h1>404 - Perfil não encontrado</h1>');
         }
 
         // Buscar dados do formulário (primeiro de digital_form_items)
