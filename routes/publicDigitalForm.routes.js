@@ -608,7 +608,7 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
     const { slug, token } = req.params;
     
     // LOG CRÍTICO: Confirmar que a rota está sendo chamada
-    logger.info(`🔍 [ROUTE] Rota /:slug/form/share/:token chamada - slug: "${slug}", token: "${token}", path: "${req.path}"`);
+    logger.info(`🔍 [ROUTE] Rota /:slug/form/share/:token chamada - slug: "${slug}", token: "${token}", path: "${req.path}", url: "${req.url}", originalUrl: "${req.originalUrl}"`);
     
     // Headers para evitar cache
     const now = Date.now();
@@ -636,6 +636,8 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             
             if (uniqueLinkRes.rows.length > 0) {
                 const linkData = uniqueLinkRes.rows[0];
+                logger.info(`🔍 [UNIQUE_LINKS] Link único encontrado no banco: token=${token}, slug_esperado="${slug}", slug_encontrado="${linkData.profile_slug}"`);
+                
                 // Verificar se o slug corresponde ao do usuário
                 if (linkData.profile_slug === slug) {
                     actualToken = token; // Token correto já encontrado
@@ -650,14 +652,16 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                             share_token: linkData.share_token
                         }]
                     };
-                    logger.info(`✅ [UNIQUE_LINKS] Link único encontrado via /:slug/form/share/:token: token=${token}, itemId=${linkData.profile_item_id}`);
+                    logger.info(`✅ [UNIQUE_LINKS] Link único encontrado e validado via /:slug/form/share/:token: token=${token}, itemId=${linkData.profile_item_id}, slug=${linkData.profile_slug}`);
                 } else {
                     logger.warn(`⚠️ [UNIQUE_LINKS] Link encontrado mas slug não corresponde: esperado="${slug}", encontrado="${linkData.profile_slug}"`);
                     return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link não corresponde a este usuário. URL correta: <a href="https://conectaking.com.br/${linkData.profile_slug}/form/share/${token}">https://conectaking.com.br/${linkData.profile_slug}/form/share/${token}</a></p>`);
                 }
-            } else {
-                logger.warn(`⚠️ [UNIQUE_LINKS] Link único não encontrado: token=${token}`);
-                return res.status(404).send('<h1>404 - Link não encontrado</h1><p>O link único não existe ou foi removido.</p>');
+                } else {
+                    logger.warn(`⚠️ [UNIQUE_LINKS] Link único NÃO encontrado no banco: token=${token}, slug="${slug}"`);
+                    // Se não encontrou e o token começa com "unique_", retornar 404
+                    // Porque não faz sentido tentar outras prioridades para tokens unique_
+                    return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link único "${token}" não existe ou foi removido.</p><p><strong>Debug:</strong> Verifique se o link foi criado corretamente no banco de dados.</p>`);
             }
         } else {
             // PRIORIDADE 2: Buscar por cadastro_slug (MESMO comportamento da rota /form/share/:token)
@@ -916,8 +920,9 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             logger.info(`✅ [ROUTE] Usando itemRes já encontrado anteriormente`);
         }
         
-        if (itemRes.rows.length === 0) {
-            return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>O link compartilhável é inválido ou expirou.</p>');
+        if (!itemRes || itemRes.rows.length === 0) {
+            logger.error(`❌ [ROUTE] itemRes não encontrado após todas as buscas - slug: "${slug}", token: "${token}", actualToken: "${actualToken}"`);
+            return res.status(404).send(`<h1>404 - Formulário não encontrado</h1><p>O link compartilhável é inválido ou expirou.</p><p><strong>Debug:</strong> slug="${slug}", token="${token}"</p>`);
         }
         
         const item = itemRes.rows[0];
