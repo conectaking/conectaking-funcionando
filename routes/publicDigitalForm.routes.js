@@ -613,7 +613,14 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
     const { slug, token } = req.params;
     
     // LOG CRÍTICO: Confirmar que a rota está sendo chamada
-    logger.info(`🔍 [ROUTE] Rota /:slug/form/share/:token chamada - slug: "${slug}", token: "${token}"`);
+    logger.info(`🔍 [ROUTE] Rota /:slug/form/share/:token chamada - slug: "${slug}", token: "${token}", path: "${req.path}"`);
+    
+    // Headers para evitar cache
+    const now = Date.now();
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('X-Timestamp', now.toString());
     
     const client = await db.pool.connect();
     
