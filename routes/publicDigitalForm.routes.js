@@ -1551,9 +1551,12 @@ router.post('/:slug/form/:itemId/submit',
     try {
         const itemIdInt = parseInt(itemId, 10);
         
-        // Se slug for 'form' e itemId for um número, pode ser acesso via share_token
+        // PRIORIDADE 1: Se slug for 'form' e itemId for um número, pode ser acesso via share_token
         // Nesse caso, buscar o userId pelo itemId
+        // PRIORIDADE 2: Se itemId for válido, tentar buscar userId pelo itemId primeiro (mais confiável)
+        // PRIORIDADE 3: Se não encontrar pelo itemId, tentar buscar pelo slug
         let userId;
+        
         if (slug === 'form' && !isNaN(itemIdInt)) {
             // Buscar userId pelo itemId
             const itemRes = await client.query(
@@ -1564,8 +1567,31 @@ router.post('/:slug/form/:itemId/submit',
                 return res.status(404).json({ message: 'Formulário não encontrado' });
             }
             userId = itemRes.rows[0].user_id;
+        } else if (!isNaN(itemIdInt)) {
+            // Tentar buscar userId pelo itemId primeiro (mais confiável que slug)
+            const itemRes = await client.query(
+                'SELECT user_id FROM profile_items WHERE id = $1 AND (item_type = \'digital_form\' OR item_type = \'guest_list\') AND is_active = true',
+                [itemIdInt]
+            );
+            
+            if (itemRes.rows.length > 0) {
+                userId = itemRes.rows[0].user_id;
+                logger.info(`✅ [SUBMIT] userId encontrado via itemId: ${userId} para itemId: ${itemIdInt}`);
+            } else {
+                // Se não encontrou pelo itemId, tentar buscar pelo slug
+                logger.info(`⚠️ [SUBMIT] Item não encontrado pelo itemId, tentando buscar pelo slug: "${slug}"`);
+                const userRes = await client.query(
+                    'SELECT id FROM users WHERE profile_slug = $1 OR id = $1',
+                    [slug]
+                );
+                
+                if (userRes.rows.length === 0) {
+                    return res.status(404).json({ message: 'Perfil não encontrado' });
+                }
+                userId = userRes.rows[0].id;
+            }
         } else {
-            // Buscar usuário por slug
+            // Buscar usuário por slug (fallback)
             const userRes = await client.query(
                 'SELECT id FROM users WHERE profile_slug = $1 OR id = $1',
                 [slug]
