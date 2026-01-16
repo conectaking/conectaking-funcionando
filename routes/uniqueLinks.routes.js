@@ -26,9 +26,15 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
         return res.status(401).json({ error: 'Usuário não autenticado corretamente' });
     }
 
-    const { description, expiresInHours = 24, maxUses = 1 } = req.body;
+    const { description, expiresInHours = 24, expiresInMinutes = null, maxUses = 1 } = req.body;
+    
+    // Calcular expiresInHours se for fornecido em minutos
+    let finalExpiresInHours = expiresInHours;
+    if (expiresInMinutes !== null && expiresInMinutes !== undefined) {
+        finalExpiresInHours = expiresInMinutes / 60;
+    }
 
-    logger.info(`🔗 [UNIQUE_LINKS] Criando link único para item ${itemId}, userId: ${userId} (tipo: ${typeof userId}), req.user:`, {
+    logger.info(`🔗 [UNIQUE_LINKS] Criando link único para item ${itemId}, userId: ${userId} (tipo: ${typeof userId}), validade: ${finalExpiresInHours}h (${expiresInMinutes ? expiresInMinutes + 'min' : expiresInHours + 'h'}), req.user:`, {
         userId: req.user.userId,
         id: req.user.id,
         user_id: req.user.user_id,
@@ -44,8 +50,12 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
         return res.status(400).json({ error: 'maxUses deve ser pelo menos 1' });
     }
 
-    if (expiresInHours < 1) {
-        return res.status(400).json({ error: 'expiresInHours deve ser pelo menos 1' });
+    if (finalExpiresInHours < 0.0167) { // Mínimo de 1 minuto (0.0167 horas)
+        return res.status(400).json({ error: 'Validade deve ser de pelo menos 1 minuto' });
+    }
+    
+    if (finalExpiresInHours > 8760) { // Máximo de 1 ano (8760 horas)
+        return res.status(400).json({ error: 'Validade não pode ser superior a 1 ano' });
     }
 
     // Verificar se o item existe e pertence ao usuário
@@ -150,7 +160,7 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
 
     // Calcular data de expiração
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + parseInt(expiresInHours));
+    expiresAt.setMinutes(expiresAt.getMinutes() + Math.round(finalExpiresInHours * 60));
 
     // Inserir link único no banco
     const insertQuery = `
