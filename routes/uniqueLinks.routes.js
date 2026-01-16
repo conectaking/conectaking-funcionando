@@ -79,56 +79,66 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
         return res.status(400).json({ error: 'Links únicos são válidos apenas para formulários ou listas de convidados' });
     }
 
-    // Verificar se a tabela existe - tentar múltiplas formas
+    // Verificar se a tabela existe - método mais simples e confiável
     let tableExists = false;
     try {
-        // Método 1: Verificar via information_schema
+        // Tentar fazer SELECT direto na tabela (método mais confiável)
         try {
-            const tableCheck = await db.query(`
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = 'unique_form_links'
-                ) as table_exists
-            `);
-            tableExists = tableCheck.rows[0]?.table_exists || false;
-            logger.info(`🔍 [UNIQUE_LINKS] Verificação via information_schema: ${tableExists}`);
-        } catch (schemaError) {
-            logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao verificar via information_schema:`, schemaError.message);
-        }
-        
-        // Método 2: Tentar fazer SELECT direto (se método 1 falhou ou retornou false)
-        if (!tableExists) {
-            try {
-                const directCheck = await db.query(`
-                    SELECT COUNT(*) as count FROM unique_form_links LIMIT 1
-                `);
-                tableExists = true; // Se chegou aqui, a tabela existe
-                logger.info(`✅ [UNIQUE_LINKS] Tabela existe (verificado via SELECT direto)`);
-            } catch (directError) {
-                // Erro 42P01 = relation does not exist
-                if (directError.code === '42P01') {
-                    tableExists = false;
-                    logger.warn(`⚠️ [UNIQUE_LINKS] Tabela não existe (erro 42P01): ${directError.message}`);
-                } else {
-                    // Outro erro, pode ser problema de permissão ou conexão
-                    logger.error(`❌ [UNIQUE_LINKS] Erro inesperado ao verificar tabela via SELECT:`, directError);
-                    tableExists = false;
+            await db.query(`SELECT 1 FROM unique_form_links LIMIT 1`);
+            tableExists = true;
+            logger.info(`✅ [UNIQUE_LINKS] Tabela unique_form_links existe e é acessível`);
+        } catch (directError) {
+            // Erro 42P01 = relation "unique_form_links" does not exist
+            if (directError.code === '42P01' || (directError.message && directError.message.includes('does not exist'))) {
+                tableExists = false;
+                logger.error(`❌ [UNIQUE_LINKS] Tabela unique_form_links NÃO existe (erro PostgreSQL 42P01)`);
+                logger.error(`❌ [UNIQUE_LINKS] Mensagem: ${directError.message}`);
+                
+                // Tentar verificar via information_schema para dar mais detalhes
+                try {
+                    const schemaCheck = await db.query(`
+                        SELECT table_name, table_schema 
+                        FROM information_schema.tables 
+                        WHERE table_name LIKE '%unique%' OR table_name LIKE '%link%'
+                        ORDER BY table_schema, table_name
+                    `);
+                    logger.info(`🔍 [UNIQUE_LINKS] Tabelas similares encontradas:`, schemaCheck.rows);
+                } catch (schemaError) {
+                    logger.warn(`⚠️ [UNIQUE_LINKS] Não foi possível verificar tabelas similares:`, schemaError.message);
                 }
+            } else {
+                // Outro erro - pode ser problema de permissão, conexão, ou sintaxe
+                logger.error(`❌ [UNIQUE_LINKS] Erro ao acessar tabela (não é erro de "não existe"):`, {
+                    code: directError.code,
+                    message: directError.message,
+                    detail: directError.detail
+                });
+                // Considerar que a tabela existe, mas há problema de acesso
+                // Isso evita bloqueios desnecessários se for erro de permissão
+                tableExists = true;
+                logger.warn(`⚠️ [UNIQUE_LINKS] Assumindo que tabela existe, mas há problema de acesso`);
             }
         }
         
         if (!tableExists) {
-            logger.error(`❌ [UNIQUE_LINKS] Tabela unique_form_links não encontrada. Execute a migration 084 primeiro.`);
-            logger.error(`❌ [UNIQUE_LINKS] Dica: Execute: psql -U seu_usuario -d seu_banco -f migrations/084_create_unique_form_links.sql`);
+            logger.error(`❌ [UNIQUE_LINKS] ============================================`);
+            logger.error(`❌ [UNIQUE_LINKS] MIGRATION NECESSÁRIA: Execute a migration 084`);
+            logger.error(`❌ [UNIQUE_LINKS] Comando: psql -U seu_usuario -d seu_banco -f migrations/084_create_unique_form_links.sql`);
+            logger.error(`❌ [UNIQUE_LINKS] OU execute o script SQL diretamente no seu banco de dados`);
+            logger.error(`❌ [UNIQUE_LINKS] ============================================`);
+            
             return res.status(500).json({ 
-                error: 'Tabela de links únicos não encontrada. Execute a migration 084 primeiro.' 
+                error: 'Tabela de links únicos não encontrada. Execute a migration 084 primeiro.',
+                hint: 'Execute: psql -U seu_usuario -d seu_banco -f migrations/084_create_unique_form_links.sql'
             });
         }
         
-        logger.info(`✅ [UNIQUE_LINKS] Tabela unique_form_links confirmada como existente`);
     } catch (tableCheckError) {
-        logger.error(`❌ [UNIQUE_LINKS] Erro crítico ao verificar tabela:`, tableCheckError);
+        logger.error(`❌ [UNIQUE_LINKS] Erro crítico ao verificar tabela:`, {
+            error: tableCheckError.message,
+            code: tableCheckError.code,
+            stack: tableCheckError.stack
+        });
         return res.status(500).json({ 
             error: 'Erro ao verificar tabela de links únicos',
             details: process.env.NODE_ENV === 'development' ? tableCheckError.message : undefined
