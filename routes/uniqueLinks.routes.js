@@ -17,7 +17,7 @@ const { protectUser } = require('../middleware/protectUser');
  */
 router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
     const { itemId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId || req.user.id;
     const { description, expiresInHours = 24, maxUses = 1 } = req.body;
 
     logger.info(`🔗 [UNIQUE_LINKS] Criando link único para item ${itemId}, userId: ${userId}`);
@@ -84,10 +84,16 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
 
     logger.info(`✅ [UNIQUE_LINKS] Link único criado: ${token} para item ${itemId}`);
 
+    // Buscar slug do usuário do banco de dados
+    const userRes = await db.query(
+        'SELECT profile_slug FROM users WHERE id = $1',
+        [userId]
+    );
+    const userSlug = userRes.rows[0]?.profile_slug || 'user';
+
     // Construir URL completa do link
     const baseUrl = process.env.FRONTEND_URL || 'https://tag.conectaking.com.br';
-    const slug = req.user.slug || req.user.username || 'user';
-    const fullUrl = `${baseUrl}/${slug}/form/share/${token}`;
+    const fullUrl = `${baseUrl}/${userSlug}/form/share/${token}`;
 
     res.status(201).json({
         success: true,
@@ -105,7 +111,7 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
  */
 router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
     const { itemId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId || req.user.id;
 
     logger.info(`🔗 [UNIQUE_LINKS] Listando links únicos para item ${itemId}, userId: ${userId}`);
 
@@ -138,12 +144,18 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
 
     const result = await db.query(query, [itemId]);
 
+    // Buscar slug do usuário do banco de dados
+    const userRes = await db.query(
+        'SELECT profile_slug FROM users WHERE id = $1',
+        [userId]
+    );
+    const userSlug = userRes.rows[0]?.profile_slug || 'user';
+
     const baseUrl = process.env.FRONTEND_URL || 'https://tag.conectaking.com.br';
-    const slug = req.user.slug || req.user.username || 'user';
 
     // Adicionar URL completa e status atualizado
     const links = result.rows.map(link => {
-        const fullUrl = `${baseUrl}/${slug}/form/share/${link.token}`;
+        const fullUrl = `${baseUrl}/${userSlug}/form/share/${link.token}`;
         
         // Verificar status atual
         let status = link.status;
@@ -178,7 +190,7 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
  */
 router.delete('/:linkId', protectUser, asyncHandler(async (req, res) => {
     const { linkId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId || req.user.id;
 
     logger.info(`🔗 [UNIQUE_LINKS] Desativando link único ${linkId}, userId: ${userId}`);
 
