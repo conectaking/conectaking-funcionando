@@ -153,7 +153,7 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
                     const expiresAt = new Date(cadastroLinkData.cadastro_expires_at);
                     if (expiresAt < new Date()) {
                         logger.warn(`❌ [CADASTRO_LINK] Link de cadastro expirado: ${token}, expirou em: ${expiresAt.toISOString()}`);
-                        return res.status(400).send('<h1>Link Expirado</h1><p>Este link de cadastro expirou. Entre em contato com o organizador do evento.</p>');
+                        return res.status(410).render('linkExpired', {});
                     }
                 }
                 
@@ -162,7 +162,9 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
                 const currentUses = cadastroLinkData.cadastro_current_uses || 0;
                 if (currentUses >= maxUses) {
                     logger.warn(`❌ [CADASTRO_LINK] Link de cadastro atingiu limite de usos: ${token}, usos: ${currentUses}/${maxUses}`);
-                    return res.status(400).send('<h1>Link Esgotado</h1><p>Este link de cadastro atingiu o limite máximo de usos. Entre em contato com o organizador do evento.</p>');
+                    return res.status(410).render('linkExpired', {
+                        reason: 'Este link atingiu o limite máximo de usos.'
+                    });
                 }
             }
         }
@@ -554,18 +556,14 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 // Validar expiração
                 if (linkRow.link_expires_at && new Date(linkRow.link_expires_at) < new Date()) {
                     logger.warn(`⚠️ [CADASTRO_LINKS] Link expirado: ${token}`);
-                    return res.status(410).render('error', {
-                        message: 'Este link expirou',
-                        title: 'Link Expirado'
-                    });
+                    return res.status(410).render('linkExpired', {});
                 }
                 
                 // Validar limite de usos
                 if (linkRow.link_max_uses !== 999999 && linkRow.link_current_uses >= linkRow.link_max_uses) {
                     logger.warn(`⚠️ [CADASTRO_LINKS] Link esgotado: ${token}`);
-                    return res.status(410).render('error', {
-                        message: 'Este link atingiu o limite de usos',
-                        title: 'Link Esgotado'
+                    return res.status(410).render('linkExpired', {
+                        reason: 'Este link atingiu o limite máximo de usos.'
                     });
                 }
                 
