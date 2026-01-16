@@ -146,8 +146,8 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
                 } else {
                     const link = linkInfo.rows[0];
                     if (link.status === 'used' || link.current_uses >= link.max_uses) {
-                        reason = 'Este link já foi utilizado. Cada link pode ser usado apenas uma vez.';
-                        title = 'Link já foi utilizado';
+                        reason = `Este link já foi usado ${link.max_uses} vez(es) e atingiu o limite máximo de usos.`;
+                        title = 'Link já foi usado';
                     } else if (link.status === 'expired' || new Date(link.expires_at) < new Date()) {
                         reason = 'Este link expirou. Links únicos têm validade limitada por segurança.';
                         title = 'Link expirado';
@@ -709,20 +709,263 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         
         // IMPORTANTE: Processar diretamente usando a mesma lógica da rota /form/share/:token
         // Isso mantém o slug na URL e evita redirecionamento
-        client.release();
-        
-        // Chamar a mesma função da rota principal, mas ajustando o req.params
-        // para que ela processe corretamente
-        const originalToken = req.params.token;
-        req.params.token = actualToken;
-        
-        // Reutilizar a função da rota principal /form/share/:token
-        // Mas precisamos chamar ela diretamente
+        // Usar actualToken para processar, mas manter o slug original na URL
         logger.info(`🔗 [UNIQUE_LINKS] Processando link via /:slug/form/share/:token, token: ${actualToken}, slug: ${slug}`);
         
-        // Redirecionar para a rota principal mantendo o token
-        // Isso resolve o 404 e mantém a funcionalidade
-        return res.redirect(`/form/share/${actualToken}`);
+        // Buscar dados do item usando actualToken
+        let itemRes = await client.query(`
+            SELECT ufl.*, pi.*
+            FROM unique_form_links ufl
+            INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
+            WHERE ufl.token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
+        `, [actualToken]);
+        
+        if (itemRes.rows.length === 0) {
+            // Tentar buscar pelo token original também (caso não seja unique_)
+            itemRes = await client.query(
+                `SELECT pi.* 
+                 FROM profile_items pi
+                 WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
+                [actualToken]
+            );
+        }
+        
+        if (itemRes.rows.length === 0) {
+            return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>O link compartilhável é inválido ou expirou.</p>');
+        }
+        
+        const item = itemRes.rows[0];
+        // Extrair userId e itemId corretamente (pode vir de unique_form_links join ou profile_items)
+        let finalUserId = item.user_id;
+        const itemIdInt = item.profile_item_id || item.id;
+        const isGuestList = item.item_type === 'guest_list';
+        
+        // Se userId não foi encontrado, buscar do profile_item
+        if (!finalUserId && itemIdInt) {
+            const userRes = await client.query('SELECT user_id FROM profile_items WHERE id = $1', [itemIdInt]);
+            if (userRes.rows.length > 0) {
+                finalUserId = userRes.rows[0].user_id;
+            }
+        }
+        
+        if (!finalUserId || !itemIdInt) {
+            client.release();
+            return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>Dados incompletos para carregar o formulário.</p>');
+        }
+        
+        // Buscar unique_link_data para validação e uso
+        let uniqueLinkData = null;
+        try {
+            const uniqueRes = await client.query(`
+                SELECT * FROM unique_form_links WHERE token = $1
+            `, [actualToken]);
+            
+            if (uniqueRes.rows.length > 0) {
+                uniqueLinkData = uniqueRes.rows[0];
+                
+                // Validar se o link ainda é válido
+                const validationResult = await client.query(
+                    'SELECT is_unique_link_valid($1) as is_valid',
+                    [actualToken]
+                );
+                
+                if (!validationResult.rows[0].is_valid) {
+                    // Link foi usado completamente ou expirado
+                    let reason = 'Este link já foi usado completamente ou expirado.';
+                    let title = 'Link Indisponível';
+                    
+                    if (uniqueLinkData.current_uses >= uniqueLinkData.max_uses) {
+                        reason = `Este link já foi usado ${uniqueLinkData.max_uses} vez(es) e atingiu o limite máximo de usos.`;
+                        title = 'Link já foi usado';
+                    } else if (uniqueLinkData.status === 'expired') {
+                        reason = 'Este link expirou.';
+                        title = 'Link expirado';
+                    }
+                    
+                    client.release();
+                    return res.status(400).render('formError', {
+                        title: title,
+                        message: reason,
+                        errorCode: 'UNIQUE_LINK_INVALID'
+                    });
+                }
+            }
+        } catch (uniqueError) {
+            logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao buscar dados do link único:`, uniqueError);
+            // Continuar mesmo se não encontrar - pode ser link normal
+        }
+        
+        // Armazenar dados do unique_link para usar após cadastro (sistema separado)
+        if (uniqueLinkData) {
+            res.locals.uniqueLinkToken = actualToken;
+            res.locals.uniqueLinkData = uniqueLinkData;
+        }
+        
+        // Continuar com a lógica normal de renderização do formulário
+        // Buscar dados do formulário com verificação de colunas
+        const columnCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'digital_form_items' 
+            AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit')
+        `);
+        
+        const hasEnableWhatsapp = columnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+        const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+        
+        // Buscar dados de digital_form_items
+        let formRes;
+        formRes = await client.query(
+            `SELECT * FROM digital_form_items 
+             WHERE profile_item_id = $1 
+             ORDER BY 
+                COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
+                id DESC 
+             LIMIT 1`,
+            [itemIdInt]
+        );
+
+        if (formRes.rows.length === 0) {
+            client.release();
+            return res.status(404).send('<h1>404 - Dados do formulário não encontrados</h1>');
+        }
+
+        let formData = formRes.rows[0];
+        
+        // Buscar dados de guest_list_items se necessário
+        const guestListColumnsCheck = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'guest_list_items' 
+            AND column_name IN ('card_color', 'enable_whatsapp', 'enable_guest_list_submit')
+        `);
+        const hasGuestListCardColor = guestListColumnsCheck.rows.some(r => r.column_name === 'card_color');
+        const guestListHasEnableWhatsapp = guestListColumnsCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+        const guestListHasEnableGuestListSubmit = guestListColumnsCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+        
+        let guestListSelectFields = 'primary_color, secondary_color, text_color, background_color, header_image_url, background_image_url, background_opacity, theme, updated_at';
+        if (hasGuestListCardColor) {
+            guestListSelectFields += ', card_color';
+        }
+        if (guestListHasEnableWhatsapp) {
+            guestListSelectFields += ', enable_whatsapp';
+        }
+        if (guestListHasEnableGuestListSubmit) {
+            guestListSelectFields += ', enable_guest_list_submit';
+        }
+        
+        const guestListRes = await client.query(
+            `SELECT ${guestListSelectFields}
+             FROM guest_list_items 
+             WHERE profile_item_id = $1 
+             ORDER BY 
+                COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
+                id DESC 
+             LIMIT 1`,
+            [itemIdInt]
+        );
+        
+        if (guestListRes.rows.length > 0 && isGuestList) {
+            const guestListData = guestListRes.rows[0];
+            if (guestListData.primary_color) formData.primary_color = guestListData.primary_color;
+            if (guestListData.secondary_color) formData.secondary_color = guestListData.secondary_color;
+            if (guestListData.text_color) formData.text_color = guestListData.text_color;
+            if (guestListData.background_color) formData.background_color = guestListData.background_color;
+            if (guestListData.header_image_url) formData.header_image_url = guestListData.header_image_url;
+            if (guestListData.background_image_url) formData.background_image_url = guestListData.background_image_url;
+            if (guestListData.background_opacity !== null && guestListData.background_opacity !== undefined) {
+                formData.background_opacity = guestListData.background_opacity;
+            }
+            if (guestListData.theme) formData.theme = guestListData.theme;
+            if (hasGuestListCardColor && guestListData.card_color) formData.card_color = guestListData.card_color;
+            if (guestListHasEnableWhatsapp && guestListData.enable_whatsapp !== undefined) {
+                formData.enable_whatsapp = guestListData.enable_whatsapp;
+            }
+            if (guestListHasEnableGuestListSubmit && guestListData.enable_guest_list_submit !== undefined) {
+                formData.enable_guest_list_submit = guestListData.enable_guest_list_submit;
+            }
+        }
+        
+        // Garantir valores padrão
+        if (hasEnableWhatsapp && (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null)) {
+            formData.enable_whatsapp = true;
+        } else if (!hasEnableWhatsapp) {
+            formData.enable_whatsapp = true;
+        }
+        
+        if (hasEnableGuestListSubmit && (formData.enable_guest_list_submit === undefined || formData.enable_guest_list_submit === null)) {
+            formData.enable_guest_list_submit = false;
+        } else if (!hasEnableGuestListSubmit) {
+            formData.enable_guest_list_submit = false;
+        }
+        
+        // Garantir secondary_color
+        if (!formData.secondary_color || formData.secondary_color === 'null' || formData.secondary_color === 'undefined' || 
+            formData.secondary_color === null || formData.secondary_color === undefined ||
+            (typeof formData.secondary_color === 'string' && formData.secondary_color.trim() === '')) {
+            formData.secondary_color = formData.primary_color || '#4A90E2';
+        }
+        
+        // Processar form_fields
+        if (formData.form_fields) {
+            if (typeof formData.form_fields === 'string') {
+                try {
+                    formData.form_fields = JSON.parse(formData.form_fields);
+                } catch (e) {
+                    formData.form_fields = [];
+                }
+            }
+            if (!Array.isArray(formData.form_fields)) {
+                formData.form_fields = [];
+            }
+        } else {
+            formData.form_fields = [];
+        }
+        
+        // Buscar profile_slug - usar o slug da URL original
+        const profileSlug = slug;
+        
+        // Garantir show_logo_corner
+        if (formData.show_logo_corner === undefined) {
+            formData.show_logo_corner = false;
+        }
+        
+        // Headers de cache
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+        if (formData.updated_at) {
+            res.set('X-Form-Updated-At', new Date(formData.updated_at).getTime().toString());
+        }
+        res.set('X-Cache-Timestamp', Date.now().toString());
+        
+        // Sanitizar dados (se a função existir)
+        let sanitizedFormData = formData;
+        try {
+            sanitizedFormData = sanitizeFormDataForRender(formData);
+        } catch (e) {
+            logger.warn('⚠️ [UNIQUE_LINKS] Erro ao sanitizar dados:', e);
+            sanitizedFormData = formData;
+        }
+        
+        // Renderizar página (manter o slug original na URL)
+        client.release();
+        
+        // Criar objeto item completo para renderização
+        const itemForRender = {
+            id: itemIdInt,
+            user_id: finalUserId,
+            item_type: item.item_type || item.item_type,
+            is_active: item.is_active !== false
+        };
+        
+        return res.render('digitalForm', {
+            item: itemForRender,
+            formData: sanitizedFormData,
+            profileSlug: profileSlug,
+            slug: profileSlug,
+            itemId: itemIdInt,
+            _timestamp: Date.now(),
+            _cacheBust: `?t=${Date.now()}`
+        });
         
     } catch (error) {
         logger.error('Erro ao processar link único personalizado:', {
