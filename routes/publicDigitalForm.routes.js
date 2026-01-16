@@ -735,102 +735,102 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                                 `);
                             }
                         } else {
-                    // Tentar buscar apenas pelo custom_slug (sem verificar slug do usuário) para debug
-                    const debugRes = await client.query(`
-                        SELECT ufl.custom_slug, ufl.token, u.profile_slug, u.id as user_id
-                        FROM unique_form_links ufl
-                        INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                        INNER JOIN users u ON pi.user_id = u.id
-                        WHERE ufl.custom_slug = $1
-                        LIMIT 5
-                    `, [token]);
-                    
-                    logger.warn(`⚠️ [UNIQUE_LINKS] Link não encontrado com slug "${slug}". Links com custom_slug="${token}" encontrados:`, debugRes.rows);
-                    
-                    // Se encontrou links mas com slug diferente, sugerir o slug correto
-                    if (debugRes.rows.length > 0) {
-                        const foundSlug = debugRes.rows[0].profile_slug;
-                        logger.error(`❌ [UNIQUE_LINKS] Slug incorreto! Esperado: "${slug}", mas o link pertence ao usuário: "${foundSlug}"`);
-                        return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" existe, mas pertence ao usuário "${foundSlug}", não "${slug}".</p><p><strong>URL correta:</strong> /${foundSlug}/form/share/${token}</p>`);
-                    }
-                    
-                    // Verificar se a coluna custom_slug existe
-                    try {
-                        const columnCheck = await client.query(`
-                            SELECT column_name 
-                            FROM information_schema.columns 
-                            WHERE table_schema = 'public' 
-                            AND table_name = 'unique_form_links'
-                            AND column_name = 'custom_slug'
-                        `);
-                        
-                        if (columnCheck.rows.length === 0) {
-                            return res.status(500).send('<h1>500 - Funcionalidade não disponível</h1><p>A coluna custom_slug não existe. Execute a migration 088 primeiro.</p>');
-                        }
-                    } catch (colError) {
-                        logger.error(`❌ [UNIQUE_LINKS] Erro ao verificar coluna custom_slug:`, colError);
-                    }
-                    
-                    // Log detalhado para diagnóstico
-                    logger.error(`❌ [UNIQUE_LINKS] Link personalizado não encontrado - custom_slug: "${token}", slug: "${slug}"`);
-                    logger.error(`❌ [UNIQUE_LINKS] Verificando se há algum problema com a tabela ou a busca...`);
-                    
-                    // Tentar buscar todos os links únicos deste usuário para debug
-                    try {
-                        const userCheck = await client.query(`
-                            SELECT u.id, u.profile_slug 
-                            FROM users u 
-                            WHERE u.profile_slug = $1 OR u.id::text = $1
-                            LIMIT 1
-                        `, [slug]);
-                        
-                        if (userCheck.rows.length > 0) {
-                            const userId = userCheck.rows[0].id;
-                            const userSlug = userCheck.rows[0].profile_slug;
-                            logger.info(`ℹ️ [UNIQUE_LINKS] Usuário encontrado: id=${userId}, profile_slug="${userSlug}"`);
-                            
-                            // Buscar todos os links únicos deste usuário
-                            const allLinksRes = await client.query(`
-                                SELECT ufl.custom_slug, ufl.token, u.profile_slug, pi.id as item_id
+                            // Tentar buscar apenas pelo custom_slug (sem verificar slug do usuário) para debug
+                            const debugRes = await client.query(`
+                                SELECT ufl.custom_slug, ufl.token, u.profile_slug, u.id as user_id
                                 FROM unique_form_links ufl
                                 INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
                                 INNER JOIN users u ON pi.user_id = u.id
-                                WHERE u.id = $1 OR u.id::text = $1
-                                ORDER BY ufl.created_at DESC
-                                LIMIT 10
-                            `, [userId]);
+                                WHERE ufl.custom_slug = $1
+                                LIMIT 5
+                            `, [token]);
                             
-                            logger.info(`ℹ️ [UNIQUE_LINKS] Links únicos do usuário "${userSlug}":`, allLinksRes.rows.map(r => ({
-                                custom_slug: r.custom_slug,
-                                token: r.token ? r.token.substring(0, 20) + '...' : null,
-                                profile_slug: r.profile_slug
-                            })));
+                            logger.warn(`⚠️ [UNIQUE_LINKS] Link não encontrado com slug "${slug}". Links com custom_slug="${token}" encontrados:`, debugRes.rows);
                             
-                            return res.status(404).send(`
-                                <h1>404 - Link não encontrado</h1>
-                                <p>O link personalizado "<strong>${token}</strong>" não existe para o usuário "<strong>${slug}</strong>".</p>
-                                <p><strong>Usuário encontrado:</strong> ${userSlug} (ID: ${userId})</p>
-                                <p><strong>Links únicos do usuário:</strong> ${allLinksRes.rows.length} encontrado(s)</p>
-                                <p><strong>Dica:</strong> Verifique se:</p>
-                                <ul>
-                                    <li>O link foi criado corretamente com o custom_slug "${token}"</li>
-                                    <li>O slug do usuário no banco é "${userSlug}" (não "${slug}")</li>
-                                    <li>A migration 088 foi executada (para adicionar a coluna custom_slug)</li>
-                                </ul>
-                            `);
-                        } else {
-                            return res.status(404).send(`
-                                <h1>404 - Usuário não encontrado</h1>
-                                <p>O usuário com slug "<strong>${slug}</strong>" não existe.</p>
-                            `);
+                            // Se encontrou links mas com slug diferente, sugerir o slug correto
+                            if (debugRes.rows.length > 0) {
+                                const foundSlug = debugRes.rows[0].profile_slug;
+                                logger.error(`❌ [UNIQUE_LINKS] Slug incorreto! Esperado: "${slug}", mas o link pertence ao usuário: "${foundSlug}"`);
+                                return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" existe, mas pertence ao usuário "${foundSlug}", não "${slug}".</p><p><strong>URL correta:</strong> /${foundSlug}/form/share/${token}</p>`);
+                            }
+                            
+                            // Verificar se a coluna custom_slug existe
+                            try {
+                                const columnCheck = await client.query(`
+                                    SELECT column_name 
+                                    FROM information_schema.columns 
+                                    WHERE table_schema = 'public' 
+                                    AND table_name = 'unique_form_links'
+                                    AND column_name = 'custom_slug'
+                                `);
+                                
+                                if (columnCheck.rows.length === 0) {
+                                    return res.status(500).send('<h1>500 - Funcionalidade não disponível</h1><p>A coluna custom_slug não existe. Execute a migration 088 primeiro.</p>');
+                                }
+                            } catch (colError) {
+                                logger.error(`❌ [UNIQUE_LINKS] Erro ao verificar coluna custom_slug:`, colError);
+                            }
+                            
+                            // Log detalhado para diagnóstico
+                            logger.error(`❌ [UNIQUE_LINKS] Link personalizado não encontrado - custom_slug: "${token}", slug: "${slug}"`);
+                            logger.error(`❌ [UNIQUE_LINKS] Verificando se há algum problema com a tabela ou a busca...`);
+                            
+                            // Tentar buscar todos os links únicos deste usuário para debug
+                            try {
+                                const userCheck = await client.query(`
+                                    SELECT u.id, u.profile_slug 
+                                    FROM users u 
+                                    WHERE u.profile_slug = $1 OR u.id::text = $1
+                                    LIMIT 1
+                                `, [slug]);
+                                
+                                if (userCheck.rows.length > 0) {
+                                    const userId = userCheck.rows[0].id;
+                                    const userSlug = userCheck.rows[0].profile_slug;
+                                    logger.info(`ℹ️ [UNIQUE_LINKS] Usuário encontrado: id=${userId}, profile_slug="${userSlug}"`);
+                                    
+                                    // Buscar todos os links únicos deste usuário
+                                    const allLinksRes = await client.query(`
+                                        SELECT ufl.custom_slug, ufl.token, u.profile_slug, pi.id as item_id
+                                        FROM unique_form_links ufl
+                                        INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
+                                        INNER JOIN users u ON pi.user_id = u.id
+                                        WHERE u.id = $1 OR u.id::text = $1
+                                        ORDER BY ufl.created_at DESC
+                                        LIMIT 10
+                                    `, [userId]);
+                                    
+                                    logger.info(`ℹ️ [UNIQUE_LINKS] Links únicos do usuário "${userSlug}":`, allLinksRes.rows.map(r => ({
+                                        custom_slug: r.custom_slug,
+                                        token: r.token ? r.token.substring(0, 20) + '...' : null,
+                                        profile_slug: r.profile_slug
+                                    })));
+                                    
+                                    return res.status(404).send(`
+                                        <h1>404 - Link não encontrado</h1>
+                                        <p>O link personalizado "<strong>${token}</strong>" não existe para o usuário "<strong>${slug}</strong>".</p>
+                                        <p><strong>Usuário encontrado:</strong> ${userSlug} (ID: ${userId})</p>
+                                        <p><strong>Links únicos do usuário:</strong> ${allLinksRes.rows.length} encontrado(s)</p>
+                                        <p><strong>Dica:</strong> Verifique se:</p>
+                                        <ul>
+                                            <li>O link foi criado corretamente com o custom_slug "${token}"</li>
+                                            <li>O slug do usuário no banco é "${userSlug}" (não "${slug}")</li>
+                                            <li>A migration 088 foi executada (para adicionar a coluna custom_slug)</li>
+                                        </ul>
+                                    `);
+                                } else {
+                                    return res.status(404).send(`
+                                        <h1>404 - Usuário não encontrado</h1>
+                                        <p>O usuário com slug "<strong>${slug}</strong>" não existe.</p>
+                                    `);
+                                }
+                            } catch (debugError) {
+                                logger.error(`❌ [UNIQUE_LINKS] Erro ao fazer debug:`, debugError);
+                            }
+                            
+                            return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" não existe.</p><p><strong>Dica:</strong> Verifique se o link foi criado corretamente e se o slug "${slug}" está correto.</p>`);
                         }
-                    } catch (debugError) {
-                        logger.error(`❌ [UNIQUE_LINKS] Erro ao fazer debug:`, debugError);
-                    }
-                    
-                    return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" não existe.</p><p><strong>Dica:</strong> Verifique se o link foi criado corretamente e se o slug "${slug}" está correto.</p>`);
-                }
-            } catch (customSlugError) {
+                    } catch (customSlugError) {
                 // Se erro for de coluna não existe
                 if (customSlugError.code === '42703' || customSlugError.message.includes('custom_slug')) {
                     logger.error(`❌ [UNIQUE_LINKS] Coluna custom_slug não existe. Execute a migration 088 primeiro.`, {
