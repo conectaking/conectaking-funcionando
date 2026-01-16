@@ -124,12 +124,11 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         // Buscar formulário pelo share_token ou cadastro_slug
         // PRIORIDADE 1: Tentar pelo share_token (sistema normal)
         itemRes = await client.query(
-                `SELECT pi.* 
-                 FROM profile_items pi
-                 WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
-                [token]
-            );
-        }
+            `SELECT pi.* 
+             FROM profile_items pi
+             WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
+            [token]
+        );
 
         // PRIORIDADE 2: Tentar pelo cadastro_slug (sistema normal - agora com validação de validade e limite de usos)
         let cadastroLinkData = null;
