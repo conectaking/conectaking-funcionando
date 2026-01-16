@@ -662,8 +662,10 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         
         const item = itemRes.rows[0];
         // Extrair userId e itemId corretamente
+        // Quando vem de cadastro_links, o item já tem pi.*, então item.id é o profile_item_id
+        // Quando vem de cadastro_slug, também tem pi.*, então item.id é o profile_item_id
         let finalUserId = item.user_id;
-        const itemIdInt = item.profile_item_id || item.id;
+        let itemIdInt = item.id; // item.id sempre será o profile_item_id quando vem de pi.*
         const isGuestList = item.item_type === 'guest_list';
         
         // Se userId não foi encontrado, buscar do profile_item
@@ -674,7 +676,17 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             }
         }
         
-        if (!finalUserId || !itemIdInt) {
+        // Validar que temos os dados necessários
+        if (!itemIdInt || isNaN(parseInt(itemIdInt, 10))) {
+            logger.error(`❌ [ROUTE] itemId inválido - itemId: ${itemIdInt}, item:`, item);
+            client.release();
+            return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>ID do formulário inválido.</p>');
+        }
+        
+        itemIdInt = parseInt(itemIdInt, 10);
+        
+        if (!finalUserId) {
+            logger.error(`❌ [ROUTE] userId não encontrado - itemId: ${itemIdInt}, item:`, item);
             client.release();
             return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>Dados incompletos para carregar o formulário.</p>');
         }
@@ -694,17 +706,27 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         
         // Buscar dados de digital_form_items
         let formRes;
-        formRes = await client.query(
-            `SELECT * FROM digital_form_items 
-             WHERE profile_item_id = $1 
-             ORDER BY 
-                COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
-                id DESC 
-             LIMIT 1`,
-            [itemIdInt]
-        );
+        try {
+            formRes = await client.query(
+                `SELECT * FROM digital_form_items 
+                 WHERE profile_item_id = $1 
+                 ORDER BY 
+                    COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
+                    id DESC 
+                 LIMIT 1`,
+                [itemIdInt]
+            );
+        } catch (queryError) {
+            logger.error(`❌ [ROUTE] Erro ao buscar digital_form_items para itemId ${itemIdInt}:`, queryError);
+            client.release();
+            return res.status(500).json({
+                success: false,
+                message: 'Erro interno do servidor'
+            });
+        }
 
         if (formRes.rows.length === 0) {
+            logger.warn(`⚠️ [ROUTE] digital_form_items não encontrado para itemId: ${itemIdInt}`);
             client.release();
             return res.status(404).send('<h1>404 - Dados do formulário não encontrados</h1>');
         }
@@ -863,6 +885,14 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             }
         } catch (releaseError) {
             logger.warn('Erro ao liberar client após erro:', releaseError);
+        }
+        
+        // Retornar JSON se for uma requisição AJAX ou se o Accept header indicar JSON
+        if (req.headers.accept && req.headers.accept.includes('application/json')) {
+            return res.status(500).json({
+                success: false,
+                message: 'Erro interno do servidor'
+            });
         }
         
         return res.status(500).render('formError', {
