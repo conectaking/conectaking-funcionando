@@ -525,6 +525,7 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
         
         try {
             // Primeiro, tentar buscar em cadastro_links (múltiplos links personalizados)
+            // O slug do link é único, então não precisamos verificar o profile_slug
             const cadastroLinksRes = await client.query(`
                 SELECT 
                     pi.*, 
@@ -537,11 +538,10 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
                 INNER JOIN users u ON pi.user_id = u.id
                 INNER JOIN cadastro_links cl ON cl.guest_list_item_id = gli.id
-                WHERE cl.slug = $1 
-                AND u.profile_slug = $2
+                WHERE cl.slug = $1
                 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
                 AND pi.is_active = true
-            `, [token, slug]);
+            `, [token]);
             
             if (cadastroLinksRes.rows.length > 0) {
                 const linkRow = cadastroLinksRes.rows[0];
@@ -575,13 +575,14 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 itemRes = cadastroLinksRes;
             } else {
                 // Se não encontrou em cadastro_links, tentar cadastro_slug (link único)
+                // Verificar se o profile_slug corresponde (para links únicos, o slug do usuário pode estar na URL)
                 const cadastroSlugRes = await client.query(`
                     SELECT pi.*, u.profile_slug
                     FROM profile_items pi
                     INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
                     INNER JOIN users u ON pi.user_id = u.id
                     WHERE gli.cadastro_slug = $1 
-                    AND u.profile_slug = $2
+                    AND (u.profile_slug = $2 OR $2 IS NULL OR $2 = '')
                     AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
                     AND pi.is_active = true
                 `, [token, slug]);
