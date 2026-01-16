@@ -329,12 +329,7 @@
                 } catch (e) {
                     console.error('Erro ao comunicar com o pai:', e);
                     // Fallback: usar histórico do navegador
-                    if (responsesListUrl) {
-                        // Se houver URL, tentar voltar ao pai
-                        history.back();
-                    } else {
-                        history.back();
-                    }
+                    history.back();
                 }
             } else {
                 // Não estamos em um iframe - navegação normal
