@@ -315,24 +315,42 @@ router.put('/cadastro-links/:linkId', protectUser, asyncHandler(async (req, res)
         }
         
         // Atualizar expires_at
-        if (expiresAt !== undefined && expiresAt !== null) {
-            // Se for uma string "null" ou vazia, definir como NULL
-            if (expiresAt === 'null' || expiresAt === '' || expiresAt === null) {
+        // PRIORIDADE: expiresAt explícito (null ou data) > expiresInHours > expiresInMinutes
+        if (expiresAt !== undefined) {
+            // Se for explicitamente null ou string "null", definir como NULL
+            if (expiresAt === null || expiresAt === 'null' || expiresAt === '') {
                 updates.push(`expires_at = NULL`);
+                logger.info(`📝 [EDIT_LINK] Definindo expires_at como NULL (sem expiração)`);
             } else {
                 // Se for um objeto Date ou string ISO, converter
-                const dateValue = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
-                updates.push(`expires_at = $${paramIndex++}`);
-                values.push(dateValue);
+                try {
+                    const dateValue = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
+                    if (isNaN(dateValue.getTime())) {
+                        return res.status(400).json({ 
+                            success: false,
+                            message: 'Data de expiração inválida' 
+                        });
+                    }
+                    updates.push(`expires_at = $${paramIndex++}`);
+                    values.push(dateValue);
+                    logger.info(`📝 [EDIT_LINK] Definindo expires_at como: ${dateValue.toISOString()}`);
+                } catch (dateError) {
+                    return res.status(400).json({ 
+                        success: false,
+                        message: 'Data de expiração inválida' 
+                    });
+                }
             }
         } else if (expiresInHours !== undefined && expiresInHours !== null) {
             const expiresAtValue = new Date(Date.now() + (expiresInHours * 60 * 60 * 1000));
             updates.push(`expires_at = $${paramIndex++}`);
             values.push(expiresAtValue);
+            logger.info(`📝 [EDIT_LINK] Definindo expires_at via expiresInHours: ${expiresInHours}h -> ${expiresAtValue.toISOString()}`);
         } else if (expiresInMinutes !== undefined && expiresInMinutes !== null) {
             const expiresAtValue = new Date(Date.now() + (expiresInMinutes * 60 * 1000));
             updates.push(`expires_at = $${paramIndex++}`);
             values.push(expiresAtValue);
+            logger.info(`📝 [EDIT_LINK] Definindo expires_at via expiresInMinutes: ${expiresInMinutes}min -> ${expiresAtValue.toISOString()}`);
         }
         
         // Atualizar max_uses
