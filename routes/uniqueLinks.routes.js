@@ -17,12 +17,21 @@ const { protectUser } = require('../middleware/protectUser');
  */
 router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
     const { itemId } = req.params;
-    const userId = req.user.userId || req.user.id;
+    // IMPORTANTE: user_id no banco é VARCHAR (string como "ADRIANO-KING")
+    // req.user vem do JWT e deve ter userId ou id
+    const userId = req.user.userId || req.user.id || req.user.user_id;
+    
+    if (!userId) {
+        logger.error(`❌ [UNIQUE_LINKS] userId não encontrado em req.user:`, req.user);
+        return res.status(401).json({ error: 'Usuário não autenticado corretamente' });
+    }
+
     const { description, expiresInHours = 24, maxUses = 1 } = req.body;
 
     logger.info(`🔗 [UNIQUE_LINKS] Criando link único para item ${itemId}, userId: ${userId} (tipo: ${typeof userId}), req.user:`, {
         userId: req.user.userId,
         id: req.user.id,
+        user_id: req.user.user_id,
         email: req.user.email
     });
 
@@ -154,9 +163,15 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
  */
 router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
     const { itemId } = req.params;
-    const userId = req.user.userId || req.user.id;
+    // IMPORTANTE: user_id no banco é VARCHAR (string como "ADRIANO-KING")
+    const userId = req.user.userId || req.user.id || req.user.user_id;
 
-    logger.info(`🔗 [UNIQUE_LINKS] Listando links únicos para item ${itemId}, userId: ${userId}`);
+    if (!userId) {
+        logger.error(`❌ [UNIQUE_LINKS] userId não encontrado em req.user ao listar:`, req.user);
+        return res.status(401).json({ error: 'Usuário não autenticado corretamente' });
+    }
+
+    logger.info(`🔗 [UNIQUE_LINKS] Listando links únicos para item ${itemId}, userId: ${userId} (tipo: ${typeof userId})`);
 
     // Verificar se o item existe e pertence ao usuário
     const itemCheck = await db.query(
@@ -291,9 +306,15 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
  */
 router.delete('/:linkId', protectUser, asyncHandler(async (req, res) => {
     const { linkId } = req.params;
-    const userId = req.user.userId || req.user.id;
+    // IMPORTANTE: user_id no banco é VARCHAR (string como "ADRIANO-KING")
+    const userId = req.user.userId || req.user.id || req.user.user_id;
 
-    logger.info(`🔗 [UNIQUE_LINKS] Desativando link único ${linkId}, userId: ${userId}`);
+    if (!userId) {
+        logger.error(`❌ [UNIQUE_LINKS] userId não encontrado em req.user ao desativar:`, req.user);
+        return res.status(401).json({ error: 'Usuário não autenticado corretamente' });
+    }
+
+    logger.info(`🔗 [UNIQUE_LINKS] Desativando link único ${linkId}, userId: ${userId} (tipo: ${typeof userId})`);
 
     // Verificar se o link existe e pertence ao usuário
     const linkCheck = await db.query(`
