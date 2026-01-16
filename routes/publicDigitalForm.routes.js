@@ -657,11 +657,11 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                     logger.warn(`⚠️ [UNIQUE_LINKS] Link encontrado mas slug não corresponde: esperado="${slug}", encontrado="${linkData.profile_slug}"`);
                     return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link não corresponde a este usuário. URL correta: <a href="https://conectaking.com.br/${linkData.profile_slug}/form/share/${token}">https://conectaking.com.br/${linkData.profile_slug}/form/share/${token}</a></p>`);
                 }
-                } else {
-                    logger.warn(`⚠️ [UNIQUE_LINKS] Link único NÃO encontrado no banco: token=${token}, slug="${slug}"`);
-                    // Se não encontrou e o token começa com "unique_", retornar 404
-                    // Porque não faz sentido tentar outras prioridades para tokens unique_
-                    return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link único "${token}" não existe ou foi removido.</p><p><strong>Debug:</strong> Verifique se o link foi criado corretamente no banco de dados.</p>`);
+            } else {
+                logger.warn(`⚠️ [UNIQUE_LINKS] Link único NÃO encontrado no banco: token=${token}, slug="${slug}"`);
+                // Se não encontrou e o token começa com "unique_", retornar 404
+                // Porque não faz sentido tentar outras prioridades para tokens unique_
+                return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link único "${token}" não existe ou foi removido.</p><p><strong>Debug:</strong> Verifique se o link foi criado corretamente no banco de dados.</p>`);
             }
         } else {
             // PRIORIDADE 2: Buscar por cadastro_slug (MESMO comportamento da rota /form/share/:token)
