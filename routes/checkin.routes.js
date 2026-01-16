@@ -107,8 +107,8 @@ router.get('/:itemId', protectUser, asyncHandler(async (req, res) => {
         if (profileItem.item_type === 'digital_form') {
             responsesPromise = client.query(`
                 SELECT 
-                    id, response_data, submitted_at, ip_address, user_agent
-                FROM form_responses
+                    id, response_data, submitted_at, responder_name, responder_email, responder_phone
+                FROM digital_form_responses
                 WHERE profile_item_id = $1
                 ORDER BY submitted_at DESC
             `, [itemId]);

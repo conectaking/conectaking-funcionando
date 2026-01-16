@@ -271,9 +271,9 @@
 <body>
     <div class="header-actions" style="max-width: 1400px; margin: 0 auto 24px;">
         <% 
-            // Determinar se está dentro de iframe (vindo da responsesList.html)
+            // Determinar se está dentro de iframe
             // Se estiver dentro de iframe, esconder o botão "Voltar" (não é necessário)
-            const isInIframe = true; // Assumir que sempre está em iframe quando acessado via responsesList.html
+            const isInIframe = true;
         %>
         <div id="back-button-container" style="display: none;">
             <a href="#" class="back-button" onclick="handleVoltarClick(event, '');">
@@ -300,10 +300,10 @@
         })();
         
         // Função para lidar com o clique no botão "Voltar" (se necessário)
-        function handleVoltarClick(event, responsesListUrl) {
+        function handleVoltarClick(event, backUrl) {
             event.preventDefault();
             
-            // Verificar se estamos dentro de um iframe (vindo da responsesList.html)
+            // Verificar se estamos dentro de um iframe
             if (window.self !== window.top) {
                 // Estamos dentro de um iframe - comunicar com o pai para voltar à aba "Inscritos"
                 try {
@@ -328,17 +328,18 @@
                     }
                 } catch (e) {
                     console.error('Erro ao comunicar com o pai:', e);
-                    // Fallback: tentar navegar para responsesList.html
+                    // Fallback: usar histórico do navegador
                     if (responsesListUrl) {
-                        window.parent.location.href = responsesListUrl;
+                        // Se houver URL, tentar voltar ao pai
+                        history.back();
                     } else {
                         history.back();
                     }
                 }
             } else {
                 // Não estamos em um iframe - navegação normal
-                if (responsesListUrl) {
-                    window.location.href = responsesListUrl;
+                if (backUrl) {
+                    window.location.href = backUrl;
                 } else if (document.referrer && !document.referrer.includes('customize-portaria')) {
                     window.location.href = document.referrer;
                 } else {
