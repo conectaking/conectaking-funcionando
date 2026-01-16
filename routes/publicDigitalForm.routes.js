@@ -831,36 +831,37 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                             return res.status(404).send(`<h1>404 - Link não encontrado</h1><p>O link personalizado "${token}" não existe.</p><p><strong>Dica:</strong> Verifique se o link foi criado corretamente e se o slug "${slug}" está correto.</p>`);
                         }
                     } catch (customSlugError) {
-                // Se erro for de coluna não existe
-                if (customSlugError.code === '42703' || customSlugError.message.includes('custom_slug')) {
-                    logger.error(`❌ [UNIQUE_LINKS] Coluna custom_slug não existe. Execute a migration 088 primeiro.`, {
-                        error: customSlugError.message,
-                        code: customSlugError.code,
-                        slug,
-                        token
-                    });
-                    return res.status(500).send(`
-                        <h1>500 - Erro de configuração</h1>
-                        <p>A funcionalidade de links personalizados não está disponível.</p>
-                        <p><strong>Passos para corrigir:</strong></p>
-                        <ol>
-                            <li>Execute a migration 088: <code>psql -U seu_usuario -d seu_banco -f migrations/088_add_custom_slug_to_unique_form_links.sql</code></li>
-                            <li>Reinicie o servidor</li>
-                            <li>Tente acessar o link novamente</li>
-                        </ol>
-                    `);
-                } else {
-                    logger.error(`❌ [UNIQUE_LINKS] Erro ao buscar por custom_slug:`, {
-                        error: customSlugError.message,
-                        code: customSlugError.code,
-                        stack: customSlugError.stack,
-                        slug,
-                        token
-                    });
-                    throw customSlugError;
+                        // Se erro for de coluna não existe
+                        if (customSlugError.code === '42703' || customSlugError.message.includes('custom_slug')) {
+                            logger.error(`❌ [UNIQUE_LINKS] Coluna custom_slug não existe. Execute a migration 088 primeiro.`, {
+                                error: customSlugError.message,
+                                code: customSlugError.code,
+                                slug,
+                                token
+                            });
+                            return res.status(500).send(`
+                                <h1>500 - Erro de configuração</h1>
+                                <p>A funcionalidade de links personalizados não está disponível.</p>
+                                <p><strong>Passos para corrigir:</strong></p>
+                                <ol>
+                                    <li>Execute a migration 088: <code>psql -U seu_usuario -d seu_banco -f migrations/088_add_custom_slug_to_unique_form_links.sql</code></li>
+                                    <li>Reinicie o servidor</li>
+                                    <li>Tente acessar o link novamente</li>
+                                </ol>
+                            `);
+                        } else {
+                            logger.error(`❌ [UNIQUE_LINKS] Erro ao buscar por custom_slug:`, {
+                                error: customSlugError.message,
+                                code: customSlugError.code,
+                                stack: customSlugError.stack,
+                                slug,
+                                token
+                            });
+                            throw customSlugError;
+                        }
+                    }
                 }
             }
-        }
         
         // IMPORTANTE: Processar diretamente usando a mesma lógica da rota /form/share/:token
         // Isso mantém o slug na URL e evita redirecionamento
