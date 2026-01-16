@@ -12,12 +12,38 @@
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js"></script>
     <% } %>
     <!-- Carregar jsPDF sempre, não apenas quando há QR Code -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" 
-            onerror="console.error('❌ Erro ao carregar jsPDF do CDN principal'); 
-                     var script = document.createElement('script'); 
-                     script.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'; 
-                     script.onload = function() { console.log('✅ jsPDF carregado via CDN alternativo'); }; 
-                     document.head.appendChild(script);"></script>
+    <script>
+        // Carregar jsPDF com múltiplos fallbacks
+        (function() {
+            const cdnUrls = [
+                'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+                'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+                'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'
+            ];
+            
+            let currentIndex = 0;
+            
+            function loadJsPDF(index) {
+                if (index >= cdnUrls.length) {
+                    console.warn('⚠️ Todos os CDNs do jsPDF falharam. A funcionalidade de PDF pode não estar disponível.');
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = cdnUrls[index];
+                script.onload = function() {
+                    console.log('✅ jsPDF carregado via CDN:', cdnUrls[index]);
+                };
+                script.onerror = function() {
+                    console.warn('⚠️ Falha ao carregar jsPDF do CDN:', cdnUrls[index]);
+                    loadJsPDF(index + 1); // Tentar próximo CDN
+                };
+                document.head.appendChild(script);
+            }
+            
+            loadJsPDF(0);
+        })();
+    </script>
     <script>
         // Aguardar carregamento da biblioteca jsPDF
         window.jsPDFReady = false;
