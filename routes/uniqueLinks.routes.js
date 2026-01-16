@@ -170,40 +170,66 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
             return res.status(400).json({ error: 'Slug personalizado deve ter entre 3 e 50 caracteres e conter apenas letras, números e hífens' });
         }
         
-        // Verificar se o slug já existe
-        const slugCheck = await db.query(
-            'SELECT id FROM unique_form_links WHERE custom_slug = $1',
-            [slug]
-        );
-        
-        if (slugCheck.rows.length > 0) {
-            return res.status(400).json({ error: 'Este slug personalizado já está em uso. Escolha outro.' });
+        // Verificar se a coluna custom_slug existe
+        try {
+            // Verificar se o slug já existe
+            const slugCheck = await db.query(
+                'SELECT id FROM unique_form_links WHERE custom_slug = $1',
+                [slug]
+            );
+            
+            if (slugCheck.rows.length > 0) {
+                return res.status(400).json({ error: 'Este slug personalizado já está em uso. Escolha outro.' });
+            }
+            
+            finalCustomSlug = slug;
+            logger.info(`🔗 [UNIQUE_LINKS] Custom slug validado: "${slug}"`);
+        } catch (slugError) {
+            // Se erro for de coluna não existe, ignorar custom_slug
+            if (slugError.code === '42703' || slugError.message.includes('custom_slug')) {
+                logger.warn(`⚠️ [UNIQUE_LINKS] Coluna custom_slug não existe. Execute a migration 088 primeiro. Ignorando custom_slug.`);
+                finalCustomSlug = null;
+            } else {
+                throw slugError;
+            }
         }
-        
-        finalCustomSlug = slug;
+    }
+    
+    // Verificar se a coluna custom_slug existe antes de inserir
+    let hasCustomSlugColumn = false;
+    try {
+        const columnCheck = await db.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'unique_form_links'
+            AND column_name = 'custom_slug'
+        `);
+        hasCustomSlugColumn = columnCheck.rows.length > 0;
+    } catch (checkError) {
+        logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao verificar coluna custom_slug:`, checkError);
     }
     
     // Inserir link único no banco
+    const insertFields = ['profile_item_id', 'token', 'description', 'expires_at', 'max_uses', 'created_by_user_id'];
+    const insertValues = [itemId, token, description || null, expiresAt, maxUses, userId];
+    
+    if (hasCustomSlugColumn && finalCustomSlug !== null) {
+        insertFields.push('custom_slug');
+        insertValues.push(finalCustomSlug);
+    }
+    
     const insertQuery = `
-        INSERT INTO unique_form_links 
-        (profile_item_id, token, description, expires_at, max_uses, created_by_user_id, custom_slug)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO unique_form_links (${insertFields.join(', ')})
+        VALUES (${insertFields.map((_, i) => `$${i + 1}`).join(', ')})
         RETURNING *
     `;
 
-    const result = await db.query(insertQuery, [
-        itemId,
-        token,
-        description || null,
-        expiresAt,
-        maxUses,
-        userId,
-        finalCustomSlug
-    ]);
+    const result = await db.query(insertQuery, insertValues);
 
     const uniqueLink = result.rows[0];
 
-    logger.info(`✅ [UNIQUE_LINKS] Link único criado: ${token} para item ${itemId}`);
+    logger.info(`✅ [UNIQUE_LINKS] Link único criado: ${token} para item ${itemId}, custom_slug: ${uniqueLink.custom_slug || 'não informado'}`);
 
     // Buscar slug do usuário do banco de dados
     // IMPORTANTE: user_id pode ser VARCHAR (string como "ADRIANO-KING") ou INTEGER
@@ -220,9 +246,12 @@ router.post('/:itemId/create', protectUser, asyncHandler(async (req, res) => {
 
     // Construir URL completa do link
     const baseUrl = process.env.FRONTEND_URL || 'https://tag.conectaking.com.br';
-    // Se tiver custom_slug, usar ele, senão usar o token
-    const urlIdentifier = finalCustomSlug || token;
+    // IMPORTANTE: Se tiver custom_slug, usar APENAS o custom_slug (sem unique_)
+    // Se não tiver custom_slug, usar o token (unique_...)
+    const urlIdentifier = uniqueLink.custom_slug || token;
     const fullUrl = `${baseUrl}/${userSlug}/form/share/${urlIdentifier}`;
+    
+    logger.info(`🔗 [UNIQUE_LINKS] URL gerada: ${fullUrl} (custom_slug: ${uniqueLink.custom_slug || 'não usado'}, token: ${token})`);
 
     res.status(201).json({
         success: true,
@@ -347,7 +376,9 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
 
     // Adicionar URL completa e status atualizado
     const links = result.rows.map(link => {
-        const fullUrl = `${baseUrl}/${userSlug}/form/share/${link.token}`;
+        // IMPORTANTE: Usar custom_slug se existir, senão usar token
+        const urlIdentifier = link.custom_slug || link.token;
+        const fullUrl = `${baseUrl}/${userSlug}/form/share/${urlIdentifier}`;
         
         // Verificar status atual
         let status = link.status;
@@ -378,7 +409,7 @@ router.get('/:itemId/list', protectUser, asyncHandler(async (req, res) => {
 
 /**
  * DELETE /api/unique-links/:linkId
- * Desativar um link único
+ * Apagar um link único (desativa automaticamente antes de apagar)
  */
 router.delete('/:linkId', protectUser, asyncHandler(async (req, res) => {
     const { linkId } = req.params;
@@ -409,26 +440,27 @@ router.delete('/:linkId', protectUser, asyncHandler(async (req, res) => {
     const linkUserId = String(linkCheck.rows[0].user_id || '').trim();
     const currentUserId = String(userId || '').trim();
 
-    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para desativar: link.user_id="${linkUserId}" (tipo: ${typeof linkCheck.rows[0].user_id}), userId="${currentUserId}" (tipo: ${typeof userId}), linkId=${linkId}`);
+    logger.info(`🔍 [UNIQUE_LINKS] Verificando permissão para apagar: link.user_id="${linkUserId}" (tipo: ${typeof linkCheck.rows[0].user_id}), userId="${currentUserId}" (tipo: ${typeof userId}), linkId=${linkId}`);
 
     if (linkUserId !== currentUserId) {
-        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao desativar: link.user_id="${linkUserId}", userId="${currentUserId}", linkId=${linkId}`);
-        return res.status(403).json({ error: 'Você não tem permissão para desativar este link' });
+        logger.warn(`⚠️ [UNIQUE_LINKS] Permissão negada ao apagar: link.user_id="${linkUserId}", userId="${currentUserId}", linkId=${linkId}`);
+        return res.status(403).json({ error: 'Você não tem permissão para apagar este link' });
     }
     
-    logger.info(`✅ [UNIQUE_LINKS] Permissão aprovada para desativar link`);
+    logger.info(`✅ [UNIQUE_LINKS] Permissão aprovada para apagar link`);
 
-    // Desativar link
+    // Apagar link (DELETE físico - remove do banco)
+    // O banco de dados já tem CASCADE configurado, então remove automaticamente
     await db.query(
-        'UPDATE unique_form_links SET status = $1 WHERE id = $2',
-        ['deactivated', linkId]
+        'DELETE FROM unique_form_links WHERE id = $1',
+        [linkId]
     );
 
-    logger.info(`✅ [UNIQUE_LINKS] Link único ${linkId} desativado`);
+    logger.info(`✅ [UNIQUE_LINKS] Link único ${linkId} apagado com sucesso`);
 
     res.json({
         success: true,
-        message: 'Link desativado com sucesso'
+        message: 'Link apagado com sucesso'
     });
 }));
 

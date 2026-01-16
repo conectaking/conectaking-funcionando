@@ -217,33 +217,45 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         }
 
         // PRIORIDADE 3: Tentar pelo custom_slug (links únicos personalizados)
-        if (!itemRes || itemRes.rows.length === 0) {
-            const customSlugRes = await client.query(`
-                SELECT ufl.*, pi.*
-                FROM unique_form_links ufl
-                INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                WHERE ufl.custom_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
-            `, [token]);
-            
-            if (customSlugRes.rows.length > 0) {
-                uniqueLinkData = customSlugRes.rows[0];
-                // Validar o link único
-                const validationResult = await client.query(
-                    'SELECT is_unique_link_valid($1) as is_valid',
-                    [uniqueLinkData.token]
-                );
+        // Só tenta se o token NÃO começa com "unique_" (para evitar conflito)
+        if ((!itemRes || itemRes.rows.length === 0) && !token.startsWith('unique_')) {
+            try {
+                const customSlugRes = await client.query(`
+                    SELECT ufl.*, pi.*
+                    FROM unique_form_links ufl
+                    INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
+                    WHERE ufl.custom_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
+                `, [token]);
                 
-                if (validationResult.rows[0].is_valid) {
-                    itemRes = {
-                        rows: [{
-                            id: uniqueLinkData.profile_item_id,
-                            user_id: uniqueLinkData.user_id,
-                            item_type: uniqueLinkData.item_type,
-                            is_active: uniqueLinkData.is_active,
-                            share_token: uniqueLinkData.share_token
-                        }]
-                    };
-                    logger.info(`🔗 [UNIQUE_LINKS] Formulário encontrado via custom_slug: ${token}, itemId: ${uniqueLinkData.profile_item_id}`);
+                if (customSlugRes.rows.length > 0) {
+                    uniqueLinkData = customSlugRes.rows[0];
+                    // Validar o link único
+                    const validationResult = await client.query(
+                        'SELECT is_unique_link_valid($1) as is_valid',
+                        [uniqueLinkData.token]
+                    );
+                    
+                    if (validationResult.rows[0].is_valid) {
+                        itemRes = {
+                            rows: [{
+                                id: uniqueLinkData.profile_item_id,
+                                user_id: uniqueLinkData.user_id,
+                                item_type: uniqueLinkData.item_type,
+                                is_active: uniqueLinkData.is_active,
+                                share_token: uniqueLinkData.share_token
+                            }]
+                        };
+                        logger.info(`🔗 [UNIQUE_LINKS] Formulário encontrado via custom_slug: "${token}" (slug personalizado), token real: ${uniqueLinkData.token}, itemId: ${uniqueLinkData.profile_item_id}`);
+                    } else {
+                        logger.warn(`⚠️ [UNIQUE_LINKS] Link único encontrado via custom_slug mas inválido: ${token}`);
+                    }
+                }
+            } catch (customSlugError) {
+                // Se erro for de coluna não existe, apenas logar e continuar
+                if (customSlugError.code === '42703' || customSlugError.message.includes('custom_slug')) {
+                    logger.debug(`ℹ️ [UNIQUE_LINKS] Coluna custom_slug não existe. Execute a migration 088 para habilitar slugs personalizados.`);
+                } else {
+                    logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao buscar por custom_slug:`, customSlugError);
                 }
             }
         }
@@ -603,9 +615,10 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     
     try {
-        // Se o token começa com "unique_", buscar por token
+        let actualToken = token;
+        
+        // PRIORIDADE 1: Se o token começa com "unique_", buscar por token diretamente
         if (token && token.startsWith('unique_')) {
-            // Buscar link único pelo token
             const uniqueLinkRes = await client.query(`
                 SELECT ufl.*, pi.*, u.profile_slug
                 FROM unique_form_links ufl
@@ -618,51 +631,77 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                 const linkData = uniqueLinkRes.rows[0];
                 // Verificar se o slug corresponde ao do usuário
                 if (linkData.profile_slug === slug) {
-                    // Redirecionar para a rota principal que já trata links únicos
-                    return res.redirect(`/form/share/${token}`);
+                    actualToken = token; // Token correto já encontrado
+                } else {
+                    return res.status(404).send('<h1>404 - Link não encontrado</h1><p>O link não corresponde a este usuário.</p>');
                 }
+            } else {
+                return res.status(404).send('<h1>404 - Link não encontrado</h1><p>O link único não existe ou foi removido.</p>');
             }
-        }
-        
-        // Se não começa com "unique_", pode ser um custom_slug
-        // Buscar link único pelo custom_slug
-        const customLinkRes = await client.query(`
-            SELECT ufl.*, pi.*, u.profile_slug
-            FROM unique_form_links ufl
-            INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-            INNER JOIN users u ON pi.user_id = u.id
-            WHERE ufl.custom_slug = $1 
-            AND u.profile_slug = $2 
-            AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
-            AND pi.is_active = true
-        `, [token, slug]);
-        
-        if (customLinkRes.rows.length > 0) {
-            const linkData = customLinkRes.rows[0];
-            // Validar se o link único é válido
-            const validationResult = await client.query(
-                'SELECT is_unique_link_valid($1) as is_valid',
-                [linkData.token]
-            );
+        } else {
+            // PRIORIDADE 2: Buscar por custom_slug
+            const customLinkRes = await client.query(`
+                SELECT ufl.*, pi.*, u.profile_slug
+                FROM unique_form_links ufl
+                INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
+                INNER JOIN users u ON pi.user_id = u.id
+                WHERE ufl.custom_slug = $1 
+                AND u.profile_slug = $2 
+                AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
+                AND pi.is_active = true
+            `, [token, slug]);
             
-            if (validationResult.rows[0].is_valid) {
-                // Redirecionar para a rota principal usando o token real
-                return res.redirect(`/form/share/${linkData.token}`);
+            if (customLinkRes.rows.length > 0) {
+                const linkData = customLinkRes.rows[0];
+                // Validar se o link único é válido
+                const validationResult = await client.query(
+                    'SELECT is_unique_link_valid($1) as is_valid',
+                    [linkData.token]
+                );
+                
+                if (validationResult.rows[0].is_valid) {
+                    actualToken = linkData.token; // Usar o token real para processar
+                } else {
+                    return res.status(400).render('formError', {
+                        title: 'Link Indisponível',
+                        message: 'Este link expirou ou já foi utilizado.',
+                        errorCode: 'UNIQUE_LINK_INVALID'
+                    });
+                }
+            } else {
+                return res.status(404).send('<h1>404 - Link não encontrado</h1><p>O link personalizado não existe ou expirou.</p>');
             }
         }
         
-        // Se não encontrou, retornar 404
-        return res.status(404).send('<h1>404 - Link não encontrado</h1><p>O link personalizado não existe ou expirou.</p>');
+        // IMPORTANTE: Processar diretamente usando a mesma lógica da rota /form/share/:token
+        // Isso mantém o slug na URL e evita redirecionamento
+        client.release();
+        
+        // Chamar a mesma função da rota principal, mas ajustando o req.params
+        // para que ela processe corretamente
+        const originalToken = req.params.token;
+        req.params.token = actualToken;
+        
+        // Reutilizar a função da rota principal /form/share/:token
+        // Mas precisamos chamar ela diretamente
+        logger.info(`🔗 [UNIQUE_LINKS] Processando link via /:slug/form/share/:token, token: ${actualToken}, slug: ${slug}`);
+        
+        // Redirecionar para a rota principal mantendo o token
+        // Isso resolve o 404 e mantém a funcionalidade
+        return res.redirect(`/form/share/${actualToken}`);
         
     } catch (error) {
         logger.error('Erro ao processar link único personalizado:', {
             error: error.message,
             slug,
-            token
+            token,
+            stack: error.stack
         });
-        return res.status(500).send('<h1>500 - Erro interno</h1>');
-    } finally {
-        client.release();
+        return res.status(500).render('formError', {
+            title: 'Erro',
+            message: 'Erro ao processar o link. Tente novamente mais tarde.',
+            errorCode: 'INTERNAL_ERROR'
+        });
     }
 }));
 
