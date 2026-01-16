@@ -99,7 +99,7 @@ const formSubmissionLimiter = rateLimit({
 /**
  * Rota pública: GET /form/share/:token
  * Acesso via link compartilhável (formulário oculto do cartão público)
- * Também aceita: GET /:slug/form/share/:token (para links únicos personalizados)
+ * Também aceita: GET /:slug/form/share/:token (para links personalizados)
  */
 router.get('/form/share/:token', asyncHandler(async (req, res) => {
     const { token } = req.params;
@@ -114,99 +114,12 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
     res.set('X-Timestamp', now.toString());
     res.set('X-No-Cache', '1');
     
-    // VALIDAÇÃO DE LINK ÚNICO (apenas para tokens que começam com "unique_")
-    // Sistema separado - não afeta tokens normais existentes
-    if (token && token.startsWith('unique_')) {
-        try {
-            const validationResult = await db.query(
-                'SELECT is_unique_link_valid($1) as is_valid',
-                [token]
-            );
-
-            const isValid = validationResult.rows[0].is_valid;
-
-            if (!isValid) {
-                // Buscar motivo da invalidação
-                const linkInfo = await db.query(`
-                    SELECT 
-                        status,
-                        expires_at,
-                        current_uses,
-                        max_uses
-                    FROM unique_form_links
-                    WHERE token = $1
-                `, [token]);
-
-                let reason = 'Link inválido';
-                let title = 'Link Indisponível';
-
-                if (linkInfo.rows.length === 0) {
-                    reason = 'Link não encontrado';
-                    title = 'Link não encontrado';
-                } else {
-                    const link = linkInfo.rows[0];
-                    if (link.status === 'used' || link.current_uses >= link.max_uses) {
-                        reason = `Este link já foi usado ${link.max_uses} vez(es) e atingiu o limite máximo de usos.`;
-                        title = 'Link já foi usado';
-                    } else if (link.status === 'expired' || new Date(link.expires_at) < new Date()) {
-                        reason = 'Este link expirou. Links únicos têm validade limitada por segurança.';
-                        title = 'Link expirado';
-                    } else if (link.status === 'deactivated') {
-                        reason = 'Este link foi desativado pelo administrador.';
-                        title = 'Link desativado';
-                    }
-                }
-
-                logger.warn(`❌ [UNIQUE_LINKS] Link único inválido: ${token}, motivo: ${reason}`);
-
-                // Renderizar página de erro amigável
-                return res.status(400).render('formError', {
-                    title: title,
-                    message: reason,
-                    errorCode: 'UNIQUE_LINK_INVALID'
-                });
-            }
-
-            logger.info(`✅ [UNIQUE_LINKS] Link único válido: ${token}`);
-        } catch (error) {
-            logger.error(`❌ [UNIQUE_LINKS] Erro ao validar link único: ${token}`, error);
-            // Em caso de erro, permitir continuar (fallback)
-        }
-    }
     
     const client = await db.pool.connect();
     
     try {
-        // Buscar formulário pelo unique_token, share_token ou cadastro_slug
-        // PRIORIDADE 1: Tentar buscar por unique_token (sistema separado)
-        let itemRes = null;
-        let uniqueLinkData = null;
-        
-        if (token && token.startsWith('unique_')) {
-            const uniqueLinkRes = await client.query(`
-                SELECT ufl.*, pi.*
-                FROM unique_form_links ufl
-                INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                WHERE ufl.token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
-            `, [token]);
-            
-            if (uniqueLinkRes.rows.length > 0) {
-                uniqueLinkData = uniqueLinkRes.rows[0];
-                // Extrair apenas campos de profile_items para manter compatibilidade
-                itemRes = {
-                    rows: [{
-                        id: uniqueLinkData.profile_item_id,
-                        user_id: uniqueLinkData.user_id,
-                        item_type: uniqueLinkData.item_type,
-                        is_active: uniqueLinkData.is_active,
-                        share_token: uniqueLinkData.share_token
-                    }]
-                };
-                logger.info(`🔗 [UNIQUE_LINKS] Formulário encontrado via link único: ${token}, itemId: ${uniqueLinkData.profile_item_id}`);
-            }
-        }
-        
-        // PRIORIDADE 2: Tentar pelo share_token (sistema normal - não modificar)
+        // Buscar formulário pelo share_token ou cadastro_slug
+        // PRIORIDADE 1: Tentar pelo share_token (sistema normal)
         if (!itemRes || itemRes.rows.length === 0) {
             itemRes = await client.query(
                 `SELECT pi.* 
@@ -216,54 +129,41 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
             );
         }
 
-        // PRIORIDADE 3: Tentar pelo custom_slug (links únicos personalizados)
-        // Funciona da mesma forma que cadastro_slug - SEM validação de expiração/uso, apenas busca e renderiza
-        // Só tenta se o token NÃO começa com "unique_" (para evitar conflito)
-        if ((!itemRes || itemRes.rows.length === 0) && !token.startsWith('unique_')) {
-            try {
-                const customSlugRes = await client.query(`
-                    SELECT ufl.*, pi.*
-                    FROM unique_form_links ufl
-                    INNER JOIN profile_items pi ON ufl.profile_item_id = pi.id
-                    WHERE ufl.custom_slug = $1 
-                    AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
-                    AND pi.is_active = true
-                `, [token]);
-                
-                if (customSlugRes.rows.length > 0) {
-                    uniqueLinkData = customSlugRes.rows[0];
-                    // NÃO validar expiração ou limite de uso - funciona como cadastro_slug (sempre ativo)
-                    // Apenas verificar se status é 'active'
-                    itemRes = {
-                        rows: [{
-                            id: uniqueLinkData.profile_item_id,
-                            user_id: uniqueLinkData.user_id,
-                            item_type: uniqueLinkData.item_type,
-                            is_active: uniqueLinkData.is_active,
-                            share_token: uniqueLinkData.share_token
-                        }]
-                    };
-                    logger.info(`🔗 [UNIQUE_LINKS] Formulário encontrado via custom_slug: "${token}" (slug personalizado), token real: ${uniqueLinkData.token}, itemId: ${uniqueLinkData.profile_item_id}`);
-                }
-            } catch (customSlugError) {
-                // Se erro for de coluna não existe, apenas logar e continuar
-                if (customSlugError.code === '42703' || customSlugError.message.includes('custom_slug')) {
-                    logger.debug(`ℹ️ [UNIQUE_LINKS] Coluna custom_slug não existe. Execute a migration 088 para habilitar slugs personalizados.`);
-                } else {
-                    logger.warn(`⚠️ [UNIQUE_LINKS] Erro ao buscar por custom_slug:`, customSlugError);
-                }
-            }
-        }
-        
-        // PRIORIDADE 4: Tentar pelo cadastro_slug (sistema normal - não modificar)
+        // PRIORIDADE 2: Tentar pelo cadastro_slug (sistema normal - agora com validação de validade e limite de usos)
+        let cadastroLinkData = null;
         if (!itemRes || itemRes.rows.length === 0) {
-            itemRes = await client.query(
-                `SELECT pi.* 
+            const cadastroRes = await client.query(
+                `SELECT pi.*, 
+                        gli.cadastro_expires_at,
+                        gli.cadastro_max_uses,
+                        gli.cadastro_current_uses
                  FROM profile_items pi
                  INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
                  WHERE gli.cadastro_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
                 [token]
             );
+            
+            if (cadastroRes.rows.length > 0) {
+                itemRes = cadastroRes;
+                cadastroLinkData = cadastroRes.rows[0];
+                
+                // Validar validade do link de cadastro
+                if (cadastroLinkData.cadastro_expires_at) {
+                    const expiresAt = new Date(cadastroLinkData.cadastro_expires_at);
+                    if (expiresAt < new Date()) {
+                        logger.warn(`❌ [CADASTRO_LINK] Link de cadastro expirado: ${token}, expirou em: ${expiresAt.toISOString()}`);
+                        return res.status(400).send('<h1>Link Expirado</h1><p>Este link de cadastro expirou. Entre em contato com o organizador do evento.</p>');
+                    }
+                }
+                
+                // Validar limite de usos
+                const maxUses = cadastroLinkData.cadastro_max_uses || 999999;
+                const currentUses = cadastroLinkData.cadastro_current_uses || 0;
+                if (currentUses >= maxUses) {
+                    logger.warn(`❌ [CADASTRO_LINK] Link de cadastro atingiu limite de usos: ${token}, usos: ${currentUses}/${maxUses}`);
+                    return res.status(400).send('<h1>Link Esgotado</h1><p>Este link de cadastro atingiu o limite máximo de usos. Entre em contato com o organizador do evento.</p>');
+                }
+            }
         }
 
         if (!itemRes || itemRes.rows.length === 0) {
@@ -274,12 +174,6 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
         const userId = item.user_id;
         const itemIdInt = item.id;
         const isGuestList = item.item_type === 'guest_list';
-        
-        // Armazenar dados do unique_link para usar após cadastro (sistema separado)
-        if (uniqueLinkData) {
-            res.locals.uniqueLinkToken = token;
-            res.locals.uniqueLinkData = uniqueLinkData;
-        }
 
         // Buscar dados do formulário com verificação de colunas
         const columnCheck = await client.query(`
@@ -693,16 +587,12 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
                     
                     // Preparar itemRes para processamento abaixo
                     itemRes = cadastroSlugRes;
-                } else {
-                    // PRIORIDADE 3: Buscar por custom_slug (links únicos personalizados)
-                    logger.info(`🔍 [UNIQUE_LINKS] Não encontrado cadastro_slug, buscando por custom_slug: "${token}", slug: "${slug}"`);
                 }
             } catch (cadastroError) {
                 logger.warn(`⚠️ [CADASTRO_SLUG] Erro ao buscar cadastro_slug:`, cadastroError);
-                // Continuar para tentar custom_slug mesmo se houver erro
             }
             
-            // Se ainda não encontrou, tentar custom_slug
+            // Se ainda não encontrou, não há mais opções
             if (!itemRes || itemRes.rows.length === 0) {
                 try {
                         // Buscar custom_slug SEM verificar slug do usuário primeiro (como cadastro_slug)
@@ -2165,13 +2055,38 @@ router.post('/:slug/form/:itemId/submit',
             };
         }
         
-        // IMPORTANTE: Marcar link único como usado APÓS cadastro bem-sucedido (sistema separado)
+        // IMPORTANTE: Incrementar contador de usos do link de cadastro APÓS cadastro bem-sucedido
+        // Extrair token do referer para verificar se é cadastro_slug
+        const referer = req.headers.referer || '';
+        let cadastroToken = null;
+        if (referer.includes('/form/share/')) {
+            const tokenMatch = referer.match(/\/form\/share\/([^\/\?]+)/);
+            if (tokenMatch && tokenMatch[1] && !tokenMatch[1].startsWith('unique_')) {
+                cadastroToken = tokenMatch[1];
+                logger.info(`🔗 [CADASTRO_LINK] Token de cadastro detectado no referer: ${cadastroToken}`);
+                
+                try {
+                    // Incrementar contador de usos
+                    await client.query(
+                        `UPDATE guest_list_items 
+                         SET cadastro_current_uses = COALESCE(cadastro_current_uses, 0) + 1
+                         WHERE cadastro_slug = $1`,
+                        [cadastroToken]
+                    );
+                    logger.info(`✅ [CADASTRO_LINK] Contador de usos incrementado para link: ${cadastroToken}`);
+                } catch (linkError) {
+                    logger.error(`❌ [CADASTRO_LINK] Erro ao incrementar contador de usos: ${cadastroToken}`, linkError);
+                    // Não falhar a requisição se incrementar contador falhar
+                }
+            }
+        }
+        
+        // IMPORTANTE: Marcar link único como usado APÓS cadastro bem-sucedido (sistema separado - será removido)
         // Buscar token único do payload ou do referer
         let uniqueToken = req.body.unique_token || null;
         
         // Se não veio no payload, tentar extrair do referer
         if (!uniqueToken) {
-            const referer = req.headers.referer || '';
             if (referer.includes('/form/share/')) {
                 const tokenMatch = referer.match(/\/form\/share\/([^\/\?]+)/);
                 if (tokenMatch && tokenMatch[1] && tokenMatch[1].startsWith('unique_')) {

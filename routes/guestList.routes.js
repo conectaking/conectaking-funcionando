@@ -38,6 +38,10 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                 gli.public_view_token,
                 gli.portaria_slug,
                 gli.cadastro_slug,
+                gli.cadastro_description,
+                gli.cadastro_expires_at,
+                gli.cadastro_max_uses,
+                gli.cadastro_current_uses,
                 COALESCE(gli.primary_color, '#FFC700') as primary_color,
                 COALESCE(gli.text_color, '#ECECEC') as text_color,
                 COALESCE(gli.background_color, '#0D0D0F') as background_color,
@@ -58,6 +62,8 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                      gli.event_date, gli.event_location, gli.registration_token, gli.confirmation_token, 
                      gli.max_guests, gli.allow_self_registration, gli.require_confirmation,
                      gli.custom_form_fields, gli.use_custom_form, gli.public_view_token,
+                     gli.portaria_slug, gli.cadastro_slug, gli.cadastro_description,
+                     gli.cadastro_expires_at, gli.cadastro_max_uses, gli.cadastro_current_uses,
                      gli.primary_color, gli.text_color, gli.background_color, gli.secondary_color,
                      gli.header_image_url, gli.background_image_url, gli.background_opacity, gli.theme
             ORDER BY pi.display_order ASC, pi.created_at DESC
@@ -304,6 +310,10 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.public_view_token,
                 gli.portaria_slug,
                 gli.cadastro_slug,
+                gli.cadastro_description,
+                gli.cadastro_expires_at,
+                gli.cadastro_max_uses,
+                gli.cadastro_current_uses,
                 COALESCE(gli.primary_color, '#FFC700') as primary_color,
                 COALESCE(gli.text_color, '#ECECEC') as text_color,
                 COALESCE(gli.background_color, '#0D0D0F') as background_color,
@@ -363,6 +373,10 @@ router.get('/:id', protectUser, asyncHandler(async (req, res) => {
                     gli.public_view_token,
                     gli.portaria_slug,
                     gli.cadastro_slug,
+                    gli.cadastro_description,
+                    gli.cadastro_expires_at,
+                    gli.cadastro_max_uses,
+                    gli.cadastro_current_uses,
                     COALESCE(gli.primary_color, '#FFC700') as primary_color,
                     COALESCE(gli.text_color, '#ECECEC') as text_color,
                     COALESCE(gli.background_color, '#0D0D0F') as background_color,
@@ -520,6 +534,12 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             // IMPORTANTE: Incluir portaria_slug e cadastro_slug
             portaria_slug,
             cadastro_slug,
+            // IMPORTANTE: Novos campos do link de cadastro (funcionalidades de link único)
+            cadastro_description,
+            cadastro_expires_at,
+            cadastro_expires_in_hours,
+            cadastro_expires_in_minutes,
+            cadastro_max_uses,
             // IMPORTANTE: Incluir decorative_bar_color, card_color e separator_line_color
             decorative_bar_color,
             card_color,
@@ -900,6 +920,46 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             }
         }
         
+        // Atualizar cadastro_description se fornecido
+        if (cadastro_description !== undefined) {
+            guestListUpdateFields.push(`cadastro_description = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(cadastro_description && cadastro_description.trim() ? cadastro_description.trim() : null);
+            logger.info(`🔗 [GUEST_LIST] Salvando cadastro_description: "${cadastro_description || 'null'}"`);
+        }
+        
+        // Atualizar cadastro_expires_at se fornecido
+        if (cadastro_expires_at !== undefined || cadastro_expires_in_hours !== undefined || cadastro_expires_in_minutes !== undefined) {
+            let expiresAt = null;
+            
+            // Se fornecido diretamente como timestamp
+            if (cadastro_expires_at) {
+                expiresAt = new Date(cadastro_expires_at);
+            } 
+            // Se fornecido em horas
+            else if (cadastro_expires_in_hours !== null && cadastro_expires_in_hours !== undefined) {
+                expiresAt = new Date();
+                expiresAt.setHours(expiresAt.getHours() + parseInt(cadastro_expires_in_hours));
+            }
+            // Se fornecido em minutos
+            else if (cadastro_expires_in_minutes !== null && cadastro_expires_in_minutes !== undefined) {
+                expiresAt = new Date();
+                expiresAt.setMinutes(expiresAt.getMinutes() + parseInt(cadastro_expires_in_minutes));
+            }
+            
+            guestListUpdateFields.push(`cadastro_expires_at = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(expiresAt);
+            logger.info(`🔗 [GUEST_LIST] Salvando cadastro_expires_at: ${expiresAt ? expiresAt.toISOString() : 'null'}`);
+        }
+        
+        // Atualizar cadastro_max_uses se fornecido
+        if (cadastro_max_uses !== undefined) {
+            // Se for null/undefined, usar 999999 (ilimitado)
+            const maxUses = cadastro_max_uses === null || cadastro_max_uses === undefined ? 999999 : parseInt(cadastro_max_uses);
+            guestListUpdateFields.push(`cadastro_max_uses = $${guestListParamIndex++}`);
+            guestListUpdateValues.push(maxUses);
+            logger.info(`🔗 [GUEST_LIST] Salvando cadastro_max_uses: ${maxUses}`);
+        }
+        
         // IMPORTANTE: Também atualizar enable_whatsapp e enable_guest_list_submit em guest_list_items
         // Verificar se as colunas existem em guest_list_items
         if (enable_whatsapp !== undefined) {
@@ -1116,6 +1176,10 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 gli.public_view_token,
                 gli.portaria_slug,
                 gli.cadastro_slug,
+                gli.cadastro_description,
+                gli.cadastro_expires_at,
+                gli.cadastro_max_uses,
+                gli.cadastro_current_uses,
                 COALESCE(gli.primary_color, '#FFC700') as primary_color,
                 COALESCE(gli.text_color, '#ECECEC') as text_color,
                 COALESCE(gli.background_color, '#0D0D0F') as background_color,
