@@ -1083,13 +1083,34 @@ router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
             error: error.message,
             slug,
             token,
-            stack: error.stack
+            stack: error.stack,
+            path: req.path,
+            url: req.url
         });
+        
+        // Garantir que o client seja liberado em caso de erro
+        try {
+            if (client) {
+                client.release();
+            }
+        } catch (releaseError) {
+            logger.warn('Erro ao liberar client após erro:', releaseError);
+        }
+        
         return res.status(500).render('formError', {
             title: 'Erro',
             message: 'Erro ao processar o link. Tente novamente mais tarde.',
             errorCode: 'INTERNAL_ERROR'
         });
+    } finally {
+        // Garantir que o client sempre seja liberado
+        try {
+            if (client && !client.released) {
+                client.release();
+            }
+        } catch (releaseError) {
+            logger.warn('Erro ao liberar client no finally:', releaseError);
+        }
     }
 }));
 
