@@ -1854,42 +1854,109 @@ router.post('/:slug/form/:itemId/submit',
         }
         
         // IMPORTANTE: Incrementar contador de usos do link de cadastro APÓS cadastro bem-sucedido
-        // Extrair token do referer para verificar se é cadastro_slug ou cadastro_links.slug
-        const referer = req.headers.referer || '';
-        let cadastroToken = null;
-        if (referer.includes('/form/share/')) {
-            const tokenMatch = referer.match(/\/form\/share\/([^\/\?]+)/);
-            if (tokenMatch && tokenMatch[1] && !tokenMatch[1].startsWith('unique_')) {
-                cadastroToken = tokenMatch[1];
-                logger.info(`🔗 [CADASTRO_LINK] Token de cadastro detectado no referer: ${cadastroToken}`);
+        // Estratégia: Buscar todos os cadastro_links desse item e verificar qual foi usado
+        // Isso funciona porque apenas um link de cadastro pode estar ativo por vez
+        try {
+            // Buscar todos os cadastro_links para este item
+            const guestListItemCheck = await client.query(`
+                SELECT gli.id 
+                FROM guest_list_items gli
+                INNER JOIN profile_items pi ON pi.id = gli.profile_item_id
+                WHERE pi.id = $1 AND pi.user_id = $2
+            `, [itemIdInt, userId]);
+            
+            if (guestListItemCheck.rows.length > 0) {
+                const guestListItemId = guestListItemCheck.rows[0].id;
                 
-                try {
+                // Tentar encontrar o link usado através do referer ou URL
+                const referer = req.headers.referer || '';
+                const currentUrl = req.url || req.originalUrl || '';
+                let cadastroToken = null;
+                
+                // Extrair token do referer primeiro
+                if (referer.includes('/form/share/')) {
+                    const tokenMatch = referer.match(/\/form\/share\/([^\/\?]+)/);
+                    if (tokenMatch && tokenMatch[1] && !tokenMatch[1].startsWith('unique_')) {
+                        cadastroToken = tokenMatch[1];
+                    }
+                }
+                
+                // Se não encontrou no referer, tentar da URL atual
+                if (!cadastroToken && currentUrl.includes('/form/share/')) {
+                    const urlMatch = currentUrl.match(/\/form\/share\/([^\/\?]+)/);
+                    if (urlMatch && urlMatch[1] && !urlMatch[1].startsWith('unique_')) {
+                        cadastroToken = urlMatch[1];
+                    }
+                }
+                
+                // Se encontrou um token, tentar incrementar
+                if (cadastroToken) {
+                    logger.info(`🔗 [CADASTRO_LINK] Token de cadastro detectado: ${cadastroToken}`);
+                    
                     // Primeiro, tentar incrementar em cadastro_links (links personalizados múltiplos)
                     const cadastroLinkUpdate = await client.query(
                         `UPDATE cadastro_links 
                          SET current_uses = COALESCE(current_uses, 0) + 1
-                         WHERE slug = $1
+                         WHERE slug = $1 AND guest_list_item_id = $2
                          RETURNING id`,
-                        [cadastroToken]
+                        [cadastroToken, guestListItemId]
                     );
                     
                     if (cadastroLinkUpdate.rows.length > 0) {
-                        logger.info(`✅ [CADASTRO_LINKS] Contador de usos incrementado para link personalizado: ${cadastroToken}`);
+                        logger.info(`✅ [CADASTRO_LINKS] Contador de usos incrementado para link personalizado: ${cadastroToken} (ID: ${cadastroLinkUpdate.rows[0].id})`);
                     } else {
                         // Se não encontrou em cadastro_links, tentar cadastro_slug (link único)
-                        await client.query(
+                        const cadastroSlugUpdate = await client.query(
                             `UPDATE guest_list_items 
                              SET cadastro_current_uses = COALESCE(cadastro_current_uses, 0) + 1
-                             WHERE cadastro_slug = $1`,
-                            [cadastroToken]
+                             WHERE cadastro_slug = $1 AND id = $2
+                             RETURNING id`,
+                            [cadastroToken, guestListItemId]
                         );
-                        logger.info(`✅ [CADASTRO_SLUG] Contador de usos incrementado para link único: ${cadastroToken}`);
+                        
+                        if (cadastroSlugUpdate.rows.length > 0) {
+                            logger.info(`✅ [CADASTRO_SLUG] Contador de usos incrementado para link único: ${cadastroToken}`);
+                        } else {
+                            logger.warn(`⚠️ [CADASTRO_LINK] Token não encontrado em cadastro_links nem em cadastro_slug: ${cadastroToken}`);
+                        }
                     }
-                } catch (linkError) {
-                    logger.error(`❌ [CADASTRO_LINK] Erro ao incrementar contador de usos: ${cadastroToken}`, linkError);
-                    // Não falhar a requisição se incrementar contador falhar
+                } else {
+                    // Se não encontrou token no referer/URL, verificar se há apenas um link ativo recente
+                    // e incrementar (útil quando o referer não está disponível ou foi alterado)
+                    logger.info(`⚠️ [CADASTRO_LINK] Token não encontrado no referer/URL, tentando encontrar link ativo para item ${guestListItemId}`);
+                    
+                    // Buscar links ativos recentemente acessados (últimos 5 minutos) ou links únicos ativos
+                    const activeLinkCheck = await client.query(
+                        `SELECT id, slug, current_uses, max_uses
+                         FROM cadastro_links 
+                         WHERE guest_list_item_id = $1 
+                         AND (expires_at IS NULL OR expires_at > NOW())
+                         AND (max_uses = 999999 OR current_uses < max_uses)
+                         ORDER BY 
+                            CASE WHEN created_at > NOW() - INTERVAL '5 minutes' THEN 1 ELSE 2 END,
+                            created_at DESC
+                         LIMIT 1`,
+                        [guestListItemId]
+                    );
+                    
+                    if (activeLinkCheck.rows.length === 1) {
+                        const linkId = activeLinkCheck.rows[0].id;
+                        const linkSlug = activeLinkCheck.rows[0].slug;
+                        await client.query(
+                            `UPDATE cadastro_links 
+                             SET current_uses = COALESCE(current_uses, 0) + 1
+                             WHERE id = $1`,
+                            [linkId]
+                        );
+                        logger.info(`✅ [CADASTRO_LINKS] Contador incrementado via link único ativo: ${linkId} (slug: ${linkSlug})`);
+                    } else {
+                        logger.warn(`⚠️ [CADASTRO_LINK] Nenhum link ativo encontrado para incrementar (itemId: ${itemIdInt})`);
+                    }
                 }
             }
+        } catch (linkError) {
+            logger.error(`❌ [CADASTRO_LINK] Erro ao incrementar contador de usos:`, linkError);
+            // Não falhar a requisição se incrementar contador falhar
         }
         
 

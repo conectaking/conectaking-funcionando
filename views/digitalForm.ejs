@@ -2004,16 +2004,27 @@
                     throw new Error(errorData.message || `Erro ${submitResponse.status}: ${submitResponse.statusText}`);
                 }
                 
-                const submitResult = await submitResponse.json();
+                let submitResult;
+                try {
+                    submitResult = await submitResponse.json();
+                } catch (parseError) {
+                    console.error('❌ [SUBMIT] Erro ao parsear resposta JSON:', parseError);
+                    // Se não conseguir parsear JSON, assumir sucesso se status for 200-299
+                    if (submitResponse.ok) {
+                        submitResult = { success: true, response_id: null };
+                    } else {
+                        throw new Error('Erro ao processar resposta do servidor');
+                    }
+                }
+                
                 console.log('✅ [SUBMIT] Resultado do submit:', submitResult);
                 
                 submitSuccess = true;
                 responseId = submitResult.response_id || submitResult.id || null;
                 
-                // IMPORTANTE: Sempre redirecionar para página de sucesso quando o formulário é enviado
-                // Se "Salvar na Lista" está ativo OU não há WhatsApp, SEMPRE redirecionar
-                // Se WhatsApp está ativo, redirecionar apenas se não for para abrir WhatsApp
-                if (submitResult.success || submitResult.success_page_url || !enableWhatsapp || enableGuestListSubmit) {
+                // IMPORTANTE: Sempre redirecionar para página de sucesso quando o formulário é enviado com sucesso
+                // Se o status foi OK (200-299), assumir que foi salvo com sucesso
+                if (submitResponse.ok) {
                     const successUrl = submitResult.success_page_url || `/${slug}/form/${itemId}/success?response_id=${responseId || ''}`;
                     
                     // Passar dados do formulário via URL para mostrar na página de sucesso
@@ -2041,10 +2052,13 @@
                         enableWhatsapp,
                         enableGuestListSubmit,
                         hasSuccessPageUrl: !!submitResult.success_page_url,
-                        responseId
+                        responseId,
+                        submitResultSuccess: submitResult.success,
+                        statusOk: submitResponse.ok
                     });
                     
-                    // IMPORTANTE: Forçar redirecionamento imediatamente
+                    // IMPORTANTE: Forçar redirecionamento imediatamente SEMPRE que o submit foi OK
+                    // Não esperar nenhuma condição adicional
                     window.location.replace(finalUrl);
                     return;
                 }
