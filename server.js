@@ -513,7 +513,10 @@ app.use('/api/business', apiLimiter, businessRoutes);
 app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/api/suggestions', apiLimiter, suggestionsRoutes);
 // Rota pública do chat (sem rate limit para página inicial)
-app.use('/api/ia-king/chat-public', iaKingRoutes);
+app.post('/api/ia-king/chat-public', (req, res, next) => {
+    // Passar para o router sem rate limit
+    iaKingRoutes(req, res, next);
+});
 // Rotas protegidas com rate limit
 app.use('/api/ia-king', apiLimiter, iaKingRoutes);
 app.use('/api/ia-king', apiLimiter, iaKingTrainingRoutes);
