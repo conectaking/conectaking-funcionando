@@ -488,16 +488,9 @@ app.use((req, res, next) => {
     next();
 });
 
-// Rotas de recuperação de senha
-app.use('/api/password', passwordRoutes);
-
-// Rotas da API com rate limiting apropriado
-app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/inquiry', apiLimiter, inquiryRoutes);
-app.use('/api/generator', apiLimiter, generatorRoutes);
-app.use('/api/account', apiLimiter, accountRoutes);
-app.use('/api/profile', apiLimiter, profileRoutes);
-// Rotas públicas (sem rate limit para página inicial) - DEVEM VIR ANTES das rotas protegidas
+// ============================================
+// ROTAS PÚBLICAS (SEM RATE LIMIT) - DEVEM VIR PRIMEIRO
+// ============================================
 app.get('/api/subscription/plans-public', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
@@ -566,7 +559,18 @@ app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) =
     }
 }));
 
-// Rotas protegidas com rate limit
+// ============================================
+// ROTAS PROTEGIDAS COM RATE LIMIT
+// ============================================
+// Rotas de recuperação de senha
+app.use('/api/password', passwordRoutes);
+
+// Rotas da API com rate limiting apropriado
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/inquiry', apiLimiter, inquiryRoutes);
+app.use('/api/generator', apiLimiter, generatorRoutes);
+app.use('/api/account', apiLimiter, accountRoutes);
+app.use('/api/profile', apiLimiter, profileRoutes);
 app.use('/api/subscription', apiLimiter, subscriptionRoutes);
 app.use('/api/modules', apiLimiter, moduleAvailabilityRoutes);
 app.use('/log', loggerRoutes);
