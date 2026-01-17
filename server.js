@@ -33,6 +33,7 @@ const vcardRoutes = require('./routes/vcard');
 const healthRoutes = require('./routes/health');
 const passwordRoutes = require('./routes/password');
 const imageProxyRoutes = require('./routes/imageProxy');
+const ogImageRoutes = require('./routes/ogImage');
 const publicSalesPageRoutes = require('./routes/publicSalesPage.routes');
 const salesPageRoutes = require('./modules/salesPage/salesPage.routes');
 const productRoutes = require('./modules/salesPage/products/product.routes');
@@ -690,6 +691,9 @@ app.use('/', publicProfileRoutes);
 
 // Proxy de imagem para processar PNGs com fundo preto
 app.use('/api/image', imageProxyRoutes);
+
+// Rota para gerar imagem Open Graph (og-image.jpg) para preview no WhatsApp
+app.use('/', ogImageRoutes);
 
 cron.schedule('0 0 * * *', async () => {
     logger.info('Executando verificação diária de assinaturas e testes...');
