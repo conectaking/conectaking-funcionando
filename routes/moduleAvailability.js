@@ -132,19 +132,32 @@ router.put('/plan-availability', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
-// GET /api/modules/available - Buscar módulos disponíveis para o usuário atual
+// GET /api/modules/available - Buscar módulos disponíveis para o usuário atual ou por plan_code
 router.get('/available', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const userId = req.user.userId;
+        const planCode = req.query.plan_code; // Parâmetro opcional para buscar por plan_code
         
-        // Buscar account_type do usuário
-        const userQuery = await client.query('SELECT account_type FROM users WHERE id = $1', [userId]);
-        if (userQuery.rows.length === 0) {
-            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        let accountType;
+        
+        if (planCode) {
+            // Mapear plan_code para account_type
+            const planCodeMap = {
+                'individual': 'individual',
+                'individual_com_logo': 'individual_com_logo',
+                'business_owner': 'business_owner',
+                'free': 'free'
+            };
+            accountType = planCodeMap[planCode] || planCode;
+        } else {
+            // Buscar account_type do usuário
+            const userQuery = await client.query('SELECT account_type FROM users WHERE id = $1', [userId]);
+            if (userQuery.rows.length === 0) {
+                return res.status(404).json({ message: 'Usuário não encontrado.' });
+            }
+            accountType = userQuery.rows[0].account_type;
         }
-        
-        const accountType = userQuery.rows[0].account_type;
         
         // Buscar módulos disponíveis para este plano
         const modulesQuery = `
@@ -157,6 +170,7 @@ router.get('/available', protectUser, asyncHandler(async (req, res) => {
         
         res.json({
             account_type: accountType,
+            plan_code: planCode || null,
             available_modules: modulesResult.rows.map(r => r.module_type)
         });
     } catch (error) {
