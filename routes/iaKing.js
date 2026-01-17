@@ -19686,16 +19686,37 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
             });
         }
         
-        // Garantir que a resposta está relacionada ao sistema
-        if (result.answer && !result.answer.toLowerCase().includes('conecta') && !result.answer.toLowerCase().includes('king')) {
-            // Se a resposta não menciona ConectaKing, adicionar contexto
-            result.answer = result.answer + '\n\n💡 Dica: Esta resposta é sobre o ConectaKing. Se tiver mais dúvidas sobre nosso sistema, estou aqui para ajudar!';
+        // Garantir que temos uma resposta válida
+        if (!result || !result.answer) {
+            console.warn('⚠️ [IA PUBLIC] Nenhuma resposta encontrada');
+            return res.json({
+                success: false,
+                response: 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
+                answer: 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
+                confidence: 0,
+                source: 'error',
+                category: 'general'
+            });
         }
+        
+        // Garantir que a resposta está relacionada ao sistema (apenas se não for sobre ConectaKing)
+        const answerLower = result.answer.toLowerCase();
+        if (isAboutConectaKing && !answerLower.includes('conecta') && !answerLower.includes('king') && answerLower.length > 100) {
+            // Se a resposta não menciona ConectaKing mas é longa, pode ser genérica demais
+            console.log('⚠️ [IA PUBLIC] Resposta não menciona ConectaKing, mas é sobre o sistema');
+        }
+        
+        console.log('✅ [IA PUBLIC] Retornando resposta:', {
+            hasAnswer: !!result.answer,
+            answerLength: result.answer.length,
+            confidence: result.confidence,
+            source: result.source
+        });
         
         res.json({
             success: true,
-            response: result.answer || 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
-            answer: result.answer || 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
+            response: result.answer,
+            answer: result.answer,
             confidence: result.confidence || 0.5,
             source: result.source || 'system',
             category: result.category || 'general'

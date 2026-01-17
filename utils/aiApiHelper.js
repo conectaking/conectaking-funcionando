@@ -81,7 +81,12 @@ INSTRUÇÕES:
         });
 
         if (!response.ok) {
-            console.error('❌ [Gemini] Erro na API:', response.status, response.statusText);
+            const errorText = await response.text();
+            console.error('❌ [Gemini] Erro na API:', {
+                status: response.status,
+                statusText: response.statusText,
+                error: errorText.substring(0, 200)
+            });
             return null;
         }
 
