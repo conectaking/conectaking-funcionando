@@ -5608,6 +5608,52 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // ============================================
+        // DETECÇÃO: PERGUNTAS SOBRE FORMAS DE PAGAMENTO
+        // ============================================
+        const paymentQuestions = [
+            'forma de pagamento', 'formas de pagamento', 'como pagar', 'como posso pagar',
+            'qual forma de pagamento', 'quais formas de pagamento', 'meios de pagamento',
+            'métodos de pagamento', 'metodos de pagamento', 'opções de pagamento',
+            'opcoes de pagamento', 'aceita', 'aceitam', 'pix', 'cartão', 'cartao',
+            'crédito', 'credito', 'débito', 'debito', 'boleto', 'transferência',
+            'transferencia', 'parcelado', 'parcela', 'vezes', '12x', 'à vista',
+            'a vista', 'mensal', 'anual', 'recorrente', 'pagamento único',
+            'pagamento unico', 'melhor forma de pagamento', 'melhor forma pagamento'
+        ];
+        
+        if (paymentQuestions.some(q => lowerMessage.includes(q))) {
+            return {
+                answer: "💳 **FORMAS DE PAGAMENTO DO CONECTA KING**\n\n" +
+                       "Oferecemos **3 formas de pagamento** flexíveis para você escolher:\n\n" +
+                       "**1️⃣ PIX (Pagamento à Vista)**\n" +
+                       "• Valor integral do plano\n" +
+                       "• Ativação imediata após confirmação\n" +
+                       "• Mais rápido e prático\n" +
+                       "• Sem taxas adicionais\n\n" +
+                       "**2️⃣ Cartão de Crédito**\n" +
+                       "• Parcelamento em até 12x\n" +
+                       "• Taxa adicional de 20% sobre o valor\n" +
+                       "• Exemplo: Plano King Start (R$ 700)\n" +
+                       "  → No cartão: R$ 840 (até 12x de R$ 70)\n\n" +
+                       "**3️⃣ Pagamento Mensal Recorrente**\n" +
+                       "• Pagamento mensal automático\n" +
+                       "• Valor dividido em 12 parcelas\n" +
+                       "• Ideal para quem prefere pagar mensalmente\n\n" +
+                       "**📋 PROCESSO:**\n" +
+                       "1. Escolha seu plano (King Start, King Prime ou King Corporate)\n" +
+                       "2. Selecione a forma de pagamento\n" +
+                       "3. Entre em contato via WhatsApp para finalizar\n" +
+                       "4. Após confirmação, seu plano é ativado imediatamente\n\n" +
+                       "**💡 RECOMENDAÇÃO:**\n" +
+                       "O PIX é a forma mais rápida e econômica, sem taxas adicionais!\n\n" +
+                       "Quer saber mais sobre algum plano específico? Posso te ajudar! 😊",
+                confidence: 100,
+                source: 'payment_info',
+                mentalMode: 'informative'
+            };
+        }
+        
+        // ============================================
         // DETECÇÃO: PERGUNTAS SOBRE COMO FUNCIONA O SISTEMA
         // ============================================
         const systemHowQuestions = [
@@ -7828,6 +7874,38 @@ async function findBestAnswer(userMessage, userId) {
             };
         }
         
+        // Verificar se é pergunta sobre pagamento antes de retornar erro
+        const lowerMsg = userMessage.toLowerCase();
+        const paymentKeywords = ['pagamento', 'pix', 'cartão', 'cartao', 'crédito', 'credito', 'forma de pagamento', 'como pagar', 'formas de pagamento'];
+        if (paymentKeywords.some(kw => lowerMsg.includes(kw))) {
+            return {
+                answer: "💳 **FORMAS DE PAGAMENTO DO CONECTA KING**\n\n" +
+                       "Oferecemos **3 formas de pagamento** flexíveis:\n\n" +
+                       "**1️⃣ PIX (Pagamento à Vista)**\n" +
+                       "• Valor integral do plano\n" +
+                       "• Ativação imediata após confirmação\n" +
+                       "• Sem taxas adicionais\n\n" +
+                       "**2️⃣ Cartão de Crédito**\n" +
+                       "• Parcelamento em até 12x\n" +
+                       "• Taxa adicional de 20% sobre o valor\n" +
+                       "• Exemplo: Plano King Start (R$ 700)\n" +
+                       "  → No cartão: R$ 840 (até 12x de R$ 70)\n\n" +
+                       "**3️⃣ Pagamento Mensal Recorrente**\n" +
+                       "• Pagamento mensal automático\n" +
+                       "• Valor dividido em 12 parcelas\n\n" +
+                       "**📋 PROCESSO:**\n" +
+                       "1. Escolha seu plano\n" +
+                       "2. Selecione a forma de pagamento\n" +
+                       "3. Entre em contato via WhatsApp\n" +
+                       "4. Após confirmação, seu plano é ativado\n\n" +
+                       "**💡 RECOMENDAÇÃO:**\n" +
+                       "O PIX é a forma mais rápida e econômica! 😊",
+                confidence: 100,
+                source: 'payment_info_fallback',
+                mentalMode: 'informative'
+            };
+        }
+        
         // Retornar resposta de erro educada para outros casos
         return {
             answer: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou reformule sua pergunta.',
@@ -8046,6 +8124,84 @@ router.post('/chat', protectUser, asyncHandler(async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Erro no chat da IA KING:', error);
+        
+        // Tentar detectar tipo de pergunta mesmo em caso de erro
+        const lowerMessage = (message || '').toLowerCase();
+        const paymentKeywords = ['pagamento', 'pix', 'cartão', 'cartao', 'crédito', 'credito', 'forma de pagamento', 'como pagar'];
+        const pricingKeywords = ['valor', 'preço', 'preco', 'quanto custa', 'planos', 'pacotes'];
+        const systemKeywords = ['conecta king', 'conectaking', 'sistema', 'como funciona', 'cartão virtual'];
+        
+        // Se for pergunta sobre pagamento, retornar resposta específica
+        if (paymentKeywords.some(kw => lowerMessage.includes(kw))) {
+            return res.json({
+                response: "💳 **FORMAS DE PAGAMENTO DO CONECTA KING**\n\n" +
+                         "Oferecemos **3 formas de pagamento** flexíveis:\n\n" +
+                         "**1️⃣ PIX (Pagamento à Vista)**\n" +
+                         "• Valor integral do plano\n" +
+                         "• Ativação imediata após confirmação\n" +
+                         "• Sem taxas adicionais\n\n" +
+                         "**2️⃣ Cartão de Crédito**\n" +
+                         "• Parcelamento em até 12x\n" +
+                         "• Taxa adicional de 20% sobre o valor\n" +
+                         "• Exemplo: Plano King Start (R$ 700)\n" +
+                         "  → No cartão: R$ 840 (até 12x de R$ 70)\n\n" +
+                         "**3️⃣ Pagamento Mensal Recorrente**\n" +
+                         "• Pagamento mensal automático\n" +
+                         "• Valor dividido em 12 parcelas\n\n" +
+                         "**📋 PROCESSO:**\n" +
+                         "1. Escolha seu plano\n" +
+                         "2. Selecione a forma de pagamento\n" +
+                         "3. Entre em contato via WhatsApp\n" +
+                         "4. Após confirmação, seu plano é ativado\n\n" +
+                         "**💡 RECOMENDAÇÃO:**\n" +
+                         "O PIX é a forma mais rápida e econômica! 😊",
+                confidence: 100,
+                source: 'payment_info_error_fallback',
+                conversation_id: null,
+                response_time_ms: Date.now() - startTime
+            });
+        }
+        
+        // Se for pergunta sobre valores/planos, retornar resposta específica
+        if (pricingKeywords.some(kw => lowerMessage.includes(kw))) {
+            return res.json({
+                response: "💰 **VALORES E PLANOS DO CONECTA KING**\n\n" +
+                         "**King Start** - R$ 700,00 (pagamento único)\n" +
+                         "Ideal para iniciar sua presença digital\n\n" +
+                         "**King Prime** - R$ 1.000,00 (pagamento único)\n" +
+                         "Para profissionais que buscam impacto e autoridade\n\n" +
+                         "**King Corporate** - R$ 2.300,00 (pagamento único)\n" +
+                         "A escolha ideal para empresas e equipes\n\n" +
+                         "💳 **Formas de Pagamento:**\n" +
+                         "• PIX (à vista)\n" +
+                         "• Cartão de Crédito (até 12x com taxa de 20%)\n" +
+                         "• Pagamento Mensal Recorrente\n\n" +
+                         "Para assinar, acesse a seção 'Assinatura' no dashboard! 😊",
+                confidence: 100,
+                source: 'pricing_info_error_fallback',
+                conversation_id: null,
+                response_time_ms: Date.now() - startTime
+            });
+        }
+        
+        // Se for pergunta sobre o sistema, retornar resposta específica
+        if (systemKeywords.some(kw => lowerMessage.includes(kw))) {
+            return res.json({
+                response: "🚀 **COMO FUNCIONA O CONECTA KING**\n\n" +
+                         "O Conecta King é uma plataforma para criação de **cartões virtuais profissionais**.\n\n" +
+                         "**📋 PASSO A PASSO:**\n\n" +
+                         "1️⃣ Crie seu cartão virtual personalizado\n" +
+                         "2️⃣ Adicione módulos (WhatsApp, Instagram, links, PIX, etc.)\n" +
+                         "3️⃣ Personalize cores, fontes e layout\n" +
+                         "4️⃣ Compartilhe seu link único ou QR Code\n" +
+                         "5️⃣ Acompanhe visualizações através dos relatórios\n\n" +
+                         "Quer ajuda para configurar seu cartão? Posso te guiar passo a passo! 😊",
+                confidence: 100,
+                source: 'system_info_error_fallback',
+                conversation_id: null,
+                response_time_ms: Date.now() - startTime
+            });
+        }
         console.error('Stack trace:', error.stack);
         console.error('Detalhes do erro:', {
             message: error.message,
