@@ -7174,34 +7174,77 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // ============================================
-        // NOVO: TENTAR API EXTERNA SE RESPOSTA LOCAL É FRACA
+        // NOVO: USAR GEMINI PARA MELHORAR RESPOSTAS LOCAIS
         // ============================================
-        if (hasAnyAPIConfigured() && (!bestAnswer || bestScore < 70)) {
-            console.log('🤖 [IA] Tentando melhorar resposta com API externa...');
+        if (hasAnyAPIConfigured()) {
+            console.log('🤖 [IA] Usando Gemini para melhorar resposta...');
             try {
-                // Construir contexto para a API
-                const contextInfo = questionIsAboutSystem 
-                    ? `O Conecta King é uma plataforma de cartões virtuais profissionais. Planos: King Start (R$ 700), King Prime (R$ 1.000), King Corporate (R$ 2.300). Formas de pagamento: PIX, Cartão de Crédito (até 12x com 20% de taxa), Pagamento Mensal Recorrente.`
-                    : '';
+                // Construir contexto detalhado para a API
+                let contextInfo = '';
+                if (questionIsAboutSystem) {
+                    contextInfo = `O Conecta King é uma plataforma de cartões virtuais profissionais.
+
+PLANOS DISPONÍVEIS:
+- King Start: R$ 700,00 (pagamento único) - Ideal para iniciar
+- King Prime: R$ 1.000,00 (pagamento único) - Para profissionais que buscam impacto
+- King Corporate: R$ 2.300,00 (pagamento único) - Modo empresa
+
+FORMAS DE PAGAMENTO:
+- PIX (à vista, sem taxas)
+- Cartão de Crédito (até 12x com 20% de taxa adicional)
+- Pagamento Mensal Recorrente (dividido em 12 parcelas)
+
+FUNCIONALIDADES:
+- Cartão virtual personalizado
+- Módulos: WhatsApp, Instagram, links, PIX, QR Code, Loja Virtual, King Forms, Carrossel, Portfólio, Banner
+- Tecnologia NFC
+- Relatórios e analytics
+- Compartilhamento via link único ou QR Code`;
+                } else {
+                    contextInfo = questionContext.keywords ? 
+                        `Contexto da pergunta: ${questionContext.keywords.join(', ')}` : '';
+                }
                 
-                const apiResult = await generateWithExternalAPI(userMessage, contextInfo, true);
+                // SEMPRE tentar melhorar com Gemini, mesmo se tiver resposta local
+                const apiResult = await generateWithExternalAPI(
+                    userMessage, 
+                    contextInfo, 
+                    true, 
+                    bestAnswer // Passar resposta local para o Gemini melhorar
+                );
                 
                 if (apiResult && apiResult.answer) {
                     // Validar se a resposta da API é relevante
                     const apiAnswerLower = apiResult.answer.toLowerCase();
-                    const hasRelevantContent = apiAnswerLower.length > 50 && 
-                                             (apiAnswerLower.includes('conecta') || 
-                                              apiAnswerLower.includes('king') || 
-                                              questionContext.entities.length === 0 ||
-                                              questionContext.entities.some(e => apiAnswerLower.includes(e.toLowerCase())));
+                    const hasRelevantContent = apiAnswerLower.length > 50;
                     
-                    if (hasRelevantContent) {
-                        console.log(`✅ [IA] Resposta melhorada com ${apiResult.source.toUpperCase()}`);
-                        bestAnswer = apiResult.answer;
-                        bestScore = Math.max(bestScore, 75); // Melhorar confiança
-                        bestSource = `external_api_${apiResult.source}`;
+                    // Se tiver resposta local, validar se a API melhorou
+                    if (bestAnswer) {
+                        const localAnswerLower = bestAnswer.toLowerCase();
+                        const apiImproved = apiAnswerLower.length > localAnswerLower.length * 0.8 || // Pelo menos 80% do tamanho
+                                           apiAnswerLower.includes('conecta') || 
+                                           apiAnswerLower.includes('king') ||
+                                           questionContext.entities.length === 0 ||
+                                           questionContext.entities.some(e => apiAnswerLower.includes(e.toLowerCase()));
+                        
+                        if (apiImproved && hasRelevantContent) {
+                            console.log(`✨ [IA] Resposta local melhorada com ${apiResult.source.toUpperCase()}`);
+                            bestAnswer = apiResult.answer;
+                            bestScore = Math.min(95, bestScore + 10); // Melhorar confiança
+                            bestSource = `enhanced_${bestSource}_with_${apiResult.source}`;
+                        } else {
+                            console.log('ℹ️ [IA] Resposta local mantida (já é boa)');
+                        }
                     } else {
-                        console.log('⚠️ [IA] Resposta da API não é relevante, mantendo resposta local');
+                        // Não tem resposta local, usar resposta da API
+                        if (hasRelevantContent) {
+                            console.log(`✅ [IA] Resposta gerada com ${apiResult.source.toUpperCase()}`);
+                            bestAnswer = apiResult.answer;
+                            bestScore = 75;
+                            bestSource = `external_api_${apiResult.source}`;
+                        } else {
+                            console.log('⚠️ [IA] Resposta da API não é relevante');
+                        }
                     }
                 }
             } catch (apiError) {

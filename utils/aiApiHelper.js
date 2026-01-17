@@ -18,24 +18,37 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 /**
  * Gera resposta usando Google Gemini API (GRATUITA)
  */
-async function generateWithGemini(userMessage, context = '') {
+async function generateWithGemini(userMessage, context = '', localAnswer = null) {
     if (!GEMINI_API_KEY) {
         return null;
     }
 
     try {
-        const systemPrompt = `Você é a IA King, assistente virtual do Conecta King, uma plataforma de cartões virtuais profissionais.
+        let systemPrompt = `Você é a IA King, assistente virtual do Conecta King, uma plataforma de cartões virtuais profissionais.
 
 CONTEXTO DO SISTEMA:
-${context || 'Você ajuda usuários com dúvidas sobre o sistema Conecta King, planos, funcionalidades e como usar a plataforma.'}
+${context || 'Você ajuda usuários com dúvidas sobre o sistema Conecta King, planos, funcionalidades e como usar a plataforma.'}`;
+
+        // Se tiver resposta local, pedir para melhorar/refinar
+        if (localAnswer) {
+            systemPrompt += `\n\nRESPOSTA LOCAL ENCONTRADA (melhore e refine esta resposta):
+${localAnswer}
 
 INSTRUÇÕES:
+- Use a resposta local como base, mas melhore-a tornando-a mais natural, clara e contextualizada
+- Mantenha todas as informações importantes da resposta local
+- Adicione contexto quando necessário
+- Torne a linguagem mais fluida e profissional
+- Se a resposta local estiver incompleta, complete com informações relevantes`;
+        } else {
+            systemPrompt += `\n\nINSTRUÇÕES:
 - Seja educada, profissional e prestativa
 - Responda em português brasileiro
 - Se a pergunta não for sobre o Conecta King, redirecione educadamente
 - Use emojis moderadamente
 - Seja clara e objetiva
 - Se não souber algo, seja honesta`;
+        }
 
         const prompt = `${systemPrompt}\n\nUsuário: ${userMessage}\n\nIA King:`;
 
@@ -184,9 +197,9 @@ async function generateWithHuggingFace(userMessage, context = '') {
  * Tenta gerar resposta usando APIs externas (com fallback)
  * Ordem de prioridade: Gemini > Groq > HuggingFace
  */
-async function generateWithExternalAPI(userMessage, context = '', useFallback = true) {
+async function generateWithExternalAPI(userMessage, context = '', useFallback = true, localAnswer = null) {
     // Tentar Gemini primeiro (melhor qualidade)
-    let answer = await generateWithGemini(userMessage, context);
+    let answer = await generateWithGemini(userMessage, context, localAnswer);
     if (answer) return { answer, source: 'gemini' };
 
     // Tentar Groq (mais rápido)
