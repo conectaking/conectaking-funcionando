@@ -5640,7 +5640,7 @@ async function findBestAnswer(userMessage, userId) {
         
         if (isPaymentQuestion) {
             console.log('💳 [IA] ✅ Detectada pergunta sobre pagamento (mesma lógica para público e autenticado):', {
-                message: message.substring(0, 100),
+                message: userMessage.substring(0, 100),
                 hasPaymentKeyword,
                 hasQualAndPagamento,
                 hasFormasAndPagamento,
