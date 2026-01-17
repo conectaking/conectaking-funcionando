@@ -5,6 +5,56 @@ const { asyncHandler } = require('../middleware/errorHandler');
 
 const router = express.Router();
 
+// GET /api/modules/plan-availability-public - Buscar disponibilidade de módulos por plano (público)
+router.get('/plan-availability-public', asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Buscar todos os módulos e sua disponibilidade por plano
+        const availabilityQuery = `
+            SELECT 
+                mpa.id,
+                mpa.module_type,
+                mpa.plan_code,
+                mpa.is_available,
+                mpa.updated_at
+            FROM module_plan_availability mpa
+            WHERE mpa.module_type IN (
+                'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode',
+                'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
+                'spotify', 'linkedin', 'pinterest',
+                'link', 'portfolio', 'banner', 'carousel', 
+                'youtube_embed', 'sales_page', 'digital_form'
+            )
+            ORDER BY mpa.module_type, mpa.plan_code
+        `;
+        const availabilityResult = await client.query(availabilityQuery);
+        
+        // Organizar por módulo
+        const modulesMap = {};
+        availabilityResult.rows.forEach(row => {
+            if (!modulesMap[row.module_type]) {
+                modulesMap[row.module_type] = {
+                    module_type: row.module_type,
+                    plans: {}
+                };
+            }
+            modulesMap[row.module_type].plans[row.plan_code] = {
+                is_available: row.is_available,
+                id: row.id
+            };
+        });
+        
+        res.json({
+            modules: Object.values(modulesMap)
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar disponibilidade de módulos:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
 // GET /api/modules/plan-availability - Buscar disponibilidade de módulos por plano
 router.get('/plan-availability', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();

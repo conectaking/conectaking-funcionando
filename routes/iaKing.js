@@ -19374,5 +19374,63 @@ async function getContextualHelpForPage(page, client) {
     }
 }
 
+// POST /api/ia-king/chat-public - Chat público para página inicial (sem autenticação)
+// Limita respostas apenas a assuntos do ConectaKing
+router.post('/chat-public', asyncHandler(async (req, res) => {
+    const { message } = req.body;
+    
+    if (!message || !message.trim()) {
+        return res.status(400).json({ error: 'Mensagem é obrigatória' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        // Verificar se a mensagem é sobre o sistema ConectaKing
+        const lowerMessage = message.toLowerCase();
+        const conectaKingKeywords = [
+            'conecta', 'king', 'conectaking', 'plano', 'planos', 'preço', 'preco', 'valor', 'assinatura',
+            'cartão', 'cartao', 'virtual', 'nfc', 'qr code', 'qrcode', 'link', 'perfil', 'dashboard',
+            'módulo', 'modulo', 'recurso', 'funcionalidade', 'como funciona', 'como usar', 'tutorial',
+            'king start', 'king prime', 'king corporate', 'king forms', 'loja virtual', 'carrossel',
+            'portfólio', 'portfolio', 'whatsapp', 'instagram', 'redes sociais'
+        ];
+        
+        const isAboutConectaKing = conectaKingKeywords.some(keyword => lowerMessage.includes(keyword));
+        
+        if (!isAboutConectaKing) {
+            return res.json({
+                answer: 'Olá! 👋\n\nSou a IA King, assistente do ConectaKing. Posso ajudar você apenas com questões relacionadas ao nosso sistema, planos, funcionalidades e como usar o ConectaKing.\n\nPor favor, faça uma pergunta sobre o ConectaKing! 😊',
+                confidence: 1,
+                source: 'system',
+                category: 'redirect'
+            });
+        }
+        
+        // Buscar resposta usando userId null (público)
+        const result = await findBestAnswer(message.trim(), null);
+        
+        // Garantir que a resposta está relacionada ao sistema
+        if (result.answer && !result.answer.toLowerCase().includes('conecta') && !result.answer.toLowerCase().includes('king')) {
+            // Se a resposta não menciona ConectaKing, adicionar contexto
+            result.answer = result.answer + '\n\n💡 Dica: Esta resposta é sobre o ConectaKing. Se tiver mais dúvidas sobre nosso sistema, estou aqui para ajudar!';
+        }
+        
+        res.json({
+            answer: result.answer || 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
+            confidence: result.confidence || 0.5,
+            source: result.source || 'system',
+            category: result.category || 'general'
+        });
+    } catch (error) {
+        console.error('❌ Erro no chat público:', error);
+        res.status(500).json({
+            answer: 'Desculpe, ocorreu um erro. Por favor, tente novamente ou entre em contato via WhatsApp.',
+            error: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
 

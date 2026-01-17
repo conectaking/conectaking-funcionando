@@ -220,5 +220,39 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
+// GET /api/subscription/plans-public - Buscar planos disponíveis (público, sem autenticação)
+router.get('/plans-public', asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const plansQuery = `
+            SELECT 
+                id,
+                plan_code,
+                plan_name,
+                price,
+                description,
+                features,
+                whatsapp_number,
+                whatsapp_message,
+                pix_key,
+                is_active
+            FROM subscription_plans
+            WHERE is_active = true
+            ORDER BY price ASC
+        `;
+        const plansResult = await client.query(plansQuery);
+        
+        res.json({
+            success: true,
+            plans: plansResult.rows
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar planos públicos:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
 
