@@ -497,7 +497,16 @@ app.use('/api/inquiry', apiLimiter, inquiryRoutes);
 app.use('/api/generator', apiLimiter, generatorRoutes);
 app.use('/api/account', apiLimiter, accountRoutes);
 app.use('/api/profile', apiLimiter, profileRoutes);
+// Rota pública dos planos (sem rate limit para página inicial)
+app.get('/api/subscription/plans-public', (req, res, next) => {
+    subscriptionRoutes(req, res, next);
+});
+// Rotas protegidas com rate limit
 app.use('/api/subscription', apiLimiter, subscriptionRoutes);
+// Rota pública de módulos (sem rate limit para página inicial)
+app.get('/api/modules/plan-availability-public', (req, res, next) => {
+    moduleAvailabilityRoutes(req, res, next);
+});
 app.use('/api/modules', apiLimiter, moduleAvailabilityRoutes);
 app.use('/log', loggerRoutes);
 // Endpoint agregado de check-in (rate limit específico - 120/min)
