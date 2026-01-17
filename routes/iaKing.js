@@ -42,11 +42,29 @@ function isAboutSystem(message) {
         'assinatura', 'plano', 'pacote', 'módulo', 'modulo', 'dashboard',
         'perfil', 'sistema', 'funcionalidade', 'como usar', 'como funciona',
         'valores', 'preços', 'preco', 'quanto custa', 'custa', 'logomarca',
-        'logo', 'personalização', 'personalizacao', 'compartilhar', 'compartilhamento'
+        'logo', 'personalização', 'personalizacao', 'compartilhar', 'compartilhamento',
+        'empresa', 'sobre', 'fale sobre', 'fala sobre', 'me fale', 'me fala',
+        'conecta', 'king', 'plataforma', 'serviço', 'servico', 'produto'
     ];
     
     const lowerMessage = message.toLowerCase();
-    return systemKeywords.some(keyword => lowerMessage.includes(keyword));
+    
+    // Detectar perguntas sobre a empresa/sistema mesmo sem palavras-chave explícitas
+    const aboutPatterns = [
+        /(me\s+)?fale?\s+sobre/i,
+        /(me\s+)?fala?\s+sobre/i,
+        /(me\s+)?conte?\s+sobre/i,
+        /(me\s+)?explique?\s+sobre/i,
+        /o\s+que\s+é/i,
+        /quem\s+é/i,
+        /o\s+que\s+faz/i,
+        /sobre\s+(a\s+)?(empresa|sistema|plataforma|conecta|king)/i
+    ];
+    
+    const hasAboutPattern = aboutPatterns.some(pattern => pattern.test(message));
+    const hasKeyword = systemKeywords.some(keyword => lowerMessage.includes(keyword));
+    
+    return hasKeyword || hasAboutPattern;
 }
 
 // ============================================
@@ -5713,6 +5731,49 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // ============================================
+        // DETECÇÃO: PERGUNTAS SOBRE A EMPRESA/SISTEMA
+        // ============================================
+        const aboutCompanyPatterns = [
+            /(me\s+)?fale?\s+sobre\s+(a\s+)?(empresa|conecta|king|sistema|plataforma)/i,
+            /(me\s+)?fala?\s+sobre\s+(a\s+)?(empresa|conecta|king|sistema|plataforma)/i,
+            /(me\s+)?conte?\s+sobre\s+(a\s+)?(empresa|conecta|king|sistema|plataforma)/i,
+            /(me\s+)?explique?\s+(a\s+)?(empresa|conecta|king|sistema|plataforma)/i,
+            /o\s+que\s+é\s+(a\s+)?(empresa|conecta|king|sistema|plataforma)/i,
+            /quem\s+é\s+(a\s+)?(empresa|conecta|king)/i,
+            /o\s+que\s+faz\s+(a\s+)?(empresa|conecta|king)/i
+        ];
+        
+        const isAboutCompany = aboutCompanyPatterns.some(pattern => pattern.test(userMessage));
+        
+        if (isAboutCompany) {
+            return {
+                answer: "🏢 **SOBRE O CONECTA KING**\n\n" +
+                       "O **Conecta King** é uma plataforma inovadora de cartões virtuais profissionais que transforma a forma como você se conecta e compartilha suas informações de contato.\n\n" +
+                       "**🎯 NOSSA MISSÃO:**\n" +
+                       "Revolucionar o networking profissional através de tecnologia NFC premium, oferecendo uma solução completa e elegante para profissionais que buscam autoridade, conexão e vendas.\n\n" +
+                       "**💎 O QUE OFERECEMOS:**\n" +
+                       "• Cartões virtuais personalizados com tecnologia NFC\n" +
+                       "• Múltiplos módulos (WhatsApp, Instagram, links, PIX, QR Code, Loja Virtual, King Forms, Carrossel, Portfólio, Banner)\n" +
+                       "• Relatórios e analytics completos\n" +
+                       "• Compartilhamento via link único ou QR Code\n" +
+                       "• Atualizações em tempo real\n\n" +
+                       "**👑 NOSSOS PLANOS:**\n" +
+                       "• **King Start** (R$ 700) - Ideal para iniciar\n" +
+                       "• **King Prime** (R$ 1.000) - Para profissionais que buscam impacto\n" +
+                       "• **King Corporate** (R$ 2.300) - Modo empresa\n\n" +
+                       "**✨ DIFERENCIAIS:**\n" +
+                       "• Sem mensalidade (pagamento único)\n" +
+                       "• Tecnologia NFC moderna\n" +
+                       "• Imagem profissional e inovadora\n" +
+                       "• Solução sustentável e reutilizável\n\n" +
+                       "Quer saber mais sobre algum plano específico ou funcionalidade? Posso te ajudar! 😊",
+                confidence: 100,
+                source: 'company_info',
+                mentalMode: 'informative'
+            };
+        }
+        
+        // ============================================
         // DETECÇÃO: PERGUNTAS SOBRE COMO FUNCIONA O SISTEMA
         // ============================================
         const systemHowQuestions = [
@@ -7240,10 +7301,13 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         if (hasAnyAPIConfigured()) {
-            console.log('🤖 [IA] Usando Gemini para melhorar resposta...', {
+            console.log('🤖 [IA] API Externa configurada - tentando melhorar resposta...', {
                 hasLocalAnswer: !!bestAnswer,
                 localScore: bestScore,
-                isAboutSystem: questionIsAboutSystem
+                isAboutSystem: questionIsAboutSystem,
+                hasGemini: !!process.env.GEMINI_API_KEY,
+                hasGroq: !!process.env.GROQ_API_KEY,
+                hasHuggingFace: !!process.env.HUGGINGFACE_API_KEY
             });
             try {
                 // Construir contexto detalhado para a API
@@ -19777,13 +19841,62 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
             category: 'general'
         });
     } catch (error) {
-        console.error('❌ Erro no chat público:', error);
-        res.status(500).json({
-            answer: 'Desculpe, ocorreu um erro. Por favor, tente novamente ou entre em contato via WhatsApp.',
-            error: error.message
+        console.error('❌ [IA PUBLIC] Erro ao processar mensagem:', error);
+        console.error('Stack trace:', error.stack);
+        
+        // Tentar responder mesmo com erro, se for pergunta sobre o sistema
+        const lowerMsg = (message || '').toLowerCase();
+        const isAboutSystem = lowerMsg.includes('conecta') || 
+                             lowerMsg.includes('king') || 
+                             lowerMsg.includes('empresa') ||
+                             lowerMsg.includes('sistema') ||
+                             lowerMsg.includes('sobre') ||
+                             /(me\s+)?fale?\s+sobre/i.test(message || '') ||
+                             /(me\s+)?fala?\s+sobre/i.test(message || '');
+        
+        if (isAboutSystem) {
+            // Retornar resposta básica sobre o sistema mesmo com erro
+            return res.json({
+                success: true,
+                response: "🏢 **SOBRE O CONECTA KING**\n\n" +
+                         "O Conecta King é uma plataforma de cartões virtuais profissionais que transforma a forma como você se conecta.\n\n" +
+                         "**💎 PRINCIPAIS FUNCIONALIDADES:**\n" +
+                         "• Cartões virtuais personalizados com tecnologia NFC\n" +
+                         "• Múltiplos módulos (WhatsApp, Instagram, links, PIX, QR Code, Loja Virtual, King Forms, etc.)\n" +
+                         "• Relatórios e analytics\n" +
+                         "• Compartilhamento via link único ou QR Code\n\n" +
+                         "**👑 PLANOS DISPONÍVEIS:**\n" +
+                         "• King Start (R$ 700)\n" +
+                         "• King Prime (R$ 1.000)\n" +
+                         "• King Corporate (R$ 2.300)\n\n" +
+                         "Quer saber mais sobre algum plano específico? Posso te ajudar! 😊",
+                answer: "🏢 **SOBRE O CONECTA KING**\n\n" +
+                       "O Conecta King é uma plataforma de cartões virtuais profissionais que transforma a forma como você se conecta.\n\n" +
+                       "**💎 PRINCIPAIS FUNCIONALIDADES:**\n" +
+                       "• Cartões virtuais personalizados com tecnologia NFC\n" +
+                       "• Múltiplos módulos (WhatsApp, Instagram, links, PIX, QR Code, Loja Virtual, King Forms, etc.)\n" +
+                       "• Relatórios e analytics\n" +
+                       "• Compartilhamento via link único ou QR Code\n\n" +
+                       "**👑 PLANOS DISPONÍVEIS:**\n" +
+                       "• King Start (R$ 700)\n" +
+                       "• King Prime (R$ 1.000)\n" +
+                       "• King Corporate (R$ 2.300)\n\n" +
+                       "Quer saber mais sobre algum plano específico? Posso te ajudar! 😊",
+                confidence: 80,
+                source: 'fallback_company_info',
+                category: 'company'
+            });
+        }
+        
+        return res.status(500).json({
+            success: false,
+            response: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou reformule sua pergunta.',
+            answer: 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou reformule sua pergunta.',
+            confidence: 0,
+            source: 'error'
         });
     } finally {
-        client.release();
+        if (client) client.release();
     }
 }));
 
