@@ -19376,6 +19376,7 @@ async function getContextualHelpForPage(page, client) {
 
 // POST /api/ia-king/chat-public - Chat público para página inicial (sem autenticação)
 // Limita respostas apenas a assuntos do ConectaKing
+// IMPORTANTE: Esta rota também pode ser acessada via /api/ia-king/chat-public diretamente
 router.post('/chat-public', asyncHandler(async (req, res) => {
     const { message } = req.body;
     

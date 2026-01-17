@@ -512,6 +512,9 @@ app.use('/api/pix', apiLimiter, pixRoutes);
 app.use('/api/business', apiLimiter, businessRoutes);
 app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/api/suggestions', apiLimiter, suggestionsRoutes);
+// Rota pública do chat (sem rate limit para página inicial)
+app.use('/api/ia-king/chat-public', iaKingRoutes);
+// Rotas protegidas com rate limit
 app.use('/api/ia-king', apiLimiter, iaKingRoutes);
 app.use('/api/ia-king', apiLimiter, iaKingTrainingRoutes);
 app.use('/api/ai-core', apiLimiter, aiCoreRoutes); // Nova ConectaKing AI Core
