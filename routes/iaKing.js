@@ -6,6 +6,7 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const fetch = require('node-fetch');
 const embeddings = require('./embeddings');
 const { generateWithExternalAPI, hasAnyAPIConfigured } = require('../utils/aiApiHelper');
+const { trainIAWithSystemInfo, addParcelamentoKnowledge } = require('../utils/iaSystemTrainer');
 
 // Sistema avançado de entendimento (similar ao ChatGPT)
 let advancedUnderstanding = null;
@@ -5625,6 +5626,31 @@ async function findBestAnswer(userMessage, userId) {
         ];
         
         if (paymentQuestions.some(q => lowerMessage.includes(q))) {
+            // Buscar informações atualizadas do banco de dados
+            let planDetails = '';
+            try {
+                const plansResult = await client.query(`
+                    SELECT plan_name, price, plan_code FROM subscription_plans 
+                    WHERE is_active = true 
+                    ORDER BY price ASC
+                `);
+                
+                if (plansResult.rows.length > 0) {
+                    planDetails = '\n\n**💎 VALORES POR PLANO:**\n\n';
+                    plansResult.rows.forEach(plan => {
+                        const pixPrice = plan.price;
+                        const cardPrice = plan.price * 1.2; // +20%
+                        const monthlyCard = cardPrice / 12;
+                        
+                        planDetails += `**${plan.plan_name}**\n`;
+                        planDetails += `• PIX: R$ ${pixPrice.toFixed(2).replace('.', ',')} (à vista)\n`;
+                        planDetails += `• Cartão: R$ ${cardPrice.toFixed(2).replace('.', ',')} (até 12x de R$ ${monthlyCard.toFixed(2).replace('.', ',')})\n\n`;
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao buscar planos:', error);
+            }
+            
             return {
                 answer: "💳 **FORMAS DE PAGAMENTO DO CONECTA KING**\n\n" +
                        "Oferecemos **3 formas de pagamento** flexíveis para você escolher:\n\n" +
@@ -5633,15 +5659,23 @@ async function findBestAnswer(userMessage, userId) {
                        "• Ativação imediata após confirmação\n" +
                        "• Mais rápido e prático\n" +
                        "• Sem taxas adicionais\n\n" +
-                       "**2️⃣ Cartão de Crédito**\n" +
-                       "• Parcelamento em até 12x\n" +
+                       "**2️⃣ Cartão de Crédito (Parcelamento)**\n" +
+                       "• **Até 12 parcelas** disponíveis\n" +
                        "• Taxa adicional de 20% sobre o valor\n" +
-                       "• Exemplo: Plano King Start (R$ 700)\n" +
-                       "  → No cartão: R$ 840 (até 12x de R$ 70)\n\n" +
+                       "• Exemplos:\n" +
+                       "  → King Start (R$ 700) → No cartão: R$ 840 (12x de R$ 70)\n" +
+                       "  → King Prime (R$ 1.000) → No cartão: R$ 1.200 (12x de R$ 100)\n" +
+                       "  → King Corporate (R$ 2.300) → No cartão: R$ 2.760 (12x de R$ 230)\n\n" +
                        "**3️⃣ Pagamento Mensal Recorrente**\n" +
                        "• Pagamento mensal automático\n" +
-                       "• Valor dividido em 12 parcelas\n" +
+                       "• Valor dividido em 12 parcelas mensais\n" +
                        "• Ideal para quem prefere pagar mensalmente\n\n" +
+                       "**📋 PERGUNTAS FREQUENTES:**\n" +
+                       "• **Quantas vezes posso parcelar?** → Até 12x no cartão de crédito\n" +
+                       "• **Tem juros?** → Sim, 20% de taxa adicional no cartão\n" +
+                       "• **PIX tem desconto?** → Não, mas não tem taxa adicional\n" +
+                       "• **Posso pagar mensalmente?** → Sim, via pagamento recorrente\n\n" +
+                       planDetails +
                        "**📋 PROCESSO:**\n" +
                        "1. Escolha seu plano (King Start, King Prime ou King Corporate)\n" +
                        "2. Selecione a forma de pagamento\n" +

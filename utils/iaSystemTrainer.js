@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { generateWithGemini } = require('./aiApiHelper');
+const fetch = require('node-fetch');
 
 /**
  * Extrai informações sobre planos e pagamento do index.html
