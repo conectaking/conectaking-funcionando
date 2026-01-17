@@ -535,18 +535,44 @@ app.get('/api/subscription/plans-public', asyncHandler(async (req, res) => {
 app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
-        const modulesQuery = `
+        // Usar a mesma lógica do router moduleAvailability.js
+        const availabilityQuery = `
             SELECT 
-                module_type,
-                plans
-            FROM module_availability
-            WHERE is_active = true
+                mpa.id,
+                mpa.module_type,
+                mpa.plan_code,
+                mpa.is_available,
+                mpa.updated_at
+            FROM module_plan_availability mpa
+            WHERE mpa.module_type IN (
+                'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode',
+                'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
+                'spotify', 'linkedin', 'pinterest',
+                'link', 'portfolio', 'banner', 'carousel', 
+                'youtube_embed', 'sales_page', 'digital_form'
+            )
+            ORDER BY mpa.module_type, mpa.plan_code
         `;
-        const modulesResult = await client.query(modulesQuery);
+        const availabilityResult = await client.query(availabilityQuery);
+        
+        // Organizar por módulo (mesma estrutura do router)
+        const modulesMap = {};
+        availabilityResult.rows.forEach(row => {
+            if (!modulesMap[row.module_type]) {
+                modulesMap[row.module_type] = {
+                    module_type: row.module_type,
+                    plans: {}
+                };
+            }
+            modulesMap[row.module_type].plans[row.plan_code] = {
+                is_available: row.is_available,
+                id: row.id
+            };
+        });
         
         res.json({
             success: true,
-            modules: modulesResult.rows
+            modules: Object.values(modulesMap)
         });
     } catch (error) {
         logger.error('❌ Erro ao buscar módulos públicos:', error);
