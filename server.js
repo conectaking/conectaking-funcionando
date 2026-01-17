@@ -606,6 +606,7 @@ app.use('/log', loggerRoutes);
 app.use('/api/checkin', checkinLimiter, checkinRoutes);
 
 app.use('/api/admin', adminLimiter, adminRoutes);
+app.use('/api/admin', adminLimiter, ogImageRoutes); // Rotas de personalização de link (apenas ADM)
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/upload/pdf', uploadLimiter, pdfUploadRoutes);
 app.use('/api/upload', uploadLimiter, uploadRoutes);
