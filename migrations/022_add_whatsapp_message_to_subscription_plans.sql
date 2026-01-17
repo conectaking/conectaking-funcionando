@@ -20,15 +20,15 @@ BEGIN
     END IF;
 END $$;
 
--- Atualizar mensagens padrão para cada plano
+-- Atualizar mensagens padrão para cada plano (será sobrescrito pela migration 085 se aplicada depois)
 UPDATE subscription_plans 
 SET whatsapp_message = CASE
-    WHEN plan_code = 'basic' THEN 'Olá! Gostaria de renovar o meu Pacote 1 e continuar aproveitando todas as funcionalidades do Conecta King! 🚀'
-    WHEN plan_code = 'premium' THEN 'Olá! Gostaria de renovar o meu Pacote 2 e continuar com acesso completo, incluindo personalização de logomarca! ✨'
-    WHEN plan_code = 'enterprise' THEN 'Olá! Gostaria de renovar o meu Pacote 3 (Empresarial) e manter meus três perfis com todas as funcionalidades premium! 💼'
+    WHEN plan_code = 'basic' THEN 'Olá! Gostaria de assinar o plano King Start e iniciar minha presença digital com elegância e praticidade! 👑🚀'
+    WHEN plan_code = 'premium' THEN 'Olá! Gostaria de assinar o plano King Prime e ter acesso completo com máximo aproveitamento da tecnologia! 👑✨'
+    WHEN plan_code = 'enterprise' THEN 'Olá! Gostaria de assinar o plano King Corporate para minha empresa e ter padronização, profissionalismo e conversão! 👑💼'
     ELSE whatsapp_message
 END
-WHERE whatsapp_message IS NULL;
+WHERE whatsapp_message IS NULL OR whatsapp_message LIKE '%Pacote%';
 
 -- Verificação
 SELECT 

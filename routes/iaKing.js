@@ -5517,6 +5517,7 @@ async function findBestAnswer(userMessage, userId) {
             'planos', 'pacotes', 'assinatura', 'quanto custa o sistema',
             'valor do sistema', 'preço do sistema', 'quanto é a assinatura',
             'quais os planos', 'quais os pacotes', 'quanto custa a assinatura',
+            'king start', 'king prime', 'king corporate', 'king start', 'king prime', 'king corporate',
             'pacote 1', 'pacote 2', 'pacote 3', 'preço do pacote'
         ];
         
@@ -5539,13 +5540,21 @@ async function findBestAnswer(userMessage, userId) {
                             currency: 'BRL'
                         });
                         
-                        answer += `**${plan.plan_name}** - ${price}/mês\n`;
+                        answer += `**${plan.plan_name}** - ${price} (pagamento único)\n`;
                         if (plan.description) {
                             answer += `   ${plan.description}\n`;
                         }
                         
                         if (plan.features && typeof plan.features === 'object') {
                             const features = plan.features;
+                            if (features.includes_nfc) answer += `   ✅ ConectaKing NFC\n`;
+                            if (features.includes_premium_card) answer += `   ✅ Cartão Premium\n`;
+                            if (features.unlimited_links) answer += `   ✅ Links ilimitados\n`;
+                            if (features.includes_portfolio) answer += `   ✅ Portfólio integrado\n`;
+                            if (features.smart_buttons) answer += `   ✅ Botões inteligentes\n`;
+                            if (features.assisted_updates) answer += `   ✅ Atualizações assistidas\n`;
+                            if (features.includes_enterprise_mode) answer += `   ✅ Modo Empresa\n`;
+                            if (features.priority_support) answer += `   ✅ Suporte prioritário\n`;
                             if (features.can_add_all_modules) answer += `   ✅ Todos os módulos disponíveis\n`;
                             if (features.can_edit_logo) answer += `   ✅ Personalização de logomarca\n`;
                             if (features.max_profiles) answer += `   ✅ ${features.max_profiles} perfil(is)\n`;
@@ -5554,8 +5563,9 @@ async function findBestAnswer(userMessage, userId) {
                         answer += "\n";
                     });
                     
-                    answer += "💳 **Forma de Pagamento:** PIX\n";
-                    answer += "📱 **Renovação:** Via WhatsApp\n\n";
+                    answer += "💳 **Forma de Pagamento:** PIX (pagamento único, sem mensalidade)\n";
+                    answer += "📱 **Renovação:** Opcional via WhatsApp\n\n";
+                    answer += "✨ **Diferenciais:** Sem mensalidade, atualizações em tempo real, tecnologia NFC moderna!\n\n";
                     answer += "Para assinar ou renovar, acesse a seção 'Assinatura' no dashboard! 😊";
                     
                     return {
@@ -10222,23 +10232,37 @@ O Conecta King é ideal para profissionais, empresas e empreendedores que querem
                 
                 if (plan.plan_code === 'basic') {
                     plansContent += `\nRecursos incluídos:\n`;
-                    plansContent += `• Todas as funcionalidades do cartão\n`;
+                    plansContent += `• ConectaKing NFC\n`;
+                    plansContent += `• Cartão digital personalizado\n`;
+                    plansContent += `• Links essenciais (WhatsApp, Instagram, redes sociais)\n`;
+                    plansContent += `• Ativação e configuração inicial\n`;
                     plansContent += `• Todos os módulos disponíveis\n`;
                     plansContent += `• 1 perfil/cartão\n`;
                     plansContent += `• NÃO pode alterar a logomarca do Conecta King no rodapé\n`;
                 } else if (plan.plan_code === 'premium') {
                     plansContent += `\nRecursos incluídos:\n`;
-                    plansContent += `• Todas as funcionalidades do cartão\n`;
+                    plansContent += `• ConectaKing NFC Premium\n`;
+                    plansContent += `• Cartão digital completo e altamente personalizado\n`;
+                    plansContent += `• Links ilimitados\n`;
+                    plansContent += `• Portfólio, localização e botões inteligentes\n`;
+                    plansContent += `• Atualizações assistidas\n`;
+                    plansContent += `• Ativação e configuração completas\n`;
                     plansContent += `• Todos os módulos disponíveis\n`;
                     plansContent += `• 1 perfil/cartão\n`;
                     plansContent += `• PODE alterar a logomarca do Conecta King no rodapé\n`;
                 } else if (plan.plan_code === 'enterprise') {
                     plansContent += `\nRecursos incluídos:\n`;
-                    plansContent += `• Todas as funcionalidades do cartão\n`;
+                    plansContent += `• Modo Empresa ConectaKing\n`;
+                    plansContent += `• Página institucional personalizada\n`;
+                    plansContent += `• Centralização de contatos corporativos\n`;
+                    plansContent += `• Direcionamento estratégico de leads\n`;
+                    plansContent += `• Uso corporativo do ConectaKing NFC\n`;
+                    plansContent += `• Suporte prioritário\n`;
+                    plansContent += `• Ativação e configuração completas\n`;
                     plansContent += `• Todos os módulos disponíveis\n`;
                     plansContent += `• 3 perfis/cartões em uma única assinatura\n`;
                     plansContent += `• PODE alterar a logomarca do Conecta King no rodapé para cada cartão\n`;
-                    plansContent += `• Ideal para empresas que precisam de múltiplos cartões\n`;
+                    plansContent += `• Ideal para empresas, equipes comerciais e marcas\n`;
                 }
                 
                 if (plan.whatsapp_number) {
@@ -10366,25 +10390,41 @@ O cartão funciona como um site pessoal, mas muito mais simples e focado em cone
             title: 'Qual a diferença entre os planos?',
             content: `As principais diferenças entre os planos são:
 
-**Pacote 1 (R$ 480/mês)**:
-• Todas as funcionalidades do cartão
+**👑 King Start (R$ 700,00)** - Uso Individual:
+• ConectaKing NFC
+• Cartão digital personalizado
+• Links essenciais (WhatsApp, Instagram, redes sociais)
+• Ativação e configuração inicial
 • Todos os módulos disponíveis
 • 1 cartão/perfil
 • NÃO pode alterar a logomarca do Conecta King no rodapé
+• Ideal para iniciar presença digital com elegância
 
-**Pacote 2 (R$ 700/mês)**:
-• Todas as funcionalidades do cartão
+**👑 King Prime (R$ 1.000,00)** - Uso Individual Premium:
+• ConectaKing NFC Premium
+• Cartão digital completo e altamente personalizado
+• Links ilimitados
+• Portfólio, localização e botões inteligentes
+• Atualizações assistidas
+• Ativação e configuração completas
 • Todos os módulos disponíveis
 • 1 cartão/perfil
 • PODE alterar a logomarca do Conecta King no rodapé
+• Ideal para profissionais que buscam impacto e autoridade
 
-**Pacote 3 (R$ 1.500/mês)**:
-• Todas as funcionalidades do cartão
+**👑 King Corporate (R$ 2.300,00)** - Modo Empresa:
+• Modo Empresa ConectaKing
+• Página institucional personalizada
+• Centralização de contatos corporativos
+• Direcionamento estratégico de leads
+• Uso corporativo do ConectaKing NFC
+• Suporte prioritário
+• Ativação e configuração completas
 • Todos os módulos disponíveis
 • 3 cartões/perfis em uma única assinatura
 • PODE alterar a logomarca do Conecta King no rodapé para cada cartão
-• Ideal para empresas`,
-            keywords: ['diferença', 'comparação', 'qual escolher', 'qual plano', 'individual', 'empresarial'],
+• Ideal para empresas, equipes comerciais e marcas`,
+            keywords: ['diferença', 'comparação', 'qual escolher', 'qual plano', 'king start', 'king prime', 'king corporate', 'individual', 'empresarial'],
             category: 'Assinatura'
         });
         

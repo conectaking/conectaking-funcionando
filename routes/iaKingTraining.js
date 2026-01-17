@@ -135,9 +135,9 @@ MÓDULOS DISPONÍVEIS:
 • Página de Vendas: Página completa de vendas personalizada
 
 VALORES DOS PLANOS:
-• Pacote 1: R$ 480,00/mês - Todas as funcionalidades, sem alteração de logo
-• Pacote 2: R$ 700,00/mês - Todas as funcionalidades, com alteração de logo
-• Pacote 3: R$ 1.500,00/mês - Empresarial, 3 cartões, logo personalizável
+• King Start: R$ 700,00 - Uso Individual - ConectaKing NFC, cartão personalizado, links essenciais
+• King Prime: R$ 1.000,00 - Uso Individual Premium - NFC Premium, links ilimitados, portfólio, atualizações assistidas
+• King Corporate: R$ 2.300,00 - Modo Empresa - 3 cartões, página institucional, suporte prioritário
 
 COMO FUNCIONA:
 1. Crie sua conta no Conecta King
@@ -157,32 +157,61 @@ Para dúvidas, entre em contato através do WhatsApp ou suporte do sistema.
                 content: `
 PLANOS E VALORES DO CONECTA KING
 
-PACOTE 1 - R$ 480,00/mês
-• Todas as funcionalidades do cartão
-• Todos os módulos disponíveis
-• Não pode alterar a logomarca do sistema
-• 1 perfil
+👑 KING START - R$ 700,00 | Uso Individual
+Ideal para quem deseja iniciar sua presença digital com elegância e praticidade.
 
-PACOTE 2 - R$ 700,00/mês
-• Todas as funcionalidades do cartão
+Incluso:
+• ConectaKing NFC
+• Cartão digital personalizado
+• Links essenciais (WhatsApp, Instagram, redes sociais)
+• Ativação e configuração inicial
 • Todos os módulos disponíveis
-• Pode alterar a logomarca do cartão
-• 1 perfil
+• 1 perfil/cartão
+• NÃO pode alterar a logomarca do sistema
 
-PACOTE 3 - R$ 1.500,00/mês (EMPRESARIAL)
-• Todas as funcionalidades do cartão
+👑 KING PRIME - R$ 1.000,00 | Uso Individual Premium
+Criado para profissionais que buscam impacto, autoridade e máximo aproveitamento da tecnologia.
+
+Incluso:
+• ConectaKing NFC Premium
+• Cartão digital completo e altamente personalizado
+• Links ilimitados
+• Portfólio, localização e botões inteligentes
+• Atualizações assistidas
+• Ativação e configuração completas
 • Todos os módulos disponíveis
-• Pode alterar a logomarca
-• 3 perfis/cartões
-• Modo empresarial
+• 1 perfil/cartão
+• PODE alterar a logomarca do cartão
+
+👑 KING CORPORATE - R$ 2.300,00 | Modo Empresa
+A escolha ideal para empresas, equipes comerciais e marcas que desejam padronização, profissionalismo e conversão.
+
+Incluso:
+• Modo Empresa ConectaKing
+• Página institucional personalizada
+• Centralização de contatos corporativos
+• Direcionamento estratégico de leads
+• Uso corporativo do ConectaKing NFC
+• Suporte prioritário
+• Ativação e configuração completas
+• Todos os módulos disponíveis
+• 3 perfis/cartões em uma única assinatura
+• PODE alterar a logomarca para cada cartão
 
 FORMA DE PAGAMENTO:
-• PIX
+• PIX (pagamento único, sem mensalidade)
 • WhatsApp para renovação
+
+DIFERENCIAIS CONECTAKING:
+• Sem mensalidade
+• Atualizações em tempo real
+• Tecnologia NFC moderna
+• Imagem profissional e inovadora
+• Solução sustentável e reutilizável
 
 Para assinar ou renovar, acesse a seção "Assinatura" no dashboard.
 `.trim(),
-                keywords: extractKeywords('planos valores preços pacote 1 pacote 2 pacote 3 R$ 480 700 1500')
+                keywords: extractKeywords('planos valores preços king start king prime king corporate R$ 700 1000 2300')
             },
             {
                 title: 'Módulos do Conecta King',
