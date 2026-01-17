@@ -651,6 +651,65 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
     }
 }));
 
+// GET /api/public-profile/:identifier - API pública para buscar dados do perfil (JSON)
+router.get('/api/:identifier', asyncHandler(async (req, res) => {
+    const { identifier } = req.params;
+    const client = await db.pool.connect();
+    
+    try {
+        const userRes = await client.query('SELECT id, profile_slug FROM users WHERE profile_slug = $1 OR id = $1', [identifier]);
+        
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ error: 'Perfil não encontrado' });
+        }
+
+        const userId = userRes.rows[0].id;
+        const profileSlug = userRes.rows[0].profile_slug;
+
+        const profileQuery = `
+            SELECT 
+                u.id AS user_id,
+                u.profile_slug,
+                p.display_name,
+                p.bio,
+                p.profile_image_url,
+                p.background_color,
+                p.text_color,
+                p.button_color,
+                COALESCE(p.avatar_format, 'circular') as avatar_format
+            FROM users u
+            INNER JOIN user_profiles p ON u.id = p.user_id
+            WHERE u.id = $1
+        `;
+        const profileRes = await client.query(profileQuery, [userId]);
+        
+        if (profileRes.rows.length === 0) {
+            return res.status(404).json({ error: 'Perfil não configurado' });
+        }
+
+        const itemsRes = await client.query(
+            `SELECT item_type, title, destination_url, image_url 
+             FROM profile_items 
+             WHERE user_id = $1 AND is_active = true 
+             ORDER BY display_order ASC 
+             LIMIT 10`,
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            profile: profileRes.rows[0],
+            items: itemsRes.rows,
+            profileUrl: `${req.protocol}://${req.get('host')}/${profileSlug || identifier}`
+        });
+    } catch (error) {
+        logger.error('Erro ao buscar perfil público via API:', error);
+        res.status(500).json({ error: 'Erro ao buscar perfil' });
+    } finally {
+        client.release();
+    }
+}));
+
 module.exports = router;
 
 
