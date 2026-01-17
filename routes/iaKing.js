@@ -7176,8 +7176,17 @@ async function findBestAnswer(userMessage, userId) {
         // ============================================
         // NOVO: USAR GEMINI PARA MELHORAR RESPOSTAS LOCAIS
         // ============================================
+        // Garantir que questionIsAboutSystem está definido
+        if (questionIsAboutSystem === null) {
+            questionIsAboutSystem = isAboutSystem(userMessage);
+        }
+        
         if (hasAnyAPIConfigured()) {
-            console.log('🤖 [IA] Usando Gemini para melhorar resposta...');
+            console.log('🤖 [IA] Usando Gemini para melhorar resposta...', {
+                hasLocalAnswer: !!bestAnswer,
+                localScore: bestScore,
+                isAboutSystem: questionIsAboutSystem
+            });
             try {
                 // Construir contexto detalhado para a API
                 let contextInfo = '';

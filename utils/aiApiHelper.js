@@ -20,8 +20,15 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
  */
 async function generateWithGemini(userMessage, context = '', localAnswer = null) {
     if (!GEMINI_API_KEY) {
+        console.log('⚠️ [Gemini] API Key não configurada');
         return null;
     }
+
+    console.log('🚀 [Gemini] Iniciando geração de resposta...', {
+        hasContext: !!context,
+        hasLocalAnswer: !!localAnswer,
+        messageLength: userMessage.length
+    });
 
     try {
         let systemPrompt = `Você é a IA King, assistente virtual do Conecta King, uma plataforma de cartões virtuais profissionais.
@@ -82,10 +89,14 @@ INSTRUÇÕES:
         
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
             const answer = data.candidates[0].content.parts[0].text;
-            console.log('✅ [Gemini] Resposta gerada com sucesso');
+            console.log('✅ [Gemini] Resposta gerada com sucesso', {
+                answerLength: answer.length,
+                preview: answer.substring(0, 100) + '...'
+            });
             return answer.trim();
         }
 
+        console.warn('⚠️ [Gemini] Resposta vazia ou formato inesperado:', JSON.stringify(data).substring(0, 200));
         return null;
     } catch (error) {
         console.error('❌ [Gemini] Erro ao gerar resposta:', error.message);
