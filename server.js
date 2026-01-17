@@ -460,6 +460,7 @@ app.use((req, res, next) => {
         path.startsWith('/api/health') ||
         path.startsWith('/api/account') ||
         path.startsWith('/api/subscription') ||
+        path.startsWith('/api/modules') ||
         path.startsWith('/api/upload') ||
         path.startsWith('/api/analytics') ||
         path.startsWith('/api/business') ||
