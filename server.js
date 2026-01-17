@@ -10,7 +10,7 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const config = require('./config');
 const logger = require('./utils/logger');
-const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/auth');
 const inquiryRoutes = require('./routes/inquiry');
@@ -497,16 +497,77 @@ app.use('/api/inquiry', apiLimiter, inquiryRoutes);
 app.use('/api/generator', apiLimiter, generatorRoutes);
 app.use('/api/account', apiLimiter, accountRoutes);
 app.use('/api/profile', apiLimiter, profileRoutes);
-// Rota pública dos planos (sem rate limit para página inicial)
-app.get('/api/subscription/plans-public', (req, res, next) => {
-    subscriptionRoutes(req, res, next);
-});
+// Rotas públicas (sem rate limit para página inicial) - DEVEM VIR ANTES das rotas protegidas
+app.get('/api/subscription/plans-public', asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        logger.debug('📥 Requisição para /api/subscription/plans-public');
+        const plansQuery = `
+            SELECT 
+                id,
+                plan_code,
+                plan_name,
+                price,
+                description,
+                features,
+                whatsapp_number,
+                whatsapp_message,
+                pix_key,
+                is_active
+            FROM subscription_plans
+            WHERE is_active = true
+            ORDER BY price ASC
+        `;
+        const plansResult = await client.query(plansQuery);
+        
+        logger.debug('✅ Planos encontrados:', { count: plansResult.rows.length });
+        
+        res.json({
+            success: true,
+            plans: plansResult.rows
+        });
+    } catch (error) {
+        logger.error('❌ Erro ao buscar planos públicos:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Erro ao buscar planos',
+            plans: []
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const modulesQuery = `
+            SELECT 
+                module_type,
+                plans
+            FROM module_availability
+            WHERE is_active = true
+        `;
+        const modulesResult = await client.query(modulesQuery);
+        
+        res.json({
+            success: true,
+            modules: modulesResult.rows
+        });
+    } catch (error) {
+        logger.error('❌ Erro ao buscar módulos públicos:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Erro ao buscar módulos',
+            modules: []
+        });
+    } finally {
+        client.release();
+    }
+}));
+
 // Rotas protegidas com rate limit
 app.use('/api/subscription', apiLimiter, subscriptionRoutes);
-// Rota pública de módulos (sem rate limit para página inicial)
-app.get('/api/modules/plan-availability-public', (req, res, next) => {
-    moduleAvailabilityRoutes(req, res, next);
-});
 app.use('/api/modules', apiLimiter, moduleAvailabilityRoutes);
 app.use('/log', loggerRoutes);
 // Endpoint agregado de check-in (rate limit específico - 120/min)
