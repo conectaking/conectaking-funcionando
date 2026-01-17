@@ -5612,6 +5612,8 @@ async function findBestAnswer(userMessage, userId) {
         // ============================================
         // DETECÇÃO: PERGUNTAS SOBRE FORMAS DE PAGAMENTO E PARCELAMENTO
         // ============================================
+        // IMPORTANTE: Esta detecção funciona tanto para usuários autenticados quanto públicos
+        // Não depende de userId, garantindo que a IA pública responda corretamente
         const paymentQuestions = [
             'forma de pagamento', 'formas de pagamento', 'como pagar', 'como posso pagar',
             'qual forma de pagamento', 'quais formas de pagamento', 'meios de pagamento',
@@ -5625,7 +5627,15 @@ async function findBestAnswer(userMessage, userId) {
             'tem juros', 'tem taxa', 'valor da parcela', 'quanto fica a parcela'
         ];
         
-        if (paymentQuestions.some(q => lowerMessage.includes(q))) {
+        // Detectar perguntas sobre pagamento (melhorado para capturar mais variações)
+        // Exemplos: "qual forma de pagamento", "quais formas de pagamento", "aceita pagamento"
+        const isPaymentQuestion = paymentQuestions.some(q => lowerMessage.includes(q)) ||
+                                  (lowerMessage.includes('qual') && lowerMessage.includes('pagamento')) ||
+                                  (lowerMessage.includes('quais') && lowerMessage.includes('pagamento')) ||
+                                  (lowerMessage.includes('pagamento') && (lowerMessage.includes('aceita') || lowerMessage.includes('aceitam')));
+        
+        if (isPaymentQuestion) {
+            console.log('💳 [IA] Detectada pergunta sobre pagamento (mesma lógica para público e autenticado):', message.substring(0, 100));
             // Buscar informações atualizadas do banco de dados
             let planDetails = '';
             try {
@@ -19674,17 +19684,49 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
     try {
         console.log('📥 [IA PUBLIC] Mensagem recebida:', message.substring(0, 100));
         
-        // USAR A MESMA FUNÇÃO findBestAnswer que a rota autenticada usa
+        // ============================================
+        // USAR A MESMA FUNÇÃO findBestAnswer QUE A ROTA AUTENTICADA USA
+        // ============================================
         // userId = null para usuários não autenticados
+        // IMPORTANTE: findBestAnswer já tem TODA a lógica de detecção de:
+        // - Pagamento (PIX, Cartão, Parcelamento)
+        // - Planos (King Start, King Prime, King Corporate)
+        // - Funcionalidades do sistema
+        // - E usa o Gemini para melhorar respostas
+        // Esta é a MESMA IA que o dashboard usa - garantindo consistência total
         const result = await findBestAnswer(message.trim(), null);
         
-        console.log('✅ [IA PUBLIC] Resposta encontrada:', {
-            confidence: result.confidence,
-            source: result.source,
-            answerLength: result.answer?.length || 0
+        console.log('✅ [IA PUBLIC] Resposta do findBestAnswer (MESMA IA do dashboard):', {
+            confidence: result?.confidence,
+            source: result?.source,
+            answerLength: result?.answer?.length || 0,
+            hasAnswer: !!(result && result.answer),
+            answerPreview: result?.answer?.substring(0, 150) || 'SEM RESPOSTA'
         });
         
-        // Verificar se a mensagem é sobre o sistema ConectaKing (opcional - apenas para redirecionamento)
+        // ============================================
+        // SEMPRE USAR A RESPOSTA DO findBestAnswer SE EXISTIR
+        // ============================================
+        // A lógica de detecção de pagamento, planos, etc. já está dentro do findBestAnswer
+        // Isso garante que a IA pública seja EXATAMENTE a mesma do dashboard
+        if (result && result.answer && result.answer.length > 0) {
+            console.log('✅ [IA PUBLIC] Retornando resposta do findBestAnswer (MESMA IA):', {
+                source: result.source,
+                confidence: result.confidence,
+                answerLength: result.answer.length
+            });
+            
+            return res.json({
+                success: true,
+                response: result.answer,
+                answer: result.answer,
+                confidence: result.confidence || 0.5,
+                source: result.source || 'system',
+                category: result.category || 'general'
+            });
+        }
+        
+        // Verificar se a mensagem é sobre o sistema ConectaKing (apenas para redirecionamento se necessário)
         const lowerMessage = message.toLowerCase();
         const conectaKingKeywords = [
             'conecta', 'king', 'conectaking', 'plano', 'planos', 'preço', 'preco', 'valor', 'assinatura',
@@ -19695,24 +19737,14 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
             'pagamento', 'pagar', 'pix', 'cartão de crédito', 'cartao de credito', 'crédito', 'credito',
             'débito', 'debito', 'boleto', 'transferência', 'transferencia', 'forma de pagamento',
             'melhor forma', 'como pagar', 'quanto custa', 'preços', 'valores', 'mensalidade',
-            'anual', 'mensal', 'parcelado', 'parcela', 'vezes', '12x', 'à vista', 'a vista'
+            'anual', 'mensal', 'parcelado', 'parcela', 'parcelamento', 'vezes', '12x', 'à vista', 'a vista',
+            'quantas vezes', 'quantas parcelas', 'posso parcelar', 'tem juros', 'tem taxa'
         ];
         
-        // SEMPRE usar findBestAnswer primeiro (mesma lógica da IA autenticada)
-        // Isso garante que o Gemini seja usado e todas as melhorias sejam aplicadas
-        const result = await findBestAnswer(message.trim(), null);
-        
-        console.log('✅ [IA PUBLIC] Resposta do findBestAnswer:', {
-            hasAnswer: !!result.answer,
-            confidence: result.confidence,
-            source: result.source
-        });
-        
-        // Verificar se a mensagem é sobre o sistema ConectaKing
         const isAboutConectaKing = conectaKingKeywords.some(keyword => lowerMessage.includes(keyword));
         
-        // Se não for sobre ConectaKing E a resposta não for boa, redirecionar
-        if (!isAboutConectaKing && (!result.answer || result.confidence < 50)) {
+        // Se não for sobre ConectaKing, redirecionar
+        if (!isAboutConectaKing) {
             return res.json({
                 response: 'Olá! 👋\n\nSou a IA King, assistente do ConectaKing. Posso ajudar você apenas com questões relacionadas ao nosso sistema, planos, funcionalidades e como usar o ConectaKing.\n\nPor favor, faça uma pergunta sobre o ConectaKing! 😊',
                 answer: 'Olá! 👋\n\nSou a IA King, assistente do ConectaKing. Posso ajudar você apenas com questões relacionadas ao nosso sistema, planos, funcionalidades e como usar o ConectaKing.\n\nPor favor, faça uma pergunta sobre o ConectaKing! 😊',
@@ -19722,40 +19754,15 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
             });
         }
         
-        // Garantir que temos uma resposta válida
-        if (!result || !result.answer) {
-            console.warn('⚠️ [IA PUBLIC] Nenhuma resposta encontrada');
-            return res.json({
-                success: false,
-                response: 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
-                answer: 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
-                confidence: 0,
-                source: 'error',
-                category: 'general'
-            });
-        }
-        
-        // Garantir que a resposta está relacionada ao sistema (apenas se não for sobre ConectaKing)
-        const answerLower = result.answer.toLowerCase();
-        if (isAboutConectaKing && !answerLower.includes('conecta') && !answerLower.includes('king') && answerLower.length > 100) {
-            // Se a resposta não menciona ConectaKing mas é longa, pode ser genérica demais
-            console.log('⚠️ [IA PUBLIC] Resposta não menciona ConectaKing, mas é sobre o sistema');
-        }
-        
-        console.log('✅ [IA PUBLIC] Retornando resposta:', {
-            hasAnswer: !!result.answer,
-            answerLength: result.answer.length,
-            confidence: result.confidence,
-            source: result.source
-        });
-        
-        res.json({
-            success: true,
-            response: result.answer,
-            answer: result.answer,
-            confidence: result.confidence || 0.5,
-            source: result.source || 'system',
-            category: result.category || 'general'
+        // Se chegou aqui e não tem resposta, retornar mensagem de erro
+        console.warn('⚠️ [IA PUBLIC] Nenhuma resposta encontrada para pergunta sobre ConectaKing');
+        return res.json({
+            success: false,
+            response: 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
+            answer: 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
+            confidence: 0,
+            source: 'error',
+            category: 'general'
         });
     } catch (error) {
         console.error('❌ Erro no chat público:', error);
