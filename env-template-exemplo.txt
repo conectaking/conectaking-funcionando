@@ -70,6 +70,21 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 # MERCADOPAGO_PUBLIC_KEY=
 
 # ============================================
+# APIs DE IA GRATUITAS (opcional - para melhorar respostas da IA King)
+# ============================================
+# Google Gemini API (RECOMENDADO - Gratuita e boa qualidade)
+# Obter em: https://makersuite.google.com/app/apikey
+# GEMINI_API_KEY=sua_chave_gemini_aqui
+
+# Groq API (Rápida e gratuita)
+# Obter em: https://console.groq.com/keys
+# GROQ_API_KEY=sua_chave_groq_aqui
+
+# Hugging Face API (Gratuita)
+# Obter em: https://huggingface.co/settings/tokens
+# HUGGINGFACE_API_KEY=sua_chave_huggingface_aqui
+
+# ============================================
 # CONFIGURAÇÕES AVANÇADAS (opcional)
 # ============================================
 # DB_POOL_MAX=20

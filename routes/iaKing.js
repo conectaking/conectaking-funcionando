@@ -5,6 +5,7 @@ const { protectAdmin } = require('../middleware/protectAdmin');
 const { asyncHandler } = require('../middleware/errorHandler');
 const fetch = require('node-fetch');
 const embeddings = require('./embeddings');
+const { generateWithExternalAPI, hasAnyAPIConfigured } = require('../utils/aiApiHelper');
 
 // Sistema avançado de entendimento (similar ao ChatGPT)
 let advancedUnderstanding = null;
@@ -7170,6 +7171,43 @@ async function findBestAnswer(userMessage, userId) {
                 score: bestScore,
                 isAboutSystem: questionIsAboutSystem
             });
+        }
+        
+        // ============================================
+        // NOVO: TENTAR API EXTERNA SE RESPOSTA LOCAL É FRACA
+        // ============================================
+        if (hasAnyAPIConfigured() && (!bestAnswer || bestScore < 70)) {
+            console.log('🤖 [IA] Tentando melhorar resposta com API externa...');
+            try {
+                // Construir contexto para a API
+                const contextInfo = questionIsAboutSystem 
+                    ? `O Conecta King é uma plataforma de cartões virtuais profissionais. Planos: King Start (R$ 700), King Prime (R$ 1.000), King Corporate (R$ 2.300). Formas de pagamento: PIX, Cartão de Crédito (até 12x com 20% de taxa), Pagamento Mensal Recorrente.`
+                    : '';
+                
+                const apiResult = await generateWithExternalAPI(userMessage, contextInfo, true);
+                
+                if (apiResult && apiResult.answer) {
+                    // Validar se a resposta da API é relevante
+                    const apiAnswerLower = apiResult.answer.toLowerCase();
+                    const hasRelevantContent = apiAnswerLower.length > 50 && 
+                                             (apiAnswerLower.includes('conecta') || 
+                                              apiAnswerLower.includes('king') || 
+                                              questionContext.entities.length === 0 ||
+                                              questionContext.entities.some(e => apiAnswerLower.includes(e.toLowerCase())));
+                    
+                    if (hasRelevantContent) {
+                        console.log(`✅ [IA] Resposta melhorada com ${apiResult.source.toUpperCase()}`);
+                        bestAnswer = apiResult.answer;
+                        bestScore = Math.max(bestScore, 75); // Melhorar confiança
+                        bestSource = `external_api_${apiResult.source}`;
+                    } else {
+                        console.log('⚠️ [IA] Resposta da API não é relevante, mantendo resposta local');
+                    }
+                }
+            } catch (apiError) {
+                console.error('❌ [IA] Erro ao usar API externa:', apiError.message);
+                // Continuar com resposta local se API falhar
+            }
         }
         
         // Salvar conversa E aprender automaticamente
