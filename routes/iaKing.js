@@ -19653,6 +19653,17 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
             'anual', 'mensal', 'parcelado', 'parcela', 'vezes', '12x', 'à vista', 'a vista'
         ];
         
+        // SEMPRE usar findBestAnswer primeiro (mesma lógica da IA autenticada)
+        // Isso garante que o Gemini seja usado e todas as melhorias sejam aplicadas
+        const result = await findBestAnswer(message.trim(), null);
+        
+        console.log('✅ [IA PUBLIC] Resposta do findBestAnswer:', {
+            hasAnswer: !!result.answer,
+            confidence: result.confidence,
+            source: result.source
+        });
+        
+        // Verificar se a mensagem é sobre o sistema ConectaKing
         const isAboutConectaKing = conectaKingKeywords.some(keyword => lowerMessage.includes(keyword));
         
         // Se não for sobre ConectaKing E a resposta não for boa, redirecionar
@@ -19665,9 +19676,6 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
                 category: 'redirect'
             });
         }
-        
-        // Buscar resposta usando userId null (público)
-        const result = await findBestAnswer(message.trim(), null);
         
         // Garantir que a resposta está relacionada ao sistema
         if (result.answer && !result.answer.toLowerCase().includes('conecta') && !result.answer.toLowerCase().includes('king')) {
