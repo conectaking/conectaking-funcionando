@@ -380,15 +380,18 @@ app.use((req, res, next) => {
     const userAgent = (req.get('user-agent') || '').toLowerCase();
     
     // Lista expandida de padrões de bots/scanners
+    // IMPORTANTE: Não incluir '/api' aqui pois bloqueia rotas válidas
     const botPatterns = [
         '/wordpress', '/wp-admin', '/wp-content', '/wp-includes', '/wp-login',
         '/setup-config.php', '/xmlrpc.php', '/readme.html', '/license.txt',
         '/phpmyadmin', '/phpinfo', '/administrator', '/.env', '/config.php',
         '/.git', '/backup', '/.sql', '/.bak', '/.old', '/test.php',
         '/shell.php', '/c99.php', '/r57.php', '/admin.php', '/login.php',
-        '/index.php', // Bloquear acesso direto a index.php (não é usado no sistema)
-        '/api' // Bloquear acesso genérico a /api sem rota específica
+        '/index.php' // Bloquear acesso direto a index.php (não é usado no sistema)
     ];
+    
+    // Verificar se é acesso genérico a /api (sem rota específica) - apenas se for exatamente '/api'
+    const isGenericApiAccess = path === '/api' && !req.path.startsWith('/api/');
     
     // Padrões de user-agent suspeitos
     const suspiciousUserAgents = [
@@ -403,8 +406,8 @@ app.use((req, res, next) => {
     // Verificar se o user-agent é suspeito
     const isSuspiciousUA = suspiciousUserAgents.some(pattern => userAgent.includes(pattern));
     
-    // Bloquear se for path de bot OU user-agent suspeito
-    if (isBotPath || isSuspiciousUA) {
+    // Bloquear se for path de bot OU user-agent suspeito OU acesso genérico a /api
+    if (isBotPath || isSuspiciousUA || isGenericApiAccess) {
         // Não logar em produção para reduzir ruído (apenas em debug)
         if (!config.isProduction) {
             logger.debug('Tentativa de acesso bloqueada (bot/scanner)', {
@@ -433,13 +436,37 @@ app.use((req, res, next) => {
     const path = req.path.toLowerCase();
     // Aplicar rate limit agressivo apenas para rotas genéricas suspeitas
     // (rotas válidas da API já têm seus próprios rate limiters)
-    if ((path === '/api' && !req.path.startsWith('/api/')) || 
+    // IMPORTANTE: Não aplicar em rotas válidas da API como /api/profile, /api/pix, etc.
+    const isValidApiRoute = path.startsWith('/api/') && (
+        path.startsWith('/api/profile') ||
+        path.startsWith('/api/pix') ||
+        path.startsWith('/api/auth') ||
+        path.startsWith('/api/health') ||
+        path.startsWith('/api/account') ||
+        path.startsWith('/api/subscription') ||
+        path.startsWith('/api/upload') ||
+        path.startsWith('/api/analytics') ||
+        path.startsWith('/api/business') ||
+        path.startsWith('/api/contracts') ||
+        path.startsWith('/api/guest-list') ||
+        path.startsWith('/api/sales-page') ||
+        path.startsWith('/api/products') ||
+        path.startsWith('/api/ia-king') ||
+        path.startsWith('/api/suggestions') ||
+        path.startsWith('/api/log') ||
+        path.startsWith('/api/vcard') ||
+        path.startsWith('/api/public')
+    );
+    
+    if (!isValidApiRoute && (
+        (path === '/api' && !req.path.startsWith('/api/')) || 
         path === '/index.php' || 
         (path === '/admin' && !req.path.startsWith('/admin/')) ||
         path.startsWith('/wp-') || 
         path.includes('phpmyadmin') || 
         (path.includes('.php') && !path.includes('/api/')) ||
-        path.includes('.sql')) {
+        path.includes('.sql')
+    )) {
         return botLimiter(req, res, next);
     }
     next();
