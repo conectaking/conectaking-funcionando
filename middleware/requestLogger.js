@@ -29,26 +29,38 @@ const requestLogger = (req, res, next) => {
             });
         }
 
-        // Log de erros sempre (exceto favicon.ico e tentativas de WordPress que são normais)
-        // Filtrar tentativas de acesso ao WordPress (bots/scanners)
+        // Filtrar tentativas de acesso de bots/scanners
         const isWordPressAttempt = /wp-admin|wordpress|wp-content|wp-includes|wp-login|setup-config|xmlrpc\.php|readme\.html/i.test(req.path);
-        const isCommonBotPath = /phpmyadmin|phpinfo|admin|\.env|\.git|backup|test|api\/v1\/|\.sql$/i.test(req.path);
+        const isCommonBotPath = /phpmyadmin|phpinfo|\.env|\.git|backup|test\.php|shell\.php|c99|r57|\.sql$|\.bak$|\.old$/i.test(req.path);
+        const isGenericPath = /^\/index\.php$|^\/api$|^\/admin$/.test(req.path); // Rotas genéricas sem parâmetros
         
-        if (res.statusCode >= 400 && req.path !== '/favicon.ico' && !isWordPressAttempt && !isCommonBotPath) {
-            logger.warn('Requisição com erro', {
-                method: req.method,
-                path: req.path,
-                statusCode: res.statusCode,
-                duration: `${duration}ms`
-            });
-        } else if (res.statusCode === 404 && (isWordPressAttempt || isCommonBotPath)) {
-            // Log apenas em nível debug para tentativas conhecidas de bots
-            logger.debug('Tentativa de acesso bloqueada (bot/scanner)', {
-                method: req.method,
-                path: req.path,
-                ip: req.ip,
-                userAgent: req.get('user-agent')?.substring(0, 100)
-            });
+        // Não logar 404 de rotas conhecidas de bots ou rotas genéricas
+        const shouldSkipLog = req.path === '/favicon.ico' || 
+                             isWordPressAttempt || 
+                             isCommonBotPath || 
+                             (res.statusCode === 404 && isGenericPath);
+        
+        if (res.statusCode >= 400 && !shouldSkipLog) {
+            // Log apenas erros reais, não tentativas de bots
+            if (res.statusCode === 404) {
+                // 404 apenas em debug para não poluir logs
+                logger.debug('Requisição 404', {
+                    method: req.method,
+                    path: req.path,
+                    statusCode: res.statusCode,
+                    duration: `${duration}ms`,
+                    ip: req.ip
+                });
+            } else {
+                // Outros erros (500, 400, etc) sempre logar
+                logger.warn('Requisição com erro', {
+                    method: req.method,
+                    path: req.path,
+                    statusCode: res.statusCode,
+                    duration: `${duration}ms`,
+                    ip: req.ip
+                });
+            }
         }
 
         originalSend.call(this, body);

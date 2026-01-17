@@ -51,7 +51,7 @@ const webhooksRoutes = require('./routes/webhooks.routes');
 const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
 const checkinRoutes = require('./routes/checkin.routes');
 const requestLogger = require('./middleware/requestLogger');
-const { securityHeaders, validateRequestSize } = require('./middleware/security');
+const { securityHeaders, validateRequestSize, botLimiter } = require('./middleware/security');
 
 const app = express();
 
@@ -375,24 +375,44 @@ app.get('/', (req, res) => {
 // Bloquear bots e scanners - ANTES de qualquer rota
 app.use((req, res, next) => {
     const path = req.path.toLowerCase();
+    const userAgent = (req.get('user-agent') || '').toLowerCase();
     
-    // Bloquear caminhos comuns de WordPress e scanners
-    if (path.includes('/wordpress') || 
-        path.includes('/wp-admin') || 
-        path.includes('/wp-content') ||
-        path.includes('/wp-includes') ||
-        path.includes('/setup-config.php') ||
-        path.includes('/wp-login.php') ||
-        path.includes('/phpmyadmin') ||
-        path.includes('/administrator') ||
-        path.includes('/.env') ||
-        path.includes('/config.php')) {
-        logger.warn('Tentativa de acesso bloqueada (bot/scanner)', {
-            ip: req.ip,
-            path: req.path,
-            userAgent: req.get('user-agent'),
-            method: req.method
-        });
+    // Lista expandida de padrões de bots/scanners
+    const botPatterns = [
+        '/wordpress', '/wp-admin', '/wp-content', '/wp-includes', '/wp-login',
+        '/setup-config.php', '/xmlrpc.php', '/readme.html', '/license.txt',
+        '/phpmyadmin', '/phpinfo', '/administrator', '/.env', '/config.php',
+        '/.git', '/backup', '/.sql', '/.bak', '/.old', '/test.php',
+        '/shell.php', '/c99.php', '/r57.php', '/admin.php', '/login.php',
+        '/index.php', // Bloquear acesso direto a index.php (não é usado no sistema)
+        '/api' // Bloquear acesso genérico a /api sem rota específica
+    ];
+    
+    // Padrões de user-agent suspeitos
+    const suspiciousUserAgents = [
+        'sqlmap', 'nikto', 'nmap', 'masscan', 'zap', 'burp', 'w3af',
+        'dirbuster', 'gobuster', 'wfuzz', 'scanner', 'bot', 'crawler',
+        'spider', 'scraper', 'http://', 'https://' // User-agent que é uma URL é suspeito
+    ];
+    
+    // Verificar se o path corresponde a padrões de bot
+    const isBotPath = botPatterns.some(pattern => path.includes(pattern));
+    
+    // Verificar se o user-agent é suspeito
+    const isSuspiciousUA = suspiciousUserAgents.some(pattern => userAgent.includes(pattern));
+    
+    // Bloquear se for path de bot OU user-agent suspeito
+    if (isBotPath || isSuspiciousUA) {
+        // Não logar em produção para reduzir ruído (apenas em debug)
+        if (!config.isProduction) {
+            logger.debug('Tentativa de acesso bloqueada (bot/scanner)', {
+                ip: req.ip,
+                path: req.path,
+                userAgent: req.get('user-agent')?.substring(0, 100),
+                method: req.method,
+                reason: isBotPath ? 'bot_path' : 'suspicious_ua'
+            });
+        }
         return res.status(403).json({
             success: false,
             message: 'Acesso negado'
@@ -404,6 +424,24 @@ app.use((req, res, next) => {
 
 // Health check (sem rate limit)
 app.use('/api', healthRoutes);
+
+// Aplicar rate limiting agressivo para rotas genéricas suspeitas
+// Nota: Isso deve vir DEPOIS do bloqueio de bots acima, mas ANTES das rotas válidas
+app.use((req, res, next) => {
+    const path = req.path.toLowerCase();
+    // Aplicar rate limit agressivo apenas para rotas genéricas suspeitas
+    // (rotas válidas da API já têm seus próprios rate limiters)
+    if ((path === '/api' && !req.path.startsWith('/api/')) || 
+        path === '/index.php' || 
+        (path === '/admin' && !req.path.startsWith('/admin/')) ||
+        path.startsWith('/wp-') || 
+        path.includes('phpmyadmin') || 
+        (path.includes('.php') && !path.includes('/api/')) ||
+        path.includes('.sql')) {
+        return botLimiter(req, res, next);
+    }
+    next();
+});
 
 // Rotas de recuperação de senha
 app.use('/api/password', passwordRoutes);

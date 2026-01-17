@@ -93,6 +93,27 @@ const errorHandler = (err, req, res, next) => {
  * Middleware para rotas não encontradas
  */
 const notFoundHandler = (req, res) => {
+    const path = req.path.toLowerCase();
+    
+    // Lista de rotas comuns de bots que não devem ser logadas
+    const commonBotPaths = [
+        '/index.php', '/api', '/admin', '/wp-admin', '/wordpress',
+        '/phpmyadmin', '/.env', '/.git', '/backup', '/test.php',
+        '/wp-login', '/setup-config', '/xmlrpc', '/readme.html'
+    ];
+    
+    const isBotPath = commonBotPaths.some(pattern => path.includes(pattern));
+    
+    // Não logar 404 de rotas conhecidas de bots (reduz ruído nos logs)
+    if (!isBotPath) {
+        logger.warn('Rota não encontrada', {
+            method: req.method,
+            path: req.path,
+            ip: req.ip,
+            userAgent: req.get('user-agent')?.substring(0, 100)
+        });
+    }
+    
     res.status(404).json({
         success: false,
         message: `Rota ${req.method} ${req.path} não encontrada`
