@@ -5627,15 +5627,27 @@ async function findBestAnswer(userMessage, userId) {
             'tem juros', 'tem taxa', 'valor da parcela', 'quanto fica a parcela'
         ];
         
-        // Detectar perguntas sobre pagamento (melhorado para capturar mais variações)
-        // Exemplos: "qual forma de pagamento", "quais formas de pagamento", "aceita pagamento"
-        const isPaymentQuestion = paymentQuestions.some(q => lowerMessage.includes(q)) ||
-                                  (lowerMessage.includes('qual') && lowerMessage.includes('pagamento')) ||
-                                  (lowerMessage.includes('quais') && lowerMessage.includes('pagamento')) ||
-                                  (lowerMessage.includes('pagamento') && (lowerMessage.includes('aceita') || lowerMessage.includes('aceitam')));
+        // Detectar perguntas sobre pagamento (melhorado para capturar TODAS as variações)
+        // Exemplos: "qual forma de pagamento", "qual as formas de pagamento", "quais formas", "aceita pagamento"
+        const hasPaymentKeyword = paymentQuestions.some(q => lowerMessage.includes(q));
+        const hasQualAndPagamento = (lowerMessage.includes('qual') || lowerMessage.includes('quais')) && lowerMessage.includes('pagamento');
+        const hasFormasAndPagamento = lowerMessage.includes('formas') && lowerMessage.includes('pagamento');
+        const hasAceitaAndPagamento = lowerMessage.includes('pagamento') && (lowerMessage.includes('aceita') || lowerMessage.includes('aceitam'));
+        // Detectar "qual as formas" (com "as" no meio)
+        const hasQualAsFormas = (lowerMessage.includes('qual as') || lowerMessage.includes('quais as')) && lowerMessage.includes('pagamento');
+        
+        const isPaymentQuestion = hasPaymentKeyword || hasQualAndPagamento || hasFormasAndPagamento || hasAceitaAndPagamento || hasQualAsFormas;
         
         if (isPaymentQuestion) {
-            console.log('💳 [IA] Detectada pergunta sobre pagamento (mesma lógica para público e autenticado):', message.substring(0, 100));
+            console.log('💳 [IA] ✅ Detectada pergunta sobre pagamento (mesma lógica para público e autenticado):', {
+                message: message.substring(0, 100),
+                hasPaymentKeyword,
+                hasQualAndPagamento,
+                hasFormasAndPagamento,
+                hasAceitaAndPagamento,
+                hasQualAsFormas,
+                userId: userId || 'PUBLICO'
+            });
             // Buscar informações atualizadas do banco de dados
             let planDetails = '';
             try {
