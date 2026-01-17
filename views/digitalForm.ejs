@@ -943,15 +943,24 @@
                     const dependsOnFieldId = dependsOn.fieldId || dependsOn;
                     const dependsOnValue = dependsOn.value || 'Sim';
                     
-                    // Encontrar o índice do campo pai
-                    const parentFieldIndex = fields.findIndex(f => {
+                    // Encontrar o índice do campo pai usando ID ou índice
+                    const parentFieldIndex = fields.findIndex((f, idx) => {
                         const fId = (f.id || '').toString();
                         const dependsId = dependsOnFieldId.toString();
-                        return fId === dependsId || fId === `field_${dependsId}` || `field_${fId}` === dependsId;
+                        // Comparar IDs diretamente ou por índice
+                        return fId === dependsId || 
+                               fId === `field_${dependsId}` || 
+                               `field_${fId}` === dependsId ||
+                               (dependsId === idx.toString()) ||
+                               (dependsId === `field_${idx}`);
                     });
                     
                     if (parentFieldIndex >= 0) {
-                        group.dataset.dependsOn = `field_${parentFieldIndex}`;
+                        // Usar tanto o índice quanto o ID para maior compatibilidade
+                        const parentField = fields[parentFieldIndex];
+                        const parentId = parentField.id || `field_${parentFieldIndex}`;
+                        group.dataset.dependsOn = parentId;
+                        group.dataset.dependsOnIndex = parentFieldIndex;
                         group.dataset.dependsOnValue = dependsOnValue;
                         group.style.display = 'none'; // Esconder inicialmente
                         group.classList.add('conditional-field');
@@ -1011,13 +1020,35 @@
                         fieldHTML += `
                             <div class="yes-no-group">
                                 <label class="radio-label">
-                                    <input type="radio" name="${normalizedField.id || `field_${index}`}" value="sim" ${normalizedField.required ? 'required' : ''}>
+                                    <input type="radio" name="${normalizedField.id || `field_${index}`}" value="Sim" ${normalizedField.required ? 'required' : ''}>
                                     <span>Sim</span>
                                 </label>
                                 <label class="radio-label">
-                                    <input type="radio" name="${normalizedField.id || `field_${index}`}" value="não" ${normalizedField.required ? 'required' : ''}>
+                                    <input type="radio" name="${normalizedField.id || `field_${index}`}" value="Não" ${normalizedField.required ? 'required' : ''}>
                                     <span>Não</span>
                                 </label>
+                            </div>
+                        `;
+                        break;
+                    case 'yes_no_with_text':
+                        const textFieldName = `${normalizedField.id || `field_${index}`}_text`;
+                        const textFieldId = `field-text-${index}`;
+                        const textPlaceholder = normalizedField.placeholder || 'Sua resposta';
+                        fieldHTML += `
+                            <div class="yes-no-with-text-group" data-field-index="${index}">
+                                <div class="yes-no-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="${normalizedField.id || `field_${index}`}" value="Sim" class="yes-no-with-text-trigger" ${normalizedField.required ? 'required' : ''}>
+                                        <span>Sim</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="${normalizedField.id || `field_${index}`}" value="Não" class="yes-no-with-text-trigger" ${normalizedField.required ? 'required' : ''}>
+                                        <span>Não</span>
+                                    </label>
+                                </div>
+                                <div id="${textFieldId}" class="yes-no-text-field" style="display: none; margin-top: 16px;">
+                                    <input type="text" id="${textFieldId}-input" name="${textFieldName}" placeholder="${textPlaceholder}" style="width: 100%; padding: 14px 18px; border: 2px solid #dadce0; border-radius: 12px; font-size: 15px; background: white; color: #202124; box-sizing: border-box;">
+                                </div>
                             </div>
                         `;
                         break;
@@ -1121,6 +1152,34 @@
             
             console.log(`✅ [PUBLIC] Todos os ${fields.length} campos foram renderizados com sucesso!`);
             
+            // Função para gerenciar campos yes_no_with_text
+            function handleYesNoWithText(triggerInput) {
+                const group = triggerInput.closest('.yes-no-with-text-group');
+                if (!group) return;
+                
+                const textField = group.querySelector('.yes-no-text-field');
+                if (!textField) return;
+                
+                const textInput = textField.querySelector('input[type="text"]');
+                
+                if (triggerInput.value === 'Sim' && triggerInput.checked) {
+                    textField.style.display = 'block';
+                    textField.style.animation = 'fadeInUp 0.3s ease-out';
+                    if (textInput) {
+                        const fieldIndex = parseInt(group.dataset.fieldIndex);
+                        if (!isNaN(fieldIndex) && fields[fieldIndex] && fields[fieldIndex].required) {
+                            textInput.setAttribute('required', 'required');
+                        }
+                    }
+                } else if (triggerInput.value === 'Não' && triggerInput.checked) {
+                    textField.style.display = 'none';
+                    if (textInput) {
+                        textInput.value = '';
+                        textInput.removeAttribute('required');
+                    }
+                }
+            }
+            
             // Adicionar classe 'checked' aos labels quando inputs são marcados (fallback para :has())
             setTimeout(() => {
                 document.querySelectorAll('.radio-label input[type="radio"], .checkbox-label input[type="checkbox"]').forEach(input => {
@@ -1141,6 +1200,11 @@
                         
                         // Lógica de campos condicionais
                         handleConditionalFields(this);
+                        
+                        // Lógica para yes_no_with_text
+                        if (this.classList.contains('yes-no-with-text-trigger')) {
+                            handleYesNoWithText(this);
+                        }
                     });
                 });
             }, 100);
@@ -1151,12 +1215,23 @@
                 if (!triggerGroup) return;
                 
                 const fieldIndex = triggerGroup.dataset.fieldIndex;
-                const fieldId = `field_${fieldIndex}`;
-                if (!fieldIndex && !triggerGroup.dataset.fieldId) return;
+                const fieldId = triggerGroup.dataset.fieldId || (fieldIndex !== undefined ? `field_${fieldIndex}` : null);
+                if (!fieldIndex && !fieldId) return;
                 
-                // Encontrar todos os campos que dependem deste (usar fieldIndex)
-                const selector = fieldIndex !== undefined ? `.conditional-field[data-depends-on="field_${fieldIndex}"]` : `.conditional-field[data-depends-on="${triggerGroup.dataset.fieldId}"]`;
-                document.querySelectorAll(selector).forEach(conditionalField => {
+                // Encontrar todos os campos que dependem deste (usar tanto ID quanto índice)
+                const selectors = [];
+                if (fieldId) selectors.push(`.conditional-field[data-depends-on="${fieldId}"]`);
+                if (fieldIndex !== undefined) {
+                    selectors.push(`.conditional-field[data-depends-on-index="${fieldIndex}"]`);
+                    selectors.push(`.conditional-field[data-depends-on="field_${fieldIndex}"]`);
+                }
+                
+                const allConditionalFields = new Set();
+                selectors.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => allConditionalFields.add(el));
+                });
+                
+                allConditionalFields.forEach(conditionalField => {
                     const requiredValue = conditionalField.dataset.dependsOnValue || 'Sim';
                     const triggerValue = triggerInput.value;
                     
