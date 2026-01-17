@@ -19393,7 +19393,11 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
             'cartão', 'cartao', 'virtual', 'nfc', 'qr code', 'qrcode', 'link', 'perfil', 'dashboard',
             'módulo', 'modulo', 'recurso', 'funcionalidade', 'como funciona', 'como usar', 'tutorial',
             'king start', 'king prime', 'king corporate', 'king forms', 'loja virtual', 'carrossel',
-            'portfólio', 'portfolio', 'whatsapp', 'instagram', 'redes sociais'
+            'portfólio', 'portfolio', 'whatsapp', 'instagram', 'redes sociais',
+            'pagamento', 'pagar', 'pix', 'cartão de crédito', 'cartao de credito', 'crédito', 'credito',
+            'débito', 'debito', 'boleto', 'transferência', 'transferencia', 'forma de pagamento',
+            'melhor forma', 'como pagar', 'quanto custa', 'preços', 'valores', 'mensalidade',
+            'anual', 'mensal', 'parcelado', 'parcela', 'vezes', '12x', 'à vista', 'a vista'
         ];
         
         const isAboutConectaKing = conectaKingKeywords.some(keyword => lowerMessage.includes(keyword));
