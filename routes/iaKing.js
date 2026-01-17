@@ -19612,18 +19612,34 @@ async function getContextualHelpForPage(page, client) {
 }
 
 // POST /api/ia-king/chat-public - Chat público para página inicial (sem autenticação)
-// Limita respostas apenas a assuntos do ConectaKing
-// IMPORTANTE: Esta rota também pode ser acessada via /api/ia-king/chat-public diretamente
+// USA A MESMA LÓGICA DA IA AUTENTICADA (findBestAnswer) para garantir consistência
 router.post('/chat-public', asyncHandler(async (req, res) => {
     const { message } = req.body;
     
     if (!message || !message.trim()) {
-        return res.status(400).json({ error: 'Mensagem é obrigatória' });
+        return res.status(400).json({ 
+            response: 'Mensagem é obrigatória',
+            answer: 'Mensagem é obrigatória',
+            confidence: 0,
+            source: 'error'
+        });
     }
     
     const client = await db.pool.connect();
     try {
-        // Verificar se a mensagem é sobre o sistema ConectaKing
+        console.log('📥 [IA PUBLIC] Mensagem recebida:', message.substring(0, 100));
+        
+        // USAR A MESMA FUNÇÃO findBestAnswer que a rota autenticada usa
+        // userId = null para usuários não autenticados
+        const result = await findBestAnswer(message.trim(), null);
+        
+        console.log('✅ [IA PUBLIC] Resposta encontrada:', {
+            confidence: result.confidence,
+            source: result.source,
+            answerLength: result.answer?.length || 0
+        });
+        
+        // Verificar se a mensagem é sobre o sistema ConectaKing (opcional - apenas para redirecionamento)
         const lowerMessage = message.toLowerCase();
         const conectaKingKeywords = [
             'conecta', 'king', 'conectaking', 'plano', 'planos', 'preço', 'preco', 'valor', 'assinatura',
@@ -19639,8 +19655,10 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
         
         const isAboutConectaKing = conectaKingKeywords.some(keyword => lowerMessage.includes(keyword));
         
-        if (!isAboutConectaKing) {
+        // Se não for sobre ConectaKing E a resposta não for boa, redirecionar
+        if (!isAboutConectaKing && (!result.answer || result.confidence < 50)) {
             return res.json({
+                response: 'Olá! 👋\n\nSou a IA King, assistente do ConectaKing. Posso ajudar você apenas com questões relacionadas ao nosso sistema, planos, funcionalidades e como usar o ConectaKing.\n\nPor favor, faça uma pergunta sobre o ConectaKing! 😊',
                 answer: 'Olá! 👋\n\nSou a IA King, assistente do ConectaKing. Posso ajudar você apenas com questões relacionadas ao nosso sistema, planos, funcionalidades e como usar o ConectaKing.\n\nPor favor, faça uma pergunta sobre o ConectaKing! 😊',
                 confidence: 1,
                 source: 'system',
