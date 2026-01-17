@@ -5609,7 +5609,7 @@ async function findBestAnswer(userMessage, userId) {
         }
         
         // ============================================
-        // DETECÇÃO: PERGUNTAS SOBRE FORMAS DE PAGAMENTO
+        // DETECÇÃO: PERGUNTAS SOBRE FORMAS DE PAGAMENTO E PARCELAMENTO
         // ============================================
         const paymentQuestions = [
             'forma de pagamento', 'formas de pagamento', 'como pagar', 'como posso pagar',
@@ -5617,9 +5617,11 @@ async function findBestAnswer(userMessage, userId) {
             'métodos de pagamento', 'metodos de pagamento', 'opções de pagamento',
             'opcoes de pagamento', 'aceita', 'aceitam', 'pix', 'cartão', 'cartao',
             'crédito', 'credito', 'débito', 'debito', 'boleto', 'transferência',
-            'transferencia', 'parcelado', 'parcela', 'vezes', '12x', 'à vista',
-            'a vista', 'mensal', 'anual', 'recorrente', 'pagamento único',
-            'pagamento unico', 'melhor forma de pagamento', 'melhor forma pagamento'
+            'transferencia', 'parcelado', 'parcela', 'parcelamento', 'parcelas',
+            'vezes', '12x', 'à vista', 'a vista', 'mensal', 'anual', 'recorrente', 
+            'pagamento único', 'pagamento unico', 'melhor forma de pagamento', 
+            'melhor forma pagamento', 'quantas vezes', 'quantas parcelas', 'posso parcelar',
+            'tem juros', 'tem taxa', 'valor da parcela', 'quanto fica a parcela'
         ];
         
         if (paymentQuestions.some(q => lowerMessage.includes(q))) {
@@ -19725,6 +19727,72 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
         console.error('❌ Erro no chat público:', error);
         res.status(500).json({
             answer: 'Desculpe, ocorreu um erro. Por favor, tente novamente ou entre em contato via WhatsApp.',
+            error: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// ============================================
+// ROTA DE TREINAMENTO AUTOMÁTICO DO SISTEMA
+// ============================================
+// POST /api/ia-king/train-system - Treinar IA com informações do sistema
+router.post('/train-system', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        console.log('🧠 [IA Trainer] Iniciando treinamento do sistema...');
+        
+        // 1. Adicionar conhecimento sobre parcelamento primeiro
+        await addParcelamentoKnowledge(client);
+        
+        // 2. Treinar com informações do sistema
+        const result = await trainIAWithSystemInfo(client);
+        
+        res.json({
+            success: true,
+            message: `Treinamento concluído: ${result.trained} tópicos treinados`,
+            trained: result.trained,
+            errors: result.errors
+        });
+    } catch (error) {
+        console.error('❌ Erro no treinamento:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/ia-king/train-system-status - Verificar status do treinamento
+router.get('/train-system-status', protectAdmin, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const knowledgeCount = await client.query(`
+            SELECT COUNT(*) as total,
+                   COUNT(CASE WHEN source_type = 'system_auto_trained' THEN 1 END) as system_trained
+            FROM ia_knowledge_base
+            WHERE is_active = true
+        `);
+        
+        const parcelamentoExists = await client.query(`
+            SELECT id FROM ia_knowledge_base
+            WHERE LOWER(title) LIKE '%parcela%' OR LOWER(title) LIKE '%parcelamento%'
+            LIMIT 1
+        `);
+        
+        res.json({
+            success: true,
+            total_knowledge: parseInt(knowledgeCount.rows[0].total),
+            system_trained: parseInt(knowledgeCount.rows[0].system_trained),
+            has_parcelamento: parcelamentoExists.rows.length > 0
+        });
+    } catch (error) {
+        console.error('❌ Erro ao verificar status:', error);
+        res.status(500).json({
+            success: false,
             error: error.message
         });
     } finally {
