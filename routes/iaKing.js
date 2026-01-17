@@ -7379,9 +7379,22 @@ FUNCIONALIDADES:
                     }
                 }
             } catch (apiError) {
-                console.error('❌ [IA] Erro ao usar API externa:', apiError.message);
+                console.error('❌ [IA] Erro ao usar API externa:', {
+                    message: apiError.message,
+                    stack: apiError.stack?.substring(0, 200),
+                    hasLocalAnswer: !!bestAnswer
+                });
                 // Continuar com resposta local se API falhar
+                if (!bestAnswer) {
+                    console.warn('⚠️ [IA] Sem resposta local e API externa falhou - tentando resposta básica');
+                }
             }
+        } else {
+            console.log('ℹ️ [IA] Nenhuma API externa configurada - usando apenas respostas locais', {
+                hasGemini: !!process.env.GEMINI_API_KEY,
+                hasGroq: !!process.env.GROQ_API_KEY,
+                hasHuggingFace: !!process.env.HUGGINGFACE_API_KEY
+            });
         }
         
         // Salvar conversa E aprender automaticamente
