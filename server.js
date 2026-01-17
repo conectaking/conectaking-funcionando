@@ -374,7 +374,8 @@ app.get('/', (req, res) => {
     });
 });
 
-// Bloquear bots e scanners - ANTES de qualquer rota
+// Bloquear bots e scanners - ANTES de qualquer rota e ANTES do requestLogger
+// Isso evita que requisições de bots sejam processadas ou logadas
 app.use((req, res, next) => {
     const path = req.path.toLowerCase();
     const userAgent = (req.get('user-agent') || '').toLowerCase();
@@ -394,18 +395,22 @@ app.use((req, res, next) => {
     // IMPORTANTE: Não bloquear rotas válidas como /api/profile, /api/pix, etc.
     const isGenericApiAccess = path === '/api' && !req.path.startsWith('/api/');
     
-    // Padrões de user-agent suspeitos
+    // Padrões de user-agent suspeitos (incluindo URLs como user-agent)
     const suspiciousUserAgents = [
         'sqlmap', 'nikto', 'nmap', 'masscan', 'zap', 'burp', 'w3af',
         'dirbuster', 'gobuster', 'wfuzz', 'scanner', 'bot', 'crawler',
-        'spider', 'scraper', 'http://', 'https://' // User-agent que é uma URL é suspeito
+        'spider', 'scraper', 'http://', 'https://', // User-agent que é uma URL é suspeito
+        'http://cnking.bio', 'https://cnking.bio', // User-agents que são URLs do próprio domínio
+        'http://tag.conectaking.com.br', 'https://tag.conectaking.com.br'
     ];
     
     // Verificar se o path corresponde a padrões de bot
     const isBotPath = botPatterns.some(pattern => path.includes(pattern));
     
-    // Verificar se o user-agent é suspeito
-    const isSuspiciousUA = suspiciousUserAgents.some(pattern => userAgent.includes(pattern));
+    // Verificar se o user-agent é suspeito (URL como user-agent é sempre suspeito)
+    const isSuspiciousUA = suspiciousUserAgents.some(pattern => userAgent.includes(pattern)) ||
+                          userAgent.startsWith('http://') || 
+                          userAgent.startsWith('https://');
     
     // IMPORTANTE: NUNCA bloquear rotas válidas da API (que começam com /api/)
     // Apenas bloquear se NÃO for uma rota válida da API
@@ -414,6 +419,9 @@ app.use((req, res, next) => {
     // Bloquear se for path de bot OU user-agent suspeito OU acesso genérico a /api
     // MAS NUNCA bloquear rotas válidas da API
     if (!isValidApiRoute && (isBotPath || isSuspiciousUA || isGenericApiAccess)) {
+        // Marcar como bot para não ser logado
+        req._isBotRequest = true;
+        
         // Não logar em produção para reduzir ruído (apenas em debug)
         if (!config.isProduction) {
             logger.debug('Tentativa de acesso bloqueada (bot/scanner)', {
@@ -421,9 +429,11 @@ app.use((req, res, next) => {
                 path: req.path,
                 userAgent: req.get('user-agent')?.substring(0, 100),
                 method: req.method,
-                reason: isBotPath ? 'bot_path' : 'suspicious_ua'
+                reason: isBotPath ? 'bot_path' : (isSuspiciousUA ? 'suspicious_ua' : 'generic_api')
             });
         }
+        
+        // Retornar resposta rápida sem processar
         return res.status(403).json({
             success: false,
             message: 'Acesso negado'

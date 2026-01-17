@@ -29,15 +29,24 @@ const requestLogger = (req, res, next) => {
             });
         }
 
+        // Verificar se foi marcado como requisição de bot (bloqueada antes do logger)
+        const isBotRequest = req._isBotRequest === true;
+        
         // Filtrar tentativas de acesso de bots/scanners
         const isWordPressAttempt = /wp-admin|wordpress|wp-content|wp-includes|wp-login|setup-config|xmlrpc\.php|readme\.html/i.test(req.path);
         const isCommonBotPath = /phpmyadmin|phpinfo|\.env|\.git|backup|test\.php|shell\.php|c99|r57|\.sql$|\.bak$|\.old$/i.test(req.path);
         const isGenericPath = /^\/index\.php$|^\/api$|^\/admin$/.test(req.path); // Rotas genéricas sem parâmetros
         
-        // Não logar 404 de rotas conhecidas de bots ou rotas genéricas
+        // Verificar se user-agent é uma URL (sempre suspeito)
+        const userAgent = req.get('user-agent') || '';
+        const isUrlAsUserAgent = userAgent.startsWith('http://') || userAgent.startsWith('https://');
+        
+        // Não logar requisições de bots, WordPress, ou rotas genéricas
         const shouldSkipLog = req.path === '/favicon.ico' || 
+                             isBotRequest ||
                              isWordPressAttempt || 
                              isCommonBotPath || 
+                             isUrlAsUserAgent ||
                              (res.statusCode === 404 && isGenericPath);
         
         if (res.statusCode >= 400 && !shouldSkipLog) {
