@@ -19417,6 +19417,8 @@ router.post('/chat-public', asyncHandler(async (req, res) => {
         }
         
         res.json({
+            success: true,
+            response: result.answer || 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
             answer: result.answer || 'Desculpe, não consegui processar sua pergunta. Por favor, tente novamente ou pergunte sobre nossos planos e funcionalidades.',
             confidence: result.confidence || 0.5,
             source: result.source || 'system',
