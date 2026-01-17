@@ -391,6 +391,7 @@ app.use((req, res, next) => {
     ];
     
     // Verificar se é acesso genérico a /api (sem rota específica) - apenas se for exatamente '/api'
+    // IMPORTANTE: Não bloquear rotas válidas como /api/profile, /api/pix, etc.
     const isGenericApiAccess = path === '/api' && !req.path.startsWith('/api/');
     
     // Padrões de user-agent suspeitos
@@ -406,8 +407,13 @@ app.use((req, res, next) => {
     // Verificar se o user-agent é suspeito
     const isSuspiciousUA = suspiciousUserAgents.some(pattern => userAgent.includes(pattern));
     
+    // IMPORTANTE: NUNCA bloquear rotas válidas da API (que começam com /api/)
+    // Apenas bloquear se NÃO for uma rota válida da API
+    const isValidApiRoute = path.startsWith('/api/');
+    
     // Bloquear se for path de bot OU user-agent suspeito OU acesso genérico a /api
-    if (isBotPath || isSuspiciousUA || isGenericApiAccess) {
+    // MAS NUNCA bloquear rotas válidas da API
+    if (!isValidApiRoute && (isBotPath || isSuspiciousUA || isGenericApiAccess)) {
         // Não logar em produção para reduzir ruído (apenas em debug)
         if (!config.isProduction) {
             logger.debug('Tentativa de acesso bloqueada (bot/scanner)', {
