@@ -74,29 +74,26 @@ async function insertTemplates() {
             throw new Error('Seção de SEED não encontrada na migration 088');
         }
         
-        // Pegar tudo a partir do SEED até o próximo comentário de seção ou fim do arquivo
+        // Pegar tudo a partir do SEED até o próximo comentário de seção (mas não o primeiro que aparece logo depois)
+        // Ou até o final do arquivo
         const seedSection = migrationContent.substring(seedStartIndex);
-        const nextSectionIndex = seedSection.indexOf('\n-- ============================================');
-        const finalSeedSection = nextSectionIndex !== -1 
-            ? seedSection.substring(0, nextSectionIndex) 
+        
+        // Procurar pelo próximo "-- ============================================" que NÃO seja logo após o SEED
+        // Pular o primeiro que aparece logo depois do comentário SEED
+        let searchStart = seedSection.indexOf('\n-- ============================================');
+        if (searchStart !== -1) {
+            // Pular o primeiro (que é o próprio comentário do SEED) e procurar o próximo
+            searchStart = seedSection.indexOf('\n-- ============================================', searchStart + 1);
+        }
+        
+        const finalSeedSection = searchStart !== -1 
+            ? seedSection.substring(0, searchStart) 
             : seedSection;
         
-        // Dividir por comentários de template (cada template tem um comentário "-- Template X:")
-        // Incluir o primeiro INSERT que não tem comentário antes
-        const parts = finalSeedSection.split(/--\s*Template\s+\d+:/);
-        const insertStatements = [];
-        
-        for (let i = 0; i < parts.length; i++) {
-            const part = parts[i].trim();
-            if (!part) continue;
-            
-            // Procurar pelo INSERT completo neste bloco
-            // O INSERT termina com "WHERE NOT EXISTS ... ;" seguido de quebra de linha ou fim do bloco
-            const insertMatch = part.match(/INSERT INTO ck_contracts_templates[\s\S]*?WHERE NOT EXISTS[^;]*;/);
-            if (insertMatch) {
-                insertStatements.push(insertMatch[0].trim());
-            }
-        }
+        // Usar regex global para encontrar todos os INSERTs completos
+        // Cada INSERT começa com "INSERT INTO" e termina com "WHERE NOT EXISTS ... ;"
+        const insertPattern = /INSERT INTO ck_contracts_templates[\s\S]*?WHERE NOT EXISTS[^;]*;/g;
+        const insertStatements = finalSeedSection.match(insertPattern) || [];
         
         console.log(`\n🔄 Encontrados ${insertStatements.length} comandos INSERT para executar...\n`);
         
