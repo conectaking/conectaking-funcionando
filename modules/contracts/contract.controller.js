@@ -1,4 +1,5 @@
 const service = require('./contract.service');
+const repository = require('./contract.repository');
 const responseFormatter = require('../../utils/responseFormatter');
 const logger = require('../../utils/logger');
 
@@ -169,6 +170,30 @@ class ContractController {
         } catch (error) {
             logger.error('Erro ao buscar template:', error);
             return responseFormatter.error(res, error.message, 404);
+        }
+    }
+
+    /**
+     * Buscar signatários de um contrato
+     */
+    async getSigners(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+            
+            // Verificar ownership
+            const ownsContract = await repository.checkOwnership(id, userId);
+            if (!ownsContract) {
+                return responseFormatter.error(res, 'Você não tem permissão para ver os signatários deste contrato', 403);
+            }
+            
+            const signers = await repository.findSignersByContractId(id);
+            return responseFormatter.success(res, signers);
+        } catch (error) {
+            logger.error('Erro ao buscar signatários:', error);
+            const statusCode = error.message.includes('permissão') ? 403 : 
+                              error.message.includes('não encontrado') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
         }
     }
 

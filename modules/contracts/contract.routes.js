@@ -82,6 +82,11 @@ router.post('/:id/duplicate', asyncHandler(async (req, res) => {
     await controller.duplicate(req, res);
 }));
 
+// Rota para buscar signatários (deve vir ANTES de /:id/audit)
+router.get('/:id/signers', asyncHandler(async (req, res) => {
+    await controller.getSigners(req, res);
+}));
+
 router.get('/:id/audit', asyncHandler(async (req, res) => {
     await controller.getAuditLogs(req, res);
 }));
