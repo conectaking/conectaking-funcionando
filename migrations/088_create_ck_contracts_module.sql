@@ -846,6 +846,250 @@ _________________________          _________________________
     '[{"name": "NOME_CLIENTE_ARQ", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_ARQUITETO", "label": "Nome do Arquiteto", "type": "text", "required": true}, {"name": "TIPO_PROJETO_ARQ", "label": "Tipo de Projeto (Residencial, Comercial, etc.)", "type": "text", "required": true}, {"name": "ENDERECO_OBRA", "label": "Endereço da Obra", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_ARQ", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "ETAPAS_PROJETO", "label": "Etapas do Projeto", "type": "textarea", "required": true}, {"name": "VALOR_TOTAL_ARQ", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "VALOR_PROJETO", "label": "Valor do Projeto (R$)", "type": "text", "required": true}, {"name": "VALOR_ACOMPANHAMENTO", "label": "Valor do Acompanhamento (R$)", "type": "text", "required": false}, {"name": "FORMA_PAGAMENTO_ARQ", "label": "Forma de Pagamento", "type": "text", "required": true}, {"name": "CIDADE_ARQ", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_ARQ", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
 WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Arquitetura e Projetos');
 
+-- Template 19: Tradução e Interpretação
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Tradução e Interpretação',
+    'Tradução',
+    'Contrato para serviços de tradução de documentos e interpretação',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - TRADUÇÃO
+
+CONTRATANTE: {{NOME_CLIENTE_TRAD}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_TRAD}}
+Email: {{EMAIL_CLIENTE_TRAD}}
+
+TRADUTOR: {{NOME_TRADUTOR}}
+Registro Profissional: {{REGISTRO_TRADUTOR}}
+Idiomas: {{IDIOMAS_TRADUTOR}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de {{TIPO_SERVICO_TRAD}} do(s) documento(s) conforme especificado abaixo.
+
+DOCUMENTO(S) A TRADUZIR
+{{DESCRICAO_DOCUMENTOS}}
+- Idioma origem: {{IDIOMA_ORIGEM}}
+- Idioma destino: {{IDIOMA_DESTINO}}
+- Prazo de entrega: {{PRAZO_ENTREGA_TRAD}}
+- Formato: {{FORMATO_ENTREGA_TRAD}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor total dos serviços é de R$ {{VALOR_TOTAL_TRAD}}, baseado em {{UNIDADE_CALCULO}} (páginas/palavras/caracteres).
+- Forma de pagamento: {{FORMA_PAGAMENTO_TRAD}}
+
+CONFIDENCIALIDADE
+O tradutor compromete-se a manter sigilo sobre o conteúdo dos documentos traduzidos.
+
+{{CIDADE_TRAD}}, {{DATA_CONTRATO_TRAD}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_TRAD}}                     {{NOME_TRADUTOR}}',
+    '[{"name": "NOME_CLIENTE_TRAD", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_TRADUTOR", "label": "Nome do Tradutor", "type": "text", "required": true}, {"name": "TIPO_SERVICO_TRAD", "label": "Tipo de Serviço (Tradução/Interpretação)", "type": "text", "required": true}, {"name": "DESCRICAO_DOCUMENTOS", "label": "Descrição dos Documentos", "type": "textarea", "required": true}, {"name": "IDIOMA_ORIGEM", "label": "Idioma Origem", "type": "text", "required": true}, {"name": "IDIOMA_DESTINO", "label": "Idioma Destino", "type": "text", "required": true}, {"name": "PRAZO_ENTREGA_TRAD", "label": "Prazo de Entrega", "type": "text", "required": true}, {"name": "VALOR_TOTAL_TRAD", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "UNIDADE_CALCULO", "label": "Unidade de Cálculo (páginas/palavras)", "type": "text", "required": true}, {"name": "CIDADE_TRAD", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_TRAD", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Tradução e Interpretação');
+
+-- Template 20: Serviços Jurídicos
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Serviços Jurídicos',
+    'Direito',
+    'Contrato para prestação de serviços advocatícios e consultoria jurídica',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - ASSESSORIA JURÍDICA
+
+CONTRATANTE: {{NOME_CLIENTE_JUR}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_JUR}}
+Endereço: {{ENDERECO_CLIENTE_JUR}}
+
+ADVOGADO/ESCRITÓRIO: {{NOME_ADVOGADO}}
+OAB: {{OAB_ADVOGADO}}
+Escritório: {{NOME_ESCRITORIO}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços advocatícios na área de {{AREA_ATUACAO_JUR}}.
+
+SERVIÇOS CONTRATADOS
+{{DESCRICAO_SERVICOS_JUR}}
+- Assunto: {{ASSUNTO_JURIDICO}}
+- Prazo estimado: {{PRAZO_SERVICOS_JUR}}
+
+HONORÁRIOS
+O valor dos honorários advocatícios é de R$ {{VALOR_HONORARIOS_JUR}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_JUR}}
+- Percentual de êxito (se aplicável): {{PERCENTUAL_EXITO}}
+
+REEMBOLSOS E DESPESAS
+As despesas processuais e outras despesas necessárias serão custeadas pelo contratante, além dos honorários.
+
+{{CIDADE_JUR}}, {{DATA_CONTRATO_JUR}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_JUR}}                     {{NOME_ADVOGADO}}',
+    '[{"name": "NOME_CLIENTE_JUR", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_ADVOGADO", "label": "Nome do Advogado", "type": "text", "required": true}, {"name": "AREA_ATUACAO_JUR", "label": "Área de Atuação (Civil, Trabalhista, etc.)", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_JUR", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "ASSUNTO_JURIDICO", "label": "Assunto Jurídico", "type": "text", "required": true}, {"name": "VALOR_HONORARIOS_JUR", "label": "Valor dos Honorários (R$)", "type": "text", "required": true}, {"name": "FORMA_PAGAMENTO_JUR", "label": "Forma de Pagamento", "type": "text", "required": true}, {"name": "CIDADE_JUR", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_JUR", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Serviços Jurídicos');
+
+-- Template 21: Limpeza e Conservação
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Limpeza e Conservação',
+    'Serviços',
+    'Contrato para serviços de limpeza, conservação e manutenção de imóveis',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - LIMPEZA E CONSERVAÇÃO
+
+CONTRATANTE: {{NOME_CLIENTE_LIM}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_LIM}}
+Endereço: {{ENDERECO_CLIENTE_LIM}}
+
+PRESTADOR DE SERVIÇOS: {{NOME_EMPRESA_LIM}}
+CNPJ: {{CNPJ_EMPRESA_LIM}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de {{TIPO_LIMPEZA}} no imóvel localizado em {{ENDERECO_IMOVEL}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_LIMPEZA}}
+- Frequência: {{FREQUENCIA_LIMPEZA}}
+- Horário de execução: {{HORARIO_LIMPEZA}}
+- Período: {{DATA_INICIO_LIM}} até {{DATA_TERMINO_LIM}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor mensal dos serviços é de R$ {{VALOR_MENSAL_LIM}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_LIM}}
+- Reajuste: {{REAJUSTE_ANUAL}}
+
+MATERIAIS E EQUIPAMENTOS
+{{PROVISAO_MATERIAIS}}
+
+{{CIDADE_LIM}}, {{DATA_CONTRATO_LIM}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_LIM}}                     {{NOME_EMPRESA_LIM}}',
+    '[{"name": "NOME_CLIENTE_LIM", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_EMPRESA_LIM", "label": "Nome da Empresa", "type": "text", "required": true}, {"name": "TIPO_LIMPEZA", "label": "Tipo de Limpeza (Residencial, Comercial, Industrial)", "type": "text", "required": true}, {"name": "ENDERECO_IMOVEL", "label": "Endereço do Imóvel", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_LIMPEZA", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "FREQUENCIA_LIMPEZA", "label": "Frequência (Diária, Semanal, Quinzenal)", "type": "text", "required": true}, {"name": "VALOR_MENSAL_LIM", "label": "Valor Mensal (R$)", "type": "text", "required": true}, {"name": "DATA_INICIO_LIM", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_LIM", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_LIM", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_LIM", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Limpeza e Conservação');
+
+-- Template 22: Manutenção e Reparos
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Manutenção e Reparos',
+    'Manutenção',
+    'Contrato para serviços de manutenção, reparos e assistência técnica',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - MANUTENÇÃO E REPAROS
+
+CONTRATANTE: {{NOME_CLIENTE_MAN}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_MAN}}
+Endereço: {{ENDERECO_CLIENTE_MAN}}
+
+PRESTADOR: {{NOME_TECNICO_MAN}}
+CNPJ/CPF: {{CNPJ_CPF_TECNICO}}
+Área de Atuação: {{AREA_ATUACAO_MAN}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de {{TIPO_MANUTENCAO}} no(s) item(s) especificado(s) abaixo.
+
+SERVIÇOS SOLICITADOS
+{{DESCRICAO_REPAROS}}
+- Local: {{LOCAL_SERVICO_MAN}}
+- Data/hora agendada: {{DATA_HORA_MAN}}
+- Prazo de execução: {{PRAZO_EXECUCAO_MAN}}
+
+GARANTIA
+O prestador oferece garantia de {{TEMPO_GARANTIA}} sobre os serviços executados e peças substituídas.
+
+VALOR E FORMA DE PAGAMENTO
+O valor total dos serviços é de R$ {{VALOR_TOTAL_MAN}}.
+- Mão de obra: R$ {{VALOR_MAO_OBRA}}
+- Materiais/Peças: R$ {{VALOR_MATERIAIS}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_MAN}}
+
+{{CIDADE_MAN}}, {{DATA_CONTRATO_MAN}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_MAN}}                     {{NOME_TECNICO_MAN}}',
+    '[{"name": "NOME_CLIENTE_MAN", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_TECNICO_MAN", "label": "Nome do Técnico/Empresa", "type": "text", "required": true}, {"name": "TIPO_MANUTENCAO", "label": "Tipo de Manutenção (Elétrica, Hidráulica, Eletrônica, etc.)", "type": "text", "required": true}, {"name": "DESCRICAO_REPAROS", "label": "Descrição dos Reparos/Serviços", "type": "textarea", "required": true}, {"name": "LOCAL_SERVICO_MAN", "label": "Local do Serviço", "type": "text", "required": true}, {"name": "DATA_HORA_MAN", "label": "Data e Hora Agendada", "type": "text", "required": true}, {"name": "VALOR_TOTAL_MAN", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "VALOR_MAO_OBRA", "label": "Valor Mão de Obra (R$)", "type": "text", "required": true}, {"name": "VALOR_MATERIAIS", "label": "Valor Materiais (R$)", "type": "text", "required": true}, {"name": "TEMPO_GARANTIA", "label": "Tempo de Garantia", "type": "text", "required": true}, {"name": "CIDADE_MAN", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_MAN", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Manutenção e Reparos');
+
+-- Template 23: Publicidade e Propaganda
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Publicidade e Propaganda',
+    'Marketing',
+    'Contrato para serviços de publicidade, criação de campanhas e materiais promocionais',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - PUBLICIDADE E PROPAGANDA
+
+CONTRATANTE: {{NOME_CLIENTE_PUB}}
+CNPJ: {{CNPJ_CLIENTE_PUB}}
+Ramo de Atividade: {{RAMO_ATIVIDADE_PUB}}
+
+AGÊNCIA/PUBLICITÁRIO: {{NOME_AGENCIA_PUB}}
+CNPJ: {{CNPJ_AGENCIA_PUB}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de publicidade e propaganda para {{CAMPANHA_PUB}}.
+
+SERVIÇOS CONTRATADOS
+{{DESCRICAO_SERVICOS_PUB}}
+- Mídia: {{TIPO_MIDIA}}
+- Período de veiculação: {{PERIODO_VEICULACAO}}
+- Prazo de entrega: {{PRAZO_ENTREGA_PUB}}
+
+CRIAÇÃO E DESENVOLVIMENTO
+{{ETAPAS_CRIACAO}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor total da campanha é de R$ {{VALOR_TOTAL_PUB}}, sendo:
+- Criação: R$ {{VALOR_CRIACAO}}
+- Mídia/Veiculação: R$ {{VALOR_MIDIA}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_PUB}}
+
+PROPRIEDADE INTELECTUAL
+Os materiais criados serão de propriedade do contratante após o pagamento integral.
+
+{{CIDADE_PUB}}, {{DATA_CONTRATO_PUB}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_PUB}}                     {{NOME_AGENCIA_PUB}}',
+    '[{"name": "NOME_CLIENTE_PUB", "label": "Nome do Cliente/Empresa", "type": "text", "required": true}, {"name": "NOME_AGENCIA_PUB", "label": "Nome da Agência/Publicitário", "type": "text", "required": true}, {"name": "CAMPANHA_PUB", "label": "Nome da Campanha/Projeto", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_PUB", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "TIPO_MIDIA", "label": "Tipo de Mídia (TV, Rádio, Digital, etc.)", "type": "text", "required": true}, {"name": "PERIODO_VEICULACAO", "label": "Período de Veiculação", "type": "text", "required": true}, {"name": "VALOR_TOTAL_PUB", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "VALOR_CRIACAO", "label": "Valor Criação (R$)", "type": "text", "required": true}, {"name": "VALOR_MIDIA", "label": "Valor Mídia/Veiculação (R$)", "type": "text", "required": true}, {"name": "CIDADE_PUB", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_PUB", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Publicidade e Propaganda');
+
+-- Template 24: Serviços Contábeis
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Serviços Contábeis',
+    'Contabilidade',
+    'Contrato para prestação de serviços contábeis, tributários e assessoria fiscal',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - SERVIÇOS CONTÁBEIS
+
+CONTRATANTE: {{NOME_CLIENTE_CONT}}
+CNPJ: {{CNPJ_CLIENTE_CONT}}
+Endereço: {{ENDERECO_CLIENTE_CONT}}
+
+CONTADOR/ESCRITÓRIO: {{NOME_CONTADOR}}
+CRC: {{CRC_CONTADOR}}
+Escritório: {{NOME_ESCRITORIO_CONT}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços contábeis e fiscais conforme especificado abaixo.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_CONT}}
+- Regime tributário: {{REGIME_TRIBUTARIO}}
+- Período de vigência: {{PERIODO_VIGENCIA_CONT}}
+
+OBRIGAÇÕES
+{{OBRIGACOES_ENTREGAS}}
+
+HONORÁRIOS
+O valor mensal dos honorários é de R$ {{VALOR_MENSAL_CONT}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_CONT}}
+- Reajuste: {{REAJUSTE_CONT}}
+
+RESPONSABILIDADE
+O contador responsabiliza-se pela correta execução dos serviços e cumprimento das obrigações fiscais.
+
+{{CIDADE_CONT}}, {{DATA_CONTRATO_CONT}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_CONT}}                     {{NOME_CONTADOR}}',
+    '[{"name": "NOME_CLIENTE_CONT", "label": "Nome do Cliente/Empresa", "type": "text", "required": true}, {"name": "NOME_CONTADOR", "label": "Nome do Contador", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_CONT", "label": "Descrição dos Serviços Contábeis", "type": "textarea", "required": true}, {"name": "REGIME_TRIBUTARIO", "label": "Regime Tributário (Simples, Lucro Presumido, etc.)", "type": "text", "required": true}, {"name": "PERIODO_VIGENCIA_CONT", "label": "Período de Vigência", "type": "text", "required": true}, {"name": "VALOR_MENSAL_CONT", "label": "Valor Mensal dos Honorários (R$)", "type": "text", "required": true}, {"name": "FORMA_PAGAMENTO_CONT", "label": "Forma de Pagamento", "type": "text", "required": true}, {"name": "CIDADE_CONT", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_CONT", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Serviços Contábeis');
+
 -- ============================================
 -- 7. TRIGGERS: Atualizar updated_at automaticamente
 -- ============================================
