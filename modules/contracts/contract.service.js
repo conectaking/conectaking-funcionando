@@ -1370,7 +1370,6 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
         // Se não for importado ou não tiver PDF URL, gerar preview do conteúdo
         throw new Error('PDF não disponível para visualização');
     }
-}
 
     /**
      * Salvar posições de assinaturas para um contrato
@@ -1443,5 +1442,6 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
         
         return positions;
     }
+}
 
 module.exports = new ContractService();
