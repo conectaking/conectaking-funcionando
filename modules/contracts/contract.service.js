@@ -438,6 +438,18 @@ class ContractService {
         const pdfBuffer = await fs.readFile(file.path);
         const pdfHash = this.generateSHA256Hash(pdfBuffer);
 
+        // Extrair texto do PDF para permitir edição
+        let extractedText = '';
+        try {
+            const pdfParse = require('pdf-parse');
+            const pdfData = await pdfParse(pdfBuffer);
+            extractedText = pdfData.text || '';
+            logger.info(`Texto extraído do PDF: ${extractedText.length} caracteres`);
+        } catch (parseError) {
+            logger.warn('Erro ao extrair texto do PDF, continuando sem conteúdo:', parseError);
+            extractedText = ''; // Se não conseguir extrair, permite edição manual
+        }
+
         // Salvar PDF no diretório de uploads
         const pdfFileName = `contract_${Date.now()}_${file.originalname}`;
         const pdfPath = path.join(uploadsDir, pdfFileName);
@@ -446,7 +458,7 @@ class ContractService {
         // Remover arquivo temporário do multer
         await fs.unlink(file.path).catch(() => {});
 
-        // Criar contrato
+        // Criar contrato com conteúdo extraído (permitindo edição)
         const contract = await repository.create({
             user_id: userId,
             template_id: null,
@@ -454,7 +466,7 @@ class ContractService {
             status: TYPES.STATUS.DRAFT,
             contract_type: 'imported',
             pdf_url: `/uploads/contracts/${pdfFileName}`,
-            pdf_content: null, // PDF importado não tem conteúdo editável
+            pdf_content: extractedText, // Conteúdo extraído do PDF - agora editável!
             variables: {},
             original_pdf_hash: pdfHash
         });
