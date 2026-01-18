@@ -560,7 +560,7 @@
                     errorDiv.style.display = 'none';
                     
                     try {
-                        const response = await fetch(`/api/contracts/sign/${signToken}/verify-code`, {
+                        const response = await fetch(`/contract/sign/${signToken}/verify-code`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ code })
@@ -593,7 +593,7 @@
                     resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
                     
                     try {
-                        const response = await fetch(`/api/contracts/sign/${signToken}/send-code`, {
+                        const response = await fetch(`/contract/sign/${signToken}/send-code`, {
                             method: 'POST'
                         });
                         
@@ -621,10 +621,111 @@
             
             // Enviar código automaticamente se necessário
             if (verificationRequired) {
-                fetch(`/api/contracts/sign/${signToken}/send-code`, {
+                fetch(`/contract/sign/${signToken}/send-code`, {
                     method: 'POST'
                 }).catch(err => console.error('Erro ao enviar código:', err));
             }
+            
+            // Carregar PDF se disponível
+            <% if (contract.pdf_url && contract.contract_type === 'imported') { %>
+            let pdfDoc = null;
+            let currentPdfPage = 1;
+            let pdfScale = 1.0;
+            
+            // Toggle entre texto e PDF
+            document.getElementById('view-text-btn')?.addEventListener('click', function() {
+                document.getElementById('contract-text-view').style.display = 'block';
+                document.getElementById('contract-pdf-view').style.display = 'none';
+                this.classList.add('active');
+                document.getElementById('view-pdf-btn').classList.remove('active');
+            });
+            
+            document.getElementById('view-pdf-btn')?.addEventListener('click', async function() {
+                document.getElementById('contract-text-view').style.display = 'none';
+                document.getElementById('contract-pdf-view').style.display = 'block';
+                this.classList.add('active');
+                document.getElementById('view-text-btn').classList.remove('active');
+                
+                // Carregar PDF se ainda não foi carregado
+                if (!pdfDoc) {
+                    try {
+                        // Usar a rota pública do contrato para obter o PDF
+                        const pdfUrl = `/api/contracts/<%= contract.id %>/pdf?token=${signToken}`;
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                        pdfDoc = await loadingTask.promise;
+                        await renderPdfPage();
+                        updatePdfControls();
+                    } catch (error) {
+                        console.error('Erro ao carregar PDF:', error);
+                        alert('Erro ao carregar PDF. Tente novamente.');
+                    }
+                }
+            });
+            
+            // Função para renderizar página do PDF
+            async function renderPdfPage() {
+                if (!pdfDoc) return;
+                const canvas = document.getElementById('pdf-canvas');
+                if (!canvas) return;
+                
+                try {
+                    const page = await pdfDoc.getPage(currentPdfPage);
+                    const viewport = page.getViewport({ scale: pdfScale });
+                    
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    const context = canvas.getContext('2d');
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                } catch (error) {
+                    console.error('Erro ao renderizar PDF:', error);
+                }
+            }
+            
+            // Função para atualizar controles do PDF
+            function updatePdfControls() {
+                const pageInfo = document.getElementById('pdf-page-info');
+                const zoomLevel = document.getElementById('pdf-zoom-level');
+                
+                if (pageInfo && pdfDoc) {
+                    pageInfo.textContent = `Página ${currentPdfPage} de ${pdfDoc.numPages}`;
+                }
+                
+                if (zoomLevel) {
+                    zoomLevel.textContent = Math.round(pdfScale * 100) + '%';
+                }
+            }
+            
+            // Controles de navegação do PDF
+            document.getElementById('pdf-prev-page')?.addEventListener('click', function() {
+                if (currentPdfPage > 1) {
+                    currentPdfPage--;
+                    renderPdfPage();
+                    updatePdfControls();
+                }
+            });
+            
+            document.getElementById('pdf-next-page')?.addEventListener('click', function() {
+                if (pdfDoc && currentPdfPage < pdfDoc.numPages) {
+                    currentPdfPage++;
+                    renderPdfPage();
+                    updatePdfControls();
+                }
+            });
+            
+            document.getElementById('pdf-zoom-in')?.addEventListener('click', function() {
+                pdfScale = Math.min(pdfScale + 0.25, 3.0);
+                renderPdfPage();
+                updatePdfControls();
+            });
+            
+            document.getElementById('pdf-zoom-out')?.addEventListener('click', function() {
+                pdfScale = Math.max(pdfScale - 0.25, 0.5);
+                renderPdfPage();
+                updatePdfControls();
+            });
+            <% } %>
             const canvas = document.getElementById('signature-canvas');
             if (canvas) {
                 signaturePad = new SignaturePad(canvas);
@@ -638,7 +739,7 @@
             }
             
             // Registrar acesso
-            fetch(`/api/contracts/sign/${signToken}/start`, {
+            fetch(`/contract/sign/${signToken}/start`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -740,7 +841,7 @@
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
                 
                 try {
-                    const response = await fetch(`/api/contracts/sign/${signToken}/submit`, {
+                    const response = await fetch(`/contract/sign/${signToken}/submit`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
