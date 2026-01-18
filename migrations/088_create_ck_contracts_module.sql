@@ -604,6 +604,248 @@ _________________________          _________________________
     '[{"name": "TIPO_EVENTO_BUFFET", "label": "Tipo de Evento", "type": "text", "required": true}, {"name": "NUMERO_CONVIDADOS", "label": "Número de Convidados", "type": "text", "required": true}, {"name": "CARDAPIO_SERVICOS", "label": "Cardápio e Serviços Inclusos", "type": "textarea", "required": true}, {"name": "VALOR_BUFFET", "label": "Valor por Pessoa (R$)", "type": "text", "required": true}]'::jsonb
 WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Buffet e Alimentação');
 
+-- Template 13: Coaching e Mentoria
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Coaching e Mentoria',
+    'Coaching',
+    'Contrato para serviços de coaching pessoal ou profissional e mentoria',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - COACHING E MENTORIA
+
+CONTRATANTE: {{NOME_CLIENTE_COACH}}
+CPF/CNPJ: {{CPF_CNPJ_COACH}}
+Email: {{EMAIL_COACH_CLIENTE}}
+Telefone: {{TELEFONE_COACH_CLIENTE}}
+
+COACH/MENTOR: {{NOME_COACH}}
+Certificação: {{CERTIFICACAO_COACH}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de {{TIPO_COACHING}} para o desenvolvimento de {{AREA_DESENVOLVIMENTO}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_COACH}}
+- Quantidade de sessões: {{NUMERO_SESSOES}}
+- Duração de cada sessão: {{DURACAO_SESSAO}}
+- Modalidade: {{MODALIDADE_COACHING}} (presencial/online)
+- Prazo de vigência: {{PRAZO_VIGENCIA}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor total dos serviços é de R$ {{VALOR_TOTAL_COACH}}, sendo:
+- Forma de pagamento: {{FORMA_PAGAMENTO_COACH}}
+- {{CONDICAO_PAGAMENTO_COACH}}
+
+CONFIDENCIALIDADE
+Todas as informações compartilhadas durante as sessões são confidenciais e serão mantidas em sigilo.
+
+{{CIDADE_COACH}}, {{DATA_CONTRATO_COACH}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_COACH}}                     {{NOME_COACH}}',
+    '[{"name": "NOME_CLIENTE_COACH", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_COACH", "label": "Nome do Coach/Mentor", "type": "text", "required": true}, {"name": "TIPO_COACHING", "label": "Tipo de Coaching (Pessoal, Profissional, Executivo)", "type": "text", "required": true}, {"name": "AREA_DESENVOLVIMENTO", "label": "Área de Desenvolvimento", "type": "text", "required": true}, {"name": "NUMERO_SESSOES", "label": "Número de Sessões", "type": "text", "required": true}, {"name": "DURACAO_SESSAO", "label": "Duração de Cada Sessão", "type": "text", "required": true}, {"name": "MODALIDADE_COACHING", "label": "Modalidade (Presencial/Online)", "type": "text", "required": true}, {"name": "VALOR_TOTAL_COACH", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "FORMA_PAGAMENTO_COACH", "label": "Forma de Pagamento", "type": "text", "required": true}, {"name": "CIDADE_COACH", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_COACH", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Coaching e Mentoria');
+
+-- Template 14: Aulas Particulares
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Aulas Particulares',
+    'Educação',
+    'Contrato para prestação de serviços de aulas particulares e reforço escolar',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - AULAS PARTICULARES
+
+ALUNO/RESPONSÁVEL: {{NOME_ALUNO}}
+CPF/CNPJ: {{CPF_ALUNO}}
+Email: {{EMAIL_ALUNO}}
+Telefone: {{TELEFONE_ALUNO}}
+
+PROFESSOR: {{NOME_PROFESSOR}}
+Formação: {{FORMACAO_PROFESSOR}}
+Registro: {{REGISTRO_PROFESSOR}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de aulas particulares na disciplina/matéria de {{DISCIPLINA}}.
+
+CONTEÚDO E METODOLOGIA
+{{CONTEUDO_AULAS}}
+- Nível: {{NIVEL_AULA}}
+- Frequência: {{FREQUENCIA_AULAS}}
+- Duração de cada aula: {{DURACAO_AULA}}
+- Modalidade: {{MODALIDADE_AULA}} (presencial/online)
+
+VALOR E FORMA DE PAGAMENTO
+O valor é de R$ {{VALOR_HORA}} por hora/aula, totalizando R$ {{VALOR_TOTAL_AULA}} por {{PERIODO_PAGAMENTO}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_AULA}}
+
+PRAZO
+O contrato terá vigência de {{DATA_INICIO}} até {{DATA_TERMINO}}.
+
+{{CIDADE_AULA}}, {{DATA_CONTRATO_AULA}}.
+
+_________________________          _________________________
+{{NOME_ALUNO}}                     {{NOME_PROFESSOR}}',
+    '[{"name": "NOME_ALUNO", "label": "Nome do Aluno/Responsável", "type": "text", "required": true}, {"name": "NOME_PROFESSOR", "label": "Nome do Professor", "type": "text", "required": true}, {"name": "DISCIPLINA", "label": "Disciplina/Matéria", "type": "text", "required": true}, {"name": "NIVEL_AULA", "label": "Nível (Fundamental, Médio, Superior)", "type": "text", "required": true}, {"name": "FREQUENCIA_AULAS", "label": "Frequência das Aulas", "type": "text", "required": true}, {"name": "DURACAO_AULA", "label": "Duração de Cada Aula", "type": "text", "required": true}, {"name": "VALOR_HORA", "label": "Valor por Hora/Aula (R$)", "type": "text", "required": true}, {"name": "VALOR_TOTAL_AULA", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "PERIODO_PAGAMENTO", "label": "Período de Pagamento (Ex: mês)", "type": "text", "required": true}, {"name": "DATA_INICIO", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_AULA", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_AULA", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Aulas Particulares');
+
+-- Template 15: Serviços de Beleza (Salão/Estética)
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Serviços de Beleza e Estética',
+    'Beleza',
+    'Contrato para serviços de salão de beleza, estética e cuidados pessoais',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - BELEZA E ESTÉTICA
+
+CLIENTE: {{NOME_CLIENTE_BELEZA}}
+CPF: {{CPF_CLIENTE_BELEZA}}
+Telefone: {{TELEFONE_CLIENTE_BELEZA}}
+
+PROFISSIONAL/ESTABELECIMENTO: {{NOME_ESTABELECIMENTO}}
+CNPJ: {{CNPJ_ESTABELECIMENTO}}
+Endereço: {{ENDERECO_ESTABELECIMENTO}}
+
+SERVIÇOS CONTRATADOS
+{{LISTA_SERVICOS_BELEZA}}
+- Data/hora agendada: {{DATA_HORA_AGENDAMENTO}}
+- Profissional responsável: {{NOME_PROFISSIONAL}}
+
+VALOR
+O valor total dos serviços é de R$ {{VALOR_TOTAL_BELEZA}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_BELEZA}}
+- {{CONDICAO_PAGAMENTO_BELEZA}}
+
+POLÍTICA DE CANCELAMENTO
+{{POLITICA_CANCELAMENTO}}
+
+{{CIDADE_BELEZA}}, {{DATA_CONTRATO_BELEZA}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_BELEZA}}                     {{NOME_ESTABELECIMENTO}}',
+    '[{"name": "NOME_CLIENTE_BELEZA", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_ESTABELECIMENTO", "label": "Nome do Estabelecimento/Profissional", "type": "text", "required": true}, {"name": "LISTA_SERVICOS_BELEZA", "label": "Lista de Serviços Contratados", "type": "textarea", "required": true}, {"name": "DATA_HORA_AGENDAMENTO", "label": "Data e Hora Agendada", "type": "text", "required": true}, {"name": "VALOR_TOTAL_BELEZA", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "FORMA_PAGAMENTO_BELEZA", "label": "Forma de Pagamento", "type": "text", "required": true}, {"name": "POLITICA_CANCELAMENTO", "label": "Política de Cancelamento", "type": "textarea", "required": false}, {"name": "CIDADE_BELEZA", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_BELEZA", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Serviços de Beleza e Estética');
+
+-- Template 16: Personal Trainer
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Personal Trainer',
+    'Fitness',
+    'Contrato para serviços de personal trainer e treinamento físico personalizado',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - PERSONAL TRAINER
+
+CLIENTE: {{NOME_CLIENTE_TRAINER}}
+CPF: {{CPF_CLIENTE_TRAINER}}
+Email: {{EMAIL_CLIENTE_TRAINER}}
+Telefone: {{TELEFONE_CLIENTE_TRAINER}}
+
+PERSONAL TRAINER: {{NOME_TRAINER}}
+CREF: {{CREF_TRAINER}}
+Especialização: {{ESPECIALIZACAO_TRAINER}}
+
+OBJETIVO DO TREINAMENTO
+{{OBJETIVO_TREINAMENTO}}
+
+PLANO DE TREINO
+{{DESCRICAO_PLANO_TREINO}}
+- Frequência semanal: {{FREQUENCIA_TREINOS}}
+- Duração de cada sessão: {{DURACAO_SESSAO_TREINO}}
+- Local: {{LOCAL_TREINO}}
+- Período: {{DATA_INICIO_TREINO}} até {{DATA_TERMINO_TREINO}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor é de R$ {{VALOR_SESSAO}} por sessão, totalizando R$ {{VALOR_TOTAL_TREINO}} por {{PERIODO_PAGAMENTO_TREINO}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_TREINO}}
+
+RESPONSABILIDADES
+O cliente declara estar apto para a prática de exercícios físicos e assumirá as responsabilidades pelos riscos inerentes à atividade.
+
+{{CIDADE_TRAINER}}, {{DATA_CONTRATO_TRAINER}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_TRAINER}}                     {{NOME_TRAINER}}',
+    '[{"name": "NOME_CLIENTE_TRAINER", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_TRAINER", "label": "Nome do Personal Trainer", "type": "text", "required": true}, {"name": "OBJETIVO_TREINAMENTO", "label": "Objetivo do Treinamento", "type": "textarea", "required": true}, {"name": "FREQUENCIA_TREINOS", "label": "Frequência Semanal", "type": "text", "required": true}, {"name": "DURACAO_SESSAO_TREINO", "label": "Duração de Cada Sessão", "type": "text", "required": true}, {"name": "LOCAL_TREINO", "label": "Local do Treino", "type": "text", "required": true}, {"name": "VALOR_SESSAO", "label": "Valor por Sessão (R$)", "type": "text", "required": true}, {"name": "VALOR_TOTAL_TREINO", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "PERIODO_PAGAMENTO_TREINO", "label": "Período de Pagamento", "type": "text", "required": true}, {"name": "DATA_INICIO_TREINO", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_TREINO", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_TRAINER", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_TRAINER", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Personal Trainer');
+
+-- Template 17: Desenvolvimento de Software
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Desenvolvimento de Software',
+    'Tecnologia',
+    'Contrato para desenvolvimento de software, aplicativos e sistemas',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - DESENVOLVIMENTO DE SOFTWARE
+
+CONTRATANTE: {{NOME_CLIENTE_SOFT}}
+CNPJ: {{CNPJ_CLIENTE_SOFT}}
+Email: {{EMAIL_CLIENTE_SOFT}}
+
+DESENVOLVEDOR/EMPRESA: {{NOME_DEV}}
+CNPJ: {{CNPJ_DEV}}
+
+OBJETO
+O presente contrato tem por objeto o desenvolvimento de {{TIPO_SOFTWARE}} conforme especificações descritas abaixo.
+
+ESPECIFICAÇÕES DO PROJETO
+{{ESPECIFICACOES_PROJETO}}
+- Tecnologias: {{TECNOLOGIAS}}
+- Prazo de desenvolvimento: {{PRAZO_DESENVOLVIMENTO}}
+- Fases de entrega: {{FASES_ENTREGA}}
+
+ENTREGÁVEIS
+{{ENTREGAVEIS}}
+- Suporte pós-lançamento: {{PERIODO_SUPORTE}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor total do projeto é de R$ {{VALOR_TOTAL_SOFT}}, sendo:
+- Entrada: R$ {{VALOR_ENTRADA_SOFT}}
+- Parcelas: {{CONDICAO_PAGAMENTO_SOFT}}
+
+PROPRIEDADE INTELECTUAL
+{{DIREITOS_PROPRIEDADE}}
+
+{{CIDADE_SOFT}}, {{DATA_CONTRATO_SOFT}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_SOFT}}                     {{NOME_DEV}}',
+    '[{"name": "NOME_CLIENTE_SOFT", "label": "Nome do Cliente/Empresa", "type": "text", "required": true}, {"name": "NOME_DEV", "label": "Nome do Desenvolvedor/Empresa", "type": "text", "required": true}, {"name": "TIPO_SOFTWARE", "label": "Tipo de Software (Aplicativo, Sistema Web, etc.)", "type": "text", "required": true}, {"name": "ESPECIFICACOES_PROJETO", "label": "Especificações do Projeto", "type": "textarea", "required": true}, {"name": "TECNOLOGIAS", "label": "Tecnologias Utilizadas", "type": "text", "required": true}, {"name": "PRAZO_DESENVOLVIMENTO", "label": "Prazo de Desenvolvimento", "type": "text", "required": true}, {"name": "ENTREGAVEIS", "label": "Entregáveis", "type": "textarea", "required": true}, {"name": "VALOR_TOTAL_SOFT", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "VALOR_ENTRADA_SOFT", "label": "Valor da Entrada (R$)", "type": "text", "required": true}, {"name": "CONDICAO_PAGAMENTO_SOFT", "label": "Condição de Pagamento", "type": "text", "required": true}, {"name": "CIDADE_SOFT", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_SOFT", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Desenvolvimento de Software');
+
+-- Template 18: Arquitetura e Projetos
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Arquitetura e Projetos',
+    'Arquitetura',
+    'Contrato para serviços de arquitetura, projetos arquitetônicos e execução',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - ARQUITETURA
+
+CONTRATANTE: {{NOME_CLIENTE_ARQ}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_ARQ}}
+Endereço: {{ENDERECO_CLIENTE_ARQ}}
+
+ARQUITETO: {{NOME_ARQUITETO}}
+CAU: {{CAU_ARQUITETO}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de arquitetura para {{TIPO_PROJETO_ARQ}} no endereço {{ENDERECO_OBRA}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_ARQ}}
+- Área total: {{AREA_TOTAL}}
+- Número de pavimentos: {{NUMERO_PAVIMENTOS}}
+- Prazo de entrega do projeto: {{PRAZO_ENTREGA_PROJETO}}
+
+ETAPAS DO PROJETO
+{{ETAPAS_PROJETO}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor total dos serviços é de R$ {{VALOR_TOTAL_ARQ}}, sendo:
+- Projeto arquitetônico: R$ {{VALOR_PROJETO}}
+- Acompanhamento de obra: R$ {{VALOR_ACOMPANHAMENTO}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_ARQ}}
+
+{{CIDADE_ARQ}}, {{DATA_CONTRATO_ARQ}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_ARQ}}                     {{NOME_ARQUITETO}}',
+    '[{"name": "NOME_CLIENTE_ARQ", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_ARQUITETO", "label": "Nome do Arquiteto", "type": "text", "required": true}, {"name": "TIPO_PROJETO_ARQ", "label": "Tipo de Projeto (Residencial, Comercial, etc.)", "type": "text", "required": true}, {"name": "ENDERECO_OBRA", "label": "Endereço da Obra", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_ARQ", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "ETAPAS_PROJETO", "label": "Etapas do Projeto", "type": "textarea", "required": true}, {"name": "VALOR_TOTAL_ARQ", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "VALOR_PROJETO", "label": "Valor do Projeto (R$)", "type": "text", "required": true}, {"name": "VALOR_ACOMPANHAMENTO", "label": "Valor do Acompanhamento (R$)", "type": "text", "required": false}, {"name": "FORMA_PAGAMENTO_ARQ", "label": "Forma de Pagamento", "type": "text", "required": true}, {"name": "CIDADE_ARQ", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_ARQ", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Arquitetura e Projetos');
+
 -- ============================================
 -- 7. TRIGGERS: Atualizar updated_at automaticamente
 -- ============================================
