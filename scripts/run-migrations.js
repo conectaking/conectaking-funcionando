@@ -10,41 +10,46 @@ const path = require('path');
 const config = require('../config');
 
 // Detectar se deve usar SSL baseado no host
-// Se for localhost ou 127.0.0.1, não usar SSL
-// Para migrações, vamos desabilitar SSL por padrão para evitar problemas
+// Render.com e outros serviços em nuvem REQUEREM SSL
+// Localhost não precisa de SSL
 const isLocalhost = config.db.host === 'localhost' || 
                     config.db.host === '127.0.0.1' || 
                     config.db.host?.includes('localhost') ||
                     config.db.host === '::1' ||
-                    !config.db.host ||
-                    process.env.DB_DISABLE_SSL === 'true';
+                    !config.db.host;
 
-// Por padrão, SEMPRE desabilitar SSL para migrations (evitar problemas de conexão)
-// Forçar desabilitado a menos que explicitamente habilitado via variável de ambiente
-const useSSL = process.env.DB_USE_SSL === 'true' && !isLocalhost && process.env.DB_HOST?.includes('render');
+// Render.com e outros serviços em nuvem REQUEREM SSL
+const isCloudDatabase = config.db.host?.includes('render.com') || 
+                        config.db.host?.includes('amazonaws.com') ||
+                        config.db.host?.includes('azure.com') ||
+                        config.db.host?.includes('googleapis.com') ||
+                        process.env.DB_REQUIRE_SSL === 'true';
+
+// Usar SSL se for banco em nuvem OU se explicitamente solicitado
+const useSSL = isCloudDatabase || (process.env.DB_USE_SSL === 'true' && !isLocalhost);
 
 console.log(`🔌 Conectando ao banco: ${config.db.host}:${config.db.port}`);
-console.log(`   SSL: ${useSSL ? 'habilitado' : 'DESABILITADO (forçado)'}`);
 console.log(`   isLocalhost: ${isLocalhost}`);
+console.log(`   isCloudDatabase: ${isCloudDatabase}`);
+console.log(`   SSL: ${useSSL ? 'HABILITADO (requerido)' : 'DESABILITADO'}`);
 
-// Usar a mesma configuração do db.js, mas FORÇAR SSL=false para migrations
-// IMPORTANTE: Para migrations, sempre usar SSL=false a menos que explicitamente solicitado
+// Configuração do pool
 const poolConfig = {
     user: config.db.user,
     host: config.db.host,
     database: config.db.database,
     password: config.db.password,
-    port: parseInt(config.db.port, 10),
-    // FORÇAR SSL=false para evitar problemas de conexão
-    ssl: false
+    port: parseInt(config.db.port, 10)
 };
 
-// Só usar SSL se explicitamente solicitado E se não for localhost
-if (useSSL && config.db.ssl) {
-    console.log('   ⚠️  Usando SSL conforme solicitado');
-    poolConfig.ssl = config.db.ssl;
+// Configurar SSL baseado no tipo de banco
+if (useSSL) {
+    // Usar configuração SSL do config (rejectUnauthorized: false para Render.com)
+    poolConfig.ssl = config.db.ssl || { rejectUnauthorized: false };
+    console.log('   ✅ SSL habilitado para conexão segura');
 } else {
-    console.log('   ✅ SSL desabilitado para migrations');
+    poolConfig.ssl = false;
+    console.log('   ✅ SSL desabilitado (localhost)');
 }
 
 const pool = new Pool(poolConfig);
