@@ -1597,6 +1597,599 @@ _________________________          _________________________
 WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Serviços de TI e Suporte Técnico');
 
 -- ============================================
+-- TEMPLATES ADICIONAIS - FOTOGRAFIA
+-- ============================================
+
+-- Template 37: Fotografia de Produtos
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Fotografia de Produtos',
+    'Fotografia',
+    'Contrato para serviços de fotografia de produtos, e-commerce e catálogos',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - FOTOGRAFIA DE PRODUTOS
+
+CONTRATANTE: {{NOME_CLIENTE_PROD}}
+CNPJ: {{CNPJ_CLIENTE_PROD}}
+Email: {{EMAIL_CLIENTE_PROD}}
+
+FOTÓGRAFO: {{NOME_FOTOGRAFO_PROD}}
+CPF/CNPJ: {{CPF_CNPJ_FOTOGRAFO_PROD}}
+Portfólio: {{PORTFOLIO_FOTOGRAFO_PROD}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços fotográficos para {{TIPO_FOTOGRAFIA_PROD}}.
+
+PRODUTOS/SERVIÇOS
+{{DESCRICAO_PRODUTOS}}
+- Quantidade de produtos: {{QUANTIDADE_PRODUTOS}}
+- Estilo fotográfico: {{ESTILO_FOTOGRAFIA}}
+- Fundo/cenário: {{FUNDO_CENARIO}}
+
+ENTREGAS
+- Quantidade de fotos por produto: {{FOTOS_POR_PRODUTO}}
+- Formato de entrega: {{FORMATO_ENTREGA_PROD}}
+- Prazo de entrega: {{PRAZO_ENTREGA_PROD}}
+- Revisões incluídas: {{NUMERO_REVISOES}}
+
+VALOR E FORMA DE PAGAMENTO
+Valor total: R$ {{VALOR_TOTAL_PROD}}
+- Entrada: R$ {{VALOR_ENTRADA_PROD}}
+- Saldo: R$ {{VALOR_SALDO_PROD}} até {{DATA_PAGAMENTO_SALDO_PROD}}
+
+DIREITOS AUTORAIS E USO
+{{TERMOS_USO_IMAGENS}}
+
+{{CIDADE_PROD}}, {{DATA_CONTRATO_PROD}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_PROD}}                     {{NOME_FOTOGRAFO_PROD}}',
+    '[{"name": "NOME_CLIENTE_PROD", "label": "Nome do Cliente/Empresa", "type": "text", "required": true}, {"name": "NOME_FOTOGRAFO_PROD", "label": "Nome do Fotógrafo", "type": "text", "required": true}, {"name": "TIPO_FOTOGRAFIA_PROD", "label": "Tipo de Fotografia (E-commerce, Catálogo, etc.)", "type": "text", "required": true}, {"name": "DESCRICAO_PRODUTOS", "label": "Descrição dos Produtos", "type": "textarea", "required": true}, {"name": "QUANTIDADE_PRODUTOS", "label": "Quantidade de Produtos", "type": "text", "required": true}, {"name": "FOTOS_POR_PRODUTO", "label": "Fotos por Produto", "type": "text", "required": true}, {"name": "VALOR_TOTAL_PROD", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "VALOR_ENTRADA_PROD", "label": "Valor da Entrada (R$)", "type": "text", "required": true}, {"name": "CIDADE_PROD", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_PROD", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Fotografia de Produtos');
+
+-- Template 38: Fotografia Corporativa
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Fotografia Corporativa',
+    'Fotografia',
+    'Contrato para serviços de fotografia corporativa, headshots e eventos empresariais',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - FOTOGRAFIA CORPORATIVA
+
+CONTRATANTE: {{NOME_EMPRESA_CORP}}
+CNPJ: {{CNPJ_EMPRESA_CORP}}
+Contato: {{NOME_CONTATO_CORP}}
+Email: {{EMAIL_CONTATO_CORP}}
+
+FOTÓGRAFO: {{NOME_FOTOGRAFO_CORP}}
+CPF/CNPJ: {{CPF_CNPJ_FOTOGRAFO_CORP}}
+
+OBJETO
+Contratação de serviços fotográficos para {{TIPO_SERVICO_CORP}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_CORP}}
+- Tipo de sessão: {{TIPO_SESSAO_CORP}}
+- Local: {{LOCAL_SESSAO_CORP}}
+- Data e horário: {{DATA_HORA_SESSAO_CORP}}
+- Número de pessoas: {{NUMERO_PESSOAS_CORP}}
+
+ENTREGAS
+- Quantidade de fotos: {{QUANTIDADE_FOTOS_CORP}}
+- Formato: {{FORMATO_ENTREGA_CORP}}
+- Prazo: {{PRAZO_ENTREGA_CORP}}
+- Tratamento/edição: {{TRATAMENTO_EDICAO}}
+
+VALOR E FORMA DE PAGAMENTO
+Valor total: R$ {{VALOR_TOTAL_CORP}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_CORP}}
+- Vencimento: {{DATA_VENCIMENTO_CORP}}
+
+USO DAS IMAGENS
+{{TERMOS_USO_CORPORATIVO}}
+
+{{CIDADE_CORP}}, {{DATA_CONTRATO_CORP}}.
+
+_________________________          _________________________
+{{NOME_CONTATO_CORP}}                     {{NOME_FOTOGRAFO_CORP}}',
+    '[{"name": "NOME_EMPRESA_CORP", "label": "Nome da Empresa", "type": "text", "required": true}, {"name": "NOME_FOTOGRAFO_CORP", "label": "Nome do Fotógrafo", "type": "text", "required": true}, {"name": "TIPO_SERVICO_CORP", "label": "Tipo de Serviço (Headshots, Evento, etc.)", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_CORP", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "DATA_HORA_SESSAO_CORP", "label": "Data e Horário da Sessão", "type": "text", "required": true}, {"name": "QUANTIDADE_FOTOS_CORP", "label": "Quantidade de Fotos", "type": "text", "required": true}, {"name": "VALOR_TOTAL_CORP", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "CIDADE_CORP", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_CORP", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Fotografia Corporativa');
+
+-- Template 39: Fotografia de Moda
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Fotografia de Moda',
+    'Fotografia',
+    'Contrato para serviços de fotografia de moda, editoriais e lookbooks',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - FOTOGRAFIA DE MODA
+
+CONTRATANTE: {{NOME_CLIENTE_MODA}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_MODA}}
+Marca/Agência: {{MARCA_AGENCIA_MODA}}
+
+FOTÓGRAFO: {{NOME_FOTOGRAFO_MODA}}
+CPF/CNPJ: {{CPF_CNPJ_FOTOGRAFO_MODA}}
+
+OBJETO
+Contratação de serviços fotográficos para {{TIPO_TRABALHO_MODA}}.
+
+PRODUÇÃO
+{{DESCRICAO_PRODUCAO_MODA}}
+- Estilo: {{ESTILO_FOTOGRAFIA_MODA}}
+- Local: {{LOCAL_PRODUCAO_MODA}}
+- Data: {{DATA_PRODUCAO_MODA}}
+- Equipe: {{EQUIPE_PRODUCAO_MODA}}
+
+ENTREGAS
+- Quantidade de looks: {{QUANTIDADE_LOOKS}}
+- Fotos por look: {{FOTOS_POR_LOOK}}
+- Formato: {{FORMATO_ENTREGA_MODA}}
+- Prazo: {{PRAZO_ENTREGA_MODA}}
+- Edição: {{NIVEL_EDICAO}}
+
+VALOR E FORMA DE PAGAMENTO
+Valor total: R$ {{VALOR_TOTAL_MODA}}
+- Entrada: R$ {{VALOR_ENTRADA_MODA}}
+- Saldo: R$ {{VALOR_SALDO_MODA}}
+
+DIREITOS AUTORAIS
+{{TERMOS_AUTORIA_MODA}}
+
+{{CIDADE_MODA}}, {{DATA_CONTRATO_MODA}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_MODA}}                     {{NOME_FOTOGRAFO_MODA}}',
+    '[{"name": "NOME_CLIENTE_MODA", "label": "Nome do Cliente/Marca", "type": "text", "required": true}, {"name": "NOME_FOTOGRAFO_MODA", "label": "Nome do Fotógrafo", "type": "text", "required": true}, {"name": "TIPO_TRABALHO_MODA", "label": "Tipo de Trabalho (Editorial, Lookbook, etc.)", "type": "text", "required": true}, {"name": "DESCRICAO_PRODUCAO_MODA", "label": "Descrição da Produção", "type": "textarea", "required": true}, {"name": "DATA_PRODUCAO_MODA", "label": "Data da Produção", "type": "date", "required": true}, {"name": "QUANTIDADE_LOOKS", "label": "Quantidade de Looks", "type": "text", "required": true}, {"name": "VALOR_TOTAL_MODA", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "CIDADE_MODA", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_MODA", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Fotografia de Moda');
+
+-- ============================================
+-- TEMPLATES ADICIONAIS - VIDEOMAKING
+-- ============================================
+
+-- Template 40: Vídeo Institucional
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Vídeo Institucional',
+    'Videomaking',
+    'Contrato para produção de vídeo institucional para empresas',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - VÍDEO INSTITUCIONAL
+
+CONTRATANTE: {{NOME_EMPRESA_VID_INST}}
+CNPJ: {{CNPJ_EMPRESA_VID_INST}}
+Contato: {{NOME_CONTATO_VID_INST}}
+
+PRODUTORA: {{NOME_PRODUTORA_VID_INST}}
+CNPJ: {{CNPJ_PRODUTORA_VID_INST}}
+
+OBJETO
+Produção de vídeo institucional para {{OBJETIVO_VIDEO_INST}}.
+
+PRODUTO FINAL
+- Duração: {{DURACAO_VIDEO_INST}}
+- Formato: {{FORMATO_VIDEO_INST}}
+- Idioma: {{IDIOMA_VIDEO_INST}}
+- Legendas: {{LEGENDAS_VIDEO_INST}}
+
+PRODUÇÃO
+{{DESCRICAO_PRODUCAO_VID_INST}}
+- Locais de gravação: {{LOCAIS_GRAVACAO}}
+- Equipe técnica: {{EQUIPE_TECNICA}}
+- Datas de gravação: {{DATAS_GRAVACAO}}
+
+CRONOGRAMA
+{{CRONOGRAMA_PRODUCAO_VID_INST}}
+- Pré-produção: {{PRAZO_PRE_PRODUCAO}}
+- Gravação: {{PRAZO_GRAVACAO}}
+- Pós-produção: {{PRAZO_POS_PRODUCAO}}
+- Entrega final: {{DATA_ENTREGA_FINAL}}
+
+VALOR E FORMA DE PAGAMENTO
+Valor total: R$ {{VALOR_TOTAL_VID_INST}}
+- Entrada: R$ {{VALOR_ENTRADA_VID_INST}}
+- Durante produção: R$ {{VALOR_PRODUCAO_VID_INST}}
+- Finalização: R$ {{VALOR_FINALIZACAO_VID_INST}}
+
+REVISÕES E ALTERAÇÕES
+{{NUMERO_REVISOES_VID_INST}} revisões incluídas. Alterações adicionais: {{VALOR_REVISAO_EXTRA}}.
+
+{{CIDADE_VID_INST}}, {{DATA_CONTRATO_VID_INST}}.
+
+_________________________          _________________________
+{{NOME_CONTATO_VID_INST}}                     {{NOME_PRODUTORA_VID_INST}}',
+    '[{"name": "NOME_EMPRESA_VID_INST", "label": "Nome da Empresa", "type": "text", "required": true}, {"name": "NOME_PRODUTORA_VID_INST", "label": "Nome da Produtora", "type": "text", "required": true}, {"name": "OBJETIVO_VIDEO_INST", "label": "Objetivo do Vídeo", "type": "text", "required": true}, {"name": "DESCRICAO_PRODUCAO_VID_INST", "label": "Descrição da Produção", "type": "textarea", "required": true}, {"name": "DURACAO_VIDEO_INST", "label": "Duração do Vídeo", "type": "text", "required": true}, {"name": "VALOR_TOTAL_VID_INST", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "CIDADE_VID_INST", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_VID_INST", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Vídeo Institucional');
+
+-- Template 41: Vídeo para Redes Sociais
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Vídeo para Redes Sociais',
+    'Videomaking',
+    'Contrato para produção de vídeos para Instagram, TikTok, YouTube e outras redes sociais',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - VÍDEO PARA REDES SOCIAIS
+
+CONTRATANTE: {{NOME_CLIENTE_REDES}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_REDES}}
+Instagram: {{INSTAGRAM_CLIENTE_REDES}}
+
+VIDEOMAKER: {{NOME_VIDEOMAKER_REDES}}
+CPF/CNPJ: {{CPF_CNPJ_VIDEOMAKER_REDES}}
+
+OBJETO
+Produção de conteúdo audiovisual para {{REDES_SOCIAIS_DESTINO}}.
+
+CONTEÚDO
+{{DESCRICAO_CONTEUDO_REDES}}
+- Tipo de vídeo: {{TIPO_VIDEO_REDES}}
+- Quantidade de vídeos: {{QUANTIDADE_VIDEOS_REDES}}
+- Duração por vídeo: {{DURACAO_VIDEO_REDES}}
+- Formato: {{FORMATO_VIDEO_REDES}}
+
+ENTREGAS
+- Vídeos editados: {{VIDEOS_EDITADOS}}
+- Versões para stories/reels: {{VERSOES_STORIES}}
+- Prazo de entrega: {{PRAZO_ENTREGA_REDES}}
+- Revisões: {{NUMERO_REVISOES_REDES}}
+
+VALOR E FORMA DE PAGAMENTO
+Valor total: R$ {{VALOR_TOTAL_REDES}}
+- Valor por vídeo: R$ {{VALOR_POR_VIDEO_REDES}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_REDES}}
+
+CRÉDITOS E USO
+{{TERMOS_CREDITOS_REDES}}
+
+{{CIDADE_REDES}}, {{DATA_CONTRATO_REDES}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_REDES}}                     {{NOME_VIDEOMAKER_REDES}}',
+    '[{"name": "NOME_CLIENTE_REDES", "label": "Nome do Cliente/Influencer", "type": "text", "required": true}, {"name": "NOME_VIDEOMAKER_REDES", "label": "Nome do Videomaker", "type": "text", "required": true}, {"name": "REDES_SOCIAIS_DESTINO", "label": "Redes Sociais (Instagram, TikTok, YouTube)", "type": "text", "required": true}, {"name": "DESCRICAO_CONTEUDO_REDES", "label": "Descrição do Conteúdo", "type": "textarea", "required": true}, {"name": "QUANTIDADE_VIDEOS_REDES", "label": "Quantidade de Vídeos", "type": "text", "required": true}, {"name": "VALOR_TOTAL_REDES", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "CIDADE_REDES", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_REDES", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Vídeo para Redes Sociais');
+
+-- Template 42: Documentário
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Documentário',
+    'Videomaking',
+    'Contrato para produção de documentários e vídeos documentais',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - DOCUMENTÁRIO
+
+CONTRATANTE: {{NOME_CLIENTE_DOC}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_DOC}}
+Instituição: {{INSTITUICAO_DOC}}
+
+PRODUTORA: {{NOME_PRODUTORA_DOC}}
+CNPJ: {{CNPJ_PRODUTORA_DOC}}
+
+OBJETO
+Produção de documentário sobre {{TEMA_DOCUMENTARIO}}.
+
+PRODUTO FINAL
+- Duração: {{DURACAO_DOCUMENTARIO}}
+- Formato: {{FORMATO_DOCUMENTARIO}}
+- Idioma: {{IDIOMA_DOCUMENTARIO}}
+- Legendas: {{LEGENDAS_DOCUMENTARIO}}
+
+PRODUÇÃO
+{{DESCRICAO_PRODUCAO_DOC}}
+- Locais de filmagem: {{LOCAIS_FILMAGEM}}
+- Entrevistas: {{NUMERO_ENTREVISTAS}}
+- Equipe: {{EQUIPE_DOCUMENTARIO}}
+- Período de produção: {{PERIODO_PRODUCAO_DOC}}
+
+CRONOGRAMA
+{{CRONOGRAMA_DOCUMENTARIO}}
+- Pesquisa e roteiro: {{PRAZO_PESQUISA}}
+- Filmagens: {{PRAZO_FILMAGENS}}
+- Edição: {{PRAZO_EDICAO_DOC}}
+- Entrega: {{DATA_ENTREGA_DOC}}
+
+VALOR E FORMA DE PAGAMENTO
+Valor total: R$ {{VALOR_TOTAL_DOC}}
+- Entrada: R$ {{VALOR_ENTRADA_DOC}}
+- Durante produção: R$ {{VALOR_PRODUCAO_DOC}}
+- Finalização: R$ {{VALOR_FINALIZACAO_DOC}}
+
+DIREITOS AUTORAIS
+{{TERMOS_AUTORIA_DOC}}
+
+{{CIDADE_DOC}}, {{DATA_CONTRATO_DOC}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_DOC}}                     {{NOME_PRODUTORA_DOC}}',
+    '[{"name": "NOME_CLIENTE_DOC", "label": "Nome do Cliente/Instituição", "type": "text", "required": true}, {"name": "NOME_PRODUTORA_DOC", "label": "Nome da Produtora", "type": "text", "required": true}, {"name": "TEMA_DOCUMENTARIO", "label": "Tema do Documentário", "type": "text", "required": true}, {"name": "DESCRICAO_PRODUCAO_DOC", "label": "Descrição da Produção", "type": "textarea", "required": true}, {"name": "DURACAO_DOCUMENTARIO", "label": "Duração do Documentário", "type": "text", "required": true}, {"name": "VALOR_TOTAL_DOC", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "CIDADE_DOC", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_DOC", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Documentário');
+
+-- ============================================
+-- TEMPLATES ADICIONAIS - MARKETING
+-- ============================================
+
+-- Template 43: Gestão de Redes Sociais
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Gestão de Redes Sociais',
+    'Marketing',
+    'Contrato para gestão completa de redes sociais e criação de conteúdo',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - GESTÃO DE REDES SOCIAIS
+
+CONTRATANTE: {{NOME_CLIENTE_GESTAO}}
+CNPJ: {{CNPJ_CLIENTE_GESTAO}}
+Marca: {{MARCA_GESTAO}}
+
+AGÊNCIA/PROFISSIONAL: {{NOME_AGENCIA_GESTAO}}
+CNPJ/CPF: {{CNPJ_CPF_AGENCIA_GESTAO}}
+
+OBJETO
+Gestão de redes sociais e criação de conteúdo para {{REDES_SOCIAIS_GESTAO}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_GESTAO}}
+- Publicações por semana: {{PUBLICACOES_SEMANA}}
+- Stories por semana: {{STORIES_SEMANA}}
+- Reels/Vídeos: {{REELS_VIDEOS}}
+- Interação e respostas: {{INTERACAO_REDES}}
+- Relatórios mensais: {{RELATORIOS_MENSAIS}}
+
+CONTEÚDO
+- Criação de artes: {{CRIACAO_ARTES}}
+- Textos e copywriting: {{COPYWRITING}}
+- Hashtags estratégicas: {{HASHTAGS}}
+- Planejamento de conteúdo: {{PLANEJAMENTO}}
+
+PERÍODO
+De {{DATA_INICIO_GESTAO}} até {{DATA_TERMINO_GESTAO}}.
+
+VALOR E FORMA DE PAGAMENTO
+Valor mensal: R$ {{VALOR_MENSAL_GESTAO}}
+Valor total: R$ {{VALOR_TOTAL_GESTAO}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_GESTAO}}
+- Vencimento: {{DATA_VENCIMENTO_GESTAO}}
+
+MÉTRICAS E RESULTADOS
+{{METRICAS_ESPERADAS}}
+
+{{CIDADE_GESTAO}}, {{DATA_CONTRATO_GESTAO}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_GESTAO}}                     {{NOME_AGENCIA_GESTAO}}',
+    '[{"name": "NOME_CLIENTE_GESTAO", "label": "Nome do Cliente/Empresa", "type": "text", "required": true}, {"name": "NOME_AGENCIA_GESTAO", "label": "Nome da Agência/Profissional", "type": "text", "required": true}, {"name": "REDES_SOCIAIS_GESTAO", "label": "Redes Sociais (Instagram, Facebook, etc.)", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_GESTAO", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "VALOR_MENSAL_GESTAO", "label": "Valor Mensal (R$)", "type": "text", "required": true}, {"name": "DATA_INICIO_GESTAO", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_GESTAO", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_GESTAO", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_GESTAO", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Gestão de Redes Sociais');
+
+-- Template 44: Criação de Conteúdo para Marketing
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Criação de Conteúdo para Marketing',
+    'Marketing',
+    'Contrato para criação de conteúdo, textos e materiais de marketing',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - CRIAÇÃO DE CONTEÚDO
+
+CONTRATANTE: {{NOME_CLIENTE_CONTEUDO}}
+CNPJ: {{CNPJ_CLIENTE_CONTEUDO}}
+
+CRIADOR DE CONTEÚDO: {{NOME_CRIADOR_CONTEUDO}}
+CPF/CNPJ: {{CPF_CNPJ_CRIADOR_CONTEUDO}}
+
+OBJETO
+Criação de conteúdo para {{TIPO_CONTEUDO_MARKETING}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_CONTEUDO}}
+- Tipo de conteúdo: {{TIPOS_CONTEUDO}}
+- Quantidade: {{QUANTIDADE_CONTEUDO}}
+- Formato: {{FORMATO_CONTEUDO}}
+- Prazo: {{PRAZO_ENTREGA_CONTEUDO}}
+
+CONTEÚDO
+- Textos: {{TEXTOS_INCLUSOS}}
+- Artes/Designs: {{ARTES_INCLUSAS}}
+- Vídeos: {{VIDEOS_INCLUSOS}}
+- Revisões: {{NUMERO_REVISOES_CONTEUDO}}
+
+VALOR E FORMA DE PAGAMENTO
+Valor total: R$ {{VALOR_TOTAL_CONTEUDO}}
+- Valor por peça: R$ {{VALOR_POR_PECA}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_CONTEUDO}}
+
+DIREITOS AUTORAIS
+{{TERMOS_AUTORIA_CONTEUDO}}
+
+{{CIDADE_CONTEUDO}}, {{DATA_CONTRATO_CONTEUDO}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_CONTEUDO}}                     {{NOME_CRIADOR_CONTEUDO}}',
+    '[{"name": "NOME_CLIENTE_CONTEUDO", "label": "Nome do Cliente/Empresa", "type": "text", "required": true}, {"name": "NOME_CRIADOR_CONTEUDO", "label": "Nome do Criador de Conteúdo", "type": "text", "required": true}, {"name": "TIPO_CONTEUDO_MARKETING", "label": "Tipo de Conteúdo", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_CONTEUDO", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "QUANTIDADE_CONTEUDO", "label": "Quantidade de Peças", "type": "text", "required": true}, {"name": "VALOR_TOTAL_CONTEUDO", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "CIDADE_CONTEUDO", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_CONTEUDO", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Criação de Conteúdo para Marketing');
+
+-- Template 45: Email Marketing
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Email Marketing',
+    'Marketing',
+    'Contrato para criação e gestão de campanhas de email marketing',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - EMAIL MARKETING
+
+CONTRATANTE: {{NOME_CLIENTE_EMAIL}}
+CNPJ: {{CNPJ_CLIENTE_EMAIL}}
+
+AGÊNCIA/PROFISSIONAL: {{NOME_AGENCIA_EMAIL}}
+CNPJ/CPF: {{CNPJ_CPF_AGENCIA_EMAIL}}
+
+OBJETO
+Criação e gestão de campanhas de email marketing para {{OBJETIVO_EMAIL_MARKETING}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_EMAIL}}
+- Criação de templates: {{TEMPLATES_EMAIL}}
+- Campanhas por mês: {{CAMPANHAS_MES}}
+- Segmentação: {{SEGMENTACAO_EMAIL}}
+- Automação: {{AUTOMACAO_EMAIL}}
+- Relatórios: {{RELATORIOS_EMAIL}}
+
+CONTEÚDO
+- Textos e copywriting: {{COPYWRITING_EMAIL}}
+- Design dos emails: {{DESIGN_EMAIL}}
+- Testes A/B: {{TESTES_AB}}
+
+PERÍODO
+De {{DATA_INICIO_EMAIL}} até {{DATA_TERMINO_EMAIL}}.
+
+VALOR E FORMA DE PAGAMENTO
+Valor mensal: R$ {{VALOR_MENSAL_EMAIL}}
+Valor total: R$ {{VALOR_TOTAL_EMAIL}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_EMAIL}}
+
+MÉTRICAS
+{{METRICAS_EMAIL_MARKETING}}
+
+{{CIDADE_EMAIL}}, {{DATA_CONTRATO_EMAIL}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_EMAIL}}                     {{NOME_AGENCIA_EMAIL}}',
+    '[{"name": "NOME_CLIENTE_EMAIL", "label": "Nome do Cliente/Empresa", "type": "text", "required": true}, {"name": "NOME_AGENCIA_EMAIL", "label": "Nome da Agência/Profissional", "type": "text", "required": true}, {"name": "OBJETIVO_EMAIL_MARKETING", "label": "Objetivo do Email Marketing", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_EMAIL", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "VALOR_MENSAL_EMAIL", "label": "Valor Mensal (R$)", "type": "text", "required": true}, {"name": "DATA_INICIO_EMAIL", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_EMAIL", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_EMAIL", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_EMAIL", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Email Marketing');
+
+-- ============================================
+-- TEMPLATES ADICIONAIS - MENTORIAS
+-- ============================================
+
+-- Template 46: Mentoria Individual
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Mentoria Individual',
+    'Mentorias',
+    'Contrato para sessões individuais de mentoria e coaching',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - MENTORIA INDIVIDUAL
+
+MENTORADO: {{NOME_MENTORADO}}
+CPF: {{CPF_MENTORADO}}
+Email: {{EMAIL_MENTORADO}}
+Área de interesse: {{AREA_INTERESSE_MENTORADO}}
+
+MENTOR: {{NOME_MENTOR}}
+CPF/CNPJ: {{CPF_CNPJ_MENTOR}}
+Especialização: {{ESPECIALIZACAO_MENTOR}}
+
+OBJETO
+Prestação de serviços de mentoria individual na área de {{AREA_MENTORIA}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_MENTORIA}}
+- Sessões individuais: {{NUMERO_SESSOES}}
+- Duração por sessão: {{DURACAO_SESSAO}}
+- Modalidade: {{MODALIDADE_MENTORIA}}
+- Materiais inclusos: {{MATERIAIS_INCLUSOS}}
+
+PERÍODO
+De {{DATA_INICIO_MENTORIA}} até {{DATA_TERMINO_MENTORIA}}.
+
+VALOR E FORMA DE PAGAMENTO
+Valor total: R$ {{VALOR_TOTAL_MENTORIA}}
+- Valor por sessão: R$ {{VALOR_POR_SESSAO}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_MENTORIA}}
+- Vencimento: {{DATA_VENCIMENTO_MENTORIA}}
+
+COMPROMISSOS
+{{COMPROMISSOS_MENTORADO}}
+{{COMPROMISSOS_MENTOR}}
+
+CONFIDENCIALIDADE
+{{TERMOS_CONFIDENCIALIDADE}}
+
+{{CIDADE_MENTORIA}}, {{DATA_CONTRATO_MENTORIA}}.
+
+_________________________          _________________________
+{{NOME_MENTORADO}}                     {{NOME_MENTOR}}',
+    '[{"name": "NOME_MENTORADO", "label": "Nome do Mentorado", "type": "text", "required": true}, {"name": "NOME_MENTOR", "label": "Nome do Mentor", "type": "text", "required": true}, {"name": "AREA_MENTORIA", "label": "Área de Mentoria", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_MENTORIA", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "NUMERO_SESSOES", "label": "Número de Sessões", "type": "text", "required": true}, {"name": "VALOR_TOTAL_MENTORIA", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "DATA_INICIO_MENTORIA", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_MENTORIA", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_MENTORIA", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_MENTORIA", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Mentoria Individual');
+
+-- Template 47: Mentoria em Grupo
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Mentoria em Grupo',
+    'Mentorias',
+    'Contrato para programas de mentoria em grupo e workshops',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - MENTORIA EM GRUPO
+
+MENTORADOS: {{NOME_GRUPO_MENTORIA}}
+Número de participantes: {{NUMERO_PARTICIPANTES}}
+
+MENTOR: {{NOME_MENTOR_GRUPO}}
+CPF/CNPJ: {{CPF_CNPJ_MENTOR_GRUPO}}
+Especialização: {{ESPECIALIZACAO_MENTOR_GRUPO}}
+
+OBJETO
+Prestação de serviços de mentoria em grupo na área de {{AREA_MENTORIA_GRUPO}}.
+
+PROGRAMA
+{{DESCRICAO_PROGRAMA_MENTORIA}}
+- Número de encontros: {{NUMERO_ENCONTROS}}
+- Duração por encontro: {{DURACAO_ENCONTRO}}
+- Modalidade: {{MODALIDADE_MENTORIA_GRUPO}}
+- Materiais inclusos: {{MATERIAIS_INCLUSOS_GRUPO}}
+
+PERÍODO
+De {{DATA_INICIO_MENTORIA_GRUPO}} até {{DATA_TERMINO_MENTORIA_GRUPO}}.
+
+VALOR E FORMA DE PAGAMENTO
+Valor total do programa: R$ {{VALOR_TOTAL_MENTORIA_GRUPO}}
+- Valor por participante: R$ {{VALOR_POR_PARTICIPANTE}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_MENTORIA_GRUPO}}
+
+ESTRUTURA DO PROGRAMA
+{{ESTRUTURA_PROGRAMA_MENTORIA}}
+
+{{CIDADE_MENTORIA_GRUPO}}, {{DATA_CONTRATO_MENTORIA_GRUPO}}.
+
+_________________________          _________________________
+{{NOME_REPRESENTANTE_GRUPO}}                     {{NOME_MENTOR_GRUPO}}',
+    '[{"name": "NOME_GRUPO_MENTORIA", "label": "Nome do Grupo/Programa", "type": "text", "required": true}, {"name": "NOME_MENTOR_GRUPO", "label": "Nome do Mentor", "type": "text", "required": true}, {"name": "AREA_MENTORIA_GRUPO", "label": "Área de Mentoria", "type": "text", "required": true}, {"name": "DESCRICAO_PROGRAMA_MENTORIA", "label": "Descrição do Programa", "type": "textarea", "required": true}, {"name": "NUMERO_ENCONTROS", "label": "Número de Encontros", "type": "text", "required": true}, {"name": "VALOR_TOTAL_MENTORIA_GRUPO", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "DATA_INICIO_MENTORIA_GRUPO", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_MENTORIA_GRUPO", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_MENTORIA_GRUPO", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_MENTORIA_GRUPO", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Mentoria em Grupo');
+
+-- Template 48: Mentoria Empresarial
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Mentoria Empresarial',
+    'Mentorias',
+    'Contrato para programas de mentoria empresarial e consultoria estratégica',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - MENTORIA EMPRESARIAL
+
+CONTRATANTE: {{NOME_EMPRESA_MENTORIA_EMP}}
+CNPJ: {{CNPJ_EMPRESA_MENTORIA_EMP}}
+Contato: {{NOME_CONTATO_MENTORIA_EMP}}
+
+MENTOR/CONSULTOR: {{NOME_MENTOR_EMP}}
+CNPJ/CPF: {{CNPJ_CPF_MENTOR_EMP}}
+Especialização: {{ESPECIALIZACAO_MENTOR_EMP}}
+
+OBJETO
+Prestação de serviços de mentoria empresarial para {{OBJETIVO_MENTORIA_EMP}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_MENTORIA_EMP}}
+- Sessões de mentoria: {{NUMERO_SESSOES_EMP}}
+- Análise estratégica: {{ANALISE_ESTRATEGICA}}
+- Plano de ação: {{PLANO_ACAO}}
+- Acompanhamento: {{ACOMPANHAMENTO_MENTORIA}}
+
+PERÍODO
+De {{DATA_INICIO_MENTORIA_EMP}} até {{DATA_TERMINO_MENTORIA_EMP}}.
+
+VALOR E FORMA DE PAGAMENTO
+Valor total: R$ {{VALOR_TOTAL_MENTORIA_EMP}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_MENTORIA_EMP}}
+- Vencimento: {{DATA_VENCIMENTO_MENTORIA_EMP}}
+
+RESULTADOS ESPERADOS
+{{RESULTADOS_ESPERADOS_MENTORIA}}
+
+CONFIDENCIALIDADE
+{{TERMOS_CONFIDENCIALIDADE_EMP}}
+
+{{CIDADE_MENTORIA_EMP}}, {{DATA_CONTRATO_MENTORIA_EMP}}.
+
+_________________________          _________________________
+{{NOME_CONTATO_MENTORIA_EMP}}                     {{NOME_MENTOR_EMP}}',
+    '[{"name": "NOME_EMPRESA_MENTORIA_EMP", "label": "Nome da Empresa", "type": "text", "required": true}, {"name": "NOME_MENTOR_EMP", "label": "Nome do Mentor/Consultor", "type": "text", "required": true}, {"name": "OBJETIVO_MENTORIA_EMP", "label": "Objetivo da Mentoria", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_MENTORIA_EMP", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "VALOR_TOTAL_MENTORIA_EMP", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "DATA_INICIO_MENTORIA_EMP", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_MENTORIA_EMP", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_MENTORIA_EMP", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_MENTORIA_EMP", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Mentoria Empresarial');
+
+-- ============================================
 -- 7. TRIGGERS: Atualizar updated_at automaticamente
 -- ============================================
 CREATE OR REPLACE FUNCTION update_contracts_updated_at()

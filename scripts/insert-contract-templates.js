@@ -74,20 +74,14 @@ async function insertTemplates() {
             throw new Error('Seção de SEED não encontrada na migration 088');
         }
         
-        // Pegar tudo a partir do SEED até o próximo comentário de seção (mas não o primeiro que aparece logo depois)
-        // Ou até o final do arquivo
+        // Pegar tudo a partir do SEED até a seção de TRIGGERS (que vem depois dos templates)
         const seedSection = migrationContent.substring(seedStartIndex);
         
-        // Procurar pelo próximo "-- ============================================" que NÃO seja logo após o SEED
-        // Pular o primeiro que aparece logo depois do comentário SEED
-        let searchStart = seedSection.indexOf('\n-- ============================================');
-        if (searchStart !== -1) {
-            // Pular o primeiro (que é o próprio comentário do SEED) e procurar o próximo
-            searchStart = seedSection.indexOf('\n-- ============================================', searchStart + 1);
-        }
+        // Procurar pela seção de TRIGGERS (onde terminam os templates)
+        const triggersStart = seedSection.indexOf('-- ============================================\n-- 7. TRIGGERS:');
         
-        const finalSeedSection = searchStart !== -1 
-            ? seedSection.substring(0, searchStart) 
+        const finalSeedSection = triggersStart !== -1 
+            ? seedSection.substring(0, triggersStart) 
             : seedSection;
         
         // Usar regex global para encontrar todos os INSERTs completos
