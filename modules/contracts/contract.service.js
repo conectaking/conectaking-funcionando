@@ -835,6 +835,8 @@ class ContractService {
 
             // Criar novo documento PDF
             const pdfDoc = await PDFDocument.create();
+            const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
             // Se o contrato foi importado de PDF, carregar o PDF original
             if (contract.contract_type === 'imported' && contract.pdf_url) {
@@ -845,14 +847,21 @@ class ContractService {
                     const pages = await pdfDoc.copyPages(originalPdf, originalPdf.getPageIndices());
                     pages.forEach(page => pdfDoc.addPage(page));
                 } catch (err) {
-                    logger.warn(`Não foi possível carregar PDF original: ${err.message}`);
-                    // Continuar sem PDF original
+                    // Tentar em uploads/contracts
+                    try {
+                        const altPath = path.join(__dirname, '../../uploads/contracts', path.basename(contract.pdf_url));
+                        const originalPdfBytes = await fs.readFile(altPath);
+                        const originalPdf = await PDFDocument.load(originalPdfBytes);
+                        const pages = await pdfDoc.copyPages(originalPdf, originalPdf.getPageIndices());
+                        pages.forEach(page => pdfDoc.addPage(page));
+                    } catch (err2) {
+                        logger.warn(`Não foi possível carregar PDF original: ${err2.message}`);
+                        // Continuar sem PDF original
+                    }
                 }
             } else {
                 // Se foi criado de template, gerar PDF a partir do conteúdo
                 const page = pdfDoc.addPage([595, 842]); // A4
-                const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-                const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
                 let y = 800;
                 const content = contract.pdf_content || contract.content || '';
@@ -874,11 +883,78 @@ class ContractService {
                 }
             }
 
-            // Adicionar página de assinaturas
-            const signaturePage = pdfDoc.addPage([595, 842]);
-            const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-            const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+            // Aplicar assinaturas nas posições corretas (se tiverem coordenadas)
+            for (const signature of signatures) {
+                if (signature.signature_image_url && signature.signature_page && signature.signature_x !== null && signature.signature_y !== null) {
+                    try {
+                        // Carregar imagem da assinatura
+                        let signatureImage;
+                        let imageBytes;
+                        
+                        if (signature.signature_image_url.startsWith('data:image')) {
+                            // Base64
+                            const base64Data = signature.signature_image_url.replace(/^data:image\/\w+;base64,/, '');
+                            imageBytes = Buffer.from(base64Data, 'base64');
+                        } else {
+                            // URL de arquivo
+                            try {
+                                const imagePath = path.join(__dirname, '../../public', signature.signature_image_url);
+                                imageBytes = await fs.readFile(imagePath);
+                            } catch {
+                                // Tentar em uploads
+                                const altPath = path.join(__dirname, '../../uploads/contracts', path.basename(signature.signature_image_url));
+                                imageBytes = await fs.readFile(altPath);
+                            }
+                        }
+                        
+                        // Converter para PNG se necessário usando sharp
+                        let signatureImage;
+                        try {
+                            const sharp = require('sharp');
+                            const pngBuffer = await sharp(imageBytes).png().toBuffer();
+                            signatureImage = await pdfDoc.embedPng(pngBuffer);
+                        } catch {
+                            // Tentar embed direto
+                            signatureImage = await pdfDoc.embedPng(imageBytes);
+                        }
 
+                        // Obter página correta (1-indexed para 0-indexed)
+                        const pageIndex = Math.max(0, Math.min(signature.signature_page - 1, pdfDoc.getPageCount() - 1));
+                        const targetPage = pdfDoc.getPage(pageIndex);
+
+                        // Aplicar assinatura na posição especificada
+                        const sigWidth = signature.signature_width || 200;
+                        const sigHeight = signature.signature_height || 80;
+                        
+                        // Converter coordenadas (Y invertido no PDF)
+                        const pageHeight = targetPage.getHeight();
+                        const x = signature.signature_x || 50;
+                        const y = pageHeight - (signature.signature_y || 100) - sigHeight;
+
+                        targetPage.drawImage(signatureImage, {
+                            x: x,
+                            y: y,
+                            width: sigWidth,
+                            height: sigHeight
+                        });
+
+                        // Adicionar texto abaixo da assinatura
+                        targetPage.drawText(`${signature.signer_name}`, {
+                            x: x,
+                            y: y - 15,
+                            size: 10,
+                            font: font,
+                            color: rgb(0, 0, 0),
+                        });
+                    } catch (err) {
+                        logger.warn(`Erro ao aplicar assinatura na posição: ${err.message}`);
+                        // Continuar sem aplicar esta assinatura
+                    }
+                }
+            }
+
+            // Adicionar página de assinaturas (resumo)
+            const signaturePage = pdfDoc.addPage([595, 842]);
             let y = 800;
             signaturePage.drawText('ASSINATURAS ELETRÔNICAS', {
                 x: 50,
@@ -913,7 +989,17 @@ class ContractService {
                     font: font,
                     color: rgb(0.5, 0.5, 0.5),
                 });
-                y -= 30;
+                if (signature.signature_page && signature.signature_x !== null) {
+                    signaturePage.drawText(`Posição: Página ${signature.signature_page}, X: ${signature.signature_x}, Y: ${signature.signature_y}`, {
+                        x: 50,
+                        y: y - 15,
+                        size: 9,
+                        font: font,
+                        color: rgb(0.3, 0.3, 0.3),
+                    });
+                    y -= 15;
+                }
+                y -= 15;
 
                 if (y < 200) {
                     const newPage = pdfDoc.addPage([595, 842]);

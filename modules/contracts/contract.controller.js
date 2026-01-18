@@ -42,6 +42,9 @@ class ContractController {
                 search: req.query.search || null,
                 orderBy: req.query.orderBy || 'created_at',
                 orderDir: req.query.orderDir || 'DESC',
+                dateFrom: req.query.dateFrom || null,
+                dateTo: req.query.dateTo || null,
+                statuses: req.query.statuses ? req.query.statuses.split(',') : null,
                 limit: req.query.limit ? parseInt(req.query.limit) : null,
                 offset: req.query.offset ? parseInt(req.query.offset) : null
             };

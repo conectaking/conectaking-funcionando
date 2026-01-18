@@ -74,28 +74,62 @@ class ContractRepository {
     async findByUserId(userId, filters = {}) {
         const client = await db.pool.connect();
         try {
-            let query = 'SELECT * FROM ck_contracts WHERE user_id = $1';
+            let query = 'SELECT DISTINCT c.* FROM ck_contracts c';
             const params = [userId];
             let paramCount = 2;
 
-            // Filtro por status
+            // Buscar signatários para busca por nome
+            if (filters.search) {
+                query += ` LEFT JOIN ck_contracts_signers cs ON c.id = cs.contract_id`;
+            }
+
+            query += ' WHERE c.user_id = $1';
+
+            // Busca por título, conteúdo ou signatário
+            if (filters.search) {
+                query += ` AND (c.title ILIKE $${paramCount} OR c.pdf_content ILIKE $${paramCount} OR cs.name ILIKE $${paramCount} OR cs.email ILIKE $${paramCount})`;
+                params.push(`%${filters.search}%`);
+                paramCount++;
+            }
+
+            // Filtro por status único
             if (filters.status) {
-                query += ` AND status = $${paramCount}`;
+                query += ` AND c.status = $${paramCount}`;
                 params.push(filters.status);
                 paramCount++;
             }
 
-            // Busca por título ou conteúdo
-            if (filters.search) {
-                query += ` AND (title ILIKE $${paramCount} OR pdf_content ILIKE $${paramCount})`;
-                params.push(`%${filters.search}%`);
+            // Filtro por múltiplos status
+            if (filters.statuses && Array.isArray(filters.statuses) && filters.statuses.length > 0) {
+                query += ` AND c.status = ANY($${paramCount})`;
+                params.push(filters.statuses);
+                paramCount++;
+            }
+
+            // Filtro por data de criação - De
+            if (filters.dateFrom) {
+                query += ` AND c.created_at >= $${paramCount}::date`;
+                params.push(filters.dateFrom);
+                paramCount++;
+            }
+
+            // Filtro por data de criação - Até
+            if (filters.dateTo) {
+                query += ` AND c.created_at <= $${paramCount}::date`;
+                params.push(filters.dateTo);
                 paramCount++;
             }
 
             // Ordenação
             const orderBy = filters.orderBy || 'created_at';
             const orderDir = filters.orderDir || 'DESC';
-            query += ` ORDER BY ${orderBy} ${orderDir}`;
+            
+            // Validar orderBy para prevenir SQL injection
+            const allowedOrderBy = ['created_at', 'title', 'status', 'completed_at', 'updated_at'];
+            const safeOrderBy = allowedOrderBy.includes(orderBy) ? orderBy : 'created_at';
+            const safeOrderDir = orderDir.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+            
+            query += ` ORDER BY c.${safeOrderBy} ${safeOrderDir}`;
 
             // Paginação
             if (filters.limit) {
