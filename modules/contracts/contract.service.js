@@ -1232,4 +1232,76 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
     }
 }
 
+    /**
+     * Salvar posições de assinaturas para um contrato
+     */
+    async saveSignaturePositions(contractId, positions) {
+        const client = await require('../db').pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Buscar signatários do contrato
+            const signers = await repository.findSignersByContractId(contractId);
+            const signerMap = {};
+            signers.forEach(s => {
+                signerMap[s.id] = s;
+            });
+            
+            // Atualizar posições para cada signatário
+            const updates = [];
+            for (const [signerId, position] of Object.entries(positions)) {
+                if (!signerMap[signerId]) {
+                    logger.warn(`Signatário ${signerId} não encontrado para contrato ${contractId}`);
+                    continue;
+                }
+                
+                // Atualizar signatário com posições (usando campos temporários ou tabela auxiliar)
+                // Por enquanto, vamos armazenar em um campo JSON na tabela de signatários
+                // ou criar uma tabela de posições temporárias
+                await repository.updateSigner(signerId, {
+                    signature_page: position.page || 1,
+                    signature_x: position.x || null,
+                    signature_y: position.y || null,
+                    signature_width: position.width || 150,
+                    signature_height: position.height || 60
+                }, client);
+                
+                updates.push({ signerId, position });
+            }
+            
+            await client.query('COMMIT');
+            logger.info(`Posições salvas para ${updates.length} signatários no contrato ${contractId}`);
+            
+            return { saved: updates.length, positions: updates };
+        } catch (error) {
+            await client.query('ROLLBACK');
+            logger.error('Erro ao salvar posições:', error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Buscar posições de assinaturas de um contrato
+     */
+    async getSignaturePositions(contractId) {
+        const signers = await repository.findSignersByContractId(contractId);
+        
+        const positions = {};
+        signers.forEach(signer => {
+            if (signer.signature_page && signer.signature_x !== null) {
+                positions[signer.id] = {
+                    page: signer.signature_page,
+                    x: signer.signature_x,
+                    y: signer.signature_y,
+                    width: signer.signature_width || 150,
+                    height: signer.signature_height || 60
+                };
+            }
+        });
+        
+        return positions;
+    }
+
 module.exports = new ContractService();

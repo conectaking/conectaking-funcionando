@@ -96,4 +96,14 @@ router.get('/:id/report', asyncHandler(async (req, res) => {
     await controller.getReport(req, res);
 }));
 
+// Salvar posições de assinaturas
+router.post('/:id/signature-positions', asyncHandler(async (req, res) => {
+    await controller.saveSignaturePositions(req, res);
+}));
+
+// Buscar posições de assinaturas
+router.get('/:id/signature-positions', asyncHandler(async (req, res) => {
+    await controller.getSignaturePositions(req, res);
+}));
+
 module.exports = router;

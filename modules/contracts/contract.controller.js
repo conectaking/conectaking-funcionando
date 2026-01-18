@@ -317,6 +317,40 @@ class ContractController {
     }
 
     /**
+     * Salvar posições de assinaturas
+     */
+    async saveSignaturePositions(req, res) {
+        try {
+            const { id } = req.params;
+            const { positions } = req.body; // { signerId: { page, x, y, width, height } }
+            
+            if (!positions || typeof positions !== 'object') {
+                return responseFormatter.error(res, 'Posições inválidas', 400);
+            }
+            
+            const result = await service.saveSignaturePositions(id, positions);
+            return responseFormatter.success(res, result, 'Posições salvas com sucesso');
+        } catch (error) {
+            logger.error('Erro ao salvar posições:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Buscar posições de assinaturas
+     */
+    async getSignaturePositions(req, res) {
+        try {
+            const { id } = req.params;
+            const positions = await service.getSignaturePositions(id);
+            return responseFormatter.success(res, positions);
+        } catch (error) {
+            logger.error('Erro ao buscar posições:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
      * Relatório completo de assinaturas (página HTML)
      */
     async getReport(req, res) {
