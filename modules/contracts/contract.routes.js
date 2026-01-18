@@ -52,6 +52,11 @@ router.get('/:id', asyncHandler(async (req, res) => {
     await controller.findById(req, res);
 }));
 
+// Rota para visualizar PDF original (deve vir ANTES de /:id/download)
+router.get('/:id/pdf', asyncHandler(async (req, res) => {
+    await controller.viewPdf(req, res);
+}));
+
 // Rota para download do PDF final (deve vir ANTES de outras rotas /:id/*)
 router.get('/:id/download', asyncHandler(async (req, res) => {
     await controller.downloadFinalPdf(req, res);

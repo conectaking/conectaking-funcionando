@@ -768,6 +768,46 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
         
         return { filePath, fileName };
     }
+
+    /**
+     * Visualizar PDF original do contrato (importado ou de template)
+     */
+    async viewPdf(contractId, userId) {
+        // Verificar ownership
+        const ownsContract = await repository.checkOwnership(contractId, userId);
+        if (!ownsContract) {
+            throw new Error('Você não tem permissão para visualizar este contrato');
+        }
+
+        const contract = await repository.findById(contractId);
+        if (!contract) {
+            throw new Error('Contrato não encontrado');
+        }
+
+        const path = require('path');
+        const fs = require('fs').promises;
+
+        // Se for PDF importado, retornar o PDF original
+        if (contract.contract_type === 'imported' && contract.pdf_url) {
+            // pdf_url pode ser /uploads/contracts/... ou caminho completo
+            let pdfPath = contract.pdf_url;
+            if (!path.isAbsolute(pdfPath)) {
+                // Se for caminho relativo, tentar em uploads/contracts primeiro
+                pdfPath = path.join(__dirname, '../../uploads/contracts', path.basename(pdfPath));
+                // Se não existir, tentar em public
+                try {
+                    await fs.access(pdfPath);
+                } catch {
+                    pdfPath = path.join(__dirname, '../../public', contract.pdf_url);
+                }
+            }
+            const fileName = `${contract.title.replace(/[^a-z0-9]/gi, '_')}_original.pdf`;
+            return { filePath: pdfPath, fileName };
+        }
+
+        // Se não for importado ou não tiver PDF URL, gerar preview do conteúdo
+        throw new Error('PDF não disponível para visualização');
+    }
 }
 
 module.exports = new ContractService();

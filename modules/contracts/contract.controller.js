@@ -259,6 +259,34 @@ class ContractController {
             return responseFormatter.error(res, error.message, statusCode);
         }
     }
+
+    /**
+     * Visualizar PDF original do contrato
+     */
+    async viewPdf(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+            const { filePath, fileName } = await service.viewPdf(id, userId);
+            
+            const fs = require('fs');
+            
+            if (!fs.existsSync(filePath)) {
+                return responseFormatter.error(res, 'Arquivo PDF não encontrado', 404);
+            }
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+            
+            const fileStream = fs.createReadStream(filePath);
+            fileStream.pipe(res);
+        } catch (error) {
+            logger.error('Erro ao visualizar PDF:', error);
+            const statusCode = error.message.includes('permissão') ? 403 : 
+                              error.message.includes('não encontrado') ? 404 : 500;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
 }
 
 module.exports = new ContractController();
