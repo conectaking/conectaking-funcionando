@@ -312,6 +312,42 @@ class ContractController {
             return responseFormatter.error(res, error.message, statusCode);
         }
     }
+
+    /**
+     * Relatório completo de assinaturas (página HTML)
+     */
+    async getReport(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+            
+            // Verificar ownership
+            const ownsContract = await repository.checkOwnership(id, userId);
+            if (!ownsContract) {
+                return responseFormatter.error(res, 'Você não tem permissão para ver este relatório', 403);
+            }
+            
+            // Buscar dados completos
+            const contract = await service.findById(id);
+            const signers = await repository.findSignersByContractId(id);
+            const signatures = await repository.findSignaturesByContractId(id);
+            const auditLogs = await repository.findAuditLogsByContractId(id);
+            
+            // Renderizar página EJS
+            const path = require('path');
+            res.render(path.join(__dirname, '../../views/contractReport.ejs'), {
+                contract,
+                signers,
+                signatures,
+                auditLogs
+            });
+        } catch (error) {
+            logger.error('Erro ao gerar relatório:', error);
+            const statusCode = error.message.includes('permissão') ? 403 : 
+                              error.message.includes('não encontrado') ? 404 : 500;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
 }
 
 module.exports = new ContractController();

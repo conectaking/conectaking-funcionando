@@ -91,4 +91,9 @@ router.get('/:id/audit', asyncHandler(async (req, res) => {
     await controller.getAuditLogs(req, res);
 }));
 
+// Rota para relatório de assinaturas (página HTML)
+router.get('/:id/report', asyncHandler(async (req, res) => {
+    await controller.getReport(req, res);
+}));
+
 module.exports = router;

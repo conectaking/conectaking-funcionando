@@ -244,26 +244,87 @@ class ContractService {
         
         for (const signer of signers) {
             const signUrl = `${frontendUrl}/contract/sign/${signer.sign_token}`;
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + TYPES.DEFAULT_TOKEN_EXPIRY_DAYS);
             
-            const subject = `Contrato para Assinatura: ${contract.title}`;
+            const subject = `📄 Contrato para Assinatura: ${contract.title}`;
             const html = `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #991B1B;">Contrato para Assinatura</h2>
-                    <p>Olá, ${signer.name}!</p>
-                    <p>Você recebeu um contrato para assinatura: <strong>${contract.title}</strong></p>
-                    <p>Clique no link abaixo para acessar e assinar o contrato:</p>
-                    <p style="text-align: center; margin: 30px 0;">
-                        <a href="${signUrl}" style="background-color: #991B1B; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                            Assinar Contrato
-                        </a>
-                    </p>
-                    <p style="color: #666; font-size: 14px;">
-                        Este link expira em ${TYPES.DEFAULT_TOKEN_EXPIRY_DAYS} dias.
-                    </p>
-                    <p style="color: #666; font-size: 12px; margin-top: 30px;">
-                        Se você não esperava este email, ignore esta mensagem.
-                    </p>
-                </div>
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                </head>
+                <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+                    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
+                        <tr>
+                            <td align="center" style="padding: 40px 20px;">
+                                <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+                                    <!-- Header -->
+                                    <tr>
+                                        <td style="background: linear-gradient(135deg, #991B1B 0%, #000000 100%); padding: 40px 30px; text-align: center;">
+                                            <h1 style="margin: 0; color: #FFC700; font-size: 28px; font-weight: 700;">
+                                                <i class="fas fa-file-contract"></i> Contrato para Assinatura
+                                            </h1>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Content -->
+                                    <tr>
+                                        <td style="padding: 40px 30px;">
+                                            <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                                Olá, <strong>${signer.name}</strong>!
+                                            </p>
+                                            
+                                            <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                                Você recebeu um contrato para assinatura digital:
+                                            </p>
+                                            
+                                            <div style="background-color: #f9f9f9; border-left: 4px solid #991B1B; padding: 20px; margin: 25px 0; border-radius: 4px;">
+                                                <h2 style="margin: 0 0 10px 0; color: #991B1B; font-size: 20px; font-weight: 600;">
+                                                    ${contract.title}
+                                                </h2>
+                                            </div>
+                                            
+                                            <p style="margin: 30px 0; text-align: center;">
+                                                <a href="${signUrl}" style="display: inline-block; background: linear-gradient(135deg, #FFC700 0%, #F59E0B 100%); color: #000000; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 12px rgba(255, 199, 0, 0.3); transition: transform 0.2s;">
+                                                    ✍️ Assinar Contrato Agora
+                                                </a>
+                                            </p>
+                                            
+                                            <div style="background-color: #FFF4E6; border: 1px solid #FFC700; border-radius: 8px; padding: 15px; margin: 25px 0;">
+                                                <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                                                    <strong>⏰ Importante:</strong> Este link expira em <strong>${TYPES.DEFAULT_TOKEN_EXPIRY_DAYS} dias</strong> (${expiryDate.toLocaleDateString('pt-BR')}).
+                                                </p>
+                                            </div>
+                                            
+                                            <p style="margin: 30px 0 0 0; color: #666666; font-size: 14px; line-height: 1.6; border-top: 1px solid #e0e0e0; padding-top: 20px;">
+                                                <strong>Como funciona:</strong><br>
+                                                1. Clique no botão acima para acessar o contrato<br>
+                                                2. Revise o conteúdo do documento<br>
+                                                3. Escolha um método de assinatura (desenhar, enviar imagem ou digitar nome)<br>
+                                                4. Confirme sua assinatura
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Footer -->
+                                    <tr>
+                                        <td style="background-color: #1C1C21; padding: 30px; text-align: center;">
+                                            <p style="margin: 0 0 10px 0; color: #888888; font-size: 12px;">
+                                                Este email foi enviado automaticamente pelo sistema ConectaKing.
+                                            </p>
+                                            <p style="margin: 0; color: #666666; font-size: 12px;">
+                                                Se você não esperava este email, pode ignorá-lo com segurança.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
             `;
 
             await sendEmail(signer.email, subject, html);
