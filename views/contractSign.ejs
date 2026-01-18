@@ -57,6 +57,18 @@
             margin-bottom: 40px;
             max-height: 600px;
             overflow-y: auto;
+            position: relative;
+        }
+        
+        .contract-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #FFC700, #FFD700);
+            border-radius: 12px 12px 0 0;
         }
         
         .contract-preview h2 {
@@ -83,6 +95,17 @@
             font-size: 1.3rem;
             margin-bottom: 20px;
             color: #FFC700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .signature-section h3::before {
+            content: '';
+            width: 4px;
+            height: 30px;
+            background: #FFC700;
+            border-radius: 2px;
         }
         
         .signature-methods {
@@ -341,8 +364,24 @@
         </div>
         
         <div class="contract-preview">
-            <h2>Visualização do Contrato</h2>
-            <div class="contract-content"><%= contract.pdf_content || 'Conteúdo do contrato não disponível' %></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;"><i class="fas fa-file-alt"></i> Visualização do Contrato</h2>
+                <button id="expand-contract-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9rem;">
+                    <i class="fas fa-expand"></i> Expandir
+                </button>
+            </div>
+            <div class="contract-content" id="contract-content"><%= contract.pdf_content || 'Conteúdo do contrato não disponível' %></div>
+        </div>
+        
+        <!-- Modal de visualização expandida -->
+        <div id="contract-expanded-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; padding: 20px; overflow-y: auto;">
+            <div style="max-width: 900px; margin: 0 auto; background: #1C1C21; border-radius: 16px; padding: 30px; position: relative;">
+                <button id="close-expanded-btn" style="position: absolute; top: 20px; right: 20px; background: #2C2C2F; border: none; color: #FFFFFF; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h2 style="color: #FFC700; margin-bottom: 20px;"><i class="fas fa-file-alt"></i> <%= contract.title %></h2>
+                <div style="background: #0B0B0B; padding: 30px; border-radius: 12px; white-space: pre-wrap; line-height: 1.8; color: #ECECEC; max-height: 70vh; overflow-y: auto;" id="expanded-contract-content"><%= contract.pdf_content || 'Conteúdo do contrato não disponível' %></div>
+            </div>
         </div>
         
         <% if (!signer.signed_at) { %>
