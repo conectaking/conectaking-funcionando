@@ -81,10 +81,22 @@ async function insertTemplates() {
             ? seedSection.substring(0, nextSectionIndex) 
             : seedSection;
         
-        // Usar regex para encontrar todos os INSERTs completos
-        // Cada INSERT começa com "INSERT INTO ck_contracts_templates" e termina com "WHERE NOT EXISTS ... ;"
-        const insertPattern = /INSERT INTO ck_contracts_templates[\s\S]*?WHERE NOT EXISTS[^;]*;/g;
-        const insertStatements = finalSeedSection.match(insertPattern) || [];
+        // Dividir por comentários de template (cada template tem um comentário "-- Template X:")
+        // Incluir o primeiro INSERT que não tem comentário antes
+        const parts = finalSeedSection.split(/--\s*Template\s+\d+:/);
+        const insertStatements = [];
+        
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i].trim();
+            if (!part) continue;
+            
+            // Procurar pelo INSERT completo neste bloco
+            // O INSERT termina com "WHERE NOT EXISTS ... ;" seguido de quebra de linha ou fim do bloco
+            const insertMatch = part.match(/INSERT INTO ck_contracts_templates[\s\S]*?WHERE NOT EXISTS[^;]*;/);
+            if (insertMatch) {
+                insertStatements.push(insertMatch[0].trim());
+            }
+        }
         
         console.log(`\n🔄 Encontrados ${insertStatements.length} comandos INSERT para executar...\n`);
         
