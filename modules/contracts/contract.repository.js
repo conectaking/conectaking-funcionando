@@ -131,20 +131,42 @@ class ContractRepository {
             
             query += ` ORDER BY c.${safeOrderBy} ${safeOrderDir}`;
 
+            // Contar total de resultados (antes da paginação)
+            // Criar query de contagem sem ORDER BY, LIMIT e OFFSET
+            let countQuery = query.replace(/SELECT DISTINCT c\.\*/i, 'SELECT COUNT(DISTINCT c.id) as total');
+            countQuery = countQuery.replace(/\s+ORDER BY.*$/i, '');
+            
+            // Usar os mesmos parâmetros, mas sem os últimos 2 (limit e offset que serão adicionados depois)
+            // Por enquanto, usar todos os parâmetros (limit e offset ainda não foram adicionados)
+            const countParams = params.slice(0, params.length);
+            const countResult = await client.query(countQuery, countParams);
+            const total = parseInt(countResult.rows[0]?.total || 0);
+
             // Paginação
-            if (filters.limit) {
-                query += ` LIMIT $${paramCount}`;
-                params.push(filters.limit);
-                paramCount++;
-            }
-            if (filters.offset) {
-                query += ` OFFSET $${paramCount}`;
-                params.push(filters.offset);
-                paramCount++;
-            }
+            const limit = filters.limit || 20; // Padrão: 20 por página
+            const offset = filters.offset || 0;
+            
+            query += ` LIMIT $${paramCount}`;
+            params.push(limit);
+            paramCount++;
+            
+            query += ` OFFSET $${paramCount}`;
+            params.push(offset);
+            paramCount++;
 
             const result = await client.query(query, params);
-            return result.rows;
+            return {
+                data: result.rows,
+                pagination: {
+                    total,
+                    limit,
+                    offset,
+                    page: Math.floor(offset / limit) + 1,
+                    totalPages: Math.ceil(total / limit),
+                    hasNext: offset + limit < total,
+                    hasPrev: offset > 0
+                }
+            };
         } finally {
             client.release();
         }

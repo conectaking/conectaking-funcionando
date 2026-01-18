@@ -45,12 +45,12 @@ class ContractController {
                 dateFrom: req.query.dateFrom || null,
                 dateTo: req.query.dateTo || null,
                 statuses: req.query.statuses ? req.query.statuses.split(',') : null,
-                limit: req.query.limit ? parseInt(req.query.limit) : null,
-                offset: req.query.offset ? parseInt(req.query.offset) : null
+                limit: req.query.limit ? parseInt(req.query.limit) : 20,
+                offset: req.query.offset ? parseInt(req.query.offset) : 0
             };
 
-            const contracts = await service.findByUserId(userId, filters);
-            return responseFormatter.success(res, contracts);
+            const result = await service.findByUserId(userId, filters);
+            return responseFormatter.success(res, result);
         } catch (error) {
             logger.error('Erro ao buscar contratos:', error);
             return responseFormatter.error(res, error.message, 500);
