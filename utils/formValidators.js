@@ -102,10 +102,16 @@ function isValidCPF(cpf) {
  */
 const validateFormSubmission = [
     body('response_data')
-        .isObject()
-        .withMessage('response_data deve ser um objeto')
-        .notEmpty()
-        .withMessage('response_data não pode estar vazio'),
+        .custom((value) => {
+            // Permite objeto vazio ou nulo, será tratado no handler
+            if (value === null || value === undefined) {
+                return true; // Permitir null/undefined, será tratado no handler
+            }
+            if (typeof value !== 'object' || Array.isArray(value)) {
+                throw new Error('response_data deve ser um objeto');
+            }
+            return true; // Permitir objeto vazio também
+        }),
     
     body('responder_name')
         .optional({ nullable: true, checkFalsy: true })
