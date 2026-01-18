@@ -42,6 +42,52 @@ router.get('/sign/:signToken', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * Visualizar PDF do contrato (rota pública usando token)
+ * GET /contract/sign/:token/pdf
+ */
+router.get('/sign/:token/pdf', asyncHandler(async (req, res) => {
+    try {
+        const { token } = req.params;
+        
+        // Buscar signatário por token
+        const signer = await contractService.findSignerByToken(token);
+        
+        // Buscar contrato
+        const contract = await contractRepository.findById(signer.contract_id);
+        if (!contract) {
+            return res.status(404).json({ error: 'Contrato não encontrado' });
+        }
+        
+        // Verificar se tem PDF
+        if (!contract.pdf_file_path) {
+            return res.status(404).json({ error: 'PDF não encontrado para este contrato' });
+        }
+        
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Construir caminho do arquivo
+        let filePath = contract.pdf_file_path;
+        if (!path.isAbsolute(filePath)) {
+            filePath = path.join(__dirname, '..', filePath);
+        }
+        
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: 'Arquivo PDF não encontrado' });
+        }
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${contract.title || 'contrato'}.pdf"`);
+        
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
+    } catch (error) {
+        logger.error('Erro ao visualizar PDF público:', error);
+        res.status(404).json({ error: error.message || 'Token de assinatura inválido' });
+    }
+}));
+
+/**
  * API: Registrar acesso ao link de assinatura (tracking)
  * POST /api/contracts/sign/:token/start
  */
