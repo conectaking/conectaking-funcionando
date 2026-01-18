@@ -76,16 +76,15 @@ async function insertTemplates() {
         
         // Pegar tudo a partir do SEED até o próximo comentário de seção ou fim do arquivo
         const seedSection = migrationContent.substring(seedStartIndex);
-        const nextSectionIndex = seedSection.indexOf('-- ============================================');
+        const nextSectionIndex = seedSection.indexOf('\n-- ============================================');
         const finalSeedSection = nextSectionIndex !== -1 
             ? seedSection.substring(0, nextSectionIndex) 
             : seedSection;
         
-        // Dividir em comandos SQL individuais (separados por ponto e vírgula seguido de quebra de linha)
-        // Cada INSERT termina com "; seguido de quebra de linha
-        const insertStatements = finalSeedSection
-            .split(/(?<=;\s*\n)(?=--|\s*INSERT)/)
-            .filter(block => block.trim().startsWith('INSERT INTO ck_contracts_templates'));
+        // Usar regex para encontrar todos os INSERTs completos
+        // Cada INSERT começa com "INSERT INTO ck_contracts_templates" e termina com "WHERE NOT EXISTS ... ;"
+        const insertPattern = /INSERT INTO ck_contracts_templates[\s\S]*?WHERE NOT EXISTS[^;]*;/g;
+        const insertStatements = finalSeedSection.match(insertPattern) || [];
         
         console.log(`\n🔄 Encontrados ${insertStatements.length} comandos INSERT para executar...\n`);
         
