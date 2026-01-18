@@ -1,0 +1,208 @@
+const service = require('./contract.service');
+const responseFormatter = require('../../utils/responseFormatter');
+const logger = require('../../utils/logger');
+
+class ContractController {
+    /**
+     * Criar novo contrato
+     */
+    async create(req, res) {
+        try {
+            const contract = await service.create(req.body);
+            return responseFormatter.success(res, contract, 'Contrato criado com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao criar contrato:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Buscar contrato por ID
+     */
+    async findById(req, res) {
+        try {
+            const { id } = req.params;
+            const contract = await service.findById(id);
+            return responseFormatter.success(res, contract);
+        } catch (error) {
+            logger.error('Erro ao buscar contrato:', error);
+            return responseFormatter.error(res, error.message, 404);
+        }
+    }
+
+    /**
+     * Buscar contratos do usuário
+     */
+    async findByUserId(req, res) {
+        try {
+            const userId = req.user.userId;
+            const filters = {
+                status: req.query.status || null,
+                search: req.query.search || null,
+                orderBy: req.query.orderBy || 'created_at',
+                orderDir: req.query.orderDir || 'DESC',
+                limit: req.query.limit ? parseInt(req.query.limit) : null,
+                offset: req.query.offset ? parseInt(req.query.offset) : null
+            };
+
+            const contracts = await service.findByUserId(userId, filters);
+            return responseFormatter.success(res, contracts);
+        } catch (error) {
+            logger.error('Erro ao buscar contratos:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Atualizar contrato
+     */
+    async update(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+            const contract = await service.update(id, userId, req.body);
+            return responseFormatter.success(res, contract, 'Contrato atualizado com sucesso');
+        } catch (error) {
+            logger.error('Erro ao atualizar contrato:', error);
+            const statusCode = error.message.includes('permissão') ? 403 : 
+                              error.message.includes('não encontrado') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
+     * Enviar contrato para assinatura
+     */
+    async sendForSignature(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+            const { signers } = req.body;
+
+            const result = await service.sendForSignature(id, userId, signers);
+            return responseFormatter.success(res, result, 'Contrato enviado para assinatura com sucesso');
+        } catch (error) {
+            logger.error('Erro ao enviar contrato para assinatura:', error);
+            const statusCode = error.message.includes('permissão') ? 403 : 
+                              error.message.includes('não encontrado') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
+     * Cancelar contrato
+     */
+    async cancel(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+
+            // Atualizar status para cancelled
+            const contract = await service.update(id, userId, { status: 'cancelled' });
+            return responseFormatter.success(res, contract, 'Contrato cancelado com sucesso');
+        } catch (error) {
+            logger.error('Erro ao cancelar contrato:', error);
+            const statusCode = error.message.includes('permissão') ? 403 : 
+                              error.message.includes('não encontrado') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
+     * Excluir contrato
+     */
+    async delete(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+
+            await service.delete(id, userId);
+            return responseFormatter.success(res, null, 'Contrato excluído com sucesso');
+        } catch (error) {
+            logger.error('Erro ao excluir contrato:', error);
+            const statusCode = error.message.includes('permissão') ? 403 : 
+                              error.message.includes('não encontrado') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
+     * Duplicar contrato
+     */
+    async duplicate(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+
+            const contract = await service.duplicate(id, userId);
+            return responseFormatter.success(res, contract, 'Contrato duplicado com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao duplicar contrato:', error);
+            const statusCode = error.message.includes('permissão') ? 403 : 
+                              error.message.includes('não encontrado') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
+     * Buscar templates
+     */
+    async findTemplates(req, res) {
+        try {
+            const category = req.query.category || null;
+            const templates = await service.findTemplates(category);
+            return responseFormatter.success(res, templates);
+        } catch (error) {
+            logger.error('Erro ao buscar templates:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Buscar template por ID
+     */
+    async findTemplateById(req, res) {
+        try {
+            const { id } = req.params;
+            const template = await service.findTemplateById(id);
+            return responseFormatter.success(res, template);
+        } catch (error) {
+            logger.error('Erro ao buscar template:', error);
+            return responseFormatter.error(res, error.message, 404);
+        }
+    }
+
+    /**
+     * Buscar logs de auditoria
+     */
+    async getAuditLogs(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+
+            const logs = await service.getAuditLogs(id, userId);
+            return responseFormatter.success(res, logs);
+        } catch (error) {
+            logger.error('Erro ao buscar logs de auditoria:', error);
+            const statusCode = error.message.includes('permissão') ? 403 : 
+                              error.message.includes('não encontrado') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
+     * Estatísticas do usuário
+     */
+    async getStats(req, res) {
+        try {
+            const userId = req.user.userId;
+            const stats = await service.getStats(userId);
+            return responseFormatter.success(res, stats);
+        } catch (error) {
+            logger.error('Erro ao buscar estatísticas:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+}
+
+module.exports = new ContractController();
