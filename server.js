@@ -492,46 +492,8 @@ app.use((req, res, next) => {
 
 // ============================================
 // ROTAS PÚBLICAS (SEM RATE LIMIT) - DEVEM VIR PRIMEIRO
+// A rota /api/subscription/plans-public está definida em routes/subscription.js
 // ============================================
-app.get('/api/subscription/plans-public', asyncHandler(async (req, res) => {
-    const client = await db.pool.connect();
-    try {
-        logger.debug('📥 Requisição para /api/subscription/plans-public');
-        const plansQuery = `
-            SELECT 
-                id,
-                plan_code,
-                plan_name,
-                price,
-                description,
-                features,
-                whatsapp_number,
-                whatsapp_message,
-                pix_key,
-                is_active
-            FROM subscription_plans
-            WHERE is_active = true
-            ORDER BY price ASC
-        `;
-        const plansResult = await client.query(plansQuery);
-        
-        logger.debug('✅ Planos encontrados:', { count: plansResult.rows.length });
-        
-        res.json({
-            success: true,
-            plans: plansResult.rows
-        });
-    } catch (error) {
-        logger.error('❌ Erro ao buscar planos públicos:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Erro ao buscar planos',
-            plans: []
-        });
-    } finally {
-        client.release();
-    }
-}));
 
 app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();

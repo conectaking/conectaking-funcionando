@@ -888,7 +888,6 @@ class ContractService {
                 if (signature.signature_image_url && signature.signature_page && signature.signature_x !== null && signature.signature_y !== null) {
                     try {
                         // Carregar imagem da assinatura
-                        let signatureImage;
                         let imageBytes;
                         
                         if (signature.signature_image_url.startsWith('data:image')) {
