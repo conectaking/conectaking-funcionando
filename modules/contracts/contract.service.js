@@ -474,8 +474,7 @@ class ContractService {
     }
 
     /**
-     * Gerar PDF final com assinaturas (placeholder)
-     * TODO: Implementar geração real de PDF com pdf-lib ou pdfmake
+     * Gerar PDF final com assinaturas e relatório de auditoria
      */
     async generateFinalPdf(contractId) {
         const contract = await repository.findById(contractId);
@@ -487,13 +486,254 @@ class ContractService {
             throw new Error('Apenas contratos completos podem ter PDF final gerado');
         }
 
-        // TODO: Implementar geração real de PDF
-        // Por enquanto, retornar o PDF original se importado, ou gerar a partir do template
-        logger.warn('generateFinalPdf não implementado completamente - usando placeholder');
-        return {
-            pdf_url: contract.pdf_url || `/uploads/contracts/placeholder_${contractId}.pdf`,
-            pdf_hash: contract.original_pdf_hash || 'placeholder-hash'
-        };
+        const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
+        const path = require('path');
+        const fs = require('fs').promises;
+
+        try {
+            // Buscar assinaturas e logs de auditoria
+            const signatures = await repository.findSignaturesByContractId(contractId);
+            const auditLogs = await repository.findAuditLogsByContractId(contractId);
+            const signers = await repository.findSignersByContractId(contractId);
+
+            // Criar novo documento PDF
+            const pdfDoc = await PDFDocument.create();
+
+            // Se o contrato foi importado de PDF, carregar o PDF original
+            if (contract.contract_type === 'imported' && contract.pdf_url) {
+                const originalPdfPath = path.join(__dirname, '../../public', contract.pdf_url);
+                try {
+                    const originalPdfBytes = await fs.readFile(originalPdfPath);
+                    const originalPdf = await PDFDocument.load(originalPdfBytes);
+                    const pages = await pdfDoc.copyPages(originalPdf, originalPdf.getPageIndices());
+                    pages.forEach(page => pdfDoc.addPage(page));
+                } catch (err) {
+                    logger.warn(`Não foi possível carregar PDF original: ${err.message}`);
+                    // Continuar sem PDF original
+                }
+            } else {
+                // Se foi criado de template, gerar PDF a partir do conteúdo
+                const page = pdfDoc.addPage([595, 842]); // A4
+                const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+                const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+                let y = 800;
+                const content = contract.pdf_content || contract.content || '';
+                const lines = content.split('\n');
+
+                for (const line of lines) {
+                    if (y < 50) {
+                        const newPage = pdfDoc.addPage([595, 842]);
+                        y = 800;
+                    }
+                    page.drawText(line, {
+                        x: 50,
+                        y: y,
+                        size: 12,
+                        font: line.startsWith('CONTRATO') || line.startsWith('OBJETO') || line.startsWith('VALOR') ? boldFont : font,
+                        color: rgb(0, 0, 0),
+                    });
+                    y -= 20;
+                }
+            }
+
+            // Adicionar página de assinaturas
+            const signaturePage = pdfDoc.addPage([595, 842]);
+            const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+            let y = 800;
+            signaturePage.drawText('ASSINATURAS ELETRÔNICAS', {
+                x: 50,
+                y: y,
+                size: 16,
+                font: boldFont,
+                color: rgb(0, 0, 0),
+            });
+            y -= 40;
+
+            for (const signature of signatures) {
+                signaturePage.drawText(`${signature.signer_name} (${signature.signer_email})`, {
+                    x: 50,
+                    y: y,
+                    size: 12,
+                    font: font,
+                    color: rgb(0, 0, 0),
+                });
+                y -= 20;
+                signaturePage.drawText(`Assinado em: ${new Date(signature.signed_at).toLocaleString('pt-BR')}`, {
+                    x: 50,
+                    y: y,
+                    size: 10,
+                    font: font,
+                    color: rgb(0.5, 0.5, 0.5),
+                });
+                y -= 20;
+                signaturePage.drawText(`Tipo: ${signature.signature_type}`, {
+                    x: 50,
+                    y: y,
+                    size: 10,
+                    font: font,
+                    color: rgb(0.5, 0.5, 0.5),
+                });
+                y -= 30;
+
+                if (y < 200) {
+                    const newPage = pdfDoc.addPage([595, 842]);
+                    y = 800;
+                }
+            }
+
+            // Adicionar página de Relatório de Assinaturas (Auditoria)
+            const auditPage = pdfDoc.addPage([595, 842]);
+            y = 800;
+
+            auditPage.drawText('RELATÓRIO DE ASSINATURAS E AUDITORIA', {
+                x: 50,
+                y: y,
+                size: 16,
+                font: boldFont,
+                color: rgb(0, 0, 0),
+            });
+            y -= 40;
+
+            auditPage.drawText('Este documento foi assinado eletronicamente usando o sistema ConectaKing.', {
+                x: 50,
+                y: y,
+                size: 10,
+                font: font,
+                color: rgb(0, 0, 0),
+            });
+            y -= 30;
+
+            auditPage.drawText('Hashes SHA-256:', {
+                x: 50,
+                y: y,
+                size: 12,
+                font: boldFont,
+                color: rgb(0, 0, 0),
+            });
+            y -= 20;
+
+            auditPage.drawText(`Hash Original: ${contract.original_pdf_hash || 'N/A'}`, {
+                x: 50,
+                y: y,
+                size: 9,
+                font: font,
+                color: rgb(0, 0, 0),
+            });
+            y -= 15;
+
+            // NOTA: O hash final será calculado após salvar o PDF
+            // Por enquanto, usaremos um placeholder
+            auditPage.drawText(`Hash Final: [Será calculado após geração do PDF]`, {
+                x: 50,
+                y: y,
+                size: 9,
+                font: font,
+                color: rgb(0.5, 0.5, 0.5),
+            });
+            y -= 30;
+
+            auditPage.drawText('Log de Auditoria:', {
+                x: 50,
+                y: y,
+                size: 12,
+                font: boldFont,
+                color: rgb(0, 0, 0),
+            });
+            y -= 20;
+
+            for (const log of auditLogs) {
+                if (y < 100) {
+                    const newPage = pdfDoc.addPage([595, 842]);
+                    y = 800;
+                }
+
+                const logDate = new Date(log.created_at).toLocaleString('pt-BR');
+                auditPage.drawText(`${logDate} - ${log.action}`, {
+                    x: 50,
+                    y: y,
+                    size: 9,
+                    font: font,
+                    color: rgb(0, 0, 0),
+                });
+                y -= 15;
+
+                if (log.ip_address) {
+                    auditPage.drawText(`IP: ${log.ip_address}`, {
+                        x: 70,
+                        y: y,
+                        size: 8,
+                        font: font,
+                        color: rgb(0.5, 0.5, 0.5),
+                    });
+                    y -= 12;
+                }
+            }
+
+            y -= 30;
+            if (y < 200) {
+                const newPage = pdfDoc.addPage([595, 842]);
+                y = 800;
+            }
+
+            // Adicionar texto legal fixo
+            const legalText = `Este documento foi gerado automaticamente pelo sistema ConectaKing. 
+As assinaturas eletrônicas são válidas de acordo com a legislação brasileira (Lei nº 14.063/2020).
+O hash SHA-256 garante a integridade do documento.
+Data de geração: ${new Date().toLocaleString('pt-BR')}`;
+
+            const legalLines = legalText.split('\n');
+            for (const line of legalLines) {
+                if (y < 50) {
+                    const newPage = pdfDoc.addPage([595, 842]);
+                    y = 800;
+                }
+                auditPage.drawText(line, {
+                    x: 50,
+                    y: y,
+                    size: 8,
+                    font: font,
+                    color: rgb(0.3, 0.3, 0.3),
+                });
+                y -= 12;
+            }
+
+            // Salvar PDF final
+            const pdfBytes = await pdfDoc.save();
+            const finalPdfHash = this.generateSHA256Hash(Buffer.from(pdfBytes));
+            
+            const fileName = `contract_${contractId}_signed_${Date.now()}.pdf`;
+            const uploadsDir = path.join(__dirname, '../../public/uploads/contracts');
+            
+            try {
+                await fs.mkdir(uploadsDir, { recursive: true });
+            } catch (err) {
+                // Diretório já existe
+            }
+
+            const finalPdfPath = path.join(uploadsDir, fileName);
+            await fs.writeFile(finalPdfPath, pdfBytes);
+
+            const finalPdfUrl = `/uploads/contracts/${fileName}`;
+
+            // Atualizar contrato com URL e hash do PDF final
+            await repository.update(contractId, {
+                final_pdf_url: finalPdfUrl,
+                final_pdf_hash: finalPdfHash
+            });
+
+            logger.info(`PDF final gerado para contrato ${contractId}: ${finalPdfUrl} (Hash: ${finalPdfHash.substring(0, 16)}...)`);
+
+            return {
+                pdf_url: finalPdfUrl,
+                pdf_hash: finalPdfHash
+            };
+        } catch (error) {
+            logger.error('Erro ao gerar PDF final:', error);
+            throw new Error(`Erro ao gerar PDF final: ${error.message}`);
+        }
     }
 
     /**
