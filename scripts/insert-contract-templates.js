@@ -7,25 +7,44 @@ require('dotenv').config();
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
+const config = require('../config');
 
-// Configuração do pool
-const isLocalhost = process.env.DB_HOST === 'localhost' || 
-                    process.env.DB_HOST === '127.0.0.1' || 
-                    process.env.DB_HOST?.includes('localhost') ||
-                    process.env.DB_HOST === '::1' ||
-                    !process.env.DB_HOST ||
-                    process.env.DB_DISABLE_SSL === 'true';
+// Detectar se deve usar SSL baseado no host (mesmo padrão do run-migrations.js)
+const isLocalhost = config.db.host === 'localhost' || 
+                    config.db.host === '127.0.0.1' || 
+                    config.db.host?.includes('localhost') ||
+                    config.db.host === '::1' ||
+                    !config.db.host;
 
-const useSSL = (!isLocalhost && process.env.DB_SSL) || (process.env.DB_HOST?.includes('render.com'));
+const isCloudDatabase = config.db.host?.includes('render.com') || 
+                        config.db.host?.includes('amazonaws.com') ||
+                        config.db.host?.includes('azure.com') ||
+                        config.db.host?.includes('googleapis.com') ||
+                        process.env.DB_REQUIRE_SSL === 'true';
 
+const useSSL = isCloudDatabase || (process.env.DB_USE_SSL === 'true' && !isLocalhost);
+
+console.log(`🔌 Conectando ao banco: ${config.db.host}:${config.db.port}`);
+console.log(`   isLocalhost: ${isLocalhost}`);
+console.log(`   isCloudDatabase: ${isCloudDatabase}`);
+console.log(`   SSL: ${useSSL ? 'HABILITADO (requerido)' : 'DESABILITADO'}`);
+
+// Configuração do pool (mesmo padrão do run-migrations.js)
 const poolConfig = {
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: parseInt(process.env.DB_PORT, 10),
-    ssl: useSSL ? { rejectUnauthorized: false } : false
+    user: config.db.user,
+    host: config.db.host,
+    database: config.db.database,
+    password: config.db.password,
+    port: parseInt(config.db.port, 10)
 };
+
+if (useSSL) {
+    poolConfig.ssl = config.db.ssl || { rejectUnauthorized: false };
+    console.log('   ✅ SSL habilitado para conexão segura');
+} else {
+    poolConfig.ssl = false;
+    console.log('   ✅ SSL desabilitado (localhost)');
+}
 
 const pool = new Pool(poolConfig);
 
