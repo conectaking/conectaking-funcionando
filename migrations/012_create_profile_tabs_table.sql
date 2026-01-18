@@ -6,7 +6,7 @@
 
 CREATE TABLE IF NOT EXISTS profile_tabs (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
     tab_name VARCHAR(100) NOT NULL,
     tab_icon VARCHAR(50),
     display_order INTEGER DEFAULT 0,
