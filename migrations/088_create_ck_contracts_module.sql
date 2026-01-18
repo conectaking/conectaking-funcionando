@@ -1090,6 +1090,512 @@ _________________________          _________________________
     '[{"name": "NOME_CLIENTE_CONT", "label": "Nome do Cliente/Empresa", "type": "text", "required": true}, {"name": "NOME_CONTADOR", "label": "Nome do Contador", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_CONT", "label": "Descrição dos Serviços Contábeis", "type": "textarea", "required": true}, {"name": "REGIME_TRIBUTARIO", "label": "Regime Tributário (Simples, Lucro Presumido, etc.)", "type": "text", "required": true}, {"name": "PERIODO_VIGENCIA_CONT", "label": "Período de Vigência", "type": "text", "required": true}, {"name": "VALOR_MENSAL_CONT", "label": "Valor Mensal dos Honorários (R$)", "type": "text", "required": true}, {"name": "FORMA_PAGAMENTO_CONT", "label": "Forma de Pagamento", "type": "text", "required": true}, {"name": "CIDADE_CONT", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_CONT", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
 WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Serviços Contábeis');
 
+-- Template 25: Psicologia e Psicoterapia
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Psicologia e Psicoterapia',
+    'Saúde Mental',
+    'Contrato para serviços de psicoterapia, terapia e acompanhamento psicológico',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - PSICOTERAPIA
+
+PACIENTE: {{NOME_PACIENTE}}
+CPF: {{CPF_PACIENTE}}
+Data de Nascimento: {{DATA_NASCIMENTO_PAC}}
+Email: {{EMAIL_PACIENTE}}
+Telefone: {{TELEFONE_PACIENTE}}
+
+PSICÓLOGO: {{NOME_PSICOLOGO}}
+CRP: {{CRP_PSICOLOGO}}
+Especialização: {{ESPECIALIZACAO_PSI}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de {{TIPO_TERAPIA}} para acompanhamento psicológico.
+
+FREQUÊNCIA E DURAÇÃO
+- Frequência das sessões: {{FREQUENCIA_SESSOES_PSI}}
+- Duração de cada sessão: {{DURACAO_SESSAO_PSI}}
+- Modalidade: {{MODALIDADE_TERAPIA}} (presencial/online)
+- Período estimado: {{PERIODO_TRATAMENTO}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor por sessão é de R$ {{VALOR_SESSAO_PSI}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_PSI}}
+- Política de cancelamento: {{POLITICA_CANCELAMENTO_PSI}}
+
+CONFIDENCIALIDADE E SIGILO
+Todas as informações compartilhadas durante as sessões são protegidas por sigilo profissional.
+
+{{CIDADE_PSI}}, {{DATA_CONTRATO_PSI}}.
+
+_________________________          _________________________
+{{NOME_PACIENTE}}                     {{NOME_PSICOLOGO}}',
+    '[{"name": "NOME_PACIENTE", "label": "Nome do Paciente", "type": "text", "required": true}, {"name": "NOME_PSICOLOGO", "label": "Nome do Psicólogo", "type": "text", "required": true}, {"name": "TIPO_TERAPIA", "label": "Tipo de Terapia", "type": "text", "required": true}, {"name": "FREQUENCIA_SESSOES_PSI", "label": "Frequência das Sessões", "type": "text", "required": true}, {"name": "DURACAO_SESSAO_PSI", "label": "Duração de Cada Sessão", "type": "text", "required": true}, {"name": "MODALIDADE_TERAPIA", "label": "Modalidade (Presencial/Online)", "type": "text", "required": true}, {"name": "VALOR_SESSAO_PSI", "label": "Valor por Sessão (R$)", "type": "text", "required": true}, {"name": "CIDADE_PSI", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_PSI", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Psicologia e Psicoterapia');
+
+-- Template 26: Nutrição
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Nutrição e Consultoria Nutricional',
+    'Nutrição',
+    'Contrato para serviços de consultoria nutricional, planos alimentares e acompanhamento',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - NUTRIÇÃO
+
+CLIENTE: {{NOME_CLIENTE_NUT}}
+CPF: {{CPF_CLIENTE_NUT}}
+Email: {{EMAIL_CLIENTE_NUT}}
+Telefone: {{TELEFONE_CLIENTE_NUT}}
+
+NUTRICIONISTA: {{NOME_NUTRICIONISTA}}
+CRN: {{CRN_NUTRICIONISTA}}
+Especialização: {{ESPECIALIZACAO_NUT}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de consultoria nutricional e elaboração de {{TIPO_PLANO_NUT}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_NUT}}
+- Objetivo: {{OBJETIVO_NUTRICIONAL}}
+- Frequência de acompanhamento: {{FREQUENCIA_ACOMPANHAMENTO_NUT}}
+- Duração do tratamento: {{DURACAO_TRATAMENTO_NUT}}
+
+ENTREGÁVEIS
+{{ENTREGAVEIS_NUT}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor total do tratamento é de R$ {{VALOR_TOTAL_NUT}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_NUT}}
+- Consultas de retorno: {{VALOR_RETORNO_NUT}}
+
+{{CIDADE_NUT}}, {{DATA_CONTRATO_NUT}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_NUT}}                     {{NOME_NUTRICIONISTA}}',
+    '[{"name": "NOME_CLIENTE_NUT", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_NUTRICIONISTA", "label": "Nome do Nutricionista", "type": "text", "required": true}, {"name": "TIPO_PLANO_NUT", "label": "Tipo de Plano (Alimentar, Reeducação, etc.)", "type": "text", "required": true}, {"name": "OBJETIVO_NUTRICIONAL", "label": "Objetivo Nutricional", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_NUT", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "VALOR_TOTAL_NUT", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "CIDADE_NUT", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_NUT", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Nutrição e Consultoria Nutricional');
+
+-- Template 27: Veterinária
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Veterinária e Clínica Pet',
+    'Veterinária',
+    'Contrato para serviços veterinários, consultas, cirurgias e cuidados com animais',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - VETERINÁRIA
+
+TUTOR: {{NOME_TUTOR}}
+CPF: {{CPF_TUTOR}}
+Telefone: {{TELEFONE_TUTOR}}
+
+VETERINÁRIO/CLÍNICA: {{NOME_VETERINARIO}}
+CRMV: {{CRMV_VETERINARIO}}
+Clínica: {{NOME_CLINICA_VET}}
+
+ANIMAL
+Nome: {{NOME_ANIMAL}}
+Espécie: {{ESPECIE_ANIMAL}}
+Raça: {{RACA_ANIMAL}}
+Idade: {{IDADE_ANIMAL}}
+
+SERVIÇOS SOLICITADOS
+{{DESCRICAO_SERVICOS_VET}}
+- Data/hora da consulta: {{DATA_HORA_CONSULTA_VET}}
+- Tipo de atendimento: {{TIPO_ATENDIMENTO_VET}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor total dos serviços é de R$ {{VALOR_TOTAL_VET}}.
+- Consulta: R$ {{VALOR_CONSULTA_VET}}
+- Procedimentos/Medicamentos: R$ {{VALOR_PROCEDIMENTOS}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_VET}}
+
+GARANTIA E RESPONSABILIDADE
+{{TERMOS_RESPONSABILIDADE_VET}}
+
+{{CIDADE_VET}}, {{DATA_CONTRATO_VET}}.
+
+_________________________          _________________________
+{{NOME_TUTOR}}                     {{NOME_VETERINARIO}}',
+    '[{"name": "NOME_TUTOR", "label": "Nome do Tutor", "type": "text", "required": true}, {"name": "NOME_VETERINARIO", "label": "Nome do Veterinário", "type": "text", "required": true}, {"name": "NOME_ANIMAL", "label": "Nome do Animal", "type": "text", "required": true}, {"name": "ESPECIE_ANIMAL", "label": "Espécie (Cão, Gato, etc.)", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_VET", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "VALOR_TOTAL_VET", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "CIDADE_VET", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_VET", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Veterinária e Clínica Pet');
+
+-- Template 28: Jardinagem e Paisagismo
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Jardinagem e Paisagismo',
+    'Paisagismo',
+    'Contrato para serviços de jardinagem, paisagismo e manutenção de áreas verdes',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - JARDINAGEM E PAISAGISMO
+
+CONTRATANTE: {{NOME_CLIENTE_JARD}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_JARD}}
+Endereço do Imóvel: {{ENDERECO_IMOVEL_JARD}}
+
+JARDINEIRO/EMPRESA: {{NOME_JARDINEIRO}}
+CNPJ/CPF: {{CNPJ_CPF_JARDINEIRO}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de {{TIPO_SERVICO_JARD}} na área localizada em {{ENDERECO_SERVICO_JARD}}.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_JARD}}
+- Área total: {{AREA_TOTAL_JARD}} m²
+- Frequência: {{FREQUENCIA_SERVICOS_JARD}}
+- Período: {{DATA_INICIO_JARD}} até {{DATA_TERMINO_JARD}}
+
+PROJETO PAISAGÍSTICO
+{{DESCRICAO_PROJETO_JARD}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor mensal dos serviços é de R$ {{VALOR_MENSAL_JARD}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_JARD}}
+- Materiais: {{INCLUSAO_MATERIAIS}}
+
+{{CIDADE_JARD}}, {{DATA_CONTRATO_JARD}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_JARD}}                     {{NOME_JARDINEIRO}}',
+    '[{"name": "NOME_CLIENTE_JARD", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_JARDINEIRO", "label": "Nome do Jardineiro/Empresa", "type": "text", "required": true}, {"name": "TIPO_SERVICO_JARD", "label": "Tipo de Serviço (Manutenção, Projeto, etc.)", "type": "text", "required": true}, {"name": "ENDERECO_SERVICO_JARD", "label": "Endereço do Serviço", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_JARD", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "FREQUENCIA_SERVICOS_JARD", "label": "Frequência dos Serviços", "type": "text", "required": true}, {"name": "VALOR_MENSAL_JARD", "label": "Valor Mensal (R$)", "type": "text", "required": true}, {"name": "DATA_INICIO_JARD", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_JARD", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_JARD", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_JARD", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Jardinagem e Paisagismo');
+
+-- Template 29: Transporte e Frete
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Transporte e Frete',
+    'Transporte',
+    'Contrato para serviços de transporte de cargas, mudanças e frete',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - TRANSPORTE E FRETE
+
+CONTRATANTE: {{NOME_CLIENTE_TRANS}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_TRANS}}
+Endereço: {{ENDERECO_CLIENTE_TRANS}}
+
+TRANSPORTADORA/MOTORISTA: {{NOME_TRANSPORTADORA}}
+CNPJ: {{CNPJ_TRANSPORTADORA}}
+Veículo: {{TIPO_VEICULO}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de transporte de {{TIPO_CARGA}} do local de origem até o destino especificado abaixo.
+
+ORIGEM E DESTINO
+- Origem: {{ENDERECO_ORIGEM}}
+- Destino: {{ENDERECO_DESTINO}}
+- Data/hora da coleta: {{DATA_HORA_COLETA}}
+- Data/hora da entrega estimada: {{DATA_HORA_ENTREGA}}
+
+CARGA
+{{DESCRICAO_CARGA}}
+- Peso aproximado: {{PESO_CARGA}} kg
+- Volume: {{VOLUME_CARGA}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor do frete é de R$ {{VALOR_FRETE}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_TRANS}}
+- Seguro: {{VALOR_SEGURO}}
+
+RESPONSABILIDADE
+{{TERMOS_RESPONSABILIDADE_TRANS}}
+
+{{CIDADE_TRANS}}, {{DATA_CONTRATO_TRANS}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_TRANS}}                     {{NOME_TRANSPORTADORA}}',
+    '[{"name": "NOME_CLIENTE_TRANS", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_TRANSPORTADORA", "label": "Nome da Transportadora/Motorista", "type": "text", "required": true}, {"name": "TIPO_CARGA", "label": "Tipo de Carga (Mudança, Mercadoria, etc.)", "type": "text", "required": true}, {"name": "ENDERECO_ORIGEM", "label": "Endereço de Origem", "type": "text", "required": true}, {"name": "ENDERECO_DESTINO", "label": "Endereço de Destino", "type": "text", "required": true}, {"name": "DESCRICAO_CARGA", "label": "Descrição da Carga", "type": "textarea", "required": true}, {"name": "VALOR_FRETE", "label": "Valor do Frete (R$)", "type": "text", "required": true}, {"name": "CIDADE_TRANS", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_TRANS", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Transporte e Frete');
+
+-- Template 30: Fisioterapia
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Fisioterapia',
+    'Fisioterapia',
+    'Contrato para serviços de fisioterapia, reabilitação e tratamento fisioterapêutico',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - FISIOTERAPIA
+
+PACIENTE: {{NOME_PACIENTE_FISI}}
+CPF: {{CPF_PACIENTE_FISI}}
+Data de Nascimento: {{DATA_NASC_PAC}}
+Telefone: {{TELEFONE_PAC_FISI}}
+
+FISIOTERAPEUTA: {{NOME_FISIOTERAPEUTA}}
+CREFITO: {{CREFITO_FISIOTERAPEUTA}}
+Especialização: {{ESPECIALIZACAO_FISI}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de fisioterapia para tratamento de {{DIAGNOSTICO_FISI}}.
+
+TRATAMENTO
+{{DESCRICAO_TRATAMENTO_FISI}}
+- Objetivo do tratamento: {{OBJETIVO_TRATAMENTO_FISI}}
+- Frequência semanal: {{FREQUENCIA_SESSOES_FISI}}
+- Duração de cada sessão: {{DURACAO_SESSAO_FISI}}
+- Período estimado: {{PERIODO_TRATAMENTO_FISI}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor por sessão é de R$ {{VALOR_SESSAO_FISI}}.
+- Pacote de {{NUMERO_SESSOES_PACOTE}} sessões: R$ {{VALOR_PACOTE_FISI}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_FISI}}
+
+{{CIDADE_FISI}}, {{DATA_CONTRATO_FISI}}.
+
+_________________________          _________________________
+{{NOME_PACIENTE_FISI}}                     {{NOME_FISIOTERAPEUTA}}',
+    '[{"name": "NOME_PACIENTE_FISI", "label": "Nome do Paciente", "type": "text", "required": true}, {"name": "NOME_FISIOTERAPEUTA", "label": "Nome do Fisioterapeuta", "type": "text", "required": true}, {"name": "DIAGNOSTICO_FISI", "label": "Diagnóstico/Queixa", "type": "text", "required": true}, {"name": "OBJETIVO_TRATAMENTO_FISI", "label": "Objetivo do Tratamento", "type": "text", "required": true}, {"name": "DESCRICAO_TRATAMENTO_FISI", "label": "Descrição do Tratamento", "type": "textarea", "required": true}, {"name": "FREQUENCIA_SESSOES_FISI", "label": "Frequência Semanal", "type": "text", "required": true}, {"name": "VALOR_SESSAO_FISI", "label": "Valor por Sessão (R$)", "type": "text", "required": true}, {"name": "VALOR_PACOTE_FISI", "label": "Valor do Pacote (R$)", "type": "text", "required": false}, {"name": "CIDADE_FISI", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_FISI", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Fisioterapia');
+
+-- Template 31: Música e Aulas de Instrumento
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Aulas de Música e Instrumento',
+    'Música',
+    'Contrato para serviços de aulas de música, instrumento musical e ensino musical',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - AULAS DE MÚSICA
+
+ALUNO/RESPONSÁVEL: {{NOME_ALUNO_MUS}}
+CPF: {{CPF_ALUNO_MUS}}
+Email: {{EMAIL_ALUNO_MUS}}
+Telefone: {{TELEFONE_ALUNO_MUS}}
+
+PROFESSOR: {{NOME_PROFESSOR_MUS}}
+Instrumento/Área: {{INSTRUMENTO_ENSINADO}}
+Formação: {{FORMACAO_PROFESSOR_MUS}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de ensino de {{INSTRUMENTO_ENSINADO}} para o(a) aluno(a) {{NOME_ALUNO_AULA_MUS}}.
+
+METODOLOGIA E CONTEÚDO
+{{METODOLOGIA_AULA_MUS}}
+- Nível: {{NIVEL_ALUNO_MUS}}
+- Frequência: {{FREQUENCIA_AULAS_MUS}}
+- Duração de cada aula: {{DURACAO_AULA_MUS}}
+- Modalidade: {{MODALIDADE_AULA_MUS}} (presencial/online)
+
+VALOR E FORMA DE PAGAMENTO
+O valor mensal das aulas é de R$ {{VALOR_MENSAL_MUS}}.
+- Valor por aula avulsa: R$ {{VALOR_AVULSA_MUS}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_MUS}}
+
+MATERIAIS E EQUIPAMENTOS
+{{PROVISAO_INSTRUMENTOS}}
+
+{{CIDADE_MUS}}, {{DATA_CONTRATO_MUS}}.
+
+_________________________          _________________________
+{{NOME_ALUNO_MUS}}                     {{NOME_PROFESSOR_MUS}}',
+    '[{"name": "NOME_ALUNO_MUS", "label": "Nome do Aluno/Responsável", "type": "text", "required": true}, {"name": "NOME_PROFESSOR_MUS", "label": "Nome do Professor", "type": "text", "required": true}, {"name": "INSTRUMENTO_ENSINADO", "label": "Instrumento/Área Ensinada", "type": "text", "required": true}, {"name": "NIVEL_ALUNO_MUS", "label": "Nível do Aluno (Iniciante, Intermediário, Avançado)", "type": "text", "required": true}, {"name": "FREQUENCIA_AULAS_MUS", "label": "Frequência das Aulas", "type": "text", "required": true}, {"name": "VALOR_MENSAL_MUS", "label": "Valor Mensal (R$)", "type": "text", "required": true}, {"name": "CIDADE_MUS", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_MUS", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Aulas de Música e Instrumento');
+
+-- Template 32: Locação de Imóveis
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Locação de Imóveis',
+    'Imobiliária',
+    'Contrato para locação de imóveis residenciais ou comerciais',
+    'CONTRATO DE LOCAÇÃO DE IMÓVEL
+
+LOCADOR: {{NOME_LOCADOR_IMOV}}
+CPF/CNPJ: {{CPF_CNPJ_LOCADOR}}
+RG: {{RG_LOCADOR}}
+
+LOCATÁRIO: {{NOME_LOCATARIO_IMOV}}
+CPF: {{CPF_LOCATARIO}}
+RG: {{RG_LOCATARIO}}
+Estado Civil: {{ESTADO_CIVIL_LOCATARIO}}
+
+IMÓVEL
+Endereço: {{ENDERECO_IMOVEL}}
+Categoria: {{CATEGORIA_IMOVEL}} (Residencial/Comercial)
+Área: {{AREA_IMOVEL}} m²
+
+VALOR E FORMA DE PAGAMENTO
+O valor do aluguel é de R$ {{VALOR_ALUGUEL}} mensais.
+- Vencimento: Todo dia {{DIA_VENCIMENTO}} de cada mês
+- Caução: R$ {{VALOR_CAUCAO}}
+- IPTU: {{RESPONSAVEL_IPTU}}
+
+PRAZO
+O contrato terá vigência de {{DATA_INICIO_LOC}} até {{DATA_TERMINO_LOC}}.
+
+CONDIÇÕES
+{{CONDICOES_LOCACAO}}
+
+{{CIDADE_IMOV}}, {{DATA_CONTRATO_IMOV}}.
+
+_________________________          _________________________
+{{NOME_LOCADOR_IMOV}}                     {{NOME_LOCATARIO_IMOV}}',
+    '[{"name": "NOME_LOCADOR_IMOV", "label": "Nome do Locador", "type": "text", "required": true}, {"name": "NOME_LOCATARIO_IMOV", "label": "Nome do Locatário", "type": "text", "required": true}, {"name": "ENDERECO_IMOVEL", "label": "Endereço do Imóvel", "type": "text", "required": true}, {"name": "CATEGORIA_IMOVEL", "label": "Categoria (Residencial/Comercial)", "type": "text", "required": true}, {"name": "VALOR_ALUGUEL", "label": "Valor do Aluguel Mensal (R$)", "type": "text", "required": true}, {"name": "VALOR_CAUCAO", "label": "Valor da Caução (R$)", "type": "text", "required": true}, {"name": "DATA_INICIO_LOC", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_LOC", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_IMOV", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_IMOV", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Locação de Imóveis');
+
+-- Template 33: Segurança e Vigilância
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Segurança e Vigilância',
+    'Segurança',
+    'Contrato para serviços de segurança, vigilância patrimonial e monitoramento',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - SEGURANÇA E VIGILÂNCIA
+
+CONTRATANTE: {{NOME_CLIENTE_SEG}}
+CNPJ: {{CNPJ_CLIENTE_SEG}}
+Endereço do Local: {{ENDERECO_LOCAL_SEG}}
+
+EMPRESA DE SEGURANÇA: {{NOME_EMPRESA_SEG}}
+CNPJ: {{CNPJ_EMPRESA_SEG}}
+Credenciamento: {{CREDENCIAMENTO_SEG}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de {{TIPO_SERVICO_SEG}} no local especificado abaixo.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_SEG}}
+- Tipo de vigilância: {{TIPO_VIGILANCIA}}
+- Horário de atuação: {{HORARIO_VIGILANCIA}}
+- Número de vigilantes: {{NUMERO_VIGILANTES}}
+- Período: {{DATA_INICIO_SEG}} até {{DATA_TERMINO_SEG}}
+
+EQUIPAMENTOS
+{{EQUIPAMENTOS_SEG}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor mensal dos serviços é de R$ {{VALOR_MENSAL_SEG}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_SEG}}
+- Reajuste anual: {{REAJUSTE_ANUAL_SEG}}
+
+RESPONSABILIDADE
+{{TERMOS_RESPONSABILIDADE_SEG}}
+
+{{CIDADE_SEG}}, {{DATA_CONTRATO_SEG}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_SEG}}                     {{NOME_EMPRESA_SEG}}',
+    '[{"name": "NOME_CLIENTE_SEG", "label": "Nome do Cliente/Empresa", "type": "text", "required": true}, {"name": "NOME_EMPRESA_SEG", "label": "Nome da Empresa de Segurança", "type": "text", "required": true}, {"name": "TIPO_SERVICO_SEG", "label": "Tipo de Serviço (Vigilância, Monitoramento, etc.)", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_SEG", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "VALOR_MENSAL_SEG", "label": "Valor Mensal (R$)", "type": "text", "required": true}, {"name": "DATA_INICIO_SEG", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_SEG", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_SEG", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_SEG", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Segurança e Vigilância');
+
+-- Template 34: Redação e Revisão de Textos
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Redação e Revisão de Textos',
+    'Escrita',
+    'Contrato para serviços de redação, revisão de textos e produção de conteúdo',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - REDAÇÃO E REVISÃO
+
+CONTRATANTE: {{NOME_CLIENTE_RED}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_RED}}
+Email: {{EMAIL_CLIENTE_RED}}
+
+REDATOR/REVISOR: {{NOME_REDATOR}}
+Formação: {{FORMACAO_REDATOR}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de {{TIPO_SERVICO_RED}} conforme especificado abaixo.
+
+SERVIÇOS SOLICITADOS
+{{DESCRICAO_SERVICOS_RED}}
+- Tipo de texto: {{TIPO_TEXTO}}
+- Quantidade de palavras/páginas: {{QUANTIDADE_TEXTO}}
+- Prazo de entrega: {{PRAZO_ENTREGA_RED}}
+- Número de revisões: {{NUMERO_REVISOES}}
+
+ESTILO E PADRÕES
+{{ESPECIFICACOES_ESTILO}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor total dos serviços é de R$ {{VALOR_TOTAL_RED}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_RED}}
+- Valor por palavra/página: R$ {{VALOR_UNITARIO_RED}}
+
+DIREITOS AUTORAIS
+{{TERMOS_AUTORIA}}
+
+{{CIDADE_RED}}, {{DATA_CONTRATO_RED}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_RED}}                     {{NOME_REDATOR}}',
+    '[{"name": "NOME_CLIENTE_RED", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_REDATOR", "label": "Nome do Redator/Revisor", "type": "text", "required": true}, {"name": "TIPO_SERVICO_RED", "label": "Tipo de Serviço (Redação, Revisão, Tradução)", "type": "text", "required": true}, {"name": "TIPO_TEXTO", "label": "Tipo de Texto (Acadêmico, Comercial, etc.)", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_RED", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "VALOR_TOTAL_RED", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "CIDADE_RED", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_RED", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Redação e Revisão de Textos');
+
+-- Template 35: Organização de Eventos
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Organização de Eventos',
+    'Eventos',
+    'Contrato para serviços de organização, planejamento e coordenação de eventos',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - ORGANIZAÇÃO DE EVENTOS
+
+CONTRATANTE: {{NOME_CLIENTE_ORG}}
+CPF/CNPJ: {{CPF_CNPJ_CLIENTE_ORG}}
+Email: {{EMAIL_CLIENTE_ORG}}
+
+ORGANIZADOR DE EVENTOS: {{NOME_ORGANIZADOR}}
+CNPJ/CPF: {{CNPJ_CPF_ORGANIZADOR}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de organização e coordenação do evento: {{NOME_EVENTO_ORG}}.
+
+EVENTO
+{{DESCRICAO_EVENTO_ORG}}
+- Tipo de evento: {{TIPO_EVENTO_ORG}}
+- Data e horário: {{DATA_HORA_EVENTO_ORG}}
+- Local: {{LOCAL_EVENTO_ORG}}
+- Número estimado de participantes: {{NUMERO_PARTICIPANTES}}
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_ORG}}
+- Planejamento: {{SERVICOS_PLANEJAMENTO}}
+- Execução: {{SERVICOS_EXECUCAO}}
+- Pós-evento: {{SERVICOS_POS_EVENTO}}
+
+VALOR E FORMA DE PAGAMENTO
+O valor total dos serviços é de R$ {{VALOR_TOTAL_ORG}}, sendo:
+- Entrada: R$ {{VALOR_ENTRADA_ORG}}
+- Saldo: R$ {{VALOR_SALDO_ORG}} até {{DATA_PAGAMENTO_SALDO}}
+- Forma de pagamento: {{FORMA_PAGAMENTO_ORG}}
+
+{{CIDADE_ORG}}, {{DATA_CONTRATO_ORG}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_ORG}}                     {{NOME_ORGANIZADOR}}',
+    '[{"name": "NOME_CLIENTE_ORG", "label": "Nome do Cliente", "type": "text", "required": true}, {"name": "NOME_ORGANIZADOR", "label": "Nome do Organizador de Eventos", "type": "text", "required": true}, {"name": "NOME_EVENTO_ORG", "label": "Nome do Evento", "type": "text", "required": true}, {"name": "TIPO_EVENTO_ORG", "label": "Tipo de Evento", "type": "text", "required": true}, {"name": "DATA_HORA_EVENTO_ORG", "label": "Data e Horário do Evento", "type": "text", "required": true}, {"name": "LOCAL_EVENTO_ORG", "label": "Local do Evento", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_ORG", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "VALOR_TOTAL_ORG", "label": "Valor Total (R$)", "type": "text", "required": true}, {"name": "VALOR_ENTRADA_ORG", "label": "Valor da Entrada (R$)", "type": "text", "required": true}, {"name": "CIDADE_ORG", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_ORG", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Organização de Eventos');
+
+-- Template 36: Serviços de TI e Suporte Técnico
+INSERT INTO ck_contracts_templates (title, category, description, content, variables)
+SELECT 
+    'Serviços de TI e Suporte Técnico',
+    'Tecnologia',
+    'Contrato para serviços de suporte técnico, manutenção de TI e administração de sistemas',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS - TI E SUPORTE TÉCNICO
+
+CONTRATANTE: {{NOME_CLIENTE_TI}}
+CNPJ: {{CNPJ_CLIENTE_TI}}
+Endereço: {{ENDERECO_CLIENTE_TI}}
+
+PRESTADOR DE SERVIÇOS TI: {{NOME_EMPRESA_TI}}
+CNPJ: {{CNPJ_EMPRESA_TI}}
+
+OBJETO
+O presente contrato tem por objeto a prestação de serviços de {{TIPO_SERVICO_TI}} conforme especificado abaixo.
+
+SERVIÇOS INCLUSOS
+{{DESCRICAO_SERVICOS_TI}}
+- Equipamentos/sistemas: {{EQUIPAMENTOS_SISTEMAS}}
+- Tipo de atendimento: {{TIPO_ATENDIMENTO_TI}}
+- Horário de atendimento: {{HORARIO_ATENDIMENTO_TI}}
+- Tempo de resposta: {{TEMPO_RESPOSTA_TI}}
+
+PERÍODO DE VIGÊNCIA
+De {{DATA_INICIO_TI}} até {{DATA_TERMINO_TI}}.
+
+VALOR E FORMA DE PAGAMENTO
+O valor mensal dos serviços é de R$ {{VALOR_MENSAL_TI}}.
+- Forma de pagamento: {{FORMA_PAGAMENTO_TI}}
+- Serviços adicionais: {{VALOR_SERVICOS_ADICIONAIS}}
+
+GARANTIA E SLA
+{{SLA_GARANTIAS}}
+
+{{CIDADE_TI}}, {{DATA_CONTRATO_TI}}.
+
+_________________________          _________________________
+{{NOME_CLIENTE_TI}}                     {{NOME_EMPRESA_TI}}',
+    '[{"name": "NOME_CLIENTE_TI", "label": "Nome do Cliente/Empresa", "type": "text", "required": true}, {"name": "NOME_EMPRESA_TI", "label": "Nome da Empresa de TI", "type": "text", "required": true}, {"name": "TIPO_SERVICO_TI", "label": "Tipo de Serviço (Suporte, Manutenção, etc.)", "type": "text", "required": true}, {"name": "DESCRICAO_SERVICOS_TI", "label": "Descrição dos Serviços", "type": "textarea", "required": true}, {"name": "VALOR_MENSAL_TI", "label": "Valor Mensal (R$)", "type": "text", "required": true}, {"name": "DATA_INICIO_TI", "label": "Data Início", "type": "date", "required": true}, {"name": "DATA_TERMINO_TI", "label": "Data Término", "type": "date", "required": true}, {"name": "CIDADE_TI", "label": "Cidade", "type": "text", "required": true}, {"name": "DATA_CONTRATO_TI", "label": "Data do Contrato", "type": "date", "required": true}]'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM ck_contracts_templates WHERE title = 'Serviços de TI e Suporte Técnico');
+
 -- ============================================
 -- 7. TRIGGERS: Atualizar updated_at automaticamente
 -- ============================================
