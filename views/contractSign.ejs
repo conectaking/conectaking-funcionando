@@ -650,7 +650,7 @@
                 if (!pdfDoc) {
                     try {
                         // Usar a rota pública do contrato para obter o PDF
-                        const pdfUrl = `/api/contracts/<%= contract.id %>/pdf?token=${signToken}`;
+                        const pdfUrl = `/contract/sign/${signToken}/pdf`;
                         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                         const loadingTask = pdfjsLib.getDocument(pdfUrl);
                         pdfDoc = await loadingTask.promise;
