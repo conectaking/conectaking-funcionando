@@ -121,7 +121,17 @@
             padding: 20px;
         }
         
-        .signature-method.active {
+            .signature-method.active {
+            border-color: #FFC700;
+            background: rgba(255, 199, 0, 0.05);
+        }
+        
+        .signature-method:hover {
+            border-color: #3C3C3F;
+            cursor: pointer;
+        }
+        
+        .signature-method.active:hover {
             border-color: #FFC700;
         }
         
@@ -616,8 +626,20 @@
             document.getElementById('signature-typed')?.addEventListener('input', function() {
                 if (this.value.trim()) {
                     currentSignatureMethod = 'typed';
+                    // Ativar método digitado visualmente
+                    document.querySelectorAll('.signature-method').forEach(m => m.classList.remove('active'));
+                    document.getElementById('typed-method').classList.add('active');
                 }
             });
+            
+            // Ativar método canvas quando desenhar
+            if (signaturePad) {
+                signaturePad.addEventListener('beginStroke', function() {
+                    document.querySelectorAll('.signature-method').forEach(m => m.classList.remove('active'));
+                    document.getElementById('canvas-method').classList.add('active');
+                    currentSignatureMethod = 'canvas';
+                });
+            }
             
             // Trocar método de assinatura
             document.querySelectorAll('.signature-method').forEach(method => {
@@ -645,14 +667,16 @@
                 
                 if (currentSignatureMethod === 'canvas') {
                     if (signaturePad.isEmpty()) {
-                        alert('Por favor, desenhe sua assinatura no canvas.');
+                        alert('⚠️ Por favor, desenhe sua assinatura no espaço acima antes de continuar.');
+                        document.getElementById('canvas-method').scrollIntoView({ behavior: 'smooth', block: 'center' });
                         return;
                     }
                     signatureData = signaturePad.toDataURL('image/png');
                     signatureImageUrl = signatureData;
                 } else if (currentSignatureMethod === 'upload') {
                     if (!uploadedSignatureData) {
-                        alert('Por favor, faça upload de uma imagem da sua assinatura.');
+                        alert('⚠️ Por favor, selecione uma imagem da sua assinatura antes de continuar.');
+                        document.getElementById('upload-method').scrollIntoView({ behavior: 'smooth', block: 'center' });
                         return;
                     }
                     signatureData = uploadedSignatureData;
@@ -660,7 +684,8 @@
                 } else if (currentSignatureMethod === 'typed') {
                     const typedName = document.getElementById('signature-typed').value.trim();
                     if (!typedName) {
-                        alert('Por favor, digite seu nome completo.');
+                        alert('⚠️ Por favor, digite seu nome completo antes de continuar.');
+                        document.getElementById('typed-method').scrollIntoView({ behavior: 'smooth', block: 'center' });
                         return;
                     }
                     signatureData = typedName;
