@@ -103,6 +103,11 @@ router.post('/sign/:token/submit', asyncHandler(async (req, res) => {
         try {
             await client.query('BEGIN');
 
+            // Verificar código de verificação se necessário
+            if (signer.verification_code && !signer.verification_code_verified) {
+                return responseFormatter.error(res, 'Código de verificação não foi confirmado', 403);
+            }
+
             // Criar assinatura
             await contractRepository.createSignature({
                 signer_id: signer.id,
@@ -110,6 +115,11 @@ router.post('/sign/:token/submit', asyncHandler(async (req, res) => {
                 signature_type,
                 signature_data,
                 signature_image_url,
+                signature_page: req.body.signature_page || 1,
+                signature_x: req.body.signature_x || null,
+                signature_y: req.body.signature_y || null,
+                signature_width: req.body.signature_width || 200,
+                signature_height: req.body.signature_height || 80,
                 ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
                 user_agent: req.headers['user-agent'] || null
             }, client);
@@ -153,6 +163,10 @@ router.post('/sign/:token/submit', asyncHandler(async (req, res) => {
 
             await client.query('COMMIT');
 
+            // Enviar notificações (fora da transação)
+            const updatedContract = await contractRepository.findById(signer.contract_id);
+            await contractService.sendSignatureNotification(updatedContract, signer, allSigned);
+
             return responseFormatter.success(res, {
                 success: true,
                 completed: allSigned
@@ -192,10 +206,69 @@ router.get('/sign/:token/status', asyncHandler(async (req, res) => {
             signed_at: signer.signed_at,
             contract_status: contract.status,
             expires_at: signer.token_expires_at,
-            expired: new Date(signer.token_expires_at) < new Date()
+            expired: new Date(signer.token_expires_at) < new Date(),
+            verification_required: !signer.verification_code_verified && signer.verification_code !== null
         });
     } catch (error) {
         logger.error('Erro ao buscar status:', error);
+        return responseFormatter.error(res, error.message, 400);
+    }
+}));
+
+/**
+ * API: Enviar código de verificação
+ * POST /api/contracts/sign/:token/send-code
+ */
+router.post('/sign/:token/send-code', asyncHandler(async (req, res) => {
+    try {
+        const { token } = req.params;
+        
+        // Buscar signatário
+        const signer = await contractService.findSignerByToken(token);
+        
+        // Buscar contrato
+        const contract = await contractRepository.findById(signer.contract_id);
+        if (!contract) {
+            return responseFormatter.error(res, 'Contrato não encontrado', 404);
+        }
+
+        // Enviar código
+        const { code, expiresAt } = await contractService.sendVerificationCode(signer, contract);
+
+        return responseFormatter.success(res, {
+            expires_at: expiresAt,
+            message: 'Código enviado com sucesso'
+        }, 'Código de verificação enviado');
+    } catch (error) {
+        logger.error('Erro ao enviar código:', error);
+        return responseFormatter.error(res, error.message, 400);
+    }
+}));
+
+/**
+ * API: Verificar código de verificação
+ * POST /api/contracts/sign/:token/verify-code
+ */
+router.post('/sign/:token/verify-code', asyncHandler(async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { code } = req.body;
+
+        if (!code || code.length !== 6) {
+            return responseFormatter.error(res, 'Código inválido', 400);
+        }
+
+        // Buscar signatário
+        const signer = await contractService.findSignerByToken(token);
+
+        // Verificar código
+        await contractService.verifyCode(signer.id, code);
+
+        return responseFormatter.success(res, {
+            verified: true
+        }, 'Código verificado com sucesso');
+    } catch (error) {
+        logger.error('Erro ao verificar código:', error);
         return responseFormatter.error(res, error.message, 400);
     }
 }));

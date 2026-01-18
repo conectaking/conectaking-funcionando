@@ -261,6 +261,22 @@ class ContractRepository {
     }
 
     /**
+     * Buscar signatário por ID
+     */
+    async findSignerById(id) {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                'SELECT * FROM ck_contracts_signers WHERE id = $1',
+                [id]
+            );
+            return result.rows[0] || null;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
      * Criar signatário
      */
     async createSigner(data, existingClient = null) {
@@ -350,6 +366,11 @@ class ContractRepository {
             signature_type,
             signature_data,
             signature_image_url,
+            signature_page,
+            signature_x,
+            signature_y,
+            signature_width,
+            signature_height,
             ip_address,
             user_agent
         } = data;
@@ -361,12 +382,14 @@ class ContractRepository {
             const result = await client.query(
                 `INSERT INTO ck_contracts_signatures (
                     signer_id, contract_id, signature_type, signature_data,
-                    signature_image_url, ip_address, user_agent
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    signature_image_url, signature_page, signature_x, signature_y,
+                    signature_width, signature_height, ip_address, user_agent
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
                 RETURNING *`,
                 [
                     signer_id, contract_id, signature_type, signature_data,
-                    signature_image_url, ip_address, user_agent
+                    signature_image_url, signature_page || 1, signature_x || null, signature_y || null,
+                    signature_width || 200, signature_height || 80, ip_address, user_agent
                 ]
             );
             return result.rows[0];

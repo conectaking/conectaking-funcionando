@@ -222,10 +222,21 @@ class ContractService {
             // Enviar emails (UMA VEZ - conforme plano de economia)
             await this.sendSignEmails(contract, createdSigners);
 
+            // Enviar códigos de verificação automaticamente
+            const updatedContract = await repository.findById(id);
+            for (const signer of createdSigners) {
+                try {
+                    await this.sendVerificationCode(signer, updatedContract);
+                } catch (error) {
+                    logger.warn(`Erro ao enviar código de verificação para ${signer.email}:`, error);
+                    // Continuar mesmo se falhar o envio do código
+                }
+            }
+
             logger.info(`Contrato enviado para assinatura: ${id} com ${createdSigners.length} signatários`);
             
             return {
-                contract: await repository.findById(id),
+                contract: updatedContract,
                 signers: createdSigners
             };
         } catch (error) {
@@ -457,6 +468,259 @@ class ContractService {
         }
 
         return signer;
+    }
+
+    /**
+     * Gerar código de verificação de 6 dígitos
+     */
+    generateVerificationCode() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    /**
+     * Enviar código de verificação por email
+     */
+    async sendVerificationCode(signer, contract) {
+        const code = this.generateVerificationCode();
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + 15); // 15 minutos
+
+        // Salvar código no banco
+        await repository.updateSigner(signer.id, {
+            verification_code: code,
+            verification_code_expires_at: expiresAt,
+            verification_code_attempts: 0,
+            verification_code_verified: false
+        });
+
+        // Enviar email
+        const frontendUrl = config.urls.frontend || 'https://conectaking.com.br';
+        const signUrl = `${frontendUrl}/contract/sign/${signer.sign_token}`;
+        
+        const subject = `🔐 Código de Verificação - Contrato: ${contract.title}`;
+        const html = `
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+                <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
+                    <tr>
+                        <td align="center" style="padding: 40px 20px;">
+                            <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+                                <!-- Header -->
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #991B1B 0%, #000000 100%); padding: 40px 30px; text-align: center;">
+                                        <h1 style="margin: 0; color: #FFC700; font-size: 28px; font-weight: 700;">
+                                            <i class="fas fa-shield-alt"></i> Código de Verificação
+                                        </h1>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Content -->
+                                <tr>
+                                    <td style="padding: 40px 30px;">
+                                        <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                            Olá, <strong>${signer.name}</strong>!
+                                        </p>
+                                        
+                                        <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                            Você está prestes a assinar o contrato: <strong>${contract.title}</strong>
+                                        </p>
+                                        
+                                        <p style="margin: 0 0 30px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                            Use o código abaixo para verificar sua identidade:
+                                        </p>
+                                        
+                                        <div style="background: linear-gradient(135deg, #FFC700 0%, #F59E0B 100%); border-radius: 12px; padding: 30px; text-align: center; margin: 30px 0;">
+                                            <div style="font-size: 48px; font-weight: 700; color: #000000; letter-spacing: 8px; font-family: 'Courier New', monospace;">
+                                                ${code}
+                                            </div>
+                                        </div>
+                                        
+                                        <div style="background-color: #FFF4E6; border: 1px solid #FFC700; border-radius: 8px; padding: 15px; margin: 25px 0;">
+                                            <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                                                <strong>⏰ Importante:</strong> Este código expira em <strong>15 minutos</strong>.
+                                            </p>
+                                        </div>
+                                        
+                                        <p style="margin: 30px 0 0 0; color: #666666; font-size: 14px; line-height: 1.6;">
+                                            Se você não solicitou este código, ignore esta mensagem.
+                                        </p>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Footer -->
+                                <tr>
+                                    <td style="background-color: #1C1C21; padding: 30px; text-align: center;">
+                                        <p style="margin: 0; color: #888888; font-size: 12px;">
+                                            Este email foi enviado automaticamente pelo sistema ConectaKing.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+        `;
+
+        await sendEmail(signer.email, subject, html);
+        logger.info(`Código de verificação enviado para ${signer.email}: ${code}`);
+        
+        return { code, expiresAt };
+    }
+
+    /**
+     * Verificar código de verificação
+     */
+    async verifyCode(signerId, code) {
+        const signer = await repository.findSignerById(signerId);
+        if (!signer) {
+            throw new Error('Signatário não encontrado');
+        }
+
+        // Verificar se código existe
+        if (!signer.verification_code) {
+            throw new Error('Código de verificação não foi gerado. Solicite um novo código.');
+        }
+
+        // Verificar expiração
+        if (new Date(signer.verification_code_expires_at) < new Date()) {
+            throw new Error('Código de verificação expirado. Solicite um novo código.');
+        }
+
+        // Verificar tentativas (máximo 5)
+        if (signer.verification_code_attempts >= 5) {
+            throw new Error('Muitas tentativas incorretas. Solicite um novo código.');
+        }
+
+        // Verificar código
+        if (signer.verification_code !== code) {
+            // Incrementar tentativas
+            await repository.updateSigner(signerId, {
+                verification_code_attempts: (signer.verification_code_attempts || 0) + 1
+            });
+            throw new Error('Código de verificação incorreto');
+        }
+
+        // Marcar como verificado
+        await repository.updateSigner(signerId, {
+            verification_code_verified: true
+        });
+
+        logger.info(`Código verificado com sucesso para signatário ${signerId}`);
+        return true;
+    }
+
+    /**
+     * Enviar notificação quando contrato for assinado
+     */
+    async sendSignatureNotification(contract, signer, allSigned = false) {
+        const frontendUrl = config.urls.frontend || 'https://conectaking.com.br';
+        const db = require('../db');
+        
+        // Notificar o criador do contrato
+        const client = await db.pool.connect();
+        let contractOwner = null;
+        try {
+            const result = await client.query(
+                'SELECT id, email FROM users WHERE id = $1',
+                [contract.user_id]
+            );
+            contractOwner = result.rows[0] || null;
+        } finally {
+            client.release();
+        }
+        
+        if (contractOwner && contractOwner.email) {
+            const ownerSubject = allSigned 
+                ? `✅ Contrato Completo: ${contract.title}`
+                : `📝 Nova Assinatura: ${contract.title}`;
+            
+            const ownerHtml = `
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                </head>
+                <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+                    <table role="presentation" style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #991B1B 0%, #000000 100%); padding: 30px; text-align: center;">
+                                <h1 style="margin: 0; color: #FFC700; font-size: 24px;">
+                                    ${allSigned ? '✅ Contrato Completo!' : '📝 Nova Assinatura'}
+                                </h1>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 30px;">
+                                <p style="color: #333; font-size: 16px;">
+                                    Olá, <strong>${contractOwner.name || 'Usuário'}</strong>!
+                                </p>
+                                <p style="color: #333; font-size: 16px;">
+                                    ${allSigned 
+                                        ? `Todos os signatários assinaram o contrato <strong>${contract.title}</strong>.`
+                                        : `<strong>${signer.name}</strong> (${signer.email}) assinou o contrato <strong>${contract.title}</strong>.`
+                                    }
+                                </p>
+                                ${allSigned ? `
+                                    <p style="text-align: center; margin: 30px 0;">
+                                        <a href="${frontendUrl}/dashboard#contratos" style="background: #FFC700; color: #000; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                                            Ver Contrato
+                                        </a>
+                                    </p>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
+            `;
+            
+            await sendEmail(contractOwner.email, ownerSubject, ownerHtml);
+        }
+
+        // Notificar o signatário (confirmação)
+        const signerSubject = `✅ Assinatura Confirmada: ${contract.title}`;
+        const signerHtml = `
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+            </head>
+            <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+                <table role="presentation" style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%); padding: 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #FFFFFF; font-size: 24px;">
+                                ✅ Assinatura Confirmada
+                            </h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 30px;">
+                            <p style="color: #333; font-size: 16px;">
+                                Olá, <strong>${signer.name}</strong>!
+                            </p>
+                            <p style="color: #333; font-size: 16px;">
+                                Sua assinatura no contrato <strong>${contract.title}</strong> foi confirmada com sucesso.
+                            </p>
+                            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                                Data da assinatura: ${new Date().toLocaleString('pt-BR')}
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+        `;
+        
+        await sendEmail(signer.email, signerSubject, signerHtml);
+        logger.info(`Notificações enviadas para contrato ${contract.id}`);
     }
 
     /**
