@@ -203,6 +203,62 @@ class ContractController {
             return responseFormatter.error(res, error.message, 500);
         }
     }
+
+    /**
+     * Importar PDF e criar contrato
+     */
+    async importPdf(req, res) {
+        try {
+            const userId = req.user.userId;
+            const file = req.file;
+            
+            if (!file) {
+                return responseFormatter.error(res, 'Nenhum arquivo PDF enviado', 400);
+            }
+
+            const { title } = req.body;
+            const signers = req.body.signers ? JSON.parse(req.body.signers) : [];
+
+            const contract = await service.importPdfContract(userId, file, title, signers);
+            return responseFormatter.success(res, contract, 'PDF importado e contrato criado com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao importar PDF:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Download do PDF final do contrato
+     */
+    async downloadFinalPdf(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+            
+            const { filePath, fileName } = await service.downloadFinalPdf(id, userId);
+            
+            const fs = require('fs');
+            const path = require('path');
+            
+            if (!fs.existsSync(filePath)) {
+                return responseFormatter.error(res, 'Arquivo PDF não encontrado', 404);
+            }
+
+            res.download(filePath, fileName, (err) => {
+                if (err) {
+                    logger.error('Erro ao baixar PDF:', err);
+                    if (!res.headersSent) {
+                        responseFormatter.error(res, 'Erro ao baixar PDF', 500);
+                    }
+                }
+            });
+        } catch (error) {
+            logger.error('Erro ao baixar PDF:', error);
+            const statusCode = error.message.includes('permissão') ? 403 : 
+                              error.message.includes('não encontrado') ? 404 : 500;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
 }
 
 module.exports = new ContractController();

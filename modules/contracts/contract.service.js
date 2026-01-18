@@ -410,6 +410,124 @@ class ContractService {
 
         return await repository.findAuditLogsByContractId(contractId);
     }
+
+    /**
+     * Importar PDF e criar contrato
+     * @param {Object} userId - ID do usuário
+     * @param {Object} file - Arquivo PDF (Multer file object)
+     * @param {String} title - Título do contrato
+     * @param {Array} signers - Array de signatários (opcional)
+     */
+    async importPdfContract(userId, file, title, signers = []) {
+        if (!file || file.mimetype !== 'application/pdf') {
+            throw new Error('Arquivo PDF inválido');
+        }
+
+        const fs = require('fs').promises;
+        const path = require('path');
+        const uploadsDir = path.join(__dirname, '../../uploads/contracts');
+        
+        // Criar diretório se não existir
+        try {
+            await fs.mkdir(uploadsDir, { recursive: true });
+        } catch (err) {
+            // Diretório já existe
+        }
+
+        // Ler arquivo PDF
+        const pdfBuffer = await fs.readFile(file.path);
+        const pdfHash = this.generateSHA256Hash(pdfBuffer);
+
+        // Salvar PDF no diretório de uploads
+        const pdfFileName = `contract_${Date.now()}_${file.originalname}`;
+        const pdfPath = path.join(uploadsDir, pdfFileName);
+        await fs.writeFile(pdfPath, pdfBuffer);
+
+        // Remover arquivo temporário do multer
+        await fs.unlink(file.path).catch(() => {});
+
+        // Criar contrato
+        const contract = await repository.create({
+            user_id: userId,
+            template_id: null,
+            title: title || file.originalname.replace('.pdf', ''),
+            status: TYPES.STATUS.DRAFT,
+            contract_type: 'imported',
+            pdf_url: `/uploads/contracts/${pdfFileName}`,
+            pdf_content: null, // PDF importado não tem conteúdo editável
+            variables: {},
+            original_pdf_hash: pdfHash
+        });
+
+        // Log de auditoria
+        await repository.createAuditLog({
+            contract_id: contract.id,
+            user_id: userId,
+            action: 'imported',
+            details: { pdf_filename: file.originalname, pdf_hash: pdfHash },
+            ip_address: null,
+            user_agent: null
+        });
+
+        logger.info(`PDF importado e contrato criado: ${contract.id}`);
+        return contract;
+    }
+
+    /**
+     * Gerar PDF final com assinaturas (placeholder)
+     * TODO: Implementar geração real de PDF com pdf-lib ou pdfmake
+     */
+    async generateFinalPdf(contractId) {
+        const contract = await repository.findById(contractId);
+        if (!contract) {
+            throw new Error('Contrato não encontrado');
+        }
+
+        if (contract.status !== TYPES.STATUS.COMPLETED) {
+            throw new Error('Apenas contratos completos podem ter PDF final gerado');
+        }
+
+        // TODO: Implementar geração real de PDF
+        // Por enquanto, retornar o PDF original se importado, ou gerar a partir do template
+        logger.warn('generateFinalPdf não implementado completamente - usando placeholder');
+        return {
+            pdf_url: contract.pdf_url || `/uploads/contracts/placeholder_${contractId}.pdf`,
+            pdf_hash: contract.original_pdf_hash || 'placeholder-hash'
+        };
+    }
+
+    /**
+     * Obter caminho do PDF final para download
+     */
+    async downloadFinalPdf(contractId, userId) {
+        // Verificar ownership
+        const ownsContract = await repository.checkOwnership(contractId, userId);
+        if (!ownsContract) {
+            throw new Error('Você não tem permissão para baixar este contrato');
+        }
+
+        const contract = await repository.findById(contractId);
+        if (!contract) {
+            throw new Error('Contrato não encontrado');
+        }
+
+        const path = require('path');
+        const fs = require('fs').promises;
+
+        // Se houver PDF final, retornar ele
+        if (contract.final_pdf_url) {
+            const filePath = path.join(__dirname, '../../public', contract.final_pdf_url);
+            const fileName = `${contract.title.replace(/[^a-z0-9]/gi, '_')}_assinado.pdf`;
+            return { filePath, fileName };
+        }
+
+        // Senão, gerar PDF final
+        const pdfData = await this.generateFinalPdf(contractId);
+        const filePath = path.join(__dirname, '../../public', pdfData.pdf_url);
+        const fileName = `${contract.title.replace(/[^a-z0-9]/gi, '_')}_assinado.pdf`;
+        
+        return { filePath, fileName };
+    }
 }
 
 module.exports = new ContractService();
