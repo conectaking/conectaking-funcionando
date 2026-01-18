@@ -9,6 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.9/dist/signature_pad.umd.min.js"></script>
+    <!-- PDF.js para preview de PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <style>
         * {
             margin: 0;
@@ -374,13 +379,53 @@
         </div>
         
         <div class="contract-preview">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0;"><i class="fas fa-file-alt"></i> Visualização do Contrato</h2>
-                <button id="expand-contract-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9rem;">
-                    <i class="fas fa-expand"></i> Expandir
-                </button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h2 style="margin: 0;"><i class="fas fa-file-contract"></i> Visualização do Contrato</h2>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <% if (contract.pdf_url && contract.contract_type === 'imported') { %>
+                    <button id="view-pdf-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9rem;">
+                        <i class="fas fa-file-pdf"></i> Ver PDF
+                    </button>
+                    <% } %>
+                    <button id="view-text-btn" class="btn btn-secondary active" style="padding: 8px 16px; font-size: 0.9rem;">
+                        <i class="fas fa-file-alt"></i> Ver Texto
+                    </button>
+                </div>
             </div>
-            <div class="contract-content" id="contract-content"><%= contract.pdf_content || 'Conteúdo do contrato não disponível' %></div>
+            
+            <!-- Visualização de Texto -->
+            <div id="contract-text-view" class="contract-content"><%= contract.pdf_content || 'Conteúdo do contrato não disponível' %></div>
+            
+            <!-- Visualização de PDF (oculta por padrão) -->
+            <% if (contract.pdf_url && contract.contract_type === 'imported') { %>
+            <div id="contract-pdf-view" style="display: none;">
+                <div style="background: #0B0B0B; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="pdf-prev-page" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span id="pdf-page-info" style="color: #ECECEC; font-size: 0.9rem; min-width: 100px; text-align: center;">Página 1</span>
+                            <button id="pdf-next-page" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="pdf-zoom-out" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
+                                <i class="fas fa-search-minus"></i>
+                            </button>
+                            <span id="pdf-zoom-level" style="color: #ECECEC; font-size: 0.9rem; min-width: 60px; text-align: center;">100%</span>
+                            <button id="pdf-zoom-in" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
+                                <i class="fas fa-search-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="pdf-canvas-container" style="background: #2C2C2F; border-radius: 8px; padding: 20px; overflow: auto; max-height: 600px; text-align: center;">
+                    <canvas id="pdf-canvas" style="max-width: 100%; height: auto; border-radius: 4px;"></canvas>
+                </div>
+            </div>
+            <% } %>
         </div>
         
         <!-- Modal de visualização expandida -->

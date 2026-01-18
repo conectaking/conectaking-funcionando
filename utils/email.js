@@ -34,7 +34,7 @@ function initEmailTransporter() {
 /**
  * Envia email
  */
-async function sendEmail(to, subject, html, text = null) {
+async function sendEmail(to, subject, html, text = null, attachments = []) {
     try {
         const emailTransporter = initEmailTransporter();
 
@@ -48,12 +48,13 @@ async function sendEmail(to, subject, html, text = null) {
             to,
             subject,
             html,
-            text: text || html.replace(/<[^>]*>/g, '') // Remove HTML se text não fornecido
+            text: text || html.replace(/<[^>]*>/g, ''), // Remove HTML se text não fornecido
+            attachments: attachments.length > 0 ? attachments : undefined
         };
 
         const info = await emailTransporter.sendMail(mailOptions);
         
-        logger.info('Email enviado', { to, subject, messageId: info.messageId });
+        logger.info('Email enviado', { to, subject, messageId: info.messageId, attachments: attachments.length });
         
         return { success: true, messageId: info.messageId };
     } catch (error) {
