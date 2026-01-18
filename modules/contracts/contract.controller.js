@@ -81,9 +81,9 @@ class ContractController {
         try {
             const { id } = req.params;
             const userId = req.user.userId;
-            const { signers } = req.body;
+            const { signers, signaturePositions } = req.body;
 
-            const result = await service.sendForSignature(id, userId, signers);
+            const result = await service.sendForSignature(id, userId, signers, signaturePositions);
             return responseFormatter.success(res, result, 'Contrato enviado para assinatura com sucesso');
         } catch (error) {
             logger.error('Erro ao enviar contrato para assinatura:', error);

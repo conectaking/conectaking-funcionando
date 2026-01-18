@@ -147,7 +147,7 @@ class ContractService {
     /**
      * Enviar contrato para assinatura
      */
-    async sendForSignature(id, userId, signers) {
+    async sendForSignature(id, userId, signers, signaturePositions = null) {
         // Verificar ownership
         const ownsContract = await repository.checkOwnership(id, userId);
         if (!ownsContract) {
@@ -180,6 +180,21 @@ class ContractService {
             tokenExpiryDate.setDate(tokenExpiryDate.getDate() + TYPES.DEFAULT_TOKEN_EXPIRY_DAYS);
 
             const createdSigners = [];
+            // Mapear posições por email para aplicar depois
+            const positionsByEmail = {};
+            if (signaturePositions && typeof signaturePositions === 'object') {
+                // Buscar signatários existentes para mapear IDs
+                const existingSigners = await repository.findSignersByContractId(id);
+                Object.entries(signaturePositions).forEach(([signerId, pos]) => {
+                    // Tentar encontrar pelo ID ou email
+                    const signer = existingSigners.find(s => s.id == signerId) || 
+                                  signers.find(s => s.email === signerId);
+                    if (signer) {
+                        positionsByEmail[signer.email || signerId] = pos;
+                    }
+                });
+            }
+            
             for (const signerData of signers) {
                 const validation = validators.validateSignerData(signerData);
                 if (!validation.isValid) {
@@ -197,6 +212,18 @@ class ContractService {
                     ip_address: null,
                     user_agent: null
                 }, client);
+
+                // Aplicar posições se existirem
+                const position = positionsByEmail[signerData.email];
+                if (position && (position.page || position.x !== undefined)) {
+                    await repository.updateSigner(signer.id, {
+                        signature_page: position.page || 1,
+                        signature_x: position.x || null,
+                        signature_y: position.y || null,
+                        signature_width: position.width || 150,
+                        signature_height: position.height || 60
+                    }, client);
+                }
 
                 createdSigners.push(signer);
             }
