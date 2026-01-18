@@ -5,6 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate": "node scripts/run-migrations.js",
+    "migrate-089-090": "node scripts/run-migrations-089-090.js",
+    "check-migrations-089-090": "node scripts/check-migrations-089-090.js",
     "migrate-enum": "node scripts/add-embed-types-to-enum.js",
     "start": "node server.js",
     "push": "powershell -ExecutionPolicy Bypass -File ./push-auto.ps1",
