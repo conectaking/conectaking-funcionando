@@ -598,6 +598,8 @@ app.use('/api/push', apiLimiter, pushNotificationsRoutes);
 // Histórico de confirmações (Melhoria 7)
 const confirmationHistoryRoutes = require('./routes/confirmationHistory.routes');
 app.use('/api/guest-lists', apiLimiter, confirmationHistoryRoutes);
+
+// IMPORTANTE: Rotas públicas de contrato devem vir ANTES das rotas genéricas (/) para evitar interceptação
 app.use('/contract', publicContractRoutes);
 app.use('/vcard', vcardRoutes);
 

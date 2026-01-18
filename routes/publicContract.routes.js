@@ -14,17 +14,55 @@ router.get('/sign/:signToken', asyncHandler(async (req, res) => {
     try {
         const { signToken } = req.params;
         
+        logger.info('Tentando carregar página de assinatura', { signToken: signToken.substring(0, 20) + '...' });
+        
         // Buscar signatário por token
         const signer = await contractService.findSignerByToken(signToken);
+        
+        if (!signer) {
+            logger.warn('Signatário não encontrado', { signToken: signToken.substring(0, 20) + '...' });
+            return res.status(404).send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Token Inválido</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                        h1 { color: #EF4444; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Token de Assinatura Inválido</h1>
+                    <p>O link de assinatura não é válido ou expirou.</p>
+                    <p>Por favor, entre em contato com quem enviou o contrato para receber um novo link.</p>
+                </body>
+                </html>
+            `);
+        }
         
         // Buscar contrato
         const contract = await contractRepository.findById(signer.contract_id);
         if (!contract) {
-            return res.status(404).render('error', { 
-                message: 'Contrato não encontrado',
-                error: { status: 404 }
-            });
+            logger.warn('Contrato não encontrado', { contractId: signer.contract_id });
+            return res.status(404).send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Contrato Não Encontrado</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                        h1 { color: #EF4444; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Contrato Não Encontrado</h1>
+                    <p>O contrato solicitado não foi encontrado no sistema.</p>
+                </body>
+                </html>
+            `);
         }
+
+        logger.info('Renderizando página de assinatura', { contractId: contract.id, signerId: signer.id });
 
         // Renderizar página de assinatura
         res.render('contractSign', {
@@ -34,10 +72,67 @@ router.get('/sign/:signToken', asyncHandler(async (req, res) => {
         });
     } catch (error) {
         logger.error('Erro ao carregar página de assinatura:', error);
-        res.status(404).render('error', {
-            message: error.message || 'Token de assinatura inválido',
-            error: { status: 404 }
-        });
+        
+        // Retornar página de erro HTML simples se o template não existir
+        const errorMessage = error.message || 'Token de assinatura inválido';
+        const isExpired = errorMessage.includes('expirado');
+        const isAlreadySigned = errorMessage.includes('já foi assinado');
+        
+        res.status(404).send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Erro ao Carregar Contrato</title>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    body { 
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                        text-align: center; 
+                        padding: 50px 20px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: #fff;
+                        min-height: 100vh;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .error-container {
+                        background: rgba(255, 255, 255, 0.95);
+                        color: #333;
+                        padding: 40px;
+                        border-radius: 12px;
+                        max-width: 600px;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                    }
+                    h1 { 
+                        color: #EF4444; 
+                        margin-bottom: 20px;
+                        font-size: 2rem;
+                    }
+                    p {
+                        font-size: 1.1rem;
+                        line-height: 1.6;
+                        margin-bottom: 15px;
+                    }
+                    .icon {
+                        font-size: 4rem;
+                        margin-bottom: 20px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="error-container">
+                    <div class="icon">${isExpired ? '⏰' : isAlreadySigned ? '✅' : '❌'}</div>
+                    <h1>${isExpired ? 'Link Expirado' : isAlreadySigned ? 'Contrato Já Assinado' : 'Erro ao Carregar Contrato'}</h1>
+                    <p>${errorMessage}</p>
+                    ${isExpired ? '<p>Por favor, entre em contato com quem enviou o contrato para receber um novo link de assinatura.</p>' : ''}
+                    ${isAlreadySigned ? '<p>Este contrato já foi assinado anteriormente.</p>' : ''}
+                    ${!isExpired && !isAlreadySigned ? '<p>Por favor, verifique o link ou entre em contato com o suporte.</p>' : ''}
+                </div>
+            </body>
+            </html>
+        `);
     }
 }));
 
@@ -45,9 +140,9 @@ router.get('/sign/:signToken', asyncHandler(async (req, res) => {
  * Visualizar PDF do contrato (rota pública usando token)
  * GET /contract/sign/:token/pdf
  */
-router.get('/sign/:token/pdf', asyncHandler(async (req, res) => {
+router.get('/sign/:signToken/pdf', asyncHandler(async (req, res) => {
     try {
-        const { token } = req.params;
+        const { signToken: token } = req.params;
         
         // Buscar signatário por token
         const signer = await contractService.findSignerByToken(token);
@@ -89,11 +184,11 @@ router.get('/sign/:token/pdf', asyncHandler(async (req, res) => {
 
 /**
  * API: Registrar acesso ao link de assinatura (tracking)
- * POST /api/contracts/sign/:token/start
+ * POST /contract/sign/:signToken/start
  */
-router.post('/sign/:token/start', asyncHandler(async (req, res) => {
+router.post('/sign/:signToken/start', asyncHandler(async (req, res) => {
     try {
-        const { token } = req.params;
+        const { signToken: token } = req.params;
         
         // Buscar signatário
         const signer = await contractService.findSignerByToken(token);
@@ -123,11 +218,11 @@ router.post('/sign/:token/start', asyncHandler(async (req, res) => {
 
 /**
  * API: Submeter assinatura
- * POST /api/contracts/sign/:token/submit
+ * POST /contract/sign/:signToken/submit
  */
-router.post('/sign/:token/submit', asyncHandler(async (req, res) => {
+router.post('/sign/:signToken/submit', asyncHandler(async (req, res) => {
     try {
-        const { token } = req.params;
+        const { signToken: token } = req.params;
         const { signature_type, signature_data, signature_image_url } = req.body;
 
         // Buscar signatário
@@ -231,11 +326,11 @@ router.post('/sign/:token/submit', asyncHandler(async (req, res) => {
 
 /**
  * API: Status da assinatura
- * GET /api/contracts/sign/:token/status
+ * GET /contract/sign/:signToken/status
  */
-router.get('/sign/:token/status', asyncHandler(async (req, res) => {
+router.get('/sign/:signToken/status', asyncHandler(async (req, res) => {
     try {
-        const { token } = req.params;
+        const { signToken: token } = req.params;
         
         // Buscar signatário
         const signer = await contractRepository.findSignerByToken(token);
@@ -263,11 +358,11 @@ router.get('/sign/:token/status', asyncHandler(async (req, res) => {
 
 /**
  * API: Enviar código de verificação
- * POST /api/contracts/sign/:token/send-code
+ * POST /contract/sign/:signToken/send-code
  */
-router.post('/sign/:token/send-code', asyncHandler(async (req, res) => {
+router.post('/sign/:signToken/send-code', asyncHandler(async (req, res) => {
     try {
-        const { token } = req.params;
+        const { signToken: token } = req.params;
         
         // Buscar signatário
         const signer = await contractService.findSignerByToken(token);
@@ -293,11 +388,11 @@ router.post('/sign/:token/send-code', asyncHandler(async (req, res) => {
 
 /**
  * API: Verificar código de verificação
- * POST /api/contracts/sign/:token/verify-code
+ * POST /contract/sign/:signToken/verify-code
  */
-router.post('/sign/:token/verify-code', asyncHandler(async (req, res) => {
+router.post('/sign/:signToken/verify-code', asyncHandler(async (req, res) => {
     try {
-        const { token } = req.params;
+        const { signToken: token } = req.params;
         const { code } = req.body;
 
         if (!code || code.length !== 6) {
