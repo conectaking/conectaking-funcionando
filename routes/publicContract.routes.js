@@ -7,6 +7,18 @@ const responseFormatter = require('../utils/responseFormatter');
 const logger = require('../utils/logger');
 
 /**
+ * Função auxiliar para extrair token da URL
+ */
+function extractTokenFromPath(path, suffix = '') {
+    // Remove /sign/ do início e o sufixo do final (ex: /pdf, /start, etc)
+    let token = path.replace(/^\/sign\//, '');
+    if (suffix) {
+        token = token.replace(new RegExp(`/${suffix}$`), '');
+    }
+    return token.trim();
+}
+
+/**
  * Página pública de assinatura de contrato
  * GET /contract/sign/*
  * Captura todo o token incluindo hífens usando * (wildcard)
@@ -14,14 +26,15 @@ const logger = require('../utils/logger');
 router.get('/sign/*', asyncHandler(async (req, res) => {
     try {
         // Capturar token completo da URL (tudo após /sign/)
-        const signToken = req.params[0] || req.path.replace('/sign/', '');
+        const signToken = req.params[0] || extractTokenFromPath(req.path);
         
         // Limpar token (remover caracteres especiais ou espaços, mas manter hífens)
         const cleanToken = signToken.trim();
         
         logger.info('Tentando carregar página de assinatura', { 
             tokenLength: cleanToken.length,
-            tokenPreview: cleanToken.length > 20 ? cleanToken.substring(0, 20) + '...' : cleanToken
+            tokenPreview: cleanToken.length > 20 ? cleanToken.substring(0, 20) + '...' : cleanToken,
+            fullPath: req.path
         });
         
         // Buscar signatário por token
@@ -167,11 +180,11 @@ router.get('/sign/*', asyncHandler(async (req, res) => {
 
 /**
  * Visualizar PDF do contrato (rota pública usando token)
- * GET /contract/sign/:token/pdf
+ * GET /contract/sign/*/pdf
  */
-router.get('/sign/:signToken/pdf', asyncHandler(async (req, res) => {
+router.get('/sign/*/pdf', asyncHandler(async (req, res) => {
     try {
-        const { signToken } = req.params;
+        const signToken = extractTokenFromPath(req.path, 'pdf');
         const token = signToken.trim();
         
         // Buscar signatário por token
@@ -214,11 +227,11 @@ router.get('/sign/:signToken/pdf', asyncHandler(async (req, res) => {
 
 /**
  * API: Registrar acesso ao link de assinatura (tracking)
- * POST /contract/sign/:signToken(*)/start
+ * POST /contract/sign/*/start
  */
-router.post('/sign/:signToken(*)/start', asyncHandler(async (req, res) => {
+router.post('/sign/*/start', asyncHandler(async (req, res) => {
     try {
-        const { signToken } = req.params;
+        const signToken = extractTokenFromPath(req.path, 'start');
         const token = signToken.trim();
         
         // Buscar signatário
@@ -249,11 +262,11 @@ router.post('/sign/:signToken(*)/start', asyncHandler(async (req, res) => {
 
 /**
  * API: Submeter assinatura
- * POST /contract/sign/:signToken(*)/submit
+ * POST /contract/sign/*/submit
  */
-router.post('/sign/:signToken(*)/submit', asyncHandler(async (req, res) => {
+router.post('/sign/*/submit', asyncHandler(async (req, res) => {
     try {
-        const { signToken } = req.params;
+        const signToken = extractTokenFromPath(req.path, 'submit');
         const token = signToken.trim();
         const { signature_type, signature_data, signature_image_url } = req.body;
 
@@ -276,7 +289,7 @@ router.post('/sign/:signToken(*)/submit', asyncHandler(async (req, res) => {
         try {
             await client.query('BEGIN');
 
-            // Verificar código de verificação se necessário
+            // Verificar código de verificação se necessário (mas não obrigatório)
             if (signer.verification_code && !signer.verification_code_verified) {
                 return responseFormatter.error(res, 'Código de verificação não foi confirmado', 403);
             }
@@ -358,11 +371,11 @@ router.post('/sign/:signToken(*)/submit', asyncHandler(async (req, res) => {
 
 /**
  * API: Status da assinatura
- * GET /contract/sign/:signToken(*)/status
+ * GET /contract/sign/*/status
  */
-router.get('/sign/:signToken(*)/status', asyncHandler(async (req, res) => {
+router.get('/sign/*/status', asyncHandler(async (req, res) => {
     try {
-        const { signToken } = req.params;
+        const signToken = extractTokenFromPath(req.path, 'status');
         const token = signToken.trim();
         
         // Buscar signatário
@@ -391,11 +404,11 @@ router.get('/sign/:signToken(*)/status', asyncHandler(async (req, res) => {
 
 /**
  * API: Enviar código de verificação
- * POST /contract/sign/:signToken(*)/send-code
+ * POST /contract/sign/*/send-code
  */
-router.post('/sign/:signToken(*)/send-code', asyncHandler(async (req, res) => {
+router.post('/sign/*/send-code', asyncHandler(async (req, res) => {
     try {
-        const { signToken } = req.params;
+        const signToken = extractTokenFromPath(req.path, 'send-code');
         const token = signToken.trim();
         
         // Buscar signatário
@@ -422,11 +435,11 @@ router.post('/sign/:signToken(*)/send-code', asyncHandler(async (req, res) => {
 
 /**
  * API: Verificar código de verificação
- * POST /contract/sign/:signToken(*)/verify-code
+ * POST /contract/sign/*/verify-code
  */
-router.post('/sign/:signToken(*)/verify-code', asyncHandler(async (req, res) => {
+router.post('/sign/*/verify-code', asyncHandler(async (req, res) => {
     try {
-        const { signToken } = req.params;
+        const signToken = extractTokenFromPath(req.path, 'verify-code');
         const token = signToken.trim();
         const { code } = req.body;
 
