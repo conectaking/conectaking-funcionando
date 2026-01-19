@@ -127,16 +127,76 @@ class FinanceService {
             throw new Error(validation.errors.join(', '));
         }
 
-        // Atualizar
-        const updated = await repository.updateTransaction(id, userId, data);
+        const db = require('../../db');
+        const client = await db.pool.connect();
+        
+        try {
+            await client.query('BEGIN');
 
-        // Se mudou status ou valor, atualizar saldo da conta
-        if ((data.status !== undefined || data.amount !== undefined) && updated.account_id) {
-            await this.updateAccountBalance(updated.account_id, userId);
+            // Atualizar transação existente
+            const updated = await repository.updateTransaction(id, userId, data);
+
+            // Se foi marcado como recorrente e tem recurring_times, criar transações futuras
+            if (data.is_recurring && data.recurring_times && data.recurring_times > 1) {
+                // Verificar se já existem transações recorrentes criadas para esta transação
+                // (buscar por mesma descrição e datas futuras próximas)
+                const baseDate = new Date(data.transaction_date || existing.transaction_date);
+                
+                // Criar transações para os meses seguintes
+                for (let i = 1; i < data.recurring_times; i++) {
+                    const nextDate = new Date(baseDate);
+                    const nextYear = nextDate.getFullYear();
+                    const nextMonth = nextDate.getMonth() + i;
+                    
+                    const finalYear = nextYear + Math.floor(nextMonth / 12);
+                    const finalMonth = nextMonth % 12;
+                    
+                    nextDate.setFullYear(finalYear);
+                    nextDate.setMonth(finalMonth);
+                    const dayOfMonth = baseDate.getDate();
+                    nextDate.setDate(Math.min(dayOfMonth, new Date(finalYear, finalMonth + 1, 0).getDate()));
+
+                    // Verificar se já existe transação para esta data
+                    const existingRecurring = await repository.findTransactionsByUserId(userId, {
+                        dateFrom: nextDate.toISOString().split('T')[0],
+                        dateTo: nextDate.toISOString().split('T')[0],
+                        limit: 100
+                    });
+                    
+                    const alreadyExists = existingRecurring.data.some(t => 
+                        t.description === (data.description || existing.description) &&
+                        t.type === (data.type || existing.type) &&
+                        Math.abs(new Date(t.transaction_date).getTime() - nextDate.getTime()) < 86400000 // Mesmo dia
+                    );
+                    
+                    if (!alreadyExists) {
+                        await repository.createTransaction({
+                            ...data,
+                            user_id: userId,
+                            transaction_date: nextDate.toISOString().split('T')[0],
+                            is_recurring: false,
+                            recurring_times: null
+                        }, client);
+                    }
+                }
+            }
+
+            await client.query('COMMIT');
+
+            // Se mudou status ou valor, atualizar saldo da conta
+            if ((data.status !== undefined || data.amount !== undefined) && updated.account_id) {
+                await this.updateAccountBalance(updated.account_id, userId);
+            }
+
+            logger.info(`Transação atualizada: ${id} para usuário ${userId}`);
+            return updated;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            logger.error('Erro ao atualizar transação:', error);
+            throw error;
+        } finally {
+            client.release();
         }
-
-        logger.info(`Transação atualizada: ${id} para usuário ${userId}`);
-        return updated;
     }
 
     /**
