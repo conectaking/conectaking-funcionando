@@ -20,8 +20,8 @@ function extractTokenFromPath(path, suffix = '') {
 
 /**
  * Visualizar PDF do contrato (rota pública usando token)
- * GET /contract/sign/*/pdf
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ * GET /contract/sign/TOKEN/pdf
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
 router.get('/sign/*/pdf', asyncHandler(async (req, res) => {
     try {
@@ -68,8 +68,8 @@ router.get('/sign/*/pdf', asyncHandler(async (req, res) => {
 
 /**
  * API: Status da assinatura
- * GET /contract/sign/*/status
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ * GET /contract/sign/TOKEN/status
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
 router.get('/sign/*/status', asyncHandler(async (req, res) => {
     try {
@@ -102,8 +102,8 @@ router.get('/sign/*/status', asyncHandler(async (req, res) => {
 
 /**
  * API: Registrar acesso ao link de assinatura (tracking)
- * POST /contract/sign/*/start
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ * POST /contract/sign/TOKEN/start
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
 router.post('/sign/*/start', asyncHandler(async (req, res) => {
     try {
@@ -138,8 +138,8 @@ router.post('/sign/*/start', asyncHandler(async (req, res) => {
 
 /**
  * API: Submeter assinatura
- * POST /contract/sign/*/submit
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ * POST /contract/sign/TOKEN/submit
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
 router.post('/sign/*/submit', asyncHandler(async (req, res) => {
     try {
@@ -248,8 +248,8 @@ router.post('/sign/*/submit', asyncHandler(async (req, res) => {
 
 /**
  * API: Enviar código de verificação
- * POST /contract/sign/*/send-code
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ * POST /contract/sign/TOKEN/send-code
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
 router.post('/sign/*/send-code', asyncHandler(async (req, res) => {
     try {
@@ -280,8 +280,8 @@ router.post('/sign/*/send-code', asyncHandler(async (req, res) => {
 
 /**
  * API: Verificar código de verificação
- * POST /contract/sign/*/verify-code
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ * POST /contract/sign/TOKEN/verify-code
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
 router.post('/sign/*/verify-code', asyncHandler(async (req, res) => {
     try {
@@ -310,9 +310,9 @@ router.post('/sign/*/verify-code', asyncHandler(async (req, res) => {
 
 /**
  * Página pública de assinatura de contrato
- * GET /contract/sign/*
+ * GET /contract/sign/TOKEN
  * IMPORTANTE: Esta rota deve vir POR ÚLTIMO (depois de todas as rotas específicas)
- * Captura todo o token incluindo hífens usando * (wildcard)
+ * Captura todo o token incluindo hífens usando wildcard
  */
 router.get('/sign/*', asyncHandler(async (req, res) => {
     try {
