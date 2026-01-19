@@ -54,6 +54,22 @@ class FinanceController {
     }
 
     /**
+     * Obter transação por ID
+     */
+    async getTransaction(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { id } = req.params;
+            const transaction = await service.findTransactionById(id, userId);
+            return responseFormatter.success(res, transaction);
+        } catch (error) {
+            logger.error('Erro ao obter transação:', error);
+            const statusCode = error.message.includes('não encontrada') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
      * Criar transação
      */
     async createTransaction(req, res) {

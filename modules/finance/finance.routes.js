@@ -33,6 +33,7 @@ router.get('/dashboard', controller.getDashboard);
 
 // Transações
 router.get('/transactions', controller.getTransactions);
+router.get('/transactions/:id', controller.getTransaction);
 router.post('/transactions', controller.createTransaction);
 router.put('/transactions/:id', controller.updateTransaction);
 router.delete('/transactions/:id', controller.deleteTransaction);
