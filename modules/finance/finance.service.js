@@ -32,8 +32,21 @@ class FinanceService {
                 const createdTransactions = [transaction];
 
                 for (let i = 1; i < data.recurring_times; i++) {
+                    // Criar nova data adicionando meses corretamente
                     const nextDate = new Date(baseDate);
-                    nextDate.setMonth(nextDate.getMonth() + i);
+                    // Usar setFullYear e setMonth para evitar problemas com virada de ano
+                    const nextYear = nextDate.getFullYear();
+                    const nextMonth = nextDate.getMonth() + i;
+                    
+                    // Ajustar ano se necessário
+                    const finalYear = nextYear + Math.floor(nextMonth / 12);
+                    const finalMonth = nextMonth % 12;
+                    
+                    nextDate.setFullYear(finalYear);
+                    nextDate.setMonth(finalMonth);
+                    // Manter o mesmo dia do mês
+                    const dayOfMonth = baseDate.getDate();
+                    nextDate.setDate(Math.min(dayOfMonth, new Date(finalYear, finalMonth + 1, 0).getDate()));
 
                     const recurringTransaction = await repository.createTransaction({
                         ...data,

@@ -521,12 +521,16 @@ class FinanceRepository {
             const totalExpensePending = parseFloat(expensePendingResult.rows[0]?.total || 0);
             
             // Calcular saldo disponível
-            // Se houver contas cadastradas, usar saldo das contas
-            // Caso contrário, usar saldo líquido (receitas - despesas) como fallback
-            let accountBalance = parseFloat(accountBalanceResult.rows[0]?.total || 0);
-            if (!hasAccounts || accountBalance === 0) {
-                // Usar saldo líquido como fallback
-                accountBalance = totalIncomePaid - totalExpensePaid;
+            // SEMPRE usar saldo líquido (receitas pagas - despesas pagas) para ser coerente
+            // Se houver contas cadastradas e o saldo das contas for diferente, usar o maior valor
+            const accountBalanceFromAccounts = parseFloat(accountBalanceResult.rows[0]?.total || 0);
+            const accountBalanceFromTransactions = totalIncomePaid - totalExpensePaid;
+            
+            // Usar o saldo calculado das transações (mais preciso)
+            // Se houver contas e o saldo for maior, usar o maior valor
+            let accountBalance = accountBalanceFromTransactions;
+            if (hasAccounts && accountBalanceFromAccounts > accountBalanceFromTransactions) {
+                accountBalance = accountBalanceFromAccounts;
             }
 
             return {
