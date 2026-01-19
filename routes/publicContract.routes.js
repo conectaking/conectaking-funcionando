@@ -278,9 +278,10 @@ router.post(/^\/sign\/(.+)\/send-code$/, asyncHandler(async (req, res) => {
  * API: Verificar código de verificação
  * POST /contract/sign/TOKEN/verify-code
  */
-router.post('/sign/:token(*)/verify-code', asyncHandler(async (req, res) => {
+router.post(/^\/sign\/(.+)\/verify-code$/, asyncHandler(async (req, res) => {
     try {
-        const token = (req.params.token || req.signToken || extractTokenFromPath(req.path, 'verify-code')).trim();
+        const match = req.path.match(/^\/sign\/(.+)\/verify-code$/);
+        const token = (match ? match[1] : extractTokenFromPath(req.path, 'verify-code')).trim();
         const { code } = req.body;
 
         if (!code || code.length !== 6) {
