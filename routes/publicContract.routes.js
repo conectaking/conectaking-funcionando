@@ -8,13 +8,14 @@ const logger = require('../utils/logger');
 
 /**
  * Página pública de assinatura de contrato
- * GET /contract/sign/:signToken
+ * GET /contract/sign/:signToken(*)
+ * Usa (*) para capturar todo o token incluindo hífens
  */
-router.get('/sign/:signToken', asyncHandler(async (req, res) => {
+router.get('/sign/:signToken(*)', asyncHandler(async (req, res) => {
     try {
         const { signToken } = req.params;
         
-        // Limpar token (remover caracteres especiais ou espaços)
+        // Limpar token (remover caracteres especiais ou espaços, mas manter hífens)
         const cleanToken = signToken.trim();
         
         logger.info('Tentando carregar página de assinatura', { 
@@ -212,9 +213,9 @@ router.get('/sign/:signToken/pdf', asyncHandler(async (req, res) => {
 
 /**
  * API: Registrar acesso ao link de assinatura (tracking)
- * POST /contract/sign/:signToken/start
+ * POST /contract/sign/:signToken(*)/start
  */
-router.post('/sign/:signToken/start', asyncHandler(async (req, res) => {
+router.post('/sign/:signToken(*)/start', asyncHandler(async (req, res) => {
     try {
         const { signToken } = req.params;
         const token = signToken.trim();

@@ -254,9 +254,9 @@ class ContractService {
 
             await client.query('COMMIT');
 
-            // Enviar emails unificados (link + código de verificação em um único email)
+            // Enviar emails (sem código de verificação por padrão - pode ser habilitado se necessário)
             const updatedContract = await repository.findById(id);
-            await this.sendSignEmails(updatedContract, createdSigners, true); // true = incluir código de verificação
+            await this.sendSignEmails(updatedContract, createdSigners, false); // false = sem código de verificação
 
             logger.info(`Contrato enviado para assinatura: ${id} com ${createdSigners.length} signatários`);
             
