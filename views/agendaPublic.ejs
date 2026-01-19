@@ -207,7 +207,8 @@
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-calendar-check"></i> Agendar Reunião</h1>
-            <p>Escolha uma data e horário disponível</p>
+            <p>Agende uma reunião com <strong><%= ownerName %></strong></p>
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">Escolha uma data e horário disponível</p>
         </div>
         
         <div class="step-indicator">
@@ -304,8 +305,9 @@
     </div>
     
     <script>
-        const API_URL = '<%= typeof API_URL !== "undefined" ? API_URL : "/api" %>';
+        const API_URL = '<%= typeof API_URL !== "undefined" ? API_URL : "https://conectaking-api.onrender.com/api" %>';
         const slug = '<%= slug %>';
+        const ownerName = '<%= typeof ownerName !== "undefined" ? ownerName : "Profissional" %>';
         let selectedDate = null;
         let selectedSlot = null;
         let reservationId = null;
@@ -401,7 +403,7 @@
             
             // Calcular horários
             const startDateTime = `${selectedDate}T${selectedSlot.start_time}`;
-            const duration = <%= settings.meeting_duration_minutes || 30 %>;
+            const duration = <%= (typeof settings !== 'undefined' && settings && settings.meeting_duration_minutes) ? settings.meeting_duration_minutes : 30 %>;
             const endDateTime = new Date(new Date(startDateTime).getTime() + duration * 60000).toISOString();
             
             try {

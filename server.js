@@ -604,10 +604,14 @@ const confirmationHistoryRoutes = require('./routes/confirmationHistory.routes')
 app.use('/api/guest-lists', apiLimiter, confirmationHistoryRoutes);
 
 // IMPORTANTE: Rotas públicas de agenda devem vir ANTES das rotas genéricas (/) para evitar interceptação
+// Rotas específicas de API primeiro
 const publicAgendaRoutes = require('./routes/publicAgenda.routes');
 const oauthAgendaRoutes = require('./routes/oauthAgenda.routes');
-app.use('/agenda', publicAgendaRoutes);
+// Registrar rotas de API primeiro (mais específicas)
+app.use('/api/agenda', publicAgendaRoutes);
 app.use('/api/oauth/agenda', oauthAgendaRoutes);
+// Depois registrar rotas públicas genéricas
+app.use('/agenda', publicAgendaRoutes);
 
 // IMPORTANTE: Rotas públicas de contrato devem vir ANTES das rotas genéricas (/) para evitar interceptação
 app.use('/contract', publicContractRoutes);

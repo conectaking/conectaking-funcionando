@@ -283,9 +283,10 @@ class AgendaService {
             }
 
             // Criar evento no calendário do dono
+            const ownerEventDescription = await this.buildEventDescription(leadData, appointment, 'owner', client);
             const ownerEventData = {
                 summary: `Reunião com ${leadData.full_name}`,
-                description: this.buildEventDescription(leadData, appointment, 'owner'),
+                description: ownerEventDescription,
                 startDateTime: appointment.start_at,
                 endDateTime: appointment.end_at,
                 timeZone: settings.timezone
@@ -303,9 +304,12 @@ class AgendaService {
             if (clientTokens) {
                 try {
                     const clientCalendar = await googleCalendarService.createCalendarClient(clientTokens);
+                    const ownerResult = await client.query('SELECT name FROM users WHERE id = $1', [appointment.owner_user_id]);
+                    const ownerName = ownerResult.rows[0]?.name || 'Profissional';
+                    const clientEventDescription = await this.buildEventDescription(leadData, appointment, 'client', client);
                     const clientEventData = {
-                        summary: `Reunião com ${settings.owner_user_id}`, // TODO: buscar nome do dono
-                        description: this.buildEventDescription(leadData, appointment, 'client'),
+                        summary: `Reunião com ${ownerName}`,
+                        description: clientEventDescription,
                         startDateTime: appointment.start_at,
                         endDateTime: appointment.end_at,
                         timeZone: appointment.client_timezone || settings.timezone
@@ -365,7 +369,7 @@ class AgendaService {
     /**
      * Construir descrição do evento
      */
-    buildEventDescription(lead, appointment, type = 'owner') {
+    async buildEventDescription(lead, appointment, type = 'owner', client = null) {
         const formData = appointment.form_data || {};
         let description = '';
 
@@ -379,7 +383,16 @@ class AgendaService {
                 description += `CPF: ${maskCPF(formData.cpf)}\n`;
             }
         } else {
-            description += `Profissional: [Nome do Dono]\n`; // TODO: buscar nome
+            // Buscar nome do dono usando client da transação se disponível
+            let ownerName = 'Profissional';
+            if (client) {
+                const ownerResult = await client.query('SELECT name FROM users WHERE id = $1', [appointment.owner_user_id]);
+                ownerName = ownerResult.rows[0]?.name || 'Profissional';
+            } else {
+                const ownerResult = await db.pool.query('SELECT name FROM users WHERE id = $1', [appointment.owner_user_id]);
+                ownerName = ownerResult.rows[0]?.name || 'Profissional';
+            }
+            description += `Profissional: ${ownerName}\n`;
         }
 
         if (formData.company) {

@@ -12,44 +12,9 @@ const responseFormatter = require('../utils/responseFormatter');
 const logger = require('../utils/logger');
 
 /**
- * Página pública de agendamento
- * GET /:slug/agenda
- */
-router.get('/:slug/agenda', asyncHandler(async (req, res) => {
-    try {
-        // Buscar usuário por slug
-        const { slug } = req.params;
-        const db = require('../db');
-        const userResult = await db.pool.query(
-            `SELECT u.id FROM users u 
-             JOIN profile_items pi ON u.id = pi.user_id 
-             WHERE pi.slug = $1 AND pi.item_type = 'agenda' AND pi.is_active = true
-             LIMIT 1`,
-            [slug]
-        );
-
-        if (userResult.rows.length === 0) {
-            return res.status(404).render('error', { message: 'Página de agendamento não encontrada' });
-        }
-
-        const ownerUserId = userResult.rows[0].id;
-        const settings = await agendaRepository.findOrCreateSettings(ownerUserId);
-
-        // Renderizar página pública
-        res.render('agendaPublic', {
-            ownerUserId,
-            settings,
-            slug
-        });
-    } catch (error) {
-        logger.error('Erro ao carregar página pública de agenda:', error);
-        res.status(500).render('error', { message: 'Erro ao carregar página de agendamento' });
-    }
-}));
-
-/**
  * Buscar disponibilidade para uma data
  * GET /api/agenda/:slug/availability
+ * IMPORTANTE: Esta rota deve vir ANTES da rota /:slug/agenda para evitar conflitos
  */
 router.get('/api/agenda/:slug/availability', asyncHandler(async (req, res) => {
     try {
@@ -83,6 +48,65 @@ router.get('/api/agenda/:slug/availability', asyncHandler(async (req, res) => {
         return responseFormatter.error(res, error.message, 500);
     }
 }));
+
+/**
+ * Página pública de agendamento
+ * GET /:slug/agenda
+ * IMPORTANTE: Esta rota deve ser registrada ANTES das rotas genéricas no server.js
+ */
+router.get('/:slug/agenda', asyncHandler(async (req, res) => {
+    try {
+        // Buscar usuário por slug
+        const { slug } = req.params;
+        const db = require('../db');
+        const userResult = await db.pool.query(
+            `SELECT u.id, u.name FROM users u 
+             JOIN profile_items pi ON u.id = pi.user_id 
+             WHERE pi.slug = $1 AND pi.item_type = 'agenda' AND pi.is_active = true
+             LIMIT 1`,
+            [slug]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).send(`
+                <!DOCTYPE html>
+                <html>
+                <head><title>Página não encontrada</title></head>
+                <body style="font-family: Arial; text-align: center; padding: 50px;">
+                    <h1>404 - Página não encontrada</h1>
+                    <p>A página de agendamento solicitada não existe.</p>
+                </body>
+                </html>
+            `);
+        }
+
+        const ownerUserId = userResult.rows[0].id;
+        const ownerName = userResult.rows[0].name || 'Profissional';
+        const settings = await agendaRepository.findOrCreateSettings(ownerUserId);
+
+        // Renderizar página pública
+        res.render('agendaPublic', {
+            ownerUserId,
+            ownerName,
+            settings,
+            slug,
+            API_URL: process.env.FRONTEND_URL || 'https://conectaking-api.onrender.com'
+        });
+    } catch (error) {
+        logger.error('Erro ao carregar página pública de agenda:', error);
+        res.status(500).send(`
+            <!DOCTYPE html>
+            <html>
+            <head><title>Erro</title></head>
+            <body style="font-family: Arial; text-align: center; padding: 50px;">
+                <h1>Erro ao carregar página</h1>
+                <p>Ocorreu um erro ao carregar a página de agendamento. Tente novamente mais tarde.</p>
+            </body>
+            </html>
+        `);
+    }
+}));
+
 
 /**
  * Reservar slot (cria PENDING)
