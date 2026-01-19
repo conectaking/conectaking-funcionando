@@ -229,12 +229,11 @@ router.post('/sign/:token/submit', asyncHandler(async (req, res) => {
 
 /**
  * API: Enviar código de verificação
- * POST /contract/sign/TOKEN/send-code
+ * POST /contract/sign/:token/send-code
  */
-router.post(/^\/sign\/(.+)\/send-code$/, asyncHandler(async (req, res) => {
+router.post('/sign/:token/send-code', asyncHandler(async (req, res) => {
     try {
-        const match = req.path.match(/^\/sign\/(.+)\/send-code$/);
-        const token = (match ? match[1] : extractTokenFromPath(req.path, 'send-code')).trim();
+        const token = req.params.token;
         
         // Buscar signatário
         const signer = await contractService.findSignerByToken(token);
@@ -260,12 +259,11 @@ router.post(/^\/sign\/(.+)\/send-code$/, asyncHandler(async (req, res) => {
 
 /**
  * API: Verificar código de verificação
- * POST /contract/sign/TOKEN/verify-code
+ * POST /contract/sign/:token/verify-code
  */
-router.post(/^\/sign\/(.+)\/verify-code$/, asyncHandler(async (req, res) => {
+router.post('/sign/:token/verify-code', asyncHandler(async (req, res) => {
     try {
-        const match = req.path.match(/^\/sign\/(.+)\/verify-code$/);
-        const token = (match ? match[1] : extractTokenFromPath(req.path, 'verify-code')).trim();
+        const token = req.params.token;
         const { code } = req.body;
 
         if (!code || code.length !== 6) {
@@ -289,17 +287,16 @@ router.post(/^\/sign\/(.+)\/verify-code$/, asyncHandler(async (req, res) => {
 
 /**
  * Página pública de assinatura de contrato
- * GET /contract/sign/TOKEN
+ * GET /contract/sign/:token
  * IMPORTANTE: Esta rota deve vir POR ÚLTIMO (depois de todas as rotas específicas)
- * Captura todo o token incluindo hífens usando regex ou path direto
+ * Usa padrão simples :token como outras rotas públicas que funcionam
  */
-router.get(/^\/sign\/(.+)$/, asyncHandler(async (req, res) => {
+router.get('/sign/:token', asyncHandler(async (req, res) => {
     try {
-        // Capturar token completo da URL usando regex match
-        const match = req.path.match(/^\/sign\/(.+)$/);
-        const signToken = match ? match[1] : (req.params.token || extractTokenFromPath(req.path));
+        // Capturar token do parâmetro (Express captura tudo após /sign/ até a próxima barra ou fim)
+        const signToken = req.params.token;
         
-        // Limpar token (remover caracteres especiais ou espaços, mas manter hífens)
+        // Limpar token (remover espaços, mas manter hífens e caracteres alfanuméricos)
         const cleanToken = String(signToken || '').trim();
         
         if (!cleanToken) {
