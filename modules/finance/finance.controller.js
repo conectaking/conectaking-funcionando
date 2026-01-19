@@ -1,0 +1,311 @@
+const service = require('./finance.service');
+const responseFormatter = require('../../utils/responseFormatter');
+const logger = require('../../utils/logger');
+
+class FinanceController {
+    /**
+     * Obter dashboard financeiro
+     */
+    async getDashboard(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { dateFrom, dateTo } = req.query;
+
+            // Padrão: mês atual
+            const now = new Date();
+            const defaultDateFrom = dateFrom || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+            const defaultDateTo = dateTo || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`;
+
+            const stats = await service.getDashboardStats(userId, defaultDateFrom, defaultDateTo);
+            return responseFormatter.success(res, stats);
+        } catch (error) {
+            logger.error('Erro ao obter dashboard financeiro:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Listar transações
+     */
+    async getTransactions(req, res) {
+        try {
+            const userId = req.user.userId;
+            const filters = {
+                type: req.query.type || null,
+                status: req.query.status || null,
+                category_id: req.query.category_id ? parseInt(req.query.category_id) : null,
+                account_id: req.query.account_id ? parseInt(req.query.account_id) : null,
+                card_id: req.query.card_id ? parseInt(req.query.card_id) : null,
+                dateFrom: req.query.dateFrom || null,
+                dateTo: req.query.dateTo || null,
+                search: req.query.search || null,
+                orderBy: req.query.orderBy || 'transaction_date',
+                orderDir: req.query.orderDir || 'DESC',
+                limit: req.query.limit ? parseInt(req.query.limit) : 20,
+                offset: req.query.offset ? parseInt(req.query.offset) : 0
+            };
+
+            const result = await service.findTransactionsByUserId(userId, filters);
+            return responseFormatter.success(res, result);
+        } catch (error) {
+            logger.error('Erro ao listar transações:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Criar transação
+     */
+    async createTransaction(req, res) {
+        try {
+            const userId = req.user.userId;
+            const transaction = await service.createTransaction(userId, req.body);
+            return responseFormatter.success(res, transaction, 'Transação criada com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao criar transação:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Atualizar transação
+     */
+    async updateTransaction(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { id } = req.params;
+            const transaction = await service.updateTransaction(id, userId, req.body);
+            return responseFormatter.success(res, transaction, 'Transação atualizada com sucesso');
+        } catch (error) {
+            logger.error('Erro ao atualizar transação:', error);
+            const statusCode = error.message.includes('não encontrada') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
+     * Deletar transação
+     */
+    async deleteTransaction(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { id } = req.params;
+            await service.deleteTransaction(id, userId);
+            return responseFormatter.success(res, null, 'Transação deletada com sucesso');
+        } catch (error) {
+            logger.error('Erro ao deletar transação:', error);
+            const statusCode = error.message.includes('não encontrada') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
+     * Listar categorias
+     */
+    async getCategories(req, res) {
+        try {
+            const userId = req.user.userId;
+            const type = req.query.type || null;
+            const categories = await service.findCategoriesByUserId(userId, type);
+            return responseFormatter.success(res, categories);
+        } catch (error) {
+            logger.error('Erro ao listar categorias:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Criar categoria
+     */
+    async createCategory(req, res) {
+        try {
+            const userId = req.user.userId;
+            const category = await service.createCategory(userId, req.body);
+            return responseFormatter.success(res, category, 'Categoria criada com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao criar categoria:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Listar contas
+     */
+    async getAccounts(req, res) {
+        try {
+            const userId = req.user.userId;
+            const accounts = await service.findAccountsByUserId(userId);
+            return responseFormatter.success(res, accounts);
+        } catch (error) {
+            logger.error('Erro ao listar contas:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Criar conta
+     */
+    async createAccount(req, res) {
+        try {
+            const userId = req.user.userId;
+            const account = await service.createAccount(userId, req.body);
+            return responseFormatter.success(res, account, 'Conta criada com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao criar conta:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Listar cartões
+     */
+    async getCards(req, res) {
+        try {
+            const userId = req.user.userId;
+            const cards = await service.findCardsByUserId(userId);
+            return responseFormatter.success(res, cards);
+        } catch (error) {
+            logger.error('Erro ao listar cartões:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Criar cartão
+     */
+    async createCard(req, res) {
+        try {
+            const userId = req.user.userId;
+            const card = await service.createCard(userId, req.body);
+            return responseFormatter.success(res, card, 'Cartão criado com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao criar cartão:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Listar orçamentos
+     */
+    async getBudgets(req, res) {
+        try {
+            const userId = req.user.userId;
+            const month = req.query.month ? parseInt(req.query.month) : null;
+            const year = req.query.year ? parseInt(req.query.year) : null;
+            const budgets = await service.findBudgetsByUserId(userId, month, year);
+            return responseFormatter.success(res, budgets);
+        } catch (error) {
+            logger.error('Erro ao listar orçamentos:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Criar orçamento
+     */
+    async createBudget(req, res) {
+        try {
+            const userId = req.user.userId;
+            const budget = await service.createBudget(userId, req.body);
+            return responseFormatter.success(res, budget, 'Orçamento criado com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao criar orçamento:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Relatório resumido
+     */
+    async getSummaryReport(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { dateFrom, dateTo } = req.query;
+
+            const now = new Date();
+            const defaultDateFrom = dateFrom || `${now.getFullYear()}-01-01`;
+            const defaultDateTo = dateTo || `${now.getFullYear()}-12-31`;
+
+            const stats = await service.getDashboardStats(userId, defaultDateFrom, defaultDateTo);
+            return responseFormatter.success(res, stats);
+        } catch (error) {
+            logger.error('Erro ao obter relatório resumido:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Relatório por categorias
+     */
+    async getCategoriesReport(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { dateFrom, dateTo, type } = req.query;
+
+            const now = new Date();
+            const defaultDateFrom = dateFrom || `${now.getFullYear()}-01-01`;
+            const defaultDateTo = dateTo || `${now.getFullYear()}-12-31`;
+
+            const transactions = await service.findTransactionsByUserId(userId, {
+                type: type || null,
+                dateFrom: defaultDateFrom,
+                dateTo: defaultDateTo,
+                status: 'PAID',
+                limit: 10000
+            });
+
+            // Agrupar por categoria
+            const categoryMap = {};
+            transactions.data.forEach(t => {
+                const catId = t.category_id || 'sem_categoria';
+                if (!categoryMap[catId]) {
+                    categoryMap[catId] = {
+                        category_id: t.category_id,
+                        category_name: t.category_id ? 'Categoria' : 'Sem categoria',
+                        total: 0,
+                        count: 0
+                    };
+                }
+                categoryMap[catId].total += parseFloat(t.amount);
+                categoryMap[catId].count += 1;
+            });
+
+            const report = Object.values(categoryMap);
+            return responseFormatter.success(res, report);
+        } catch (error) {
+            logger.error('Erro ao obter relatório por categorias:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Transferir entre contas
+     */
+    async transferBetweenAccounts(req, res) {
+        try {
+            const userId = req.user.userId;
+            const result = await service.transferBetweenAccounts(userId, req.body);
+            return responseFormatter.success(res, result, 'Transferência realizada com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao transferir entre contas:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Upload de anexo
+     */
+    async uploadAttachment(req, res) {
+        try {
+            // Implementar upload de arquivo
+            // Por enquanto retornar URL mockada
+            const fileUrl = req.file ? `/uploads/finance/${req.file.filename}` : null;
+            return responseFormatter.success(res, { url: fileUrl }, 'Anexo enviado com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao fazer upload de anexo:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+}
+
+module.exports = new FinanceController();

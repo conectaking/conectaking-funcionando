@@ -587,6 +587,10 @@ app.use('/api/ia-king', apiLimiter, iaKingRoutes);
 app.use('/api/ia-king', apiLimiter, iaKingTrainingRoutes);
 app.use('/api/ai-core', apiLimiter, aiCoreRoutes); // Nova ConectaKing AI Core
 app.use('/api/contracts', apiLimiter, contractsRoutes);
+const financeRoutes = require('./routes/finance.routes');
+app.use('/api/finance', apiLimiter, financeRoutes);
+const agendaRoutes = require('./routes/agenda.routes');
+app.use('/api/agenda', apiLimiter, agendaRoutes);
 // IMPORTANTE: cadastroLinksRoutes deve vir ANTES de guestListRoutes para que rotas específicas como /:id/cadastro-links sejam processadas antes da rota genérica /:id
 app.use('/api/guest-lists', apiLimiter, cadastroLinksRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListCustomizeRoutes);
@@ -598,6 +602,12 @@ app.use('/api/push', apiLimiter, pushNotificationsRoutes);
 // Histórico de confirmações (Melhoria 7)
 const confirmationHistoryRoutes = require('./routes/confirmationHistory.routes');
 app.use('/api/guest-lists', apiLimiter, confirmationHistoryRoutes);
+
+// IMPORTANTE: Rotas públicas de agenda devem vir ANTES das rotas genéricas (/) para evitar interceptação
+const publicAgendaRoutes = require('./routes/publicAgenda.routes');
+const oauthAgendaRoutes = require('./routes/oauthAgenda.routes');
+app.use('/agenda', publicAgendaRoutes);
+app.use('/api/oauth/agenda', oauthAgendaRoutes);
 
 // IMPORTANTE: Rotas públicas de contrato devem vir ANTES das rotas genéricas (/) para evitar interceptação
 app.use('/contract', publicContractRoutes);
