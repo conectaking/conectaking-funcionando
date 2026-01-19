@@ -248,9 +248,9 @@ router.post('/sign/:signToken(*)/start', asyncHandler(async (req, res) => {
 
 /**
  * API: Submeter assinatura
- * POST /contract/sign/:signToken/submit
+ * POST /contract/sign/:signToken(*)/submit
  */
-router.post('/sign/:signToken/submit', asyncHandler(async (req, res) => {
+router.post('/sign/:signToken(*)/submit', asyncHandler(async (req, res) => {
     try {
         const { signToken } = req.params;
         const token = signToken.trim();
