@@ -293,14 +293,36 @@ router.post('/sign/:token/verify-code', asyncHandler(async (req, res) => {
  */
 router.get('/sign/:token', asyncHandler(async (req, res) => {
     try {
-        // Capturar token do parâmetro (Express captura tudo após /sign/ até a próxima barra ou fim)
-        const signToken = req.params.token;
+        // Capturar token do parâmetro
+        let signToken = req.params.token;
+        
+        // IMPORTANTE: Se o token tem hífen, o Express pode ter cortado
+        // Tentar capturar o token completo da URL original
+        if (req.originalUrl && req.originalUrl.includes('/sign/')) {
+            const urlToken = req.originalUrl.split('/sign/')[1];
+            // Se o token da URL é maior que o do parâmetro, usar o da URL
+            if (urlToken && urlToken.length > signToken.length) {
+                signToken = urlToken.split('?')[0]; // Remover query string se houver
+                logger.info('Token completo capturado da URL original', { 
+                    paramToken: req.params.token, 
+                    urlToken: signToken 
+                });
+            }
+        }
         
         // Limpar token (remover espaços, mas manter hífens e caracteres alfanuméricos)
         const cleanToken = String(signToken || '').trim();
         
+        logger.info('Processando token de assinatura', {
+            paramToken: req.params.token,
+            cleanToken: cleanToken.substring(0, 50),
+            tokenLength: cleanToken.length,
+            path: req.path,
+            originalUrl: req.originalUrl
+        });
+        
         if (!cleanToken) {
-            logger.warn('Token vazio recebido', { path: req.path });
+            logger.warn('Token vazio recebido', { path: req.path, originalUrl: req.originalUrl });
             return res.status(404).send(`
                 <!DOCTYPE html>
                 <html>
