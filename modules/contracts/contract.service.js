@@ -550,7 +550,7 @@ class ContractService {
     /**
      * Buscar signatário por token (público)
      */
-    async findSignerByToken(token) {
+    async findSignerByToken(token, allowSigned = false) {
         const signer = await repository.findSignerByToken(token);
         if (!signer) {
             throw new Error('Token de assinatura inválido');
@@ -561,8 +561,8 @@ class ContractService {
             throw new Error('Token de assinatura expirado');
         }
 
-        // Verificar se já assinou
-        if (signer.signed_at) {
+        // Verificar se já assinou (só lançar erro se não permitir assinados)
+        if (!allowSigned && signer.signed_at) {
             throw new Error('Este contrato já foi assinado');
         }
 

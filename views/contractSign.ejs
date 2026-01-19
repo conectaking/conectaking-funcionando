@@ -338,11 +338,6 @@
                 width: 100%;
             }
             
-            #verification-code {
-                font-size: 1.2rem;
-                padding: 12px;
-            }
-            
             .signature-typed-input {
                 font-size: 1rem;
                 padding: 12px;
@@ -442,7 +437,13 @@
             </div>
         </div>
         
-        <% if (!signer.signed_at) { %>
+        <% if (signer.signed_at) { %>
+        <div class="signature-section" style="background: rgba(34, 197, 94, 0.1); border: 2px solid #22C55E; padding: 30px; border-radius: 12px; text-align: center;">
+            <h3 style="color: #22C55E; margin-bottom: 20px;"><i class="fas fa-check-circle"></i> Contrato Já Assinado</h3>
+            <p style="color: #ECECEC; margin-bottom: 15px;">Este contrato foi assinado em <strong><%= new Date(signer.signed_at).toLocaleString('pt-BR') %></strong>.</p>
+            <p style="color: #888888; font-size: 0.9rem;">Não é possível assinar novamente este contrato.</p>
+        </div>
+        <% } else { %>
         <div class="signature-section" id="signature-section">
             <h3><i class="fas fa-signature"></i> Assinatura Eletrônica</h3>
             
@@ -510,103 +511,22 @@
         let signaturePad = null;
         let currentSignatureMethod = 'canvas';
         let uploadedSignatureData = null;
-        let verificationRequired = <%= signer.verification_code && !signer.verification_code_verified ? 'true' : 'false' %>;
         
         // Inicializar Signature Pad (canvas)
         document.addEventListener('DOMContentLoaded', function() {
-            // Verificação de código
-            if (verificationRequired) {
-                const verificationCodeInput = document.getElementById('verification-code');
-                const verifyBtn = document.getElementById('verify-code-btn');
-                const resendBtn = document.getElementById('resend-code-btn');
-                const errorDiv = document.getElementById('verification-error');
-                
-                // Auto-focus no campo de código
-                verificationCodeInput.focus();
-                
-                // Permitir apenas números
-                verificationCodeInput.addEventListener('input', function(e) {
-                    e.target.value = e.target.value.replace(/\D/g, '');
-                });
-                
-                // Verificar código
-                verifyBtn.addEventListener('click', async function() {
-                    const code = verificationCodeInput.value.trim();
-                    if (code.length !== 6) {
-                        errorDiv.textContent = 'Por favor, digite o código completo (6 dígitos)';
-                        errorDiv.style.display = 'block';
-                        return;
+            // Verificar se pdfjsLib está disponível antes de usar
+            if (typeof pdfjsLib === 'undefined') {
+                console.warn('PDF.js não carregado. Tentando recarregar...');
+                // Tentar recarregar PDF.js
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+                script.onload = function() {
+                    if (typeof pdfjsLib !== 'undefined') {
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                        console.log('PDF.js carregado com sucesso');
                     }
-                    
-                    verifyBtn.disabled = true;
-                    verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
-                    errorDiv.style.display = 'none';
-                    
-                    try {
-                        const response = await fetch(`/contract/sign/${signToken}/verify-code`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ code })
-                        });
-                        
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                            // Esconder seção de verificação e mostrar assinatura
-                            document.getElementById('verification-section').style.display = 'none';
-                            document.getElementById('signature-section').style.display = 'block';
-                            verificationRequired = false;
-                        } else {
-                            errorDiv.textContent = result.error?.message || 'Código inválido';
-                            errorDiv.style.display = 'block';
-                            verifyBtn.disabled = false;
-                            verifyBtn.innerHTML = '<i class="fas fa-check"></i> Verificar Código';
-                        }
-                    } catch (error) {
-                        errorDiv.textContent = 'Erro ao verificar código. Tente novamente.';
-                        errorDiv.style.display = 'block';
-                        verifyBtn.disabled = false;
-                        verifyBtn.innerHTML = '<i class="fas fa-check"></i> Verificar Código';
-                    }
-                });
-                
-                // Reenviar código
-                resendBtn.addEventListener('click', async function() {
-                    resendBtn.disabled = true;
-                    resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-                    
-                    try {
-                        const response = await fetch(`/contract/sign/${signToken}/send-code`, {
-                            method: 'POST'
-                        });
-                        
-                        const result = await response.json();
-                        if (result.success) {
-                            alert('✅ Código reenviado com sucesso! Verifique seu email.');
-                        } else {
-                            alert('Erro ao reenviar código: ' + (result.error?.message || 'Erro desconhecido'));
-                        }
-                    } catch (error) {
-                        alert('Erro ao reenviar código. Tente novamente.');
-                    } finally {
-                        resendBtn.disabled = false;
-                        resendBtn.innerHTML = '<i class="fas fa-redo"></i> Reenviar';
-                    }
-                });
-                
-                // Enter para verificar
-                verificationCodeInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        verifyBtn.click();
-                    }
-                });
-            }
-            
-            // Enviar código automaticamente se necessário
-            if (verificationRequired) {
-                fetch(`/contract/sign/${signToken}/send-code`, {
-                    method: 'POST'
-                }).catch(err => console.error('Erro ao enviar código:', err));
+                };
+                document.head.appendChild(script);
             }
             
             // Carregar PDF se disponível
@@ -632,16 +552,26 @@
                 // Carregar PDF se ainda não foi carregado
                 if (!pdfDoc) {
                     try {
+                        // Verificar se pdfjsLib está disponível
+                        if (typeof pdfjsLib === 'undefined') {
+                            throw new Error('PDF.js não está carregado. Aguarde alguns segundos e tente novamente.');
+                        }
+                        
                         // Usar a rota pública do contrato para obter o PDF
                         const pdfUrl = `/contract/sign/${signToken}/pdf`;
-                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                        
+                        // Configurar worker se ainda não foi configurado
+                        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                        }
+                        
                         const loadingTask = pdfjsLib.getDocument(pdfUrl);
                         pdfDoc = await loadingTask.promise;
                         await renderPdfPage();
                         updatePdfControls();
                     } catch (error) {
                         console.error('Erro ao carregar PDF:', error);
-                        alert('Erro ao carregar PDF. Tente novamente.');
+                        alert('Erro ao carregar PDF: ' + (error.message || 'Tente novamente.'));
                     }
                 }
             });

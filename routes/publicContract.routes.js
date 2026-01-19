@@ -349,8 +349,8 @@ router.get('/sign/:token', asyncHandler(async (req, res) => {
             originalUrl: req.originalUrl
         });
         
-        // Buscar signatário por token
-        const signer = await contractService.findSignerByToken(cleanToken);
+        // Buscar signatário por token (permitir assinados para mostrar página)
+        const signer = await contractService.findSignerByToken(cleanToken, true);
         
         if (!signer) {
             logger.warn('Signatário não encontrado', { 
