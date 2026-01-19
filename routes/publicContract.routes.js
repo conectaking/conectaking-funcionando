@@ -24,9 +24,10 @@ function extractTokenFromPath(path, suffix = '') {
  * Visualizar PDF do contrato (rota pública usando token)
  * GET /contract/sign/TOKEN/pdf
  */
-router.get('/sign/:token(*)/pdf', asyncHandler(async (req, res) => {
+router.get(/^\/sign\/(.+)\/pdf$/, asyncHandler(async (req, res) => {
     try {
-        const token = (req.params.token || req.signToken || extractTokenFromPath(req.path, 'pdf')).trim();
+        const match = req.path.match(/^\/sign\/(.+)\/pdf$/);
+        const token = (match ? match[1] : extractTokenFromPath(req.path, 'pdf')).trim();
         
         // Buscar signatário por token
         const signer = await contractService.findSignerByToken(token);
