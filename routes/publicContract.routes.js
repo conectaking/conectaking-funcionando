@@ -7,27 +7,13 @@ const responseFormatter = require('../utils/responseFormatter');
 const logger = require('../utils/logger');
 
 /**
- * Função auxiliar para extrair token da URL
- */
-function extractTokenFromPath(path, suffix = '') {
-    // Remove /sign/ do início e o sufixo do final (ex: /pdf, /start, etc)
-    let token = path.replace(/^\/sign\//, '');
-    if (suffix) {
-        token = token.replace(new RegExp(`/${suffix}$`), '');
-    }
-    return token.trim();
-}
-
-// Removido middleware - não necessário com a abordagem atual
-
-/**
  * Visualizar PDF do contrato (rota pública usando token)
- * GET /contract/sign/TOKEN/pdf
+ * GET /contract/sign/:token/pdf
+ * IMPORTANTE: Usar padrão simples :token como outras rotas públicas que funcionam
  */
-router.get(/^\/sign\/(.+)\/pdf$/, asyncHandler(async (req, res) => {
+router.get('/sign/:token/pdf', asyncHandler(async (req, res) => {
     try {
-        const match = req.path.match(/^\/sign\/(.+)\/pdf$/);
-        const token = (match ? match[1] : extractTokenFromPath(req.path, 'pdf')).trim();
+        const token = req.params.token;
         
         // Buscar signatário por token
         const signer = await contractService.findSignerByToken(token);
@@ -69,12 +55,11 @@ router.get(/^\/sign\/(.+)\/pdf$/, asyncHandler(async (req, res) => {
 
 /**
  * API: Status da assinatura
- * GET /contract/sign/TOKEN/status
+ * GET /contract/sign/:token/status
  */
-router.get(/^\/sign\/(.+)\/status$/, asyncHandler(async (req, res) => {
+router.get('/sign/:token/status', asyncHandler(async (req, res) => {
     try {
-        const match = req.path.match(/^\/sign\/(.+)\/status$/);
-        const token = (match ? match[1] : extractTokenFromPath(req.path, 'status')).trim();
+        const token = req.params.token;
         
         // Buscar signatário
         const signer = await contractRepository.findSignerByToken(token);
@@ -102,12 +87,11 @@ router.get(/^\/sign\/(.+)\/status$/, asyncHandler(async (req, res) => {
 
 /**
  * API: Registrar acesso ao link de assinatura (tracking)
- * POST /contract/sign/TOKEN/start
+ * POST /contract/sign/:token/start
  */
-router.post(/^\/sign\/(.+)\/start$/, asyncHandler(async (req, res) => {
+router.post('/sign/:token/start', asyncHandler(async (req, res) => {
     try {
-        const match = req.path.match(/^\/sign\/(.+)\/start$/);
-        const token = (match ? match[1] : extractTokenFromPath(req.path, 'start')).trim();
+        const token = req.params.token;
         
         // Buscar signatário
         const signer = await contractService.findSignerByToken(token);
@@ -137,12 +121,11 @@ router.post(/^\/sign\/(.+)\/start$/, asyncHandler(async (req, res) => {
 
 /**
  * API: Submeter assinatura
- * POST /contract/sign/TOKEN/submit
+ * POST /contract/sign/:token/submit
  */
-router.post(/^\/sign\/(.+)\/submit$/, asyncHandler(async (req, res) => {
+router.post('/sign/:token/submit', asyncHandler(async (req, res) => {
     try {
-        const match = req.path.match(/^\/sign\/(.+)\/submit$/);
-        const token = (match ? match[1] : extractTokenFromPath(req.path, 'submit')).trim();
+        const token = req.params.token;
         const { signature_type, signature_data, signature_image_url } = req.body;
 
         // Buscar signatário
