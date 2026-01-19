@@ -86,7 +86,15 @@ class FinanceRepository {
     async findTransactionsByUserId(userId, filters = {}) {
         const client = await db.pool.connect();
         try {
-            let query = 'SELECT * FROM finance_transactions WHERE user_id = $1';
+            let query = `SELECT t.*, 
+                c.name as category_name, 
+                c.color as category_color, 
+                c.icon as category_icon,
+                a.name as account_name
+                FROM finance_transactions t
+                LEFT JOIN finance_categories c ON t.category_id = c.id
+                LEFT JOIN finance_accounts a ON t.account_id = a.id
+                WHERE t.user_id = $1`;
             const params = [userId];
             let paramCount = 2;
 
