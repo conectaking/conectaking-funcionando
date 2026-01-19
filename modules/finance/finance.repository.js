@@ -25,7 +25,9 @@ class FinanceRepository {
             project_name,
             cost_center,
             client_name,
-            notes
+            notes,
+            is_recurring = false,
+            recurring_times = null
         } = data;
 
         const client = existingClient || await db.pool.connect();
@@ -39,8 +41,8 @@ class FinanceRepository {
                     installment_group_id, installment_number,
                     recurrence_type, recurrence_end_date,
                     attachment_url, tags, project_name, cost_center,
-                    client_name, notes
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+                    client_name, notes, is_recurring, recurring_times
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
                 RETURNING *`,
                 [
                     user_id, type, amount, description, transaction_date,
@@ -48,7 +50,7 @@ class FinanceRepository {
                     installment_group_id, installment_number,
                     recurrence_type, recurrence_end_date,
                     attachment_url, tags || [], project_name, cost_center,
-                    client_name, notes
+                    client_name, notes, is_recurring, recurring_times
                 ]
             );
             return result.rows[0];
