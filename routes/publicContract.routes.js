@@ -247,9 +247,10 @@ router.post(/^\/sign\/(.+)\/submit$/, asyncHandler(async (req, res) => {
  * API: Enviar código de verificação
  * POST /contract/sign/TOKEN/send-code
  */
-router.post('/sign/:token(*)/send-code', asyncHandler(async (req, res) => {
+router.post(/^\/sign\/(.+)\/send-code$/, asyncHandler(async (req, res) => {
     try {
-        const token = (req.params.token || req.signToken || extractTokenFromPath(req.path, 'send-code')).trim();
+        const match = req.path.match(/^\/sign\/(.+)\/send-code$/);
+        const token = (match ? match[1] : extractTokenFromPath(req.path, 'send-code')).trim();
         
         // Buscar signatário
         const signer = await contractService.findSignerByToken(token);
