@@ -520,9 +520,21 @@ class FinanceRepository {
             const totalExpensePaid = parseFloat(expensePaidResult.rows[0]?.total || 0);
             const totalExpensePending = parseFloat(expensePendingResult.rows[0]?.total || 0);
             
-            // Calcular saldo disponível
-            // SEMPRE usar saldo líquido (receitas pagas - despesas pagas) para ser coerente
-            // Se houver contas cadastradas e o saldo das contas for diferente, usar o maior valor
+            // Calcular saldo disponível ACUMULADO (todas as transações pagas, sem filtro de data)
+            const accountBalanceAccumulatedResult = await client.query(
+                `SELECT 
+                    COALESCE(SUM(CASE WHEN type = 'INCOME' AND status = 'PAID' THEN amount ELSE 0 END), 0) as total_income,
+                    COALESCE(SUM(CASE WHEN type = 'EXPENSE' AND status = 'PAID' THEN amount ELSE 0 END), 0) as total_expense
+                 FROM finance_transactions
+                 WHERE user_id = $1 AND status = 'PAID'`,
+                [userId]
+            );
+            
+            const totalIncomeAccumulated = parseFloat(accountBalanceAccumulatedResult.rows[0]?.total_income || 0);
+            const totalExpenseAccumulated = parseFloat(accountBalanceAccumulatedResult.rows[0]?.total_expense || 0);
+            const accountBalanceAccumulated = totalIncomeAccumulated - totalExpenseAccumulated;
+            
+            // Calcular saldo disponível do mês (apenas do período filtrado)
             const accountBalanceFromAccounts = parseFloat(accountBalanceResult.rows[0]?.total || 0);
             const accountBalanceFromTransactions = totalIncomePaid - totalExpensePaid;
             
@@ -538,7 +550,8 @@ class FinanceRepository {
                 totalExpense: totalExpensePaid,
                 pendingExpense: totalExpensePending,
                 pendingIncome: totalIncomePending,
-                accountBalance: accountBalance,
+                accountBalance: accountBalanceAccumulated, // Saldo disponível acumulado (permanente)
+                monthlyBalance: totalIncomePaid - totalExpensePaid, // Saldo total do mês
                 netProfit: totalIncomePaid - totalExpensePaid,
                 topCategories: topCategoriesResult.rows
             };
