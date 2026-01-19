@@ -145,7 +145,6 @@ async function runMigrations() {
         throw error;
     } finally {
         client.release();
-        await pool.end();
     }
 }
 
