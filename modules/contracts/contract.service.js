@@ -850,7 +850,127 @@ class ContractService {
             await sendEmail(contractOwner.email, ownerSubject, ownerHtml, null, attachments);
         }
 
-        // Notificar o signatário (confirmação)
+        // Se todos assinaram, notificar TODOS os signatários com PDF anexado
+        if (allSigned) {
+            const allSigners = await repository.findSignersByContractId(contract.id);
+            const path = require('path');
+            const fs = require('fs').promises;
+            let pdfAttachment = null;
+            
+            // Preparar anexo do PDF final se disponível
+            if (contract.final_pdf_url) {
+                try {
+                    const pdfPath = path.join(__dirname, '../../public', contract.final_pdf_url);
+                    const pdfExists = await fs.access(pdfPath).then(() => true).catch(() => false);
+                    if (pdfExists) {
+                        pdfAttachment = {
+                            filename: `${contract.title.replace(/[^a-z0-9]/gi, '_')}_assinado.pdf`,
+                            path: pdfPath
+                        };
+                    }
+                } catch (error) {
+                    logger.warn('Erro ao preparar PDF para anexo:', error);
+                }
+            }
+            
+            // Enviar email para cada signatário
+            for (const signerToNotify of allSigners) {
+                if (signerToNotify.email) {
+                    const completeSubject = `🎉 Contrato Completo: ${contract.title}`;
+                    const completeHtml = `
+                        <!DOCTYPE html>
+                        <html lang="pt-BR">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        </head>
+                        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
+                                <tr>
+                                    <td align="center" style="padding: 40px 20px;">
+                                        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+                                            <!-- Header -->
+                                            <tr>
+                                                <td style="background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%); padding: 40px 30px; text-align: center;">
+                                                    <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                                        <span style="font-size: 40px;">🎉</span>
+                                                    </div>
+                                                    <h1 style="margin: 0; color: #FFFFFF; font-size: 28px; font-weight: 700;">
+                                                        Contrato Completo!
+                                                    </h1>
+                                                </td>
+                                            </tr>
+                                            
+                                            <!-- Content -->
+                                            <tr>
+                                                <td style="padding: 40px 30px;">
+                                                    <p style="color: #333; font-size: 18px; margin: 0 0 20px 0; font-weight: 600;">
+                                                        Olá, <strong style="color: #16A34A;">${signerToNotify.name}</strong>!
+                                                    </p>
+                                                    
+                                                    <div style="background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%); border-left: 4px solid #22C55E; padding: 20px; margin: 25px 0; border-radius: 8px;">
+                                                        <p style="color: #333; font-size: 16px; margin: 0; line-height: 1.6;">
+                                                            🎉 <strong>Todos os signatários assinaram!</strong><br><br>
+                                                            O contrato <strong>"${contract.title}"</strong> está completo e pronto. Uma cópia do contrato assinado está anexada a este email.
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <div style="background: #F5F5F5; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                                                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                                                            <strong>📅 Data de conclusão:</strong> ${new Date(contract.completed_at || new Date()).toLocaleString('pt-BR')}
+                                                        </p>
+                                                        <p style="margin: 0; color: #666; font-size: 14px;">
+                                                            <strong>📄 Contrato:</strong> ${contract.title}
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <div style="text-align: center; margin: 30px 0;">
+                                                        <a href="${frontendUrl}/dashboard#contratos" style="display: inline-block; background: linear-gradient(135deg, #FFC700 0%, #F59E0B 100%); color: #000; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 12px rgba(255, 199, 0, 0.3);">
+                                                            📥 Baixar Contrato Assinado
+                                                        </a>
+                                                    </div>
+                                                    
+                                                    <div style="background: #E8F5E9; border: 1px solid #4CAF50; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                                                        <p style="margin: 0; color: #2E7D32; font-size: 14px;">
+                                                            <strong>✅ Status:</strong> Contrato completo e assinado por todos os signatários.
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                                                        <p style="color: #666; font-size: 12px; margin: 0; text-align: center;">
+                                                            Esta assinatura tem validade legal conforme a legislação brasileira (Lei nº 14.063/2020).
+                                                        </p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            
+                                            <!-- Footer -->
+                                            <tr>
+                                                <td style="background-color: #1C1C21; padding: 30px; text-align: center;">
+                                                    <p style="margin: 0 0 10px 0; color: #888888; font-size: 12px;">
+                                                        <strong style="color: #FFC700;">ConectaKing</strong> - Sistema de Assinatura Digital
+                                                    </p>
+                                                    <p style="margin: 0; color: #666666; font-size: 11px;">
+                                                        Este email foi enviado automaticamente. Não responda este email.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </body>
+                        </html>
+                    `;
+                    
+                    const attachments = pdfAttachment ? [pdfAttachment] : [];
+                    await sendEmail(signerToNotify.email, completeSubject, completeHtml, null, attachments);
+                    logger.info(`Email de contrato completo enviado para ${signerToNotify.email}`);
+                }
+            }
+        }
+        
+        // Notificar o signatário atual (confirmação individual)
         const signerSubject = `✅ Assinatura Confirmada: ${contract.title}`;
         const signerHtml = `
             <!DOCTYPE html>
@@ -898,11 +1018,13 @@ class ContractService {
                                             </p>
                                         </div>
                                         
+                                        ${!allSigned ? `
                                         <div style="background: #E3F2FD; border: 1px solid #2196F3; border-radius: 8px; padding: 15px; margin: 20px 0;">
                                             <p style="margin: 0; color: #1565C0; font-size: 14px; line-height: 1.6;">
-                                                <strong>💾 Cópia:</strong> Você receberá uma cópia do contrato assinado por email quando todos os signatários concluírem.
+                                                <strong>⏳ Aguardando:</strong> Ainda há signatários pendentes. Você receberá uma cópia do contrato assinado por email quando todos os signatários concluírem.
                                             </p>
                                         </div>
+                                        ` : ''}
                                         
                                         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
                                             <p style="color: #666; font-size: 12px; margin: 0; text-align: center;">

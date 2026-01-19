@@ -58,14 +58,15 @@
         }
         
         .contract-preview {
-            background: #1C1C21;
-            border: 2px solid #2C2C2F;
-            border-radius: 12px;
+            background: linear-gradient(135deg, #1C1C21 0%, #2C2C2F 100%);
+            border: 2px solid #FFC700;
+            border-radius: 16px;
             padding: 30px;
             margin-bottom: 40px;
-            max-height: 600px;
+            max-height: 700px;
             overflow-y: auto;
             position: relative;
+            box-shadow: 0 8px 32px rgba(255, 199, 0, 0.1);
         }
         
         .contract-preview::before {
@@ -75,20 +76,53 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #FFC700, #FFD700);
-            border-radius: 12px 12px 0 0;
+            background: linear-gradient(90deg, #FFC700, #FFD700, #FFC700);
+            border-radius: 16px 16px 0 0;
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
         }
         
         .contract-preview h2 {
             font-size: 1.5rem;
             margin-bottom: 20px;
             color: #FFC700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .contract-content {
             white-space: pre-wrap;
-            line-height: 1.8;
+            line-height: 2;
             color: #ECECEC;
+            font-size: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid #FFC700;
+        }
+        
+        /* Scrollbar personalizada */
+        .contract-preview::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .contract-preview::-webkit-scrollbar-track {
+            background: #1C1C21;
+            border-radius: 10px;
+        }
+        
+        .contract-preview::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #FFC700, #F59E0B);
+            border-radius: 10px;
+        }
+        
+        .contract-preview::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #FFD700, #FFC700);
         }
         
         .signature-section {
@@ -633,19 +667,35 @@
             async function renderPdfPage() {
                 if (!pdfDoc) return;
                 const canvas = document.getElementById('pdf-canvas');
+                const loadingDiv = document.getElementById('pdf-loading');
+                const errorDiv = document.getElementById('pdf-error');
+                
                 if (!canvas) return;
                 
                 try {
-                    const page = await pdfDoc.getPage(currentPdfPage);
+                    // Mostrar loading
+                    if (loadingDiv) loadingDiv.style.display = 'block';
+                    if (errorDiv) errorDiv.style.display = 'none';
+                    canvas.style.display = 'none';
+                    
+                    const page = await pdfDoc.getPage(currentPdfPage - 1); // PDF.js usa índice 0-based
                     const viewport = page.getViewport({ scale: pdfScale });
                     
                     canvas.height = viewport.height;
                     canvas.width = viewport.width;
                     
                     const context = canvas.getContext('2d');
+                    context.clearRect(0, 0, canvas.width, canvas.height);
                     await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    
+                    // Esconder loading e mostrar canvas
+                    if (loadingDiv) loadingDiv.style.display = 'none';
+                    canvas.style.display = 'block';
                 } catch (error) {
                     console.error('Erro ao renderizar PDF:', error);
+                    if (loadingDiv) loadingDiv.style.display = 'none';
+                    if (errorDiv) errorDiv.style.display = 'block';
+                    canvas.style.display = 'none';
                 }
             }
             
