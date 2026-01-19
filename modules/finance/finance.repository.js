@@ -497,11 +497,19 @@ class FinanceRepository {
                 [userId, dateFrom, dateTo]
             );
 
+            const totalIncomePaid = parseFloat(incomePaidResult.rows[0]?.total || 0);
+            const totalIncomePending = parseFloat(incomePendingResult.rows[0]?.total || 0);
+            const totalExpensePaid = parseFloat(expensePaidResult.rows[0]?.total || 0);
+            const totalExpensePending = parseFloat(expensePendingResult.rows[0]?.total || 0);
+            const accountBalance = parseFloat(accountBalanceResult.rows[0]?.total || 0);
+
             return {
-                totalIncome: parseFloat(incomeResult.rows[0]?.total || 0),
-                totalExpense: parseFloat(expenseResult.rows[0]?.total || 0),
-                pendingExpense: parseFloat(pendingExpenseResult.rows[0]?.total || 0),
-                netProfit: parseFloat(incomeResult.rows[0]?.total || 0) - parseFloat(expenseResult.rows[0]?.total || 0),
+                totalIncome: totalIncomePaid,
+                totalExpense: totalExpensePaid,
+                pendingExpense: totalExpensePending,
+                pendingIncome: totalIncomePending,
+                accountBalance: accountBalance,
+                netProfit: totalIncomePaid - totalExpensePaid,
                 topCategories: topCategoriesResult.rows
             };
         } finally {
