@@ -485,12 +485,22 @@ class FinanceRepository {
             );
 
             // Saldo disponível (soma dos saldos das contas ativas)
+            // Se não houver contas ou saldo zerado, usar saldo líquido como fallback
             const accountBalanceResult = await client.query(
                 `SELECT COALESCE(SUM(current_balance), 0) as total
                  FROM finance_accounts
                  WHERE user_id = $1 AND is_active = true`,
                 [userId]
             );
+            
+            // Verificar se há contas cadastradas
+            const accountsCountResult = await client.query(
+                `SELECT COUNT(*) as count
+                 FROM finance_accounts
+                 WHERE user_id = $1 AND is_active = true`,
+                [userId]
+            );
+            const hasAccounts = parseInt(accountsCountResult.rows[0]?.count || 0) > 0;
 
             // Top 5 categorias de gasto
             const topCategoriesResult = await client.query(
@@ -509,7 +519,15 @@ class FinanceRepository {
             const totalIncomePending = parseFloat(incomePendingResult.rows[0]?.total || 0);
             const totalExpensePaid = parseFloat(expensePaidResult.rows[0]?.total || 0);
             const totalExpensePending = parseFloat(expensePendingResult.rows[0]?.total || 0);
-            const accountBalance = parseFloat(accountBalanceResult.rows[0]?.total || 0);
+            
+            // Calcular saldo disponível
+            // Se houver contas cadastradas, usar saldo das contas
+            // Caso contrário, usar saldo líquido (receitas - despesas) como fallback
+            let accountBalance = parseFloat(accountBalanceResult.rows[0]?.total || 0);
+            if (!hasAccounts || accountBalance === 0) {
+                // Usar saldo líquido como fallback
+                accountBalance = totalIncomePaid - totalExpensePaid;
+            }
 
             return {
                 totalIncome: totalIncomePaid,
