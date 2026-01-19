@@ -254,19 +254,9 @@ class ContractService {
 
             await client.query('COMMIT');
 
-            // Enviar emails (UMA VEZ - conforme plano de economia)
-            await this.sendSignEmails(contract, createdSigners);
-
-            // Enviar códigos de verificação automaticamente
+            // Enviar emails unificados (link + código de verificação em um único email)
             const updatedContract = await repository.findById(id);
-            for (const signer of createdSigners) {
-                try {
-                    await this.sendVerificationCode(signer, updatedContract);
-                } catch (error) {
-                    logger.warn(`Erro ao enviar código de verificação para ${signer.email}:`, error);
-                    // Continuar mesmo se falhar o envio do código
-                }
-            }
+            await this.sendSignEmails(updatedContract, createdSigners, true); // true = incluir código de verificação
 
             logger.info(`Contrato enviado para assinatura: ${id} com ${createdSigners.length} signatários`);
             
@@ -283,9 +273,25 @@ class ContractService {
     }
 
     /**
-     * Enviar emails para signatários (UMA VEZ apenas)
+     * Função auxiliar para escapar HTML e garantir UTF-8
      */
-    async sendSignEmails(contract, signers) {
+    escapeHtml(text) {
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    /**
+     * Enviar emails para signatários (UMA VEZ apenas)
+     * @param {Object} contract - Contrato
+     * @param {Array} signers - Lista de signatários
+     * @param {Boolean} includeVerificationCode - Se deve incluir código de verificação no email
+     */
+    async sendSignEmails(contract, signers, includeVerificationCode = false) {
         const frontendUrl = config.urls.frontend || 'https://conectaking.com.br';
         
         for (const signer of signers) {
@@ -293,13 +299,61 @@ class ContractService {
             const expiryDate = new Date();
             expiryDate.setDate(expiryDate.getDate() + TYPES.DEFAULT_TOKEN_EXPIRY_DAYS);
             
-            const subject = `📄 Contrato para Assinatura: ${contract.title}`;
+            // Gerar código de verificação se necessário
+            let verificationCode = null;
+            let codeExpiresAt = null;
+            if (includeVerificationCode) {
+                verificationCode = this.generateVerificationCode();
+                codeExpiresAt = new Date();
+                codeExpiresAt.setMinutes(codeExpiresAt.getMinutes() + 15); // 15 minutos
+                
+                // Salvar código no banco
+                await repository.updateSigner(signer.id, {
+                    verification_code: verificationCode,
+                    verification_code_expires_at: codeExpiresAt,
+                    verification_code_attempts: 0,
+                    verification_code_verified: false
+                });
+            }
+            
+            // Escapar textos para evitar problemas de encoding
+            const contractTitle = this.escapeHtml(contract.title);
+            const signerName = this.escapeHtml(signer.name);
+            
+            const subject = `📄 Contrato para Assinatura: ${contractTitle}`;
+            
+            // Seção de código de verificação (se necessário)
+            let verificationSection = '';
+            if (includeVerificationCode && verificationCode) {
+                verificationSection = `
+                    <div style="background-color: #E8F5E9; border: 2px solid #4CAF50; border-radius: 12px; padding: 25px; margin: 25px 0;">
+                        <h3 style="margin: 0 0 15px 0; color: #2E7D32; font-size: 18px; font-weight: 600; text-align: center;">
+                            🔐 Código de Verificação
+                        </h3>
+                        <p style="margin: 0 0 20px 0; color: #333333; font-size: 14px; line-height: 1.6; text-align: center;">
+                            Use este código para verificar sua identidade ao assinar:
+                        </p>
+                        <div style="background: linear-gradient(135deg, #FFC700 0%, #F59E0B 100%); border-radius: 12px; padding: 25px; text-align: center; margin: 20px 0;">
+                            <div style="font-size: 42px; font-weight: 700; color: #000000; letter-spacing: 10px; font-family: 'Courier New', monospace;">
+                                ${verificationCode}
+                            </div>
+                        </div>
+                        <div style="background-color: #FFF4E6; border: 1px solid #FFC700; border-radius: 8px; padding: 12px; margin: 15px 0;">
+                            <p style="margin: 0; color: #856404; font-size: 13px; line-height: 1.6; text-align: center;">
+                                <strong>⏰ Importante:</strong> Este código expira em <strong>15 minutos</strong>.
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+            
             const html = `
                 <!DOCTYPE html>
                 <html lang="pt-BR">
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
                 </head>
                 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
                     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
@@ -310,7 +364,7 @@ class ContractService {
                                     <tr>
                                         <td style="background: linear-gradient(135deg, #991B1B 0%, #000000 100%); padding: 40px 30px; text-align: center;">
                                             <h1 style="margin: 0; color: #FFC700; font-size: 28px; font-weight: 700;">
-                                                <i class="fas fa-file-contract"></i> Contrato para Assinatura
+                                                ✍️ Contrato para Assinatura
                                             </h1>
                                         </td>
                                     </tr>
@@ -319,7 +373,7 @@ class ContractService {
                                     <tr>
                                         <td style="padding: 40px 30px;">
                                             <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
-                                                Olá, <strong>${signer.name}</strong>!
+                                                Olá, <strong>${signerName}</strong>!
                                             </p>
                                             
                                             <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
@@ -328,9 +382,11 @@ class ContractService {
                                             
                                             <div style="background-color: #f9f9f9; border-left: 4px solid #991B1B; padding: 20px; margin: 25px 0; border-radius: 4px;">
                                                 <h2 style="margin: 0 0 10px 0; color: #991B1B; font-size: 20px; font-weight: 600;">
-                                                    ${contract.title}
+                                                    ${contractTitle}
                                                 </h2>
                                             </div>
+                                            
+                                            ${verificationSection}
                                             
                                             <p style="margin: 30px 0; text-align: center;">
                                                 <a href="${signUrl}" style="display: inline-block; background: linear-gradient(135deg, #FFC700 0%, #F59E0B 100%); color: #000000; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 12px rgba(255, 199, 0, 0.3); transition: transform 0.2s;">
@@ -348,7 +404,7 @@ class ContractService {
                                                 <strong>Como funciona:</strong><br>
                                                 1. Clique no botão acima para acessar o contrato<br>
                                                 2. Revise o conteúdo do documento<br>
-                                                3. Escolha um método de assinatura (desenhar, enviar imagem ou digitar nome)<br>
+                                                3. ${includeVerificationCode ? 'Digite o código de verificação acima' : ''} Escolha um método de assinatura (desenhar, enviar imagem ou digitar nome)<br>
                                                 4. Confirme sua assinatura
                                             </p>
                                         </td>
@@ -374,6 +430,12 @@ class ContractService {
             `;
 
             await sendEmail(signer.email, subject, html);
+            
+            if (includeVerificationCode && verificationCode) {
+                logger.info(`Email unificado enviado para ${signer.email} (inclui código: ${verificationCode})`);
+            } else {
+                logger.info(`Email enviado para ${signer.email}`);
+            }
         }
     }
 

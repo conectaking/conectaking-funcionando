@@ -49,7 +49,12 @@ async function sendEmail(to, subject, html, text = null, attachments = []) {
             subject,
             html,
             text: text || html.replace(/<[^>]*>/g, ''), // Remove HTML se text não fornecido
-            attachments: attachments.length > 0 ? attachments : undefined
+            attachments: attachments.length > 0 ? attachments : undefined,
+            encoding: 'UTF-8',
+            headers: {
+                'Content-Type': 'text/html; charset=UTF-8',
+                'Content-Transfer-Encoding': 'quoted-printable'
+            }
         };
 
         const info = await emailTransporter.sendMail(mailOptions);
