@@ -8,12 +8,13 @@ const logger = require('../utils/logger');
 
 /**
  * Página pública de assinatura de contrato
- * GET /contract/sign/:signToken(*)
- * Usa (*) para capturar todo o token incluindo hífens
+ * GET /contract/sign/*
+ * Captura todo o token incluindo hífens usando * (wildcard)
  */
-router.get('/sign/:signToken(*)', asyncHandler(async (req, res) => {
+router.get('/sign/*', asyncHandler(async (req, res) => {
     try {
-        const { signToken } = req.params;
+        // Capturar token completo da URL (tudo após /sign/)
+        const signToken = req.params[0] || req.path.replace('/sign/', '');
         
         // Limpar token (remover caracteres especiais ou espaços, mas manter hífens)
         const cleanToken = signToken.trim();
@@ -357,9 +358,9 @@ router.post('/sign/:signToken(*)/submit', asyncHandler(async (req, res) => {
 
 /**
  * API: Status da assinatura
- * GET /contract/sign/:signToken/status
+ * GET /contract/sign/:signToken(*)/status
  */
-router.get('/sign/:signToken/status', asyncHandler(async (req, res) => {
+router.get('/sign/:signToken(*)/status', asyncHandler(async (req, res) => {
     try {
         const { signToken } = req.params;
         const token = signToken.trim();
@@ -390,9 +391,9 @@ router.get('/sign/:signToken/status', asyncHandler(async (req, res) => {
 
 /**
  * API: Enviar código de verificação
- * POST /contract/sign/:signToken/send-code
+ * POST /contract/sign/:signToken(*)/send-code
  */
-router.post('/sign/:signToken/send-code', asyncHandler(async (req, res) => {
+router.post('/sign/:signToken(*)/send-code', asyncHandler(async (req, res) => {
     try {
         const { signToken } = req.params;
         const token = signToken.trim();
@@ -421,9 +422,9 @@ router.post('/sign/:signToken/send-code', asyncHandler(async (req, res) => {
 
 /**
  * API: Verificar código de verificação
- * POST /contract/sign/:signToken/verify-code
+ * POST /contract/sign/:signToken(*)/verify-code
  */
-router.post('/sign/:signToken/verify-code', asyncHandler(async (req, res) => {
+router.post('/sign/:signToken(*)/verify-code', asyncHandler(async (req, res) => {
     try {
         const { signToken } = req.params;
         const token = signToken.trim();
