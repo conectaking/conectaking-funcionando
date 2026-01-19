@@ -14,13 +14,22 @@ router.get('/sign/:signToken', asyncHandler(async (req, res) => {
     try {
         const { signToken } = req.params;
         
-        logger.info('Tentando carregar página de assinatura', { signToken: signToken.substring(0, 20) + '...' });
+        // Limpar token (remover caracteres especiais ou espaços)
+        const cleanToken = signToken.trim();
+        
+        logger.info('Tentando carregar página de assinatura', { 
+            tokenLength: cleanToken.length,
+            tokenPreview: cleanToken.length > 20 ? cleanToken.substring(0, 20) + '...' : cleanToken
+        });
         
         // Buscar signatário por token
-        const signer = await contractService.findSignerByToken(signToken);
+        const signer = await contractService.findSignerByToken(cleanToken);
         
         if (!signer) {
-            logger.warn('Signatário não encontrado', { signToken: signToken.substring(0, 20) + '...' });
+            logger.warn('Signatário não encontrado', { 
+                tokenLength: cleanToken.length,
+                tokenPreview: cleanToken.length > 20 ? cleanToken.substring(0, 20) + '...' : cleanToken
+            });
             return res.status(404).send(`
                 <!DOCTYPE html>
                 <html>
@@ -142,7 +151,8 @@ router.get('/sign/:signToken', asyncHandler(async (req, res) => {
  */
 router.get('/sign/:signToken/pdf', asyncHandler(async (req, res) => {
     try {
-        const { signToken: token } = req.params;
+        const { signToken } = req.params;
+        const token = signToken.trim();
         
         // Buscar signatário por token
         const signer = await contractService.findSignerByToken(token);
@@ -188,7 +198,8 @@ router.get('/sign/:signToken/pdf', asyncHandler(async (req, res) => {
  */
 router.post('/sign/:signToken/start', asyncHandler(async (req, res) => {
     try {
-        const { signToken: token } = req.params;
+        const { signToken } = req.params;
+        const token = signToken.trim();
         
         // Buscar signatário
         const signer = await contractService.findSignerByToken(token);
@@ -222,7 +233,8 @@ router.post('/sign/:signToken/start', asyncHandler(async (req, res) => {
  */
 router.post('/sign/:signToken/submit', asyncHandler(async (req, res) => {
     try {
-        const { signToken: token } = req.params;
+        const { signToken } = req.params;
+        const token = signToken.trim();
         const { signature_type, signature_data, signature_image_url } = req.body;
 
         // Buscar signatário
@@ -330,7 +342,8 @@ router.post('/sign/:signToken/submit', asyncHandler(async (req, res) => {
  */
 router.get('/sign/:signToken/status', asyncHandler(async (req, res) => {
     try {
-        const { signToken: token } = req.params;
+        const { signToken } = req.params;
+        const token = signToken.trim();
         
         // Buscar signatário
         const signer = await contractRepository.findSignerByToken(token);
@@ -362,7 +375,8 @@ router.get('/sign/:signToken/status', asyncHandler(async (req, res) => {
  */
 router.post('/sign/:signToken/send-code', asyncHandler(async (req, res) => {
     try {
-        const { signToken: token } = req.params;
+        const { signToken } = req.params;
+        const token = signToken.trim();
         
         // Buscar signatário
         const signer = await contractService.findSignerByToken(token);
@@ -392,7 +406,8 @@ router.post('/sign/:signToken/send-code', asyncHandler(async (req, res) => {
  */
 router.post('/sign/:signToken/verify-code', asyncHandler(async (req, res) => {
     try {
-        const { signToken: token } = req.params;
+        const { signToken } = req.params;
+        const token = signToken.trim();
         const { code } = req.body;
 
         if (!code || code.length !== 6) {

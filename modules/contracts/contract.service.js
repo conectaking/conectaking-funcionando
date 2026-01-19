@@ -51,15 +51,23 @@ class ContractService {
         // Sanitizar dados
         const sanitized = validators.sanitize(data);
 
-        // Se for template, substituir variáveis
-        if (sanitized.template_id && sanitized.variables) {
+        // Se for template, copiar conteúdo do template
+        if (sanitized.template_id) {
             const template = await repository.findTemplateById(sanitized.template_id);
             if (!template) {
                 throw new Error('Template não encontrado');
             }
             
-            // Substituir variáveis no conteúdo
-            sanitized.pdf_content = this.replaceVariables(template.content, sanitized.variables);
+            // Se não tiver pdf_content definido, copiar do template
+            if (!sanitized.pdf_content && template.content) {
+                // Se tiver variáveis, substituir; senão, copiar conteúdo original
+                if (sanitized.variables && Object.keys(sanitized.variables).length > 0) {
+                    sanitized.pdf_content = this.replaceVariables(template.content, sanitized.variables);
+                } else {
+                    // Copiar conteúdo do template sem substituir variáveis
+                    sanitized.pdf_content = template.content;
+                }
+            }
         }
 
         // Criar contrato
