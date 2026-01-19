@@ -41,8 +41,8 @@ class FinanceRepository {
                     installment_group_id, installment_number,
                     recurrence_type, recurrence_end_date,
                     attachment_url, tags, project_name, cost_center,
-                    client_name, notes, is_recurring, recurring_times
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+                    client_name, notes, is_recurring, recurring_times, profile_id
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
                 RETURNING *`,
                 [
                     user_id, type, amount, description, transaction_date,
@@ -50,7 +50,7 @@ class FinanceRepository {
                     installment_group_id, installment_number,
                     recurrence_type, recurrence_end_date,
                     attachment_url, tags || [], project_name, cost_center,
-                    client_name, notes, is_recurring, recurring_times
+                    client_name, notes, is_recurring, recurring_times, data.profile_id || null
                 ]
             );
             return result.rows[0];
@@ -97,6 +97,13 @@ class FinanceRepository {
                 WHERE t.user_id = $1`;
             const params = [userId];
             let paramCount = 2;
+
+            // Filtro por perfil (se não especificado, buscar do perfil principal ou todas)
+            if (filters.profile_id !== undefined && filters.profile_id !== null) {
+                query += ` AND t.profile_id = $${paramCount}`;
+                params.push(filters.profile_id);
+                paramCount++;
+            }
 
             // Filtro por tipo
             if (filters.type) {
@@ -445,16 +452,20 @@ class FinanceRepository {
     /**
      * Calcular estatísticas do dashboard
      */
-    async getDashboardStats(userId, dateFrom, dateTo) {
+    async getDashboardStats(userId, dateFrom, dateTo, profileId = null) {
         const client = await db.pool.connect();
         try {
+            // Construir filtro de perfil
+            const profileFilter = profileId ? 'AND profile_id = $4' : 'AND (profile_id IS NULL OR profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const params = profileId ? [userId, dateFrom, dateTo, profileId] : [userId, dateFrom, dateTo];
+            
             // Total de receitas pagas
             const incomePaidResult = await client.query(
                 `SELECT COALESCE(SUM(amount), 0) as total
                  FROM finance_transactions
                  WHERE user_id = $1 AND type = 'INCOME' AND status = 'PAID'
-                 AND transaction_date BETWEEN $2::date AND $3::date`,
-                [userId, dateFrom, dateTo]
+                 AND transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
+                params
             );
 
             // Total de receitas pendentes (o que falta receber)
@@ -462,8 +473,8 @@ class FinanceRepository {
                 `SELECT COALESCE(SUM(amount), 0) as total
                  FROM finance_transactions
                  WHERE user_id = $1 AND type = 'INCOME' AND status = 'PENDING'
-                 AND transaction_date BETWEEN $2::date AND $3::date`,
-                [userId, dateFrom, dateTo]
+                 AND transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
+                params
             );
 
             // Total de despesas pagas
@@ -471,8 +482,8 @@ class FinanceRepository {
                 `SELECT COALESCE(SUM(amount), 0) as total
                  FROM finance_transactions
                  WHERE user_id = $1 AND type = 'EXPENSE' AND status = 'PAID'
-                 AND transaction_date BETWEEN $2::date AND $3::date`,
-                [userId, dateFrom, dateTo]
+                 AND transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
+                params
             );
 
             // Total de despesas pendentes (o que falta pagar)
@@ -480,25 +491,27 @@ class FinanceRepository {
                 `SELECT COALESCE(SUM(amount), 0) as total
                  FROM finance_transactions
                  WHERE user_id = $1 AND type = 'EXPENSE' AND status = 'PENDING'
-                 AND transaction_date BETWEEN $2::date AND $3::date`,
-                [userId, dateFrom, dateTo]
+                 AND transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
+                params
             );
 
-            // Saldo disponível (soma dos saldos das contas ativas)
-            // Se não houver contas ou saldo zerado, usar saldo líquido como fallback
+            // Saldo disponível (soma dos saldos das contas ativas do perfil)
+            const accountProfileFilter = profileId ? 'AND profile_id = $2' : 'AND (profile_id IS NULL OR profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const accountParams = profileId ? [userId, profileId] : [userId];
+            
             const accountBalanceResult = await client.query(
                 `SELECT COALESCE(SUM(current_balance), 0) as total
                  FROM finance_accounts
-                 WHERE user_id = $1 AND is_active = true`,
-                [userId]
+                 WHERE user_id = $1 AND is_active = true ${accountProfileFilter}`,
+                accountParams
             );
             
             // Verificar se há contas cadastradas
             const accountsCountResult = await client.query(
                 `SELECT COUNT(*) as count
                  FROM finance_accounts
-                 WHERE user_id = $1 AND is_active = true`,
-                [userId]
+                 WHERE user_id = $1 AND is_active = true ${accountProfileFilter}`,
+                accountParams
             );
             const hasAccounts = parseInt(accountsCountResult.rows[0]?.count || 0) > 0;
 
@@ -508,11 +521,11 @@ class FinanceRepository {
                  FROM finance_transactions t
                  JOIN finance_categories c ON t.category_id = c.id
                  WHERE t.user_id = $1 AND t.type = 'EXPENSE' AND t.status = 'PAID'
-                 AND t.transaction_date BETWEEN $2::date AND $3::date
+                 AND t.transaction_date BETWEEN $2::date AND $3::date ${profileFilter}
                  GROUP BY c.id, c.name, c.color
                  ORDER BY total DESC
                  LIMIT 5`,
-                [userId, dateFrom, dateTo]
+                params
             );
 
             const totalIncomePaid = parseFloat(incomePaidResult.rows[0]?.total || 0);
@@ -521,13 +534,16 @@ class FinanceRepository {
             const totalExpensePending = parseFloat(expensePendingResult.rows[0]?.total || 0);
             
             // Calcular saldo disponível ACUMULADO (todas as transações pagas, sem filtro de data)
+            const accumulatedProfileFilter = profileId ? 'AND profile_id = $2' : 'AND (profile_id IS NULL OR profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const accumulatedParams = profileId ? [userId, profileId] : [userId];
+            
             const accountBalanceAccumulatedResult = await client.query(
                 `SELECT 
                     COALESCE(SUM(CASE WHEN type = 'INCOME' AND status = 'PAID' THEN amount ELSE 0 END), 0) as total_income,
                     COALESCE(SUM(CASE WHEN type = 'EXPENSE' AND status = 'PAID' THEN amount ELSE 0 END), 0) as total_expense
                  FROM finance_transactions
-                 WHERE user_id = $1 AND status = 'PAID'`,
-                [userId]
+                 WHERE user_id = $1 AND status = 'PAID' ${accumulatedProfileFilter}`,
+                accumulatedParams
             );
             
             const totalIncomeAccumulated = parseFloat(accountBalanceAccumulatedResult.rows[0]?.total_income || 0);
@@ -571,6 +587,187 @@ class FinanceRepository {
                  VALUES ($1, $2, $3, $4)
                  RETURNING *`,
                 [data.user_id, data.description, data.total_amount, data.total_installments]
+            );
+            return result.rows[0];
+        } finally {
+            client.release();
+        }
+    }
+}
+
+    /**
+     * Criar perfil financeiro
+     */
+    async createProfile(data) {
+        const { user_id, name, description, color, icon } = data;
+        const client = await db.pool.connect();
+        try {
+            // Se for marcado como principal, desmarcar outros
+            if (data.is_primary) {
+                await client.query(
+                    'UPDATE finance_profiles SET is_primary = FALSE WHERE user_id = $1',
+                    [user_id]
+                );
+            }
+            
+            const result = await client.query(
+                `INSERT INTO finance_profiles (user_id, name, description, color, icon, is_primary, is_active)
+                 VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+                 RETURNING *`,
+                [user_id, name, description || null, color || '#3b82f6', icon || 'fa-wallet', data.is_primary || false]
+            );
+            return result.rows[0];
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Buscar perfis do usuário
+     */
+    async findProfilesByUserId(userId) {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                'SELECT * FROM finance_profiles WHERE user_id = $1 AND is_active = TRUE ORDER BY is_primary DESC, name ASC',
+                [userId]
+            );
+            return result.rows;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Buscar perfil por ID
+     */
+    async findProfileById(id, userId) {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                'SELECT * FROM finance_profiles WHERE id = $1 AND user_id = $2',
+                [id, userId]
+            );
+            return result.rows[0] || null;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Buscar perfil principal do usuário
+     */
+    async findPrimaryProfile(userId) {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                'SELECT * FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE AND is_active = TRUE LIMIT 1',
+                [userId]
+            );
+            return result.rows[0] || null;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Atualizar perfil
+     */
+    async updateProfile(id, userId, data) {
+        const client = await db.pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Se for marcado como principal, desmarcar outros
+            if (data.is_primary) {
+                await client.query(
+                    'UPDATE finance_profiles SET is_primary = FALSE WHERE user_id = $1 AND id != $2',
+                    [userId, id]
+                );
+            }
+            
+            const updates = [];
+            const values = [];
+            let paramCount = 1;
+            
+            if (data.name !== undefined) {
+                updates.push(`name = $${paramCount++}`);
+                values.push(data.name);
+            }
+            if (data.description !== undefined) {
+                updates.push(`description = $${paramCount++}`);
+                values.push(data.description);
+            }
+            if (data.color !== undefined) {
+                updates.push(`color = $${paramCount++}`);
+                values.push(data.color);
+            }
+            if (data.icon !== undefined) {
+                updates.push(`icon = $${paramCount++}`);
+                values.push(data.icon);
+            }
+            if (data.is_primary !== undefined) {
+                updates.push(`is_primary = $${paramCount++}`);
+                values.push(data.is_primary);
+            }
+            if (data.is_active !== undefined) {
+                updates.push(`is_active = $${paramCount++}`);
+                values.push(data.is_active);
+            }
+            
+            updates.push(`updated_at = NOW()`);
+            values.push(id, userId);
+            
+            const result = await client.query(
+                `UPDATE finance_profiles SET ${updates.join(', ')} WHERE id = $${paramCount++} AND user_id = $${paramCount++} RETURNING *`,
+                values
+            );
+            
+            await client.query('COMMIT');
+            return result.rows[0];
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Deletar perfil
+     */
+    async deleteProfile(id, userId) {
+        const client = await db.pool.connect();
+        try {
+            // Verificar se é o único perfil
+            const countResult = await client.query(
+                'SELECT COUNT(*) FROM finance_profiles WHERE user_id = $1 AND is_active = TRUE',
+                [userId]
+            );
+            if (parseInt(countResult.rows[0].count) <= 1) {
+                throw new Error('Não é possível deletar o único perfil financeiro');
+            }
+            
+            // Verificar se é o perfil principal
+            const profile = await this.findProfileById(id, userId);
+            if (profile && profile.is_primary) {
+                // Tornar outro perfil como principal
+                const otherProfile = await client.query(
+                    'SELECT id FROM finance_profiles WHERE user_id = $1 AND id != $2 AND is_active = TRUE LIMIT 1',
+                    [userId, id]
+                );
+                if (otherProfile.rows.length > 0) {
+                    await client.query(
+                        'UPDATE finance_profiles SET is_primary = TRUE WHERE id = $1',
+                        [otherProfile.rows[0].id]
+                    );
+                }
+            }
+            
+            // Marcar como inativo ao invés de deletar (para manter histórico)
+            const result = await client.query(
+                'UPDATE finance_profiles SET is_active = FALSE WHERE id = $1 AND user_id = $2 RETURNING *',
+                [id, userId]
             );
             return result.rows[0];
         } finally {

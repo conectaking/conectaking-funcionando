@@ -64,4 +64,12 @@ router.post('/transfer', controller.transferBetweenAccounts);
 // Upload
 router.post('/upload', upload.single('file'), controller.uploadAttachment);
 
+// Perfis Financeiros
+router.get('/profiles', controller.getProfiles);
+router.get('/profiles/primary', controller.getPrimaryProfile);
+router.get('/profiles/:id', controller.getProfile);
+router.post('/profiles', controller.createProfile);
+router.put('/profiles/:id', controller.updateProfile);
+router.delete('/profiles/:id', controller.deleteProfile);
+
 module.exports = router;

@@ -395,25 +395,32 @@ class FinanceService {
     /**
      * Obter estatísticas do dashboard
      */
-    async getDashboardStats(userId, dateFrom, dateTo) {
-        const stats = await repository.getDashboardStats(userId, dateFrom, dateTo);
+    async getDashboardStats(userId, dateFrom, dateTo, profileId = null) {
+        const stats = await repository.getDashboardStats(userId, dateFrom, dateTo, profileId);
 
-        // Buscar saldo total de todas as contas
+        // Buscar saldo total de todas as contas do perfil
         const accounts = await repository.findAccountsByUserId(userId);
-        const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.current_balance || 0), 0);
+        const filteredAccounts = profileId 
+            ? accounts.filter(acc => acc.profile_id === profileId)
+            : accounts.filter(acc => !acc.profile_id || acc.profile_id === null);
+        const totalBalance = filteredAccounts.reduce((sum, acc) => sum + parseFloat(acc.current_balance || 0), 0);
 
-        // Buscar orçamentos do mês atual
+        // Buscar orçamentos do mês atual do perfil
         const now = new Date();
         const budgets = await repository.findBudgetsByUserId(userId, now.getMonth() + 1, now.getFullYear());
+        const filteredBudgets = profileId 
+            ? budgets.filter(b => b.profile_id === profileId)
+            : budgets.filter(b => !b.profile_id || b.profile_id === null);
 
         // Calcular gastos por categoria com orçamento
         const budgetsWithSpent = await Promise.all(
-            budgets.map(async (budget) => {
+            filteredBudgets.map(async (budget) => {
                 const categoryTransactions = await repository.findTransactionsByUserId(userId, {
                     category_id: budget.category_id,
                     type: 'EXPENSE',
                     dateFrom: `${budget.year}-${String(budget.month).padStart(2, '0')}-01`,
                     dateTo: `${budget.year}-${String(budget.month).padStart(2, '0')}-31`,
+                    profile_id: profileId,
                     limit: 10000
                 });
 
@@ -439,6 +446,79 @@ class FinanceService {
             totalBalance,
             budgets: budgetsWithSpent
         };
+    }
+}
+
+    /**
+     * Criar perfil financeiro
+     */
+    async createProfile(userId, data) {
+        const validation = validators.validateProfile({ ...data, user_id: userId });
+        if (!validation.isValid) {
+            throw new Error(validation.errors.join(', '));
+        }
+        return await repository.createProfile({
+            ...data,
+            user_id: userId
+        });
+    }
+
+    /**
+     * Buscar perfis do usuário
+     */
+    async findProfilesByUserId(userId) {
+        return await repository.findProfilesByUserId(userId);
+    }
+
+    /**
+     * Buscar perfil por ID
+     */
+    async findProfileById(id, userId) {
+        const profile = await repository.findProfileById(id, userId);
+        if (!profile) {
+            throw new Error('Perfil não encontrado');
+        }
+        return profile;
+    }
+
+    /**
+     * Buscar perfil principal
+     */
+    async findPrimaryProfile(userId) {
+        let profile = await repository.findPrimaryProfile(userId);
+        // Se não tiver perfil principal, buscar qualquer perfil ativo
+        if (!profile) {
+            const profiles = await repository.findProfilesByUserId(userId);
+            if (profiles.length > 0) {
+                profile = profiles[0];
+                // Tornar este perfil como principal
+                await repository.updateProfile(profile.id, userId, { is_primary: true });
+                profile.is_primary = true;
+            }
+        }
+        return profile;
+    }
+
+    /**
+     * Atualizar perfil
+     */
+    async updateProfile(id, userId, data) {
+        const existing = await repository.findProfileById(id, userId);
+        if (!existing) {
+            throw new Error('Perfil não encontrado');
+        }
+        return await repository.updateProfile(id, userId, data);
+    }
+
+    /**
+     * Deletar perfil
+     */
+    async deleteProfile(id, userId) {
+        const existing = await repository.findProfileById(id, userId);
+        if (!existing) {
+            throw new Error('Perfil não encontrado');
+        }
+        return await repository.deleteProfile(id, userId);
     }
 }
 

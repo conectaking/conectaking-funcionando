@@ -289,6 +289,31 @@ class FinanceValidators {
             errors
         };
     }
+
+    /**
+     * Validar dados de perfil financeiro
+     */
+    validateProfile(data, isUpdate = false) {
+        const errors = [];
+
+        if (!isUpdate && !data.user_id) {
+            errors.push('user_id é obrigatório');
+        }
+        if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
+            errors.push('name é obrigatório e deve ser uma string não vazia');
+        }
+        if (data.name && data.name.length > 100) {
+            errors.push('name deve ter no máximo 100 caracteres');
+        }
+        if (data.color && !/^#[0-9A-Fa-f]{6}$/.test(data.color)) {
+            errors.push('color deve ser um código hexadecimal válido (ex: #3b82f6)');
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors
+        };
+    }
 }
 
 module.exports = new FinanceValidators();

@@ -9,14 +9,14 @@ class FinanceController {
     async getDashboard(req, res) {
         try {
             const userId = req.user.userId;
-            const { dateFrom, dateTo } = req.query;
+            const { dateFrom, dateTo, profile_id } = req.query;
 
             // Padrão: mês atual
             const now = new Date();
             const defaultDateFrom = dateFrom || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
             const defaultDateTo = dateTo || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`;
 
-            const stats = await service.getDashboardStats(userId, defaultDateFrom, defaultDateTo);
+            const stats = await service.getDashboardStats(userId, defaultDateFrom, defaultDateTo, profile_id ? parseInt(profile_id) : null);
             return responseFormatter.success(res, stats);
         } catch (error) {
             logger.error('Erro ao obter dashboard financeiro:', error);
@@ -39,6 +39,7 @@ class FinanceController {
                 dateFrom: req.query.dateFrom || null,
                 dateTo: req.query.dateTo || null,
                 search: req.query.search || null,
+                profile_id: req.query.profile_id ? parseInt(req.query.profile_id) : null,
                 orderBy: req.query.orderBy || 'transaction_date',
                 orderDir: req.query.orderDir || 'DESC',
                 limit: req.query.limit ? parseInt(req.query.limit) : 20,
@@ -319,6 +320,94 @@ class FinanceController {
             return responseFormatter.success(res, { url: fileUrl }, 'Anexo enviado com sucesso', 201);
         } catch (error) {
             logger.error('Erro ao fazer upload de anexo:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+}
+
+    /**
+     * Listar perfis financeiros
+     */
+    async getProfiles(req, res) {
+        try {
+            const userId = req.user.userId;
+            const profiles = await service.findProfilesByUserId(userId);
+            return responseFormatter.success(res, profiles);
+        } catch (error) {
+            logger.error('Erro ao listar perfis:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Buscar perfil por ID
+     */
+    async getProfile(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { id } = req.params;
+            const profile = await service.findProfileById(id, userId);
+            return responseFormatter.success(res, profile);
+        } catch (error) {
+            logger.error('Erro ao buscar perfil:', error);
+            return responseFormatter.error(res, error.message, 404);
+        }
+    }
+
+    /**
+     * Buscar perfil principal
+     */
+    async getPrimaryProfile(req, res) {
+        try {
+            const userId = req.user.userId;
+            const profile = await service.findPrimaryProfile(userId);
+            return responseFormatter.success(res, profile);
+        } catch (error) {
+            logger.error('Erro ao buscar perfil principal:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Criar perfil financeiro
+     */
+    async createProfile(req, res) {
+        try {
+            const userId = req.user.userId;
+            const profile = await service.createProfile(userId, req.body);
+            return responseFormatter.success(res, profile, 'Perfil criado com sucesso', 201);
+        } catch (error) {
+            logger.error('Erro ao criar perfil:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Atualizar perfil financeiro
+     */
+    async updateProfile(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { id } = req.params;
+            const profile = await service.updateProfile(id, userId, req.body);
+            return responseFormatter.success(res, profile, 'Perfil atualizado com sucesso');
+        } catch (error) {
+            logger.error('Erro ao atualizar perfil:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Deletar perfil financeiro
+     */
+    async deleteProfile(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { id } = req.params;
+            await service.deleteProfile(id, userId);
+            return responseFormatter.success(res, null, 'Perfil deletado com sucesso');
+        } catch (error) {
+            logger.error('Erro ao deletar perfil:', error);
             return responseFormatter.error(res, error.message, 400);
         }
     }
