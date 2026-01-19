@@ -1142,6 +1142,25 @@ class ContractService {
                         const x = signature.signature_x || 50;
                         const y = pageHeight - (signature.signature_y || 100) - sigHeight;
 
+                        // Desenhar fundo do carimbo (retângulo com borda dourada)
+                        const stampPadding = 5;
+                        const stampX = x - stampPadding;
+                        const stampY = y - stampPadding;
+                        const stampWidth = sigWidth + (stampPadding * 2);
+                        const stampHeight = sigHeight + (stampPadding * 2) + 25; // Espaço extra para texto
+                        
+                        // Fundo branco do carimbo
+                        targetPage.drawRectangle({
+                            x: stampX,
+                            y: stampY - 25,
+                            width: stampWidth,
+                            height: stampHeight,
+                            color: rgb(1, 1, 1), // Branco
+                            borderColor: rgb(0.8, 0.65, 0), // Dourado (#FFC700)
+                            borderWidth: 2,
+                        });
+                        
+                        // Desenhar assinatura
                         targetPage.drawImage(signatureImage, {
                             x: x,
                             y: y,
@@ -1149,13 +1168,41 @@ class ContractService {
                             height: sigHeight
                         });
 
-                        // Adicionar texto abaixo da assinatura
-                        targetPage.drawText(`${signature.signer_name}`, {
+                        // Adicionar texto abaixo da assinatura com estilo de carimbo
+                        const signerName = signature.signer_name || 'Assinante';
+                        targetPage.drawText(signerName, {
                             x: x,
                             y: y - 15,
-                            size: 10,
-                            font: font,
+                            size: 9,
+                            font: boldFont,
                             color: rgb(0, 0, 0),
+                        });
+                        
+                        // Adicionar data/hora da assinatura
+                        const signedDate = new Date(signature.signed_at || new Date()).toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        targetPage.drawText(signedDate, {
+                            x: x,
+                            y: y - 28,
+                            size: 7,
+                            font: font,
+                            color: rgb(0.5, 0.5, 0.5),
+                        });
+                        
+                        // Adicionar marca "Assinado via ConectaKing"
+                        const stampText = 'Assinado via ConectaKing';
+                        const stampTextWidth = boldFont.widthOfTextAtSize(stampText, 6);
+                        targetPage.drawText(stampText, {
+                            x: stampX + (stampWidth / 2) - (stampTextWidth / 2),
+                            y: stampY - 38,
+                            size: 6,
+                            font: boldFont,
+                            color: rgb(0.8, 0.65, 0), // Dourado
                         });
                     } catch (err) {
                         logger.warn(`Erro ao aplicar assinatura na posição: ${err.message}`);

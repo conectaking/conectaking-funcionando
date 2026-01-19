@@ -207,13 +207,25 @@ router.post('/sign/:token/submit', asyncHandler(async (req, res) => {
 
             await client.query('COMMIT');
 
+            // Se todos assinaram, gerar PDF final com carimbo
+            if (allSigned) {
+                try {
+                    const updatedContract = await contractRepository.findById(signer.contract_id);
+                    await contractService.generateFinalPdf(updatedContract.id);
+                } catch (pdfError) {
+                    logger.error('Erro ao gerar PDF final:', pdfError);
+                    // Não falhar a assinatura se o PDF não puder ser gerado
+                }
+            }
+
             // Enviar notificações (fora da transação)
             const updatedContract = await contractRepository.findById(signer.contract_id);
             await contractService.sendSignatureNotification(updatedContract, signer, allSigned);
 
             return responseFormatter.success(res, {
                 success: true,
-                completed: allSigned
+                completed: allSigned,
+                downloadUrl: allSigned ? `/api/contracts/${signer.contract_id}/download` : null
             }, 'Assinatura realizada com sucesso');
         } catch (error) {
             await client.query('ROLLBACK');

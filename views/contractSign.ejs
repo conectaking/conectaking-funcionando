@@ -439,9 +439,38 @@
         
         <% if (signer.signed_at) { %>
         <div class="signature-section" style="background: rgba(34, 197, 94, 0.1); border: 2px solid #22C55E; padding: 30px; border-radius: 12px; text-align: center;">
-            <h3 style="color: #22C55E; margin-bottom: 20px;"><i class="fas fa-check-circle"></i> Contrato Já Assinado</h3>
-            <p style="color: #ECECEC; margin-bottom: 15px;">Este contrato foi assinado em <strong><%= new Date(signer.signed_at).toLocaleString('pt-BR') %></strong>.</p>
-            <p style="color: #888888; font-size: 0.9rem;">Não é possível assinar novamente este contrato.</p>
+            <div style="font-size: 4rem; margin-bottom: 20px; color: #22C55E;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 style="color: #22C55E; margin-bottom: 20px;">Contrato Assinado com Sucesso!</h3>
+            <p style="color: #ECECEC; margin-bottom: 15px; font-size: 1.1rem;">
+                Você assinou este contrato em <strong><%= new Date(signer.signed_at).toLocaleString('pt-BR') %></strong>.
+            </p>
+            <p style="color: #888888; font-size: 0.9rem; margin-bottom: 30px;">
+                Sua assinatura foi registrada com sucesso e tem validade legal.
+            </p>
+            
+            <% 
+            // Buscar status do contrato para verificar se está completo
+            const contractStatus = contract.status || 'sent';
+            const isCompleted = contractStatus === 'completed';
+            %>
+            
+            <% if (isCompleted) { %>
+            <div style="background: rgba(255, 199, 0, 0.1); border: 2px solid #FFC700; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <p style="color: #FFC700; margin: 0; font-weight: 600;">
+                    <i class="fas fa-check-double"></i> Todos os signatários assinaram! O contrato está completo.
+                </p>
+            </div>
+            <% } %>
+            
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <a href="/api/contracts/<%= contract.id %>/download" 
+                   class="btn btn-primary" 
+                   style="min-width: 200px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-download"></i> Baixar Contrato Assinado
+                </a>
+            </div>
         </div>
         <% } else { %>
         <div class="signature-section" id="signature-section">
@@ -451,23 +480,39 @@
                 <!-- Método 1: Desenhar no Canvas -->
                 <div class="signature-method active" id="canvas-method">
                     <h4><i class="fas fa-pencil-alt"></i> Assinar Desenhando</h4>
+                    <p style="color: #888888; font-size: 0.9rem; margin-bottom: 15px;">
+                        <i class="fas fa-info-circle"></i> Desenhe sua assinatura usando o mouse ou o dedo (em dispositivos touch)
+                    </p>
                     <div class="signature-canvas-container">
                         <canvas id="signature-canvas" class="signature-canvas"></canvas>
                     </div>
-                    <div class="canvas-controls">
+                    <div class="canvas-controls" style="display: flex; gap: 10px; margin-top: 15px; align-items: center;">
                         <button type="button" class="btn btn-secondary" id="clear-canvas">
                             <i class="fas fa-undo"></i> Limpar
                         </button>
+                        <div id="signature-validation" style="flex: 1; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: none;">
+                            <small style="color: #22C55E;">
+                                <i class="fas fa-check-circle"></i> Assinatura detectada
+                            </small>
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Método 2: Upload de Imagem -->
                 <div class="signature-method" id="upload-method">
                     <h4><i class="fas fa-upload"></i> Enviar Imagem da Assinatura</h4>
+                    <p style="color: #888888; font-size: 0.9rem; margin-bottom: 15px;">
+                        <i class="fas fa-info-circle"></i> Envie uma foto ou imagem da sua assinatura (PNG, JPG - máx. 5MB)
+                    </p>
                     <div class="signature-upload-container">
                         <input type="file" id="signature-upload" accept="image/png,image/jpeg,image/jpg" class="form-control">
                         <div id="signature-upload-preview" style="margin-top: 15px; display: none;">
-                            <img id="uploaded-signature" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                            <img id="uploaded-signature" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid #FFC700;">
+                            <div id="image-validation" style="margin-top: 10px; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: none;">
+                                <small style="color: #22C55E;">
+                                    <i class="fas fa-check-circle"></i> Imagem válida detectada
+                                </small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -475,7 +520,15 @@
                 <!-- Método 3: Digitar Nome -->
                 <div class="signature-method" id="typed-method">
                     <h4><i class="fas fa-keyboard"></i> Digitar Nome</h4>
+                    <p style="color: #888888; font-size: 0.9rem; margin-bottom: 15px;">
+                        <i class="fas fa-info-circle"></i> Digite seu nome completo como assinatura
+                    </p>
                     <input type="text" id="signature-typed" class="signature-typed-input" placeholder="Digite seu nome completo">
+                    <div id="typed-validation" style="margin-top: 10px; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: none;">
+                        <small style="color: #22C55E;">
+                            <i class="fas fa-check-circle"></i> Nome válido
+                        </small>
+                    </div>
                 </div>
             </div>
             
@@ -663,31 +716,74 @@
             document.getElementById('clear-canvas')?.addEventListener('click', function() {
                 if (signaturePad) {
                     signaturePad.clear();
+                    document.getElementById('signature-validation').style.display = 'none';
                 }
             });
             
-            // Upload de imagem
+            // Validação de assinatura no canvas (detectar se há traços)
+            if (signaturePad) {
+                signaturePad.addEventListener('endStroke', function() {
+                    if (!signaturePad.isEmpty()) {
+                        // Validar se tem traços suficientes (mínimo de complexidade)
+                        const data = signaturePad.toData();
+                        if (data.length > 3) { // Pelo menos 3 pontos de traço
+                            document.getElementById('signature-validation').style.display = 'block';
+                        }
+                    }
+                });
+            }
+            
+            // Upload de imagem com validação
             document.getElementById('signature-upload')?.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
+                    // Validar tamanho (máximo 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('⚠️ A imagem é muito grande. Por favor, use uma imagem menor que 5MB.');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    // Validar tipo
+                    if (!file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+                        alert('⚠️ Por favor, selecione uma imagem válida (PNG ou JPG).');
+                        this.value = '';
+                        return;
+                    }
+                    
                     const reader = new FileReader();
                     reader.onload = function(event) {
                         uploadedSignatureData = event.target.result;
                         document.getElementById('signature-upload-preview').style.display = 'block';
                         document.getElementById('uploaded-signature').src = event.target.result;
+                        
+                        // Validar se parece uma assinatura (imagem não muito simples)
+                        const img = new Image();
+                        img.onload = function() {
+                            // Verificar dimensões mínimas
+                            if (img.width >= 100 && img.height >= 50) {
+                                document.getElementById('image-validation').style.display = 'block';
+                            }
+                        };
+                        img.src = event.target.result;
+                        
                         currentSignatureMethod = 'upload';
                     };
                     reader.readAsDataURL(file);
                 }
             });
             
-            // Digitar nome
+            // Digitar nome com validação
             document.getElementById('signature-typed')?.addEventListener('input', function() {
-                if (this.value.trim()) {
+                const value = this.value.trim();
+                if (value.length >= 3) { // Mínimo 3 caracteres
                     currentSignatureMethod = 'typed';
                     // Ativar método digitado visualmente
                     document.querySelectorAll('.signature-method').forEach(m => m.classList.remove('active'));
                     document.getElementById('typed-method').classList.add('active');
+                    document.getElementById('typed-validation').style.display = 'block';
+                } else {
+                    document.getElementById('typed-validation').style.display = 'none';
                 }
             });
             
@@ -769,12 +865,69 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        alert('✅ Assinatura realizada com sucesso!');
-                        window.location.reload();
+                        // Mostrar mensagem de sucesso melhorada
+                        const successMessage = result.data?.completed 
+                            ? '🎉 Assinatura realizada com sucesso! Todos os signatários assinaram. O contrato está completo!'
+                            : '✅ Assinatura realizada com sucesso!';
+                        
+                        // Criar modal de sucesso premium
+                        const modal = document.createElement('div');
+                        modal.style.cssText = `
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: rgba(0, 0, 0, 0.8);
+                            z-index: 10000;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            animation: fadeIn 0.3s ease;
+                        `;
+                        modal.innerHTML = `
+                            <div style="background: linear-gradient(135deg, #1C1C21 0%, #2C2C2F 100%); 
+                                        border-radius: 16px; 
+                                        padding: 40px; 
+                                        max-width: 500px; 
+                                        text-align: center;
+                                        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                                        border: 2px solid #FFC700;">
+                                <div style="font-size: 5rem; color: #22C55E; margin-bottom: 20px;">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <h2 style="color: #FFFFFF; margin-bottom: 20px; font-size: 1.8rem;">
+                                    ${result.data?.completed ? '🎉 Contrato Completo!' : '✅ Assinatura Confirmada!'}
+                                </h2>
+                                <p style="color: #ECECEC; margin-bottom: 30px; font-size: 1.1rem; line-height: 1.6;">
+                                    ${successMessage}
+                                </p>
+                                ${result.data?.downloadUrl ? `
+                                    <a href="${result.data.downloadUrl}" 
+                                       class="btn btn-primary" 
+                                       style="min-width: 250px; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                                        <i class="fas fa-download"></i> Baixar Contrato Assinado
+                                    </a>
+                                ` : ''}
+                                <button onclick="window.location.reload()" 
+                                        class="btn btn-secondary" 
+                                        style="min-width: 250px;">
+                                    Ver Contrato
+                                </button>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                        
+                        // Recarregar após 3 segundos se não clicar
+                        setTimeout(() => {
+                            if (modal.parentElement) {
+                                window.location.reload();
+                            }
+                        }, 5000);
                     } else {
                         alert('Erro ao assinar: ' + (result.error?.message || 'Erro desconhecido'));
                         this.disabled = false;
-                        this.innerHTML = '<i class="fas fa-check"></i> Confirmar Assinatura';
+                        this.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar e Assinar';
                     }
                 } catch (error) {
                     alert('Erro ao assinar: ' + error.message);
