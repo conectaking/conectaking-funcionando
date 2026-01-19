@@ -720,7 +720,7 @@ class ContractService {
      */
     async sendSignatureNotification(contract, signer, allSigned = false) {
         const frontendUrl = config.urls.frontend || 'https://conectaking.com.br';
-        const db = require('../db');
+        const db = require('../../db');
         
         // Notificar o criador do contrato
         const client = await db.pool.connect();
@@ -1447,7 +1447,7 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
      * Salvar posições de assinaturas para um contrato
      */
     async saveSignaturePositions(contractId, positions) {
-        const client = await require('../db').pool.connect();
+        const client = await require('../../db').pool.connect();
         try {
             await client.query('BEGIN');
             

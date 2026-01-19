@@ -147,9 +147,9 @@ router.post('/sign/:token/submit', asyncHandler(async (req, res) => {
         try {
             await client.query('BEGIN');
 
-            // Verificar código de verificação se necessário (mas não obrigatório)
-            if (signer.verification_code && !signer.verification_code_verified) {
-                return responseFormatter.error(res, 'Código de verificação não foi confirmado', 403);
+            // Verificar se já assinou (verificação dupla)
+            if (signer.signed_at) {
+                return responseFormatter.error(res, 'Este contrato já foi assinado', 400);
             }
 
             // Criar assinatura

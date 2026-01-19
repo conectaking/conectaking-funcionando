@@ -12,7 +12,10 @@
     <!-- PDF.js para preview de PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        // Garantir que pdfjsLib está disponível globalmente
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
     </script>
     <style>
         * {
@@ -440,27 +443,7 @@
         </div>
         
         <% if (!signer.signed_at) { %>
-        <!-- Verificação de Código -->
-        <% if (!signer.verification_code_verified && signer.verification_code) { %>
-        <div class="verification-section" id="verification-section" style="background: #1C1C21; border: 2px solid #2C2C2F; border-radius: 12px; padding: 30px; margin-bottom: 30px;">
-            <h3 style="color: #FFC700; margin-bottom: 20px;"><i class="fas fa-shield-alt"></i> Verificação de Identidade</h3>
-            <p style="color: #ECECEC; margin-bottom: 20px;">Um código de verificação foi enviado para <strong><%= signer.email %></strong>. Digite o código abaixo para continuar.</p>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <input type="text" id="verification-code" placeholder="000000" maxlength="6" style="flex: 1; padding: 15px; font-size: 1.5rem; text-align: center; letter-spacing: 8px; border: 2px solid #2C2C2F; border-radius: 8px; background: #0B0B0B; color: #FFFFFF; font-family: 'Courier New', monospace;">
-            </div>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button id="verify-code-btn" class="btn btn-primary" style="flex: 1;">
-                    <i class="fas fa-check"></i> Verificar Código
-                </button>
-                <button id="resend-code-btn" class="btn btn-secondary">
-                    <i class="fas fa-redo"></i> Reenviar
-                </button>
-            </div>
-            <div id="verification-error" style="display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid #EF4444; border-radius: 8px; padding: 15px; color: #EF4444; margin-top: 15px;"></div>
-        </div>
-        <% } %>
-        
-        <div class="signature-section" id="signature-section" style="display: <%= signer.verification_code_verified || !signer.verification_code ? 'block' : 'none' %>;">
+        <div class="signature-section" id="signature-section">
             <h3><i class="fas fa-signature"></i> Assinatura Eletrônica</h3>
             
             <div class="signature-methods">
