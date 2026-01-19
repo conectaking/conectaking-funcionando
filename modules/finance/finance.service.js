@@ -14,24 +14,70 @@ class FinanceService {
             throw new Error(validation.errors.join(', '));
         }
 
-        // Criar transação
-        const transaction = await repository.createTransaction({
-            ...data,
-            user_id: userId
-        });
+        const db = require('../../db');
+        const client = await db.pool.connect();
+        
+        try {
+            await client.query('BEGIN');
 
-        // Se for despesa paga em conta, atualizar saldo
-        if (transaction.type === 'EXPENSE' && transaction.status === 'PAID' && transaction.account_id) {
-            await this.updateAccountBalance(transaction.account_id, userId);
+            // Criar transação principal
+            const transaction = await repository.createTransaction({
+                ...data,
+                user_id: userId
+            }, client);
+
+            // Se for recorrente, criar transações para os meses seguintes
+            if (data.is_recurring && data.recurring_times && data.recurring_times > 1) {
+                const baseDate = new Date(data.transaction_date);
+                const createdTransactions = [transaction];
+
+                for (let i = 1; i < data.recurring_times; i++) {
+                    const nextDate = new Date(baseDate);
+                    nextDate.setMonth(nextDate.getMonth() + i);
+
+                    const recurringTransaction = await repository.createTransaction({
+                        ...data,
+                        user_id: userId,
+                        transaction_date: nextDate.toISOString().split('T')[0],
+                        is_recurring: false, // Apenas a primeira é marcada como recorrente
+                        recurring_times: null
+                    }, client);
+
+                    createdTransactions.push(recurringTransaction);
+                }
+
+                logger.info(`Transação recorrente criada: ${transaction.id} + ${createdTransactions.length - 1} transações futuras para usuário ${userId}`);
+                await client.query('COMMIT');
+                
+                // Atualizar saldos das contas se necessário
+                if (transaction.account_id) {
+                    await this.updateAccountBalance(transaction.account_id, userId);
+                }
+                
+                return transaction;
+            }
+
+            await client.query('COMMIT');
+
+            // Se for despesa paga em conta, atualizar saldo
+            if (transaction.type === 'EXPENSE' && transaction.status === 'PAID' && transaction.account_id) {
+                await this.updateAccountBalance(transaction.account_id, userId);
+            }
+
+            // Se for receita paga em conta, atualizar saldo
+            if (transaction.type === 'INCOME' && transaction.status === 'PAID' && transaction.account_id) {
+                await this.updateAccountBalance(transaction.account_id, userId);
+            }
+
+            logger.info(`Transação criada: ${transaction.id} para usuário ${userId}`);
+            return transaction;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            logger.error('Erro ao criar transação:', error);
+            throw error;
+        } finally {
+            client.release();
         }
-
-        // Se for receita paga em conta, atualizar saldo
-        if (transaction.type === 'INCOME' && transaction.status === 'PAID' && transaction.account_id) {
-            await this.updateAccountBalance(transaction.account_id, userId);
-        }
-
-        logger.info(`Transação criada: ${transaction.id} para usuário ${userId}`);
-        return transaction;
     }
 
     /**

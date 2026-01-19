@@ -440,8 +440,8 @@ class FinanceRepository {
     async getDashboardStats(userId, dateFrom, dateTo) {
         const client = await db.pool.connect();
         try {
-            // Total de receitas
-            const incomeResult = await client.query(
+            // Total de receitas pagas
+            const incomePaidResult = await client.query(
                 `SELECT COALESCE(SUM(amount), 0) as total
                  FROM finance_transactions
                  WHERE user_id = $1 AND type = 'INCOME' AND status = 'PAID'
@@ -449,8 +449,17 @@ class FinanceRepository {
                 [userId, dateFrom, dateTo]
             );
 
-            // Total de despesas
-            const expenseResult = await client.query(
+            // Total de receitas pendentes (o que falta receber)
+            const incomePendingResult = await client.query(
+                `SELECT COALESCE(SUM(amount), 0) as total
+                 FROM finance_transactions
+                 WHERE user_id = $1 AND type = 'INCOME' AND status = 'PENDING'
+                 AND transaction_date BETWEEN $2::date AND $3::date`,
+                [userId, dateFrom, dateTo]
+            );
+
+            // Total de despesas pagas
+            const expensePaidResult = await client.query(
                 `SELECT COALESCE(SUM(amount), 0) as total
                  FROM finance_transactions
                  WHERE user_id = $1 AND type = 'EXPENSE' AND status = 'PAID'
@@ -458,13 +467,21 @@ class FinanceRepository {
                 [userId, dateFrom, dateTo]
             );
 
-            // Despesas pendentes
-            const pendingExpenseResult = await client.query(
+            // Total de despesas pendentes (o que falta pagar)
+            const expensePendingResult = await client.query(
                 `SELECT COALESCE(SUM(amount), 0) as total
                  FROM finance_transactions
                  WHERE user_id = $1 AND type = 'EXPENSE' AND status = 'PENDING'
                  AND transaction_date BETWEEN $2::date AND $3::date`,
                 [userId, dateFrom, dateTo]
+            );
+
+            // Saldo disponível (soma dos saldos das contas ativas)
+            const accountBalanceResult = await client.query(
+                `SELECT COALESCE(SUM(current_balance), 0) as total
+                 FROM finance_accounts
+                 WHERE user_id = $1 AND is_active = true`,
+                [userId]
             );
 
             // Top 5 categorias de gasto
