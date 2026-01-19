@@ -394,7 +394,7 @@
             </div>
             
             <!-- Visualização de Texto -->
-            <div id="contract-text-view" class="contract-content"><%= contract.pdf_content || 'Conteúdo do contrato não disponível' %></div>
+            <div id="contract-text-view" class="contract-content"><%= (contract.pdf_content || contract.content || 'Conteúdo do contrato não disponível').replace(/\n/g, '<br>') %></div>
             
             <!-- Visualização de PDF (oculta por padrão) -->
             <% if (contract.pdf_url && contract.contract_type === 'imported') { %>
@@ -435,7 +435,7 @@
                     <i class="fas fa-times"></i>
                 </button>
                 <h2 style="color: #FFC700; margin-bottom: 20px;"><i class="fas fa-file-alt"></i> <%= contract.title %></h2>
-                <div style="background: #0B0B0B; padding: 30px; border-radius: 12px; white-space: pre-wrap; line-height: 1.8; color: #ECECEC; max-height: 70vh; overflow-y: auto;" id="expanded-contract-content"><%= contract.pdf_content || 'Conteúdo do contrato não disponível' %></div>
+                <div style="background: #0B0B0B; padding: 30px; border-radius: 12px; white-space: pre-wrap; line-height: 1.8; color: #ECECEC; max-height: 70vh; overflow-y: auto;" id="expanded-contract-content"><%= (contract.pdf_content || contract.content || 'Conteúdo do contrato não disponível').replace(/\n/g, '<br>') %></div>
             </div>
         </div>
         

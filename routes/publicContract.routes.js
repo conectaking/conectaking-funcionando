@@ -71,13 +71,31 @@ router.get('/sign/:signToken', asyncHandler(async (req, res) => {
             `);
         }
 
-        logger.info('Renderizando página de assinatura', { contractId: contract.id, signerId: signer.id });
+        // Se o contrato não tiver conteúdo e for de template, buscar do template
+        if (!contract.pdf_content && contract.template_id) {
+            try {
+                const template = await contractRepository.findTemplateById(contract.template_id);
+                if (template && template.content) {
+                    contract.pdf_content = template.content;
+                    logger.info('Conteúdo do template carregado para exibição', { contractId: contract.id, templateId: template.id });
+                }
+            } catch (err) {
+                logger.warn('Erro ao buscar conteúdo do template', { error: err.message, templateId: contract.template_id });
+            }
+        }
+
+        logger.info('Renderizando página de assinatura', { 
+            contractId: contract.id, 
+            signerId: signer.id,
+            hasContent: !!contract.pdf_content,
+            contractType: contract.contract_type
+        });
 
         // Renderizar página de assinatura
         res.render('contractSign', {
             contract,
             signer,
-            signToken
+            signToken: cleanToken  // Usar o token limpo
         });
     } catch (error) {
         logger.error('Erro ao carregar página de assinatura:', error);
