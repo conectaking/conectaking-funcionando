@@ -306,10 +306,28 @@ class ContractRepository {
     async findSignerByToken(token) {
         const client = await db.pool.connect();
         try {
+            // Buscar token exato (suporta tokens antigos com hífens e novos sem hífens)
             const result = await client.query(
                 'SELECT * FROM ck_contracts_signers WHERE sign_token = $1',
                 [token]
             );
+            
+            // Se não encontrou e o token tem hífen, pode ser que o Express cortou
+            // Tentar buscar tokens que começam com o token recebido (para tokens antigos longos)
+            if (!result.rows[0] && token.length < 50) {
+                const partialResult = await client.query(
+                    'SELECT * FROM ck_contracts_signers WHERE sign_token LIKE $1 LIMIT 1',
+                    [`${token}%`]
+                );
+                if (partialResult.rows[0]) {
+                    logger.warn('Token parcial encontrado - pode indicar problema de roteamento', { 
+                        receivedToken: token, 
+                        foundToken: partialResult.rows[0].sign_token 
+                    });
+                    return partialResult.rows[0];
+                }
+            }
+            
             return result.rows[0] || null;
         } finally {
             client.release();
