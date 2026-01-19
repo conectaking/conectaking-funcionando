@@ -19,8 +19,299 @@ function extractTokenFromPath(path, suffix = '') {
 }
 
 /**
+ * Visualizar PDF do contrato (rota pública usando token)
+ * GET /contract/sign/*/pdf
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ */
+router.get('/sign/*/pdf', asyncHandler(async (req, res) => {
+    try {
+        const signToken = extractTokenFromPath(req.path, 'pdf');
+        const token = signToken.trim();
+        
+        // Buscar signatário por token
+        const signer = await contractService.findSignerByToken(token);
+        
+        // Buscar contrato
+        const contract = await contractRepository.findById(signer.contract_id);
+        if (!contract) {
+            return res.status(404).json({ error: 'Contrato não encontrado' });
+        }
+        
+        // Verificar se tem PDF
+        if (!contract.pdf_file_path) {
+            return res.status(404).json({ error: 'PDF não encontrado para este contrato' });
+        }
+        
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Construir caminho do arquivo
+        let filePath = contract.pdf_file_path;
+        if (!path.isAbsolute(filePath)) {
+            filePath = path.join(__dirname, '..', filePath);
+        }
+        
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: 'Arquivo PDF não encontrado' });
+        }
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${contract.title || 'contrato'}.pdf"`);
+        
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
+    } catch (error) {
+        logger.error('Erro ao visualizar PDF público:', error);
+        res.status(404).json({ error: error.message || 'Token de assinatura inválido' });
+    }
+}));
+
+/**
+ * API: Status da assinatura
+ * GET /contract/sign/*/status
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ */
+router.get('/sign/*/status', asyncHandler(async (req, res) => {
+    try {
+        const signToken = extractTokenFromPath(req.path, 'status');
+        const token = signToken.trim();
+        
+        // Buscar signatário
+        const signer = await contractRepository.findSignerByToken(token);
+        
+        if (!signer) {
+            return responseFormatter.error(res, 'Token inválido', 404);
+        }
+
+        // Buscar contrato
+        const contract = await contractRepository.findById(signer.contract_id);
+
+        return responseFormatter.success(res, {
+            signed: !!signer.signed_at,
+            signed_at: signer.signed_at,
+            contract_status: contract.status,
+            expires_at: signer.token_expires_at,
+            expired: new Date(signer.token_expires_at) < new Date(),
+            verification_required: !signer.verification_code_verified && signer.verification_code !== null
+        });
+    } catch (error) {
+        logger.error('Erro ao buscar status:', error);
+        return responseFormatter.error(res, error.message, 400);
+    }
+}));
+
+/**
+ * API: Registrar acesso ao link de assinatura (tracking)
+ * POST /contract/sign/*/start
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ */
+router.post('/sign/*/start', asyncHandler(async (req, res) => {
+    try {
+        const signToken = extractTokenFromPath(req.path, 'start');
+        const token = signToken.trim();
+        
+        // Buscar signatário
+        const signer = await contractService.findSignerByToken(token);
+        
+        // Registrar IP e User-Agent (atualizar signatário)
+        await contractRepository.updateSigner(signer.id, {
+            ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+            user_agent: req.headers['user-agent'] || null
+        });
+
+        // Log de auditoria (viewed)
+        await contractRepository.createAuditLog({
+            contract_id: signer.contract_id,
+            user_id: null,
+            action: 'viewed',
+            details: { signer_email: signer.email },
+            ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+            user_agent: req.headers['user-agent'] || null
+        });
+
+        return responseFormatter.success(res, { success: true }, 'Acesso registrado');
+    } catch (error) {
+        logger.error('Erro ao registrar acesso:', error);
+        return responseFormatter.error(res, error.message, 400);
+    }
+}));
+
+/**
+ * API: Submeter assinatura
+ * POST /contract/sign/*/submit
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ */
+router.post('/sign/*/submit', asyncHandler(async (req, res) => {
+    try {
+        const signToken = extractTokenFromPath(req.path, 'submit');
+        const token = signToken.trim();
+        const { signature_type, signature_data, signature_image_url } = req.body;
+
+        // Buscar signatário
+        const signer = await contractService.findSignerByToken(token);
+
+        // Validar assinatura
+        const validation = require('../modules/contracts/contract.validators').validateSignatureData({
+            signature_type,
+            signature_data,
+            signature_image_url
+        });
+
+        if (!validation.isValid) {
+            return responseFormatter.error(res, `Validação falhou: ${validation.errors.join(', ')}`, 400);
+        }
+
+        const client = await require('../db').pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+
+            // Verificar código de verificação se necessário (mas não obrigatório)
+            if (signer.verification_code && !signer.verification_code_verified) {
+                return responseFormatter.error(res, 'Código de verificação não foi confirmado', 403);
+            }
+
+            // Criar assinatura
+            await contractRepository.createSignature({
+                signer_id: signer.id,
+                contract_id: signer.contract_id,
+                signature_type,
+                signature_data,
+                signature_image_url,
+                signature_page: req.body.signature_page || 1,
+                signature_x: req.body.signature_x || null,
+                signature_y: req.body.signature_y || null,
+                signature_width: req.body.signature_width || 200,
+                signature_height: req.body.signature_height || 80,
+                ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+                user_agent: req.headers['user-agent'] || null
+            }, client);
+
+            // Atualizar signatário (marcar como assinado)
+            await contractRepository.updateSigner(signer.id, {
+                signed_at: new Date()
+            }, client);
+
+            // Verificar se todos assinaram
+            const allSigners = await contractRepository.findSignersByContractId(signer.contract_id);
+            const allSigned = allSigners.every(s => s.signed_at !== null);
+
+            if (allSigned) {
+                // Atualizar contrato para completed
+                await contractRepository.update(signer.contract_id, {
+                    status: 'completed',
+                    completed_at: new Date()
+                }, client);
+
+                // Log de auditoria (finalized)
+                await contractRepository.createAuditLog({
+                    contract_id: signer.contract_id,
+                    user_id: null,
+                    action: 'finalized',
+                    details: { all_signers_signed: true },
+                    ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+                    user_agent: req.headers['user-agent'] || null
+                }, client);
+            } else {
+                // Log de auditoria (signed)
+                await contractRepository.createAuditLog({
+                    contract_id: signer.contract_id,
+                    user_id: null,
+                    action: 'signed',
+                    details: { signer_email: signer.email },
+                    ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+                    user_agent: req.headers['user-agent'] || null
+                }, client);
+            }
+
+            await client.query('COMMIT');
+
+            // Enviar notificações (fora da transação)
+            const updatedContract = await contractRepository.findById(signer.contract_id);
+            await contractService.sendSignatureNotification(updatedContract, signer, allSigned);
+
+            return responseFormatter.success(res, {
+                success: true,
+                completed: allSigned
+            }, 'Assinatura realizada com sucesso');
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        logger.error('Erro ao submeter assinatura:', error);
+        return responseFormatter.error(res, error.message, 400);
+    }
+}));
+
+/**
+ * API: Enviar código de verificação
+ * POST /contract/sign/*/send-code
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ */
+router.post('/sign/*/send-code', asyncHandler(async (req, res) => {
+    try {
+        const signToken = extractTokenFromPath(req.path, 'send-code');
+        const token = signToken.trim();
+        
+        // Buscar signatário
+        const signer = await contractService.findSignerByToken(token);
+        
+        // Buscar contrato
+        const contract = await contractRepository.findById(signer.contract_id);
+        if (!contract) {
+            return responseFormatter.error(res, 'Contrato não encontrado', 404);
+        }
+
+        // Enviar código
+        const { code, expiresAt } = await contractService.sendVerificationCode(signer, contract);
+
+        return responseFormatter.success(res, {
+            expires_at: expiresAt,
+            message: 'Código enviado com sucesso'
+        }, 'Código de verificação enviado');
+    } catch (error) {
+        logger.error('Erro ao enviar código:', error);
+        return responseFormatter.error(res, error.message, 400);
+    }
+}));
+
+/**
+ * API: Verificar código de verificação
+ * POST /contract/sign/*/verify-code
+ * IMPORTANTE: Esta rota deve vir ANTES da rota genérica /sign/*
+ */
+router.post('/sign/*/verify-code', asyncHandler(async (req, res) => {
+    try {
+        const signToken = extractTokenFromPath(req.path, 'verify-code');
+        const token = signToken.trim();
+        const { code } = req.body;
+
+        if (!code || code.length !== 6) {
+            return responseFormatter.error(res, 'Código inválido', 400);
+        }
+
+        // Buscar signatário
+        const signer = await contractService.findSignerByToken(token);
+
+        // Verificar código
+        await contractService.verifyCode(signer.id, code);
+
+        return responseFormatter.success(res, {
+            verified: true
+        }, 'Código verificado com sucesso');
+    } catch (error) {
+        logger.error('Erro ao verificar código:', error);
+        return responseFormatter.error(res, error.message, 400);
+    }
+}));
+
+/**
  * Página pública de assinatura de contrato
  * GET /contract/sign/*
+ * IMPORTANTE: Esta rota deve vir POR ÚLTIMO (depois de todas as rotas específicas)
  * Captura todo o token incluindo hífens usando * (wildcard)
  */
 router.get('/sign/*', asyncHandler(async (req, res) => {
@@ -175,290 +466,6 @@ router.get('/sign/*', asyncHandler(async (req, res) => {
             </body>
             </html>
         `);
-    }
-}));
-
-/**
- * Visualizar PDF do contrato (rota pública usando token)
- * GET /contract/sign/*/pdf
- */
-router.get('/sign/*/pdf', asyncHandler(async (req, res) => {
-    try {
-        const signToken = extractTokenFromPath(req.path, 'pdf');
-        const token = signToken.trim();
-        
-        // Buscar signatário por token
-        const signer = await contractService.findSignerByToken(token);
-        
-        // Buscar contrato
-        const contract = await contractRepository.findById(signer.contract_id);
-        if (!contract) {
-            return res.status(404).json({ error: 'Contrato não encontrado' });
-        }
-        
-        // Verificar se tem PDF
-        if (!contract.pdf_file_path) {
-            return res.status(404).json({ error: 'PDF não encontrado para este contrato' });
-        }
-        
-        const fs = require('fs');
-        const path = require('path');
-        
-        // Construir caminho do arquivo
-        let filePath = contract.pdf_file_path;
-        if (!path.isAbsolute(filePath)) {
-            filePath = path.join(__dirname, '..', filePath);
-        }
-        
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: 'Arquivo PDF não encontrado' });
-        }
-        
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${contract.title || 'contrato'}.pdf"`);
-        
-        const fileStream = fs.createReadStream(filePath);
-        fileStream.pipe(res);
-    } catch (error) {
-        logger.error('Erro ao visualizar PDF público:', error);
-        res.status(404).json({ error: error.message || 'Token de assinatura inválido' });
-    }
-}));
-
-/**
- * API: Registrar acesso ao link de assinatura (tracking)
- * POST /contract/sign/*/start
- */
-router.post('/sign/*/start', asyncHandler(async (req, res) => {
-    try {
-        const signToken = extractTokenFromPath(req.path, 'start');
-        const token = signToken.trim();
-        
-        // Buscar signatário
-        const signer = await contractService.findSignerByToken(token);
-        
-        // Registrar IP e User-Agent (atualizar signatário)
-        await contractRepository.updateSigner(signer.id, {
-            ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-            user_agent: req.headers['user-agent'] || null
-        });
-
-        // Log de auditoria (viewed)
-        await contractRepository.createAuditLog({
-            contract_id: signer.contract_id,
-            user_id: null,
-            action: 'viewed',
-            details: { signer_email: signer.email },
-            ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-            user_agent: req.headers['user-agent'] || null
-        });
-
-        return responseFormatter.success(res, { success: true }, 'Acesso registrado');
-    } catch (error) {
-        logger.error('Erro ao registrar acesso:', error);
-        return responseFormatter.error(res, error.message, 400);
-    }
-}));
-
-/**
- * API: Submeter assinatura
- * POST /contract/sign/*/submit
- */
-router.post('/sign/*/submit', asyncHandler(async (req, res) => {
-    try {
-        const signToken = extractTokenFromPath(req.path, 'submit');
-        const token = signToken.trim();
-        const { signature_type, signature_data, signature_image_url } = req.body;
-
-        // Buscar signatário
-        const signer = await contractService.findSignerByToken(token);
-
-        // Validar assinatura
-        const validation = require('../modules/contracts/contract.validators').validateSignatureData({
-            signature_type,
-            signature_data,
-            signature_image_url
-        });
-
-        if (!validation.isValid) {
-            return responseFormatter.error(res, `Validação falhou: ${validation.errors.join(', ')}`, 400);
-        }
-
-        const client = await require('../db').pool.connect();
-        
-        try {
-            await client.query('BEGIN');
-
-            // Verificar código de verificação se necessário (mas não obrigatório)
-            if (signer.verification_code && !signer.verification_code_verified) {
-                return responseFormatter.error(res, 'Código de verificação não foi confirmado', 403);
-            }
-
-            // Criar assinatura
-            await contractRepository.createSignature({
-                signer_id: signer.id,
-                contract_id: signer.contract_id,
-                signature_type,
-                signature_data,
-                signature_image_url,
-                signature_page: req.body.signature_page || 1,
-                signature_x: req.body.signature_x || null,
-                signature_y: req.body.signature_y || null,
-                signature_width: req.body.signature_width || 200,
-                signature_height: req.body.signature_height || 80,
-                ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-                user_agent: req.headers['user-agent'] || null
-            }, client);
-
-            // Atualizar signatário (marcar como assinado)
-            await contractRepository.updateSigner(signer.id, {
-                signed_at: new Date()
-            }, client);
-
-            // Verificar se todos assinaram
-            const allSigners = await contractRepository.findSignersByContractId(signer.contract_id);
-            const allSigned = allSigners.every(s => s.signed_at !== null);
-
-            if (allSigned) {
-                // Atualizar contrato para completed
-                await contractRepository.update(signer.contract_id, {
-                    status: 'completed',
-                    completed_at: new Date()
-                }, client);
-
-                // Log de auditoria (finalized)
-                await contractRepository.createAuditLog({
-                    contract_id: signer.contract_id,
-                    user_id: null,
-                    action: 'finalized',
-                    details: { all_signers_signed: true },
-                    ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-                    user_agent: req.headers['user-agent'] || null
-                }, client);
-            } else {
-                // Log de auditoria (signed)
-                await contractRepository.createAuditLog({
-                    contract_id: signer.contract_id,
-                    user_id: null,
-                    action: 'signed',
-                    details: { signer_email: signer.email },
-                    ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-                    user_agent: req.headers['user-agent'] || null
-                }, client);
-            }
-
-            await client.query('COMMIT');
-
-            // Enviar notificações (fora da transação)
-            const updatedContract = await contractRepository.findById(signer.contract_id);
-            await contractService.sendSignatureNotification(updatedContract, signer, allSigned);
-
-            return responseFormatter.success(res, {
-                success: true,
-                completed: allSigned
-            }, 'Assinatura realizada com sucesso');
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
-    } catch (error) {
-        logger.error('Erro ao submeter assinatura:', error);
-        return responseFormatter.error(res, error.message, 400);
-    }
-}));
-
-/**
- * API: Status da assinatura
- * GET /contract/sign/*/status
- */
-router.get('/sign/*/status', asyncHandler(async (req, res) => {
-    try {
-        const signToken = extractTokenFromPath(req.path, 'status');
-        const token = signToken.trim();
-        
-        // Buscar signatário
-        const signer = await contractRepository.findSignerByToken(token);
-        
-        if (!signer) {
-            return responseFormatter.error(res, 'Token inválido', 404);
-        }
-
-        // Buscar contrato
-        const contract = await contractRepository.findById(signer.contract_id);
-
-        return responseFormatter.success(res, {
-            signed: !!signer.signed_at,
-            signed_at: signer.signed_at,
-            contract_status: contract.status,
-            expires_at: signer.token_expires_at,
-            expired: new Date(signer.token_expires_at) < new Date(),
-            verification_required: !signer.verification_code_verified && signer.verification_code !== null
-        });
-    } catch (error) {
-        logger.error('Erro ao buscar status:', error);
-        return responseFormatter.error(res, error.message, 400);
-    }
-}));
-
-/**
- * API: Enviar código de verificação
- * POST /contract/sign/*/send-code
- */
-router.post('/sign/*/send-code', asyncHandler(async (req, res) => {
-    try {
-        const signToken = extractTokenFromPath(req.path, 'send-code');
-        const token = signToken.trim();
-        
-        // Buscar signatário
-        const signer = await contractService.findSignerByToken(token);
-        
-        // Buscar contrato
-        const contract = await contractRepository.findById(signer.contract_id);
-        if (!contract) {
-            return responseFormatter.error(res, 'Contrato não encontrado', 404);
-        }
-
-        // Enviar código
-        const { code, expiresAt } = await contractService.sendVerificationCode(signer, contract);
-
-        return responseFormatter.success(res, {
-            expires_at: expiresAt,
-            message: 'Código enviado com sucesso'
-        }, 'Código de verificação enviado');
-    } catch (error) {
-        logger.error('Erro ao enviar código:', error);
-        return responseFormatter.error(res, error.message, 400);
-    }
-}));
-
-/**
- * API: Verificar código de verificação
- * POST /contract/sign/*/verify-code
- */
-router.post('/sign/*/verify-code', asyncHandler(async (req, res) => {
-    try {
-        const signToken = extractTokenFromPath(req.path, 'verify-code');
-        const token = signToken.trim();
-        const { code } = req.body;
-
-        if (!code || code.length !== 6) {
-            return responseFormatter.error(res, 'Código inválido', 400);
-        }
-
-        // Buscar signatário
-        const signer = await contractService.findSignerByToken(token);
-
-        // Verificar código
-        await contractService.verifyCode(signer.id, code);
-
-        return responseFormatter.success(res, {
-            verified: true
-        }, 'Código verificado com sucesso');
-    } catch (error) {
-        logger.error('Erro ao verificar código:', error);
-        return responseFormatter.error(res, error.message, 400);
     }
 }));
 
