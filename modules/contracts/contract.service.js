@@ -8,13 +8,15 @@ const config = require('../../config');
 
 class ContractService {
     /**
-     * Gerar token único para assinatura (UUID + HMAC)
+     * Gerar token único para assinatura (curto e seguro usando nanoid)
+     * Formato: 21 caracteres alfanuméricos (sem hífens para evitar problemas de roteamento)
      */
     generateSignToken() {
-        const uuid = crypto.randomBytes(32).toString('hex');
-        const secret = process.env.CONTRACT_SIGN_SECRET || 'contract-sign-secret-change-in-production';
-        const hmac = crypto.createHmac('sha256', secret).update(uuid).digest('hex');
-        return `${uuid}-${hmac.substring(0, 16)}`;
+        const { customAlphabet } = require('nanoid');
+        // Usar apenas caracteres seguros para URL (sem hífens, underscores, etc)
+        const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        const nanoid = customAlphabet(alphabet, 21);
+        return nanoid();
     }
 
     /**
