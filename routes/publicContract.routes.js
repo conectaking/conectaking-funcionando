@@ -18,15 +18,15 @@ function extractTokenFromPath(path, suffix = '') {
     return token.trim();
 }
 
+// Removido middleware - não necessário com a abordagem atual
+
 /**
  * Visualizar PDF do contrato (rota pública usando token)
  * GET /contract/sign/TOKEN/pdf
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
-router.get('/sign/*/pdf', asyncHandler(async (req, res) => {
+router.get('/sign/:token(*)/pdf', asyncHandler(async (req, res) => {
     try {
-        const signToken = extractTokenFromPath(req.path, 'pdf');
-        const token = signToken.trim();
+        const token = (req.params.token || req.signToken || extractTokenFromPath(req.path, 'pdf')).trim();
         
         // Buscar signatário por token
         const signer = await contractService.findSignerByToken(token);
@@ -69,12 +69,11 @@ router.get('/sign/*/pdf', asyncHandler(async (req, res) => {
 /**
  * API: Status da assinatura
  * GET /contract/sign/TOKEN/status
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
-router.get('/sign/*/status', asyncHandler(async (req, res) => {
+router.get(/^\/sign\/(.+)\/status$/, asyncHandler(async (req, res) => {
     try {
-        const signToken = extractTokenFromPath(req.path, 'status');
-        const token = signToken.trim();
+        const match = req.path.match(/^\/sign\/(.+)\/status$/);
+        const token = (match ? match[1] : extractTokenFromPath(req.path, 'status')).trim();
         
         // Buscar signatário
         const signer = await contractRepository.findSignerByToken(token);
@@ -103,12 +102,11 @@ router.get('/sign/*/status', asyncHandler(async (req, res) => {
 /**
  * API: Registrar acesso ao link de assinatura (tracking)
  * POST /contract/sign/TOKEN/start
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
-router.post('/sign/*/start', asyncHandler(async (req, res) => {
+router.post(/^\/sign\/(.+)\/start$/, asyncHandler(async (req, res) => {
     try {
-        const signToken = extractTokenFromPath(req.path, 'start');
-        const token = signToken.trim();
+        const match = req.path.match(/^\/sign\/(.+)\/start$/);
+        const token = (match ? match[1] : extractTokenFromPath(req.path, 'start')).trim();
         
         // Buscar signatário
         const signer = await contractService.findSignerByToken(token);
@@ -139,12 +137,11 @@ router.post('/sign/*/start', asyncHandler(async (req, res) => {
 /**
  * API: Submeter assinatura
  * POST /contract/sign/TOKEN/submit
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
-router.post('/sign/*/submit', asyncHandler(async (req, res) => {
+router.post(/^\/sign\/(.+)\/submit$/, asyncHandler(async (req, res) => {
     try {
-        const signToken = extractTokenFromPath(req.path, 'submit');
-        const token = signToken.trim();
+        const match = req.path.match(/^\/sign\/(.+)\/submit$/);
+        const token = (match ? match[1] : extractTokenFromPath(req.path, 'submit')).trim();
         const { signature_type, signature_data, signature_image_url } = req.body;
 
         // Buscar signatário
@@ -249,12 +246,10 @@ router.post('/sign/*/submit', asyncHandler(async (req, res) => {
 /**
  * API: Enviar código de verificação
  * POST /contract/sign/TOKEN/send-code
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
-router.post('/sign/*/send-code', asyncHandler(async (req, res) => {
+router.post('/sign/:token(*)/send-code', asyncHandler(async (req, res) => {
     try {
-        const signToken = extractTokenFromPath(req.path, 'send-code');
-        const token = signToken.trim();
+        const token = (req.params.token || req.signToken || extractTokenFromPath(req.path, 'send-code')).trim();
         
         // Buscar signatário
         const signer = await contractService.findSignerByToken(token);
@@ -281,12 +276,10 @@ router.post('/sign/*/send-code', asyncHandler(async (req, res) => {
 /**
  * API: Verificar código de verificação
  * POST /contract/sign/TOKEN/verify-code
- * IMPORTANTE: Esta rota deve vir ANTES da rota genérica
  */
-router.post('/sign/*/verify-code', asyncHandler(async (req, res) => {
+router.post('/sign/:token(*)/verify-code', asyncHandler(async (req, res) => {
     try {
-        const signToken = extractTokenFromPath(req.path, 'verify-code');
-        const token = signToken.trim();
+        const token = (req.params.token || req.signToken || extractTokenFromPath(req.path, 'verify-code')).trim();
         const { code } = req.body;
 
         if (!code || code.length !== 6) {
@@ -312,20 +305,43 @@ router.post('/sign/*/verify-code', asyncHandler(async (req, res) => {
  * Página pública de assinatura de contrato
  * GET /contract/sign/TOKEN
  * IMPORTANTE: Esta rota deve vir POR ÚLTIMO (depois de todas as rotas específicas)
- * Captura todo o token incluindo hífens usando wildcard
+ * Captura todo o token incluindo hífens usando regex ou path direto
  */
-router.get('/sign/*', asyncHandler(async (req, res) => {
+router.get(/^\/sign\/(.+)$/, asyncHandler(async (req, res) => {
     try {
-        // Capturar token completo da URL (tudo após /sign/)
-        const signToken = req.params[0] || extractTokenFromPath(req.path);
+        // Capturar token completo da URL usando regex match
+        const match = req.path.match(/^\/sign\/(.+)$/);
+        const signToken = match ? match[1] : (req.params.token || extractTokenFromPath(req.path));
         
         // Limpar token (remover caracteres especiais ou espaços, mas manter hífens)
-        const cleanToken = signToken.trim();
+        const cleanToken = String(signToken || '').trim();
+        
+        if (!cleanToken) {
+            logger.warn('Token vazio recebido', { path: req.path });
+            return res.status(404).send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Token Inválido</title>
+                    <meta charset="UTF-8">
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                        h1 { color: #EF4444; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Token de Assinatura Inválido</h1>
+                    <p>O link de assinatura não contém um token válido.</p>
+                </body>
+                </html>
+            `);
+        }
         
         logger.info('Tentando carregar página de assinatura', { 
             tokenLength: cleanToken.length,
             tokenPreview: cleanToken.length > 20 ? cleanToken.substring(0, 20) + '...' : cleanToken,
-            fullPath: req.path
+            fullPath: req.path,
+            originalUrl: req.originalUrl
         });
         
         // Buscar signatário por token
@@ -334,13 +350,15 @@ router.get('/sign/*', asyncHandler(async (req, res) => {
         if (!signer) {
             logger.warn('Signatário não encontrado', { 
                 tokenLength: cleanToken.length,
-                tokenPreview: cleanToken.length > 20 ? cleanToken.substring(0, 20) + '...' : cleanToken
+                tokenPreview: cleanToken.length > 20 ? cleanToken.substring(0, 20) + '...' : cleanToken,
+                searchedToken: cleanToken
             });
             return res.status(404).send(`
                 <!DOCTYPE html>
                 <html>
                 <head>
                     <title>Token Inválido</title>
+                    <meta charset="UTF-8">
                     <style>
                         body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
                         h1 { color: #EF4444; }
@@ -350,6 +368,7 @@ router.get('/sign/*', asyncHandler(async (req, res) => {
                     <h1>Token de Assinatura Inválido</h1>
                     <p>O link de assinatura não é válido ou expirou.</p>
                     <p>Por favor, entre em contato com quem enviou o contrato para receber um novo link.</p>
+                    <p style="font-size: 0.8em; color: #888; margin-top: 20px;">Token recebido: ${cleanToken.substring(0, 30)}...</p>
                 </body>
                 </html>
             `);
@@ -364,6 +383,7 @@ router.get('/sign/*', asyncHandler(async (req, res) => {
                 <html>
                 <head>
                     <title>Contrato Não Encontrado</title>
+                    <meta charset="UTF-8">
                     <style>
                         body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
                         h1 { color: #EF4444; }
@@ -394,19 +414,21 @@ router.get('/sign/*', asyncHandler(async (req, res) => {
             contractId: contract.id, 
             signerId: signer.id,
             hasContent: !!contract.pdf_content,
-            contractType: contract.contract_type
+            contractType: contract.contract_type,
+            signerEmail: signer.email
         });
 
         // Renderizar página de assinatura
         res.render('contractSign', {
             contract,
             signer,
-            signToken: cleanToken  // Usar o token limpo
+            signToken: cleanToken
         });
     } catch (error) {
         logger.error('Erro ao carregar página de assinatura:', error);
+        logger.error('Stack trace:', error.stack);
         
-        // Retornar página de erro HTML simples se o template não existir
+        // Retornar página de erro HTML simples
         const errorMessage = error.message || 'Token de assinatura inválido';
         const isExpired = errorMessage.includes('expirado');
         const isAlreadySigned = errorMessage.includes('já foi assinado');
@@ -452,6 +474,15 @@ router.get('/sign/*', asyncHandler(async (req, res) => {
                         font-size: 4rem;
                         margin-bottom: 20px;
                     }
+                    .error-details {
+                        margin-top: 20px;
+                        padding: 15px;
+                        background: #f5f5f5;
+                        border-radius: 8px;
+                        font-size: 0.9em;
+                        color: #666;
+                        text-align: left;
+                    }
                 </style>
             </head>
             <body>
@@ -462,6 +493,12 @@ router.get('/sign/*', asyncHandler(async (req, res) => {
                     ${isExpired ? '<p>Por favor, entre em contato com quem enviou o contrato para receber um novo link de assinatura.</p>' : ''}
                     ${isAlreadySigned ? '<p>Este contrato já foi assinado anteriormente.</p>' : ''}
                     ${!isExpired && !isAlreadySigned ? '<p>Por favor, verifique o link ou entre em contato com o suporte.</p>' : ''}
+                    <div class="error-details">
+                        <strong>Detalhes técnicos:</strong><br>
+                        Path: ${req.path}<br>
+                        Original URL: ${req.originalUrl}<br>
+                        Token: ${(req.params.token || '').substring(0, 50)}...
+                    </div>
                 </div>
             </body>
             </html>
