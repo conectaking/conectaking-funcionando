@@ -323,7 +323,6 @@ class FinanceController {
             return responseFormatter.error(res, error.message, 400);
         }
     }
-}
 
     /**
      * Listar perfis financeiros
