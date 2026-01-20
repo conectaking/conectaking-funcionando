@@ -77,4 +77,8 @@ router.delete('/profiles/:id', controller.deleteProfile);
 // Limites e Upgrade
 router.get('/upgrade-plans', controller.getUpgradePlans);
 
+// Configuração de WhatsApp (apenas ADM)
+router.get('/whatsapp-config', controller.getWhatsAppConfig);
+router.put('/whatsapp-config', controller.updateWhatsAppConfig);
+
 module.exports = router;

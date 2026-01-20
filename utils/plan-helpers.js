@@ -126,19 +126,20 @@ async function getFinanceUpgradePlans() {
     try {
         const result = await db.query(`
             SELECT 
-                id,
-                plan_code,
-                plan_name,
-                price,
-                description,
-                features,
-                whatsapp_number,
-                whatsapp_message,
-                pix_key
-            FROM subscription_plans
-            WHERE is_active = TRUE 
-            AND (features->>'has_finance_module' = 'true' OR features->>'max_finance_profiles' > '1')
-            ORDER BY price ASC
+                sp.id,
+                sp.plan_code,
+                sp.plan_name,
+                sp.price,
+                sp.description,
+                sp.features,
+                COALESCE(fwc.whatsapp_number, sp.whatsapp_number) as whatsapp_number,
+                COALESCE(fwc.whatsapp_message, sp.whatsapp_message) as whatsapp_message,
+                sp.pix_key
+            FROM subscription_plans sp
+            LEFT JOIN finance_whatsapp_config fwc ON sp.plan_code = fwc.plan_code
+            WHERE sp.is_active = TRUE 
+            AND (sp.features->>'has_finance_module' = 'true' OR sp.features->>'max_finance_profiles' > '1')
+            ORDER BY sp.price ASC
         `);
 
         return result.rows;

@@ -34,13 +34,13 @@ BEGIN
     )
     WHERE plan_code = 'enterprise';
     
-    -- Criar novo plano King Finance (1500) - 2 perfis (1 principal + 1 adicional)
+    -- Criar novo plano King Finance (1700) - 2 perfis (1 principal + 1 adicional)
     INSERT INTO subscription_plans (plan_code, plan_name, price, description, features, is_active)
     VALUES (
         'king_finance',
         'King Finance',
-        1500.00,
-        'Plano com acesso completo a todos os módulos + Gestão Financeira com 2 perfis (1 principal + 1 adicional)',
+        1700.00,
+        'Plano com acesso completo a todos os módulos + Separação de pacotes com 2 perfis (1 principal + 1 adicional)',
         '{"can_add_all_modules": true, "can_edit_logo": true, "max_profiles": 1, "max_finance_profiles": 2, "has_finance_module": true}'::jsonb,
         true
     )
@@ -52,13 +52,13 @@ BEGIN
         is_active = EXCLUDED.is_active,
         updated_at = NOW();
     
-    -- Criar novo plano King Finance Plus (2000) - 3 perfis (1 principal + 2 adicionais) - Modo Individual
+    -- Criar novo plano King Finance Plus (2200) - 3 perfis (1 principal + 2 adicionais) - Modo Individual
     INSERT INTO subscription_plans (plan_code, plan_name, price, description, features, is_active)
     VALUES (
         'king_finance_plus',
         'King Finance Plus',
-        2000.00,
-        'Plano individual premium com acesso completo a todos os módulos + Gestão Financeira com 3 perfis (1 principal + 2 adicionais)',
+        2200.00,
+        'Plano individual premium com acesso completo a todos os módulos + Separação de pacotes com 3 perfis (1 principal + 2 adicionais)',
         '{"can_add_all_modules": true, "can_edit_logo": true, "max_profiles": 1, "max_finance_profiles": 3, "has_finance_module": true, "is_individual": true}'::jsonb,
         true
     )

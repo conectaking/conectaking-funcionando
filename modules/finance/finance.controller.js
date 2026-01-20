@@ -468,6 +468,92 @@ class FinanceController {
             return responseFormatter.error(res, error.message, 500);
         }
     }
+
+    /**
+     * Obter configurações de WhatsApp (apenas ADM)
+     */
+    async getWhatsAppConfig(req, res) {
+        try {
+            const userId = req.user.userId;
+            const db = require('../../db');
+            
+            // Verificar se é admin
+            const userResult = await db.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+            if (!userResult.rows[0]?.is_admin) {
+                return responseFormatter.error(res, 'Acesso negado. Apenas administradores podem acessar.', 403);
+            }
+            
+            const result = await db.query(`
+                SELECT 
+                    fwc.id,
+                    fwc.plan_code,
+                    sp.plan_name,
+                    fwc.whatsapp_number,
+                    fwc.whatsapp_message,
+                    fwc.created_at,
+                    fwc.updated_at
+                FROM finance_whatsapp_config fwc
+                JOIN subscription_plans sp ON fwc.plan_code = sp.plan_code
+                WHERE sp.plan_code IN ('king_finance', 'king_finance_plus')
+                ORDER BY sp.plan_code
+            `);
+            
+            return responseFormatter.success(res, result.rows);
+        } catch (error) {
+            logger.error('Erro ao buscar configurações de WhatsApp:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Atualizar configuração de WhatsApp (apenas ADM)
+     */
+    async updateWhatsAppConfig(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { plan_code, whatsapp_number, whatsapp_message } = req.body;
+            const db = require('../../db');
+            
+            // Verificar se é admin
+            const userResult = await db.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+            if (!userResult.rows[0]?.is_admin) {
+                return responseFormatter.error(res, 'Acesso negado. Apenas administradores podem acessar.', 403);
+            }
+            
+            if (!plan_code || !whatsapp_number || !whatsapp_message) {
+                return responseFormatter.error(res, 'plan_code, whatsapp_number e whatsapp_message são obrigatórios.', 400);
+            }
+            
+            // Verificar se o plano existe
+            const planResult = await db.query('SELECT id FROM subscription_plans WHERE plan_code = $1', [plan_code]);
+            if (planResult.rows.length === 0) {
+                return responseFormatter.error(res, 'Plano não encontrado.', 404);
+            }
+            
+            // Atualizar ou inserir configuração
+            const result = await db.query(`
+                INSERT INTO finance_whatsapp_config (plan_code, whatsapp_number, whatsapp_message, updated_at)
+                VALUES ($1, $2, $3, NOW())
+                ON CONFLICT (plan_code) DO UPDATE SET
+                    whatsapp_number = EXCLUDED.whatsapp_number,
+                    whatsapp_message = EXCLUDED.whatsapp_message,
+                    updated_at = NOW()
+                RETURNING *
+            `, [plan_code, whatsapp_number, whatsapp_message]);
+            
+            // Atualizar também na tabela subscription_plans
+            await db.query(`
+                UPDATE subscription_plans 
+                SET whatsapp_number = $1, whatsapp_message = $2, updated_at = NOW()
+                WHERE plan_code = $3
+            `, [whatsapp_number, whatsapp_message, plan_code]);
+            
+            return responseFormatter.success(res, result.rows[0]);
+        } catch (error) {
+            logger.error('Erro ao atualizar configuração de WhatsApp:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
 }
 
 module.exports = new FinanceController();
