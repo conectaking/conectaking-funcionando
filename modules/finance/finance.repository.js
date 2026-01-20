@@ -593,7 +593,6 @@ class FinanceRepository {
             client.release();
         }
     }
-}
 
     /**
      * Criar perfil financeiro
