@@ -447,7 +447,6 @@ class FinanceService {
             budgets: budgetsWithSpent
         };
     }
-}
 
     /**
      * Criar perfil financeiro
