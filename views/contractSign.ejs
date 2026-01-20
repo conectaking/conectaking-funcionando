@@ -350,9 +350,9 @@
             
             .signature-section {
                 padding: 20px;
-            }
-            
-            .signature-canvas {
+        }
+        
+        .signature-canvas {
                 height: 150px;
             }
             
@@ -369,7 +369,7 @@
             }
             
             .actions .btn {
-                width: 100%;
+            width: 100%;
             }
             
             .signature-typed-input {
@@ -422,9 +422,9 @@
                     <button id="view-text-btn" class="btn btn-secondary active" style="padding: 8px 16px; font-size: 0.9rem;">
                         <i class="fas fa-file-alt"></i> Ver Texto
                     </button>
-                </div>
             </div>
-            
+        </div>
+        
             <!-- Visualização de Texto -->
             <div id="contract-text-view" class="contract-content"><%= (contract.pdf_content || contract.content || 'Conteúdo do contrato não disponível').replace(/\n/g, '<br>') %></div>
             
@@ -458,8 +458,8 @@
                 </div>
             </div>
             <% } %>
-        </div>
-        
+                </div>
+                
         <!-- Modal de visualização expandida -->
         <div id="contract-expanded-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; padding: 20px; overflow-y: auto;">
             <div style="max-width: 900px; margin: 0 auto; background: #1C1C21; border-radius: 16px; padding: 30px; position: relative;">
@@ -469,8 +469,8 @@
                 <h2 style="color: #FFC700; margin-bottom: 20px;"><i class="fas fa-file-alt"></i> <%= contract.title %></h2>
                 <div style="background: #0B0B0B; padding: 30px; border-radius: 12px; white-space: pre-wrap; line-height: 1.8; color: #ECECEC; max-height: 70vh; overflow-y: auto;" id="expanded-contract-content"><%= (contract.pdf_content || contract.content || 'Conteúdo do contrato não disponível').replace(/\n/g, '<br>') %></div>
             </div>
-        </div>
-        
+                </div>
+                
         <% if (signer.signed_at) { %>
         <div class="signature-section" style="background: rgba(34, 197, 94, 0.1); border: 2px solid #22C55E; padding: 30px; border-radius: 12px; text-align: center;">
             <div style="font-size: 4rem; margin-bottom: 20px; color: #22C55E;">
@@ -563,8 +563,8 @@
                             <i class="fas fa-check-circle"></i> Nome válido
                         </small>
                     </div>
+                    </div>
                 </div>
-            </div>
             
             <div class="checkbox-group">
                 <input type="checkbox" id="accept-terms" required>
@@ -579,7 +579,7 @@
                 </button>
                 <button type="button" class="btn btn-primary" id="submit-signature-btn" style="min-width: 200px;">
                     <i class="fas fa-check-circle"></i> Confirmar e Assinar
-                </button>
+                    </button>
             </div>
             
             <div style="margin-top: 20px; padding: 15px; background: rgba(255, 199, 0, 0.1); border-left: 4px solid #FFC700; border-radius: 6px;">
@@ -587,9 +587,9 @@
                     <i class="fas fa-shield-alt" style="color: #FFC700;"></i> 
                     <strong>Segurança:</strong> Sua assinatura será registrada com data, hora e informações de segurança. Esta ação é irreversível.
                 </p>
-            </div>
-        </div>
-        <% } %>
+                    </div>
+                </div>
+                <% } %>
     </div>
     
     <script>
@@ -801,7 +801,7 @@
                         return;
                     }
                     
-                    const reader = new FileReader();
+                const reader = new FileReader();
                     reader.onload = function(event) {
                         uploadedSignatureData = event.target.result;
                         document.getElementById('signature-upload-preview').style.display = 'block';
@@ -818,9 +818,9 @@
                         img.src = event.target.result;
                         
                         currentSignatureMethod = 'upload';
-                    };
-                    reader.readAsDataURL(file);
-                }
+                };
+                reader.readAsDataURL(file);
+            }
             });
             
             // Digitar nome com validação
@@ -864,9 +864,9 @@
                 const acceptTerms = document.getElementById('accept-terms');
                 if (!acceptTerms.checked) {
                     alert('Você deve aceitar os termos do contrato para continuar.');
-                    return;
-                }
-                
+                return;
+            }
+            
                 let signatureData = null;
                 let signatureImageUrl = null;
                 
@@ -891,29 +891,29 @@
                     if (!typedName) {
                         alert('⚠️ Por favor, digite seu nome completo antes de continuar.');
                         document.getElementById('typed-method').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        return;
-                    }
+                return;
+            }
                     signatureData = typedName;
                 }
                 
                 this.disabled = true;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
-                
-                try {
+            
+            try {
                     const response = await fetch(`/contract/sign/${signToken}/submit`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                         body: JSON.stringify({
                             signature_type: currentSignatureMethod,
                             signature_data: signatureData,
                             signature_image_url: signatureImageUrl
                         })
-                    });
-                    
-                    const result = await response.json();
-                    
+                });
+                
+                const result = await response.json();
+                
                     if (result.success) {
                         // Mostrar mensagem de sucesso melhorada
                         const successMessage = result.data?.completed 
@@ -944,8 +944,8 @@
                                         box-shadow: 0 20px 60px rgba(0,0,0,0.5);
                                         border: 2px solid #FFC700;">
                                 <div style="font-size: 5rem; color: #22C55E; margin-bottom: 20px;">
-                                    <i class="fas fa-check-circle"></i>
-                                </div>
+                            <i class="fas fa-check-circle"></i>
+                            </div>
                                 <h2 style="color: #FFFFFF; margin-bottom: 20px; font-size: 1.8rem;">
                                     ${result.data?.completed ? '🎉 Contrato Completo!' : '✅ Assinatura Confirmada!'}
                                 </h2>
@@ -964,8 +964,8 @@
                                         style="min-width: 250px;">
                                     Ver Contrato
                                 </button>
-                            </div>
-                        `;
+                        </div>
+                    `;
                         document.body.appendChild(modal);
                         
                         // Recarregar após 3 segundos se não clicar
@@ -974,12 +974,12 @@
                                 window.location.reload();
                             }
                         }, 5000);
-                    } else {
+                } else {
                         alert('Erro ao assinar: ' + (result.error?.message || 'Erro desconhecido'));
                         this.disabled = false;
                         this.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar e Assinar';
-                    }
-                } catch (error) {
+                }
+            } catch (error) {
                     alert('Erro ao assinar: ' + error.message);
                     this.disabled = false;
                     this.innerHTML = '<i class="fas fa-check"></i> Confirmar Assinatura';

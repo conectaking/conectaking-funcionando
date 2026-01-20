@@ -455,62 +455,62 @@ class FinanceRepository {
     async getDashboardStats(userId, dateFrom, dateTo, profileId = null) {
         const client = await db.pool.connect();
         try {
-            // Construir filtro de perfil
-            const profileFilter = profileId ? 'AND profile_id = $4' : 'AND (profile_id IS NULL OR profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            // Construir filtro de perfil (especificar tabela para evitar ambiguidade)
+            const profileFilter = profileId ? 'AND t.profile_id = $4' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
             const params = profileId ? [userId, dateFrom, dateTo, profileId] : [userId, dateFrom, dateTo];
             
             // Total de receitas pagas
             const incomePaidResult = await client.query(
-                `SELECT COALESCE(SUM(amount), 0) as total
-                 FROM finance_transactions
-                 WHERE user_id = $1 AND type = 'INCOME' AND status = 'PAID'
-                 AND transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
+                `SELECT COALESCE(SUM(t.amount), 0) as total
+                 FROM finance_transactions t
+                 WHERE t.user_id = $1 AND t.type = 'INCOME' AND t.status = 'PAID'
+                 AND t.transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
                 params
             );
 
             // Total de receitas pendentes (o que falta receber)
             const incomePendingResult = await client.query(
-                `SELECT COALESCE(SUM(amount), 0) as total
-                 FROM finance_transactions
-                 WHERE user_id = $1 AND type = 'INCOME' AND status = 'PENDING'
-                 AND transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
+                `SELECT COALESCE(SUM(t.amount), 0) as total
+                 FROM finance_transactions t
+                 WHERE t.user_id = $1 AND t.type = 'INCOME' AND t.status = 'PENDING'
+                 AND t.transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
                 params
             );
 
             // Total de despesas pagas
             const expensePaidResult = await client.query(
-                `SELECT COALESCE(SUM(amount), 0) as total
-                 FROM finance_transactions
-                 WHERE user_id = $1 AND type = 'EXPENSE' AND status = 'PAID'
-                 AND transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
+                `SELECT COALESCE(SUM(t.amount), 0) as total
+                 FROM finance_transactions t
+                 WHERE t.user_id = $1 AND t.type = 'EXPENSE' AND t.status = 'PAID'
+                 AND t.transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
                 params
             );
 
             // Total de despesas pendentes (o que falta pagar)
             const expensePendingResult = await client.query(
-                `SELECT COALESCE(SUM(amount), 0) as total
-                 FROM finance_transactions
-                 WHERE user_id = $1 AND type = 'EXPENSE' AND status = 'PENDING'
-                 AND transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
+                `SELECT COALESCE(SUM(t.amount), 0) as total
+                 FROM finance_transactions t
+                 WHERE t.user_id = $1 AND t.type = 'EXPENSE' AND t.status = 'PENDING'
+                 AND t.transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
                 params
             );
 
             // Saldo disponível (soma dos saldos das contas ativas do perfil)
-            const accountProfileFilter = profileId ? 'AND profile_id = $2' : 'AND (profile_id IS NULL OR profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const accountProfileFilter = profileId ? 'AND a.profile_id = $2' : 'AND (a.profile_id IS NULL OR a.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
             const accountParams = profileId ? [userId, profileId] : [userId];
             
             const accountBalanceResult = await client.query(
-                `SELECT COALESCE(SUM(current_balance), 0) as total
-                 FROM finance_accounts
-                 WHERE user_id = $1 AND is_active = true ${accountProfileFilter}`,
+                `SELECT COALESCE(SUM(a.current_balance), 0) as total
+                 FROM finance_accounts a
+                 WHERE a.user_id = $1 AND a.is_active = true ${accountProfileFilter}`,
                 accountParams
             );
             
             // Verificar se há contas cadastradas
             const accountsCountResult = await client.query(
                 `SELECT COUNT(*) as count
-                 FROM finance_accounts
-                 WHERE user_id = $1 AND is_active = true ${accountProfileFilter}`,
+                 FROM finance_accounts a
+                 WHERE a.user_id = $1 AND a.is_active = true ${accountProfileFilter}`,
                 accountParams
             );
             const hasAccounts = parseInt(accountsCountResult.rows[0]?.count || 0) > 0;
@@ -534,15 +534,15 @@ class FinanceRepository {
             const totalExpensePending = parseFloat(expensePendingResult.rows[0]?.total || 0);
             
             // Calcular saldo disponível ACUMULADO (todas as transações pagas, sem filtro de data)
-            const accumulatedProfileFilter = profileId ? 'AND profile_id = $2' : 'AND (profile_id IS NULL OR profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const accumulatedProfileFilter = profileId ? 'AND t.profile_id = $2' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
             const accumulatedParams = profileId ? [userId, profileId] : [userId];
             
             const accountBalanceAccumulatedResult = await client.query(
                 `SELECT 
-                    COALESCE(SUM(CASE WHEN type = 'INCOME' AND status = 'PAID' THEN amount ELSE 0 END), 0) as total_income,
-                    COALESCE(SUM(CASE WHEN type = 'EXPENSE' AND status = 'PAID' THEN amount ELSE 0 END), 0) as total_expense
-                 FROM finance_transactions
-                 WHERE user_id = $1 AND status = 'PAID' ${accumulatedProfileFilter}`,
+                    COALESCE(SUM(CASE WHEN t.type = 'INCOME' AND t.status = 'PAID' THEN t.amount ELSE 0 END), 0) as total_income,
+                    COALESCE(SUM(CASE WHEN t.type = 'EXPENSE' AND t.status = 'PAID' THEN t.amount ELSE 0 END), 0) as total_expense
+                 FROM finance_transactions t
+                 WHERE t.user_id = $1 AND t.status = 'PAID' ${accumulatedProfileFilter}`,
                 accumulatedParams
             );
             
