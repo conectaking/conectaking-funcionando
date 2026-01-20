@@ -23,7 +23,8 @@ router.get('/plan-availability-public', asyncHandler(async (req, res) => {
                 'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
                 'spotify', 'linkedin', 'pinterest',
                 'link', 'portfolio', 'banner', 'carousel', 
-                'youtube_embed', 'sales_page', 'digital_form'
+                'youtube_embed', 'sales_page', 'digital_form',
+                'finance', 'agenda', 'contract'
             )
             ORDER BY mpa.module_type, mpa.plan_code
         `;
@@ -82,7 +83,8 @@ router.get('/plan-availability', protectUser, asyncHandler(async (req, res) => {
                 'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
                 'spotify', 'linkedin', 'pinterest',
                 'link', 'portfolio', 'banner', 'carousel', 
-                'youtube_embed', 'sales_page', 'digital_form'
+                'youtube_embed', 'sales_page', 'digital_form',
+                'finance', 'agenda', 'contract'
             )
             ORDER BY mpa.module_type, mpa.plan_code
         `;
@@ -225,6 +227,129 @@ router.get('/available', protectUser, asyncHandler(async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Erro ao buscar módulos disponíveis:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/modules/individual-plans - Buscar planos individuais por usuário (ADM)
+router.get('/individual-plans', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        
+        // Verificar se é admin
+        const adminCheck = await client.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+        if (adminCheck.rows.length === 0 || !adminCheck.rows[0].is_admin) {
+            return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem acessar.' });
+        }
+        
+        const result = await client.query(`
+            SELECT 
+                iup.id,
+                iup.user_id,
+                u.email as user_email,
+                u.name as user_name,
+                iup.module_type,
+                iup.plan_code,
+                iup.created_at,
+                iup.updated_at
+            FROM individual_user_plans iup
+            JOIN users u ON iup.user_id = u.id
+            ORDER BY iup.created_at DESC
+        `);
+        
+        res.json({
+            plans: result.rows
+        });
+    } catch (error) {
+        console.error('❌ Erro ao buscar planos individuais:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/modules/individual-plans - Criar plano individual (ADM)
+router.post('/individual-plans', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const { user_email, module_type } = req.body;
+        
+        // Verificar se é admin
+        const adminCheck = await client.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+        if (adminCheck.rows.length === 0 || !adminCheck.rows[0].is_admin) {
+            return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem criar.' });
+        }
+        
+        if (!user_email || !module_type) {
+            return res.status(400).json({ message: 'user_email e module_type são obrigatórios.' });
+        }
+        
+        // Buscar usuário pelo email
+        const userResult = await client.query('SELECT id, account_type FROM users WHERE email = $1', [user_email]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+        
+        const targetUserId = userResult.rows[0].id;
+        const planCode = userResult.rows[0].account_type;
+        
+        // Verificar se já existe
+        const existingCheck = await client.query(
+            'SELECT id FROM individual_user_plans WHERE user_id = $1 AND module_type = $2',
+            [targetUserId, module_type]
+        );
+        
+        if (existingCheck.rows.length > 0) {
+            return res.status(400).json({ message: 'Este módulo já está configurado para este usuário.' });
+        }
+        
+        // Criar plano individual
+        const result = await client.query(`
+            INSERT INTO individual_user_plans (user_id, module_type, plan_code)
+            VALUES ($1, $2, $3)
+            RETURNING *
+        `, [targetUserId, module_type, planCode]);
+        
+        res.json({
+            message: 'Plano individual criado com sucesso.',
+            plan: result.rows[0]
+        });
+    } catch (error) {
+        console.error('❌ Erro ao criar plano individual:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}));
+
+// DELETE /api/modules/individual-plans/:id - Deletar plano individual (ADM)
+router.delete('/individual-plans/:id', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const planId = parseInt(req.params.id);
+        
+        // Verificar se é admin
+        const adminCheck = await client.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+        if (adminCheck.rows.length === 0 || !adminCheck.rows[0].is_admin) {
+            return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem deletar.' });
+        }
+        
+        const result = await client.query('DELETE FROM individual_user_plans WHERE id = $1 RETURNING *', [planId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Plano individual não encontrado.' });
+        }
+        
+        res.json({
+            message: 'Plano individual removido com sucesso.'
+        });
+    } catch (error) {
+        console.error('❌ Erro ao deletar plano individual:', error);
         throw error;
     } finally {
         client.release();
