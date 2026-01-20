@@ -268,14 +268,16 @@ router.put('/users/:id/manage', protectAdmin, async (req, res) => {
     const { id } = req.params;
     const { email, accountType, isAdmin, subscriptionStatus, expiresAt, maxTeamInvites  } = req.body; 
     const adminUserId = req.user.userId;
-    const maxInvites = accountType === 'business_owner' ? parseInt(maxTeamInvites, 10) : 3;
 
     if (parseInt(id, 10) === adminUserId && isAdmin === false) {
         return res.status(403).json({ message: 'Você não pode remover seu próprio status de administrador.' });
     }
-    if (!email || !['free', 'individual', 'individual_com_logo', 'business_owner', 'team_member'].includes(accountType) || typeof isAdmin !== 'boolean') {
+    const validAccountTypes = ['king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'team_member', 
+                               'free', 'individual', 'individual_com_logo', 'business_owner']; // Manter compatibilidade
+    if (!email || !validAccountTypes.includes(accountType) || typeof isAdmin !== 'boolean') {
         return res.status(400).json({ message: 'Dados inválidos.' });
     }
+    const maxInvites = (accountType === 'king_corporate' || accountType === 'business_owner') ? parseInt(maxTeamInvites, 10) : 3;
     if (isNaN(maxInvites) || maxInvites < 0) {
         return res.status(400).json({ message: 'O valor para máximo de convites é inválido.'});
     }
@@ -329,7 +331,9 @@ router.put('/users/:id/update-role', protectAdmin, async (req, res) => {
         return res.status(403).json({ message: 'Você não pode remover seu próprio status de administrador.' });
     }
 
-    if (!['free', 'individual', 'individual_com_logo', 'business_owner', 'team_member'].includes(accountType) || typeof isAdmin !== 'boolean') {
+    const validAccountTypes = ['king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'team_member',
+                               'free', 'individual', 'individual_com_logo', 'business_owner']; // Manter compatibilidade
+    if (!validAccountTypes.includes(accountType) || typeof isAdmin !== 'boolean') {
         return res.status(400).json({ message: 'Dados de atualização inválidos.' });
     }
 
