@@ -65,15 +65,16 @@ router.post('/transfer', controller.transferBetweenAccounts);
 router.post('/upload', upload.single('file'), controller.uploadAttachment);
 
 // Perfis Financeiros
+// IMPORTANTE: Rotas específicas devem vir ANTES de rotas com parâmetros (:id)
 router.get('/profiles', controller.getProfiles);
 router.get('/profiles/primary', controller.getPrimaryProfile);
+router.get('/profiles/limit', controller.getProfilesLimit); // Deve vir antes de /profiles/:id
 router.get('/profiles/:id', controller.getProfile);
 router.post('/profiles', controller.createProfile);
 router.put('/profiles/:id', controller.updateProfile);
 router.delete('/profiles/:id', controller.deleteProfile);
 
 // Limites e Upgrade
-router.get('/profiles/limit', controller.getProfilesLimit);
 router.get('/upgrade-plans', controller.getUpgradePlans);
 
 module.exports = router;
