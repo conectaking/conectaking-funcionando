@@ -15,17 +15,21 @@ BEGIN
         FOREACH plan_code IN ARRAY plan_codes
         LOOP
             -- Inserir apenas se não existir
-            INSERT INTO module_plan_availability (module_type, plan_code, is_available)
-            SELECT module_type, plan_code, 
-                CASE 
-                    WHEN plan_code = 'free' THEN false  -- Free não tem acesso aos módulos premium
-                    ELSE true  -- Outros planos têm acesso por padrão
-                END
-            WHERE NOT EXISTS (
-                SELECT 1 FROM module_plan_availability 
-                WHERE module_plan_availability.module_type = module_type 
-                AND module_plan_availability.plan_code = plan_code
-            );
+            IF NOT EXISTS (
+                SELECT 1 FROM module_plan_availability mpa
+                WHERE mpa.module_type = module_type
+                AND mpa.plan_code = plan_code
+            ) THEN
+                INSERT INTO module_plan_availability (module_type, plan_code, is_available)
+                VALUES (
+                    module_type,
+                    plan_code,
+                    CASE 
+                        WHEN plan_code = 'free' THEN false  -- Free não tem acesso aos módulos premium
+                        ELSE true  -- Outros planos têm acesso por padrão
+                    END
+                );
+            END IF;
         END LOOP;
     END LOOP;
     
