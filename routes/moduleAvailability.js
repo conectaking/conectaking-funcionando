@@ -303,7 +303,14 @@ router.get('/users-list', protectUser, asyncHandler(async (req, res) => {
                 COALESCE(p.display_name, u.email) as name,
                 u.account_type,
                 u.subscription_status,
-                u.is_admin
+                u.subscription_expires_at,
+                u.created_at,
+                u.is_admin,
+                CASE 
+                    WHEN u.subscription_expires_at IS NULL THEN true
+                    WHEN u.subscription_expires_at >= CURRENT_DATE THEN true
+                    ELSE false
+                END as is_active
             FROM users u
             LEFT JOIN user_profiles p ON u.id = p.user_id
             ORDER BY COALESCE(p.display_name, u.email) ASC
