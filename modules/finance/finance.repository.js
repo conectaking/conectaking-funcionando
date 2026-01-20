@@ -107,28 +107,28 @@ class FinanceRepository {
 
             // Filtro por tipo
             if (filters.type) {
-                query += ` AND type = $${paramCount}`;
+                query += ` AND t.type = $${paramCount}`;
                 params.push(filters.type);
                 paramCount++;
             }
 
             // Filtro por status
             if (filters.status) {
-                query += ` AND status = $${paramCount}`;
+                query += ` AND t.status = $${paramCount}`;
                 params.push(filters.status);
                 paramCount++;
             }
 
             // Filtro por categoria
             if (filters.category_id) {
-                query += ` AND category_id = $${paramCount}`;
+                query += ` AND t.category_id = $${paramCount}`;
                 params.push(filters.category_id);
                 paramCount++;
             }
 
             // Filtro por conta
             if (filters.account_id) {
-                query += ` AND account_id = $${paramCount}`;
+                query += ` AND t.account_id = $${paramCount}`;
                 params.push(filters.account_id);
                 paramCount++;
             }
