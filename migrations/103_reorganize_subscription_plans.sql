@@ -4,10 +4,11 @@
 
 DO $$
 BEGIN
-    -- Desativar planos antigos que serão substituídos
+    -- Manter planos originais ativos (basic, premium, enterprise)
+    -- Apenas desativar planos 'free' se existirem
     UPDATE subscription_plans 
     SET is_active = false, updated_at = NOW()
-    WHERE plan_code IN ('basic', 'premium', 'enterprise', 'free');
+    WHERE plan_code = 'free';
     
     -- ============================================
     -- PLANO 1: R$ 1.500 - Novo plano base

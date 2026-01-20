@@ -272,7 +272,7 @@ router.put('/users/:id/manage', protectAdmin, async (req, res) => {
     if (parseInt(id, 10) === adminUserId && isAdmin === false) {
         return res.status(403).json({ message: 'Você não pode remover seu próprio status de administrador.' });
     }
-    const validAccountTypes = ['king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'team_member', 
+    const validAccountTypes = ['basic', 'premium', 'king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'team_member', 
                                'free', 'individual', 'individual_com_logo', 'business_owner']; // Manter compatibilidade
     if (!email || !validAccountTypes.includes(accountType) || typeof isAdmin !== 'boolean') {
         return res.status(400).json({ message: 'Dados inválidos.' });
@@ -331,7 +331,7 @@ router.put('/users/:id/update-role', protectAdmin, async (req, res) => {
         return res.status(403).json({ message: 'Você não pode remover seu próprio status de administrador.' });
     }
 
-    const validAccountTypes = ['king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'team_member',
+    const validAccountTypes = ['basic', 'premium', 'king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'team_member',
                                'free', 'individual', 'individual_com_logo', 'business_owner']; // Manter compatibilidade
     if (!validAccountTypes.includes(accountType) || typeof isAdmin !== 'boolean') {
         return res.status(400).json({ message: 'Dados de atualização inválidos.' });

@@ -561,6 +561,39 @@ class FinanceRepository {
                 accountBalance = accountBalanceFromAccounts;
             }
 
+            // Calcular variação em relação ao mês anterior
+            const currentDate = new Date(dateFrom);
+            const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+            const previousMonthLastDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
+            const previousMonthFrom = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, '0')}-01`;
+            const previousMonthTo = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, '0')}-${previousMonthLastDay}`;
+            
+            const previousMonthParams = profileId ? [userId, profileId, previousMonthFrom, previousMonthTo] : [userId, previousMonthFrom, previousMonthTo];
+            const previousMonthFilter = profileId ? 'AND t.profile_id = $2' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            
+            const previousMonthBalanceResult = await client.query(
+                `SELECT 
+                    COALESCE(SUM(CASE WHEN t.type = 'INCOME' AND t.status = 'PAID' THEN t.amount ELSE 0 END), 0) as total_income,
+                    COALESCE(SUM(CASE WHEN t.type = 'EXPENSE' AND t.status = 'PAID' THEN t.amount ELSE 0 END), 0) as total_expense
+                 FROM finance_transactions t
+                 WHERE t.user_id = $1 AND t.status = 'PAID' ${previousMonthFilter}
+                 AND t.transaction_date BETWEEN ${profileId ? '$3' : '$2'}::date AND ${profileId ? '$4' : '$3'}::date`,
+                previousMonthParams
+            );
+            
+            const previousMonthIncome = parseFloat(previousMonthBalanceResult.rows[0]?.total_income || 0);
+            const previousMonthExpense = parseFloat(previousMonthBalanceResult.rows[0]?.total_expense || 0);
+            const previousMonthBalance = previousMonthIncome - previousMonthExpense;
+            const currentMonthBalance = totalIncomePaid - totalExpensePaid;
+            
+            // Calcular variação percentual
+            let balanceVariation = 0;
+            if (previousMonthBalance !== 0) {
+                balanceVariation = ((currentMonthBalance - previousMonthBalance) / Math.abs(previousMonthBalance)) * 100;
+            } else if (currentMonthBalance !== 0) {
+                balanceVariation = currentMonthBalance > 0 ? 100 : -100;
+            }
+
             return {
                 totalIncome: totalIncomePaid,
                 totalExpense: totalExpensePaid,
@@ -569,6 +602,7 @@ class FinanceRepository {
                 accountBalance: accountBalanceAccumulated, // Saldo disponível acumulado (permanente)
                 monthlyBalance: totalIncomePaid - totalExpensePaid, // Saldo total do mês
                 netProfit: totalIncomePaid - totalExpensePaid,
+                balanceVariation: balanceVariation, // Variação percentual em relação ao mês anterior
                 topCategories: topCategoriesResult.rows
             };
         } finally {
