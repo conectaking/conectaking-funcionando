@@ -380,13 +380,17 @@ class FinanceController {
             
             // Se for erro de limite, retornar informações de upgrade
             if (error.code === 'FINANCE_PROFILE_LIMIT_REACHED') {
-                return responseFormatter.error(res, {
-                    message: error.message,
-                    code: error.code,
-                    currentCount: error.currentCount,
-                    limit: error.limit,
-                    upgradeRequired: true
-                }, 403);
+                return res.status(403).json({
+                    success: false,
+                    data: null,
+                    error: {
+                        code: error.code,
+                        message: error.message,
+                        currentCount: error.currentCount,
+                        limit: error.limit,
+                        upgradeRequired: true
+                    }
+                });
             }
             
             return responseFormatter.error(res, error.message, 400);
