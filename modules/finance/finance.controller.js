@@ -378,6 +378,18 @@ class FinanceController {
             return responseFormatter.success(res, profile, 'Perfil criado com sucesso', 201);
         } catch (error) {
             logger.error('Erro ao criar perfil:', error);
+            
+            // Se for erro de limite, retornar informações de upgrade
+            if (error.code === 'FINANCE_PROFILE_LIMIT_REACHED') {
+                return responseFormatter.error(res, {
+                    message: error.message,
+                    code: error.code,
+                    currentCount: error.currentCount,
+                    limit: error.limit,
+                    upgradeRequired: true
+                }, 403);
+            }
+            
             return responseFormatter.error(res, error.message, 400);
         }
     }
@@ -409,6 +421,48 @@ class FinanceController {
         } catch (error) {
             logger.error('Erro ao deletar perfil:', error);
             return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Obter limite de perfis financeiros do usuário
+     */
+    async getProfilesLimit(req, res) {
+        try {
+            const userId = req.user.userId;
+            const planHelpers = require('../../utils/plan-helpers');
+            const canCreate = await planHelpers.canCreateFinanceProfile(userId);
+            const limit = await planHelpers.getUserFinanceProfilesLimit(userId);
+            const plan = await planHelpers.getUserPlan(userId);
+            
+            return responseFormatter.success(res, {
+                limit,
+                currentCount: canCreate.currentCount,
+                remaining: canCreate.remaining,
+                canCreate: canCreate.canCreate,
+                plan: plan ? {
+                    code: plan.plan_code,
+                    name: plan.plan_name,
+                    price: plan.price
+                } : null
+            });
+        } catch (error) {
+            logger.error('Erro ao obter limite de perfis:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Obter planos de upgrade disponíveis
+     */
+    async getUpgradePlans(req, res) {
+        try {
+            const planHelpers = require('../../utils/plan-helpers');
+            const plans = await planHelpers.getFinanceUpgradePlans();
+            return responseFormatter.success(res, plans);
+        } catch (error) {
+            logger.error('Erro ao buscar planos de upgrade:', error);
+            return responseFormatter.error(res, error.message, 500);
         }
     }
 }

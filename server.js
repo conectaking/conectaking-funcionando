@@ -53,6 +53,7 @@ const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
 const checkinRoutes = require('./routes/checkin.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize, botLimiter } = require('./middleware/security');
+const autoMigrate = require('./utils/auto-migrate');
 
 const app = express();
 
@@ -715,7 +716,22 @@ cron.schedule('0 2 * * *', async () => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-const PORT = config.port;
-app.listen(PORT, () => {
-  logger.info(`👑 Servidor Conecta King rodando na porta ${PORT} (${config.nodeEnv})`);
-});
+// Executar migrations automaticamente antes de iniciar o servidor
+async function startServer() {
+    try {
+        logger.info('🔄 Verificando e executando migrations pendentes...');
+        await autoMigrate.runPendingMigrations();
+        logger.info('✅ Migrations verificadas. Iniciando servidor...\n');
+    } catch (error) {
+        logger.error('❌ Erro ao executar migrations automáticas:', error);
+        logger.warn('⚠️  Servidor será iniciado mesmo com erro nas migrations. Verifique manualmente.');
+    }
+    
+    const PORT = config.port;
+    app.listen(PORT, () => {
+        logger.info(`👑 Servidor Conecta King rodando na porta ${PORT} (${config.nodeEnv})`);
+    });
+}
+
+// Iniciar servidor
+startServer();

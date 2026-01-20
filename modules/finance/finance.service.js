@@ -457,6 +457,20 @@ class FinanceService {
         if (!validation.isValid) {
             throw new Error(validation.errors.join(', '));
         }
+
+        // Verificar limite de perfis financeiros
+        const planHelpers = require('../../utils/plan-helpers');
+        const canCreate = await planHelpers.canCreateFinanceProfile(userId);
+        
+        if (!canCreate.canCreate) {
+            const error = new Error('Limite de perfis financeiros atingido');
+            error.code = 'FINANCE_PROFILE_LIMIT_REACHED';
+            error.currentCount = canCreate.currentCount;
+            error.limit = canCreate.limit;
+            error.upgradeRequired = true;
+            throw error;
+        }
+
         return await repository.createProfile({
             ...data,
             user_id: userId

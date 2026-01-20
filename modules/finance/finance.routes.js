@@ -72,4 +72,8 @@ router.post('/profiles', controller.createProfile);
 router.put('/profiles/:id', controller.updateProfile);
 router.delete('/profiles/:id', controller.deleteProfile);
 
+// Limites e Upgrade
+router.get('/profiles/limit', controller.getProfilesLimit);
+router.get('/upgrade-plans', controller.getUpgradePlans);
+
 module.exports = router;
