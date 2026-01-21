@@ -1349,41 +1349,210 @@ if (typeof details === 'undefined' || !details) {
                         <% } %>
 
                     <% } else if (item.item_type === 'youtube_embed') { %>
-                        <div class="profile-embed-item youtube-embed-container" data-item-id="<%= item.id %>" data-embed-type="youtube" data-video-id="<%= item.embed_url ? item.embed_url.split('/embed/')[1]?.split('?')[0] : '' %>">
+                        <%# YOUTUBE EMBED - Implementação Clean %>
+                        <div class="profile-embed-item youtube-embed-container" 
+                             id="yt-container-<%= item.id %>"
+                             data-item-id="<%= item.id %>" 
+                             data-embed-type="youtube"
+                             data-compat-mode="false">
                             <% 
-                                let embedUrl = item.embed_url || '';
-                                if (!embedUrl && item.destination_url) {
-                                    embedUrl = item.destination_url;
-                                }
+                                const youtubeUrl = item.embed_url || item.destination_url || '';
                             %>
-                            <% if (embedUrl) { %>
-                                <% 
-                                    let finalEmbedUrl = embedUrl;
-                                    if (!embedUrl.includes('youtube.com/embed/')) {
-                                        var videoIdMatch = embedUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^&\n?#]+)/);
-                                        if (videoIdMatch && videoIdMatch[1]) {
-                                            var cleanVideoId = videoIdMatch[1].split('&')[0].split('?')[0].split('#')[0];
-                                            finalEmbedUrl = 'https://www.youtube.com/embed/' + cleanVideoId;
-                                        }
-                                    }
-                                %>
+                            <% if (youtubeUrl) { %>
                                 <iframe 
                                     id="youtube-player-<%= item.id %>"
-                                    data-video-url="<%= finalEmbedUrl %>"
+                                    data-youtube-url="<%= youtubeUrl %>"
                                     frameborder="0" 
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                                     allowfullscreen 
                                     loading="eager"
                                     referrerpolicy="strict-origin-when-cross-origin"
-                                    style="width: 100%; aspect-ratio: 16/9; border-radius: 12px;"
+                                    style="width: 100%; height: 100%; border: none; display: block;"
                                 ></iframe>
+                                
+                                <%# Overlay com hotzones para bloquear cliques em logo/compartilhar %>
+                                <div class="youtube-overlay">
+                                    <div class="youtube-overlay-hotzone youtube-overlay-hotzone-top-left"></div>
+                                    <div class="youtube-overlay-hotzone youtube-overlay-hotzone-bottom-right"></div>
+                                    <div class="youtube-overlay-hotzone youtube-overlay-hotzone-center"></div>
+                                </div>
+                                
+                                <%# Toggle modo compatível (aparece no hover) %>
+                                <button class="youtube-compat-toggle" 
+                                        onclick="window.toggleYouTubeCompatMode('<%= item.id %>')"
+                                        title="Ativar modo compatível (com controles)">
+                                    Modo Compatível
+                                </button>
+                                
                                 <script>
                                     (function() {
-                                        var iframe = document.getElementById('youtube-player-<%= item.id %>');
-                                        if (iframe) {
-                                            var videoUrl = iframe.getAttribute('data-video-url');
-                                            var currentOrigin = window.location.protocol + '//' + window.location.host;
-                                            iframe.src = videoUrl + '?autoplay=1&mute=1&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(currentOrigin) + '&rel=0';
+                                        var containerId = '<%= item.id %>';
+                                        var container = document.getElementById('yt-container-' + containerId);
+                                        var iframe = document.getElementById('youtube-player-' + containerId);
+                                        if (!iframe || !container) return;
+                                        
+                                        // Função robusta para extrair ID do vídeo (suporta múltiplos formatos)
+                                        function extractVideoId(input) {
+                                            if (!input) return null;
+                                            
+                                            // Se já é apenas um ID válido (11 caracteres)
+                                            var cleanId = input.trim();
+                                            if (/^[a-zA-Z0-9_-]{11}$/.test(cleanId)) {
+                                                return cleanId;
+                                            }
+                                            
+                                            // Padrões para extrair ID de URLs
+                                            var patterns = [
+                                                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+                                                /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
+                                                /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+                                                /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+                                                /youtube-nocookie\.com\/embed\/([a-zA-Z0-9_-]{11})/
+                                            ];
+                                            
+                                            for (var i = 0; i < patterns.length; i++) {
+                                                var match = input.match(patterns[i]);
+                                                if (match && match[1]) {
+                                                    return match[1];
+                                                }
+                                            }
+                                            
+                                            return null;
+                                        }
+                                        
+                                        // Sanitizar ID (apenas caracteres permitidos)
+                                        function sanitizeVideoId(videoId) {
+                                            if (!videoId) return null;
+                                            var sanitized = videoId.replace(/[^a-zA-Z0-9_-]/g, '');
+                                            return sanitized.length === 11 ? sanitized : null;
+                                        }
+                                        
+                                        // Construir URL do embed clean com parâmetros
+                                        function buildCleanEmbedUrl(videoId, compatMode, origin) {
+                                            // Usar youtube-nocookie.com para privacidade
+                                            var domain = 'www.youtube-nocookie.com';
+                                            var baseUrl = 'https://' + domain + '/embed/' + videoId;
+                                            
+                                            var params = new URLSearchParams();
+                                            
+                                            // Parâmetros para minimizar UI do YouTube
+                                            params.append('modestbranding', '1');
+                                            params.append('rel', '0');
+                                            params.append('controls', compatMode ? '1' : '0'); // 0 = ultra clean
+                                            params.append('fs', '0');
+                                            params.append('disablekb', '1');
+                                            params.append('iv_load_policy', '3');
+                                            params.append('playsinline', '1');
+                                            params.append('cc_load_policy', '0');
+                                            
+                                            // Parâmetros de reprodução (padrão: sem autoplay, sem mute)
+                                            // params.append('autoplay', '0');
+                                            // params.append('mute', '0');
+                                            
+                                            // Parâmetros de API
+                                            params.append('enablejsapi', '1');
+                                            if (origin) {
+                                                params.append('origin', origin);
+                                            }
+                                            
+                                            return baseUrl + '?' + params.toString();
+                                        }
+                                        
+                                        // Inicializar player
+                                        var youtubeUrl = iframe.getAttribute('data-youtube-url');
+                                        var origin = window.location.protocol + '//' + window.location.host;
+                                        var videoId = extractVideoId(youtubeUrl);
+                                        
+                                        if (videoId) {
+                                            videoId = sanitizeVideoId(videoId);
+                                            if (videoId) {
+                                                var compatMode = container.getAttribute('data-compat-mode') === 'true';
+                                                iframe.src = buildCleanEmbedUrl(videoId, compatMode, origin);
+                                            } else {
+                                                console.warn('ID do YouTube inválido após sanitização');
+                                                container.innerHTML = '<div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>';
+                                            }
+                                        } else {
+                                            console.warn('Não foi possível extrair ID do YouTube da URL:', youtubeUrl);
+                                            container.innerHTML = '<div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>';
+                                        }
+                                        
+                                        // Bloqueios de teclado e mouse (apenas quando container está focado)
+                                        var isFocused = false;
+                                        
+                                        container.addEventListener('click', function() {
+                                            isFocused = true;
+                                        });
+                                        
+                                        container.addEventListener('mouseleave', function() {
+                                            isFocused = false;
+                                        });
+                                        
+                                        container.addEventListener('contextmenu', function(e) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            return false;
+                                        });
+                                        
+                                        // Bloquear teclas quando container está focado
+                                        container.addEventListener('keydown', function(e) {
+                                            if (!isFocused) return;
+                                            
+                                            // Bloquear: Ctrl+U, Ctrl+S, Ctrl+C, Ctrl+Shift+I, F12, Ctrl+P
+                                            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                return false;
+                                            }
+                                            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                return false;
+                                            }
+                                            if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+                                                // Permitir Ctrl+C apenas fora do iframe (não bloquear seleção de texto na página)
+                                                if (e.target === container || container.contains(e.target)) {
+                                                    e.stopPropagation();
+                                                }
+                                            }
+                                            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I')) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                return false;
+                                            }
+                                            if (e.key === 'F12') {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                return false;
+                                            }
+                                            if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                return false;
+                                            }
+                                        }, true);
+                                        
+                                        // Função global para toggle modo compatível
+                                        if (!window.toggleYouTubeCompatMode) {
+                                            window.toggleYouTubeCompatMode = function(itemId) {
+                                                var cont = document.getElementById('yt-container-' + itemId);
+                                                var ifr = document.getElementById('youtube-player-' + itemId);
+                                                if (!cont || !ifr) return;
+                                                
+                                                var currentMode = cont.getAttribute('data-compat-mode') === 'true';
+                                                var newMode = !currentMode;
+                                                cont.setAttribute('data-compat-mode', newMode.toString());
+                                                
+                                                var url = ifr.getAttribute('data-youtube-url');
+                                                var vid = extractVideoId(url);
+                                                if (vid) {
+                                                    vid = sanitizeVideoId(vid);
+                                                    if (vid) {
+                                                        var origin = window.location.protocol + '//' + window.location.host;
+                                                        ifr.src = buildCleanEmbedUrl(vid, newMode, origin);
+                                                    }
+                                                }
+                                            };
                                         }
                                     })();
                                 </script>

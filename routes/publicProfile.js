@@ -196,6 +196,8 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         // Converter URLs do YouTube para formato embed, buscar Instagram oEmbed e carregar produtos dos catálogos
         const items = await Promise.all(validItems.map(async (item) => {
             if (item.item_type === 'youtube_embed' && item.destination_url) {
+                // Converter para formato embed básico (sem parâmetros)
+                // Os parâmetros clean serão adicionados no template EJS usando youtube-nocookie.com
                 item.embed_url = convertYouTubeUrlToEmbed(item.destination_url);
             }
             
