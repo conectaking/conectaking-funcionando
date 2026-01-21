@@ -72,6 +72,12 @@ BEGIN
             VALUES (user_record.id, 'Lazer', 'EXPENSE', 'fa-gamepad', '#a855f7');
         END IF;
         
+        -- Trabalho
+        IF NOT EXISTS (SELECT 1 FROM finance_categories WHERE user_id = user_record.id AND name = 'Trabalho' AND type = 'EXPENSE') THEN
+            INSERT INTO finance_categories (user_id, name, type, icon, color) 
+            VALUES (user_record.id, 'Trabalho', 'EXPENSE', 'fa-briefcase', '#8b5cf6');
+        END IF;
+        
         -- CATEGORIAS DE RECEITAS
         -- Salário
         IF NOT EXISTS (SELECT 1 FROM finance_categories WHERE user_id = user_record.id AND name = 'Salário' AND type = 'INCOME') THEN

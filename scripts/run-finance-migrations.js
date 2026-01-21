@@ -43,12 +43,12 @@ async function runMigrations() {
         const check096 = await client.query(`
             SELECT COUNT(*) as count 
             FROM finance_categories 
-            WHERE name IN ('Aluguel', 'Luz', 'Água', 'Internet', 'Cartão de Crédito', 'Supermercado', 'Transporte', 'Saúde', 'Educação', 'Lazer', 'Salário', 'Freelance', 'Vendas', 'Investimentos')
+            WHERE name IN ('Aluguel', 'Luz', 'Água', 'Internet', 'Cartão de Crédito', 'Supermercado', 'Transporte', 'Saúde', 'Educação', 'Lazer', 'Trabalho', 'Salário', 'Freelance', 'Vendas', 'Investimentos')
             AND type = 'EXPENSE'
             LIMIT 1
         `);
         
-        const hasDefaultCategories = parseInt(check096.rows[0]?.count || 0) >= 10;
+        const hasDefaultCategories = parseInt(check096.rows[0]?.count || 0) >= 11;
         
         if (!hasDefaultCategories) {
             console.log('   ⚠️  Categorias padrão não encontradas. Executando migration 096...');
@@ -89,7 +89,7 @@ async function runMigrations() {
         const finalCheck096 = await client.query(`
             SELECT name, type, icon, color 
             FROM finance_categories 
-            WHERE name IN ('Aluguel', 'Luz', 'Água', 'Internet', 'Cartão de Crédito', 'Supermercado', 'Transporte', 'Saúde', 'Educação', 'Lazer', 'Salário', 'Freelance', 'Vendas', 'Investimentos')
+            WHERE name IN ('Aluguel', 'Luz', 'Água', 'Internet', 'Cartão de Crédito', 'Supermercado', 'Transporte', 'Saúde', 'Educação', 'Lazer', 'Trabalho', 'Salário', 'Freelance', 'Vendas', 'Investimentos')
             ORDER BY type, name
         `);
         
