@@ -11,14 +11,14 @@ BEGIN
     WHERE plan_code = 'free';
     
     -- ============================================
-    -- PLANO 1: R$ 1.500 - Novo plano base
+    -- PLANO 1: R$ 1.500 - King Essential
     -- ============================================
     INSERT INTO subscription_plans (plan_code, plan_name, price, description, features, is_active)
     VALUES (
         'king_base',
-        'King Base',
+        'King Essential',
         1500.00,
-        'Plano base com acesso completo a todos os módulos + Logomarca editável',
+        'Plano essencial com acesso completo a todos os módulos + Logomarca editável',
         '{"can_add_all_modules": true, "can_edit_logo": true, "max_profiles": 1, "max_finance_profiles": 1}'::jsonb,
         true
     )
@@ -31,16 +31,16 @@ BEGIN
         updated_at = NOW();
     
     -- ============================================
-    -- PLANO 2: R$ 1.700 - King Finance (2 perfis)
-    -- Inclui todas as features do King Prime + Separação de pacotes com 2 perfis
+    -- PLANO 2: R$ 1.700 - King Finance (1 perfil)
+    -- Inclui todas as features do King Prime + Gestão Financeira
     -- ============================================
     INSERT INTO subscription_plans (plan_code, plan_name, price, description, features, is_active)
     VALUES (
         'king_finance',
         'King Finance',
         1700.00,
-        'Plano com acesso completo a todos os módulos + Separação de pacotes com 2 perfis (1 principal + 1 adicional)',
-        '{"can_add_all_modules": true, "can_edit_logo": true, "max_profiles": 2, "max_finance_profiles": 2, "has_finance_module": true, "nfc_premium": true, "links_ilimitados": true, "portfolio": true, "atualizacoes_assistidas": true}'::jsonb,
+        'Plano com acesso completo a todos os módulos + Gestão Financeira',
+        '{"can_add_all_modules": true, "can_edit_logo": true, "max_profiles": 1, "max_finance_profiles": 1, "has_finance_module": true, "nfc_premium": true, "links_ilimitados": true, "portfolio": true, "atualizacoes_assistidas": true}'::jsonb,
         true
     )
     ON CONFLICT (plan_code) DO UPDATE SET
@@ -52,16 +52,16 @@ BEGIN
         updated_at = NOW();
     
     -- ============================================
-    -- PLANO 3: R$ 2.000 - King Finance Plus (3 perfis)
-    -- Inclui todas as features do King Prime + Separação de pacotes com 3 perfis
+    -- PLANO 3: R$ 2.000 - King Finance Plus (2 perfis)
+    -- Inclui todas as features do King Prime + Separação de pacotes com 2 perfis
     -- ============================================
     INSERT INTO subscription_plans (plan_code, plan_name, price, description, features, is_active)
     VALUES (
         'king_finance_plus',
         'King Finance Plus',
         2000.00,
-        'Plano individual premium com acesso completo a todos os módulos + Separação de pacotes com 3 perfis (1 principal + 2 adicionais)',
-        '{"can_add_all_modules": true, "can_edit_logo": true, "max_profiles": 3, "max_finance_profiles": 3, "has_finance_module": true, "is_individual": true, "nfc_premium": true, "links_ilimitados": true, "portfolio": true, "atualizacoes_assistidas": true}'::jsonb,
+        'Plano individual premium com acesso completo a todos os módulos + Separação de pacotes com 2 perfis de gestão financeira',
+        '{"can_add_all_modules": true, "can_edit_logo": true, "max_profiles": 1, "max_finance_profiles": 2, "has_finance_module": true, "is_individual": true, "nfc_premium": true, "links_ilimitados": true, "portfolio": true, "atualizacoes_assistidas": true}'::jsonb,
         true
     )
     ON CONFLICT (plan_code) DO UPDATE SET
