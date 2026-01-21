@@ -404,6 +404,10 @@ class FinanceService {
             ? accounts.filter(acc => acc.profile_id === profileId)
             : accounts.filter(acc => !acc.profile_id || acc.profile_id === null);
         const totalBalance = filteredAccounts.reduce((sum, acc) => sum + parseFloat(acc.current_balance || 0), 0);
+        
+        // O accountBalance do stats já inclui transações acumuladas, mas precisa incluir também o saldo das contas
+        // Se houver contas com saldo maior que o calculado por transações, usar o maior valor
+        const finalAccountBalance = Math.max(stats.accountBalance || 0, totalBalance);
 
         // Buscar orçamentos do mês atual do perfil
         const now = new Date();
@@ -443,6 +447,7 @@ class FinanceService {
 
         return {
             ...stats,
+            accountBalance: finalAccountBalance, // Usar o maior valor entre transações e saldo das contas
             totalBalance,
             budgets: budgetsWithSpent
         };
@@ -457,17 +462,24 @@ class FinanceService {
             throw new Error(validation.errors.join(', '));
         }
 
-        // Verificar limite de perfis financeiros
-        const planHelpers = require('../../utils/plan-helpers');
-        const canCreate = await planHelpers.canCreateFinanceProfile(userId);
-        
-        if (!canCreate.canCreate) {
-            const error = new Error('Limite de perfis financeiros atingido');
-            error.code = 'FINANCE_PROFILE_LIMIT_REACHED';
-            error.currentCount = canCreate.currentCount;
-            error.limit = canCreate.limit;
-            error.upgradeRequired = true;
-            throw error;
+        // Verificar se usuário é admin (dono) - admins não têm limite
+        const db = require('../../db');
+        const userResult = await db.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+        const isAdmin = userResult.rows[0]?.is_admin === true;
+
+        // Se não for admin, verificar limite de perfis financeiros
+        if (!isAdmin) {
+            const planHelpers = require('../../utils/plan-helpers');
+            const canCreate = await planHelpers.canCreateFinanceProfile(userId);
+            
+            if (!canCreate.canCreate) {
+                const error = new Error('Limite de perfis financeiros atingido');
+                error.code = 'FINANCE_PROFILE_LIMIT_REACHED';
+                error.currentCount = canCreate.currentCount;
+                error.limit = canCreate.limit;
+                error.upgradeRequired = true;
+                throw error;
+            }
         }
 
         return await repository.createProfile({

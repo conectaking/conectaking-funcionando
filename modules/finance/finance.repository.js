@@ -548,14 +548,24 @@ class FinanceRepository {
             
             const totalIncomeAccumulated = parseFloat(accountBalanceAccumulatedResult.rows[0]?.total_income || 0);
             const totalExpenseAccumulated = parseFloat(accountBalanceAccumulatedResult.rows[0]?.total_expense || 0);
-            const accountBalanceAccumulated = totalIncomeAccumulated - totalExpenseAccumulated;
             
             // Calcular saldo disponível do mês (apenas do período filtrado)
             const accountBalanceFromAccounts = parseFloat(accountBalanceResult.rows[0]?.total || 0);
             const accountBalanceFromTransactions = totalIncomePaid - totalExpensePaid;
             
-            // Usar o saldo calculado das transações (mais preciso)
-            // Se houver contas e o saldo for maior, usar o maior valor
+            // Patrimônio Líquido Total = Saldo das contas (que já inclui saldo inicial + transações)
+            // OU se não houver contas, usar o cálculo por transações acumuladas
+            // O saldo das contas já é atualizado pelas transações, então usar ele é mais preciso
+            let accountBalanceAccumulated;
+            if (hasAccounts) {
+                // Se há contas, usar o saldo atual das contas (já inclui saldo inicial + todas as transações)
+                accountBalanceAccumulated = accountBalanceFromAccounts;
+            } else {
+                // Se não há contas, calcular apenas pelas transações
+                accountBalanceAccumulated = totalIncomeAccumulated - totalExpenseAccumulated;
+            }
+            
+            // Para o saldo do mês, usar transações do período
             let accountBalance = accountBalanceFromTransactions;
             if (hasAccounts && accountBalanceFromAccounts > accountBalanceFromTransactions) {
                 accountBalance = accountBalanceFromAccounts;

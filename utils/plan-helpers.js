@@ -42,13 +42,21 @@ async function getUserPlan(userId) {
         }
 
         // Mapear account_type para plan_code (fallback)
-        let planCode = 'basic';
+        let planCode = user.account_type || 'basic';
+        
+        // Mapear planos antigos para novos
         if (user.account_type === 'business_owner') {
-            planCode = 'enterprise';
+            planCode = 'king_corporate';
         } else if (user.account_type === 'individual_com_logo') {
             planCode = 'premium';
         } else if (user.account_type === 'individual') {
             planCode = 'basic';
+        }
+        
+        // Se account_type já for um plan_code válido, usar diretamente
+        const validPlanCodes = ['basic', 'premium', 'enterprise', 'king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate'];
+        if (!validPlanCodes.includes(planCode)) {
+            planCode = 'basic'; // Fallback seguro
         }
 
         // Buscar plano por código
@@ -91,6 +99,20 @@ async function getUserFinanceProfilesLimit(userId) {
  */
 async function canCreateFinanceProfile(userId) {
     try {
+        // Verificar se usuário é admin (dono) - admins não têm limite
+        const userResult = await db.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+        const isAdmin = userResult.rows[0]?.is_admin === true;
+        
+        if (isAdmin) {
+            // Admin pode criar quantos perfis quiser
+            return {
+                canCreate: true,
+                currentCount: 0,
+                limit: Infinity,
+                remaining: Infinity
+            };
+        }
+        
         const limit = await getUserFinanceProfilesLimit(userId);
         
         // Contar perfis ativos do usuário
