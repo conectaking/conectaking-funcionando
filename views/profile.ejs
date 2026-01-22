@@ -1370,10 +1370,15 @@ if (typeof details === 'undefined' || !details) {
                                     style="width: 100%; height: 100%; border: none; display: block;"
                                 ></iframe>
                                 
-                                <%# Overlay com hotzones para bloquear cliques em logo/compartilhar %>
+                                <%# Overlay com hotzones para BLOQUEAR E ESCONDER título, logo e compartilhar %>
                                 <div class="youtube-overlay">
-                                    <div class="youtube-overlay-hotzone youtube-overlay-hotzone-top-left"></div>
-                                    <div class="youtube-overlay-hotzone youtube-overlay-hotzone-bottom-right"></div>
+                                    <%# Overlay superior - ESCONDE TÍTULO E INFORMAÇÕES %>
+                                    <div class="youtube-overlay-hotzone youtube-overlay-hotzone-top-left" 
+                                         title="Título e informações do YouTube ocultos"></div>
+                                    <%# Overlay inferior direita - ESCONDE LOGO E COMPARTILHAR %>
+                                    <div class="youtube-overlay-hotzone youtube-overlay-hotzone-bottom-right"
+                                         title="Logo e botões do YouTube ocultos"></div>
+                                    <%# Centro transparente - permite interação com vídeo %>
                                     <div class="youtube-overlay-hotzone youtube-overlay-hotzone-center"></div>
                                 </div>
                                 

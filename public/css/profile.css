@@ -525,6 +525,11 @@ body.light-theme .branding-logo span {
     background: #000;
 }
 
+/* Container do YouTube com overflow para overlays funcionarem */
+.youtube-embed-container {
+    overflow: hidden;
+}
+
 /* Fallback para navegadores sem suporte a aspect-ratio */
 @supports not (aspect-ratio: 16 / 9) {
     .profile-embed-item {
@@ -543,6 +548,14 @@ body.light-theme .branding-logo span {
     height: 100%;
     border: none;
     display: block;
+    position: relative;
+    z-index: 0;
+}
+
+/* Iframe do YouTube deve ficar atrás dos overlays */
+.youtube-embed-container iframe {
+    z-index: 0;
+    position: relative;
 }
 
 /* YouTube Embed Clean - Overlay e Hotzones */
@@ -552,6 +565,7 @@ body.light-theme .branding-logo span {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    overflow: hidden;
 }
 
 /* Overlay transparente para bloquear cliques em áreas específicas */
@@ -563,32 +577,40 @@ body.light-theme .branding-logo span {
     pointer-events: none;
 }
 
-/* Hotzones: áreas onde bloqueamos cliques (logo, compartilhar) */
+/* Hotzones: áreas onde bloqueamos cliques E escondemos visualmente */
 .youtube-overlay-hotzone {
     position: absolute;
     pointer-events: auto;
     z-index: 2;
 }
 
-/* Hotzone inferior direita (logo YouTube e compartilhar) */
-.youtube-overlay-hotzone-bottom-right {
-    bottom: 0;
-    right: 0;
-    width: 30%;
-    height: 20%;
-    cursor: not-allowed;
-}
-
-/* Hotzone superior esquerda (título/canal - se aparecer) */
+/* Hotzone superior - ESCONDE TÍTULO E INFORMAÇÕES DO CANAL */
 .youtube-overlay-hotzone-top-left {
     top: 0;
     left: 0;
-    width: 30%;
-    height: 15%;
+    width: 100%;
+    height: 22%;
     cursor: not-allowed;
+    /* Overlay escuro para esconder título e informações */
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.90) 40%, rgba(0, 0, 0, 0.70) 70%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: auto;
+    z-index: 3;
 }
 
-/* Centro do vídeo: permite cliques para play/pause */
+/* Hotzone inferior direita - ESCONDE LOGO YOUTUBE E COMPARTILHAR */
+.youtube-overlay-hotzone-bottom-right {
+    bottom: 0;
+    right: 0;
+    width: 45%;
+    height: 30%;
+    cursor: not-allowed;
+    /* Overlay escuro para esconder logo e botões */
+    background: linear-gradient(to top right, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.90) 35%, rgba(0, 0, 0, 0.70) 60%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: auto;
+    z-index: 3;
+}
+
+/* Centro do vídeo: permite cliques para play/pause - SEM OVERLAY */
 .youtube-overlay-hotzone-center {
     top: 50%;
     left: 50%;
@@ -597,6 +619,7 @@ body.light-theme .branding-logo span {
     height: 60%;
     pointer-events: none;
     z-index: 0;
+    background: transparent;
 }
 
 /* Toggle modo compatível */
