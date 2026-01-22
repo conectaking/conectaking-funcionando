@@ -655,6 +655,108 @@ router.post('/codes/auto-delete-config', protectAdmin, async (req, res) => {
 });
 
 /**
+ * @route   GET /api/admin/users/auto-delete-config
+ * @desc    Busca configuração de exclusão automática de usuários
+ * @access  Private (Admin)
+ */
+router.get('/users/auto-delete-config', protectAdmin, async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT * FROM user_auto_delete_config ORDER BY days_after_expiration'
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Erro ao buscar configuração:", error);
+        res.status(500).json({ message: 'Erro ao buscar configuração.' });
+    } finally {
+        client.release();
+    }
+});
+
+/**
+ * @route   POST /api/admin/users/auto-delete-config
+ * @desc    Cria ou atualiza configuração de exclusão automática de usuários
+ * @access  Private (Admin)
+ */
+router.post('/users/auto-delete-config', protectAdmin, async (req, res) => {
+    const { days_after_expiration, is_active } = req.body;
+    
+    if (!days_after_expiration || days_after_expiration < 1) {
+        return res.status(400).json({ message: 'days_after_expiration deve ser maior que 0.' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(
+            `INSERT INTO user_auto_delete_config (days_after_expiration, is_active, updated_at)
+             VALUES ($1, $2, NOW())
+             ON CONFLICT (days_after_expiration) 
+             DO UPDATE SET is_active = $2, updated_at = NOW()
+             RETURNING *`,
+            [days_after_expiration, is_active !== undefined ? is_active : true]
+        );
+        
+        res.json({ message: 'Configuração salva com sucesso!', config: result.rows[0] });
+    } catch (error) {
+        console.error("Erro ao salvar configuração:", error);
+        res.status(500).json({ message: 'Erro ao salvar configuração.' });
+    } finally {
+        client.release();
+    }
+});
+
+/**
+ * @route   POST /api/admin/users/execute-auto-delete
+ * @desc    Executa exclusão automática de usuários vencidos conforme configuração
+ * @access  Private (Admin)
+ */
+router.post('/users/execute-auto-delete', protectAdmin, async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Buscar configurações ativas
+        const configs = await client.query(
+            'SELECT days_after_expiration FROM user_auto_delete_config WHERE is_active = true'
+        );
+        
+        if (configs.rows.length === 0) {
+            return res.json({ message: 'Nenhuma configuração ativa encontrada.', deleted: 0 });
+        }
+        
+        let totalDeleted = 0;
+        
+        for (const config of configs.rows) {
+            const days = config.days_after_expiration;
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+            
+            const result = await client.query(
+                `DELETE FROM users 
+                 WHERE subscription_expires_at IS NOT NULL 
+                 AND subscription_expires_at < $1 
+                 AND is_admin = false
+                 AND account_type != 'free'
+                 RETURNING id, email`,
+                [cutoffDate]
+            );
+            
+            totalDeleted += result.rowCount;
+            console.log(`🗑️ Excluídos ${result.rowCount} usuários vencidos há mais de ${days} dias`);
+        }
+        
+        res.json({ 
+            message: `Exclusão automática executada. ${totalDeleted} usuário(s) excluído(s).`,
+            deleted: totalDeleted 
+        });
+    } catch (error) {
+        console.error("Erro ao executar exclusão automática:", error);
+        res.status(500).json({ message: 'Erro ao executar exclusão automática.' });
+    } finally {
+        client.release();
+    }
+});
+
+/**
  * @route   POST /api/admin/codes/execute-auto-delete
  * @desc    Executa exclusão automática de códigos vencidos conforme configuração
  * @access  Private (Admin)

@@ -23,7 +23,7 @@ CREATE INDEX IF NOT EXISTS idx_registration_codes_expires_at
 ON registration_codes(expires_at) 
 WHERE expires_at IS NOT NULL;
 
--- Criar tabela para configuração de exclusão automática
+-- Criar tabela para configuração de exclusão automática de códigos
 CREATE TABLE IF NOT EXISTS code_auto_delete_config (
     id SERIAL PRIMARY KEY,
     days_after_expiration INTEGER NOT NULL CHECK (days_after_expiration > 0),
@@ -37,7 +37,26 @@ COMMENT ON TABLE code_auto_delete_config IS 'Configuração para exclusão autom
 COMMENT ON COLUMN code_auto_delete_config.days_after_expiration IS 'Número de dias após expiração para excluir automaticamente';
 COMMENT ON COLUMN code_auto_delete_config.is_active IS 'Se a exclusão automática está ativa';
 
--- Inserir configuração padrão (60 dias)
+-- Criar tabela para configuração de exclusão automática de usuários
+CREATE TABLE IF NOT EXISTS user_auto_delete_config (
+    id SERIAL PRIMARY KEY,
+    days_after_expiration INTEGER NOT NULL CHECK (days_after_expiration > 0),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(days_after_expiration)
+);
+
+COMMENT ON TABLE user_auto_delete_config IS 'Configuração para exclusão automática de usuários vencidos';
+COMMENT ON COLUMN user_auto_delete_config.days_after_expiration IS 'Número de dias após expiração para excluir automaticamente';
+COMMENT ON COLUMN user_auto_delete_config.is_active IS 'Se a exclusão automática está ativa';
+
+-- Inserir configuração padrão para códigos (60 dias)
 INSERT INTO code_auto_delete_config (days_after_expiration, is_active)
+VALUES (60, false)
+ON CONFLICT (days_after_expiration) DO NOTHING;
+
+-- Inserir configuração padrão para usuários (60 dias)
+INSERT INTO user_auto_delete_config (days_after_expiration, is_active)
 VALUES (60, false)
 ON CONFLICT (days_after_expiration) DO NOTHING;
