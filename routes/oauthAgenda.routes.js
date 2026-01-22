@@ -15,10 +15,51 @@ const db = require('../db');
 /**
  * Iniciar OAuth do dono
  * GET /api/oauth/agenda/google/owner/connect
+ * Aceita token via query parameter ou header Authorization
  */
-router.get('/google/owner/connect', protectAgenda, asyncHandler(async (req, res) => {
+router.get('/google/owner/connect', asyncHandler(async (req, res) => {
     try {
-        const userId = req.user.userId;
+        // Tentar obter userId do token na query ou do middleware
+        let userId = null;
+        
+        // Se tiver token na query, validar
+        if (req.query.token) {
+            try {
+                const jwt = require('jsonwebtoken');
+                const decoded = jwt.verify(req.query.token, process.env.JWT_SECRET);
+                userId = decoded.userId || decoded.id;
+            } catch (tokenError) {
+                // Se falhar, tentar via middleware
+                if (req.user && req.user.userId) {
+                    userId = req.user.userId;
+                } else {
+                    return res.status(401).send('Token inválido. Por favor, faça login novamente.');
+                }
+            }
+        } else if (req.user && req.user.userId) {
+            // Tentar via middleware (se estiver autenticado)
+            userId = req.user.userId;
+        } else {
+            // Tentar via header Authorization
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                try {
+                    const jwt = require('jsonwebtoken');
+                    const token = authHeader.substring(7);
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                    userId = decoded.userId || decoded.id;
+                } catch (tokenError) {
+                    return res.status(401).send('Token inválido. Por favor, faça login novamente.');
+                }
+            } else {
+                return res.status(401).send('Token de autenticação necessário. Por favor, faça login novamente.');
+            }
+        }
+        
+        if (!userId) {
+            return res.status(401).send('Usuário não identificado. Por favor, faça login novamente.');
+        }
+        
         const state = Buffer.from(JSON.stringify({ userId, type: 'owner' })).toString('base64');
         const authUrl = googleOAuthService.getAuthUrl('owner', state);
         res.redirect(authUrl);
