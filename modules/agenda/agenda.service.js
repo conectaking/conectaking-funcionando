@@ -508,6 +508,80 @@ class AgendaService {
     async findAppointmentsByOwnerId(ownerUserId, filters = {}) {
         return await repository.findAppointmentsByOwnerId(ownerUserId, filters);
     }
+
+    /**
+     * Verificar status da conexão do Google Calendar
+     */
+    async getGoogleCalendarStatus(ownerUserId) {
+        const client = await db.pool.connect();
+        try {
+            const oauthResult = await client.query(
+                `SELECT email, created_at, updated_at 
+                 FROM oauth_accounts 
+                 WHERE user_id = $1 AND provider = 'google' 
+                 ORDER BY created_at DESC LIMIT 1`,
+                [ownerUserId]
+            );
+
+            const isConnected = oauthResult.rows.length > 0;
+            const email = isConnected ? oauthResult.rows[0].email : null;
+            const connectedAt = isConnected ? oauthResult.rows[0].created_at : null;
+
+            return {
+                isConnected,
+                email,
+                connectedAt
+            };
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Obter dashboard resumido da agenda
+     */
+    async getDashboard(ownerUserId) {
+        const client = await db.pool.connect();
+        try {
+            // Buscar configurações
+            const settings = await repository.findOrCreateSettings(ownerUserId);
+
+            // Verificar status do Google Calendar
+            const googleStatus = await this.getGoogleCalendarStatus(ownerUserId);
+
+            // Contar próximos agendamentos (próximos 7 dias)
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            const upcomingAppointments = await repository.findAppointmentsByOwnerId(ownerUserId, {
+                status: 'CONFIRMED',
+                dateFrom: new Date().toISOString(),
+                dateTo: nextWeek.toISOString()
+            });
+
+            // Contar slots ativos
+            const slots = await repository.findSlotsByOwnerId(ownerUserId, true);
+            const activeSlots = slots.filter(s => s.is_active === true);
+
+            return {
+                settings: {
+                    is_active_in_card: settings.is_active_in_card || false,
+                    card_button_text: settings.card_button_text || 'Agendar Reunião',
+                    card_button_icon: settings.card_button_icon || 'fa-calendar'
+                },
+                googleCalendar: {
+                    isConnected: googleStatus.isConnected,
+                    email: googleStatus.email,
+                    connectedAt: googleStatus.connectedAt
+                },
+                stats: {
+                    upcomingCount: upcomingAppointments.length,
+                    activeSlotsCount: activeSlots.length
+                }
+            };
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = new AgendaService();

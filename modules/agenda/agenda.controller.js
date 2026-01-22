@@ -169,6 +169,34 @@ class AgendaController {
             return responseFormatter.error(res, error.message, 400);
         }
     }
+
+    /**
+     * Verificar status da conexão do Google Calendar
+     */
+    async getGoogleCalendarStatus(req, res) {
+        try {
+            const userId = req.user.userId;
+            const status = await service.getGoogleCalendarStatus(userId);
+            return responseFormatter.success(res, status);
+        } catch (error) {
+            logger.error('Erro ao verificar status do Google Calendar:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Obter dashboard resumido da agenda
+     */
+    async getDashboard(req, res) {
+        try {
+            const userId = req.user.userId;
+            const dashboard = await service.getDashboard(userId);
+            return responseFormatter.success(res, dashboard);
+        } catch (error) {
+            logger.error('Erro ao obter dashboard da agenda:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
 }
 
 module.exports = new AgendaController();

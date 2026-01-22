@@ -26,4 +26,8 @@ router.post('/appointments/:id/cancel', controller.cancelAppointment);
 // Configurações do cartão virtual
 router.put('/card-settings', controller.updateCardSettings);
 
+// Status e Dashboard
+router.get('/google-calendar/status', controller.getGoogleCalendarStatus);
+router.get('/dashboard', controller.getDashboard);
+
 module.exports = router;
