@@ -353,6 +353,42 @@ router.put('/users/:id/update-role', protectAdmin, async (req, res) => {
 });
 
 /**
+ * @route   PUT /api/admin/users/:id
+ * @desc    Atualiza apenas o tipo de conta de um usuário
+ * @access  Private (Admin)
+ */
+router.put('/users/:id', protectAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { account_type } = req.body;
+    
+    const validAccountTypes = ['basic', 'premium', 'king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'team_member',
+                               'free', 'individual', 'individual_com_logo', 'business_owner'];
+    
+    if (!account_type || !validAccountTypes.includes(account_type)) {
+        return res.status(400).json({ message: 'Tipo de conta inválido.' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        const { rows } = await client.query(
+            'UPDATE users SET account_type = $1 WHERE id = $2 RETURNING id, account_type',
+            [account_type, id]
+        );
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+        
+        res.json({ message: 'Tipo de conta atualizado com sucesso!', user: rows[0] });
+    } catch (error) {
+        console.error("Erro ao atualizar tipo de conta:", error);
+        res.status(500).json({ message: 'Erro ao atualizar tipo de conta.' });
+    } finally {
+        client.release();
+    }
+});
+
+/**
  * @route   DELETE /api/admin/users/:id
  * @desc    Deleta um usuário específico
  * @access  Private (Admin)
