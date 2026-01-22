@@ -585,31 +585,32 @@ body.light-theme .branding-logo span {
     transition: background 0.3s ease;
 }
 
-/* Hotzone superior - BARRA PRETA que aparece no hover para cobrir título/nome */
+/* Hotzone superior - BARRA PRETA MAIS ESCURA para esconder completamente título/nome */
 .youtube-overlay-hotzone-top-left {
     top: 0;
     left: 0;
     width: 100%;
-    height: 22%;
+    height: 18%;
     cursor: not-allowed;
-    /* Barra preta que aparece apenas no hover */
+    /* Barra preta que aparece apenas no hover - MAIS ESCURA */
     background: transparent;
     pointer-events: auto;
     z-index: 3;
     transition: background 0.3s ease;
 }
 
-/* Mostrar barra preta no hover do container */
+/* Mostrar barra preta MAIS ESCURA no hover - degradê mais opaco para esconder completamente */
 .youtube-embed-container:hover .youtube-overlay-hotzone-top-left {
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.95) 50%, rgba(0, 0, 0, 0.85) 80%, rgba(0, 0, 0, 0) 100%);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.99) 30%, rgba(0, 0, 0, 0.97) 60%, rgba(0, 0, 0, 0.90) 85%, rgba(0, 0, 0, 0) 100%);
 }
 
-/* Hotzone inferior direita - BARRA PRETA que aparece no hover para cobrir logo e compartilhar */
+/* Hotzone inferior direita - BARRA PRETA PEQUENINHA só para logo YouTube e compartilhar */
 .youtube-overlay-hotzone-bottom-right {
     bottom: 0;
     right: 0;
-    width: 45%;
-    height: 30%;
+    /* MUITO MENOR - só cobre logo YouTube e compartilhar, NÃO cobre barra de tempo nem engrenagem */
+    width: 25%;
+    height: 15%;
     cursor: not-allowed;
     /* Barra preta que aparece apenas no hover */
     background: transparent;
@@ -618,9 +619,9 @@ body.light-theme .branding-logo span {
     transition: background 0.3s ease;
 }
 
-/* Mostrar barra preta no hover do container */
+/* Mostrar barra preta PEQUENINHA no hover - só cobre logo e compartilhar */
 .youtube-embed-container:hover .youtube-overlay-hotzone-bottom-right {
-    background: linear-gradient(to top right, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.95) 40%, rgba(0, 0, 0, 0.85) 70%, rgba(0, 0, 0, 0) 100%);
+    background: linear-gradient(to top right, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.95) 50%, rgba(0, 0, 0, 0.85) 80%, rgba(0, 0, 0, 0) 100%);
 }
 
 /* Centro do vídeo: permite cliques para play/pause - SEM OVERLAY */

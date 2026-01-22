@@ -1368,6 +1368,7 @@ if (typeof details === 'undefined' || !details) {
                                     loading="eager"
                                     referrerpolicy="strict-origin-when-cross-origin"
                                     style="width: 100%; height: 100%; border: none; display: block;"
+                                    title=""
                                 ></iframe>
                                 
                                 <%# Overlay com barras pretas que aparecem apenas no HOVER %>
@@ -1516,10 +1517,12 @@ if (typeof details === 'undefined' || !details) {
                                             var bottomOverlay = container.querySelector('.youtube-overlay-hotzone-bottom-right');
                                             
                                             if (topOverlay) {
-                                                topOverlay.style.background = 'linear-gradient(to bottom, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.95) 50%, rgba(0, 0, 0, 0.85) 80%, rgba(0, 0, 0, 0) 100%)';
+                                                // Degradê MAIS ESCURO para esconder completamente o nome
+                                                topOverlay.style.background = 'linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.99) 30%, rgba(0, 0, 0, 0.97) 60%, rgba(0, 0, 0, 0.90) 85%, rgba(0, 0, 0, 0) 100%)';
                                             }
                                             if (bottomOverlay) {
-                                                bottomOverlay.style.background = 'linear-gradient(to top right, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.95) 40%, rgba(0, 0, 0, 0.85) 70%, rgba(0, 0, 0, 0) 100%)';
+                                                // Barra pequeninha só para logo e compartilhar
+                                                bottomOverlay.style.background = 'linear-gradient(to top right, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.95) 50%, rgba(0, 0, 0, 0.85) 80%, rgba(0, 0, 0, 0) 100%)';
                                             }
                                             
                                             // Remover barras após 2 segundos (quando vídeo começar a tocar)
@@ -1548,7 +1551,10 @@ if (typeof details === 'undefined' || !details) {
                                             }
                                         });
                                         
-                                        // Bloquear menu de contexto (clique direito) completamente
+                                        // BLOQUEAR MENU DE CONTEXTO (CLIQUE DIREITO) COMPLETAMENTE
+                                        // Bloquear em múltiplas camadas para garantir que não apareça
+                                        
+                                        // 1. Bloquear no container
                                         container.addEventListener('contextmenu', function(e) {
                                             e.preventDefault();
                                             e.stopPropagation();
@@ -1556,18 +1562,44 @@ if (typeof details === 'undefined' || !details) {
                                             return false;
                                         }, true);
                                         
-                                        // Bloquear também no iframe (se possível)
+                                        // 2. Bloquear no documento inteiro quando focado no container
+                                        var blockContextMenu = function(e) {
+                                            if (isFocused || container.contains(e.target)) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                e.stopImmediatePropagation();
+                                                return false;
+                                            }
+                                        };
+                                        
+                                        document.addEventListener('contextmenu', blockContextMenu, true);
+                                        
+                                        // 3. Bloquear também no iframe (se possível via postMessage)
                                         iframe.addEventListener('load', function() {
                                             try {
-                                                // Tentar bloquear contexto no iframe (pode falhar por CORS)
+                                                // Tentar bloquear contexto no iframe via postMessage
+                                                iframe.contentWindow.postMessage('{"event":"command","func":"disableContextMenu","args":""}', '*');
+                                                
+                                                // Também tentar adicionar listener direto (pode falhar por CORS)
                                                 iframe.contentWindow.addEventListener('contextmenu', function(e) {
                                                     e.preventDefault();
+                                                    e.stopPropagation();
                                                     return false;
-                                                });
+                                                }, true);
                                             } catch (e) {
-                                                // CORS bloqueia, mas não importa - já bloqueamos no container
+                                                // CORS bloqueia acesso direto, mas tentamos via postMessage
                                             }
                                         });
+                                        
+                                        // 4. Bloquear também quando clicar dentro do iframe
+                                        container.addEventListener('mousedown', function(e) {
+                                            if (e.button === 2) { // Botão direito
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                e.stopImmediatePropagation();
+                                                return false;
+                                            }
+                                        }, true);
                                         
                                         // Bloquear teclas quando container está focado
                                         container.addEventListener('keydown', function(e) {

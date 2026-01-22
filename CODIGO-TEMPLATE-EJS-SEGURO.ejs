@@ -169,6 +169,7 @@
                             loading="eager"
                             referrerpolicy="strict-origin-when-cross-origin"
                             style="width: 100%; height: 100%; border: none; display: block;"
+                            title=""
                         ></iframe>
                         
                         <%# Overlay com barras pretas que aparecem apenas no HOVER %>
@@ -299,10 +300,12 @@
                                     var bottomOverlay = container.querySelector('.youtube-overlay-hotzone-bottom-right');
                                     
                                     if (topOverlay) {
-                                        topOverlay.style.background = 'linear-gradient(to bottom, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.95) 50%, rgba(0, 0, 0, 0.85) 80%, rgba(0, 0, 0, 0) 100%)';
+                                        // Degradê MAIS ESCURO para esconder completamente o nome
+                                        topOverlay.style.background = 'linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.99) 30%, rgba(0, 0, 0, 0.97) 60%, rgba(0, 0, 0, 0.90) 85%, rgba(0, 0, 0, 0) 100%)';
                                     }
                                     if (bottomOverlay) {
-                                        bottomOverlay.style.background = 'linear-gradient(to top right, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.95) 40%, rgba(0, 0, 0, 0.85) 70%, rgba(0, 0, 0, 0) 100%)';
+                                        // Barra pequeninha só para logo e compartilhar
+                                        bottomOverlay.style.background = 'linear-gradient(to top right, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.95) 50%, rgba(0, 0, 0, 0.85) 80%, rgba(0, 0, 0, 0) 100%)';
                                     }
                                     
                                     // Remover barras após 2 segundos (quando vídeo começar a tocar)
