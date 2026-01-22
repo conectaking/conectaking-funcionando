@@ -368,9 +368,9 @@
                                     document.addEventListener('contextmenu', blockContextMenu, true);
                                 }
                                 
-                                // 3. BLOQUEAR TODOS OS CLIQUES que possam abrir YouTube
+                                // 3. BLOQUEAR APENAS CLIQUES EM LINKS DO YOUTUBE (não bloquear controles do vídeo)
                                 container.addEventListener('click', function(e) {
-                                    // Bloquear cliques em links do YouTube
+                                    // Bloquear APENAS cliques em links do YouTube
                                     var target = e.target;
                                     var link = target.closest('a');
                                     
@@ -381,8 +381,9 @@
                                         return false;
                                     }
                                     
-                                    // Bloquear cliques que possam abrir nova janela/aba
-                                    if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                                    // NÃO bloquear cliques normais (deixar play/pause/volume funcionarem)
+                                    // Apenas bloquear se for Ctrl+Click ou Shift+Click (que abrem nova aba)
+                                    if ((e.ctrlKey || e.metaKey || e.shiftKey) && link && link.href) {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         return false;
@@ -482,19 +483,7 @@
                                     }
                                 });
                                 
-                                // 9. OVERLAY INVISÍVEL para capturar todos os cliques
-                                var overlay = document.createElement('div');
-                                overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:999;pointer-events:none;';
-                                container.appendChild(overlay);
-                                
-                                // Ativar overlay apenas em áreas problemáticas (logo, título, etc)
-                                overlay.addEventListener('click', function(e) {
-                                    // Bloquear qualquer clique que possa abrir YouTube
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    e.stopImmediatePropagation();
-                                    return false;
-                                }, true);
+                                // 9. OVERLAY INVISÍVEL REMOVIDO - permite controles do vídeo funcionarem normalmente
                             })();
                         </script>
                     <% } else { %>
