@@ -748,41 +748,59 @@ router.post('/users/auto-delete-config', protectAdmin, async (req, res) => {
  * @access  Private (Admin)
  */
 router.post('/users/execute-auto-delete', protectAdmin, async (req, res) => {
+    const { days_after_expiration } = req.body;
     const client = await db.pool.connect();
     try {
-        // Buscar configurações ativas
-        const configs = await client.query(
-            'SELECT days_after_expiration FROM user_auto_delete_config WHERE is_active = true'
+        // Validar dias fornecidos
+        if (!days_after_expiration || days_after_expiration < 1) {
+            return res.status(400).json({ message: 'Número de dias inválido. Informe um valor maior que 0.' });
+        }
+        
+        const days = parseInt(days_after_expiration);
+        
+        // Calcular data de corte: usuários que expiraram há mais de X dias
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+        
+        // Primeiro, contar quantos usuários serão excluídos (para feedback)
+        const countResult = await client.query(
+            `SELECT COUNT(*) as count
+             FROM users 
+             WHERE subscription_expires_at IS NOT NULL 
+             AND subscription_expires_at < $1 
+             AND is_admin = false`,
+            [cutoffDate]
         );
         
-        if (configs.rows.length === 0) {
-            return res.json({ message: 'Nenhuma configuração ativa encontrada.', deleted: 0 });
+        const countToDelete = parseInt(countResult.rows[0].count);
+        
+        if (countToDelete === 0) {
+            return res.json({ 
+                message: `Nenhum usuário encontrado vencido há mais de ${days} dias para excluir.`,
+                deleted: 0,
+                count: 0
+            });
         }
         
-        let totalDeleted = 0;
+        // Executar exclusão
+        // Exclui usuários vencidos há mais de X dias, exceto admins
+        // Inclui todos os tipos de conta que tenham data de expiração
+        const result = await client.query(
+            `DELETE FROM users 
+             WHERE subscription_expires_at IS NOT NULL 
+             AND subscription_expires_at < $1 
+             AND is_admin = false
+             RETURNING id, email, account_type, subscription_expires_at`,
+            [cutoffDate]
+        );
         
-        for (const config of configs.rows) {
-            const days = config.days_after_expiration;
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - days);
-            
-            const result = await client.query(
-                `DELETE FROM users 
-                 WHERE subscription_expires_at IS NOT NULL 
-                 AND subscription_expires_at < $1 
-                 AND is_admin = false
-                 AND account_type != 'free'
-                 RETURNING id, email`,
-                [cutoffDate]
-            );
-            
-            totalDeleted += result.rowCount;
-            console.log(`🗑️ Excluídos ${result.rowCount} usuários vencidos há mais de ${days} dias`);
-        }
+        const totalDeleted = result.rowCount;
+        console.log(`🗑️ Excluídos ${totalDeleted} usuários vencidos há mais de ${days} dias`);
         
         res.json({ 
-            message: `Exclusão automática executada. ${totalDeleted} usuário(s) excluído(s).`,
-            deleted: totalDeleted 
+            message: `Exclusão executada com sucesso! ${totalDeleted} usuário(s) vencido(s) há mais de ${days} dias foram excluído(s).`,
+            deleted: totalDeleted,
+            count: countToDelete
         });
     } catch (error) {
         console.error("Erro ao executar exclusão automática:", error);
