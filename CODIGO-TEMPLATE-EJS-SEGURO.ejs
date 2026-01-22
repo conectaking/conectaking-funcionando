@@ -230,8 +230,8 @@
                                 
                                 // Construir URL do embed clean com parâmetros
                                 function buildCleanEmbedUrl(videoId, compatMode, origin) {
-                                    // Usar youtube-nocookie.com para privacidade
-                                    var domain = 'www.youtube-nocookie.com';
+                                    // Usar youtube.com padrão (mais compatível) - evitar youtube-nocookie.com que pode bloquear
+                                    var domain = 'www.youtube.com';
                                     var baseUrl = 'https://' + domain + '/embed/' + videoId;
                                     
                                     var params = new URLSearchParams();
@@ -239,7 +239,8 @@
                                     // Parâmetros para minimizar UI do YouTube
                                     params.append('modestbranding', '1');
                                     params.append('rel', '0');
-                                    params.append('controls', compatMode ? '1' : '0'); // 0 = ultra clean
+                                    // SEMPRE usar controls=1 para evitar bloqueios
+                                    params.append('controls', '1');
                                     params.append('fs', '0');
                                     params.append('disablekb', '1');
                                     params.append('iv_load_policy', '3');
@@ -263,8 +264,19 @@
                                 if (videoId) {
                                     videoId = sanitizeVideoId(videoId);
                                     if (videoId) {
-                                        var compatMode = container.getAttribute('data-compat-mode') === 'true';
-                                        iframe.src = buildCleanEmbedUrl(videoId, compatMode, origin);
+                                        // Sempre usar modo compatível (controls=1) para evitar bloqueios
+                                        var compatMode = true;
+                                        var embedUrl = buildCleanEmbedUrl(videoId, compatMode, origin);
+                                        iframe.src = embedUrl;
+                                        
+                                        // Tratar erros de carregamento
+                                        iframe.addEventListener('error', function() {
+                                            console.warn('Erro ao carregar vídeo do YouTube, tentando fallback...');
+                                            if (embedUrl.includes('youtube-nocookie.com')) {
+                                                var fallbackUrl = embedUrl.replace('youtube-nocookie.com', 'youtube.com');
+                                                iframe.src = fallbackUrl;
+                                            }
+                                        });
                                     } else {
                                         console.warn('ID do YouTube inválido após sanitização');
                                         container.innerHTML = '<div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>';
@@ -328,24 +340,21 @@
                                     }
                                 }, true);
                                 
-                                // Função global para toggle modo compatível
+                                // Função global para toggle modo compatível (agora sempre usa controls=1)
                                 if (!window.toggleYouTubeCompatMode) {
                                     window.toggleYouTubeCompatMode = function(itemId) {
                                         var cont = document.getElementById('yt-container-' + itemId);
                                         var ifr = document.getElementById('youtube-embed-' + itemId);
                                         if (!cont || !ifr) return;
                                         
-                                        var currentMode = cont.getAttribute('data-compat-mode') === 'true';
-                                        var newMode = !currentMode;
-                                        cont.setAttribute('data-compat-mode', newMode.toString());
-                                        
+                                        // Recarregar o vídeo (sempre em modo compatível agora)
                                         var url = ifr.getAttribute('data-youtube-url');
                                         var vid = extractVideoId(url);
                                         if (vid) {
                                             vid = sanitizeVideoId(vid);
                                             if (vid) {
                                                 var origin = typeof window !== 'undefined' ? (window.location.protocol + '//' + window.location.host) : '';
-                                                ifr.src = buildCleanEmbedUrl(vid, newMode, origin);
+                                                ifr.src = buildCleanEmbedUrl(vid, true, origin);
                                             }
                                         }
                                     };

@@ -86,7 +86,7 @@ function buildYouTubeEmbedUrl(input, options = {}) {
         mute = false,
         controls = false, // Modo ultra clean por padrão
         origin = null,
-        useNoCookie = true // Preferir youtube-nocookie.com para privacidade
+        useNoCookie = false // Usar youtube.com por padrão (mais compatível, evita bloqueios)
     } = options;
     
     // Extrair e sanitizar ID do vídeo
@@ -107,7 +107,8 @@ function buildYouTubeEmbedUrl(input, options = {}) {
         return '';
     }
     
-    // Usar youtube-nocookie.com para privacidade (não rastreia cookies)
+    // Usar youtube.com por padrão (mais compatível)
+    // youtube-nocookie.com pode causar bloqueios em alguns casos
     const domain = useNoCookie ? 'www.youtube-nocookie.com' : 'www.youtube.com';
     const baseUrl = `https://${domain}/embed/${videoId}`;
     
@@ -117,7 +118,9 @@ function buildYouTubeEmbedUrl(input, options = {}) {
     // Parâmetros para minimizar UI do YouTube
     params.append('modestbranding', '1'); // Reduz branding do YouTube
     params.append('rel', '0'); // Não mostrar vídeos relacionados
-    params.append('controls', controls ? '1' : '0'); // Controles (0 = ultra clean)
+    // SEMPRE usar controls=1 por padrão para evitar bloqueios
+    // Se controls=false foi especificado, ainda usar 1 para compatibilidade
+    params.append('controls', '1'); // Controles sempre ativos para evitar bloqueios
     params.append('fs', '0'); // Desabilitar botão fullscreen
     params.append('disablekb', '1'); // Desabilitar controles de teclado
     params.append('iv_load_policy', '3'); // Desabilitar anotações

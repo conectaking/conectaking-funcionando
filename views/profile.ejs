@@ -1429,8 +1429,9 @@ if (typeof details === 'undefined' || !details) {
                                         
                                         // Construir URL do embed clean com parâmetros
                                         function buildCleanEmbedUrl(videoId, compatMode, origin) {
-                                            // Usar youtube-nocookie.com para privacidade
-                                            var domain = 'www.youtube-nocookie.com';
+                                            // Usar youtube.com padrão (mais compatível) com fallback para nocookie
+                                            // youtube-nocookie.com pode ser bloqueado em alguns casos
+                                            var domain = 'www.youtube.com';
                                             var baseUrl = 'https://' + domain + '/embed/' + videoId;
                                             
                                             var params = new URLSearchParams();
@@ -1438,16 +1439,13 @@ if (typeof details === 'undefined' || !details) {
                                             // Parâmetros para minimizar UI do YouTube
                                             params.append('modestbranding', '1');
                                             params.append('rel', '0');
-                                            params.append('controls', compatMode ? '1' : '0'); // 0 = ultra clean
-                                            params.append('fs', '0');
-                                            params.append('disablekb', '1');
-                                            params.append('iv_load_policy', '3');
-                                            params.append('playsinline', '1');
-                                            params.append('cc_load_policy', '0');
-                                            
-                                            // Parâmetros de reprodução (padrão: sem autoplay, sem mute)
-                                            // params.append('autoplay', '0');
-                                            // params.append('mute', '0');
+                                            // SEMPRE usar controls=1 para evitar bloqueios (modo compatível por padrão)
+                                            params.append('controls', '1');
+                                            params.append('fs', '0'); // Desabilitar fullscreen
+                                            params.append('disablekb', '1'); // Desabilitar teclado
+                                            params.append('iv_load_policy', '3'); // Sem anotações
+                                            params.append('playsinline', '1'); // Mobile inline
+                                            params.append('cc_load_policy', '0'); // Sem legendas automáticas
                                             
                                             // Parâmetros de API
                                             params.append('enablejsapi', '1');
@@ -1460,22 +1458,50 @@ if (typeof details === 'undefined' || !details) {
                                         
                                         // Inicializar player
                                         var youtubeUrl = iframe.getAttribute('data-youtube-url');
+                                        
+                                        if (!youtubeUrl || youtubeUrl.trim() === '') {
+                                            console.error('URL do YouTube vazia');
+                                            container.innerHTML = '<div class="embed-error">URL do YouTube não fornecida. Verifique o link no painel.</div>';
+                                            return;
+                                        }
+                                        
                                         var origin = window.location.protocol + '//' + window.location.host;
                                         var videoId = extractVideoId(youtubeUrl);
                                         
-                                        if (videoId) {
-                                            videoId = sanitizeVideoId(videoId);
-                                            if (videoId) {
-                                                var compatMode = container.getAttribute('data-compat-mode') === 'true';
-                                                iframe.src = buildCleanEmbedUrl(videoId, compatMode, origin);
-                                            } else {
-                                                console.warn('ID do YouTube inválido após sanitização');
-                                                container.innerHTML = '<div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>';
-                                            }
-                                        } else {
-                                            console.warn('Não foi possível extrair ID do YouTube da URL:', youtubeUrl);
-                                            container.innerHTML = '<div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>';
+                                        if (!videoId) {
+                                            console.error('Não foi possível extrair ID do YouTube da URL:', youtubeUrl);
+                                            container.innerHTML = '<div class="embed-error">URL do YouTube inválida. Verifique o link no painel.<br><small>URL recebida: ' + (youtubeUrl.length > 50 ? youtubeUrl.substring(0, 50) + '...' : youtubeUrl) + '</small></div>';
+                                            return;
                                         }
+                                        
+                                        videoId = sanitizeVideoId(videoId);
+                                        if (!videoId) {
+                                            console.error('ID do YouTube inválido após sanitização');
+                                            container.innerHTML = '<div class="embed-error">ID do vídeo inválido. Verifique o link no painel.</div>';
+                                            return;
+                                        }
+                                        
+                                        // Sempre usar modo compatível (controls=1) para evitar bloqueios
+                                        var compatMode = true;
+                                        var embedUrl = buildCleanEmbedUrl(videoId, compatMode, origin);
+                                        
+                                        console.log('Carregando vídeo do YouTube:', {
+                                            videoId: videoId,
+                                            embedUrl: embedUrl.substring(0, 100) + '...',
+                                            originalUrl: youtubeUrl.substring(0, 50) + '...'
+                                        });
+                                        
+                                        iframe.src = embedUrl;
+                                        
+                                        // Tratar erros de carregamento
+                                        iframe.addEventListener('error', function() {
+                                            console.warn('Erro ao carregar vídeo do YouTube, tentando fallback...');
+                                            if (embedUrl.includes('youtube-nocookie.com')) {
+                                                var fallbackUrl = embedUrl.replace('youtube-nocookie.com', 'youtube.com');
+                                                console.log('Tentando fallback com youtube.com');
+                                                iframe.src = fallbackUrl;
+                                            }
+                                        });
                                         
                                         // Bloqueios de teclado e mouse (apenas quando container está focado)
                                         var isFocused = false;
@@ -1532,24 +1558,21 @@ if (typeof details === 'undefined' || !details) {
                                             }
                                         }, true);
                                         
-                                        // Função global para toggle modo compatível
+                                        // Função global para toggle modo compatível (agora sempre usa controls=1)
                                         if (!window.toggleYouTubeCompatMode) {
                                             window.toggleYouTubeCompatMode = function(itemId) {
                                                 var cont = document.getElementById('yt-container-' + itemId);
                                                 var ifr = document.getElementById('youtube-player-' + itemId);
                                                 if (!cont || !ifr) return;
                                                 
-                                                var currentMode = cont.getAttribute('data-compat-mode') === 'true';
-                                                var newMode = !currentMode;
-                                                cont.setAttribute('data-compat-mode', newMode.toString());
-                                                
+                                                // Recarregar o vídeo (sempre em modo compatível agora)
                                                 var url = ifr.getAttribute('data-youtube-url');
                                                 var vid = extractVideoId(url);
                                                 if (vid) {
                                                     vid = sanitizeVideoId(vid);
                                                     if (vid) {
                                                         var origin = window.location.protocol + '//' + window.location.host;
-                                                        ifr.src = buildCleanEmbedUrl(vid, newMode, origin);
+                                                        ifr.src = buildCleanEmbedUrl(vid, true, origin);
                                                     }
                                                 }
                                             };
