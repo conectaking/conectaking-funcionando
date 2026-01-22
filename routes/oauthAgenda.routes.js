@@ -61,11 +61,25 @@ router.get('/google/owner/connect', asyncHandler(async (req, res) => {
         }
         
         const state = Buffer.from(JSON.stringify({ userId, type: 'owner' })).toString('base64');
-        const authUrl = googleOAuthService.getAuthUrl('owner', state);
-        res.redirect(authUrl);
+        
+        try {
+            const authUrl = googleOAuthService.getAuthUrl('owner', state);
+            res.redirect(authUrl);
+        } catch (oauthError) {
+            logger.error('Erro ao gerar URL OAuth:', oauthError);
+            
+            // Se for erro de configuração, retornar mensagem mais clara
+            if (oauthError.message.includes('não configurado')) {
+                const frontendUrl = process.env.FRONTEND_URL || 'https://conectaking.com.br';
+                return res.redirect(`${frontendUrl}/dashboard.html?agenda=error&message=${encodeURIComponent('Google OAuth não configurado. Configure GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET.')}`);
+            }
+            
+            throw oauthError;
+        }
     } catch (error) {
         logger.error('Erro ao iniciar OAuth do dono:', error);
-        res.status(500).send('Erro ao conectar Google Calendar');
+        const frontendUrl = process.env.FRONTEND_URL || 'https://conectaking.com.br';
+        res.redirect(`${frontendUrl}/dashboard.html?agenda=error&message=${encodeURIComponent('Erro ao conectar Google Calendar: ' + error.message)}`);
     }
 }));
 

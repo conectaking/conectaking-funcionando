@@ -13,10 +13,21 @@ class GoogleOAuthService {
         this.clientId = process.env.GOOGLE_CLIENT_ID;
         this.clientSecret = process.env.GOOGLE_CLIENT_SECRET;
         // URL do backend para o callback (deve ser acessível pelo Google)
-        const backendUrl = process.env.BACKEND_URL || process.env.FRONTEND_URL || config.urls.api || 'https://conectaking-api.onrender.com';
+        // IMPORTANTE: Sempre usar BACKEND_URL, nunca FRONTEND_URL para callbacks OAuth
+        const backendUrl = process.env.BACKEND_URL || config.urls.api || 'https://conectaking-api.onrender.com';
         this.redirectUriOwner = process.env.GOOGLE_REDIRECT_URI_OWNER || `${backendUrl}/api/oauth/agenda/google/owner/callback`;
         this.redirectUriClient = process.env.GOOGLE_REDIRECT_URI_CLIENT || `${backendUrl}/api/oauth/agenda/google/client/callback`;
         this.encryptionKey = process.env.ENCRYPTION_KEY_FOR_TOKENS || process.env.JWT_SECRET;
+        
+        // Validar se as credenciais estão configuradas
+        if (!this.clientId || !this.clientSecret) {
+            logger.warn('⚠️ GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET não configurados. A integração com Google Calendar não funcionará.');
+        } else {
+            // Log das URLs de callback para debug
+            logger.info('🔗 Google OAuth URLs configuradas:');
+            logger.info(`   Owner callback: ${this.redirectUriOwner}`);
+            logger.info(`   Client callback: ${this.redirectUriClient}`);
+        }
     }
 
     /**
@@ -36,6 +47,11 @@ class GoogleOAuthService {
      * Gerar URL de autorização
      */
     getAuthUrl(type = 'owner', state = null) {
+        // Validar se as credenciais estão configuradas
+        if (!this.clientId || !this.clientSecret) {
+            throw new Error('Google OAuth não configurado. Por favor, configure GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET nas variáveis de ambiente.');
+        }
+        
         const oauth2Client = this.createOAuth2Client(type);
         
         const scopes = [

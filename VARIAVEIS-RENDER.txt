@@ -13,6 +13,14 @@ SMTP_FROM=noreply@conectaking.com.br
 ### URL do Frontend
 FRONTEND_URL=https://conectaking.com.br
 
+### Google OAuth - Agenda Inteligente (OBRIGATÓRIO para usar Agenda)
+# ✅ CREDENCIAIS CONFIGURADAS - ADICIONAR NO RENDER:
+GOOGLE_CLIENT_ID=1056182922492-g2g5mo30pg52sm4d57hm9uafhrnntn4v.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+# URLs de callback (opcional, usa padrão se não configurado):
+# GOOGLE_REDIRECT_URI_OWNER=https://conectaking-api.onrender.com/api/oauth/agenda/google/owner/callback
+# GOOGLE_REDIRECT_URI_CLIENT=https://conectaking-api.onrender.com/api/oauth/agenda/google/client/callback
+
 ---
 
 ## ⚠️ IMPORTANTE:

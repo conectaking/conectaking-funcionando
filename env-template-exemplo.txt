@@ -85,6 +85,19 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 # HUGGINGFACE_API_KEY=sua_chave_huggingface_aqui
 
 # ============================================
+# GOOGLE OAUTH - AGENDA INTELIGENTE (opcional)
+# ============================================
+# Obter em: https://console.cloud.google.com
+# 1. Criar projeto
+# 2. Habilitar Google Calendar API
+# 3. Criar credenciais OAuth 2.0
+# 4. Adicionar URLs de callback nas credenciais
+# GOOGLE_CLIENT_ID=seu_client_id.apps.googleusercontent.com
+# GOOGLE_CLIENT_SECRET=seu_client_secret
+# GOOGLE_REDIRECT_URI_OWNER=https://conectaking-api.onrender.com/api/oauth/agenda/google/owner/callback
+# GOOGLE_REDIRECT_URI_CLIENT=https://conectaking-api.onrender.com/api/oauth/agenda/google/client/callback
+
+# ============================================
 # CONFIGURAÇÕES AVANÇADAS (opcional)
 # ============================================
 # DB_POOL_MAX=20
