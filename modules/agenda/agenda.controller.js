@@ -142,6 +142,33 @@ class AgendaController {
             return responseFormatter.error(res, error.message, statusCode);
         }
     }
+
+    /**
+     * Atualizar configurações do cartão virtual (ativar/desativar)
+     */
+    async updateCardSettings(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { is_active_in_card, card_button_text, card_button_icon } = req.body;
+            
+            const updateData = {};
+            if (typeof is_active_in_card === 'boolean') {
+                updateData.is_active_in_card = is_active_in_card;
+            }
+            if (card_button_text !== undefined) {
+                updateData.card_button_text = card_button_text;
+            }
+            if (card_button_icon !== undefined) {
+                updateData.card_button_icon = card_button_icon;
+            }
+            
+            const settings = await service.updateSettings(userId, updateData);
+            return responseFormatter.success(res, settings, 'Configurações do cartão atualizadas com sucesso');
+        } catch (error) {
+            logger.error('Erro ao atualizar configurações do cartão:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
 }
 
 module.exports = new AgendaController();

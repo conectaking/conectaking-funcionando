@@ -624,13 +624,29 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         const userSlugRes = await client.query('SELECT profile_slug FROM users WHERE id = $1', [userId]);
         const userProfileSlug = userSlugRes.rows[0]?.profile_slug || identifier;
         
+        // Buscar configurações da agenda para verificar se está ativa no cartão
+        let agendaSettings = null;
+        try {
+            const agendaSettingsRes = await client.query(
+                'SELECT is_active_in_card, card_button_text, card_button_icon FROM agenda_settings WHERE owner_user_id = $1',
+                [userId]
+            );
+            if (agendaSettingsRes.rows.length > 0) {
+                agendaSettings = agendaSettingsRes.rows[0];
+            }
+        } catch (agendaError) {
+            // Se não existir a tabela ou coluna, continuar sem erro
+            logger.debug('Configurações da agenda não encontradas ou tabela não existe', { error: agendaError.message });
+        }
+        
         const profileData = {
             details: details,
             items: items,
             origin: req.protocol + '://' + req.get('host'),
             ogImageUrl: ogImageUrl,
             profile_slug: userProfileSlug, // Adicionar profile_slug para uso no template
-            identifier: identifier // Adicionar identifier também
+            identifier: identifier, // Adicionar identifier também
+            agendaSettings: agendaSettings // Configurações da agenda
         };
         
         logger.debug('✅ Renderizando perfil público', {

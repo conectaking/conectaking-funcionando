@@ -23,4 +23,7 @@ router.post('/blocked-dates', controller.createBlockedDate);
 router.get('/appointments', controller.getAppointments);
 router.post('/appointments/:id/cancel', controller.cancelAppointment);
 
+// Configurações do cartão virtual
+router.put('/card-settings', controller.updateCardSettings);
+
 module.exports = router;

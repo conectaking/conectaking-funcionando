@@ -40,6 +40,18 @@ class AgendaValidators {
             }
         }
 
+        if (data.card_button_text !== undefined) {
+            if (typeof data.card_button_text !== 'string' || data.card_button_text.length > 100) {
+                errors.push('card_button_text deve ser uma string com no máximo 100 caracteres');
+            }
+        }
+
+        if (data.card_button_icon !== undefined) {
+            if (typeof data.card_button_icon !== 'string' || data.card_button_icon.length > 50) {
+                errors.push('card_button_icon deve ser uma string com no máximo 50 caracteres');
+            }
+        }
+
         return {
             isValid: errors.length === 0,
             errors
@@ -112,6 +124,20 @@ class AgendaValidators {
                 errors.push('start_at e end_at devem ser datas válidas');
             } else if (end <= start) {
                 errors.push('end_at deve ser posterior a start_at');
+            }
+        }
+
+        if (data.event_type !== undefined) {
+            if (!Object.values(TYPES.EVENT_TYPE).includes(data.event_type)) {
+                errors.push('event_type deve ser REUNIAO ou TRABALHO');
+            }
+        }
+
+        if (data.location_maps_url !== undefined && data.location_maps_url !== null) {
+            if (typeof data.location_maps_url !== 'string' || data.location_maps_url.length > 500) {
+                errors.push('location_maps_url deve ser uma string com no máximo 500 caracteres');
+            } else if (data.location_maps_url && !/^https?:\/\/.+/.test(data.location_maps_url)) {
+                errors.push('location_maps_url deve ser uma URL válida');
             }
         }
 

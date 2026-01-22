@@ -244,6 +244,30 @@
             <h2>Preencha suas informações</h2>
             <form id="appointment-form">
                 <div class="form-group">
+                    <label>Tipo de Agendamento *</label>
+                    <select id="event-type" required onchange="handleEventTypeChange()">
+                        <option value="REUNIAO">Reunião</option>
+                        <option value="TRABALHO">Trabalho</option>
+                    </select>
+                    <small style="opacity: 0.7; font-size: 0.85rem; display: block; margin-top: 5px;">
+                        <i class="fas fa-info-circle"></i> Reunião: inclui link do Google Meet. Trabalho: apenas agendamento.
+                    </small>
+                </div>
+                <div class="form-group" id="location-group" style="display: none;">
+                    <label>Endereço (Opcional)</label>
+                    <input type="text" id="location-address" placeholder="Ex: Rua Exemplo, 123 - São Paulo, SP">
+                    <small style="opacity: 0.7; font-size: 0.85rem; display: block; margin-top: 5px;">
+                        <i class="fas fa-map-marker-alt"></i> Para reuniões presenciais, informe o endereço
+                    </small>
+                </div>
+                <div class="form-group" id="maps-url-group" style="display: none;">
+                    <label>Link do Google Maps (Opcional)</label>
+                    <input type="url" id="location-maps-url" placeholder="https://maps.google.com/...">
+                    <small style="opacity: 0.7; font-size: 0.85rem; display: block; margin-top: 5px;">
+                        <i class="fas fa-link"></i> Cole o link do Google Maps do local
+                    </small>
+                </div>
+                <div class="form-group">
                     <label>Nome Completo *</label>
                     <input type="text" id="full-name" required>
                 </div>
@@ -386,6 +410,21 @@
             document.getElementById('step-1').classList.add('active');
         }
         
+        function handleEventTypeChange() {
+            const eventType = document.getElementById('event-type').value;
+            const locationGroup = document.getElementById('location-group');
+            const mapsUrlGroup = document.getElementById('maps-url-group');
+            
+            // Mostrar campos de localização apenas para reuniões (podem ser presenciais)
+            if (eventType === 'REUNIAO') {
+                locationGroup.style.display = 'block';
+                mapsUrlGroup.style.display = 'block';
+            } else {
+                locationGroup.style.display = 'none';
+                mapsUrlGroup.style.display = 'none';
+            }
+        }
+        
         async function proceedToStep3() {
             const form = document.getElementById('appointment-form');
             if (!form.checkValidity()) {
@@ -393,12 +432,19 @@
                 return;
             }
             
+            const eventType = document.getElementById('event-type').value;
+            const locationAddress = document.getElementById('location-address').value.trim();
+            const locationMapsUrl = document.getElementById('location-maps-url').value.trim();
+            
             const formData = {
                 full_name: document.getElementById('full-name').value,
                 email: document.getElementById('email').value,
                 whatsapp: document.getElementById('whatsapp').value,
                 notes: document.getElementById('notes').value,
-                lgpd_consent: document.getElementById('lgpd-consent').checked
+                lgpd_consent: document.getElementById('lgpd-consent').checked,
+                event_type: eventType,
+                location_address: locationAddress || null,
+                location_maps_url: locationMapsUrl || null
             };
             
             // Calcular horários
@@ -430,12 +476,23 @@
                 reservationId = result.data.reservation_id;
                 
                 // Mostrar detalhes da confirmação
-                document.getElementById('confirmation-details').innerHTML = `
+                const eventTypeText = eventType === 'REUNIAO' ? 'Reunião' : 'Trabalho';
+                let detailsHTML = `
+                    <p><strong>Tipo:</strong> ${eventTypeText}</p>
                     <p><strong>Data:</strong> ${new Date(selectedDate).toLocaleDateString('pt-BR')}</p>
                     <p><strong>Horário:</strong> ${selectedSlot.start_time.substring(0, 5)}</p>
                     <p><strong>Nome:</strong> ${formData.full_name}</p>
                     <p><strong>Email:</strong> ${formData.email}</p>
                 `;
+                
+                if (locationAddress) {
+                    detailsHTML += `<p><strong>Local:</strong> ${locationAddress}</p>`;
+                }
+                if (locationMapsUrl) {
+                    detailsHTML += `<p><strong>Mapa:</strong> <a href="${locationMapsUrl}" target="_blank">Ver no Google Maps</a></p>`;
+                }
+                
+                document.getElementById('confirmation-details').innerHTML = detailsHTML;
                 
                 document.getElementById('step2-content').classList.add('hidden');
                 document.getElementById('step3-content').classList.remove('hidden');

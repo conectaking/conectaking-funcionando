@@ -63,6 +63,14 @@ class GoogleCalendarService {
                 }
             };
 
+            // Adicionar localização se fornecida
+            if (eventData.location) {
+                event.location = eventData.location;
+            } else if (eventData.locationMapsUrl) {
+                // Se tiver URL do Maps, usar como localização
+                event.location = eventData.locationMapsUrl;
+            }
+
             // Adicionar Google Meet se solicitado
             if (createMeet) {
                 event.conferenceData = googleMeetService.createConferenceRequest();

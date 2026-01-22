@@ -240,8 +240,9 @@ class AgendaRepository {
                     owner_user_id, lead_id, start_at, end_at, status,
                     meet_link, owner_google_event_id, client_google_event_id,
                     client_timezone, notes, form_data,
-                    lgpd_consent_at, lgpd_consent_ip, lgpd_consent_user_agent, lgpd_consent_version
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                    lgpd_consent_at, lgpd_consent_ip, lgpd_consent_user_agent, lgpd_consent_version,
+                    event_type, location_address, location_maps_url, auto_confirm
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
                 RETURNING *`,
                 [
                     data.owner_user_id,
@@ -258,7 +259,11 @@ class AgendaRepository {
                     data.lgpd_consent_at || null,
                     data.lgpd_consent_ip || null,
                     data.lgpd_consent_user_agent || null,
-                    data.lgpd_consent_version || null
+                    data.lgpd_consent_version || null,
+                    data.event_type || 'REUNIAO',
+                    data.location_address || null,
+                    data.location_maps_url || null,
+                    data.auto_confirm || false
                 ]
             );
             return result.rows[0];

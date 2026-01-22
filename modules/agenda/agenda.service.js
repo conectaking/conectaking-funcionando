@@ -188,12 +188,16 @@ class AgendaService {
             start_at: data.start_at,
             end_at: data.end_at,
             status: 'PENDING',
+            event_type: data.event_type || TYPES.DEFAULT_EVENT_TYPE,
+            location_address: data.location_address || null,
+            location_maps_url: data.location_maps_url || null,
             notes: data.notes || null,
             form_data: data.form_data || null,
             lgpd_consent_at: data.lgpd_consent ? new Date() : null,
             lgpd_consent_ip: data.lgpd_consent_ip || null,
             lgpd_consent_user_agent: data.lgpd_consent_user_agent || null,
-            lgpd_consent_version: '1.0'
+            lgpd_consent_version: '1.0',
+            auto_confirm: data.auto_confirm || false
         });
 
         logger.info(`Slot reservado: ${appointment.id} para usuário ${ownerUserId}`);
@@ -282,21 +286,30 @@ class AgendaService {
                 throw new Error('Horário não está disponível no seu calendário');
             }
 
+            // Determinar se deve criar Google Meet (apenas para reuniões, não para trabalho)
+            const shouldCreateMeet = appointment.event_type === 'REUNIAO';
+            
             // Criar evento no calendário do dono
             const ownerEventDescription = await this.buildEventDescription(leadData, appointment, 'owner', client);
+            const eventTitle = appointment.event_type === 'TRABALHO' 
+                ? `Trabalho: ${leadData.full_name}` 
+                : `Reunião com ${leadData.full_name}`;
+            
             const ownerEventData = {
-                summary: `Reunião com ${leadData.full_name}`,
+                summary: eventTitle,
                 description: ownerEventDescription,
                 startDateTime: appointment.start_at,
                 endDateTime: appointment.end_at,
-                timeZone: settings.timezone
+                timeZone: settings.timezone,
+                location: appointment.location_address || null,
+                locationMapsUrl: appointment.location_maps_url || null
             };
 
             const ownerEvent = await googleCalendarService.createEvent(
                 ownerCalendar,
                 ownerEventData,
                 settings.google_calendar_id,
-                true // criar Meet
+                shouldCreateMeet // criar Meet apenas para reuniões
             );
 
             // Criar evento no calendário do cliente
@@ -307,12 +320,18 @@ class AgendaService {
                     const ownerResult = await client.query('SELECT name FROM users WHERE id = $1', [appointment.owner_user_id]);
                     const ownerName = ownerResult.rows[0]?.name || 'Profissional';
                     const clientEventDescription = await this.buildEventDescription(leadData, appointment, 'client', client);
+                    const clientEventTitle = appointment.event_type === 'TRABALHO' 
+                        ? `Trabalho: ${ownerName}` 
+                        : `Reunião com ${ownerName}`;
+                    
                     const clientEventData = {
-                        summary: `Reunião com ${ownerName}`,
+                        summary: clientEventTitle,
                         description: clientEventDescription,
                         startDateTime: appointment.start_at,
                         endDateTime: appointment.end_at,
-                        timeZone: appointment.client_timezone || settings.timezone
+                        timeZone: appointment.client_timezone || settings.timezone,
+                        location: appointment.location_address || null,
+                        locationMapsUrl: appointment.location_maps_url || null
                     };
 
                     clientEvent = await googleCalendarService.createEvent(
@@ -393,6 +412,19 @@ class AgendaService {
                 ownerName = ownerResult.rows[0]?.name || 'Profissional';
             }
             description += `Profissional: ${ownerName}\n`;
+        }
+
+        // Adicionar tipo de evento
+        if (appointment.event_type) {
+            description += `Tipo: ${appointment.event_type === 'REUNIAO' ? 'Reunião' : 'Trabalho'}\n`;
+        }
+
+        // Adicionar localização se for presencial
+        if (appointment.location_address) {
+            description += `\n📍 Local: ${appointment.location_address}\n`;
+            if (appointment.location_maps_url) {
+                description += `🗺️ Mapa: ${appointment.location_maps_url}\n`;
+            }
         }
 
         if (formData.company) {
