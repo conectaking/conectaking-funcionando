@@ -402,21 +402,37 @@ router.delete('/users/:id', protectAdmin, async (req, res) => {
  * @desc    Busca todos os códigos de registro
  * @access  Private (Admin)
  */
-// ROTA ATUALIZADA para buscar códigos com mais detalhes
+// ROTA ATUALIZADA para buscar códigos com mais detalhes (incluindo expires_at)
 router.get('/codes', protectAdmin, async (req, res) => {
     const client = await db.pool.connect();
     try {
+        const { filter } = req.query; // 'expired', 'active', ou null para todos
+        
+        let whereClause = '';
+        if (filter === 'expired') {
+            whereClause = 'WHERE c.expires_at IS NOT NULL AND c.expires_at < NOW()';
+        } else if (filter === 'active') {
+            whereClause = 'WHERE c.expires_at IS NULL OR c.expires_at >= NOW()';
+        }
+        
         const query = `
             SELECT 
                 c.code, 
                 c.is_claimed, 
                 c.created_at, 
-                c.claimed_at, 
+                c.claimed_at,
+                c.expires_at,
                 u.email as claimed_by_email,
-                gen.email as generated_by_email
+                gen.email as generated_by_email,
+                CASE 
+                    WHEN c.expires_at IS NULL THEN 'no_expiration'
+                    WHEN c.expires_at < NOW() THEN 'expired'
+                    ELSE 'active'
+                END as expiration_status
             FROM registration_codes c
             LEFT JOIN users u ON c.claimed_by_user_id = u.id
             LEFT JOIN users gen ON c.generated_by_user_id = gen.id
+            ${whereClause}
             ORDER BY c.created_at DESC
         `;
         const { rows } = await client.query(query);
@@ -430,7 +446,7 @@ router.get('/codes', protectAdmin, async (req, res) => {
 });
 
 router.post('/codes/generate-manual', protectAdmin, async (req, res) => {
-    const { customCode } = req.body;
+    const { customCode, expiresAt } = req.body;
 
     if (!customCode || customCode.length > 12 || customCode.includes(' ')) {
         return res.status(400).json({ message: 'Código personalizado inválido, muito longo ou contém espaços.' });
@@ -438,8 +454,19 @@ router.post('/codes/generate-manual', protectAdmin, async (req, res) => {
 
     const client = await db.pool.connect();
     try {
-        await client.query('INSERT INTO registration_codes (code) VALUES ($1)', [customCode]);
-        console.log(`🔑 Novo código personalizado gerado: ${customCode}`);
+        let expiresAtValue = null;
+        if (expiresAt) {
+            expiresAtValue = new Date(expiresAt);
+            if (isNaN(expiresAtValue.getTime())) {
+                return res.status(400).json({ message: 'Data de expiração inválida.' });
+            }
+        }
+        
+        await client.query(
+            'INSERT INTO registration_codes (code, expires_at) VALUES ($1, $2)', 
+            [customCode, expiresAtValue]
+        );
+        console.log(`🔑 Novo código personalizado gerado: ${customCode}${expiresAtValue ? ` (expira em ${expiresAtValue.toISOString()})` : ''}`);
         res.status(201).json({ message: `Código '${customCode}' criado com sucesso!`, codes: [customCode] });
     } catch (error) {
         await client.query('ROLLBACK');
@@ -459,14 +486,218 @@ router.post('/codes/generate-manual', protectAdmin, async (req, res) => {
  * @access  Private (Admin)
  */
 router.post('/generate-code', protectAdmin, async (req, res) => {
+    const { expiresAt } = req.body;
     const newCode = nanoid(8);
     const client = await db.pool.connect();
     try {
-        await client.query('INSERT INTO registration_codes (code) VALUES ($1)', [newCode]);
+        let expiresAtValue = null;
+        if (expiresAt) {
+            expiresAtValue = new Date(expiresAt);
+            if (isNaN(expiresAtValue.getTime())) {
+                return res.status(400).json({ message: 'Data de expiração inválida.' });
+            }
+        }
+        
+        await client.query(
+            'INSERT INTO registration_codes (code, expires_at) VALUES ($1, $2)', 
+            [newCode, expiresAtValue]
+        );
         res.status(201).json({ message: 'Novo código gerado com sucesso!', code: newCode });
     } catch (error) {
         console.error("Erro ao gerar código:", error);
         res.status(500).json({ message: 'Erro ao gerar código.' });
+    } finally {
+        client.release();
+    }
+});
+
+/**
+ * @route   POST /api/admin/codes/generate-batch
+ * @desc    Gera múltiplos códigos em lote
+ * @access  Private (Admin)
+ */
+router.post('/codes/generate-batch', protectAdmin, async (req, res) => {
+    const { prefix, count, expiresAt } = req.body;
+    
+    if (!prefix || !count || count < 1 || count > 100) {
+        return res.status(400).json({ message: 'Prefixo e quantidade (1-100) são obrigatórios.' });
+    }
+
+    const client = await db.pool.connect();
+    try {
+        let expiresAtValue = null;
+        if (expiresAt) {
+            expiresAtValue = new Date(expiresAt);
+            if (isNaN(expiresAtValue.getTime())) {
+                return res.status(400).json({ message: 'Data de expiração inválida.' });
+            }
+        }
+        
+        const codes = [];
+        for (let i = 0; i < count; i++) {
+            const randomSuffix = nanoid(8);
+            const code = `${prefix}${randomSuffix}`;
+            codes.push(code);
+        }
+        
+        // Inserir todos os códigos
+        for (const code of codes) {
+            await client.query(
+                'INSERT INTO registration_codes (code, expires_at) VALUES ($1, $2)',
+                [code, expiresAtValue]
+            );
+        }
+        
+        console.log(`🔑 ${count} códigos gerados em lote com prefixo ${prefix}`);
+        res.status(201).json({ 
+            message: `${count} códigos gerados com sucesso!`, 
+            codes: codes 
+        });
+    } catch (error) {
+        console.error("Erro ao gerar códigos em lote:", error);
+        res.status(500).json({ message: 'Erro ao gerar códigos em lote.' });
+    } finally {
+        client.release();
+    }
+});
+
+/**
+ * @route   PUT /api/admin/codes/:code
+ * @desc    Atualiza um código (expires_at)
+ * @access  Private (Admin)
+ */
+router.put('/codes/:code', protectAdmin, async (req, res) => {
+    const { code } = req.params;
+    const { expiresAt } = req.body;
+    
+    const client = await db.pool.connect();
+    try {
+        let expiresAtValue = null;
+        if (expiresAt !== undefined) {
+            if (expiresAt === null || expiresAt === '') {
+                expiresAtValue = null;
+            } else {
+                expiresAtValue = new Date(expiresAt);
+                if (isNaN(expiresAtValue.getTime())) {
+                    return res.status(400).json({ message: 'Data de expiração inválida.' });
+                }
+            }
+        }
+        
+        const result = await client.query(
+            'UPDATE registration_codes SET expires_at = $1 WHERE code = $2 RETURNING *',
+            [expiresAtValue, code]
+        );
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Código não encontrado.' });
+        }
+        
+        res.json({ message: 'Código atualizado com sucesso!', code: result.rows[0] });
+    } catch (error) {
+        console.error("Erro ao atualizar código:", error);
+        res.status(500).json({ message: 'Erro ao atualizar código.' });
+    } finally {
+        client.release();
+    }
+});
+
+/**
+ * @route   GET /api/admin/codes/auto-delete-config
+ * @desc    Busca configuração de exclusão automática
+ * @access  Private (Admin)
+ */
+router.get('/codes/auto-delete-config', protectAdmin, async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT * FROM code_auto_delete_config ORDER BY days_after_expiration'
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Erro ao buscar configuração:", error);
+        res.status(500).json({ message: 'Erro ao buscar configuração.' });
+    } finally {
+        client.release();
+    }
+});
+
+/**
+ * @route   POST /api/admin/codes/auto-delete-config
+ * @desc    Cria ou atualiza configuração de exclusão automática
+ * @access  Private (Admin)
+ */
+router.post('/codes/auto-delete-config', protectAdmin, async (req, res) => {
+    const { days_after_expiration, is_active } = req.body;
+    
+    if (!days_after_expiration || days_after_expiration < 1) {
+        return res.status(400).json({ message: 'days_after_expiration deve ser maior que 0.' });
+    }
+    
+    const client = await db.pool.connect();
+    try {
+        const result = await client.query(
+            `INSERT INTO code_auto_delete_config (days_after_expiration, is_active, updated_at)
+             VALUES ($1, $2, NOW())
+             ON CONFLICT (days_after_expiration) 
+             DO UPDATE SET is_active = $2, updated_at = NOW()
+             RETURNING *`,
+            [days_after_expiration, is_active !== undefined ? is_active : true]
+        );
+        
+        res.json({ message: 'Configuração salva com sucesso!', config: result.rows[0] });
+    } catch (error) {
+        console.error("Erro ao salvar configuração:", error);
+        res.status(500).json({ message: 'Erro ao salvar configuração.' });
+    } finally {
+        client.release();
+    }
+});
+
+/**
+ * @route   POST /api/admin/codes/execute-auto-delete
+ * @desc    Executa exclusão automática de códigos vencidos conforme configuração
+ * @access  Private (Admin)
+ */
+router.post('/codes/execute-auto-delete', protectAdmin, async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        // Buscar configurações ativas
+        const configs = await client.query(
+            'SELECT days_after_expiration FROM code_auto_delete_config WHERE is_active = true'
+        );
+        
+        if (configs.rows.length === 0) {
+            return res.json({ message: 'Nenhuma configuração ativa encontrada.', deleted: 0 });
+        }
+        
+        let totalDeleted = 0;
+        
+        for (const config of configs.rows) {
+            const days = config.days_after_expiration;
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+            
+            const result = await client.query(
+                `DELETE FROM registration_codes 
+                 WHERE expires_at IS NOT NULL 
+                 AND expires_at < $1 
+                 AND is_claimed = false
+                 RETURNING code`,
+                [cutoffDate]
+            );
+            
+            totalDeleted += result.rowCount;
+            console.log(`🗑️ Excluídos ${result.rowCount} códigos vencidos há mais de ${days} dias`);
+        }
+        
+        res.json({ 
+            message: `Exclusão automática executada. ${totalDeleted} código(s) excluído(s).`,
+            deleted: totalDeleted 
+        });
+    } catch (error) {
+        console.error("Erro ao executar exclusão automática:", error);
+        res.status(500).json({ message: 'Erro ao executar exclusão automática.' });
     } finally {
         client.release();
     }
