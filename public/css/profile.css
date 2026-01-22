@@ -584,28 +584,28 @@ body.light-theme .branding-logo span {
     z-index: 2;
 }
 
-/* Hotzone superior - ESCONDE TÍTULO E INFORMAÇÕES DO CANAL */
+/* Hotzone superior - BLOQUEIA CLIQUES no título e informações (SEM BARRA PRETA) */
 .youtube-overlay-hotzone-top-left {
     top: 0;
     left: 0;
     width: 100%;
-    height: 22%;
-    cursor: not-allowed;
-    /* Overlay escuro para esconder título e informações */
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.90) 40%, rgba(0, 0, 0, 0.70) 70%, rgba(0, 0, 0, 0) 100%);
+    height: 20%;
+    cursor: default;
+    /* SEM background - apenas bloqueia cliques */
+    background: transparent;
     pointer-events: auto;
     z-index: 3;
 }
 
-/* Hotzone inferior direita - ESCONDE LOGO YOUTUBE E COMPARTILHAR */
+/* Hotzone inferior direita - BLOQUEIA CLIQUES no logo e compartilhar (SEM BARRA PRETA) */
 .youtube-overlay-hotzone-bottom-right {
     bottom: 0;
     right: 0;
-    width: 45%;
-    height: 30%;
-    cursor: not-allowed;
-    /* Overlay escuro para esconder logo e botões */
-    background: linear-gradient(to top right, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.90) 35%, rgba(0, 0, 0, 0.70) 60%, rgba(0, 0, 0, 0) 100%);
+    width: 40%;
+    height: 25%;
+    cursor: default;
+    /* SEM background - apenas bloqueia cliques */
+    background: transparent;
     pointer-events: auto;
     z-index: 3;
 }
