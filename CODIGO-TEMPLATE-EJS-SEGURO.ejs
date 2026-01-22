@@ -345,15 +345,96 @@
                                     }
                                 }, true);
                                 
-                                // Bloquear menu de contexto e compartilhar do YouTube
-                                // Interceptar mensagens do iframe do YouTube para bloquear ações de compartilhar
+                                // BLOQUEIO COMPLETO: Impedir TODOS os direcionamentos para o YouTube
+                                
+                                // 1. BLOQUEAR MENU DE CONTEXTO (clique direito) - impede copiar URL, etc
+                                container.addEventListener('contextmenu', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.stopImmediatePropagation();
+                                    return false;
+                                }, true);
+                                
+                                // 2. Bloquear no documento inteiro quando focado no container
+                                var blockContextMenu = function(e) {
+                                    if (isFocused || container.contains(e.target)) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.stopImmediatePropagation();
+                                        return false;
+                                    }
+                                };
+                                if (typeof document !== 'undefined') {
+                                    document.addEventListener('contextmenu', blockContextMenu, true);
+                                }
+                                
+                                // 3. BLOQUEAR TODOS OS CLIQUES que possam abrir YouTube
+                                container.addEventListener('click', function(e) {
+                                    // Bloquear cliques em links do YouTube
+                                    var target = e.target;
+                                    var link = target.closest('a');
+                                    
+                                    if (link && (link.href.includes('youtube.com') || link.href.includes('youtu.be'))) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.stopImmediatePropagation();
+                                        return false;
+                                    }
+                                    
+                                    // Bloquear cliques que possam abrir nova janela/aba
+                                    if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        return false;
+                                    }
+                                }, true);
+                                
+                                // 4. BLOQUEAR ABERTURA DE JANELAS/ABAS (window.open)
+                                if (typeof window !== 'undefined') {
+                                    var originalOpen = window.open;
+                                    window.open = function(url, name, features) {
+                                        if (url && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+                                            console.log('Bloqueado: tentativa de abrir YouTube');
+                                            return null;
+                                        }
+                                        return originalOpen.apply(window, arguments);
+                                    };
+                                }
+                                
+                                // 5. INTERCEPTAR MENSAGENS DO IFRAME DO YOUTUBE
                                 if (typeof window !== 'undefined') {
                                     window.addEventListener('message', function(event) {
-                                        // Bloquear mensagens do YouTube relacionadas a compartilhar/copiar link
-                                        if (event.origin === 'https://www.youtube.com' || event.origin === 'https://www.youtube-nocookie.com') {
-                                            // Bloquear ações de compartilhar
+                                        // Bloquear mensagens do YouTube que possam causar redirecionamento
+                                        if (event.origin === 'https://www.youtube.com' || 
+                                            event.origin === 'https://www.youtube-nocookie.com' ||
+                                            event.origin.includes('youtube')) {
+                                            
+                                            // Bloquear comandos que possam abrir links
                                             if (event.data && typeof event.data === 'string') {
-                                                if (event.data.includes('share') || event.data.includes('copy') || event.data.includes('link')) {
+                                                try {
+                                                    var data = JSON.parse(event.data);
+                                                    // Bloquear comandos de navegação
+                                                    if (data.event === 'navigation' || 
+                                                        data.event === 'openUrl' ||
+                                                        data.command === 'openUrl') {
+                                                        event.stopPropagation();
+                                                        return false;
+                                                    }
+                                                } catch (e) {
+                                                    // Não é JSON, verificar se contém URLs do YouTube
+                                                    if (event.data.includes('youtube.com') || 
+                                                        event.data.includes('youtu.be') ||
+                                                        event.data.includes('watch?v=')) {
+                                                        event.stopPropagation();
+                                                        return false;
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // Bloquear objetos que possam conter URLs
+                                            if (event.data && typeof event.data === 'object') {
+                                                var dataStr = JSON.stringify(event.data);
+                                                if (dataStr.includes('youtube.com') || dataStr.includes('youtu.be')) {
                                                     event.stopPropagation();
                                                     return false;
                                                 }
@@ -362,26 +443,58 @@
                                     }, true);
                                 }
                                 
-                                // Bloquear menu de contexto (clique direito) completamente
-                                container.addEventListener('contextmenu', function(e) {
+                                // 6. BLOQUEAR COPIAR URL (Ctrl+C quando focado no vídeo)
+                                container.addEventListener('copy', function(e) {
+                                    if (isFocused) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (e.clipboardData) {
+                                            e.clipboardData.setData('text/plain', '');
+                                        }
+                                        return false;
+                                    }
+                                }, true);
+                                
+                                // 7. BLOQUEAR BOTÃO DIREITO (mousedown)
+                                container.addEventListener('mousedown', function(e) {
+                                    if (e.button === 2) { // Botão direito
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.stopImmediatePropagation();
+                                        return false;
+                                    }
+                                }, true);
+                                
+                                // 8. BLOQUEAR AÇÕES DO IFRAME VIA POSTMESSAGE
+                                iframe.addEventListener('load', function() {
+                                    try {
+                                        // Tentar bloquear contexto no iframe via postMessage
+                                        iframe.contentWindow.postMessage('{"event":"command","func":"disableContextMenu","args":""}', '*');
+                                        
+                                        // Enviar comando para desabilitar links
+                                        setTimeout(function() {
+                                            try {
+                                                iframe.contentWindow.postMessage('{"event":"command","func":"setOption","args":["disablekb",1]}', '*');
+                                            } catch (e) {}
+                                        }, 1000);
+                                    } catch (e) {
+                                        // CORS bloqueia acesso direto
+                                    }
+                                });
+                                
+                                // 9. OVERLAY INVISÍVEL para capturar todos os cliques
+                                var overlay = document.createElement('div');
+                                overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:999;pointer-events:none;';
+                                container.appendChild(overlay);
+                                
+                                // Ativar overlay apenas em áreas problemáticas (logo, título, etc)
+                                overlay.addEventListener('click', function(e) {
+                                    // Bloquear qualquer clique que possa abrir YouTube
                                     e.preventDefault();
                                     e.stopPropagation();
                                     e.stopImmediatePropagation();
                                     return false;
                                 }, true);
-                                
-                                // Bloquear também no iframe (se possível)
-                                iframe.addEventListener('load', function() {
-                                    try {
-                                        // Tentar bloquear contexto no iframe (pode falhar por CORS)
-                                        iframe.contentWindow.addEventListener('contextmenu', function(e) {
-                                            e.preventDefault();
-                                            return false;
-                                        });
-                                    } catch (e) {
-                                        // CORS bloqueia, mas não importa - já bloqueamos no container
-                                    }
-                                });
                             })();
                         </script>
                     <% } else { %>
