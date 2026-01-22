@@ -20,6 +20,11 @@ function hexToRgb(hex) {
 router.get('/:identifier', asyncHandler(async (req, res) => {
     const { identifier } = req.params;
     
+    // Ignorar rotas legais (privacidade e termos) - devem ser processadas por rotas específicas
+    if (identifier === 'privacidade' || identifier === 'termos') {
+        return res.status(404).send('404 - Página não encontrada');
+    }
+    
     // Headers para evitar cache no navegador
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
     res.set('Pragma', 'no-cache');

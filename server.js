@@ -618,6 +618,11 @@ app.use('/agenda', publicAgendaRoutes);
 app.use('/contract', publicContractRoutes);
 app.use('/vcard', vcardRoutes);
 
+// IMPORTANTE: Rotas públicas legais (Política de Privacidade e Termos de Serviço)
+// DEVEM vir ANTES de todas as rotas genéricas (/) para evitar interceptação
+const publicLegalRoutes = require('./routes/publicLegal.routes');
+app.use('/', publicLegalRoutes);
+
 // Rotas do módulo Sales Page
 // IMPORTANTE: Rotas específicas (analytics) devem vir ANTES das rotas genéricas (/:id)
 app.use('/api/v1/sales-pages', apiLimiter, analyticsRoutesSalesPage);
