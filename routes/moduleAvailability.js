@@ -115,7 +115,7 @@ router.get('/plan-availability', protectUser, asyncHandler(async (req, res) => {
                 plans: {}
             };
             
-            // Inicializar todos os planos ativos para este módulo
+            // Inicializar todos os planos ativos para este módulo como false (padrão)
             activePlans.forEach(plan => {
                 modulesMap[moduleType].plans[plan.plan_code] = {
                     is_available: false,
@@ -124,15 +124,19 @@ router.get('/plan-availability', protectUser, asyncHandler(async (req, res) => {
             });
         });
         
-        // Preencher com dados da tabela
+        // Preencher com dados da tabela (sobrescreve os valores padrão)
         availabilityResult.rows.forEach(row => {
             if (modulesMap[row.module_type] && modulesMap[row.module_type].plans[row.plan_code]) {
+                // IMPORTANTE: Usar o valor real da tabela, não assumir false
                 modulesMap[row.module_type].plans[row.plan_code] = {
-                    is_available: row.is_available,
+                    is_available: row.is_available === true, // Garantir boolean
                     id: row.id
                 };
             }
         });
+        
+        // Log para debug
+        console.log(`📊 Módulos carregados: ${Object.keys(modulesMap).length} tipos, ${availabilityResult.rows.length} registros na tabela`);
         
         res.json({
             plans: activePlans,
