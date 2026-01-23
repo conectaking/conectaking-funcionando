@@ -136,6 +136,8 @@ router.get('/plans', protectUser, asyncHandler(async (req, res) => {
                 whatsapp_message,
                 pix_key,
                 is_active,
+                custom_included_modules,
+                custom_excluded_modules,
                 created_at,
                 updated_at
             FROM subscription_plans
@@ -173,7 +175,9 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
             pix_key, 
             is_active,
             included_modules,  // String separada por vírgula: "Carrossel, Portfólio, Banner"
-            excluded_modules    // String separada por vírgula: "King Forms, Gestão Financeira"
+            excluded_modules,  // String separada por vírgula: "King Forms, Gestão Financeira"
+            custom_included_modules,  // Texto completo dos módulos incluídos (para exibição)
+            custom_excluded_modules   // Texto completo dos módulos não incluídos (para exibição)
         } = req.body;
         
         // Verificar se é admin
@@ -240,6 +244,14 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
             if (is_active !== undefined) {
                 updateFields.push(`is_active = $${paramIndex++}`);
                 updateValues.push(is_active);
+            }
+            if (custom_included_modules !== undefined) {
+                updateFields.push(`custom_included_modules = $${paramIndex++}`);
+                updateValues.push(custom_included_modules || null);
+            }
+            if (custom_excluded_modules !== undefined) {
+                updateFields.push(`custom_excluded_modules = $${paramIndex++}`);
+                updateValues.push(custom_excluded_modules || null);
             }
             
             // Atualizar plano se houver campos para atualizar
@@ -433,7 +445,9 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
                 whatsapp_number,
                 whatsapp_message,
                 pix_key,
-                is_active
+                is_active,
+                custom_included_modules,
+                custom_excluded_modules
             FROM subscription_plans
             WHERE is_active = true
             ORDER BY COALESCE(monthly_price, price) ASC
