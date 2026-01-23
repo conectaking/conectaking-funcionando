@@ -70,17 +70,51 @@
      * Mover modal para área de conteúdo
      */
     function moveModalToContentArea(modal) {
-        // Procurar pela área de conteúdo (onde está o botão "Adicionar Plano Individual")
-        const contentArea = document.querySelector('.individual-plans-content, .plans-content, [class*="individual-plans"], [class*="plans-container"]) || 
-                           document.querySelector('[class*="tab-content"]:not([style*="display: none"])') ||
-                           document.querySelector('main, .main-content, .content-area');
-
-        if (!contentArea || !modal) {
+        if (!modal) {
             return;
         }
 
         // Verificar se já foi movido
         if (modal.dataset.moved === 'true') {
+            return;
+        }
+
+        // Procurar pela área de conteúdo (onde está o botão "Adicionar Plano Individual")
+        // Primeiro, procurar pela aba ativa de "Planos Individuais por Usuário"
+        let contentArea = null;
+        
+        // Procurar por abas/tabs
+        const tabs = document.querySelectorAll('.tab-content, [class*="tab-content"], [class*="tab-panel"]');
+        tabs.forEach(tab => {
+            const style = window.getComputedStyle(tab);
+            if (style.display !== 'none' && (tab.textContent.includes('Planos Individuais') || tab.textContent.includes('Individual'))) {
+                contentArea = tab;
+            }
+        });
+
+        // Se não encontrou, procurar por outras áreas
+        if (!contentArea) {
+            contentArea = document.querySelector('.individual-plans-content, .plans-content, [class*="individual-plans"], [class*="plans-container"]);
+        }
+
+        if (!contentArea) {
+            // Procurar pela área onde está o botão "Adicionar Plano Individual"
+            const addButton = Array.from(document.querySelectorAll('button')).find(btn => 
+                btn.textContent.includes('Adicionar Plano Individual') || 
+                btn.textContent.includes('Adicionar') && btn.textContent.includes('Individual')
+            );
+            
+            if (addButton) {
+                contentArea = addButton.closest('.tab-content, [class*="tab-content"], [class*="content"], main, .main-content') || addButton.parentElement;
+            }
+        }
+
+        if (!contentArea) {
+            contentArea = document.querySelector('main, .main-content, .content-area, [class*="content"]');
+        }
+
+        if (!contentArea) {
+            console.warn('Área de conteúdo não encontrada para mover o modal');
             return;
         }
 
@@ -96,6 +130,11 @@
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
             z-index: 100 !important;
+            left: auto !important;
+            right: auto !important;
+            top: auto !important;
+            bottom: auto !important;
+            transform: none !important;
         `;
 
         // Remover overlay se houver
@@ -104,18 +143,38 @@
             overlay.style.display = 'none';
         }
 
+        // Remover modal do parent atual se estiver em um container de sidebar
+        if (modal.parentElement) {
+            const parentStyle = window.getComputedStyle(modal.parentElement);
+            if (parentStyle.position === 'fixed' || parentStyle.position === 'absolute' || 
+                modal.parentElement.classList.contains('sidebar') || 
+                modal.parentElement.classList.contains('modal-container')) {
+                // Não remover ainda, vamos mover depois
+            }
+        }
+
         // Marcar como movido
         modal.dataset.moved = 'true';
 
-        // Inserir na área de conteúdo (após o botão ou no espaço vazio)
-        const addButton = contentArea.querySelector('button[class*="add"], button:has-text("Adicionar"), .add-plan-btn, [class*="add-plan"]');
-        
-        if (addButton && addButton.nextSibling) {
+        // Procurar pelo botão "Adicionar Plano Individual"
+        const addButton = Array.from(contentArea.querySelectorAll('button')).find(btn => 
+            btn.textContent.includes('Adicionar Plano Individual') || 
+            (btn.textContent.includes('Adicionar') && btn.textContent.includes('Individual'))
+        ) || contentArea.querySelector('button[class*="add"], .add-plan-btn, [class*="add-plan"]');
+
+        // Procurar pelo texto "Nenhum plano individual configurado ainda"
+        const emptyState = Array.from(contentArea.querySelectorAll('*')).find(el => 
+            el.textContent.includes('Nenhum plano individual configurado') ||
+            el.textContent.includes('Nenhum plano')
+        );
+
+        // Inserir na área de conteúdo
+        if (addButton) {
             // Inserir após o botão
-            addButton.parentNode.insertBefore(modal, addButton.nextSibling);
-        } else if (addButton) {
-            // Inserir após o botão (se não tiver nextSibling)
             addButton.insertAdjacentElement('afterend', modal);
+        } else if (emptyState) {
+            // Inserir após o estado vazio
+            emptyState.insertAdjacentElement('afterend', modal);
         } else {
             // Inserir no final da área de conteúdo
             contentArea.appendChild(modal);
@@ -123,7 +182,9 @@
 
         // Ajustar largura do conteúdo interno
         const modalContent = modal.querySelector('.modal-content, .content, [class*="content"]') || modal;
-        modalContent.style.cssText += 'width: 100% !important; max-width: 100% !important;';
+        if (modalContent !== modal) {
+            modalContent.style.cssText += 'width: 100% !important; max-width: 100% !important; padding: 0 !important;';
+        }
     }
 
     /**
