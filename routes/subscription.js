@@ -146,7 +146,7 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
                         method: 'PIX',
                         price: displayPrice,
                         label: 'Pix',
-                        title: 'À vista',
+                        title: 'À vista no Pix',
                         description: 'Pagamento à vista via Pix'
                     },
                     installment: {
@@ -176,7 +176,7 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
                 billingType: billingType,
                 displayPrice: displayPrice,
                 paymentOptions: {
-                    pix: { method: 'PIX', price: displayPrice, label: 'Pix', title: 'À vista' },
+                    pix: { method: 'PIX', price: displayPrice, label: 'Pix', title: 'À vista no Pix' },
                     installment: { method: 'CARTÃO', totalPrice: installmentInfo.totalPrice, installmentValue: installmentInfo.installmentValue, installments: 12, label: 'Até 12x', title: 'Até 12 meses' }
                 }
             };
@@ -395,7 +395,7 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
                         method: 'PIX',
                         price: displayPrice,
                         label: 'Pix',
-                        title: 'À vista',
+                        title: 'À vista no Pix',
                         description: 'Pagamento à vista via Pix'
                     },
                     installment: {

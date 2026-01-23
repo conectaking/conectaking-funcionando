@@ -84,7 +84,7 @@ class SubscriptionService {
                         method: 'PIX',
                         price: displayPrice,
                         label: 'Pix',
-                        title: 'À vista',
+                        title: 'À vista no Pix',
                         description: 'Pagamento à vista via Pix'
                     },
                     installment: {
