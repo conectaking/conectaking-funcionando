@@ -330,21 +330,25 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
                     
                     if (checkResult.rows.length > 0) {
                         // Atualizar existente
-                        await client.query(`
+                        const updateResult = await client.query(`
                             UPDATE module_plan_availability 
                             SET is_available = $1, updated_at = CURRENT_TIMESTAMP
                             WHERE module_type = $2 AND plan_code = $3
+                            RETURNING id, is_available
                         `, [isAvailable, moduleCode, planCode]);
                         updatedCount++;
                         console.log(`  ✅ ${moduleName} (${moduleCode}) → ${isAvailable ? 'incluído' : 'não incluído'} [atualizado]`);
+                        console.log(`     Verificação: ID=${updateResult.rows[0].id}, is_available=${updateResult.rows[0].is_available}`);
                     } else {
                         // Criar novo
-                        await client.query(`
+                        const insertResult = await client.query(`
                             INSERT INTO module_plan_availability (module_type, plan_code, is_available)
                             VALUES ($1, $2, $3)
+                            RETURNING id, is_available
                         `, [moduleCode, planCode, isAvailable]);
                         createdCount++;
                         console.log(`  ✅ ${moduleName} (${moduleCode}) → ${isAvailable ? 'incluído' : 'não incluído'} [criado]`);
+                        console.log(`     Verificação: ID=${insertResult.rows[0].id}, is_available=${insertResult.rows[0].is_available}`);
                     }
                 }
                 
@@ -353,6 +357,24 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
             
             // Commit da transação
             await client.query('COMMIT');
+            console.log('✅ Transação commitada com sucesso!');
+            
+            // Verificar se os módulos foram realmente salvos (após commit)
+            if ((included_modules !== undefined || excluded_modules !== undefined) && planCode) {
+                console.log('🔍 Verificando módulos salvos após commit...');
+                const verifyQuery = `
+                    SELECT module_type, is_available 
+                    FROM module_plan_availability 
+                    WHERE plan_code = $1 
+                    AND module_type IN ('carousel', 'sales_page', 'digital_form', 'portfolio', 'banner', 'finance', 'contract', 'agenda')
+                    ORDER BY module_type
+                `;
+                const verifyResult = await client.query(verifyQuery, [planCode]);
+                console.log(`📊 Módulos verificados no banco para ${planCode}:`);
+                verifyResult.rows.forEach(row => {
+                    console.log(`   ${row.module_type}: is_available = ${row.is_available}`);
+                });
+            }
             
             // Buscar plano atualizado
             const finalPlanResult = await client.query('SELECT * FROM subscription_plans WHERE id = $1', [planId]);
