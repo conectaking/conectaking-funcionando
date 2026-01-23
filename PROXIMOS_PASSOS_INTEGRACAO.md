@@ -2,19 +2,27 @@
 
 ## ✅ O que já foi feito
 
-1. ✅ Arquivos JavaScript criados:
+1. ✅ **Backend - APIs Atualizadas:**
+   - ✅ `GET /api/subscription/info?billingType=monthly` - Agora aceita `billingType` e retorna planos enriquecidos
+   - ✅ `GET /api/modules/plan-availability-public` - Já existia
+   - ✅ `PUT /api/admin/users/:id/manage` - Já existia
+   - ✅ `DELETE /api/admin/users/:id` - Já existia
+
+2. ✅ **Arquivos JavaScript criados:**
    - `public/js/admin-menu-empresa-restore.js`
    - `public/js/admin-users-fix.js`
    - `public/js/subscription-plans-restore.js`
    - `public/js/load-subscription-info.js` - Função `loadSubscriptionInfo()` recuperada
    - `public/js/planRenderer.js` (copiado do front-end antigo)
+   - `public/js/auto-integration.js` - **NOVO:** Integração automática
 
-2. ✅ Arquivos CSS criados:
+3. ✅ **Arquivos CSS criados:**
    - `public/css/subscription-plans-restore.css`
    - `public/css/admin-users-fix.css` (já existia)
 
-3. ✅ Documentação criada:
+4. ✅ **Documentação criada:**
    - `RESUMO_RECUPERACAO_FRONTEND_ANTIGO.md`
+   - `INTEGRACAO_COMPLETA.md` - **NOVO:** Guia completo de integração
 
 ---
 
@@ -36,7 +44,23 @@ grep -r "admin" routes/
 
 ---
 
-### 2. Integrar Scripts no Dashboard (Assinatura)
+### 2. Integrar Scripts (Método Automático - RECOMENDADO)
+
+**Opção mais fácil:** Adicione apenas este script em todas as páginas:
+
+```html
+<!-- Antes do </body> -->
+<script src="/js/auto-integration.js"></script>
+```
+
+O script detecta automaticamente:
+- Se está no dashboard → adiciona scripts de assinatura
+- Se está no admin → adiciona scripts do admin
+- Funciona mesmo com conteúdo carregado dinamicamente
+
+---
+
+### 2.1 Integrar Scripts no Dashboard (Assinatura) - Método Manual
 
 **Localização provável:** 
 - Se for EJS: `views/dashboard.ejs` ou similar
@@ -119,7 +143,7 @@ async function loadSubscriptionInfo() {
 
 ---
 
-### 3. Integrar Scripts no Admin Dashboard
+### 3.1 Integrar Scripts no Admin Dashboard - Método Manual
 
 **Localização provável:**
 - Se for EJS: `views/admin.ejs` ou similar
@@ -144,7 +168,26 @@ async function loadSubscriptionInfo() {
 
 ---
 
-### 4. Verificar Rotas da API
+### 4. Rotas da API - Status
+
+✅ **Todas as rotas necessárias já existem ou foram atualizadas:**
+
+1. ✅ **API de Planos:**
+   - `GET /api/subscription/plans-public` - ✅ Existe
+   - `GET /api/subscription/info?billingType=monthly` - ✅ Atualizado (agora aceita `billingType`)
+
+2. ✅ **API de Módulos:**
+   - `GET /api/modules/plan-availability-public` - ✅ Existe
+
+3. ✅ **API Admin:**
+   - `PUT /api/admin/users/:id/manage` - ✅ Existe
+   - `DELETE /api/admin/users/:id` - ✅ Existe
+
+**Nenhuma rota adicional precisa ser criada!**
+
+---
+
+### 4.1 Verificar Rotas da API (Opcional)
 
 **Verificar se existem:**
 

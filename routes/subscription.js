@@ -12,6 +12,9 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
     try {
         const userId = req.user.userId;
         
+        // Obter billingType da query string (monthly ou annual)
+        const billingType = req.query.billingType || 'monthly';
+        
         // Buscar informações do usuário
         const userQuery = `
             SELECT 
@@ -53,6 +56,48 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
         `;
         const plansResult = await client.query(plansQuery);
         
+        // Enriquecer planos com informações de pagamento baseado no billingType
+        const enrichedPlans = plansResult.rows.map(plan => {
+            const basePrice = parseFloat(plan.price) || 0;
+            let displayPrice = basePrice;
+            
+            if (billingType === 'monthly') {
+                // Calcular valor da parcela de 12x do anual (com acréscimo de 20%)
+                const annualWithIncrease = basePrice * 1.2; // Acréscimo de 20%
+                displayPrice = annualWithIncrease / 12; // Valor mensal = parcela de 12x
+            } else if (billingType === 'annual') {
+                // Valor anual = valor exato do banco (R$ 700, R$ 1000, etc.)
+                displayPrice = basePrice;
+            }
+            
+            const installmentPrice = displayPrice * 1.2;
+            const installmentValue = installmentPrice / 12;
+            
+            return {
+                ...plan,
+                billingType: billingType,
+                displayPrice: displayPrice,
+                paymentOptions: {
+                    pix: {
+                        method: 'PIX',
+                        price: displayPrice,
+                        label: 'Pix',
+                        title: 'À vista no Pix',
+                        description: 'Pagamento à vista via Pix'
+                    },
+                    installment: {
+                        method: 'CARTÃO',
+                        totalPrice: installmentPrice,
+                        installmentValue: installmentValue,
+                        installments: 12,
+                        label: 'Até 12x',
+                        title: 'Até 12 meses',
+                        description: `Até 12x de R$ ${installmentValue.toFixed(2).replace('.', ',')}`
+                    }
+                }
+            };
+        });
+        
         // Determinar qual plano o usuário tem baseado no account_type
         // Por enquanto, mapeamos:
         // - individual -> basic ou premium (precisaria de campo adicional para diferenciar)
@@ -78,8 +123,14 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
                 createdAt: user.created_at,
                 isAdmin: user.is_admin
             },
-            currentPlan: currentPlan,
-            availablePlans: plansResult.rows
+            currentPlan: currentPlan ? {
+                ...currentPlan,
+                billingType: billingType,
+                displayPrice: enrichedPlans.find(p => p.plan_code === currentPlan.plan_code)?.displayPrice || currentPlan.price,
+                paymentOptions: enrichedPlans.find(p => p.plan_code === currentPlan.plan_code)?.paymentOptions || {}
+            } : null,
+            availablePlans: enrichedPlans,
+            billingType: billingType
         });
     } catch (error) {
         console.error('❌ Erro ao buscar informações de assinatura:', error);

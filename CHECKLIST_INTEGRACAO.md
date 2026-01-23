@@ -10,12 +10,12 @@
 - [x] `public/css/subscription-plans-restore.css`
 - [x] `public/js/planRenderer.js` (copiado do front-end antigo)
 
-### ✅ APIs Verificadas
+### ✅ APIs Verificadas e Atualizadas
 - [x] `GET /api/subscription/plans-public` - ✅ Existe
-- [x] `GET /api/subscription/info` - ✅ Existe (verificar se aceita `billingType`)
-- [x] `GET /api/modules/plan-availability-public` - ⚠️ Verificar se existe
-- [x] `PUT /api/admin/users/:id/manage` - ⚠️ Verificar se existe
-- [x] `DELETE /api/admin/users/:id` - ⚠️ Verificar se existe
+- [x] `GET /api/subscription/info?billingType=monthly` - ✅ Atualizado (agora aceita `billingType`)
+- [x] `GET /api/modules/plan-availability-public` - ✅ Existe
+- [x] `PUT /api/admin/users/:id/manage` - ✅ Existe
+- [x] `DELETE /api/admin/users/:id` - ✅ Existe
 
 ---
 
@@ -60,17 +60,19 @@ grep -r "users.*manage\|users.*:id" routes/admin.js
 ```
 
 #### 2.3 API Subscription - BillingType
-- [ ] Verificar se `GET /api/subscription/info` aceita parâmetro `billingType`
-- [ ] Se não aceitar, adicionar suporte ao parâmetro
-
-**Como verificar:**
-```bash
-grep -r "billingType\|billing_type" routes/subscription.js
-```
+- [x] ✅ `GET /api/subscription/info` agora aceita parâmetro `billingType` - IMPLEMENTADO
+- [x] ✅ Retorna planos enriquecidos com `paymentOptions` baseado no `billingType`
+- [x] ✅ Calcula preços automaticamente (mensal = (anual * 1.2) / 12)
 
 ---
 
-### 3️⃣ Integrar Scripts no Dashboard (Assinatura)
+### 3️⃣ Integrar Scripts (Método Automático - RECOMENDADO)
+
+**Opção mais fácil:**
+- [ ] Adicionar em todas as páginas: `<script src="/js/auto-integration.js"></script>`
+- [ ] O script detecta automaticamente dashboard/admin e adiciona scripts necessários
+
+**OU Método Manual:**
 
 **Arquivo a modificar:** (identificar primeiro)
 - [ ] Adicionar CSS: `<link rel="stylesheet" href="/css/subscription-plans-restore.css">`
