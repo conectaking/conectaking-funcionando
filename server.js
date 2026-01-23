@@ -513,7 +513,8 @@ app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) =
                 'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
                 'spotify', 'linkedin', 'pinterest',
                 'link', 'portfolio', 'banner', 'carousel', 
-                'youtube_embed', 'sales_page', 'digital_form'
+                'youtube_embed', 'sales_page', 'digital_form',
+                'finance', 'agenda', 'contract'
             )
             ORDER BY mpa.module_type, mpa.plan_code
         `;
