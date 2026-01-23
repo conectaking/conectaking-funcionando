@@ -181,6 +181,48 @@ class SubscriptionService {
                 }
             }
             
+            // Se não encontrou pelo subscription_id, buscar pelo account_type (fallback)
+            if (!currentPlan && user.account_type) {
+                // Mapear account_type para plan_code
+                let planCode = user.account_type;
+                
+                // Mapear planos antigos para novos
+                const planCodeMap = {
+                    'business_owner': 'king_corporate',
+                    'individual_com_logo': 'premium', // King Prime
+                    'individual': 'basic', // King Start
+                    'basic': 'basic', // King Start
+                    'premium': 'premium', // King Prime
+                    'enterprise': 'king_corporate',
+                    'king_base': 'king_base', // King Essential
+                    'free': null // Plano gratuito não tem plano de assinatura
+                };
+                
+                // Se account_type está no mapa, usar o mapeamento
+                if (planCodeMap[user.account_type] !== undefined) {
+                    planCode = planCodeMap[user.account_type];
+                }
+                
+                // Se account_type já for um plan_code válido, usar diretamente
+                const validPlanCodes = ['basic', 'premium', 'king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'enterprise'];
+                if (!validPlanCodes.includes(planCode)) {
+                    planCode = 'basic'; // Fallback seguro para King Start
+                }
+                
+                // Buscar plano por código
+                if (planCode) {
+                    const planByCodeQuery = `
+                        SELECT * FROM subscription_plans
+                        WHERE plan_code = $1 AND is_active = true
+                        LIMIT 1
+                    `;
+                    const planByCodeResult = await client.query(planByCodeQuery, [planCode]);
+                    if (planByCodeResult.rows.length > 0) {
+                        currentPlan = planByCodeResult.rows[0];
+                    }
+                }
+            }
+            
             // Buscar planos disponíveis
             const availablePlans = await this.getAvailablePlans(false);
             

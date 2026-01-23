@@ -108,14 +108,44 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
         `;
         const plansResult = await client.query(plansQuery);
         
-        // Determinar qual plano o usuário tem baseado no account_type
+        // Determinar qual plano o usuário tem
         let currentPlan = null;
-        if (user.account_type === 'individual') {
-            currentPlan = plansResult.rows.find(p => p.plan_code === 'basic') || plansResult.rows[0];
-        } else if (user.account_type === 'business_owner') {
-            currentPlan = plansResult.rows.find(p => p.plan_code === 'enterprise') || plansResult.rows[2];
-        } else if (user.account_type === 'free') {
-            currentPlan = null;
+        
+        // Primeiro, tentar buscar pelo subscription_id
+        if (user.subscription_id) {
+            currentPlan = plansResult.rows.find(p => p.id === user.subscription_id);
+        }
+        
+        // Se não encontrou pelo subscription_id, buscar pelo account_type (fallback)
+        if (!currentPlan && user.account_type) {
+            // Mapear account_type para plan_code
+            const planCodeMap = {
+                'business_owner': 'king_corporate',
+                'individual_com_logo': 'premium', // King Prime
+                'individual': 'basic', // King Start
+                'basic': 'basic', // King Start
+                'premium': 'premium', // King Prime
+                'enterprise': 'king_corporate',
+                'king_base': 'king_base', // King Essential
+                'free': null // Plano gratuito não tem plano de assinatura
+            };
+            
+            let planCode = planCodeMap[user.account_type];
+            
+            // Se account_type já for um plan_code válido, usar diretamente
+            if (!planCode && ['basic', 'premium', 'king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'enterprise'].includes(user.account_type)) {
+                planCode = user.account_type;
+            }
+            
+            // Se ainda não encontrou, usar fallback
+            if (!planCode) {
+                planCode = 'basic'; // Fallback seguro para King Start
+            }
+            
+            // Buscar plano por código
+            if (planCode) {
+                currentPlan = plansResult.rows.find(p => p.plan_code === planCode);
+            }
         }
         
         // Enriquecer planos com informações de pagamento baseado no billingType
