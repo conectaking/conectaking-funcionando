@@ -120,15 +120,16 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
         
         // Enriquecer planos com informações de pagamento baseado no billingType
         // O preço no banco é ANUAL (R$ 700, R$ 1000, etc.)
-        // - Se for mensal: divide por 12 (valor mensal)
+        // - Se for mensal: usa o valor da parcela de 12x do anual (com acréscimo de 20%)
         // - Se for anual: usa o valor exato do banco
         const enrichedPlans = plansResult.rows.map(plan => {
             const basePrice = parseFloat(plan.price) || 0;
             let displayPrice = basePrice;
             
             if (billingType === 'monthly') {
-                // Valor mensal = valor anual / 12
-                displayPrice = basePrice / 12;
+                // Calcular valor da parcela de 12x do anual (com acréscimo de 20%)
+                const annualWithIncrease = basePrice * 1.2; // Acréscimo de 20%
+                displayPrice = annualWithIncrease / 12; // Valor mensal = parcela de 12x
             } else if (billingType === 'annual') {
                 // Valor anual = valor exato do banco (R$ 700, R$ 1000, etc.)
                 displayPrice = basePrice;
@@ -368,15 +369,16 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
         
         // Enriquecer planos com informações de pagamento baseado no billingType
         // O preço no banco é ANUAL (R$ 700, R$ 1000, etc.)
-        // - Se for mensal: divide por 12 (valor mensal)
+        // - Se for mensal: usa o valor da parcela de 12x do anual (com acréscimo de 20%)
         // - Se for anual: usa o valor exato do banco
         const enrichedPlans = plansResult.rows.map(plan => {
             const basePrice = parseFloat(plan.price) || 0;
             let displayPrice = basePrice;
             
             if (billingType === 'monthly') {
-                // Valor mensal = valor anual / 12
-                displayPrice = basePrice / 12;
+                // Calcular valor da parcela de 12x do anual (com acréscimo de 20%)
+                const annualWithIncrease = basePrice * 1.2; // Acréscimo de 20%
+                displayPrice = annualWithIncrease / 12; // Valor mensal = parcela de 12x
             } else if (billingType === 'annual') {
                 // Valor anual = valor exato do banco (R$ 700, R$ 1000, etc.)
                 displayPrice = basePrice;
