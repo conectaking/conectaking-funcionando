@@ -1,0 +1,541 @@
+<%# ============================================ %>
+<%# TEMPLATE EJS SEGURO - profile.ejs %>
+<%# ============================================ %>
+<%# 
+    Este template adiciona validações robustas
+    para evitar que dados inválidos quebrem a página
+%>
+
+<%# Validar se profile existe %>
+<% if (typeof profile === 'undefined' || !profile) { %>
+    <div class="error-message">
+        <h1>Perfil não encontrado</h1>
+        <p>Este perfil não existe ou foi removido.</p>
+    </div>
+<% } else { %>
+
+    <%# Renderizar perfil normalmente %>
+    <div class="profile-container">
+        <%# ... código do perfil ... %>
+        
+        <%# Renderizar itens com validação robusta %>
+        <div class="items-container">
+            <% 
+            // Garantir que items é um array
+            const safeItems = Array.isArray(items) ? items : [];
+            
+            safeItems.forEach((item, index) => {
+                try {
+                    // Validar item básico
+                    if (!item || !item.item_type) {
+                        return; // Pular item inválido
+                    }
+                    
+                    // Remover carrosséis (segurança extra)
+                    if (item.item_type === 'banner_carousel') {
+                        return; // Pular carrossel
+                    }
+                    
+                    // Verificar se banner é carrossel
+                    if (item.item_type === 'banner' && item.destination_url) {
+                        try {
+                            const destUrl = String(item.destination_url).trim();
+                            if (destUrl.startsWith('[') || destUrl === '[]') {
+                                return; // Pular carrossel
+                            }
+                        } catch (e) {
+                            // Se houver erro, pular item
+                            return;
+                        }
+                    }
+            %>
+            
+            <%# Renderizar item baseado no tipo %>
+            <% if (item.item_type === 'carousel' && item.destination_url) { %>
+                <%# ===== CARROSSEL COM SLIDE HORIZONTAL ===== %>
+                <% 
+                let carouselImages = [];
+                try {
+                    const parsed = JSON.parse(item.destination_url);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        carouselImages = parsed.filter(img => {
+                            const url = typeof img === 'string' ? img : (img.image_url || img);
+                            return url && !url.includes('placeholder') && !url.startsWith('data:image/svg');
+                        });
+                    }
+                } catch (e) {
+                    if (item.image_url && !item.image_url.includes('placeholder')) {
+                        carouselImages = [item.image_url];
+                    }
+                }
+                const carouselId = 'carousel-' + (item.id || Math.random().toString(36).substr(2, 9));
+                %>
+                <% if (carouselImages.length > 0) { %>
+                    <div class="carousel-container-public" id="<%= carouselId %>" style="width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative;">
+                        <div class="carousel-wrapper-public" style="display: flex; transition: transform 0.5s ease-in-out; width: <%= carouselImages.length * 100 %>%;">
+                            <% carouselImages.forEach((imgUrl, index) => { 
+                                const url = typeof imgUrl === 'string' ? imgUrl : (imgUrl.image_url || imgUrl);
+                            %>
+                                <div class="carousel-slide-public" style="width: <%= 100 / carouselImages.length %>%; flex-shrink: 0;">
+                                    <img src="<%= url %>" alt="Carrossel <%= index + 1 %>" style="width: 100%; height: auto; display: block;" onerror="this.style.display='none';" loading="lazy" />
+                                </div>
+                            <% }); %>
+                        </div>
+                        <% if (carouselImages.length > 1) { %>
+                            <div class="carousel-indicators-public" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10;">
+                                <% carouselImages.forEach((_, index) => { %>
+                                    <button class="carousel-indicator-public <%= index === 0 ? 'active' : '' %>" data-slide="<%= index %>" onclick="goToSlide_<%= carouselId %>(<%= index %>)" style="width: 8px; height: 8px; border-radius: 50%; border: none; background: <%= index === 0 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)' %>; cursor: pointer; transition: background 0.3s;"></button>
+                                <% }); %>
+                            </div>
+                        <% } %>
+                    </div>
+                    <% if (carouselImages.length > 1) { %>
+                        <script>
+                        (function() {
+                            const carouselId = '<%= carouselId %>';
+                            const totalSlides = <%= carouselImages.length %>;
+                            let currentSlide = 0;
+                            let carouselInterval;
+                            const carouselEl = document.getElementById(carouselId);
+                            const wrapperEl = carouselEl?.querySelector('.carousel-wrapper-public');
+                            const indicators = carouselEl?.querySelectorAll('.carousel-indicator-public');
+                            if (!wrapperEl) return;
+                            function updateCarousel() {
+                                const translateX = -(currentSlide * (100 / totalSlides));
+                                wrapperEl.style.transform = `translateX(${translateX}%)`;
+                                if (indicators) {
+                                    indicators.forEach((ind, idx) => {
+                                        ind.style.background = idx === currentSlide ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)';
+                                    });
+                                }
+                            }
+                            function nextSlide() {
+                                currentSlide = (currentSlide + 1) % totalSlides;
+                                updateCarousel();
+                            }
+                            window['goToSlide_' + carouselId] = function(slideIndex) {
+                                currentSlide = slideIndex;
+                                updateCarousel();
+                            };
+                            carouselInterval = setInterval(nextSlide, 3000);
+                            carouselEl?.addEventListener('mouseenter', () => clearInterval(carouselInterval));
+                            carouselEl?.addEventListener('mouseleave', () => { carouselInterval = setInterval(nextSlide, 3000); });
+                        })();
+                        </script>
+                    <% } %>
+                <% } %>
+                
+            <% } else if (item.item_type === 'banner') { %>
+                <%# BANNER NORMAL (não carrossel) - EXATAMENTE IGUAL AO CARROSSEL QUANDO AUTO %>
+                <div class="item-banner" style="width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <% 
+                    const imageUrl = (item.image_url && typeof item.image_url === 'string') 
+                        ? item.image_url 
+                        : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDYwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzMzMzMzIi8+Cjx0ZXh0IHg9IjMwMCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiPkJhbm5lcjwvdGV4dD4KPC9zdmc+Cg==';
+                    const aspectRatio = (item.aspect_ratio && typeof item.aspect_ratio === 'string') 
+                        ? item.aspect_ratio 
+                        : 'auto';
+                    // Quando auto, usar apenas width: 100%; height: auto; (igual ao carrossel) - SEM object-fit, SEM aspect-ratio fixo
+                    const imgStyle = aspectRatio === 'auto' 
+                        ? 'width: 100%; height: auto; display: block;'
+                        : `width: 100%; aspect-ratio: ${aspectRatio}; object-fit: cover; display: block;`;
+                    %>
+                    <img 
+                        src="<%= imageUrl %>" 
+                        alt="Banner" 
+                        style="<%= imgStyle %>"
+                        onerror="this.style.display='none';"
+                        loading="lazy"
+                    />
+                </div>
+                
+            <% } else if (item.item_type === 'youtube_embed') { %>
+                <%# YOUTUBE EMBED - Implementação Clean Completa %>
+                <div class="item-youtube youtube-embed-container" 
+                     id="yt-container-<%= item.id || 'temp' %>"
+                     data-item-id="<%= item.id || 'temp' %>" 
+                     data-embed-type="youtube"
+                     data-compat-mode="false">
+                    <% 
+                    const youtubeUrl = item.embed_url || item.destination_url || '';
+                    if (youtubeUrl) {
+                    %>
+                        <iframe 
+                            id="youtube-embed-<%= item.id || 'temp' %>"
+                            data-youtube-url="<%= youtubeUrl %>"
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen
+                            loading="eager"
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            style="width: 100%; height: 100%; border: none; display: block;"
+                            title=""
+                        ></iframe>
+                        
+                        <%# SEM barras pretas - apenas bloqueio de menu de contexto %>
+                        
+                        <script>
+                            (function() {
+                                var containerId = '<%= item.id || 'temp' %>';
+                                var container = document.getElementById('yt-container-' + containerId);
+                                var iframe = document.getElementById('youtube-embed-' + containerId);
+                                if (!iframe || !container) return;
+                                
+                                // Função robusta para extrair ID do vídeo
+                                function extractVideoId(input) {
+                                    if (!input) return null;
+                                    
+                                    // Se já é apenas um ID válido (11 caracteres)
+                                    var cleanId = input.trim();
+                                    if (/^[a-zA-Z0-9_-]{11}$/.test(cleanId)) {
+                                        return cleanId;
+                                    }
+                                    
+                                    // Padrões para extrair ID de URLs
+                                    var patterns = [
+                                        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+                                        /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
+                                        /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+                                        /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+                                        /youtube-nocookie\.com\/embed\/([a-zA-Z0-9_-]{11})/
+                                    ];
+                                    
+                                    for (var i = 0; i < patterns.length; i++) {
+                                        var match = input.match(patterns[i]);
+                                        if (match && match[1]) {
+                                            return match[1];
+                                        }
+                                    }
+                                    
+                                    return null;
+                                }
+                                
+                                // Sanitizar ID (apenas caracteres permitidos)
+                                function sanitizeVideoId(videoId) {
+                                    if (!videoId) return null;
+                                    var sanitized = videoId.replace(/[^a-zA-Z0-9_-]/g, '');
+                                    return sanitized.length === 11 ? sanitized : null;
+                                }
+                                
+                                // Construir URL do embed clean com parâmetros
+                                function buildCleanEmbedUrl(videoId, compatMode, origin) {
+                                    // Usar youtube.com padrão (mais compatível) - evitar youtube-nocookie.com que pode bloquear
+                                    var domain = 'www.youtube.com';
+                                    var baseUrl = 'https://' + domain + '/embed/' + videoId;
+                                    
+                                    var params = new URLSearchParams();
+                                    
+                                    // Parâmetros para minimizar UI do YouTube
+                                    params.append('modestbranding', '1');
+                                    params.append('rel', '0');
+                                    // SEMPRE usar controls=1 para evitar bloqueios
+                                    params.append('controls', '1');
+                                    params.append('fs', '0');
+                                    params.append('disablekb', '1');
+                                    params.append('iv_load_policy', '3');
+                                    params.append('playsinline', '1');
+                                    params.append('cc_load_policy', '0');
+                                    
+                                    // Parâmetros de API
+                                    params.append('enablejsapi', '1');
+                                    if (origin) {
+                                        params.append('origin', origin);
+                                    }
+                                    
+                                    return baseUrl + '?' + params.toString();
+                                }
+                                
+                                // Inicializar player
+                                var youtubeUrl = iframe.getAttribute('data-youtube-url');
+                                var origin = typeof window !== 'undefined' ? (window.location.protocol + '//' + window.location.host) : '';
+                                var videoId = extractVideoId(youtubeUrl);
+                                
+                                if (videoId) {
+                                    videoId = sanitizeVideoId(videoId);
+                                    if (videoId) {
+                                        // Sempre usar modo compatível (controls=1) para evitar bloqueios
+                                        var compatMode = true;
+                                        var embedUrl = buildCleanEmbedUrl(videoId, compatMode, origin);
+                                        iframe.src = embedUrl;
+                                        
+                                        // Tratar erros de carregamento
+                                        iframe.addEventListener('error', function() {
+                                            console.warn('Erro ao carregar vídeo do YouTube, tentando fallback...');
+                                            if (embedUrl.includes('youtube-nocookie.com')) {
+                                                var fallbackUrl = embedUrl.replace('youtube-nocookie.com', 'youtube.com');
+                                                iframe.src = fallbackUrl;
+                                            }
+                                        });
+                                    } else {
+                                        console.warn('ID do YouTube inválido após sanitização');
+                                        container.innerHTML = '<div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>';
+                                    }
+                                } else {
+                                    console.warn('Não foi possível extrair ID do YouTube da URL:', youtubeUrl);
+                                    container.innerHTML = '<div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>';
+                                }
+                                
+                                // Bloqueios de teclado e mouse (apenas quando container está focado)
+                                var isFocused = false;
+                                
+                                // Quando clicar no vídeo
+                                container.addEventListener('click', function(e) {
+                                    isFocused = true;
+                                });
+                                
+                                container.addEventListener('mouseleave', function() {
+                                    isFocused = false;
+                                });
+                                
+                                // Bloquear menu de contexto (clique direito) completamente
+                                container.addEventListener('contextmenu', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.stopImmediatePropagation();
+                                    return false;
+                                }, true);
+                                
+                                // Bloquear também no iframe (se possível)
+                                iframe.addEventListener('load', function() {
+                                    try {
+                                        // Tentar bloquear contexto no iframe (pode falhar por CORS)
+                                        iframe.contentWindow.addEventListener('contextmenu', function(e) {
+                                            e.preventDefault();
+                                            return false;
+                                        });
+                                    } catch (e) {
+                                        // CORS bloqueia, mas não importa - já bloqueamos no container
+                                    }
+                                });
+                                
+                                // Bloquear teclas quando container está focado
+                                container.addEventListener('keydown', function(e) {
+                                    if (!isFocused) return;
+                                    
+                                    // Bloquear: Ctrl+U, Ctrl+S, Ctrl+C, Ctrl+Shift+I, F12, Ctrl+P
+                                    if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        return false;
+                                    }
+                                    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        return false;
+                                    }
+                                    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+                                        if (e.target === container || container.contains(e.target)) {
+                                            e.stopPropagation();
+                                        }
+                                    }
+                                    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I')) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        return false;
+                                    }
+                                    if (e.key === 'F12') {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        return false;
+                                    }
+                                    if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        return false;
+                                    }
+                                }, true);
+                                
+                                // BLOQUEIO COMPLETO: Impedir TODOS os direcionamentos para o YouTube
+                                
+                                // 1. BLOQUEAR MENU DE CONTEXTO (clique direito) - impede copiar URL, etc
+                                container.addEventListener('contextmenu', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.stopImmediatePropagation();
+                                    return false;
+                                }, true);
+                                
+                                // 2. Bloquear no documento inteiro quando focado no container
+                                var blockContextMenu = function(e) {
+                                    if (isFocused || container.contains(e.target)) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.stopImmediatePropagation();
+                                        return false;
+                                    }
+                                };
+                                if (typeof document !== 'undefined') {
+                                    document.addEventListener('contextmenu', blockContextMenu, true);
+                                }
+                                
+                                // 3. BLOQUEAR APENAS CLIQUES EM LINKS DO YOUTUBE (não bloquear controles do vídeo)
+                                container.addEventListener('click', function(e) {
+                                    // Bloquear APENAS cliques em links do YouTube
+                                    var target = e.target;
+                                    var link = target.closest('a');
+                                    
+                                    if (link && (link.href.includes('youtube.com') || link.href.includes('youtu.be'))) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.stopImmediatePropagation();
+                                        return false;
+                                    }
+                                    
+                                    // NÃO bloquear cliques normais (deixar play/pause/volume funcionarem)
+                                    // Apenas bloquear se for Ctrl+Click ou Shift+Click (que abrem nova aba)
+                                    if ((e.ctrlKey || e.metaKey || e.shiftKey) && link && link.href) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        return false;
+                                    }
+                                }, true);
+                                
+                                // 4. BLOQUEAR ABERTURA DE JANELAS/ABAS (window.open)
+                                if (typeof window !== 'undefined') {
+                                    var originalOpen = window.open;
+                                    window.open = function(url, name, features) {
+                                        if (url && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+                                            console.log('Bloqueado: tentativa de abrir YouTube');
+                                            return null;
+                                        }
+                                        return originalOpen.apply(window, arguments);
+                                    };
+                                }
+                                
+                                // 5. INTERCEPTAR MENSAGENS DO IFRAME DO YOUTUBE
+                                if (typeof window !== 'undefined') {
+                                    window.addEventListener('message', function(event) {
+                                        // Bloquear mensagens do YouTube que possam causar redirecionamento
+                                        if (event.origin === 'https://www.youtube.com' || 
+                                            event.origin === 'https://www.youtube-nocookie.com' ||
+                                            event.origin.includes('youtube')) {
+                                            
+                                            // Bloquear comandos que possam abrir links
+                                            if (event.data && typeof event.data === 'string') {
+                                                try {
+                                                    var data = JSON.parse(event.data);
+                                                    // Bloquear comandos de navegação
+                                                    if (data.event === 'navigation' || 
+                                                        data.event === 'openUrl' ||
+                                                        data.command === 'openUrl') {
+                                                        event.stopPropagation();
+                                                        return false;
+                                                    }
+                                                } catch (e) {
+                                                    // Não é JSON, verificar se contém URLs do YouTube
+                                                    if (event.data.includes('youtube.com') || 
+                                                        event.data.includes('youtu.be') ||
+                                                        event.data.includes('watch?v=')) {
+                                                        event.stopPropagation();
+                                                        return false;
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // Bloquear objetos que possam conter URLs
+                                            if (event.data && typeof event.data === 'object') {
+                                                var dataStr = JSON.stringify(event.data);
+                                                if (dataStr.includes('youtube.com') || dataStr.includes('youtu.be')) {
+                                                    event.stopPropagation();
+                                                    return false;
+                                                }
+                                            }
+                                        }
+                                    }, true);
+                                }
+                                
+                                // 6. BLOQUEAR COPIAR URL (Ctrl+C quando focado no vídeo)
+                                container.addEventListener('copy', function(e) {
+                                    if (isFocused) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (e.clipboardData) {
+                                            e.clipboardData.setData('text/plain', '');
+                                        }
+                                        return false;
+                                    }
+                                }, true);
+                                
+                                // 7. BLOQUEAR BOTÃO DIREITO (mousedown)
+                                container.addEventListener('mousedown', function(e) {
+                                    if (e.button === 2) { // Botão direito
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.stopImmediatePropagation();
+                                        return false;
+                                    }
+                                }, true);
+                                
+                                // 8. BLOQUEAR AÇÕES DO IFRAME VIA POSTMESSAGE
+                                iframe.addEventListener('load', function() {
+                                    try {
+                                        // Tentar bloquear contexto no iframe via postMessage
+                                        iframe.contentWindow.postMessage('{"event":"command","func":"disableContextMenu","args":""}', '*');
+                                        
+                                        // Enviar comando para desabilitar links
+                                        setTimeout(function() {
+                                            try {
+                                                iframe.contentWindow.postMessage('{"event":"command","func":"setOption","args":["disablekb",1]}', '*');
+                                            } catch (e) {}
+                                        }, 1000);
+                                    } catch (e) {
+                                        // CORS bloqueia acesso direto
+                                    }
+                                });
+                                
+                                // 9. OVERLAY INVISÍVEL REMOVIDO - permite controles do vídeo funcionarem normalmente
+                            })();
+                        </script>
+                    <% } else { %>
+                        <div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>
+                    <% } %>
+                </div>
+                
+            <% } else if (item.item_type === 'link') { %>
+                <%# LINK %>
+                <a 
+                    href="<%= (item.destination_url && typeof item.destination_url === 'string') ? item.destination_url : '#' %>" 
+                    class="item-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <%= (item.title && typeof item.title === 'string') ? item.title : 'Link' %>
+                </a>
+                
+            <% } else { %>
+                <%# OUTROS TIPOS - Renderizar genérico %>
+                <div class="item-generic">
+                    <% if (item.title && typeof item.title === 'string') { %>
+                        <h3><%= item.title %></h3>
+                    <% } %>
+                    <% if (item.destination_url && typeof item.destination_url === 'string') { %>
+                        <a href="<%= item.destination_url %>" target="_blank" rel="noopener noreferrer">
+                            Ver mais
+                        </a>
+                    <% } %>
+                </div>
+            <% } %>
+            
+            <% 
+                } catch (itemError) {
+                    // Se houver erro ao renderizar um item, pular ele
+                    console.error('Erro ao renderizar item:', itemError);
+                    // Não renderizar nada para este item
+                }
+            }); 
+            %>
+        </div>
+    </div>
+<% } %>
+
+<%# ============================================ %>
+<%# INSTRUÇÕES DE USO %>
+<%# ============================================ %>
+<%# 
+    1. Abra o arquivo: views/profile.ejs
+    2. Envolva a renderização de itens com try/catch
+    3. Adicione validações antes de usar cada campo
+    4. Use String() para garantir que valores são strings
+    5. Use onerror="this.style.display='none';" em imagens
+%>
+

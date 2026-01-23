@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Assinaturas: <%= contract.title %></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #991B1B 0%, #000000 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #FFFFFF;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(28, 28, 33, 0.95);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #2C2C2F;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #FFC700;
+        }
+        
+        .header .contract-title {
+            font-size: 1.2rem;
+            color: #ECECEC;
+            margin-top: 10px;
+        }
+        
+        .section {
+            background: #1C1C21;
+            border: 2px solid #2C2C2F;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #FFC700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            background: #0B0B0B;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #FFC700;
+        }
+        
+        .info-item label {
+            display: block;
+            color: #888888;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        
+        .info-item value {
+            display: block;
+            color: #FFFFFF;
+            font-size: 1rem;
+            font-weight: 600;
+            word-break: break-all;
+        }
+        
+        .hash-display {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            background: #0B0B0B;
+            padding: 10px;
+            border-radius: 6px;
+            word-break: break-all;
+            color: #22C55E;
+        }
+        
+        .signature-item {
+            background: #0B0B0B;
+            border: 1px solid #2C2C2F;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .signature-item h3 {
+            color: #FFC700;
+            margin-bottom: 15px;
+        }
+        
+        .signature-image {
+            max-width: 300px;
+            max-height: 150px;
+            border: 2px solid #2C2C2F;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .audit-log-item {
+            background: #0B0B0B;
+            border-left: 4px solid #3B82F6;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        
+        .audit-log-item .date {
+            color: #888888;
+            font-size: 0.85rem;
+        }
+        
+        .audit-log-item .action {
+            color: #FFFFFF;
+            font-weight: 600;
+            margin: 5px 0;
+        }
+        
+        .audit-log-item .details {
+            color: #888888;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .qrcode-container {
+            text-align: center;
+            padding: 20px;
+            background: #0B0B0B;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .legal-text {
+            background: #0B0B0B;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #2C2C2F;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: #ECECEC;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: #FFC700;
+            color: #000000;
+        }
+        
+        .btn-primary:hover {
+            background: #FFD700;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 199, 0, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #2C2C2F;
+            color: #FFFFFF;
+        }
+        
+        .btn-secondary:hover {
+            background: #3C3C3F;
+        }
+        
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #2C2C2F;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            
+            .container {
+                background: white;
+                box-shadow: none;
+            }
+            
+            .section {
+                background: #f9f9f9;
+                border-color: #ddd;
+            }
+            
+            .btn {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-contract"></i> Relatório de Assinaturas</h1>
+            <div class="contract-title"><%= contract.title %></div>
+        </div>
+        
+        <!-- Informações do Contrato -->
+        <div class="section">
+            <h2><i class="fas fa-info-circle"></i> Informações do Contrato</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Status</label>
+                    <value><%= contract.status %></value>
+                </div>
+                <div class="info-item">
+                    <label>Data de Criação</label>
+                    <value><%= new Date(contract.created_at).toLocaleString('pt-BR') %></value>
+                </div>
+                <% if (contract.completed_at) { %>
+                <div class="info-item">
+                    <label>Data de Conclusão</label>
+                    <value><%= new Date(contract.completed_at).toLocaleString('pt-BR') %></value>
+                </div>
+                <% } %>
+                <div class="info-item">
+                    <label>Tipo</label>
+                    <value><%= contract.contract_type === 'imported' ? 'Importado' : 'Template' %></value>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hashes SHA-256 -->
+        <div class="section">
+            <h2><i class="fas fa-shield-alt"></i> Integridade do Documento</h2>
+            <div class="info-item" style="margin-bottom: 15px;">
+                <label>Hash SHA-256 Original</label>
+                <div class="hash-display"><%= contract.original_pdf_hash || 'N/A' %></div>
+            </div>
+            <% if (contract.final_pdf_hash) { %>
+            <div class="info-item">
+                <label>Hash SHA-256 Final (Após Assinaturas)</label>
+                <div class="hash-display"><%= contract.final_pdf_hash %></div>
+            </div>
+            <% } %>
+        </div>
+        
+        <!-- Assinaturas -->
+        <div class="section">
+            <h2><i class="fas fa-signature"></i> Assinaturas Eletrônicas</h2>
+            <% if (signatures.length === 0) { %>
+                <p style="color: #888888; text-align: center; padding: 20px;">Nenhuma assinatura registrada ainda.</p>
+            <% } else { %>
+                <% signatures.forEach((signature, index) => { %>
+                    <div class="signature-item">
+                        <h3><%= signature.signer_name %> (<%= signature.signer_email %>)</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Data da Assinatura</label>
+                                <value><%= new Date(signature.signed_at).toLocaleString('pt-BR') %></value>
+                            </div>
+                            <div class="info-item">
+                                <label>Tipo de Assinatura</label>
+                                <value>
+                                    <% if (signature.signature_type === 'canvas') { %>
+                                        Desenho Digital
+                                    <% } else if (signature.signature_type === 'upload') { %>
+                                        Upload de Imagem
+                                    <% } else { %>
+                                        Nome Digitado
+                                    <% } %>
+                                </value>
+                            </div>
+                            <% if (signature.ip_address) { %>
+                            <div class="info-item">
+                                <label>Endereço IP</label>
+                                <value><%= signature.ip_address %></value>
+                            </div>
+                            <% } %>
+                            <% if (signature.user_agent) { %>
+                            <div class="info-item">
+                                <label>User-Agent</label>
+                                <value style="font-size: 0.85rem;"><%= signature.user_agent %></value>
+                            </div>
+                            <% } %>
+                        </div>
+                        <% if (signature.signature_image_url) { %>
+                            <img src="<%= signature.signature_image_url %>" alt="Assinatura" class="signature-image">
+                        <% } else if (signature.signature_data && signature.signature_type === 'typed') { %>
+                            <div style="background: #0B0B0B; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                                <label style="color: #888888; font-size: 0.85rem;">Nome Assinado:</label>
+                                <div style="color: #FFFFFF; font-size: 1.2rem; font-weight: 600; margin-top: 5px;"><%= signature.signature_data %></div>
+                            </div>
+                        <% } %>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+        
+        <!-- Log de Auditoria -->
+        <div class="section">
+            <h2><i class="fas fa-history"></i> Log de Auditoria</h2>
+            <% if (auditLogs.length === 0) { %>
+                <p style="color: #888888; text-align: center; padding: 20px;">Nenhum log de auditoria disponível.</p>
+            <% } else { %>
+                <% auditLogs.forEach((log) => { %>
+                    <div class="audit-log-item">
+                        <div class="date"><%= new Date(log.created_at).toLocaleString('pt-BR') %></div>
+                        <div class="action"><%= log.action %></div>
+                        <% if (log.user_name) { %>
+                            <div class="details">Usuário: <%= log.user_name %> (<%= log.user_email %>)</div>
+                        <% } %>
+                        <% if (log.ip_address) { %>
+                            <div class="details">IP: <%= log.ip_address %></div>
+                        <% } %>
+                        <% if (log.user_agent) { %>
+                            <div class="details">User-Agent: <%= log.user_agent %></div>
+                        <% } %>
+                        <% if (log.details && Object.keys(log.details).length > 0) { %>
+                            <div class="details">Detalhes: <%= JSON.stringify(log.details, null, 2) %></div>
+                        <% } %>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+        
+        <!-- QR Code para Verificação -->
+        <div class="section">
+            <h2><i class="fas fa-qrcode"></i> Verificação por QR Code</h2>
+            <div class="qrcode-container">
+                <div id="qrcode"></div>
+                <p style="margin-top: 15px; color: #888888; font-size: 0.9rem;">
+                    Escaneie este QR Code para verificar a autenticidade deste documento
+                </p>
+            </div>
+        </div>
+        
+        <!-- Texto Legal -->
+        <div class="legal-text">
+            <h3 style="color: #FFC700; margin-bottom: 15px;">Validade Legal</h3>
+            <p>
+                Este documento foi gerado automaticamente pelo sistema ConectaKing e contém assinaturas eletrônicas válidas de acordo com a legislação brasileira (Lei nº 14.063/2020 - Marco Legal da Assinatura Eletrônica).
+            </p>
+            <p style="margin-top: 15px;">
+                O hash SHA-256 garante a integridade do documento. Qualquer alteração no conteúdo resultará em um hash diferente, invalidando o documento.
+            </p>
+            <p style="margin-top: 15px;">
+                <strong>Data de geração deste relatório:</strong> <%= new Date().toLocaleString('pt-BR') %>
+            </p>
+        </div>
+        
+        <!-- Ações -->
+        <div class="actions">
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Imprimir Relatório
+            </button>
+            <a href="/api/contracts/<%= contract.id %>/download" class="btn btn-secondary" style="margin-left: 10px;">
+                <i class="fas fa-download"></i> Baixar PDF Final
+            </a>
+        </div>
+    </div>
+    
+    <script>
+        // Gerar QR Code com informações do contrato
+        const qrData = JSON.stringify({
+            contract_id: <%= contract.id %>,
+            title: "<%= contract.title %>",
+            hash_original: "<%= contract.original_pdf_hash || '' %>",
+            hash_final: "<%= contract.final_pdf_hash || '' %>",
+            generated_at: "<%= new Date().toISOString() %>"
+        });
+        
+        new QRCode(document.getElementById("qrcode"), {
+            text: qrData,
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    </script>
+</body>
+</html>

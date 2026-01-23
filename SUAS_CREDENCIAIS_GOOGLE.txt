@@ -1,0 +1,46 @@
+# 🔐 Suas Credenciais Google OAuth
+
+## ✅ Client ID
+1056182922492-g2g5mo30pg52sm4d57hm9uafhrnntn4v.apps.googleusercontent.com
+
+## ✅ Client Secret
+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
+
+---
+
+## 📋 O que fazer agora:
+
+### 1. No Google Cloud Console:
+   - Volte para a tela onde viu o Client ID
+   - Copie o **Client Secret** (aparece apenas uma vez!)
+
+### 2. No Render.com:
+   - Acesse: https://dashboard.render.com
+   - Seu serviço > "Environment"
+   - Adicione:
+     - Key: GOOGLE_CLIENT_ID
+     - Value: 1056182922492-g2g5mo30pg52sm4d57hm9uafhrnntn4v.apps.googleusercontent.com
+   
+   - Adicione:
+     - Key: GOOGLE_CLIENT_SECRET
+     - Value: [cole o Client Secret aqui]
+
+### 3. Verificar URLs de Callback:
+   No Google Cloud Console, nas credenciais OAuth, certifique-se de ter estas URLs:
+   
+   ✅ https://conectaking-api.onrender.com/api/oauth/agenda/google/owner/callback
+   ✅ https://conectaking-api.onrender.com/api/oauth/agenda/google/client/callback
+
+### 4. Fazer Deploy:
+   - No Render, clique em "Manual Deploy" > "Deploy latest commit"
+
+### 5. Testar:
+   - Dashboard > Agenda Inteligente > Conectar Google Calendar
+   - Deve funcionar! ✅
+
+---
+
+## 🔒 IMPORTANTE:
+- NUNCA compartilhe o Client Secret publicamente
+- Mantenha essas credenciais seguras
+- O Client Secret só aparece uma vez no Google Cloud Console

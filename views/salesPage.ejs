@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR" style="background-color: <%= salesPage.background_color || '#0D0D0F' %>;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <title><%= salesPage.meta_title || salesPage.store_title || 'Loja' %></title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <meta name="description" content="<%= salesPage.meta_description || salesPage.store_description || '' %>">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <% 
+    // SEMPRE usar slug - se não existir, gerar um baseado no título
+    let storeSlug = salesPage.slug;
+    if (!storeSlug && salesPage.store_title) {
+        // Gerar slug simples do título (sem caracteres especiais)
+        storeSlug = salesPage.store_title.toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, 50);
+    }
+    if (!storeSlug) {
+        storeSlug = 'loja';
+    }
+    const currentUrl = typeof profileSlug !== 'undefined' && profileSlug 
+        ? `https://tag.conectaking.com.br/${profileSlug}/${storeSlug}` 
+        : '';
+    %>
+    <% if (currentUrl) { %>
+    <meta property="og:url" content="<%= currentUrl %>">
+    <meta property="twitter:url" content="<%= currentUrl %>">
+    <% } %>
+    <meta property="og:title" content="<%= (salesPage.meta_title || salesPage.store_title || 'Loja').replace(/"/g, '&quot;') %>">
+    <meta property="og:description" content="<%= (salesPage.meta_description || salesPage.store_description || '').replace(/"/g, '&quot;') %>">
+    <% 
+    // Garantir que a URL da imagem seja absoluta para compartilhamento
+    let metaImageUrl = salesPage.meta_image_url || '';
+    if (metaImageUrl && !metaImageUrl.startsWith('http://') && !metaImageUrl.startsWith('https://')) {
+        // Se a URL não começa com http, adicionar o domínio completo
+        metaImageUrl = `https://tag.conectaking.com.br${metaImageUrl.startsWith('/') ? '' : '/'}${metaImageUrl}`;
+    }
+    // Se não tiver imagem de compartilhamento, usar a logo do botão ou imagem de fundo
+    if (!metaImageUrl) {
+        if (salesPage.button_logo_url) {
+            metaImageUrl = salesPage.button_logo_url;
+        } else if (salesPage.background_image_url) {
+            metaImageUrl = salesPage.background_image_url;
+        }
+    }
+    // Garantir que a URL seja absoluta
+    if (metaImageUrl && !metaImageUrl.startsWith('http://') && !metaImageUrl.startsWith('https://')) {
+        metaImageUrl = `https://tag.conectaking.com.br${metaImageUrl.startsWith('/') ? '' : '/'}${metaImageUrl}`;
+    }
+    %>
+    <% if (metaImageUrl) { %>
+    <meta property="og:image" content="<%= metaImageUrl %>">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:secure_url" content="<%= metaImageUrl %>">
+    <% } %>
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= (salesPage.meta_title || salesPage.store_title || 'Loja').replace(/"/g, '&quot;') %>">
+    <meta name="twitter:description" content="<%= (salesPage.meta_description || salesPage.store_description || '').replace(/"/g, '&quot;') %>">
+    <% if (metaImageUrl) { %>
+    <meta name="twitter:image" content="<%= metaImageUrl %>">
+    <meta name="twitter:image:src" content="<%= metaImageUrl %>">
+    <% } %>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="/css/salesPage.css">
+    
+    <meta name="profile-slug" content="<%= typeof profileSlug !== 'undefined' ? profileSlug : '' %>">
+    
+    <style>
+        :root {
+            --bg-color: <%= salesPage.background_color || '#0D0D0F' %>;
+            --text-color: <%= salesPage.text_color || '#ECECEC' %>;
+            --button-color: <%= salesPage.button_color || '#FFC700' %>;
+            --button-text-color: <%= salesPage.button_text_color || '#000000' %>;
+        }
+    </style>
+</head>
+<body class="sales-page <%= salesPage.theme || 'dark' %>" data-sales-page-id="<%= salesPage.id %>" data-whatsapp-number="<%= whatsappNumber || '' %>" data-profile-slug="<%= typeof profileSlug !== 'undefined' ? profileSlug : '' %>">
+    <!-- Header -->
+    <header class="sales-header">
+        <div class="container">
+            <% if (typeof profileSlug !== 'undefined' && profileSlug) { %>
+            <a href="/<%= profileSlug %>" class="back-to-profile-btn" title="Voltar ao cartão virtual">
+                <i class="fas fa-arrow-left"></i>
+                <span>Voltar</span>
+            </a>
+            <% } %>
+            <% if (salesPage.button_logo_url) { %>
+            <img src="<%= salesPage.button_logo_url %>" alt="<%= salesPage.store_title %>" class="store-logo">
+            <% } %>
+            <h1 class="store-title"><%= salesPage.store_title || 'Minha Loja' %></h1>
+            <div class="header-actions">
+                <button class="share-btn" id="share-btn" title="Compartilhar loja">
+                    <i class="fas fa-share-alt"></i>
+                    <span class="share-text">Compartilhar</span>
+                </button>
+                <button class="cart-toggle" id="cart-toggle">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cart-count">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Share Menu -->
+    <div class="share-menu" id="share-menu">
+        <div class="share-menu-header">
+            <h3>Compartilhar Loja</h3>
+            <button class="share-menu-close" id="share-menu-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="share-menu-content">
+            <div class="share-options">
+                <button class="share-option-btn" data-share="whatsapp" title="Compartilhar no WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp</span>
+                </button>
+                <button class="share-option-btn" data-share="facebook" title="Compartilhar no Facebook">
+                    <i class="fab fa-facebook"></i>
+                    <span>Facebook</span>
+                </button>
+                <button class="share-option-btn" data-share="twitter" title="Compartilhar no Twitter">
+                    <i class="fab fa-twitter"></i>
+                    <span>Twitter</span>
+                </button>
+                <button class="share-option-btn" data-share="linkedin" title="Compartilhar no LinkedIn">
+                    <i class="fab fa-linkedin"></i>
+                    <span>LinkedIn</span>
+                </button>
+                <button class="share-option-btn" data-share="telegram" title="Compartilhar no Telegram">
+                    <i class="fab fa-telegram"></i>
+                    <span>Telegram</span>
+                </button>
+                <button class="share-option-btn" data-share="copy" title="Copiar link">
+                    <i class="fas fa-link"></i>
+                    <span>Copiar Link</span>
+                </button>
+            </div>
+            <div class="share-url-container">
+                <input type="text" id="share-url-input" class="share-url-input" readonly value="<%= typeof profileSlug !== 'undefined' && profileSlug ? `https://tag.conectaking.com.br/${profileSlug}/${storeSlug}` : '' %>">
+                <button class="copy-url-btn" id="copy-url-btn" title="Copiar URL">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="share-overlay" id="share-overlay"></div>
+
+    <!-- Hero Section -->
+    <% if (salesPage.background_image_url) { %>
+    <section class="hero-section" style="background-image: url('<%= salesPage.background_image_url %>');">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h2><%= salesPage.store_title %></h2>
+            <% if (salesPage.store_description) { %>
+            <p><%= salesPage.store_description %></p>
+            <% } %>
+        </div>
+    </section>
+    <% } %>
+
+    <!-- Products Grid -->
+    <main class="products-section">
+        <div class="container">
+            <div class="products-header">
+                <h2 class="section-title">Produtos</h2>
+                <div class="view-controls">
+                    <div class="view-mode-controls">
+                        <button class="view-btn active" data-mode="grid" title="Modo Miniatura">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="view-btn" data-mode="list" title="Modo Lista">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                    <div class="view-size-controls">
+                        <button class="size-btn active" data-size="small" title="Pequeno">
+                            <i class="fas fa-square" style="font-size: 0.7rem;"></i>
+                        </button>
+                        <button class="size-btn" data-size="medium" title="Médio">
+                            <i class="fas fa-square" style="font-size: 0.85rem;"></i>
+                        </button>
+                        <button class="size-btn" data-size="large" title="Grande">
+                            <i class="fas fa-square" style="font-size: 1rem;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="products-filter-tabs-public">
+                <button class="filter-tab-public active" data-filter="all">
+                    <i class="fas fa-th"></i> Todos
+                </button>
+                <button class="filter-tab-public" data-filter="oferta">
+                    <i class="fas fa-tag"></i> Oferta
+                </button>
+                <button class="filter-tab-public" data-filter="destaque">
+                    <i class="fas fa-star"></i> Destaque
+                </button>
+                <button class="filter-tab-public" data-filter="novo">
+                    <i class="fas fa-sparkles"></i> Novidade
+                </button>
+            </div>
+            <div class="products-grid" id="products-grid" data-view-mode="grid" data-card-size="small" data-filter="all">
+                <% if (products && products.length > 0) { %>
+                <% products.forEach(product => { %>
+                <% const productUrl = `/${typeof profileSlug !== 'undefined' ? profileSlug : ''}/produto/${product.id}`; %>
+                <% 
+                // Determinar badge para data attribute (usado no filtro)
+                let productBadgeForFilter = product.badge || '';
+                if (!productBadgeForFilter && product.is_featured) {
+                    productBadgeForFilter = 'destaque';
+                }
+                %>
+                <div class="product-card" data-product-id="<%= product.id %>" data-product-badge="<%= productBadgeForFilter %>">
+                    <a href="<%= productUrl %>" class="product-link" data-product-id="<%= product.id %>">
+                        <% if (product.image_url) { %>
+                        <div class="product-image">
+                            <img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy">
+                        </div>
+                        <% } %>
+                        <div class="product-info">
+                            <h3 class="product-name"><%= product.name %></h3>
+                            <% 
+                            // Processar badges (pode ser string única ou múltiplos separados por vírgula)
+                            let badges = [];
+                            if (product.badge) {
+                                // Se for string com vírgulas, separar
+                                badges = product.badge.split(',').map(b => b.trim()).filter(b => b);
+                            }
+                            // Se não tem badge mas é featured, adicionar destaque
+                            if (badges.length === 0 && product.is_featured) {
+                                badges.push('destaque');
+                            }
+                            
+                            const badgeLabels = {
+                                'oferta': 'Oferta',
+                                'destaque': 'Destaque',
+                                'novo': 'Novidade'
+                            };
+                            %>
+                            <% if (badges.length > 0) { %>
+                            <div class="product-badges-container">
+                                <% badges.forEach(badgeValue => { %>
+                                    <% const badgeLabel = badgeLabels[badgeValue.toLowerCase()] || badgeValue; %>
+                                    <span class="product-badge badge-<%= badgeValue.toLowerCase() %>"><%= badgeLabel %></span>
+                                <% }); %>
+                            </div>
+                            <% } %>
+                            <% if (product.description) { %>
+                            <p class="product-description"><%= product.description %></p>
+                            <% } %>
+                            <div class="product-price">
+                                <% if (product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price)) { %>
+                                <span class="compare-price">R$ <%= new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(product.compare_price)) %></span>
+                                <% } %>
+                                <span class="current-price">R$ <%= new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(product.price)) %></span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="product-actions">
+                        <button class="add-to-cart-btn" data-product-id="<%= product.id %>" data-product-name="<%= product.name %>" data-product-price="<%= product.price %>">
+                            <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
+                        </button>
+                        <a href="<%= productUrl %>" class="view-details-btn">
+                            <i class="fas fa-eye"></i> Ver Detalhes
+                        </a>
+                    </div>
+                </div>
+                <% }); %>
+                <% } else { %>
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-color);">
+                    <i class="fas fa-box-open" style="font-size: 4rem; opacity: 0.5; margin-bottom: 20px; display: block;"></i>
+                    <h3 style="font-size: 1.5rem; margin: 0 0 10px 0; color: var(--text-color);">Nenhum produto disponível</h3>
+                    <p style="opacity: 0.7; margin: 0;">A loja ainda não possui produtos cadastrados ou publicados.</p>
+                </div>
+                <% } %>
+            </div>
+        </div>
+    </main>
+
+    <!-- Cart Sidebar -->
+    <aside class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3>Carrinho</h3>
+            <button class="cart-close" id="cart-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <!-- Items serão inseridos aqui via JavaScript -->
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <strong>Total: <span id="cart-total">R$ 0,00</span></strong>
+            </div>
+            <div class="checkout-form">
+                <input type="text" id="customer-name" placeholder="Seu nome (opcional)" class="checkout-input">
+                <textarea id="customer-observation" placeholder="Observação (opcional)" class="checkout-textarea"></textarea>
+                <button class="checkout-btn" id="checkout-btn">
+                    <i class="fab fa-whatsapp"></i> Finalizar Compra
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Cart Overlay -->
+    <div class="cart-overlay" id="cart-overlay"></div>
+
+    <!-- Footer -->
+    <footer class="sales-footer">
+        <div class="container">
+            <p>&copy; <%= new Date().getFullYear() %> <%= salesPage.store_title || 'Loja' %>. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="/js/salesPage.js"></script>
+</body>
+</html>
+

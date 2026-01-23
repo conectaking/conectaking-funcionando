@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalizar Portaria - <%= guestList.event_title || 'Evento' %></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0D0D0F 0%, #1C1C21 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #ECECEC;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+        
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: rgba(255, 199, 0, 0.1);
+            border: 2px solid rgba(255, 199, 0, 0.3);
+            border-radius: 12px;
+            color: #FFC700;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 199, 0, 0.2);
+            border-color: rgba(255, 199, 0, 0.5);
+            transform: translateX(-4px);
+        }
+        
+        .back-button i {
+            font-size: 16px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+        
+        .sidebar {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 24px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .preview-area {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 24px;
+            min-height: 600px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #FFC700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ECECEC;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .form-group input[type="color"],
+        .form-group input[type="text"],
+        .form-group input[type="url"],
+        .form-group input[type="range"],
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: #ECECEC;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #FFC700;
+            background: rgba(0,0,0,0.4);
+        }
+        
+        .color-input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .color-input-wrapper input[type="color"] {
+            width: 60px;
+            height: 50px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .color-input-wrapper input[type="text"] {
+            flex: 1;
+        }
+        
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .theme-card {
+            padding: 16px;
+            background: rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .theme-card:hover {
+            border-color: #FFC700;
+            transform: translateY(-2px);
+        }
+        
+        .theme-card.active {
+            border-color: #FFC700;
+            background: rgba(255,199,0,0.1);
+        }
+        
+        .theme-preview {
+            width: 100%;
+            height: 60px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .theme-name {
+            font-weight: 600;
+            font-size: 12px;
+            color: #ECECEC;
+        }
+        
+        .image-upload-area {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0,0,0,0.2);
+        }
+        
+        .image-upload-area:hover {
+            border-color: #FFC700;
+            background: rgba(255,199,0,0.05);
+        }
+        
+        .image-upload-area.has-image {
+            border-style: solid;
+            padding: 0;
+        }
+        
+        .image-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            display: block;
+        }
+        
+        .btn-save {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #FFC700, #FFA500);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 24px;
+        }
+        
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 199, 0, 0.4);
+        }
+        
+        .preview-frame {
+            width: 100%;
+            height: 800px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        .preview-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-actions" style="max-width: 1400px; margin: 0 auto 24px;">
+        <% 
+            // Determinar se está dentro de iframe
+            // Se estiver dentro de iframe, esconder o botão "Voltar" (não é necessário)
+            const isInIframe = true;
+        %>
+        <div id="back-button-container" style="display: none;">
+            <a href="#" class="back-button" onclick="handleVoltarClick(event, '');">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+        <h1 style="color: #FFC700; margin: 0; font-size: 20px; font-weight: 700;">
+            <i class="fas fa-paint-brush"></i> Personalizar Portaria
+        </h1>
+    </div>
+    
+    <script>
+        // Detectar se está dentro de iframe e esconder botão "Voltar"
+        (function() {
+            // Verificar se estamos dentro de um iframe
+            if (window.self !== window.top) {
+                // Estamos dentro de um iframe - esconder o botão "Voltar" completamente
+                const backButtonContainer = document.getElementById('back-button-container');
+                if (backButtonContainer) {
+                    backButtonContainer.style.display = 'none';
+                }
+                console.log('✅ [CUSTOMIZE_PORTARIA] Detectado iframe - botão "Voltar" escondido');
+            }
+        })();
+        
+        // Função para lidar com o clique no botão "Voltar" (se necessário)
+        function handleVoltarClick(event, backUrl) {
+            event.preventDefault();
+            
+            // Verificar se estamos dentro de um iframe
+            if (window.self !== window.top) {
+                // Estamos dentro de um iframe - comunicar com o pai para voltar à aba "Inscritos"
+                try {
+                    // Tentar enviar mensagem para o pai pedindo para mudar para a aba "Inscritos"
+                    if (window.parent) {
+                        window.parent.postMessage({ 
+                            type: 'customize-portaria-back',
+                            action: 'switch-tab',
+                            tab: 'registered'
+                        }, '*');
+                        
+                        // Como fallback, tentar encontrar e clicar na aba "Inscritos" no pai
+                        try {
+                            const parentDocument = window.parent.document;
+                            const registeredTab = parentDocument.querySelector('.tab-btn[data-tab="registered"]');
+                            if (registeredTab) {
+                                registeredTab.click();
+                            }
+                        } catch (e) {
+                            console.log('Não foi possível acessar o documento pai diretamente, usando postMessage');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Erro ao comunicar com o pai:', e);
+                    // Fallback: usar histórico do navegador
+                    history.back();
+                }
+            } else {
+                // Não estamos em um iframe - navegação normal
+                if (backUrl) {
+                    window.location.href = backUrl;
+                } else if (document.referrer && !document.referrer.includes('customize-portaria')) {
+                    window.location.href = document.referrer;
+                } else {
+                    history.back();
+                }
+            }
+        }
+    </script>
+    <div class="container">
+        <div class="sidebar">
+            
+            <form id="customize-form">
+                <!-- Temas Pré-definidos -->
+                <div class="form-group">
+                    <label class="section-title">
+                        <i class="fas fa-palette"></i> Temas Pré-definidos
+                    </label>
+                    <div class="theme-grid" style="grid-template-columns: repeat(3, 1fr);">
+                        <div class="theme-card" data-theme="default" onclick="selectTheme('default')">
+                            <div class="theme-preview" style="background: linear-gradient(135deg, #FFC700, #FFB700);"></div>
+                            <div class="theme-name">Padrão</div>
+                        </div>
+                        <div class="theme-card" data-theme="dark" onclick="selectTheme('dark')">
+                            <div class="theme-preview" style="background: linear-gradient(135deg, #0D0D0F, #1C1C21);"></div>
+                            <div class="theme-name">Escuro</div>
+                        </div>
+                        <div class="theme-card" data-theme="light" onclick="selectTheme('light')">
+                            <div class="theme-preview" style="background: linear-gradient(135deg, #FFFFFF, #F5F5F5);"></div>
+                            <div class="theme-name">Claro</div>
+                        </div>
+                        <div class="theme-card" data-theme="red-black" onclick="selectTheme('red-black')">
+                            <div class="theme-preview" style="background: linear-gradient(135deg, #DC2626, #000000);"></div>
+                            <div class="theme-name">Vermelho/Preto</div>
+                        </div>
+                        <div class="theme-card" data-theme="premium" onclick="selectTheme('premium')">
+                            <div class="theme-preview" style="background: linear-gradient(135deg, #667EEA, #764BA2);"></div>
+                            <div class="theme-name">Premium</div>
+                        </div>
+                        <div class="theme-card" data-theme="premium-gold" onclick="selectTheme('premium-gold')">
+                            <div class="theme-preview" style="background: linear-gradient(135deg, #D4AF37, #B8860B);"></div>
+                            <div class="theme-name">Premium Ouro</div>
+                        </div>
+                        <div class="theme-card" data-theme="premium-red" onclick="selectTheme('premium-red')">
+                            <div class="theme-preview" style="background: linear-gradient(135deg, #DC2626, #991B1B);"></div>
+                            <div class="theme-name">Premium Vermelho</div>
+                        </div>
+                        <div class="theme-card" data-theme="modern" onclick="selectTheme('modern')">
+                            <div class="theme-preview" style="background: linear-gradient(135deg, #F093FB, #F5576C);"></div>
+                            <div class="theme-name">Moderno</div>
+                        </div>
+                        <div class="theme-card" data-theme="elegant" onclick="selectTheme('elegant')">
+                            <div class="theme-preview" style="background: linear-gradient(135deg, #434343, #000000);"></div>
+                            <div class="theme-name">Elegante</div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="theme_portaria" name="theme_portaria" value="<%= guestList.theme_portaria || 'default' %>">
+                </div>
+                
+                <!-- Cores -->
+                <div class="form-group">
+                    <label class="section-title">
+                        <i class="fas fa-fill-drip"></i> Cores
+                    </label>
+                    
+                    <label>Cor Primária</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="primary_color" value="<%= guestList.primary_color || '#FFC700' %>" onchange="updateColor('primary_color', this.value)">
+                        <input type="text" id="primary_color_text" value="<%= guestList.primary_color || '#FFC700' %>" onchange="updateColorFromText('primary_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 12px;">Cor Secundária</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="secondary_color" value="<%= guestList.secondary_color || '#FFB700' %>" onchange="updateColor('secondary_color', this.value)">
+                        <input type="text" id="secondary_color_text" value="<%= guestList.secondary_color || '#FFB700' %>" onchange="updateColorFromText('secondary_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 12px;">Cor do Texto</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="text_color" value="<%= guestList.text_color || '#ECECEC' %>" onchange="updateColor('text_color', this.value)">
+                        <input type="text" id="text_color_text" value="<%= guestList.text_color || '#ECECEC' %>" onchange="updateColorFromText('text_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 12px;">Cor de Fundo</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="background_color" value="<%= guestList.background_color || '#0D0D0F' %>" onchange="updateColor('background_color', this.value)">
+                        <input type="text" id="background_color_text" value="<%= guestList.background_color || '#0D0D0F' %>" onchange="updateColorFromText('background_color', this.value)">
+                    </div>
+                </div>
+                
+                <!-- Imagens -->
+                <div class="form-group">
+                    <label class="section-title">
+                        <i class="fas fa-images"></i> Imagens
+                    </label>
+                    
+                    <label>Banner/Header</label>
+                    <div class="image-upload-area <%= guestList.header_image_url ? 'has-image' : '' %>" onclick="document.getElementById('header_image_input').click()">
+                        <% if (guestList.header_image_url) { %>
+                            <img src="<%= guestList.header_image_url %>" class="image-preview" id="header_image_preview">
+                        <% } else { %>
+                            <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
+                            <p style="color: #A1A1A1;">Clique para adicionar banner</p>
+                        <% } %>
+                        <input type="file" id="header_image_input" accept="image/*" style="display: none;" onchange="handleImageUpload('header_image', this)">
+                    </div>
+                    <input type="hidden" id="header_image_url" name="header_image_url" value="<%= guestList.header_image_url || '' %>">
+                    
+                    <label style="margin-top: 16px;">Logo</label>
+                    <div class="image-upload-area <%= guestList.form_logo_url ? 'has-image' : '' %>" onclick="document.getElementById('logo_image_input').click()">
+                        <% if (guestList.form_logo_url) { %>
+                            <img src="<%= guestList.form_logo_url %>" class="image-preview" id="logo_image_preview">
+                        <% } else { %>
+                            <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
+                            <p style="color: #A1A1A1;">Clique para adicionar logo</p>
+                        <% } %>
+                        <input type="file" id="logo_image_input" accept="image/*" style="display: none;" onchange="handleImageUpload('logo_image', this)">
+                    </div>
+                    <input type="hidden" id="form_logo_url" name="form_logo_url" value="<%= guestList.form_logo_url || '' %>">
+                    
+                    <label style="margin-top: 16px;">Imagem de Fundo</label>
+                    <div class="image-upload-area <%= guestList.background_image_url ? 'has-image' : '' %>" onclick="document.getElementById('background_image_input').click()">
+                        <% if (guestList.background_image_url) { %>
+                            <img src="<%= guestList.background_image_url %>" class="image-preview" id="background_image_preview">
+                        <% } else { %>
+                            <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
+                            <p style="color: #A1A1A1;">Clique para adicionar fundo</p>
+                        <% } %>
+                        <input type="file" id="background_image_input" accept="image/*" style="display: none;" onchange="handleImageUpload('background_image', this)">
+                    </div>
+                    <input type="hidden" id="background_image_url" name="background_image_url" value="<%= guestList.background_image_url || '' %>">
+                    
+                    <label style="margin-top: 16px;">Opacidade do Fundo</label>
+                    <input type="range" id="background_opacity" name="background_opacity" min="0" max="1" step="0.1" value="<%= guestList.background_opacity || 1.0 %>" oninput="document.getElementById('opacity_value').textContent = this.value">
+                    <div style="text-align: center; color: #A1A1A1; font-size: 12px; margin-top: 4px;">
+                        Opacidade: <span id="opacity_value"><%= guestList.background_opacity || 1.0 %></span>
+                    </div>
+                </div>
+                
+                <!-- Personalização de Textos e Cores Específicas -->
+                <div class="form-group" style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                    <label class="section-title">
+                        <i class="fas fa-text-width"></i> Personalização de Textos e Botões
+                    </label>
+                    
+                    <label style="margin-top: 12px;">Título "Inscrição no Curso"</label>
+                    <input type="text" id="event_title_custom" name="event_title_custom" value="<%= guestList.event_title_custom || guestList.event_title || 'Inscrição no Curso' %>" placeholder="Ex: Inscrição no Curso" style="margin-bottom: 8px;">
+                    <label style="margin-top: 8px; font-size: 12px;">Cor do Texto do Título</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="title_text_color" value="<%= guestList.title_text_color || '#FFFFFF' %>" onchange="updateColor('title_text_color', this.value)">
+                        <input type="text" id="title_text_color_text" value="<%= guestList.title_text_color || '#FFFFFF' %>" onchange="updateColorFromText('title_text_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 16px;">Texto do Botão QR Code</label>
+                    <input type="text" id="qr_code_button_text" name="qr_code_button_text" value="<%= guestList.qr_code_button_text || 'Ler QR Code' %>" placeholder="Ex: Ler QR Code">
+                    
+                    <label style="margin-top: 12px;">Cor do Botão QR Code</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="qr_code_button_color" value="<%= guestList.qr_code_button_color || '#FFC700' %>" onchange="updateColor('qr_code_button_color', this.value)">
+                        <input type="text" id="qr_code_button_color_text" value="<%= guestList.qr_code_button_color || '#FFC700' %>" onchange="updateColorFromText('qr_code_button_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 8px; font-size: 12px;">Cor Secundária (para degradê)</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="qr_code_button_color_secondary" value="<%= guestList.qr_code_button_color_secondary || '#FFB700' %>" onchange="updateColor('qr_code_button_color_secondary', this.value)">
+                        <input type="text" id="qr_code_button_color_secondary_text" value="<%= guestList.qr_code_button_color_secondary || '#FFB700' %>" onchange="updateColorFromText('qr_code_button_color_secondary', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 12px;">Cor do Texto do Botão QR Code</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="qr_code_button_text_color" value="<%= guestList.qr_code_button_text_color || '#000000' %>" onchange="updateColor('qr_code_button_text_color', this.value)">
+                        <input type="text" id="qr_code_button_text_color_text" value="<%= guestList.qr_code_button_text_color || '#000000' %>" onchange="updateColorFromText('qr_code_button_text_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 16px;">Cor do Texto "Confirmação Rápida"</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="quick_confirm_title_color" value="<%= guestList.quick_confirm_title_color || '#FFC700' %>" onchange="updateColor('quick_confirm_title_color', this.value)">
+                        <input type="text" id="quick_confirm_title_color_text" value="<%= guestList.quick_confirm_title_color || '#FFC700' %>" onchange="updateColorFromText('quick_confirm_title_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 16px;">Cor do Ícone "Confirmação Rápida" (raio/flash)</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="quick_confirm_icon_color" value="<%= guestList.quick_confirm_icon_color || '#FFC700' %>" onchange="updateColor('quick_confirm_icon_color', this.value)">
+                        <input type="text" id="quick_confirm_icon_color_text" value="<%= guestList.quick_confirm_icon_color || '#FFC700' %>" onchange="updateColorFromText('quick_confirm_icon_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 16px;">Cor dos Números dos Cards (19, 1, 18)</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="stats_number_color" value="<%= guestList.stats_number_color || '#FFC700' %>" onchange="updateColor('stats_number_color', this.value)">
+                        <input type="text" id="stats_number_color_text" value="<%= guestList.stats_number_color || '#FFC700' %>" onchange="updateColorFromText('stats_number_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 16px;">Cor do Botão de Busca</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="search_button_color" value="<%= guestList.search_button_color || '#25D366' %>" onchange="updateColor('search_button_color', this.value)">
+                        <input type="text" id="search_button_color_text" value="<%= guestList.search_button_color || '#25D366' %>" onchange="updateColorFromText('search_button_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 8px; font-size: 12px;">Cor Secundária (para degradê)</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="search_button_color_secondary" value="<%= guestList.search_button_color_secondary || '#20BA5A' %>" onchange="updateColor('search_button_color_secondary', this.value)">
+                        <input type="text" id="search_button_color_secondary_text" value="<%= guestList.search_button_color_secondary || '#20BA5A' %>" onchange="updateColorFromText('search_button_color_secondary', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 12px;">Cor do Texto do Botão de Busca</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="search_button_text_color" value="<%= guestList.search_button_text_color || '#FFFFFF' %>" onchange="updateColor('search_button_text_color', this.value)">
+                        <input type="text" id="search_button_text_color_text" value="<%= guestList.search_button_text_color || '#FFFFFF' %>" onchange="updateColorFromText('search_button_text_color', this.value)">
+                    </div>
+                    
+                    <label style="margin-top: 16px;">Cor do Texto "Digite CPF, Email ou Nome"</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="search_input_text_color" value="<%= guestList.search_input_text_color || '#666666' %>" onchange="updateColor('search_input_text_color', this.value)">
+                        <input type="text" id="search_input_text_color_text" value="<%= guestList.search_input_text_color || '#666666' %>" onchange="updateColorFromText('search_input_text_color', this.value)">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i> Salvar Personalização
+                </button>
+            </form>
+        </div>
+        
+        <div class="preview-area">
+            <h2 style="color: #FFC700; margin-bottom: 16px;">
+                <i class="fas fa-eye"></i> Preview
+            </h2>
+            <div class="preview-frame">
+                <iframe id="preview-iframe" src="/guest-list/view-full/<%= guestList.portaria_slug || guestList.public_view_token %>" sandbox="allow-same-origin allow-scripts"></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const profileItemId = <%= profileItemId %>;
+        
+        // Obter token da URL (query string) ou do localStorage
+        // Usar variável global para garantir acesso em todas as funções
+        const urlParams = new URLSearchParams(window.location.search);
+        window.urlParams = urlParams; // Tornar global para acesso em funções
+        let authToken = urlParams.get('token');
+        
+        // Se o token veio da URL, pode estar codificado - tentar decodificar
+        if (authToken) {
+            try {
+                // Tentar decodificar se necessário
+                authToken = decodeURIComponent(authToken);
+            } catch (e) {
+                console.warn('Aviso ao decodificar token da URL:', e);
+            }
+        }
+        
+        // Se não tiver token na URL, tentar do localStorage
+        if (!authToken) {
+            authToken = localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+        }
+        
+        console.log('🔑 Token obtido:', {
+            fromUrl: !!urlParams.get('token'),
+            fromLocalStorage: !!localStorage.getItem('conectaKingToken') || !!localStorage.getItem('token'),
+            hasToken: !!authToken,
+            tokenLength: authToken ? authToken.length : 0,
+            tokenPreview: authToken ? authToken.substring(0, 20) + '...' : 'none'
+        });
+        
+        // Se não tiver token, mostrar erro e tentar obter novamente
+        if (!authToken) {
+            console.error('❌ Token não encontrado na URL nem no localStorage');
+            console.error('❌ URL completa:', window.location.href);
+            console.error('❌ Query params:', window.location.search);
+            alert('Erro: Token de autenticação não encontrado.\n\nPor favor:\n1. Feche esta página\n2. Volte para a página de edição do formulário\n3. Clique novamente em "Personalizar Link da Portaria"');
+        } else {
+            // Salvar token no localStorage para uso futuro
+            localStorage.setItem('conectaKingToken', authToken);
+            console.log('✅ Token salvo no localStorage');
+        }
+        
+        // Selecionar tema ativo
+        document.querySelector(`[data-theme="<%= guestList.theme_portaria || 'default' %>"]`)?.classList.add('active');
+        
+        function selectTheme(theme) {
+            document.querySelectorAll('.theme-card').forEach(card => card.classList.remove('active'));
+            document.querySelector(`[data-theme="${theme}"]`)?.classList.add('active');
+            document.getElementById('theme_portaria').value = theme;
+            applyTheme(theme);
+        }
+        
+        function applyTheme(theme) {
+            const themes = {
+                default: { primary: '#FFC700', secondary: '#FFB700', text: '#ECECEC', background: '#0D0D0F' },
+                dark: { primary: '#FFC700', secondary: '#FFB700', text: '#ECECEC', background: '#0D0D0F' },
+                light: { primary: '#4A90E2', secondary: '#357ABD', text: '#333333', background: '#FFFFFF' },
+                'red-black': { primary: '#DC2626', secondary: '#000000', text: '#FFFFFF', background: '#1A1A1A' },
+                premium: { primary: '#667EEA', secondary: '#764BA2', text: '#FFFFFF', background: '#1A1A2E' },
+                'premium-gold': { primary: '#D4AF37', secondary: '#B8860B', text: '#000000', background: '#1C1C1C' },
+                'premium-red': { primary: '#DC2626', secondary: '#991B1B', text: '#FFFFFF', background: '#0D0D0F' },
+                modern: { primary: '#F093FB', secondary: '#F5576C', text: '#FFFFFF', background: '#0D0D0F' },
+                elegant: { primary: '#D4AF37', secondary: '#B8860B', text: '#ECECEC', background: '#1C1C1C' }
+            };
+            
+            if (themes[theme]) {
+                document.getElementById('primary_color').value = themes[theme].primary;
+                document.getElementById('primary_color_text').value = themes[theme].primary;
+                document.getElementById('secondary_color').value = themes[theme].secondary;
+                document.getElementById('secondary_color_text').value = themes[theme].secondary;
+                document.getElementById('text_color').value = themes[theme].text;
+                document.getElementById('text_color_text').value = themes[theme].text;
+                document.getElementById('background_color').value = themes[theme].background;
+                document.getElementById('background_color_text').value = themes[theme].background;
+            }
+        }
+        
+        function updateColor(field, value) {
+            document.getElementById(`${field}_text`).value = value;
+        }
+        
+        function updateColorFromText(field, value) {
+            if (/^#[0-9A-F]{6}$/i.test(value)) {
+                document.getElementById(field).value = value;
+            }
+        }
+        
+        async function handleImageUpload(type, input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            // Verificar se ainda temos o token
+            if (!authToken) {
+                const currentUrlParams = new URLSearchParams(window.location.search);
+                let tokenFromUrl = currentUrlParams.get('token');
+                if (tokenFromUrl) {
+                    try {
+                        tokenFromUrl = decodeURIComponent(tokenFromUrl);
+                    } catch (e) {}
+                }
+                authToken = tokenFromUrl || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+            }
+            
+            if (!authToken) {
+                alert('Erro: Token de autenticação não encontrado. Por favor, faça login novamente.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                // Determinar URL base (usar URL completa se necessário)
+                const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'https://conectaking-api.onrender.com' 
+                    : '';
+                
+                const response = await fetch(`${apiBaseUrl}/api/upload/image`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+                
+                console.log('📥 Resposta do upload:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok
+                });
+                
+                // Verificar se a resposta é JSON antes de fazer parse
+                const contentType = response.headers.get('content-type');
+                let data;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error('Resposta não é JSON:', text);
+                    throw new Error(`Resposta inválida do servidor: ${text.substring(0, 200)}`);
+                }
+                
+                if (response.ok && data.url) {
+                    const urlField = type === 'header_image' ? 'header_image_url' : 
+                                   type === 'logo_image' ? 'form_logo_url' : 
+                                   'background_image_url';
+                    const previewId = type === 'header_image' ? 'header_image_preview' : 
+                                    type === 'logo_image' ? 'logo_image_preview' : 
+                                    'background_image_preview';
+                    
+                    document.getElementById(urlField).value = data.url;
+                    const preview = document.getElementById(previewId);
+                    if (preview) {
+                        preview.src = data.url;
+                        preview.parentElement.classList.add('has-image');
+                    }
+                    console.log('✅ Imagem enviada com sucesso:', data.url);
+                } else {
+                    const errorMessage = data.message || data.error || 'Erro desconhecido';
+                    console.error('❌ Erro no upload:', data);
+                    alert('❌ Erro ao fazer upload: ' + errorMessage);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao fazer upload:', error);
+                console.error('❌ Stack trace:', error.stack);
+                alert('❌ Erro ao fazer upload da imagem: ' + (error.message || 'Erro de conexão. Verifique sua internet e tente novamente.'));
+            }
+        }
+        
+        document.getElementById('customize-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Desabilitar botão durante o salvamento
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            
+            const formData = {
+                primary_color: document.getElementById('primary_color').value,
+                secondary_color: document.getElementById('secondary_color').value,
+                text_color: document.getElementById('text_color').value,
+                background_color: document.getElementById('background_color').value,
+                background_image_url: document.getElementById('background_image_url').value,
+                background_opacity: parseFloat(document.getElementById('background_opacity').value) || 1.0,
+                header_image_url: document.getElementById('header_image_url').value,
+                form_logo_url: document.getElementById('form_logo_url').value,
+                theme_portaria: document.getElementById('theme_portaria').value,
+                // Novos campos de personalização
+                event_title_custom: document.getElementById('event_title_custom')?.value || null,
+                title_text_color: document.getElementById('title_text_color')?.value || null,
+                qr_code_button_text: document.getElementById('qr_code_button_text')?.value || null,
+                qr_code_button_color: document.getElementById('qr_code_button_color')?.value || null,
+                qr_code_button_color_secondary: document.getElementById('qr_code_button_color_secondary')?.value || null,
+                qr_code_button_text_color: document.getElementById('qr_code_button_text_color')?.value || null,
+                search_button_color: document.getElementById('search_button_color')?.value || null,
+                search_button_color_secondary: document.getElementById('search_button_color_secondary')?.value || null,
+                search_button_text_color: document.getElementById('search_button_text_color')?.value || null,
+                search_input_text_color: document.getElementById('search_input_text_color')?.value || null,
+                quick_confirm_title_color: document.getElementById('quick_confirm_title_color')?.value || null,
+                quick_confirm_icon_color: document.getElementById('quick_confirm_icon_color')?.value || null,
+                stats_number_color: document.getElementById('stats_number_color')?.value || null
+            };
+            
+            try {
+                // Verificar se ainda temos o token
+                if (!authToken) {
+                    const currentUrlParams = new URLSearchParams(window.location.search);
+                    let tokenFromUrl = currentUrlParams.get('token');
+                    if (tokenFromUrl) {
+                        try {
+                            tokenFromUrl = decodeURIComponent(tokenFromUrl);
+                        } catch (e) {}
+                    }
+                    authToken = tokenFromUrl || localStorage.getItem('conectaKingToken') || localStorage.getItem('token') || '';
+                }
+                
+                if (!authToken) {
+                    alert('Erro: Token de autenticação não encontrado. Por favor, feche esta página e abra novamente através do botão "Personalizar Link da Portaria".');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                    return;
+                }
+                
+                console.log('💾 Salvando personalização...', {
+                    profileItemId: profileItemId,
+                    hasToken: !!authToken,
+                    tokenLength: authToken.length
+                });
+                
+                // Determinar URL base (usar URL completa se necessário)
+                const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'https://conectaking-api.onrender.com' 
+                    : '';
+                
+                const url = `${apiBaseUrl}/api/guest-lists/${profileItemId}/customize-portaria`;
+                console.log('📤 Enviando requisição PUT para:', url);
+                
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                console.log('📥 Resposta recebida:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    headers: Object.fromEntries(response.headers.entries())
+                });
+                
+                // Verificar se a resposta é JSON antes de fazer parse
+                const contentType = response.headers.get('content-type');
+                let data;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error('Resposta não é JSON:', text);
+                    throw new Error(`Resposta inválida do servidor: ${text.substring(0, 200)}`);
+                }
+                
+                if (response.ok && data.success) {
+                    alert('✅ Personalização salva com sucesso!');
+                    // Recarregar preview
+                    const iframe = document.getElementById('preview-iframe');
+                    if (iframe) {
+                        iframe.src = iframe.src.split('?')[0] + '?t=' + Date.now();
+                    }
+                } else {
+                    const errorMessage = data.message || data.error || 'Erro desconhecido';
+                    console.error('❌ Erro ao salvar:', data);
+                    alert('❌ Erro ao salvar: ' + errorMessage);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao salvar personalização:', error);
+                console.error('❌ Stack trace:', error.stack);
+                alert('❌ Erro ao salvar personalização: ' + (error.message || 'Erro de conexão. Verifique sua internet e tente novamente.'));
+            } finally {
+                // Reabilitar botão
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        });
+    </script>
+</body>
+</html>

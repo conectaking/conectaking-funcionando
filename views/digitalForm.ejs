@@ -1,0 +1,2664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="cache-timestamp" content="<%= typeof _timestamp !== 'undefined' ? _timestamp : Date.now() %>">
+    <meta name="updated-at" content="<%= typeof _updatedAt !== 'undefined' ? _updatedAt : Date.now() %>">
+    <title><%= formData.form_title || 'Formulário Digital' %> <%= typeof _cacheBust !== 'undefined' ? _cacheBust : '' %></title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico<%= typeof _cacheBust !== 'undefined' ? _cacheBust : '' %>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="/css/digitalForm.css<%= typeof _cacheBust !== 'undefined' ? _cacheBust : '' %>">
+    <style>
+        <%
+            // LOG NO SERVIDOR (EJS) - Verificar valores recebidos
+            console.log('🎨 [EJS] Dados recebidos no template:', {
+                primary_color: formData.primary_color,
+                primary_color_type: typeof formData.primary_color,
+                secondary_color: formData.secondary_color,
+                secondary_color_type: typeof formData.secondary_color,
+                form_title: formData.form_title
+            });
+            
+            // Garantir que secondary_color seja tratado corretamente
+            let secondaryColor = formData.secondary_color;
+            if (!secondaryColor || 
+                secondaryColor === 'null' || 
+                secondaryColor === 'undefined' ||
+                secondaryColor === null ||
+                secondaryColor === undefined ||
+                (typeof secondaryColor === 'string' && secondaryColor.trim() === '')) {
+                secondaryColor = formData.primary_color || '#4A90E2';
+                console.log('⚠️ [EJS] secondary_color estava vazio/null, usando primary_color:', secondaryColor);
+            }
+            const primaryColor = formData.primary_color || '#4A90E2';
+            
+            // LOG FINAL DAS CORES QUE SERÃO USADAS
+            console.log('✅ [EJS] Cores finais que serão aplicadas:', {
+                primaryColor: primaryColor,
+                secondaryColor: secondaryColor,
+                decorative_bar_color: formData.decorative_bar_color
+            });
+        %>
+        <%
+            // Cor das barrinhas decorativas (padrão: cor primária)
+            const decorativeBarColor = formData.decorative_bar_color || primaryColor;
+            // Cor da barra principal (6px) ao lado do título (padrão: cor primária)
+            const mainBarColor = formData.separator_line_color || primaryColor;
+            // Cor das barras laterais das opções (radio/checkbox) - usar separator_line_color (padrão: cor primária)
+            const optionBarColor = formData.separator_line_color || primaryColor;
+            // Cor da linha separadora - usar separator_line_color do banco, fallback para #e8eaed se não existir
+            const separatorLineColor = (formData.separator_line_color && 
+                                        formData.separator_line_color !== 'null' && 
+                                        formData.separator_line_color !== 'undefined' &&
+                                        formData.separator_line_color.trim() !== '') 
+                                        ? formData.separator_line_color 
+                                        : '#e8eaed';
+            console.log('🎨 [EJS] decorative_bar_color:', {
+                received: formData.decorative_bar_color,
+                primaryColor: primaryColor,
+                final: decorativeBarColor
+            });
+            console.log('🎨 [EJS] separator_line_color:', {
+                received: formData.separator_line_color,
+                final: separatorLineColor
+            });
+        %>
+        :root {
+            --primary-color: <%= primaryColor %>;
+            --secondary-color: <%= secondaryColor %>;
+            --text-color: <%= formData.text_color || '#333333' %>;
+            --background-color: <%= formData.background_color || '#FFFFFF' %>;
+            --card-color: <%= formData.card_color || '#FFFFFF' %>;
+            --decorative-bar-color: <%= decorativeBarColor %>;
+            --separator-line-color: <%= separatorLineColor %>;
+            --option-bar-color: <%= optionBarColor %>;
+            --theme: <%= formData.theme || 'light' %>;
+        }
+        
+        /* DEBUG: Forçar cores diretamente no body para garantir aplicação */
+        body {
+            --primary-color: <%= primaryColor %> !important;
+            --secondary-color: <%= secondaryColor %> !important;
+            --decorative-bar-color: <%= decorativeBarColor %> !important;
+            --option-bar-color: <%= optionBarColor %> !important;
+        }
+        
+        /* DEBUG: Log visual das cores aplicadas (descomente para ver) */
+        /* body::after {
+            content: 'Primary: <%= primaryColor %> | Secondary: <%= secondaryColor %>';
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 10px;
+            font-size: 10px;
+            z-index: 99999;
+            border-radius: 4px;
+        } */
+        
+        /* Garantir que o header use a cor secundária - FORÇAR com !important e especificidade */
+        header.form-header,
+        .form-header {
+            background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
+            background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Efeito animado de rotação - igual ao da portaria */
+        /* IMPORTANTE: Garantir que a animação funcione no desktop E mobile */
+        header.form-header::before,
+        .form-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            /* Forçar animação em todos os navegadores, incluindo mobile */
+            animation: rotateGradient 20s linear infinite !important;
+            -webkit-animation: rotateGradient 20s linear infinite !important;
+            -moz-animation: rotateGradient 20s linear infinite !important;
+            -o-animation: rotateGradient 20s linear infinite !important;
+            z-index: 0;
+            /* Garantir que o elemento seja sempre visível */
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        @keyframes rotateGradient {
+            from { 
+                transform: rotate(0deg);
+                -webkit-transform: rotate(0deg);
+                -moz-transform: rotate(0deg);
+            }
+            to { 
+                transform: rotate(360deg);
+                -webkit-transform: rotate(360deg);
+                -moz-transform: rotate(360deg);
+            }
+        }
+        
+        /* WebKit prefix para keyframes (Safari, Chrome mobile) */
+        @-webkit-keyframes rotateGradient {
+            from { -webkit-transform: rotate(0deg); }
+            to { -webkit-transform: rotate(360deg); }
+        }
+        
+        /* Moz prefix para keyframes (Firefox) */
+        @-moz-keyframes rotateGradient {
+            from { -moz-transform: rotate(0deg); }
+            to { -moz-transform: rotate(360deg); }
+        }
+        
+        /* Garantir que o conteúdo do header fique acima do efeito animado */
+        header.form-header .container,
+        .form-header .container {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Media queries para garantir que o efeito funcione no mobile */
+        /* IMPORTANTE: No mobile, o efeito DEVE aparecer animado, não estático */
+        @media (max-width: 768px) {
+            header.form-header,
+            .form-header {
+                /* Garantir que o header tenha overflow hidden no mobile também */
+                overflow: hidden !important;
+                position: relative !important;
+            }
+            
+            header.form-header::before,
+            .form-header::before {
+                /* No mobile, manter a animação ativa e visível */
+                animation: rotateGradient 20s linear infinite !important;
+                -webkit-animation: rotateGradient 20s linear infinite !important;
+                -moz-animation: rotateGradient 20s linear infinite !important;
+                /* Garantir que o elemento seja visível no mobile */
+                opacity: 1 !important;
+                visibility: visible !important;
+                display: block !important;
+                /* Aumentar um pouco a opacidade no mobile para melhor visibilidade */
+                background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%) !important;
+            }
+        }
+        
+        /* Suporte adicional para navegadores mobile */
+        @media (max-width: 480px) {
+            header.form-header::before,
+            .form-header::before {
+                /* Em telas muito pequenas, garantir ainda mais visibilidade */
+                background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%) !important;
+                animation: rotateGradient 20s linear infinite !important;
+                -webkit-animation: rotateGradient 20s linear infinite !important;
+            }
+        }
+        
+        /* Suporte para navegadores que podem desabilitar animações */
+        @media (prefers-reduced-motion: no-preference) {
+            header.form-header::before,
+            .form-header::before {
+                animation: rotateGradient 20s linear infinite !important;
+                -webkit-animation: rotateGradient 20s linear infinite !important;
+                -moz-animation: rotateGradient 20s linear infinite !important;
+            }
+        }
+        
+        /* Aplicar gradiente em todos os elementos que usam cor primária */
+        .welcome-section {
+            background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
+            background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
+        }
+        
+        .digital-form::before {
+            background: linear-gradient(90deg, <%= primaryColor %>, <%= secondaryColor %>) !important;
+            background-image: linear-gradient(90deg, <%= primaryColor %>, <%= secondaryColor %>) !important;
+        }
+        
+        /* Forçar aplicação em todos os elementos com gradiente */
+        [style*="gradient"] {
+            background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important;
+        }
+        <% if (formData.background_image_url) { %>
+        body {
+            background-image: url('<%= formData.background_image_url %>');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            <% if (formData.background_color) { %>
+            background-color: <%= formData.background_color %>;
+            <% } %>
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: <%= formData.background_color || 'rgba(255, 255, 255, 0.95)' %>;
+            opacity: <%= 1 - (formData.background_opacity || 1.0) %>;
+            z-index: -1;
+        }
+        <% } %>
+        <% if (formData.background_color) { %>
+        body {
+            background-color: <%= formData.background_color %> !important;
+        }
+        .digital-form-page {
+            background-color: <%= formData.background_color %> !important;
+        }
+        <% } %>
+        <% if (formData.header_image_url) { %>
+        .header-image-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+        .header-image {
+            width: 100%;
+            height: auto;
+            min-height: 280px;
+            max-height: 500px;
+            object-fit: cover;
+            display: block;
+        }
+        .header-image-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.3));
+            pointer-events: none;
+        }
+        <% } %>
+        
+        /* ============================================
+           ANIMAÇÕES MELHORADAS - KING FORMS
+           Efeitos animados em barras, botões e elementos gráficos
+           Funcionam em desktop E mobile
+           ============================================ */
+        
+        /* Animação nas barras decorativas ao lado dos labels */
+        /* IMPORTANTE: Usar seletores mais específicos para pegar as barras inline */
+        /* REMOVIDO: Pulse animation - mantendo apenas shine (brilho) */
+        .form-group label span[style*="background"],
+        label span[style*="background"][style*="3px"],
+        label span[style*="background"][style*="height: 18px"],
+        .form-group label > span:first-of-type {
+            position: relative !important;
+            overflow: hidden !important;
+            /* SEM animação de pulse, SEM sombras - apenas shine */
+            display: inline-block !important;
+        }
+        
+        /* Efeito shine (brilho animado) nas barras decorativas */
+        .form-group label span[style*="background"]::before,
+        label span[style*="background"][style*="3px"]::before,
+        label span[style*="background"][style*="height: 18px"]::before,
+        .form-group label > span:first-of-type::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: -100% !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent) !important;
+            animation: shine 3s ease-in-out infinite !important;
+            -webkit-animation: shine 3s ease-in-out infinite !important;
+            z-index: 1 !important;
+            pointer-events: none !important;
+        }
+        
+        @keyframes shine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        @-webkit-keyframes shine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        /* Animação na barra principal ao lado do título "Preencha os dados" */
+        /* REMOVIDO: Sombra e glow - mantendo apenas shine (brilho) */
+        h2 div[style*="background"][style*="6px"] {
+            position: relative;
+            overflow: hidden;
+            /* SEM sombra, SEM glow - apenas shine */
+        }
+        
+        h2 div[style*="background"][style*="6px"]::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: mainBarShine 3.5s ease-in-out infinite !important;
+            -webkit-animation: mainBarShine 3.5s ease-in-out infinite !important;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        @keyframes mainBarShine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        @-webkit-keyframes mainBarShine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        /* Animações nos botões - efeitos premium */
+        .submit-btn,
+        button.submit-btn,
+        #form-submit-btn,
+        #whatsapp-submit-btn,
+        #pastor-message-btn {
+            position: relative !important;
+            overflow: hidden !important;
+            transition: all 0.3s ease !important;
+            transform-style: preserve-3d !important;
+        }
+        
+        /* Efeito de brilho animado nos botões */
+        .submit-btn::before,
+        button.submit-btn::before,
+        #form-submit-btn::before,
+        #whatsapp-submit-btn::before,
+        #pastor-message-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: buttonShine 3s ease-in-out infinite !important;
+            -webkit-animation: buttonShine 3s ease-in-out infinite !important;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        @keyframes buttonShine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        @-webkit-keyframes buttonShine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        /* Conteúdo do botão acima do efeito shine */
+        .submit-btn > *,
+        button.submit-btn > * {
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* Hover effect nos botões - simplificado (sem sombras excessivas) */
+        .submit-btn:hover,
+        button.submit-btn:hover,
+        #form-submit-btn:hover,
+        #whatsapp-submit-btn:hover,
+        #pastor-message-btn:hover {
+            transform: translateY(-2px) !important;
+            -webkit-transform: translateY(-2px) !important;
+            /* REMOVIDO: box-shadow excessivo - mantendo apenas o que já estava inline */
+            transition: all 0.3s ease !important;
+        }
+        
+        /* REMOVIDO: Animação de pulse nos botões (mudando sombras constantemente) */
+        /* Botões mantêm apenas shine e hover simples */
+        
+        /* Animações nos cards e elementos de formulário */
+        .form-group {
+            animation: fadeInUp 0.5s ease-out !important;
+            -webkit-animation: fadeInUp 0.5s ease-out !important;
+            animation-fill-mode: both !important;
+            -webkit-animation-fill-mode: both !important;
+        }
+        
+        /* Delay progressivo para cada campo aparecer em sequência */
+        .form-group:nth-child(1) { animation-delay: 0.1s !important; }
+        .form-group:nth-child(2) { animation-delay: 0.2s !important; }
+        .form-group:nth-child(3) { animation-delay: 0.3s !important; }
+        .form-group:nth-child(4) { animation-delay: 0.4s !important; }
+        .form-group:nth-child(5) { animation-delay: 0.5s !important; }
+        .form-group:nth-child(6) { animation-delay: 0.6s !important; }
+        .form-group:nth-child(n+7) { animation-delay: 0.7s !important; }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @-webkit-keyframes fadeInUp {
+            from {
+                opacity: 0;
+                -webkit-transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                -webkit-transform: translateY(0);
+            }
+        }
+        
+        /* REMOVIDO: Animações de scale nos inputs - simplificando */
+        
+        /* REMOVIDO: Animação na linha separadora - mantendo apenas design limpo */
+        
+        /* Media queries para garantir que as animações funcionem no mobile */
+        @media (max-width: 768px) {
+            /* Garantir que todas as animações funcionem no mobile */
+            .form-group label span[style*="background"],
+            h2 div[style*="background"][style*="6px"],
+            .submit-btn,
+            button.submit-btn,
+            #form-submit-btn,
+            #whatsapp-submit-btn,
+            #pastor-message-btn {
+                animation-play-state: running !important;
+                -webkit-animation-play-state: running !important;
+            }
+            
+            /* No mobile: garantir que apenas shine funcione (sem pulse) */
+            .form-group label span[style*="background"],
+            label span[style*="background"][style*="3px"],
+            label span[style*="background"][style*="height: 18px"],
+            .form-group label > span:first-of-type {
+                /* Apenas shine, sem pulse - sem sombras */
+                animation-play-state: running !important;
+                -webkit-animation-play-state: running !important;
+            }
+            
+            .submit-btn::before,
+            button.submit-btn::before,
+            #form-submit-btn::before,
+            #whatsapp-submit-btn::before,
+            #pastor-message-btn::before {
+                animation: buttonShine 3s ease-in-out infinite !important;
+                -webkit-animation: buttonShine 3s ease-in-out infinite !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* Em telas muito pequenas, manter animações ativas */
+            .form-group label span[style*="background"],
+            label span[style*="background"][style*="3px"],
+            label span[style*="background"][style*="height: 18px"],
+            .form-group label > span:first-of-type,
+            h2 div[style*="background"][style*="6px"],
+            .submit-btn,
+            button.submit-btn,
+            #form-submit-btn,
+            #whatsapp-submit-btn,
+            #pastor-message-btn {
+                animation-play-state: running !important;
+                -webkit-animation-play-state: running !important;
+            }
+            
+            /* Garantir que os efeitos shine nas barras funcionem no mobile */
+            .form-group label span[style*="background"]::before,
+            label span[style*="background"][style*="3px"]::before {
+                animation: shine 3s ease-in-out infinite !important;
+                -webkit-animation: shine 3s ease-in-out infinite !important;
+                animation-play-state: running !important;
+                -webkit-animation-play-state: running !important;
+            }
+        }
+        
+        /* Garantir que animações não sejam desabilitadas por preferências do usuário */
+        @media (prefers-reduced-motion: no-preference) {
+            .form-group label span[style*="background"],
+            label span[style*="background"][style*="3px"],
+            label span[style*="background"][style*="height: 18px"],
+            .form-group label > span:first-of-type,
+            h2 div[style*="background"][style*="6px"],
+            .submit-btn,
+            button.submit-btn,
+            #form-submit-btn,
+            #whatsapp-submit-btn,
+            #pastor-message-btn,
+            .form-group {
+                animation-play-state: running !important;
+                -webkit-animation-play-state: running !important;
+            }
+        }
+    </style>
+</head>
+<body class="digital-form-page theme-<%= formData.theme || 'light' %>" data-form-id="<%= item.id %>" data-whatsapp="<%= formData.whatsapp_number || '' %>" style="<% if (formData.background_color && !formData.background_image_url) { %>background-color: <%= formData.background_color %> !important;<% } %>">
+    <!-- Header Image -->
+    <% if (formData.header_image_url) { %>
+    <div class="header-image-container">
+        <img src="<%= formData.header_image_url %>" alt="Header" class="header-image">
+    </div>
+    <% } %>
+    
+    <!-- Logo fixo no cantinho (se configurado) -->
+    <% if (formData.form_logo_url && formData.show_logo_corner) { %>
+    <% 
+        // Calcular tamanho da logo no canto (usar button_logo_size se disponível, senão usar padrão)
+        let cornerLogoSize = 80; // Tamanho padrão para logo no canto
+        if (formData.button_logo_size !== undefined && formData.button_logo_size !== null) {
+            const parsed = parseInt(formData.button_logo_size, 10);
+            if (!isNaN(parsed) && parsed >= 20 && parsed <= 120) {
+                cornerLogoSize = parsed;
+            }
+        }
+        // Para logo no canto, usar um tamanho um pouco maior que o padrão
+        const cornerContainerSize = Math.max(cornerLogoSize + 24, 100);
+    %>
+    <div class="corner-logo" style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--card-color, white); padding: 12px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: all 0.3s; max-width: <%= cornerContainerSize %>px; max-height: <%= cornerContainerSize %>px; width: <%= cornerContainerSize %>px; height: <%= cornerContainerSize %>px; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 30px rgba(0,0,0,0.25)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.15)';">
+        <img src="<%= formData.form_logo_url %>" alt="Logo" style="max-width: <%= cornerLogoSize %>px; max-height: <%= cornerLogoSize %>px; width: auto; height: auto; object-fit: contain; display: block;">
+    </div>
+    <% } %>
+    
+    <!-- Header -->
+    <header class="form-header" style="background: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important; background-image: linear-gradient(135deg, <%= primaryColor %> 0%, <%= secondaryColor %> 100%) !important; position: relative !important; overflow: hidden !important;">
+        <div class="container" style="position: relative; z-index: 1;">
+            <% if (typeof profileSlug !== 'undefined' && profileSlug) { %>
+            <a href="/<%= profileSlug %>" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                <span>Voltar</span>
+            </a>
+            <% } %>
+            <% if (formData.form_logo_url && !formData.show_logo_corner) { %>
+            <% 
+                // Calcular tamanho da logo (usar button_logo_size se disponível, senão usar padrão)
+                let logoSize = 60; // Tamanho padrão
+                if (formData.button_logo_size !== undefined && formData.button_logo_size !== null) {
+                    const parsed = parseInt(formData.button_logo_size, 10);
+                    if (!isNaN(parsed) && parsed >= 20 && parsed <= 120) {
+                        logoSize = parsed;
+                    }
+                }
+            %>
+            <img src="<%= formData.form_logo_url %>" alt="Logo" class="form-logo" style="max-width: <%= logoSize %>px; max-height: <%= logoSize %>px; width: auto; height: auto; object-fit: contain;">
+            <% } %>
+            <h1 class="form-title"><%= formData.form_title || 'King Forms' %></h1>
+        </div>
+    </header>
+
+    <!-- Main Content - Layout Checkout Premium -->
+    <main class="form-container">
+        <div class="container">
+            <div class="checkout-layout <%= (formData.enable_pastor_button && formData.pastor_whatsapp_number) ? 'has-sidebar' : '' %>">
+                <!-- Coluna Principal - Formulário -->
+                <div class="checkout-main">
+                    <!-- Informações do Evento (se disponíveis) -->
+                    <% if (formData.event_date || formData.event_address) { %>
+                    <div class="event-info" style="background: rgba(255,199,0,0.1); border: 2px solid rgba(255,199,0,0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                            <i class="fas fa-calendar-alt" style="color: <%= secondaryColor || primaryColor || '#FFC700' %>; font-size: 20px;"></i>
+                            <h3 style="margin: 0; color: <%= formData.text_color || '#333333' %>; font-size: 18px; font-weight: 700;">Informações do Evento</h3>
+                        </div>
+                        <% if (formData.event_date) { %>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding: 12px; background: rgba(255,255,255,0.5); border-radius: 12px;">
+                            <i class="fas fa-calendar" style="color: <%= secondaryColor || primaryColor || '#FFC700' %>; font-size: 18px;"></i>
+                            <div>
+                                <div style="font-weight: 600; color: <%= formData.text_color || '#333333' %>; font-size: 14px; margin-bottom: 4px;">Data do Evento</div>
+                                <div style="color: <%= formData.text_color || '#666666' %>; font-size: 16px; font-weight: 600;">
+                                    <%= new Date(formData.event_date).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+                        <% if (formData.event_address) { %>
+                        <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: rgba(255,255,255,0.5); border-radius: 12px;">
+                            <i class="fas fa-map-marker-alt" style="color: <%= secondaryColor || primaryColor || '#FFC700' %>; font-size: 18px; margin-top: 2px;"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: <%= formData.text_color || '#333333' %>; font-size: 14px; margin-bottom: 4px;">Endereço do Evento</div>
+                                <div style="color: <%= formData.text_color || '#666666' %>; font-size: 16px; line-height: 1.6;">
+                                    <%= formData.event_address %>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% } %>
+                    
+                    <!-- Descrição -->
+                    <% if (formData.form_description) { %>
+                    <div class="form-description">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary-color, #4A90E2), var(--secondary-color, #4A90E2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: var(--text-color, #202124);">Informações</h2>
+                        </div>
+                        <p style="margin: 0; padding-left: 52px;"><%= formData.form_description %></p>
+                    </div>
+                    <% } %>
+
+                    <!-- Formulário -->
+                    <form id="digital-form" class="digital-form">
+                        <div style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid <%= separatorLineColor %>;">
+                            <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text-color, #202124); letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 6px; height: 32px; background: <%= mainBarColor %>; border-radius: 3px;"></div>
+                                Preencha os dados
+                            </h2>
+                            <p style="margin: 12px 0 0 18px; color: #5f6368; font-size: 14px;">Todos os campos marcados com * são obrigatórios</p>
+                        </div>
+                        
+                        <!-- Campos Dinâmicos (form_fields) - Renderização Server-Side como Fallback -->
+                        <div id="dynamic-fields-container">
+                            <% if (typeof formData.form_fields !== 'undefined' && formData.form_fields && Array.isArray(formData.form_fields) && formData.form_fields.length > 0) { %>
+                                <% formData.form_fields.forEach((field, index) => { %>
+                                    <% 
+                                        const fieldType = field.type || 'short_text';
+                                        const fieldId = field.id || `field_${index}`;
+                                        const fieldName = fieldId;
+                                        const isRequired = field.required !== false && (field.Required === true || field.required === true);
+                                        const placeholder = field.placeholder || field.Placeholder || '';
+                                        const fieldLabel = field.label || field.Label || 'Campo sem título';
+                                    %>
+                                    <% 
+                                        // Suporte para campos condicionais
+                                        const dependsOn = field.dependsOn || field.depends_on;
+                                        const dependsOnValue = dependsOn ? (dependsOn.value || 'Sim') : null;
+                                        const dependsOnFieldId = dependsOn ? (dependsOn.fieldId || dependsOn) : null;
+                                        const isConditional = dependsOn !== undefined && dependsOn !== null;
+                                    %>
+                                    <div class="form-group" data-field-type="<%= fieldType %>" data-field-id="<%= fieldId %>" 
+                                         <% if (isConditional) { %>data-depends-on="<%= dependsOnFieldId %>" data-depends-on-value="<%= dependsOnValue %>" style="display: none;" class="conditional-field"<% } %>>
+                                        <label for="field-<%= index %>" style="display: flex; align-items: flex-start; gap: 8px;">
+                                            <span style="width: 3px; height: 18px; background: <%= decorativeBarColor %>; border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
+                                            <span style="flex: 1;"><%= fieldLabel %><% if (isRequired) { %><span class="required">*</span><% } %></span>
+                                        </label>
+                                        <% if (fieldType === 'short_text') { %>
+                                            <input type="text" id="field-<%= index %>" name="<%= fieldName %>" <% if (isRequired) { %>required<% } %> placeholder="<%= placeholder %>">
+                                        <% } else if (fieldType === 'paragraph') { %>
+                                            <textarea id="field-<%= index %>" name="<%= fieldName %>" rows="4" <% if (isRequired) { %>required<% } %> placeholder="<%= placeholder %>"></textarea>
+                                        <% } else if (fieldType === 'multiple_choice' && field.options && field.options.length > 0) { %>
+                                            <% field.options.forEach((opt) => { %>
+                                                <label class="radio-label">
+                                                    <input type="radio" name="<%= fieldName %>" value="<%= opt %>" <% if (isRequired) { %>required<% } %>>
+                                                    <span><%= opt %></span>
+                                                </label>
+                                            <% }); %>
+                                        <% } else if (fieldType === 'checkbox' && field.options && field.options.length > 0) { %>
+                                            <% field.options.forEach((opt) => { %>
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox" name="<%= fieldName %>" value="<%= opt %>">
+                                                    <span><%= opt %></span>
+                                                </label>
+                                            <% }); %>
+                                        <% } else if (fieldType === 'dropdown' && field.options && field.options.length > 0) { %>
+                                            <select id="field-<%= index %>" name="<%= fieldName %>" <% if (isRequired) { %>required<% } %>>
+                                                <option value="">Selecione...</option>
+                                                <% field.options.forEach((opt) => { %>
+                                                    <option value="<%= opt %>"><%= opt %></option>
+                                                <% }); %>
+                                            </select>
+                                        <% } else { %>
+                                            <input type="text" id="field-<%= index %>" name="<%= fieldName %>" <% if (isRequired) { %>required<% } %> placeholder="<%= placeholder %>">
+                                        <% } %>
+                                    </div>
+                                <% }); %>
+                            <% } %>
+                        </div>
+
+                        <!-- Botões de Envio (Dinâmicos baseado nas opções) -->
+                        <% 
+                            // IMPORTANTE: Garantir que enable_guest_list_submit seja sempre booleano
+                            const enableGuestListSubmitRaw = formData.enable_guest_list_submit;
+                            const enableGuestListSubmitValue = enableGuestListSubmitRaw === true || enableGuestListSubmitRaw === 'true' || enableGuestListSubmitRaw === 1 || enableGuestListSubmitRaw === '1';
+                            
+                            // LOG para debug
+                            console.log('🔘 [EJS] Botões - enable_guest_list_submit:', {
+                                raw: enableGuestListSubmitRaw,
+                                tipo: typeof enableGuestListSubmitRaw,
+                                value: enableGuestListSubmitValue,
+                                enable_whatsapp_raw: formData.enable_whatsapp
+                            });
+                            
+                            // IMPORTANTE: Se "Salvar na Lista" está ativo, WhatsApp deve ser false
+                            // Porque "Salvar na Lista" significa enviar só para o sistema (sem WhatsApp)
+                            const enableWhatsappValue = enableGuestListSubmitValue ? false : (formData.enable_whatsapp === true || formData.enable_whatsapp === 'true' || formData.enable_whatsapp === 1 || formData.enable_whatsapp === '1');
+                        %>
+                        
+                        <!-- Botão para enviar apenas para o sistema (sem WhatsApp) - AMARELO -->
+                        <!-- Este botão aparece quando "Salvar na Lista" está ativo (enableGuestListSubmitValue = true) -->
+                        <% if (enableGuestListSubmitValue) { %>
+                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="system-only" style="background: linear-gradient(135deg, #FFC700, #FFA500) !important; color: #000 !important; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.4) !important;">
+                            <i class="fas fa-user-plus" style="font-size: 22px;"></i>
+                            <span>Inscrever-se</span>
+                            <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
+                        </button>
+                        <% } %>
+                        
+                        <!-- Botão genérico de envio (fallback) - AMARELO quando WhatsApp desativado e "Salvar na Lista" também desativado -->
+                        <% if (!enableWhatsappValue && !enableGuestListSubmitValue) { %>
+                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="generic" style="background: linear-gradient(135deg, #FFC700, #FFA500) !important; color: #000 !important; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.4) !important;">
+                            <i class="fas fa-paper-plane" style="font-size: 22px;"></i>
+                            <span>Enviar</span>
+                            <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
+                        </button>
+                        <% } %>
+                        
+                        <!-- Botão para enviar via WhatsApp (verde) -->
+                        <!-- IMPORTANTE: Este botão só aparece se WhatsApp está ativo E "Salvar na Lista" está inativo -->
+                        <% if (enableWhatsappValue && !enableGuestListSubmitValue) { %>
+                        <button type="button" class="submit-btn" id="whatsapp-submit-btn" style="background: linear-gradient(135deg, #25D366, #20BA5A) !important; color: #fff !important; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3) !important;">
+                            <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
+                            <span>Enviar via WhatsApp</span>
+                            <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
+                        </button>
+                        <% } %>
+                    </form>
+                    
+                    <!-- Botão Enviar Mensagem para o Pastor (Abaixo do formulário) -->
+                    <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
+                    <div style="margin-top: 24px; padding-top: 24px; border-top: 2px solid #e8eaed;">
+                        <button type="button" class="submit-btn" id="pastor-message-btn" style="background: linear-gradient(135deg, #FFC700, #FFA500); color: #000; border: none; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.4);">
+                            <i class="fas fa-praying-hands" style="font-size: 22px;"></i>
+                            <span><%= formData.pastor_button_name || 'Enviar Mensagem para o Pastor' %></span>
+                            <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
+                        </button>
+                    </div>
+                    <% } %>
+                </div>
+                
+                <!-- Sidebar - Informações Adicionais (Estilo Checkout) - Apenas se houver botão do pastor -->
+                <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
+                <aside class="checkout-sidebar" style="position: sticky; top: 100px;">
+                    <div class="checkout-sidebar-card" style="background: linear-gradient(135deg, var(--card-color, #f8f9fa) 0%, var(--card-color, #ffffff) 100%); border-radius: 20px; padding: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06); animation: fadeInUp 0.6s ease-out;">
+                        <div style="background: linear-gradient(135deg, rgba(255,199,0,0.15), rgba(255,199,0,0.08)); border-radius: 14px; padding: 20px; border: 2px solid rgba(255,199,0,0.3);">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #FFC700, #FFA500); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-size: 18px; font-weight: 700;">
+                                    <i class="fas fa-praying-hands"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 800; font-size: 15px; color: var(--text-color, #202124);">Enviar Mensagem para o Pastor</div>
+                                    <div style="font-size: 12px; color: #5f6368; margin-top: 2px;">Contato direto e pessoal</div>
+                                </div>
+                            </div>
+                            <p style="margin: 0; font-size: 13px; color: #5f6368; line-height: 1.6; font-weight: 500;">Ao clicar em "Enviar", você será redirecionado para o WhatsApp do pastor com sua mensagem formatada.</p>
+                        </div>
+                    </div>
+                </aside>
+                <% } %>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Dados do formulário
+        const formDataObj = <%- JSON.stringify(formData) %>;
+        const enablePastorButton = <%= formData.enable_pastor_button || false %>;
+        const pastorWhatsappNumber = '<%= formData.pastor_whatsapp_number || '' %>';
+        const whatsappNumber = enablePastorButton && pastorWhatsappNumber ? pastorWhatsappNumber : '<%= formData.whatsapp_number || '' %>';
+        const itemId = <%= itemId || item.id %>;
+        const slug = '<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>';
+        const pageTimestamp = <%= typeof _timestamp !== 'undefined' ? _timestamp : Date.now() %>;
+        // Cor das barras decorativas para uso no JavaScript
+        const decorativeBarColor = '<%= decorativeBarColor %>';
+        
+        // LOG DETALHADO NO CLIENTE
+        console.log('🔍 [FORM/CLIENT] Dados recebidos do servidor:', {
+            formDataObj: formDataObj,
+            enable_whatsapp_raw: formDataObj.enable_whatsapp,
+            enable_whatsapp_type: typeof formDataObj.enable_whatsapp,
+            enable_guest_list_submit_raw: formDataObj.enable_guest_list_submit,
+            enable_guest_list_submit_type: typeof formDataObj.enable_guest_list_submit,
+            primary_color: formDataObj.primary_color,
+            secondary_color: formDataObj.secondary_color,
+            form_title: formDataObj.form_title,
+            pageTimestamp: pageTimestamp
+        });
+        
+        // Verificar enable_whatsapp e enable_guest_list_submit corretamente
+        // IMPORTANTE: Se "Salvar na Lista" está ativo, WhatsApp deve ser false
+        // Porque "Salvar na Lista" significa enviar só para o sistema (sem WhatsApp)
+        const enableGuestListSubmit = formDataObj.enable_guest_list_submit === true || formDataObj.enable_guest_list_submit === 'true' || formDataObj.enable_guest_list_submit === 1 || formDataObj.enable_guest_list_submit === '1';
+        const enableWhatsapp = enableGuestListSubmit ? false : (formDataObj.enable_whatsapp === true || formDataObj.enable_whatsapp === 'true' || formDataObj.enable_whatsapp === 1 || formDataObj.enable_whatsapp === '1');
+        
+        console.log('🔍 [FORM] Configurações processadas:', {
+            enable_whatsapp_raw: formDataObj.enable_whatsapp,
+            enable_whatsapp_type: typeof formDataObj.enable_whatsapp,
+            enableWhatsapp: enableWhatsapp,
+            enable_guest_list_submit_raw: formDataObj.enable_guest_list_submit,
+            enable_guest_list_submit_type: typeof formDataObj.enable_guest_list_submit,
+            enableGuestListSubmit: enableGuestListSubmit,
+            whatsappNumber: whatsappNumber,
+            rule: 'Se enableGuestListSubmit=true, enableWhatsapp deve ser false'
+        });
+        
+        // Gerar session ID único
+        let sessionId = sessionStorage.getItem('form_session_id');
+        if (!sessionId) {
+            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('form_session_id', sessionId);
+        }
+        
+        // Função para registrar eventos de analytics
+        async function trackEvent(eventType) {
+            try {
+                await fetch(`/${slug}/form/${itemId}/analytics`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        event_type: eventType,
+                        session_id: sessionId
+                    })
+                });
+            } catch (error) {
+                console.error('Erro ao registrar analytics:', error);
+                // Não bloquear a experiência se analytics falhar
+            }
+        }
+        
+        // Registrar view quando a página carregar
+        trackEvent('view');
+        
+        // Registrar start quando o usuário começar a interagir com o formulário
+        let formStarted = false;
+        document.addEventListener('focusin', function(e) {
+            if (e.target.closest('#digital-form') && !formStarted) {
+                formStarted = true;
+                trackEvent('start');
+            }
+        }, true);
+
+        // Carregar campos dinâmicos se existirem
+        function renderFormFields(containerEl, fields) {
+            if (!fields || fields.length === 0) {
+                containerEl.innerHTML = '<p style="text-align: center; color: var(--text-color, #666); padding: 40px;">Nenhum campo configurado neste formulário.</p>';
+                console.warn('⚠️ [PUBLIC] Nenhum campo para renderizar');
+                return;
+            }
+            
+            console.log(`🔄 [PUBLIC] Renderizando ${fields.length} campos...`);
+            containerEl.innerHTML = ''; // Limpar container antes de adicionar
+            
+            fields.forEach((field, index) => {
+                // Normalizar campo (case-insensitive para label)
+                const normalizedField = {
+                    ...field,
+                    label: field.label || field.Label || 'Campo sem título',
+                    type: field.type || 'short_text',
+                    required: field.required !== undefined ? field.required : (field.Required !== undefined ? field.Required : false),
+                    placeholder: field.placeholder || field.Placeholder || '',
+                    options: field.options || field.Options || []
+                };
+                
+                const group = document.createElement('div');
+                group.className = 'form-group';
+                group.dataset.fieldType = normalizedField.type;
+                group.dataset.fieldId = normalizedField.id || `field_${index}`;
+                group.dataset.fieldIndex = index; // Adicionar índice para referência
+                
+                // Suporte para campos condicionais
+                if (normalizedField.dependsOn || normalizedField.depends_on) {
+                    const dependsOn = normalizedField.dependsOn || normalizedField.depends_on;
+                    const dependsOnFieldId = dependsOn.fieldId || dependsOn;
+                    const dependsOnValue = dependsOn.value || 'Sim';
+                    
+                    // Encontrar o índice do campo pai usando ID ou índice
+                    const parentFieldIndex = fields.findIndex((f, idx) => {
+                        const fId = (f.id || '').toString();
+                        const dependsId = dependsOnFieldId.toString();
+                        // Comparar IDs diretamente ou por índice
+                        return fId === dependsId || 
+                               fId === `field_${dependsId}` || 
+                               `field_${fId}` === dependsId ||
+                               (dependsId === idx.toString()) ||
+                               (dependsId === `field_${idx}`);
+                    });
+                    
+                    if (parentFieldIndex >= 0) {
+                        // Usar tanto o índice quanto o ID para maior compatibilidade
+                        const parentField = fields[parentFieldIndex];
+                        const parentId = parentField.id || `field_${parentFieldIndex}`;
+                        group.dataset.dependsOn = parentId;
+                        group.dataset.dependsOnIndex = parentFieldIndex;
+                        group.dataset.dependsOnValue = dependsOnValue;
+                        group.style.display = 'none'; // Esconder inicialmente
+                        group.classList.add('conditional-field');
+                    }
+                }
+                
+                console.log(`🔄 [PUBLIC] Processando campo ${index + 1}/${fields.length}:`, normalizedField.label, '- Tipo:', normalizedField.type);
+                console.log(`🔍 [PUBLIC] Campo completo:`, normalizedField);
+                
+                // Usar decorativeBarColor para as barras pequenas (3px) ao lado dos labels
+                let fieldHTML = `<label for="field-${index}" style="display: flex; align-items: flex-start; gap: 8px;">
+                    <span style="width: 3px; height: 18px; background: ${decorativeBarColor}; border-radius: 2px; display: inline-block; margin-top: 2px; flex-shrink: 0;"></span>
+                    <span style="flex: 1;">${normalizedField.label} ${normalizedField.required ? '<span class="required">*</span>' : ''}</span>
+                </label>`;
+                
+                switch(normalizedField.type) {
+                    case 'short_text':
+                        fieldHTML += `<input type="text" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder}">`;
+                        break;
+                    case 'paragraph':
+                        fieldHTML += `<textarea id="field-${index}" name="${normalizedField.id || `field_${index}`}" rows="4" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder}"></textarea>`;
+                        break;
+                    case 'multiple_choice':
+                        if (normalizedField.options && normalizedField.options.length > 0) {
+                            normalizedField.options.forEach((opt, optIdx) => {
+                                fieldHTML += `
+                                    <label class="radio-label">
+                                        <input type="radio" name="${normalizedField.id || `field_${index}`}" value="${opt}" ${normalizedField.required ? 'required' : ''}>
+                                        <span>${opt}</span>
+                                    </label>
+                                `;
+                            });
+                        }
+                        break;
+                    case 'checkbox':
+                        if (normalizedField.options && normalizedField.options.length > 0) {
+                            normalizedField.options.forEach((opt, optIdx) => {
+                                fieldHTML += `
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="${normalizedField.id || `field_${index}`}" value="${opt}">
+                                        <span>${opt}</span>
+                                    </label>
+                                `;
+                            });
+                        }
+                        break;
+                    case 'dropdown':
+                        fieldHTML += `<select id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''}><option value="">Selecione...</option>`;
+                        if (normalizedField.options && normalizedField.options.length > 0) {
+                            normalizedField.options.forEach(opt => {
+                                fieldHTML += `<option value="${opt}">${opt}</option>`;
+                            });
+                        }
+                        fieldHTML += `</select>`;
+                        break;
+                    case 'yes_no':
+                        fieldHTML += `
+                            <div class="yes-no-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="${normalizedField.id || `field_${index}`}" value="Sim" ${normalizedField.required ? 'required' : ''}>
+                                    <span>Sim</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="${normalizedField.id || `field_${index}`}" value="Não" ${normalizedField.required ? 'required' : ''}>
+                                    <span>Não</span>
+                                </label>
+                            </div>
+                        `;
+                        break;
+                    case 'yes_no_with_text':
+                        const textFieldName = `${normalizedField.id || `field_${index}`}_text`;
+                        const textFieldId = `field-text-${index}`;
+                        const textPlaceholder = normalizedField.placeholder || 'Sua resposta';
+                        fieldHTML += `
+                            <div class="yes-no-with-text-group" data-field-index="${index}">
+                                <div class="yes-no-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="${normalizedField.id || `field_${index}`}" value="Sim" class="yes-no-with-text-trigger" ${normalizedField.required ? 'required' : ''}>
+                                        <span>Sim</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="${normalizedField.id || `field_${index}`}" value="Não" class="yes-no-with-text-trigger" ${normalizedField.required ? 'required' : ''}>
+                                        <span>Não</span>
+                                    </label>
+                                </div>
+                                <div id="${textFieldId}" class="yes-no-text-field" style="display: none; margin-top: 16px;">
+                                    <input type="text" id="${textFieldId}-input" name="${textFieldName}" placeholder="${textPlaceholder}" style="width: 100%; padding: 14px 18px; border: 2px solid #dadce0; border-radius: 12px; font-size: 15px; background: white; color: #202124; box-sizing: border-box;">
+                                </div>
+                            </div>
+                        `;
+                        break;
+                    case 'date':
+                        fieldHTML += `<input type="date" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''}>`;
+                        break;
+                    case 'time':
+                        fieldHTML += `<input type="time" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''}>`;
+                        break;
+                    case 'datetime':
+                        fieldHTML += `<input type="datetime-local" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''}>`;
+                        break;
+                    case 'email':
+                        fieldHTML += `<input type="email" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder || 'exemplo@email.com'}">`;
+                        break;
+                    case 'number':
+                        fieldHTML += `<input type="number" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder}" ${normalizedField.min !== undefined ? `min="${normalizedField.min}"` : ''} ${normalizedField.max !== undefined ? `max="${normalizedField.max}"` : ''}>`;
+                        break;
+                    case 'phone':
+                        fieldHTML += `<input type="tel" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder || '(00) 00000-0000'}">`;
+                        break;
+                    case 'url':
+                        fieldHTML += `<input type="url" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder || 'https://exemplo.com'}">`;
+                        break;
+                    case 'linear_scale':
+                        const min = normalizedField.min || field.min || 1;
+                        const max = normalizedField.max || field.max || 5;
+                        fieldHTML += `<div class="linear-scale-group">`;
+                        fieldHTML += `<div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-dark, #666);"><span>${min}</span><span>${max}</span></div>`;
+                        for (let i = min; i <= max; i++) {
+                            fieldHTML += `
+                                <label class="radio-label">
+                                    <input type="radio" name="${normalizedField.id || `field_${index}`}" value="${i}" ${normalizedField.required ? 'required' : ''}>
+                                    <span>${i}</span>
+                                </label>
+                            `;
+                        }
+                        fieldHTML += `</div>`;
+                        break;
+                    case 'rating':
+                        const ratingMax = normalizedField.max || field.max || 5;
+                        fieldHTML += `<div class="rating-group">`;
+                        for (let i = 1; i <= ratingMax; i++) {
+                            fieldHTML += `<input type="radio" name="${normalizedField.id || `field_${index}`}" value="${i}" id="rating-${index}-${i}" ${normalizedField.required ? 'required' : ''}><label for="rating-${index}-${i}">★</label>`;
+                        }
+                        fieldHTML += `</div>`;
+                        break;
+                    case 'file_upload':
+                        fieldHTML += `<input type="file" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} accept="${normalizedField.accept || field.accept || '*/*'}" style="padding: 12px; border: 1.5px solid #dadce0; border-radius: 12px; background: white; cursor: pointer;">`;
+                        break;
+                    case 'multiple_choice_grid':
+                        if ((normalizedField.rows || field.rows) && (normalizedField.columns || field.columns)) {
+                            const rows = normalizedField.rows || field.rows;
+                            const columns = normalizedField.columns || field.columns;
+                            fieldHTML += `<div class="choice-grid" style="overflow-x: auto;">`;
+                            fieldHTML += `<table style="width: 100%; border-collapse: collapse; min-width: 500px;">`;
+                            fieldHTML += `<thead><tr><th style="padding: 12px; text-align: left; border-bottom: 2px solid #dadce0;"></th>`;
+                            columns.forEach(col => {
+                                fieldHTML += `<th style="padding: 12px; text-align: center; border-bottom: 2px solid #dadce0;">${col}</th>`;
+                            });
+                            fieldHTML += `</tr></thead><tbody>`;
+                            rows.forEach(row => {
+                                fieldHTML += `<tr><td style="padding: 12px; font-weight: 600;">${row}</td>`;
+                                columns.forEach(col => {
+                                    fieldHTML += `<td style="padding: 12px; text-align: center;"><input type="radio" name="${normalizedField.id || `field_${index}`}_${row}" value="${col}" ${normalizedField.required ? 'required' : ''}></td>`;
+                                });
+                                fieldHTML += `</tr>`;
+                            });
+                            fieldHTML += `</tbody></table></div>`;
+                        }
+                        break;
+                    case 'checkbox_grid':
+                        if ((normalizedField.rows || field.rows) && (normalizedField.columns || field.columns)) {
+                            const rows = normalizedField.rows || field.rows;
+                            const columns = normalizedField.columns || field.columns;
+                            fieldHTML += `<div class="checkbox-grid" style="overflow-x: auto;">`;
+                            fieldHTML += `<table style="width: 100%; border-collapse: collapse; min-width: 500px;">`;
+                            fieldHTML += `<thead><tr><th style="padding: 12px; text-align: left; border-bottom: 2px solid #dadce0;"></th>`;
+                            columns.forEach(col => {
+                                fieldHTML += `<th style="padding: 12px; text-align: center; border-bottom: 2px solid #dadce0;">${col}</th>`;
+                            });
+                            fieldHTML += `</tr></thead><tbody>`;
+                            rows.forEach(row => {
+                                fieldHTML += `<tr><td style="padding: 12px; font-weight: 600;">${row}</td>`;
+                                columns.forEach(col => {
+                                    fieldHTML += `<td style="padding: 12px; text-align: center;"><input type="checkbox" name="${normalizedField.id || `field_${index}`}_${row}" value="${col}"></td>`;
+                                });
+                                fieldHTML += `</tr>`;
+                            });
+                            fieldHTML += `</tbody></table></div>`;
+                        }
+                        break;
+                    default:
+                        fieldHTML += `<input type="text" id="field-${index}" name="${normalizedField.id || `field_${index}`}" ${normalizedField.required ? 'required' : ''} placeholder="${normalizedField.placeholder}">`;
+                }
+                
+                group.innerHTML = fieldHTML;
+                containerEl.appendChild(group);
+                console.log(`✅ [PUBLIC] Campo ${index + 1} renderizado:`, field.label || field.type);
+            });
+            
+            console.log(`✅ [PUBLIC] Todos os ${fields.length} campos foram renderizados com sucesso!`);
+            
+            // Função para gerenciar campos yes_no_with_text
+            function handleYesNoWithText(triggerInput) {
+                const group = triggerInput.closest('.yes-no-with-text-group');
+                if (!group) return;
+                
+                const textField = group.querySelector('.yes-no-text-field');
+                if (!textField) return;
+                
+                const textInput = textField.querySelector('input[type="text"]');
+                
+                if (triggerInput.value === 'Sim' && triggerInput.checked) {
+                    textField.style.display = 'block';
+                    textField.style.animation = 'fadeInUp 0.3s ease-out';
+                    if (textInput) {
+                        const fieldIndex = parseInt(group.dataset.fieldIndex);
+                        if (!isNaN(fieldIndex) && fields[fieldIndex] && fields[fieldIndex].required) {
+                            textInput.setAttribute('required', 'required');
+                        }
+                    }
+                } else if (triggerInput.value === 'Não' && triggerInput.checked) {
+                    textField.style.display = 'none';
+                    if (textInput) {
+                        textInput.value = '';
+                        textInput.removeAttribute('required');
+                    }
+                }
+            }
+            
+            // Adicionar classe 'checked' aos labels quando inputs são marcados (fallback para :has())
+            setTimeout(() => {
+                document.querySelectorAll('.radio-label input[type="radio"], .checkbox-label input[type="checkbox"]').forEach(input => {
+                    input.addEventListener('change', function() {
+                        // Remover 'checked' de todos os irmãos do mesmo grupo (para radio)
+                        if (this.type === 'radio') {
+                            const name = this.name;
+                            document.querySelectorAll(`input[type="radio"][name="${name}"]`).forEach(radio => {
+                                radio.closest('.radio-label')?.classList.remove('checked');
+                            });
+                        }
+                        // Adicionar/remover 'checked' baseado no estado
+                        if (this.checked) {
+                            this.closest('.radio-label, .checkbox-label')?.classList.add('checked');
+                        } else {
+                            this.closest('.checkbox-label')?.classList.remove('checked');
+                        }
+                        
+                        // Lógica de campos condicionais
+                        handleConditionalFields(this);
+                        
+                        // Lógica para yes_no_with_text
+                        if (this.classList.contains('yes-no-with-text-trigger')) {
+                            handleYesNoWithText(this);
+                        }
+                    });
+                });
+            }, 100);
+            
+            // Função para gerenciar campos condicionais
+            function handleConditionalFields(triggerInput) {
+                const triggerGroup = triggerInput.closest('.form-group');
+                if (!triggerGroup) return;
+                
+                const fieldIndex = triggerGroup.dataset.fieldIndex;
+                const fieldId = triggerGroup.dataset.fieldId || (fieldIndex !== undefined ? `field_${fieldIndex}` : null);
+                if (!fieldIndex && !fieldId) return;
+                
+                // Encontrar todos os campos que dependem deste (usar tanto ID quanto índice)
+                const selectors = [];
+                if (fieldId) selectors.push(`.conditional-field[data-depends-on="${fieldId}"]`);
+                if (fieldIndex !== undefined) {
+                    selectors.push(`.conditional-field[data-depends-on-index="${fieldIndex}"]`);
+                    selectors.push(`.conditional-field[data-depends-on="field_${fieldIndex}"]`);
+                }
+                
+                const allConditionalFields = new Set();
+                selectors.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => allConditionalFields.add(el));
+                });
+                
+                allConditionalFields.forEach(conditionalField => {
+                    const requiredValue = conditionalField.dataset.dependsOnValue || 'Sim';
+                    const triggerValue = triggerInput.value;
+                    
+                    // Normalizar valores para comparação (case-insensitive)
+                    const normalizedRequired = requiredValue.toLowerCase().trim();
+                    const normalizedTrigger = triggerValue.toLowerCase().trim();
+                    
+                    // Verificar se o valor corresponde
+                    const shouldShow = normalizedTrigger === normalizedRequired || 
+                                      (normalizedRequired === 'sim' && (normalizedTrigger === 'sim' || normalizedTrigger === 'yes' || normalizedTrigger === 's')) ||
+                                      (normalizedRequired === 'não' && (normalizedTrigger === 'não' || normalizedTrigger === 'nao' || normalizedTrigger === 'no' || normalizedTrigger === 'n'));
+                    
+                    if (shouldShow) {
+                        conditionalField.style.display = 'block';
+                        conditionalField.style.animation = 'fadeInUp 0.3s ease-out';
+                        // Tornar campos obrigatórios válidos quando aparecem
+                        const requiredInputs = conditionalField.querySelectorAll('[required]');
+                        requiredInputs.forEach(input => {
+                            input.removeAttribute('required');
+                            input.setAttribute('data-was-required', 'true');
+                            input.setAttribute('required', 'required');
+                        });
+                    } else {
+                        conditionalField.style.display = 'none';
+                        // Limpar valores quando escondido
+                        conditionalField.querySelectorAll('input, textarea, select').forEach(input => {
+                            if (input.type === 'checkbox' || input.type === 'radio') {
+                                input.checked = false;
+                            } else {
+                                input.value = '';
+                            }
+                            // Remover required temporariamente
+                            if (input.hasAttribute('data-was-required')) {
+                                input.removeAttribute('required');
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Inicializar campos condicionais ao carregar
+            setTimeout(() => {
+                document.querySelectorAll('.form-group:not(.conditional-field) input[type="radio"]:checked, .form-group:not(.conditional-field) input[type="checkbox"]:checked').forEach(input => {
+                    handleConditionalFields(input);
+                });
+            }, 200);
+        }
+        
+        // Inicializar renderização dos campos
+        (function() {
+            console.log('🔍 [DEBUG] formDataObj completo:', formDataObj);
+            console.log('🔍 [DEBUG] formDataObj.form_fields (tipo):', typeof formDataObj.form_fields);
+            console.log('🔍 [DEBUG] formDataObj.form_fields (valor):', formDataObj.form_fields);
+            
+            let formFields = formDataObj.form_fields || [];
+            
+            // Garantir que formFields seja um array
+            if (typeof formFields === 'string') {
+                try {
+                    formFields = JSON.parse(formFields);
+                } catch (e) {
+                    console.error('❌ Erro ao parsear form_fields:', e);
+                    formFields = [];
+                }
+            }
+            if (!Array.isArray(formFields)) {
+                console.warn('⚠️ formFields não é um array:', typeof formFields, formFields);
+                formFields = [];
+            }
+            
+            console.log('✅ Form fields carregados (array):', formFields);
+            console.log('✅ Total de campos:', formFields.length);
+            console.log('🔍 [PUBLIC] formDataObj completo:', formDataObj);
+            console.log('🔍 [PUBLIC] formFields detalhado:', JSON.stringify(formFields, null, 2));
+            
+            // IMPORTANTE: Função para renderizar campos quando o DOM estiver pronto
+            function renderFieldsWhenReady(attempts = 0) {
+                const container = document.getElementById('dynamic-fields-container');
+                
+                if (!container) {
+                    console.warn(`⚠️ [PUBLIC] Container dynamic-fields-container ainda não encontrado (tentativa ${attempts + 1}/20)...`);
+                    // Tentar até 20 vezes (2 segundos total)
+                    if (attempts < 20) {
+                        setTimeout(() => renderFieldsWhenReady(attempts + 1), 100);
+                    } else {
+                        console.error('❌ [PUBLIC] Container não encontrado após 20 tentativas!');
+                        // Tentar criar o container se não existir
+                        const formElement = document.getElementById('digital-form');
+                        if (formElement) {
+                            const newContainer = document.createElement('div');
+                            newContainer.id = 'dynamic-fields-container';
+                            // Inserir antes do botão de submit
+                            const submitBtn = formElement.querySelector('.submit-btn, button[type="submit"]');
+                            if (submitBtn) {
+                                formElement.insertBefore(newContainer, submitBtn);
+                            } else {
+                                formElement.appendChild(newContainer);
+                            }
+                            console.log('✅ [PUBLIC] Container criado dinamicamente');
+                            renderFieldsWhenReady(0); // Tentar novamente com o container criado
+                        }
+                    }
+                    return;
+                }
+                
+                console.log('✅ [PUBLIC] Container encontrado, verificando campos...');
+                console.log('🔍 [PUBLIC] Total de campos para renderizar:', formFields.length);
+                
+                if (formFields && formFields.length > 0) {
+                    console.log(`✅ [PUBLIC] Renderizando ${formFields.length} campos no container...`);
+                    try {
+                        renderFormFields(container, formFields);
+                        
+                        // Verificar se campos foram realmente renderizados
+                        const renderedFields = container.querySelectorAll('.form-group');
+                        console.log(`✅ [PUBLIC] Campos renderizados: ${renderedFields.length} de ${formFields.length}`);
+                        
+                        if (renderedFields.length === 0) {
+                            console.error('❌ [PUBLIC] NENHUM campo foi renderizado! Verificando função renderFormFields...');
+                            container.innerHTML = '<div style="padding: 20px; background: #ffebee; border: 2px solid #f44336; border-radius: 8px; margin: 20px 0;"><strong style="color: #c62828;">⚠️ Erro ao renderizar campos:</strong> <span style="color: #333;">Verifique o console para mais detalhes.</span></div>';
+                        }
+                        
+                        // Tornar formFields acessível globalmente para event listeners e funções
+                        window.formFields = formFields;
+                        // Atualizar currentFormFields no escopo global também
+                        if (typeof currentFormFields !== 'undefined') {
+                            currentFormFields = formFields;
+                        }
+                        console.log('✅ [PUBLIC] Campos renderizados e variáveis globais atualizadas');
+                    } catch (error) {
+                        console.error('❌ [PUBLIC] Erro ao renderizar campos:', error);
+                        container.innerHTML = '<div style="padding: 20px; background: #ffebee; border: 2px solid #f44336; border-radius: 8px; margin: 20px 0;"><strong style="color: #c62828;">⚠️ Erro ao renderizar campos:</strong> <span style="color: #333;">' + error.message + '</span></div>';
+                    }
+                } else {
+                    console.warn('⚠️ [PUBLIC] Nenhum campo configurado no formulário');
+                    container.innerHTML = '<p style="text-align: center; color: var(--text-color, #666); padding: 40px; font-size: 16px;">⚠️ Nenhum campo configurado neste formulário. Entre em contato com o administrador.</p>';
+                }
+            }
+            
+            // Aguardar DOM estar pronto antes de tentar renderizar
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => renderFieldsWhenReady(0));
+            } else {
+                // DOM já está pronto, mas pode precisar de um pequeno delay para garantir que o container existe
+                setTimeout(() => renderFieldsWhenReady(0), 100);
+            }
+        })();
+
+        // Formatar WhatsApp
+        function formatWhatsApp(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.substring(0, 11);
+            if (value.length > 6) {
+                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            } else if (value.length > 2) {
+                value = value.replace(/(\d{2})(\d+)/, '($1) $2');
+            }
+            input.value = value;
+        }
+
+        const whatsappInput = document.getElementById('form-whatsapp');
+        if (whatsappInput) {
+            whatsappInput.addEventListener('input', () => formatWhatsApp(whatsappInput));
+        }
+
+        // Enviar formulário
+        // IMPORTANTE: Variável global para currentFormFields (será atualizada quando necessário)
+        let currentFormFields = window.formFields || formDataObj.form_fields || [];
+        if (typeof currentFormFields === 'string') {
+            try {
+                currentFormFields = JSON.parse(currentFormFields);
+            } catch (e) {
+                console.error('❌ [VALIDATE] Erro ao parsear formFields:', e);
+                currentFormFields = [];
+            }
+        }
+        if (!Array.isArray(currentFormFields)) {
+            currentFormFields = [];
+        }
+        
+        // Função de validação robusta
+        function validateForm() {
+            let isValid = true;
+            const errors = [];
+            
+            // Garantir que currentFormFields esteja atualizado
+            let fieldsToValidate = window.formFields || currentFormFields || formDataObj.form_fields || [];
+            if (typeof fieldsToValidate === 'string') {
+                try {
+                    fieldsToValidate = JSON.parse(fieldsToValidate);
+                } catch (e) {
+                    console.error('❌ [VALIDATE] Erro ao parsear formFields:', e);
+                    fieldsToValidate = [];
+                }
+            }
+            if (!Array.isArray(fieldsToValidate)) {
+                fieldsToValidate = [];
+            }
+            
+            fieldsToValidate.forEach((field, index) => {
+                const fieldId = field.id || `field_${index}`;
+                const fieldLabel = field.label || 'Campo sem título';
+                const fieldElement = document.querySelector(`#field-${index}`);
+                const fieldGroup = fieldElement?.closest('.form-group');
+                
+                // Remover estados de erro anteriores
+                if (fieldGroup) {
+                    fieldGroup.classList.remove('field-error', 'field-valid');
+                    const errorMsg = fieldGroup.querySelector('.field-error-message');
+                    if (errorMsg) errorMsg.remove();
+                }
+                
+                // Validar campo obrigatório
+                if (field.required) {
+                    let fieldValue = '';
+                    
+                    if (field.type === 'checkbox') {
+                        const checked = document.querySelectorAll(`input[name="${fieldId}"]:checked`);
+                        fieldValue = checked.length > 0 ? Array.from(checked).map(c => c.value).join(',') : '';
+                    } else if (field.type === 'multiple_choice' || field.type === 'yes_no') {
+                        const selected = document.querySelector(`input[name="${fieldId}"]:checked`);
+                        fieldValue = selected ? selected.value : '';
+                    } else if (fieldElement) {
+                        fieldValue = fieldElement.value ? fieldElement.value.trim() : '';
+                    }
+                    
+                    if (!fieldValue) {
+                        isValid = false;
+                        errors.push(`${fieldLabel} é obrigatório`);
+                        if (fieldGroup) {
+                            fieldGroup.classList.add('field-error');
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'field-error-message';
+                            errorDiv.style.cssText = 'color: #d32f2f; font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;';
+                            errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Este campo é obrigatório';
+                            fieldGroup.appendChild(errorDiv);
+                        }
+                    }
+                }
+                
+                // Validação específica por tipo
+                if (fieldElement && fieldElement.value) {
+                    const value = fieldElement.value.trim();
+                    
+                    // Validação de email
+                    if (field.type === 'email' && value) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(value)) {
+                            isValid = false;
+                            errors.push(`${fieldLabel} deve ser um email válido`);
+                            if (fieldGroup) {
+                                fieldGroup.classList.add('field-error');
+                                const errorDiv = fieldGroup.querySelector('.field-error-message') || document.createElement('div');
+                                errorDiv.className = 'field-error-message';
+                                errorDiv.style.cssText = 'color: #d32f2f; font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;';
+                                errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Email inválido';
+                                if (!fieldGroup.querySelector('.field-error-message')) {
+                                    fieldGroup.appendChild(errorDiv);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Validação de telefone
+                    if (field.type === 'phone' && value) {
+                        const phoneRegex = /^[\d\s\(\)\-\+]{10,}$/;
+                        const digitsOnly = value.replace(/\D/g, '');
+                        if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+                            isValid = false;
+                            errors.push(`${fieldLabel} deve ser um telefone válido`);
+                            if (fieldGroup) {
+                                fieldGroup.classList.add('field-error');
+                                const errorDiv = fieldGroup.querySelector('.field-error-message') || document.createElement('div');
+                                errorDiv.className = 'field-error-message';
+                                errorDiv.style.cssText = 'color: #d32f2f; font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;';
+                                errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Telefone inválido (mínimo 10 dígitos)';
+                                if (!fieldGroup.querySelector('.field-error-message')) {
+                                    fieldGroup.appendChild(errorDiv);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Validação de número
+                    if (field.type === 'number' && value) {
+                        if (isNaN(value)) {
+                            isValid = false;
+                            errors.push(`${fieldLabel} deve ser um número válido`);
+                            if (fieldGroup) {
+                                fieldGroup.classList.add('field-error');
+                            }
+                        } else {
+                            if (field.min !== undefined && parseFloat(value) < field.min) {
+                                isValid = false;
+                                errors.push(`${fieldLabel} deve ser no mínimo ${field.min}`);
+                            }
+                            if (field.max !== undefined && parseFloat(value) > field.max) {
+                                isValid = false;
+                                errors.push(`${fieldLabel} deve ser no máximo ${field.max}`);
+                            }
+                        }
+                    }
+                    
+                    // Feedback visual de sucesso
+                    if (isValid && fieldGroup && fieldElement.value) {
+                        fieldGroup.classList.add('field-valid');
+                    }
+                }
+            });
+            
+            return { isValid, errors };
+        }
+        
+        // Validação em tempo real (após campos serem renderizados)
+        // IMPORTANTE: Aguardar renderização dos campos antes de adicionar listeners
+        setTimeout(() => {
+            document.querySelectorAll('#digital-form input, #digital-form textarea, #digital-form select').forEach(input => {
+                input.addEventListener('blur', () => {
+                    const fieldGroup = input.closest('.form-group');
+                    if (fieldGroup) {
+                        // Obter campos atualizados de window.formFields ou currentFormFields
+                        const fields = window.formFields || currentFormFields || formDataObj.form_fields || [];
+                        let fieldsArray = fields;
+                        if (typeof fieldsArray === 'string') {
+                            try {
+                                fieldsArray = JSON.parse(fieldsArray);
+                            } catch (e) {
+                                fieldsArray = [];
+                            }
+                        }
+                        if (!Array.isArray(fieldsArray)) {
+                            fieldsArray = [];
+                        }
+                        
+                        const fieldIndex = parseInt(input.id.replace('field-', ''));
+                        const field = fieldsArray[fieldIndex];
+                        if (field && field.required && !input.value.trim()) {
+                            fieldGroup.classList.add('field-error');
+                        } else if (fieldGroup.classList.contains('field-error')) {
+                            fieldGroup.classList.remove('field-error');
+                            fieldGroup.classList.add('field-valid');
+                        }
+                    }
+                });
+            });
+        }, 1000); // Aguardar 1 segundo para garantir que os campos foram renderizados
+        
+        // Função para mostrar loading state
+        function showLoadingState(button, message = 'Enviando...') {
+            button.disabled = true;
+            button.style.opacity = '0.7';
+            button.style.cursor = 'not-allowed';
+            const originalHTML = button.innerHTML;
+            button.dataset.originalHTML = originalHTML;
+            button.innerHTML = `<i class="fas fa-spinner fa-spin" style="font-size: 22px;"></i> <span>${message}</span>`;
+            return originalHTML;
+        }
+        
+        // Função para restaurar botão
+        function restoreButton(button, originalHTML) {
+            button.disabled = false;
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+            button.innerHTML = originalHTML;
+        }
+        
+        // Função para mostrar mensagem de sucesso
+        function showSuccessMessage(message, duration = 5000) {
+            const form = document.getElementById('digital-form');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'form-success-message';
+            successDiv.style.cssText = `
+                background: linear-gradient(135deg, #4caf50, #45a049);
+                color: white;
+                padding: 24px;
+                border-radius: 12px;
+                margin: 20px 0;
+                box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                animation: slideDown 0.3s ease-out;
+            `;
+            successDiv.innerHTML = `
+                <i class="fas fa-check-circle" style="font-size: 32px;"></i>
+                <div style="flex: 1;">
+                    <strong style="display: block; font-size: 18px; margin-bottom: 4px;">Sucesso!</strong>
+                    <p style="margin: 0; font-size: 14px; opacity: 0.95;">${message}</p>
+                </div>
+            `;
+            
+            // Adicionar animação CSS se não existir
+            if (!document.getElementById('form-success-styles')) {
+                const style = document.createElement('style');
+                style.id = 'form-success-styles';
+                style.textContent = `
+                    @keyframes slideDown {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            form.insertBefore(successDiv, form.firstChild);
+            
+            // Scroll para a mensagem
+            successDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Remover após duração
+            setTimeout(() => {
+                successDiv.style.animation = 'slideDown 0.3s ease-out reverse';
+                setTimeout(() => successDiv.remove(), 300);
+            }, duration);
+        }
+        
+        // Função para mostrar erro de forma amigável
+        function showErrorMessage(message, field = null) {
+            if (field) {
+                const fieldGroup = field.closest('.form-group');
+                if (fieldGroup) {
+                    fieldGroup.classList.add('field-error');
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'field-error-message';
+                    errorDiv.style.cssText = 'color: #d32f2f; font-size: 12px; margin-top: 8px; display: flex; align-items: center; gap: 6px; animation: shake 0.3s;';
+                    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+                    fieldGroup.appendChild(errorDiv);
+                    
+                    // Scroll para o erro
+                    fieldGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else {
+                // Mensagem global
+                const form = document.getElementById('digital-form');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'form-error-message';
+                errorDiv.style.cssText = `
+                    background: #ffebee;
+                    border-left: 4px solid #d32f2f;
+                    color: #c62828;
+                    padding: 16px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    animation: shake 0.3s;
+                `;
+                errorDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle" style="font-size: 20px;"></i>
+                    <div>
+                        <strong style="display: block; margin-bottom: 4px;">Erro</strong>
+                        <p style="margin: 0; font-size: 14px;">${message}</p>
+                    </div>
+                `;
+                
+                // Adicionar animação shake se não existir
+                if (!document.getElementById('form-error-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'form-error-styles';
+                    style.textContent = `
+                        @keyframes shake {
+                            0%, 100% { transform: translateX(0); }
+                            25% { transform: translateX(-10px); }
+                            75% { transform: translateX(10px); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                form.insertBefore(errorDiv, form.firstChild);
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                setTimeout(() => {
+                    errorDiv.style.opacity = '0';
+                    errorDiv.style.transition = 'opacity 0.3s';
+                    setTimeout(() => errorDiv.remove(), 300);
+                }, 5000);
+            }
+        }
+
+        const form = document.getElementById('digital-form');
+        if (form) {
+            // Adicionar listener ao formulário
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                console.log('🔄 [SUBMIT] Evento submit capturado, prevenindo default...');
+                
+                const submitBtn = document.getElementById('form-submit-btn');
+            if (!submitBtn) {
+                console.error('❌ [SUBMIT] Botão de submit não encontrado!');
+                showErrorMessage('Erro: Botão de envio não encontrado. Recarregue a página e tente novamente.');
+                return;
+            }
+            
+            const originalHTML = showLoadingState(submitBtn, 'Validando...');
+
+            // Verificar se WhatsApp está habilitado e se tem número configurado
+            // IMPORTANTE: Só verificar WhatsApp se realmente estiver ativo (não quando "Salvar na Lista" está ativo)
+            if (enableWhatsapp && !enableGuestListSubmit && !whatsappNumber) {
+                restoreButton(submitBtn, originalHTML);
+                showErrorMessage('Número do WhatsApp não configurado. Entre em contato com o administrador.');
+                return;
+            }
+            
+            // Se nem WhatsApp nem lista de convidados estão ativos, mostrar erro
+            // Mas lembrar que quando "Salvar na Lista" está ativo, enableWhatsapp será false
+            if (!enableWhatsapp && !enableGuestListSubmit) {
+                restoreButton(submitBtn, originalHTML);
+                showErrorMessage('Nenhuma opção de envio está configurada. Entre em contato com o administrador.');
+                return;
+            }
+            
+            console.log('✅ [SUBMIT] Validação passou:', {
+                enableWhatsapp,
+                enableGuestListSubmit,
+                whatsappNumber: whatsappNumber || 'não configurado',
+                submitBtnFound: !!submitBtn
+            });
+            
+            // Validar formulário antes de enviar
+            showLoadingState(submitBtn, 'Validando dados...');
+            const validation = validateForm();
+            if (!validation.isValid) {
+                restoreButton(submitBtn, originalHTML);
+                // Scroll para o primeiro erro
+                const firstError = document.querySelector('.field-error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                
+                // Mostrar mensagem de erro global
+                showErrorMessage('Por favor, corrija os erros destacados acima antes de enviar.');
+                return;
+            }
+
+            // Obter formFields (pode estar no escopo global)
+            // IMPORTANTE: Atualizar a variável global currentFormFields se já existir
+            let fieldsToSubmit = window.formFields || currentFormFields || formDataObj.form_fields || [];
+            if (typeof fieldsToSubmit === 'string') {
+                try {
+                    fieldsToSubmit = JSON.parse(fieldsToSubmit);
+                } catch (e) {
+                    console.error('❌ [SUBMIT] Erro ao parsear formFields:', e);
+                    fieldsToSubmit = [];
+                }
+            }
+            if (!Array.isArray(fieldsToSubmit)) {
+                fieldsToSubmit = [];
+            }
+            
+            // Atualizar currentFormFields global e window.formFields
+            currentFormFields = fieldsToSubmit;
+            window.formFields = fieldsToSubmit;
+            
+            // Verificar se há campos configurados
+            if (!currentFormFields || currentFormFields.length === 0) {
+                restoreButton(submitBtn, originalHTML);
+                showErrorMessage('Nenhum campo configurado neste formulário. Entre em contato com o administrador.');
+                return;
+            }
+            
+            // Coletar dados de todos os campos dinâmicos - CORRIGIDO: Uma única passagem
+            const data = {};
+            const responseData = {};
+            
+            // IMPORTANTE: Garantir que currentFormFields esteja definido
+            // Usar fieldsToSubmit que já foi processado acima
+            let fieldsToProcess = fieldsToSubmit || currentFormFields || window.formFields || formDataObj.form_fields || [];
+            if (typeof fieldsToProcess === 'string') {
+                try {
+                    fieldsToProcess = JSON.parse(fieldsToProcess);
+                } catch (e) {
+                    console.error('❌ [SUBMIT] Erro ao parsear fieldsToProcess:', e);
+                    fieldsToProcess = [];
+                }
+            }
+            if (!Array.isArray(fieldsToProcess)) {
+                fieldsToProcess = [];
+            }
+            
+            fieldsToProcess.forEach((field, index) => {
+                // IMPORTANTE: Usar o mesmo padrão de ID usado na renderização
+                const fieldId = field.id || `field_${index}`;
+                const fieldName = fieldId; // name e id são iguais na renderização
+                const fieldLabel = field.label || 'Campo sem título';
+                
+                console.log(`🔍 [SUBMIT] Coletando campo ${index + 1}:`, {
+                    fieldId,
+                    fieldName,
+                    fieldLabel,
+                    type: field.type
+                });
+                
+                try {
+                    if (field.type === 'checkbox') {
+                        // Checkboxes: múltiplos valores
+                        const checkboxes = document.querySelectorAll(`input[type="checkbox"][name="${fieldName}"]:checked`);
+                        if (checkboxes.length > 0) {
+                            responseData[fieldId] = Array.from(checkboxes).map(cb => cb.value);
+                            data[fieldId] = responseData[fieldId].join(', ');
+                            console.log(`✅ [SUBMIT] Checkbox coletado:`, responseData[fieldId]);
+                        }
+                    } else if (field.type === 'multiple_choice_grid' || field.type === 'checkbox_grid') {
+                        // Grids: estrutura complexa
+                        const gridData = {};
+                        if (field.rows && Array.isArray(field.rows)) {
+                            field.rows.forEach(row => {
+                                const rowName = `${fieldName}_${row}`;
+                                if (field.type === 'multiple_choice_grid') {
+                                    const selected = document.querySelector(`input[type="radio"][name="${rowName}"]:checked`);
+                                    if (selected) {
+                                        gridData[row] = selected.value;
+                                    }
+                                } else {
+                                    const selected = document.querySelectorAll(`input[type="checkbox"][name="${rowName}"]:checked`);
+                                    if (selected.length > 0) {
+                                        gridData[row] = Array.from(selected).map(cb => cb.value);
+                                    }
+                                }
+                            });
+                            if (Object.keys(gridData).length > 0) {
+                                responseData[fieldId] = gridData;
+                                // Formatar para WhatsApp
+                                let gridText = '';
+                                Object.entries(gridData).forEach(([row, value]) => {
+                                    gridText += `${row}: ${Array.isArray(value) ? value.join(', ') : value}\n`;
+                                });
+                                data[fieldId] = gridText.trim();
+                                console.log(`✅ [SUBMIT] Grid coletado:`, gridData);
+                            }
+                        }
+                    } else if (field.type === 'multiple_choice' || field.type === 'yes_no' || field.type === 'linear_scale' || field.type === 'rating') {
+                        // Radio buttons: valor único
+                        const selected = document.querySelector(`input[type="radio"][name="${fieldName}"]:checked`);
+                        if (selected) {
+                            responseData[fieldId] = selected.value;
+                            data[fieldId] = selected.value;
+                            console.log(`✅ [SUBMIT] Radio coletado:`, selected.value);
+                        }
+                    } else if (field.type === 'dropdown' || field.type === 'select') {
+                        // Dropdown/Select
+                        const select = document.querySelector(`select[name="${fieldName}"], select#field-${index}`);
+                        if (select && select.value) {
+                            responseData[fieldId] = select.value;
+                            data[fieldId] = select.value;
+                            console.log(`✅ [SUBMIT] Select coletado:`, select.value);
+                        }
+                    } else {
+                        // Campos de texto, número, data, email, textarea, etc.
+                        // IMPORTANTE: Tentar ambos os seletores para garantir compatibilidade
+                        const input = document.querySelector(`#field-${index}, input[name="${fieldName}"], textarea[name="${fieldName}"], textarea#field-${index}`);
+                        if (input) {
+                            const value = input.value ? input.value.trim() : '';
+                            if (value || field.required) {
+                                responseData[fieldId] = value;
+                                data[fieldId] = value;
+                                console.log(`✅ [SUBMIT] Input coletado (${field.type}):`, value ? 'tem valor' : 'vazio mas obrigatório');
+                            }
+                        } else {
+                            console.warn(`⚠️ [SUBMIT] Campo não encontrado no DOM:`, {
+                                fieldId,
+                                fieldName,
+                                index,
+                                type: field.type,
+                                selector1: `#field-${index}`,
+                                selector2: `input[name="${fieldName}"]`
+                            });
+                        }
+                    }
+                } catch (fieldError) {
+                    console.error(`❌ [SUBMIT] Erro ao coletar campo ${fieldId}:`, fieldError);
+                    // Continuar coletando outros campos mesmo se um falhar
+                }
+            });
+            
+            // IMPORTANTE: Extrair nome, email e telefone dos campos coletados
+            // Procurar por campos com labels ou tipos específicos que indiquem nome, email ou telefone
+            let extractedName = null;
+            let extractedEmail = null;
+            let extractedPhone = null;
+            
+            // Procurar nos campos coletados
+            fieldsToProcess.forEach((field, index) => {
+                const fieldId = field.id || `field_${index}`;
+                const fieldLabel = (field.label || '').toLowerCase().trim();
+                const fieldType = field.type || '';
+                const fieldValue = responseData[fieldId] || data[fieldId] || '';
+                
+                // Extrair nome
+                if (!extractedName && fieldValue && typeof fieldValue === 'string' && fieldValue.trim().length >= 2) {
+                    if (fieldLabel.includes('nome') || fieldLabel.includes('name') || 
+                        fieldId.toLowerCase().includes('nome') || fieldId.toLowerCase().includes('name')) {
+                        extractedName = fieldValue.trim();
+                        console.log('✅ [SUBMIT] Nome extraído do campo:', fieldLabel, '=', extractedName);
+                    }
+                }
+                
+                // Extrair email
+                if (!extractedEmail && fieldValue && typeof fieldValue === 'string' && fieldValue.trim()) {
+                    if (fieldType === 'email' || fieldLabel.includes('email') || fieldLabel.includes('e-mail') ||
+                        fieldId.toLowerCase().includes('email')) {
+                        const emailValue = fieldValue.trim();
+                        // Validar formato básico de email
+                        if (emailValue.includes('@') && emailValue.includes('.')) {
+                            extractedEmail = emailValue;
+                            console.log('✅ [SUBMIT] Email extraído do campo:', fieldLabel, '=', extractedEmail);
+                        }
+                    }
+                }
+                
+                // Extrair telefone
+                if (!extractedPhone && fieldValue && typeof fieldValue === 'string' && fieldValue.trim()) {
+                    if (fieldType === 'phone' || fieldLabel.includes('telefone') || fieldLabel.includes('whatsapp') ||
+                        fieldLabel.includes('phone') || fieldId.toLowerCase().includes('telefone') ||
+                        fieldId.toLowerCase().includes('whatsapp') || fieldId.toLowerCase().includes('phone')) {
+                        extractedPhone = fieldValue.trim();
+                        console.log('✅ [SUBMIT] Telefone extraído do campo:', fieldLabel, '=', extractedPhone);
+                    }
+                }
+            });
+            
+            // Se não encontrou pelos labels, tentar pelos primeiros campos preenchidos
+            if (!extractedName && Object.keys(responseData).length > 0) {
+                const firstFieldValue = Object.values(responseData)[0];
+                if (firstFieldValue && typeof firstFieldValue === 'string' && firstFieldValue.trim().length >= 2) {
+                    extractedName = firstFieldValue.trim();
+                    console.log('✅ [SUBMIT] Nome extraído do primeiro campo preenchido:', extractedName);
+                }
+            }
+            
+            // Verificar se há dados coletados
+            console.log('📊 [SUBMIT] Dados coletados:', {
+                responseDataKeys: Object.keys(responseData),
+                responseDataCount: Object.keys(responseData).length,
+                responseData: responseData,
+                dataKeys: Object.keys(data),
+                dataCount: Object.keys(data).length,
+                data: data,
+                fieldsCount: fieldsToProcess.length,
+                extractedName: extractedName,
+                extractedEmail: extractedEmail,
+                extractedPhone: extractedPhone,
+                hasData: Object.keys(responseData).length > 0 || Object.keys(data).length > 0
+            });
+            
+            // IMPORTANTE: Validar se pelo menos alguns dados foram coletados
+            // Mas permitir envio mesmo se alguns campos obrigatórios estiverem vazios (a validação já foi feita)
+            if (Object.keys(responseData).length === 0 && Object.keys(data).length === 0) {
+                restoreButton(submitBtn, originalHTML);
+                console.error('❌ [SUBMIT] Nenhum dado coletado do formulário!', {
+                    formFieldsCount: fieldsToProcess.length,
+                    formFields: Array.isArray(fieldsToProcess) ? fieldsToProcess.map(f => ({ id: f.id, label: f.label, type: f.type })) : 'N/A',
+                    allInputs: document.querySelectorAll('input, textarea, select').length
+                });
+                showErrorMessage('Por favor, preencha pelo menos um campo do formulário antes de enviar.');
+                return;
+            }
+            
+            // Garantir que responseData não esteja vazio (pode acontecer se só data tiver valores)
+            if (Object.keys(responseData).length === 0 && Object.keys(data).length > 0) {
+                // Se responseData estiver vazio mas data não, copiar data para responseData
+                Object.assign(responseData, data);
+                console.log('⚠️ [SUBMIT] responseData estava vazio, copiando de data:', responseData);
+            }
+            
+            // IMPORTANTE: Garantir que response_data não seja um objeto vazio antes de enviar
+            if (Object.keys(responseData).length === 0) {
+                restoreButton(submitBtn, originalHTML);
+                console.error('❌ [SUBMIT] responseData vazio após todas as tentativas de coleta!');
+                showErrorMessage('Erro: Não foi possível coletar os dados do formulário. Recarregue a página e tente novamente.');
+                return;
+            }
+            
+            // Enviar para o servidor
+            showLoadingState(submitBtn, 'Enviando formulário...');
+            let submitSuccess = false;
+            let responseId = null;
+            
+            const submitUrl = `/${slug}/form/${itemId}/submit`;
+            
+            // IMPORTANTE: Garantir que valores vazios sejam null, não strings vazias
+            const finalName = (extractedName || data.name || '').trim();
+            const finalEmail = (extractedEmail || data.email || '').trim();
+            const finalPhone = (extractedPhone || data.phone || '').trim();
+            
+            const submitPayload = {
+                response_data: responseData,
+                responder_name: finalName.length >= 2 ? finalName : null,
+                responder_email: finalEmail.length > 0 && finalEmail.includes('@') ? finalEmail : null,
+                responder_phone: finalPhone.length > 0 ? finalPhone : null,
+                session_id: sessionId,
+            };
+            
+            console.log('📤 [SUBMIT] Payload final antes de enviar:', {
+                response_data_keys: Object.keys(submitPayload.response_data),
+                responder_name: submitPayload.responder_name,
+                responder_email: submitPayload.responder_email,
+                responder_phone: submitPayload.responder_phone,
+                responder_name_length: submitPayload.responder_name ? submitPayload.responder_name.length : 0
+            });
+            
+            
+            try {
+                // IMPORTANTE: Adicionar timeout para evitar que o formulário fique travado
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+                
+                const submitResponse = await fetch(submitUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(submitPayload),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                console.log('📥 [SUBMIT] Resposta recebida:', {
+                    status: submitResponse.status,
+                    statusText: submitResponse.statusText,
+                    ok: submitResponse.ok,
+                    headers: Object.fromEntries(submitResponse.headers.entries())
+                });
+                
+                if (!submitResponse.ok) {
+                    const errorText = await submitResponse.text();
+                    console.error('❌ [SUBMIT] Erro na resposta:', errorText);
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch (e) {
+                        errorData = { message: errorText || 'Erro desconhecido' };
+                    }
+                    throw new Error(errorData.message || `Erro ${submitResponse.status}: ${submitResponse.statusText}`);
+                }
+                
+                let submitResult;
+                try {
+                    submitResult = await submitResponse.json();
+                } catch (parseError) {
+                    console.error('❌ [SUBMIT] Erro ao parsear resposta JSON:', parseError);
+                    // Se não conseguir parsear JSON, assumir sucesso se status for 200-299
+                    if (submitResponse.ok) {
+                        submitResult = { success: true, response_id: null };
+                    } else {
+                        throw new Error('Erro ao processar resposta do servidor');
+                    }
+                }
+                
+                console.log('✅ [SUBMIT] Resultado do submit:', submitResult);
+                
+                submitSuccess = true;
+                responseId = submitResult.response_id || submitResult.id || null;
+                
+                // IMPORTANTE: Sempre redirecionar para página de sucesso quando o formulário é enviado com sucesso
+                // Se o status foi OK (200-299), assumir que foi salvo com sucesso
+                if (submitResponse.ok) {
+                    const successUrl = submitResult.success_page_url || `/${slug}/form/${itemId}/success?response_id=${responseId || ''}`;
+                    
+                    // Passar dados do formulário via URL para mostrar na página de sucesso
+                    const formDataParams = new URLSearchParams();
+                    formDataParams.append('response_id', responseId || '');
+                    
+                    // Adicionar dados do formulário para exibir na página de sucesso
+                    Object.keys(data).forEach(key => {
+                        if (data[key] && typeof data[key] === 'string' && data[key].trim() !== '') {
+                            // Codificar valor para URL
+                            try {
+                                formDataParams.append(`data_${key}`, encodeURIComponent(data[key]));
+                            } catch (e) {
+                                console.warn('⚠️ [SUBMIT] Erro ao codificar dado para URL:', key, e);
+                            }
+                        }
+                    });
+                    
+                    // Montar URL final
+                    const separator = successUrl.includes('?') ? '&' : '?';
+                    const finalUrl = `${successUrl}${separator}${formDataParams.toString()}`;
+                    
+                    console.log('🔄 [SUBMIT] Redirecionando para página de sucesso:', {
+                        finalUrl,
+                        enableWhatsapp,
+                        enableGuestListSubmit,
+                        hasSuccessPageUrl: !!submitResult.success_page_url,
+                        responseId,
+                        submitResultSuccess: submitResult.success,
+                        statusOk: submitResponse.ok
+                    });
+                    
+                    // IMPORTANTE: Forçar redirecionamento imediatamente SEMPRE que o submit foi OK
+                    // Não esperar nenhuma condição adicional
+                    window.location.replace(finalUrl);
+                    return;
+                }
+                
+                // Se chegou aqui e WhatsApp está ativo (caso raro), tentar abrir WhatsApp
+                console.log('✅ [SUBMIT] Formulário enviado com sucesso, tentando abrir WhatsApp');
+                // Abrir WhatsApp será tratado pelo handler específico do botão WhatsApp
+                
+            } catch (error) {
+                console.error('❌ [SUBMIT] Erro ao salvar resposta:', error);
+                console.error('❌ [SUBMIT] Stack:', error.stack);
+                console.error('❌ [SUBMIT] Error name:', error.name);
+                console.error('❌ [SUBMIT] Error message:', error.message);
+                restoreButton(submitBtn, originalHTML);
+                
+                // Mensagem de erro específica
+                let errorMessage = 'Erro ao enviar formulário. ';
+                if (error.name === 'AbortError' || error.message && error.message.includes('aborted')) {
+                    errorMessage += 'Tempo de espera esgotado. Verifique sua conexão e tente novamente.';
+                } else if (error.message && (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch'))) {
+                    errorMessage += 'Verifique sua conexão com a internet e tente novamente.';
+                } else if (error.message && error.message.includes('429')) {
+                    errorMessage += 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
+                } else if (error.message) {
+                    errorMessage += error.message;
+                } else {
+                    errorMessage += 'Tente novamente em alguns instantes.';
+                }
+                
+                // Mostrar erro na página mesmo (não redirecionar imediatamente)
+                showErrorMessage(errorMessage);
+                
+                // Apenas redirecionar para página de erro se não houver botão de submit ou se o erro for crítico
+                if (!submitBtn || error.message && error.message.includes('404')) {
+                    const errorParams = new URLSearchParams();
+                    errorParams.append('error', encodeURIComponent(errorMessage));
+                    errorParams.append('form_url', `/${slug}/form/${itemId}`);
+                    window.location.href = `/${slug}/form/${itemId}/error?${errorParams.toString()}`;
+                }
+                return;
+            }
+
+            // Se chegou aqui, o formulário foi enviado com sucesso mas não foi redirecionado
+            // Isso não deveria acontecer, mas vamos garantir o redirecionamento
+            console.warn('⚠️ [SUBMIT] Formulário enviado mas não houve redirecionamento no bloco anterior, garantindo redirecionamento...');
+            showLoadingState(submitBtn, 'Redirecionando...');
+            
+            // Redirecionar para página de sucesso imediatamente
+            const fallbackSuccessUrl = `/${slug}/form/${itemId}/success?response_id=${responseId || 'success'}`;
+            
+            // Adicionar dados básicos se disponíveis
+            const fallbackParams = new URLSearchParams();
+            if (responseId) fallbackParams.append('response_id', responseId);
+            if (data.name) fallbackParams.append('data_name', encodeURIComponent(data.name));
+            if (data.email) fallbackParams.append('data_email', encodeURIComponent(data.email));
+            
+            const finalFallbackUrl = fallbackParams.toString() 
+                ? `${fallbackSuccessUrl}&${fallbackParams.toString()}` 
+                : fallbackSuccessUrl;
+            
+            console.log('🔄 [SUBMIT] Redirecionando via fallback para:', finalFallbackUrl);
+            
+            // Redirecionar imediatamente (usar replace para não adicionar ao histórico)
+            setTimeout(() => {
+                window.location.replace(finalFallbackUrl);
+            }, 500); // Pequeno delay para garantir que o loading state seja visto
+        });
+        } else {
+            console.error('❌ [FORM] Formulário não encontrado!');
+        }
+        
+        // Botão "Enviar Mensagem para o Pastor"
+        <% if (formData.enable_pastor_button && formData.pastor_whatsapp_number) { %>
+        const pastorBtn = document.getElementById('pastor-message-btn');
+        if (pastorBtn) {
+            pastorBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                
+                const pastorWhatsapp = '<%= formData.pastor_whatsapp_number || '' %>';
+                if (!pastorWhatsapp) {
+                    alert('Número do WhatsApp do pastor não configurado!');
+                    return;
+                }
+                
+                // Validar formulário antes de enviar
+                const validation = validateForm();
+                if (!validation.isValid) {
+                    const firstError = document.querySelector('.field-error');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    
+                    const submitBtn = document.getElementById('pastor-message-btn');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Corrija os erros acima';
+                    submitBtn.style.background = '#d32f2f';
+                    setTimeout(() => {
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.style.background = '';
+                    }, 3000);
+                    
+                    return;
+                }
+                
+                // Coletar dados do formulário (mesmo processo do botão normal)
+                const form = document.getElementById('digital-form');
+                const formData = new FormData(form);
+                const data = {};
+                const responseData = {};
+                
+                let currentFormFields = window.formFields || formDataObj.form_fields || [];
+                if (typeof currentFormFields === 'string') {
+                    try {
+                        currentFormFields = JSON.parse(currentFormFields);
+                    } catch (e) {
+                        currentFormFields = [];
+                    }
+                }
+                if (!Array.isArray(currentFormFields)) {
+                    currentFormFields = [];
+                }
+                
+                // Coletar todos os campos (mesmo código do submit normal)
+                for (const [key, value] of formData.entries()) {
+                    const field = currentFormFields.find(f => {
+                        const fieldId = f.id || `field_${currentFormFields.indexOf(f)}`;
+                        return fieldId === key;
+                    });
+                    if (field) {
+                        if (field.type === 'checkbox') {
+                            if (!responseData[key]) responseData[key] = [];
+                            responseData[key].push(value);
+                        } else {
+                            responseData[key] = value;
+                        }
+                        data[key] = responseData[key];
+                    } else {
+                        data[key] = value;
+                    }
+                }
+                
+                currentFormFields.forEach((field, index) => {
+                    const fieldId = field.id || `field_${index}`;
+                    
+                    if (field.type === 'checkbox') {
+                        const checkboxes = document.querySelectorAll(`input[name="${fieldId}"]:checked`);
+                        if (checkboxes.length > 0) {
+                            responseData[fieldId] = Array.from(checkboxes).map(cb => cb.value);
+                            data[fieldId] = responseData[fieldId].join(', ');
+                        }
+                    } else if (field.type === 'multiple_choice' || field.type === 'yes_no' || field.type === 'linear_scale' || field.type === 'rating') {
+                        const selected = document.querySelector(`input[name="${fieldId}"]:checked`);
+                        if (selected) {
+                            responseData[fieldId] = selected.value;
+                            data[fieldId] = selected.value;
+                        }
+                    } else {
+                        const input = document.querySelector(`#field-${index}`);
+                        if (input && input.value) {
+                            responseData[fieldId] = input.value;
+                            data[fieldId] = input.value;
+                        }
+                    }
+                });
+                
+                // Salvar resposta no servidor
+                try {
+                    const submitResponse = await fetch(`/<%= typeof profileSlug !== 'undefined' && profileSlug ? profileSlug : slug %>/form/<%= item.id %>/submit`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            response_data: responseData,
+                            responder_name: data.name || null,
+                            responder_email: data.email || null,
+                            responder_phone: data.phone || null,
+                            session_id: sessionId
+                        })
+                    });
+                    
+                    if (!submitResponse.ok) {
+                        console.error('Erro ao salvar resposta no servidor');
+                    }
+                } catch (error) {
+                    console.error('Erro ao salvar resposta:', error);
+                }
+                
+                // Formatar mensagem para WhatsApp do Pastor
+                let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
+                message += '*Mensagem para o Pastor*\n\n';
+                
+                currentFormFields.forEach((field, index) => {
+                    const fieldId = field.id || `field_${index}`;
+                    const fieldValue = data[fieldId];
+                    if (fieldValue) {
+                        const fieldLabel = field.label || field.Label || 'Campo';
+                        if (Array.isArray(fieldValue)) {
+                            message += `*${fieldLabel}:* ${fieldValue.join(', ')}\n`;
+                        } else {
+                            message += `*${fieldLabel}:* ${fieldValue}\n`;
+                        }
+                    }
+                });
+                
+                // Limpar número do WhatsApp do pastor (apenas números)
+                const cleanPastorWhatsapp = pastorWhatsapp.replace(/\D/g, '');
+                const pastorWhatsappUrl = `https://wa.me/${cleanPastorWhatsapp}?text=${encodeURIComponent(message)}`;
+                
+                // Abrir WhatsApp do Pastor
+                window.open(pastorWhatsappUrl, '_blank');
+            });
+        }
+        <% } %>
+        
+        // Botão "Enviar via WhatsApp" - SEMPRE salva no sistema também
+        // Aguardar DOM estar completamente carregado antes de procurar o botão
+        function initWhatsappButton() {
+            const whatsappBtn = document.getElementById('whatsapp-submit-btn');
+            console.log('🔍 [WHATSAPP] Botão encontrado:', {
+                found: !!whatsappBtn,
+                element: whatsappBtn,
+                whatsappNumber: whatsappNumber,
+                slug: slug,
+                itemId: itemId
+            });
+            
+            if (!whatsappBtn) {
+                console.warn('⚠️ [WHATSAPP] Botão não encontrado! Tentando novamente em 500ms...');
+                setTimeout(initWhatsappButton, 500);
+                return;
+            }
+            
+            whatsappBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('✅ [WHATSAPP] Botão clicado!');
+                
+                // Validar formulário antes de enviar
+                const validation = validateForm();
+                if (!validation.isValid) {
+                    const firstError = document.querySelector('.field-error');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    showErrorMessage('Por favor, corrija os erros destacados acima antes de enviar.');
+                    return;
+                }
+                
+                const originalHTML = showLoadingState(whatsappBtn, 'Salvando...');
+                
+                // Coletar dados do formulário
+                const form = document.getElementById('digital-form');
+                const formData = new FormData(form);
+                const data = {};
+                const responseData = {};
+                
+                let currentFormFields = window.formFields || formDataObj.form_fields || [];
+                if (typeof currentFormFields === 'string') {
+                    try {
+                        currentFormFields = JSON.parse(currentFormFields);
+                    } catch (e) {
+                        currentFormFields = [];
+                    }
+                }
+                if (!Array.isArray(currentFormFields)) {
+                    currentFormFields = [];
+                }
+                
+                // Coletar todos os campos
+                for (const [key, value] of formData.entries()) {
+                    const field = currentFormFields.find(f => {
+                        const fieldId = f.id || `field_${currentFormFields.indexOf(f)}`;
+                        return fieldId === key;
+                    });
+                    if (field) {
+                        if (field.type === 'checkbox') {
+                            if (!responseData[key]) responseData[key] = [];
+                            responseData[key].push(value);
+                        } else {
+                            responseData[key] = value;
+                        }
+                        data[key] = responseData[key];
+                    } else {
+                        data[key] = value;
+                    }
+                }
+                
+                currentFormFields.forEach((field, index) => {
+                    const fieldId = field.id || `field_${index}`;
+                    
+                    if (field.type === 'checkbox') {
+                        const checkboxes = document.querySelectorAll(`input[name="${fieldId}"]:checked`);
+                        if (checkboxes.length > 0) {
+                            responseData[fieldId] = Array.from(checkboxes).map(cb => cb.value);
+                            data[fieldId] = responseData[fieldId].join(', ');
+                        }
+                    } else if (field.type === 'multiple_choice' || field.type === 'yes_no' || field.type === 'linear_scale' || field.type === 'rating') {
+                        const selected = document.querySelector(`input[name="${fieldId}"]:checked`);
+                        if (selected) {
+                            responseData[fieldId] = selected.value;
+                            data[fieldId] = selected.value;
+                        }
+                    } else {
+                        const input = document.querySelector(`#field-${index}`);
+                        if (input && input.value) {
+                            responseData[fieldId] = input.value;
+                            data[fieldId] = input.value;
+                        }
+                    }
+                });
+                
+                // IMPORTANTE: Sempre salvar no sistema primeiro
+                try {
+                    // Indicador de progresso detalhado (Melhoria 4)
+                    showLoadingState(whatsappBtn, '<i class="fas fa-spinner fa-spin"></i> Salvando no sistema...');
+                    
+                    const submitResponse = await fetch(`/${slug}/form/${itemId}/submit`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            response_data: responseData,
+                            responder_name: data.name || null,
+                            responder_email: data.email || null,
+                            responder_phone: data.phone || null,
+                            session_id: sessionId
+                        })
+                    });
+                    
+                    if (!submitResponse.ok) {
+                        const errorData = await submitResponse.json().catch(() => ({ message: 'Erro desconhecido' }));
+                        throw new Error(errorData.message || 'Erro ao salvar resposta no servidor');
+                    }
+                    
+                    const submitResult = await submitResponse.json();
+                    console.log('✅ [WHATSAPP] Resultado do submit:', submitResult);
+                    
+                    const sendMode = submitResult.send_mode || 'both';
+                    const shouldSave = submitResult.should_save !== false;
+                    
+                    // Obter responseId do resultado
+                    const responseId = submitResult.response_id || submitResult.id || null;
+                    
+                    // Atualizar indicador de progresso (Melhoria 4)
+                    showLoadingState(whatsappBtn, '<i class="fas fa-spinner fa-spin"></i> Preparando WhatsApp...');
+                    
+                    // Formatar mensagem para WhatsApp
+                    let message = `*${formDataObj.form_title || 'King Forms'}*\n\n`;
+                    
+                    currentFormFields.forEach((field, index) => {
+                        const fieldId = field.id || `field_${index}`;
+                        const fieldValue = data[fieldId];
+                        if (fieldValue) {
+                            const fieldLabel = field.label || field.Label || 'Campo';
+                            if (Array.isArray(fieldValue)) {
+                                message += `*${fieldLabel}:* ${fieldValue.join(', ')}\n`;
+                            } else {
+                                message += `*${fieldLabel}:* ${fieldValue}\n`;
+                            }
+                        }
+                    });
+                    
+                    // Limpar número do WhatsApp (apenas números)
+                    const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
+                    const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
+                    
+                    // Atualizar indicador de progresso final (Melhoria 4)
+                    showLoadingState(whatsappBtn, '<i class="fab fa-whatsapp"></i> Abrindo WhatsApp...');
+                    
+                    // Pequeno delay para mostrar o progresso
+                    setTimeout(() => {
+                        // Abrir WhatsApp em nova aba
+                        window.open(whatsappUrl, '_blank');
+                        
+                        // Atualizar para "Concluído"
+                        showLoadingState(whatsappBtn, '<i class="fas fa-check-circle"></i> Enviado com sucesso!');
+                    }, 300);
+                    
+                    // Se for "Só WhatsApp" (whatsapp-only), não redirecionar, apenas mostrar mensagem de sucesso
+                    if (sendMode === 'whatsapp-only') {
+                        restoreButton(whatsappBtn, originalHTML);
+                        showSuccessMessage('Formulário enviado via WhatsApp com sucesso!');
+                        // Limpar formulário após delay
+                        setTimeout(() => {
+                            document.getElementById('digital-form').reset();
+                        }, 2000);
+                        return;
+                    }
+                    
+                    // Para "Ambos" ou "Só Sistema", redirecionar para página de sucesso
+                    const successUrl = submitResult.success_page_url || `/${slug}/form/${itemId}/success?response_id=${responseId || ''}`;
+                    
+                    if (successUrl) {
+                        // Passar dados do formulário via URL para mostrar na página de sucesso
+                        const formDataParams = new URLSearchParams();
+                        formDataParams.append('response_id', responseId || '');
+                        formDataParams.append('whatsapp_sent', 'true');
+                        
+                        // Adicionar dados do formulário para exibir na página de sucesso
+                        Object.keys(data).forEach(key => {
+                            if (data[key] && typeof data[key] === 'string' && data[key].trim() !== '') {
+                                try {
+                                    formDataParams.append(`data_${key}`, encodeURIComponent(data[key]));
+                                } catch (e) {
+                                    console.warn('⚠️ [WHATSAPP] Erro ao codificar dado para URL:', key, e);
+                                }
+                            }
+                        });
+                        
+                        // Montar URL final
+                        const separator = successUrl.includes('?') ? '&' : '?';
+                        const finalUrl = `${successUrl}${separator}${formDataParams.toString()}`;
+                        
+                        // Redirecionar para página de sucesso após pequeno delay para garantir que dados foram salvos
+                        setTimeout(() => {
+                            window.location.replace(finalUrl);
+                        }, 500);
+                    } else {
+                        restoreButton(whatsappBtn, originalHTML);
+                        showSuccessMessage('Formulário enviado via WhatsApp com sucesso!');
+                    }
+                } catch (error) {
+                    console.error('❌ [WHATSAPP] Erro ao salvar no sistema:', error);
+                    restoreButton(whatsappBtn, originalHTML);
+                    showErrorMessage('Erro ao salvar no sistema. Tente novamente.');
+                    return;
+                }
+            });
+            
+            console.log('✅ [WHATSAPP] Event listener adicionado ao botão');
+        }
+        
+        // Inicializar botão quando DOM estiver pronto
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initWhatsappButton);
+        } else {
+            // DOM já está pronto
+            setTimeout(initWhatsappButton, 100);
+        }
+    </script>
+    
+    <!-- Rodapé com Direitos Autorais -->
+    <% 
+        // Determinar tema para ajustar cores do rodapé - lógica melhorada e mais robusta
+        let isDarkTheme = false;
+        
+        // Verificar tema explícito primeiro
+        if (formData.theme === 'dark') {
+            isDarkTheme = true;
+        } else if (formData.theme === 'light') {
+            isDarkTheme = false;
+        } else if (formData.background_color) {
+            // Analisar cor de fundo para determinar tema
+            const bgColor = formData.background_color.toLowerCase().trim();
+            
+            // Verificar se é um tom escuro
+            // Tons escuros: começa com #0, #1, #2, #3, #4, #5 ou contém palavras-chave
+            const darkPatterns = [
+                /^#[0-5][0-9a-f]/,  // #0x, #1x, #2x, #3x, #4x, #5x
+                /dark/i,
+                /black/i,
+                /preto/i,
+                /#0d/i,
+                /#1c/i,
+                /#2c/i,
+                /rgb\(0,\s*0,\s*0\)/i,
+                /rgb\(13,\s*13,\s*15\)/i,
+                /rgb\(28,\s*28,\s*33\)/i
+            ];
+            
+            const isDarkColor = darkPatterns.some(pattern => pattern.test(bgColor));
+            
+            // Verificar se é um tom claro
+            // Tons claros: começa com #f, #e, #d, #c, #b, #a, #9, #8, #7, #6 ou branco
+            const lightPatterns = [
+                /^#[6-9a-f][0-9a-f]/,  // #6x, #7x, #8x, #9x, #ax, #bx, #cx, #dx, #ex, #fx
+                /white/i,
+                /branco/i,
+                /#fff/i,
+                /#f8/i,
+                /#fa/i,
+                /rgb\(255,\s*255,\s*255\)/i,
+                /rgb\(248,\s*249,\s*250\)/i
+            ];
+            
+            const isLightColor = lightPatterns.some(pattern => pattern.test(bgColor));
+            
+            if (isDarkColor) {
+                isDarkTheme = true;
+            } else if (isLightColor) {
+                isDarkTheme = false;
+            } else {
+                // Se não conseguir determinar, usar padrão baseado no valor do tema
+                isDarkTheme = formData.theme === 'dark';
+            }
+        } else {
+            // Padrão: tema claro se não especificado
+            isDarkTheme = false;
+        }
+        
+        // Cores do rodapé baseadas no tema - garantindo contraste adequado
+        const footerBg = isDarkTheme ? '#1C1C21' : '#f8f9fa';
+        const footerTextMain = isDarkTheme ? '#ECECEC' : '#1a1a1a'; // Texto principal sempre visível
+        const footerTextSecondary = isDarkTheme ? '#A1A1A1' : '#4a4a4a'; // Texto secundário com bom contraste
+        const footerTextTertiary = isDarkTheme ? '#7a7a7a' : '#6b6b6b'; // Texto terciário legível
+        const footerBorder = isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+        const footerPrimaryColor = isDarkTheme ? '#4A90E2' : (primaryColor || '#4A90E2');
+    %>
+    <footer style="margin-top: 60px; padding: 40px 24px; text-align: center; border-top: 1px solid <%= footerBorder %>; background: <%= footerBg %> !important;">
+        <div style="max-width: 1000px; margin: 0 auto;">
+            <p style="margin: 0 0 12px 0; color: <%= footerTextMain %> !important; font-size: 15px; line-height: 1.7; font-weight: 600;">
+                <span style="color: <%= footerPrimaryColor %> !important; font-weight: 700; font-size: 16px;">King Forms</span> 
+                <span style="color: <%= footerTextSecondary %> !important;">é um sistema desenvolvido pela</span> 
+                <span style="color: <%= footerPrimaryColor %> !important; font-weight: 700;">Conecta King</span>
+            </p>
+            <p style="margin: 0; color: <%= footerTextTertiary %> !important; font-size: 13px; line-height: 1.6; font-weight: 500;">
+                © <%= new Date().getFullYear() %> Conecta King. Todos os direitos reservados.
+            </p>
+            <p style="margin: 8px 0 0 0; color: <%= footerTextTertiary %> !important; font-size: 12px; line-height: 1.5; font-weight: 400;">
+                Solução premium para criação de formulários digitais profissionais.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
+
