@@ -48,7 +48,9 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
                 whatsapp_number,
                 whatsapp_message,
                 pix_key,
-                is_active
+                is_active,
+                COALESCE(custom_included_modules, '') as custom_included_modules,
+                COALESCE(custom_excluded_modules, '') as custom_excluded_modules
             FROM subscription_plans
             WHERE is_active = true
             ORDER BY COALESCE(monthly_price, price) ASC
@@ -407,12 +409,28 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
                 });
             }
             
-            // Buscar plano atualizado
-            const finalPlanResult = await client.query('SELECT * FROM subscription_plans WHERE id = $1', [planId]);
+            // Buscar plano atualizado com campos customizados
+            const finalPlanResult = await client.query(`
+                SELECT 
+                    *,
+                    COALESCE(custom_included_modules, '') as custom_included_modules,
+                    COALESCE(custom_excluded_modules, '') as custom_excluded_modules
+                FROM subscription_plans 
+                WHERE id = $1
+            `, [planId]);
+            
+            const updatedPlan = finalPlanResult.rows[0];
+            
+            console.log('✅ Plano atualizado:', {
+                plan_name: updatedPlan.plan_name,
+                custom_included_modules: updatedPlan.custom_included_modules || '(vazio)',
+                custom_excluded_modules: updatedPlan.custom_excluded_modules || '(vazio)',
+                modulesUpdated: (included_modules !== undefined || excluded_modules !== undefined) ? true : false
+            });
             
             res.json({
                 message: 'Plano atualizado com sucesso.',
-                plan: finalPlanResult.rows[0],
+                plan: updatedPlan,
                 modulesUpdated: (included_modules !== undefined || excluded_modules !== undefined) ? true : false
             });
         } catch (error) {
@@ -446,8 +464,8 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
                 whatsapp_message,
                 pix_key,
                 is_active,
-                custom_included_modules,
-                custom_excluded_modules
+                COALESCE(custom_included_modules, '') as custom_included_modules,
+                COALESCE(custom_excluded_modules, '') as custom_excluded_modules
             FROM subscription_plans
             WHERE is_active = true
             ORDER BY COALESCE(monthly_price, price) ASC
