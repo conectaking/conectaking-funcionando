@@ -1,0 +1,302 @@
+/**
+ * Estilos para cards de planos de assinatura
+ * Compatível com subscription-plans-helper.js
+ */
+
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    padding: 24px 0;
+}
+
+.plan-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.plan-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255, 199, 0, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.plan-header {
+    margin-bottom: 20px;
+}
+
+.plan-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #FFC700;
+    margin: 0 0 8px 0;
+}
+
+.plan-description {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Seção de Preço */
+.plan-price-section {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(255, 199, 0, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 199, 0, 0.2);
+}
+
+.pix-price {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.pix-price .currency {
+    font-size: 18px;
+    font-weight: 600;
+    color: #FFC700;
+}
+
+.pix-price .amount {
+    font-size: 36px;
+    font-weight: 700;
+    color: #FFC700;
+    line-height: 1;
+}
+
+.pix-price .method-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pix-badge {
+    background: rgba(255, 199, 0, 0.2);
+    color: #FFC700;
+    border: 1px solid rgba(255, 199, 0, 0.3);
+}
+
+.installment-option {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.installment-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+.installment-note {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Seletor de Método de Pagamento */
+.payment-method-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.payment-option {
+    flex: 1;
+    min-width: 120px;
+    position: relative;
+}
+
+.payment-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.payment-option label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.03);
+    text-align: center;
+}
+
+.payment-option:hover label {
+    border-color: rgba(255, 199, 0, 0.4);
+    background: rgba(255, 199, 0, 0.05);
+}
+
+.payment-option.active label {
+    border-color: #FFC700;
+    background: rgba(255, 199, 0, 0.1);
+    box-shadow: 0 0 0 2px rgba(255, 199, 0, 0.2);
+}
+
+.payment-option .method-icon {
+    font-size: 24px;
+}
+
+.payment-option .method-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.payment-option .method-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: #FFC700;
+}
+
+.payment-option .method-installments {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Features */
+.plan-features {
+    margin-bottom: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.plan-features ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.plan-features li {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    padding-left: 8px;
+}
+
+/* Botão de Assinatura */
+.btn-assinar {
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #FFC700 0%, #FFA500 100%);
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-assinar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 199, 0, 0.4);
+}
+
+.btn-assinar:active {
+    transform: translateY(0);
+}
+
+/* Mensagens */
+.no-plans,
+.error-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.error-message button {
+    margin-top: 16px;
+    padding: 10px 20px;
+    background: #FFC700;
+    border: none;
+    border-radius: 6px;
+    color: #000;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .plans-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .plan-card {
+        padding: 20px;
+    }
+
+    .pix-price .amount {
+        font-size: 28px;
+    }
+
+    .payment-method-selector {
+        flex-direction: column;
+    }
+
+    .payment-option {
+        min-width: 100%;
+    }
+}
+
+/* Tema escuro (padrão) */
+body {
+    background: #0D0D0F;
+    color: #ECECEC;
+}
+
+/* Tema claro (opcional) */
+@media (prefers-color-scheme: light) {
+    .plan-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .plan-name {
+        color: #1a1a1a;
+    }
+
+    .plan-description {
+        color: rgba(0, 0, 0, 0.7);
+    }
+
+    .plan-price-section {
+        background: rgba(255, 199, 0, 0.15);
+        border-color: rgba(255, 199, 0, 0.3);
+    }
+
+    .payment-option label {
+        background: rgba(0, 0, 0, 0.03);
+        border-color: rgba(0, 0, 0, 0.2);
+    }
+
+    .plan-features li {
+        color: rgba(0, 0, 0, 0.8);
+    }
+}
