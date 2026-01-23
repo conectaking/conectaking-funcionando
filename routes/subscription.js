@@ -247,13 +247,24 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
                 updateFields.push(`is_active = $${paramIndex++}`);
                 updateValues.push(is_active);
             }
+            // SEMPRE salvar campos customizados quando enviados (mesmo que vazios)
             if (custom_included_modules !== undefined) {
                 updateFields.push(`custom_included_modules = $${paramIndex++}`);
-                updateValues.push(custom_included_modules || null);
+                // Salvar string vazia se for vazio, não null (para permitir limpar campos)
+                const valueToSave = custom_included_modules !== null && custom_included_modules !== undefined 
+                    ? custom_included_modules.trim() 
+                    : '';
+                updateValues.push(valueToSave);
+                console.log(`💾 Salvando custom_included_modules: "${valueToSave}" (tipo: ${typeof valueToSave}, length: ${valueToSave.length})`);
             }
             if (custom_excluded_modules !== undefined) {
                 updateFields.push(`custom_excluded_modules = $${paramIndex++}`);
-                updateValues.push(custom_excluded_modules || null);
+                // Salvar string vazia se for vazio, não null (para permitir limpar campos)
+                const valueToSave = custom_excluded_modules !== null && custom_excluded_modules !== undefined 
+                    ? custom_excluded_modules.trim() 
+                    : '';
+                updateValues.push(valueToSave);
+                console.log(`💾 Salvando custom_excluded_modules: "${valueToSave}" (tipo: ${typeof valueToSave}, length: ${valueToSave.length})`);
             }
             
             // Atualizar plano se houver campos para atualizar
