@@ -19,6 +19,7 @@ const accountRoutes = require('./routes/account');
 const profileRoutes = require('./routes/profile');
 const publicProfileRoutes = require('./routes/publicProfile');
 const subscriptionRoutes = require('./routes/subscription');
+const subscriptionModuleRoutes = require('./modules/subscription/subscription.routes');
 const moduleAvailabilityRoutes = require('./routes/moduleAvailability');
 const loggerRoutes = require('./routes/logger');
 const adminRoutes = require('./routes/admin');
@@ -563,6 +564,10 @@ app.use('/api/inquiry', apiLimiter, inquiryRoutes);
 app.use('/api/generator', apiLimiter, generatorRoutes);
 app.use('/api/account', apiLimiter, accountRoutes);
 app.use('/api/profile', apiLimiter, profileRoutes);
+// Rotas de subscription - usar módulo novo primeiro, depois rotas antigas como fallback
+// Rotas do módulo subscription (têm prioridade)
+app.use('/api/subscription', apiLimiter, subscriptionModuleRoutes);
+// Rotas antigas mantidas como fallback/compatibilidade
 app.use('/api/subscription', apiLimiter, subscriptionRoutes);
 app.use('/api/modules', apiLimiter, moduleAvailabilityRoutes);
 app.use('/log', loggerRoutes);

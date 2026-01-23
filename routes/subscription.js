@@ -60,10 +60,12 @@ function enrichPlansWithPaymentInfo(plans) {
 }
 
 // GET /api/subscription/info - Buscar informações da assinatura do usuário
+// NOTA: Esta rota agora é gerenciada pelo módulo subscription, mas mantida aqui para compatibilidade
 router.get('/info', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const userId = req.user.userId;
+        const billingType = req.query.billingType || 'monthly';
         
         // Buscar informações do usuário
         const userQuery = `
@@ -107,22 +109,68 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
         const plansResult = await client.query(plansQuery);
         
         // Determinar qual plano o usuário tem baseado no account_type
-        // Por enquanto, mapeamos:
-        // - individual -> basic ou premium (precisaria de campo adicional para diferenciar)
-        // - business_owner -> enterprise
         let currentPlan = null;
         if (user.account_type === 'individual') {
-            // Por padrão, assumimos basic. Em produção, você pode adicionar um campo subscription_plan_code na tabela users
             currentPlan = plansResult.rows.find(p => p.plan_code === 'basic') || plansResult.rows[0];
         } else if (user.account_type === 'business_owner') {
             currentPlan = plansResult.rows.find(p => p.plan_code === 'enterprise') || plansResult.rows[2];
         } else if (user.account_type === 'free') {
-            currentPlan = null; // Usuário free não tem plano
+            currentPlan = null;
         }
         
-        // Enriquecer planos com informações de pagamento
-        const enrichedPlans = enrichPlansWithPaymentInfo(plansResult.rows);
-        const enrichedCurrentPlan = currentPlan ? enrichPlansWithPaymentInfo([currentPlan])[0] : null;
+        // Enriquecer planos com informações de pagamento baseado no billingType
+        const enrichedPlans = plansResult.rows.map(plan => {
+            const basePrice = parseFloat(plan.price) || 0;
+            let displayPrice = basePrice;
+            
+            if (billingType === 'annual') {
+                displayPrice = basePrice * 12 * 0.8; // 20% de desconto
+            }
+            
+            const installmentInfo = calculateInstallmentPrice(displayPrice, 12);
+            
+            return {
+                ...plan,
+                billingType: billingType,
+                displayPrice: displayPrice,
+                paymentOptions: {
+                    pix: {
+                        method: 'PIX',
+                        price: displayPrice,
+                        label: 'Pix',
+                        title: 'À vista',
+                        description: 'Pagamento à vista via Pix'
+                    },
+                    installment: {
+                        method: 'CARTÃO',
+                        totalPrice: installmentInfo.totalPrice,
+                        installmentValue: installmentInfo.installmentValue,
+                        installments: installmentInfo.installments,
+                        label: `Até ${installmentInfo.installments}x`,
+                        title: 'Até 12 meses',
+                        description: `Até ${installmentInfo.installments}x de R$ ${installmentInfo.installmentValue.toFixed(2).replace('.', ',')}`
+                    }
+                }
+            };
+        });
+        
+        const enrichedCurrentPlan = currentPlan ? enrichedPlans.find(p => p.id === currentPlan.id) || (() => {
+            const basePrice = parseFloat(currentPlan.price) || 0;
+            let displayPrice = basePrice;
+            if (billingType === 'annual') {
+                displayPrice = basePrice * 12 * 0.8;
+            }
+            const installmentInfo = calculateInstallmentPrice(displayPrice, 12);
+            return {
+                ...currentPlan,
+                billingType: billingType,
+                displayPrice: displayPrice,
+                paymentOptions: {
+                    pix: { method: 'PIX', price: displayPrice, label: 'Pix', title: 'À vista' },
+                    installment: { method: 'CARTÃO', totalPrice: installmentInfo.totalPrice, installmentValue: installmentInfo.installmentValue, installments: 12, label: 'Até 12x', title: 'Até 12 meses' }
+                }
+            };
+        })() : null;
         
         res.json({
             user: {
@@ -136,7 +184,8 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
                 isAdmin: user.is_admin
             },
             currentPlan: enrichedCurrentPlan,
-            availablePlans: enrichedPlans
+            availablePlans: enrichedPlans,
+            billingType: billingType
         });
     } catch (error) {
         console.error('❌ Erro ao buscar informações de assinatura:', error);
@@ -284,9 +333,12 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
 }));
 
 // GET /api/subscription/plans-public - Buscar planos disponíveis (público, sem autenticação)
+// NOTA: Esta rota agora é gerenciada pelo módulo subscription, mas mantida aqui para compatibilidade
 router.get('/plans-public', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
+        const billingType = req.query.billingType || 'monthly';
+        
         const plansQuery = `
             SELECT 
                 id,
@@ -305,12 +357,46 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
         `;
         const plansResult = await client.query(plansQuery);
         
-        // Enriquecer planos com informações de pagamento
-        const enrichedPlans = enrichPlansWithPaymentInfo(plansResult.rows);
+        // Enriquecer planos com informações de pagamento baseado no billingType
+        const enrichedPlans = plansResult.rows.map(plan => {
+            const basePrice = parseFloat(plan.price) || 0;
+            let displayPrice = basePrice;
+            
+            if (billingType === 'annual') {
+                displayPrice = basePrice * 12 * 0.8; // 20% de desconto
+            }
+            
+            const installmentInfo = calculateInstallmentPrice(displayPrice, 12);
+            
+            return {
+                ...plan,
+                billingType: billingType,
+                displayPrice: displayPrice,
+                paymentOptions: {
+                    pix: {
+                        method: 'PIX',
+                        price: displayPrice,
+                        label: 'Pix',
+                        title: 'À vista',
+                        description: 'Pagamento à vista via Pix'
+                    },
+                    installment: {
+                        method: 'CARTÃO',
+                        totalPrice: installmentInfo.totalPrice,
+                        installmentValue: installmentInfo.installmentValue,
+                        installments: installmentInfo.installments,
+                        label: `Até ${installmentInfo.installments}x`,
+                        title: 'Até 12 meses',
+                        description: `Até ${installmentInfo.installments}x de R$ ${installmentInfo.installmentValue.toFixed(2).replace('.', ',')}`
+                    }
+                }
+            };
+        });
         
         res.json({
             success: true,
-            plans: enrichedPlans
+            plans: enrichedPlans,
+            billingType: billingType
         });
     } catch (error) {
         console.error('❌ Erro ao buscar planos públicos:', error);
