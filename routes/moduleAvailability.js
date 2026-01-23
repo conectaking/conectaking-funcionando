@@ -367,27 +367,55 @@ router.get('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
         
         const individualModules = individualModulesResult.rows.map(r => r.module_type);
         
-        // Buscar todos os módulos disponíveis e sua disponibilidade no plano do usuário
-        const planCode = user.account_type || 'free';
+        // Mapear account_type para plan_code (garantir compatibilidade)
+        let planCode = user.account_type || 'free';
         
-        const allModulesResult = await client.query(`
-            SELECT DISTINCT
-                m1.module_type,
-                COALESCE(m2.is_available, false) as in_base_plan
-            FROM module_plan_availability m1
-            LEFT JOIN module_plan_availability m2 
-                ON m1.module_type = m2.module_type 
-                AND m2.plan_code = $1
-            ORDER BY m1.module_type
+        // Verificar se o plan_code existe na tabela, se não, tentar mapear
+        const planCheck = await client.query(`
+            SELECT DISTINCT plan_code 
+            FROM module_plan_availability 
+            WHERE plan_code = $1 
+            LIMIT 1
         `, [planCode]);
+        
+        // Se o plan_code não existir, usar 'basic' como fallback
+        if (planCheck.rows.length === 0) {
+            console.log(`⚠️ Plan code '${planCode}' não encontrado, usando 'basic' como fallback`);
+            planCode = 'basic';
+        }
+        
+        // Lista completa de todos os módulos possíveis
+        const allModuleTypes = [
+            'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode',
+            'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
+            'spotify', 'linkedin', 'pinterest',
+            'link', 'portfolio', 'banner', 'carousel', 
+            'youtube_embed', 'sales_page', 'digital_form',
+            'finance', 'agenda', 'contract'
+        ];
+        
+        // Buscar módulos que estão disponíveis no plano base do usuário
+        const baseModulesResult = await client.query(`
+            SELECT module_type
+            FROM module_plan_availability
+            WHERE plan_code = $1 AND is_available = true
+        `, [planCode]);
+        
+        const baseModules = new Set(baseModulesResult.rows.map(r => r.module_type));
+        
+        console.log(`📋 Usuário: ${user.email}, Plan Code: ${planCode}, Módulos no plano base: ${baseModulesResult.rows.length}`);
+        
+        // Criar lista de todos os módulos com status correto
+        const allModules = allModuleTypes.map(moduleType => ({
+            module_type: moduleType,
+            in_base_plan: baseModules.has(moduleType),
+            is_individual: individualModules.includes(moduleType)
+        }));
         
         res.json({
             user: user,
-            modules: allModulesResult.rows.map(m => ({
-                module_type: m.module_type,
-                in_base_plan: m.in_base_plan,
-                is_individual: individualModules.includes(m.module_type)
-            }))
+            plan_code: planCode,
+            modules: allModules
         });
     } catch (error) {
         console.error('❌ Erro ao buscar módulos do usuário:', error);
@@ -421,7 +449,8 @@ router.put('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
             return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
         
-        const planCode = userResult.rows[0].account_type || 'free';
+        // Mapear account_type para plan_code (garantir compatibilidade)
+        let planCode = userResult.rows[0].account_type || 'free';
         
         await client.query('BEGIN');
         
