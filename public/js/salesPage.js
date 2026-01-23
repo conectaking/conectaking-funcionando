@@ -1151,5 +1151,104 @@
 
     // Expor Share globalmente
     window.Share = Share;
+
+    /**
+     * Funcionalidade de arrastar para rolar horizontalmente
+     * Permite clicar, segurar e arrastar para rolar elementos com scroll horizontal
+     */
+    function setupHorizontalDragScroll() {
+        const scrollContainer = document.querySelector('.products-filter-tabs-public');
+        
+        if (!scrollContainer) {
+            return;
+        }
+
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        // Mouse events
+        scrollContainer.addEventListener('mousedown', (e) => {
+            // Não ativar se clicar em um botão
+            if (e.target.closest('.filter-tab-public')) {
+                return;
+            }
+            
+            isDown = true;
+            scrollContainer.style.cursor = 'grabbing';
+            scrollContainer.style.userSelect = 'none';
+            startX = e.pageX - scrollContainer.offsetLeft;
+            scrollLeft = scrollContainer.scrollLeft;
+            e.preventDefault(); // Prevenir seleção de texto
+        });
+
+        document.addEventListener('mouseleave', () => {
+            if (isDown) {
+                isDown = false;
+                scrollContainer.style.cursor = 'grab';
+                scrollContainer.style.userSelect = '';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDown) {
+                isDown = false;
+                scrollContainer.style.cursor = 'grab';
+                scrollContainer.style.userSelect = '';
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - scrollContainer.offsetLeft;
+            const walk = (x - startX) * 2; // Velocidade do scroll (ajustável)
+            scrollContainer.scrollLeft = scrollLeft - walk;
+        });
+
+        // Touch events (para dispositivos móveis)
+        let touchStartX = 0;
+        let touchScrollLeft = 0;
+        let isTouching = false;
+
+        scrollContainer.addEventListener('touchstart', (e) => {
+            // Não ativar se tocar em um botão
+            if (e.target.closest('.filter-tab-public')) {
+                return;
+            }
+            
+            isTouching = true;
+            touchStartX = e.touches[0].pageX - scrollContainer.offsetLeft;
+            touchScrollLeft = scrollContainer.scrollLeft;
+        }, { passive: false });
+
+        scrollContainer.addEventListener('touchmove', (e) => {
+            // Se estiver tocando em um botão, não fazer scroll
+            if (!isTouching || e.target.closest('.filter-tab-public')) {
+                return;
+            }
+            
+            e.preventDefault(); // Prevenir scroll da página
+            const x = e.touches[0].pageX - scrollContainer.offsetLeft;
+            const walk = (x - touchStartX) * 2;
+            scrollContainer.scrollLeft = touchScrollLeft - walk;
+        }, { passive: false });
+
+        scrollContainer.addEventListener('touchend', () => {
+            isTouching = false;
+        });
+
+        // Adicionar cursor grab quando hover (apenas desktop)
+        if (window.innerWidth > 768) {
+            scrollContainer.style.cursor = 'grab';
+        }
+    }
+
+    // Inicializar funcionalidade de arrastar para rolar
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupHorizontalDragScroll);
+    } else {
+        setTimeout(setupHorizontalDragScroll, 100);
+    }
 })();
 

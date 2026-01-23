@@ -227,6 +227,12 @@ body.sales-page {
     border-bottom: 2px solid var(--border-color);
     padding-bottom: 0.75rem;
     flex-wrap: wrap;
+    cursor: grab;
+    scroll-behavior: smooth;
+}
+
+.products-filter-tabs-public:active {
+    cursor: grabbing;
 }
 
 .filter-tab-public {
@@ -1108,6 +1114,12 @@ body.sales-page {
         margin-bottom: 20px;
         padding-bottom: 10px;
         gap: 0.5rem;
+        cursor: grab;
+        scroll-behavior: smooth;
+    }
+    
+    .products-filter-tabs-public:active {
+        cursor: grabbing;
     }
     
     .products-filter-tabs-public::-webkit-scrollbar {
