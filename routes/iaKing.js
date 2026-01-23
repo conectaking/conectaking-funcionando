@@ -5560,7 +5560,7 @@ async function findBestAnswer(userMessage, userId) {
                             currency: 'BRL'
                         });
                         
-                        answer += `**${plan.plan_name}** - ${price} (pagamento único)\n`;
+                        answer += `**${plan.plan_name}** - ${price} (Pix)\n`;
                         if (plan.description) {
                             answer += `   ${plan.description}\n`;
                         }
@@ -5583,7 +5583,9 @@ async function findBestAnswer(userMessage, userId) {
                         answer += "\n";
                     });
                     
-                    answer += "💳 **Forma de Pagamento:** PIX (pagamento único, sem mensalidade)\n";
+                    answer += "💳 **Formas de Pagamento:**\n";
+                    answer += "• **PIX:** Pagamento à vista (sem acréscimo)\n";
+                    answer += "• **Cartão:** Até 12x com acréscimo de 20% (sem mensalidade)\n";
                     answer += "📱 **Renovação:** Opcional via WhatsApp\n\n";
                     answer += "✨ **Diferenciais:** Sem mensalidade, atualizações em tempo real, tecnologia NFC moderna!\n\n";
                     answer += "Para assinar ou renovar, acesse a seção 'Assinatura' no dashboard! 😊";
@@ -7316,12 +7318,13 @@ async function findBestAnswer(userMessage, userId) {
                     contextInfo = `O Conecta King é uma plataforma de cartões virtuais profissionais.
 
 PLANOS DISPONÍVEIS:
-- King Start: R$ 700,00 (pagamento único) - Ideal para iniciar
-- King Prime: R$ 1.000,00 (pagamento único) - Para profissionais que buscam impacto
-- King Corporate: R$ 2.300,00 (pagamento único) - Modo empresa
+- King Start: R$ 700,00 (Pix) - Ideal para iniciar
+- King Prime: R$ 1.000,00 (Pix) - Para profissionais que buscam impacto
+- King Corporate: R$ 2.300,00 (Pix) - Modo empresa
 
 FORMAS DE PAGAMENTO:
-- PIX (à vista, sem taxas)
+- PIX (à vista, sem acréscimo)
+- Cartão de Crédito (até 12x com acréscimo de 20%)
 - Cartão de Crédito (até 12x com 20% de taxa adicional)
 - Pagamento Mensal Recorrente (dividido em 12 parcelas)
 
@@ -8391,16 +8394,15 @@ router.post('/chat', protectUser, asyncHandler(async (req, res) => {
         if (pricingKeywords.some(kw => lowerMessage.includes(kw))) {
             return res.json({
                 response: "💰 **VALORES E PLANOS DO CONECTA KING**\n\n" +
-                         "**King Start** - R$ 700,00 (pagamento único)\n" +
+                         "**King Start** - R$ 700,00 (Pix)\n" +
                          "Ideal para iniciar sua presença digital\n\n" +
-                         "**King Prime** - R$ 1.000,00 (pagamento único)\n" +
+                         "**King Prime** - R$ 1.000,00 (Pix)\n" +
                          "Para profissionais que buscam impacto e autoridade\n\n" +
-                         "**King Corporate** - R$ 2.300,00 (pagamento único)\n" +
+                         "**King Corporate** - R$ 2.300,00 (Pix)\n" +
                          "A escolha ideal para empresas e equipes\n\n" +
                          "💳 **Formas de Pagamento:**\n" +
-                         "• PIX (à vista)\n" +
-                         "• Cartão de Crédito (até 12x com taxa de 20%)\n" +
-                         "• Pagamento Mensal Recorrente\n\n" +
+                         "• **PIX:** Pagamento à vista (sem acréscimo)\n" +
+                         "• **Cartão:** Até 12x com acréscimo de 20%\n\n" +
                          "Para assinar, acesse a seção 'Assinatura' no dashboard! 😊",
                 confidence: 100,
                 source: 'pricing_info_error_fallback',

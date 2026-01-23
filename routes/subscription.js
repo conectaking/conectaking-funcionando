@@ -6,6 +6,59 @@ const { asyncHandler } = require('../middleware/errorHandler');
 
 const router = express.Router();
 
+/**
+ * Calcula valores de parcelamento com acréscimo de 20%
+ * @param {number} basePrice - Preço base do plano
+ * @param {number} installments - Número de parcelas (máximo 12)
+ * @returns {Object} Objeto com valor total parcelado e valor por parcela
+ */
+function calculateInstallmentPrice(basePrice, installments = 12) {
+    const maxInstallments = Math.min(installments, 12);
+    const totalWithIncrease = basePrice * 1.2; // Acréscimo de 20%
+    const installmentValue = totalWithIncrease / maxInstallments;
+    
+    return {
+        totalPrice: totalWithIncrease,
+        installmentValue: installmentValue,
+        installments: maxInstallments,
+        basePrice: basePrice,
+        increase: totalWithIncrease - basePrice,
+        increasePercentage: 20
+    };
+}
+
+/**
+ * Adiciona informações de pagamento (Pix e parcelamento) aos planos
+ * @param {Array} plans - Array de planos
+ * @returns {Array} Planos com informações de pagamento
+ */
+function enrichPlansWithPaymentInfo(plans) {
+    return plans.map(plan => {
+        const price = parseFloat(plan.price) || 0;
+        const installmentInfo = calculateInstallmentPrice(price, 12);
+        
+        return {
+            ...plan,
+            paymentOptions: {
+                pix: {
+                    method: 'PIX',
+                    price: price,
+                    label: 'Pix',
+                    description: 'Pagamento à vista via Pix'
+                },
+                installment: {
+                    method: 'CARTÃO',
+                    totalPrice: installmentInfo.totalPrice,
+                    installmentValue: installmentInfo.installmentValue,
+                    installments: installmentInfo.installments,
+                    label: `Até ${installmentInfo.installments}x`,
+                    description: `Até ${installmentInfo.installments}x de R$ ${installmentInfo.installmentValue.toFixed(2).replace('.', ',')}`
+                }
+            }
+        };
+    });
+}
+
 // GET /api/subscription/info - Buscar informações da assinatura do usuário
 router.get('/info', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
@@ -67,6 +120,10 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
             currentPlan = null; // Usuário free não tem plano
         }
         
+        // Enriquecer planos com informações de pagamento
+        const enrichedPlans = enrichPlansWithPaymentInfo(plansResult.rows);
+        const enrichedCurrentPlan = currentPlan ? enrichPlansWithPaymentInfo([currentPlan])[0] : null;
+        
         res.json({
             user: {
                 id: user.id,
@@ -78,8 +135,8 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
                 createdAt: user.created_at,
                 isAdmin: user.is_admin
             },
-            currentPlan: currentPlan,
-            availablePlans: plansResult.rows
+            currentPlan: enrichedCurrentPlan,
+            availablePlans: enrichedPlans
         });
     } catch (error) {
         console.error('❌ Erro ao buscar informações de assinatura:', error);
@@ -121,8 +178,11 @@ router.get('/plans', protectUser, asyncHandler(async (req, res) => {
         `;
         const plansResult = await client.query(plansQuery);
         
+        // Enriquecer planos com informações de pagamento
+        const enrichedPlans = enrichPlansWithPaymentInfo(plansResult.rows);
+        
         res.json({
-            plans: plansResult.rows
+            plans: enrichedPlans
         });
     } catch (error) {
         console.error('❌ Erro ao buscar planos:', error);
@@ -245,9 +305,12 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
         `;
         const plansResult = await client.query(plansQuery);
         
+        // Enriquecer planos com informações de pagamento
+        const enrichedPlans = enrichPlansWithPaymentInfo(plansResult.rows);
+        
         res.json({
             success: true,
-            plans: plansResult.rows
+            plans: enrichedPlans
         });
     } catch (error) {
         console.error('❌ Erro ao buscar planos públicos:', error);

@@ -234,17 +234,17 @@ async function trainIAWithSystemInfo(client) {
                     } else if (topic.name.includes('Planos')) {
                         basicContent = `**PLANOS DO CONECTA KING**
 
-**King Start** - R$ 700,00 (pagamento único)
+**King Start** - R$ 700,00 (Pix)
 - Ideal para iniciar sua presença digital
 - Acesso a todos os módulos exceto: Loja Virtual, King Forms, Carrossel
 - Link Personalizado (bônus)
 
-**King Prime** - R$ 1.000,00 (pagamento único)
+**King Prime** - R$ 1.000,00 (Pix)
 - Para profissionais que buscam impacto
 - Todos os módulos disponíveis
 - Link Personalizado incluído
 
-**King Corporate** - R$ 2.300,00 (pagamento único)
+**King Corporate** - R$ 2.300,00 (Pix)
 - Modo empresa
 - 3 perfis/cartões
 - Todos os módulos e funcionalidades`;

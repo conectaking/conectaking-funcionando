@@ -13,7 +13,7 @@ Com um único toque, sua marca se apresenta, se conecta e se destaca.
 ## 📋 Planos Oficiais
 
 ### 👑 **King Start**
-**R$ 700,00 | Uso Individual | Pagamento Único**
+**R$ 700,00 | Uso Individual | Pix**
 
 Ideal para quem deseja iniciar sua presença digital com elegância e praticidade.
 
@@ -35,7 +35,7 @@ Ideal para quem deseja iniciar sua presença digital com elegância e praticidad
 ---
 
 ### 👑 **King Prime**
-**R$ 1.000,00 | Uso Individual Premium | Pagamento Único**
+**R$ 1.000,00 | Uso Individual Premium | Pix**
 
 Criado para profissionais que buscam impacto, autoridade e máximo aproveitamento da tecnologia.
 
@@ -117,9 +117,10 @@ WhatsApp, Instagram, TikTok, YouTube, PIX, Portfólio, Página de Vendas e muito
 
 ---
 
-## 💳 Forma de Pagamento
+## 💳 Formas de Pagamento
 
-- **PIX** - Pagamento único e instantâneo
+- **PIX** - Pagamento à vista (sem acréscimo)
+- **Cartão de Crédito** - Até 12x com acréscimo de 20%
 - **Sem mensalidade** - Investimento único, uso permanente
 - **Renovação opcional** - Via WhatsApp quando desejar
 

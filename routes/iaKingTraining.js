@@ -198,8 +198,9 @@ Incluso:
 • 3 perfis/cartões em uma única assinatura
 • PODE alterar a logomarca para cada cartão
 
-FORMA DE PAGAMENTO:
-• PIX (pagamento único, sem mensalidade)
+FORMAS DE PAGAMENTO:
+• PIX: Pagamento à vista (sem acréscimo)
+• Cartão de Crédito: Até 12x com acréscimo de 20%
 • WhatsApp para renovação
 
 DIFERENCIAIS CONECTAKING:
