@@ -405,6 +405,8 @@
         
         if (!planCode) {
             console.warn('⚠️ Não foi possível obter plan_code');
+            // Ocultar tudo por segurança
+            hideAllEmpresaElements();
             return;
         }
 
@@ -414,7 +416,21 @@
         const canEdit = canEditLogo(planCode);
         const hasEmpresa = hasModoEmpresa(planCode);
 
-        // Mostrar/ocultar botão Empresa
+        // Mostrar/ocultar botão Empresa no sidebar
+        const empresaTabSidebar = document.querySelector('.sidebar-tab[data-tab="times"], #empresa-tab-sidebar');
+        if (empresaTabSidebar) {
+            if (hasEmpresa) {
+                empresaTabSidebar.style.display = 'flex';
+                empresaTabSidebar.style.visibility = 'visible';
+                console.log('✅ Tab "Empresa" no sidebar visível');
+            } else {
+                empresaTabSidebar.style.display = 'none';
+                empresaTabSidebar.style.visibility = 'hidden';
+                console.log('❌ Tab "Empresa" no sidebar oculta');
+            }
+        }
+
+        // Mostrar/ocultar botão Empresa criado dinamicamente (se existir)
         const empresaButton = document.querySelector('[data-empresa-button="true"]');
         if (empresaButton) {
             if (hasEmpresa) {
@@ -424,7 +440,9 @@
             } else {
                 empresaButton.style.display = 'none';
                 empresaButton.style.visibility = 'hidden';
-                console.log('❌ Botão "Modo Empresa" oculto');
+                // Remover o botão se não tiver permissão
+                empresaButton.remove();
+                console.log('❌ Botão "Modo Empresa" removido');
             }
         }
 
@@ -496,14 +514,42 @@
     }
 
     /**
+     * Ocultar todos os elementos de Empresa
+     */
+    function hideAllEmpresaElements() {
+        const empresaTabSidebar = document.querySelector('.sidebar-tab[data-tab="times"], #empresa-tab-sidebar');
+        if (empresaTabSidebar) {
+            empresaTabSidebar.style.display = 'none';
+            empresaTabSidebar.style.visibility = 'hidden';
+        }
+        
+        const empresaButton = document.querySelector('[data-empresa-button="true"]');
+        if (empresaButton) {
+            empresaButton.remove();
+        }
+    }
+
+    /**
      * Configurar elementos
      */
     async function setupElements() {
         // Aguardar um pouco para garantir que sidebar está renderizado
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Criar botão Empresa (sempre criar, depois ocultar se necessário)
-        createEmpresaButton();
+        // PRIMEIRO: Verificar se tem permissão antes de criar
+        const planCode = await getUserPlanCode();
+        const hasEmpresa = planCode && hasModoEmpresa(planCode);
+
+        // Criar botão Empresa APENAS se tiver permissão
+        if (hasEmpresa) {
+            createEmpresaButton();
+        } else {
+            // Remover se já existir
+            const existingButton = document.querySelector('[data-empresa-button="true"]');
+            if (existingButton) {
+                existingButton.remove();
+            }
+        }
 
         // Criar opção Alterar Logo (sempre criar, depois ocultar se necessário)
         createAlterarLogoOption();
