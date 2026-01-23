@@ -37,6 +37,7 @@
             // Usar safeFetch se disponível, senão usar fetch padrão
             const fetchFunction = window.safeFetch || fetch;
             
+            // Usar billingType atual
             const response = await fetchFunction(`${API_URL}/api/subscription/info?billingType=${billingType}`, {
                 method: 'GET',
                 headers: HEADERS_AUTH,

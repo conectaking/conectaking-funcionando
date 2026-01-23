@@ -19,6 +19,8 @@ const accountRoutes = require('./routes/account');
 const profileRoutes = require('./routes/profile');
 const publicProfileRoutes = require('./routes/publicProfile');
 const subscriptionRoutes = require('./routes/subscription');
+// Módulo de Assinatura (estrutura MVC completa)
+const subscriptionModuleRoutes = require('./modules/subscription/subscription.routes');
 const moduleAvailabilityRoutes = require('./routes/moduleAvailability');
 const loggerRoutes = require('./routes/logger');
 const adminRoutes = require('./routes/admin');
@@ -564,6 +566,8 @@ app.use('/api/generator', apiLimiter, generatorRoutes);
 app.use('/api/account', apiLimiter, accountRoutes);
 app.use('/api/profile', apiLimiter, profileRoutes);
 app.use('/api/subscription', apiLimiter, subscriptionRoutes);
+// Rotas do módulo de assinatura (sobrescreve rotas antigas se necessário)
+app.use('/api/subscription', apiLimiter, subscriptionModuleRoutes);
 app.use('/api/modules', apiLimiter, moduleAvailabilityRoutes);
 app.use('/log', loggerRoutes);
 // Endpoint agregado de check-in (rate limit específico - 120/min)
