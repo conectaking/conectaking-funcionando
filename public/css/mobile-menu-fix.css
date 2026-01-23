@@ -23,7 +23,7 @@
         display: none !important;
     }
     
-    /* Sidebar mobile */
+    /* Sidebar mobile - SEMPRE FECHADO POR PADRÃO */
     .sidebar,
     .mobile-sidebar,
     .nav-sidebar,
@@ -37,12 +37,15 @@
         height: 100dvh !important;
         z-index: 1000 !important;
         transition: left 0.3s ease, transform 0.3s ease !important;
-        transform: translateX(0) !important;
+        transform: translateX(-100%) !important; /* CORRIGIDO: Fechado por padrão */
         background: #141417 !important;
         box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3) !important;
+        /* Garantir que está escondido */
+        visibility: hidden !important;
+        opacity: 0 !important;
     }
     
-    /* Sidebar aberto */
+    /* Sidebar aberto - APENAS quando tem classe open/active/show */
     .sidebar.open,
     .sidebar.active,
     .sidebar.show,
@@ -52,6 +55,8 @@
     [class*="sidebar"].active {
         left: 0 !important;
         transform: translateX(0) !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     
     /* Sidebar fechado */

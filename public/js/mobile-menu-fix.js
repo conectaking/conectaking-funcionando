@@ -333,21 +333,80 @@
     }
 
     /**
+     * Garantir que menu está fechado na inicialização
+     */
+    function ensureMenuClosedOnInit() {
+        console.log('🔒 Garantindo que menu está fechado na inicialização...');
+        
+        // Fechar menu imediatamente se estiver aberto
+        const sidebar = document.querySelector('.sidebar, .mobile-sidebar, .nav-sidebar, [class*="sidebar"], [class*="mobile-menu"]');
+        if (sidebar) {
+            // Verificar se está visível
+            const style = window.getComputedStyle(sidebar);
+            const rect = sidebar.getBoundingClientRect();
+            const isVisible = rect.left >= 0 || 
+                            style.left === '0px' || 
+                            style.transform === 'translateX(0px)' ||
+                            style.transform === 'translateX(0)';
+            
+            // Se está visível mas não tem classe open, ou se tem classe open mas não deveria ter
+            const hasOpenClass = sidebar.classList.contains('open') || 
+                               sidebar.classList.contains('active') ||
+                               sidebar.classList.contains('show');
+            
+            // Em mobile, sempre fechar por padrão
+            if (window.innerWidth <= 768) {
+                if (isVisible || hasOpenClass) {
+                    console.log('⚠️ Menu estava aberto na inicialização, fechando...');
+                    closeMobileMenu();
+                }
+                
+                // Forçar fechamento via CSS inline também
+                sidebar.style.left = '-100%';
+                sidebar.style.transform = 'translateX(-100%)';
+                sidebar.style.visibility = 'hidden';
+                sidebar.style.opacity = '0';
+                sidebar.classList.remove('open', 'active', 'show', 'visible');
+            }
+        }
+        
+        // Remover classes do body
+        document.body.classList.remove('menu-open', 'sidebar-open', 'mobile-menu-open', 'no-scroll');
+        document.body.style.overflow = '';
+        
+        // Remover qualquer overlay
+        const overlay = document.querySelector('.overlay, .sidebar-overlay, .menu-overlay, .backdrop, [class*="overlay"], [class*="backdrop"]');
+        if (overlay) {
+            overlay.classList.remove('active', 'show', 'visible');
+            overlay.style.display = 'none';
+            overlay.style.opacity = '0';
+            overlay.style.visibility = 'hidden';
+        }
+        
+        console.log('✅ Menu garantido como fechado na inicialização');
+    }
+
+    /**
      * Inicializar
      */
     function init() {
         console.log('🚀 Inicializando correções do menu mobile...');
         
+        // PRIMEIRO: Garantir que menu está fechado
+        ensureMenuClosedOnInit();
+        
         // Aguardar DOM estar pronto
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
+                    ensureMenuClosedOnInit(); // Garantir novamente após DOM carregar
                     setupMobileMenuListeners();
                     removeBlackOverlay();
                 }, 100);
             });
         } else {
             setTimeout(() => {
+                ensureMenuClosedOnInit(); // Garantir novamente
                 setupMobileMenuListeners();
                 removeBlackOverlay();
             }, 100);
@@ -409,13 +468,24 @@
     // Inicializar imediatamente
     init();
     
+    // Garantir que menu está fechado imediatamente (antes de qualquer outro script)
+    ensureMenuClosedOnInit();
+    
     // Também inicializar quando window carregar completamente
     window.addEventListener('load', () => {
         setTimeout(() => {
+            ensureMenuClosedOnInit(); // Garantir novamente após tudo carregar
             setupMobileMenuListeners();
             removeBlackOverlay();
         }, 500);
     });
+    
+    // Executar imediatamente também (para pegar antes de outros scripts)
+    if (document.readyState === 'complete') {
+        ensureMenuClosedOnInit();
+    } else {
+        window.addEventListener('DOMContentLoaded', ensureMenuClosedOnInit, { once: true });
+    }
     
     // Expor funções globalmente
     window.closeMobileMenu = closeMobileMenu;
@@ -431,8 +501,18 @@
     // Forçar execução após um delay para garantir
     setTimeout(() => {
         console.log('🔄 Executando verificação final do menu mobile...');
+        ensureMenuClosedOnInit(); // Garantir que está fechado
         setupMobileMenuListeners();
         removeBlackOverlay();
     }, 1000);
+    
+    // Executar também quando a página fica visível (se estava em background)
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && window.innerWidth <= 768) {
+            setTimeout(() => {
+                ensureMenuClosedOnInit();
+            }, 100);
+        }
+    });
 
 })();
