@@ -2,10 +2,22 @@
  * Restaurar botão "Modo Empresa" no menu do ADM
  * Posição: Abaixo de "Gerenciar códigos" e acima de "IA"
  * Baseado no front-end antigo
+ * IMPORTANTE: Este script deve rodar APENAS no admin, não no dashboard
  */
 
 (function() {
     'use strict';
+
+    // VERIFICAR SE ESTAMOS NO ADMIN - Se não estiver, não fazer nada
+    const isAdminPage = window.location.pathname.includes('/admin') || 
+                        document.querySelector('.admin-layout') || 
+                        document.querySelector('#users-table') ||
+                        document.querySelector('[data-target="users-pane"]');
+    
+    if (!isAdminPage) {
+        console.log('ℹ️ Script admin-menu-empresa-restore.js: Não é página admin, ignorando...');
+        return; // Sair imediatamente se não for admin
+    }
 
     console.log('🔧 Restaurando botão Modo Empresa no menu ADM...');
 
@@ -13,28 +25,35 @@
      * Adicionar botão "Modo Empresa" no menu
      */
     function addEmpresaButton() {
-        // Procurar por "Gerenciar Códigos" ou "Gerenciar Códigos"
-        const codigosLink = Array.from(document.querySelectorAll('.nav-link, a, [class*="nav"]')).find(el => {
+        // Procurar especificamente no menu lateral do admin
+        const sidebarNav = document.querySelector('.sidebar-nav, nav.sidebar-nav, [class*="sidebar-nav"]');
+        if (!sidebarNav) {
+            console.warn('⚠️ Menu lateral do admin não encontrado');
+            return;
+        }
+
+        // Procurar por "Gerenciar Códigos" dentro do menu lateral
+        const codigosLink = Array.from(sidebarNav.querySelectorAll('.nav-link, a')).find(el => {
             const text = (el.textContent || '').trim();
             return text.includes('Gerenciar') && (text.includes('Código') || text.includes('código') || text.includes('Códigos'));
         });
 
-        // Procurar por "IA KING" ou "IA"
-        const iaLink = Array.from(document.querySelectorAll('.nav-link, a, [class*="nav"]')).find(el => {
+        // Procurar por "IA KING" dentro do menu lateral
+        const iaLink = Array.from(sidebarNav.querySelectorAll('.nav-link, a')).find(el => {
             const text = (el.textContent || '').trim();
-            return text === 'IA KING' || text.includes('IA KING') || text.includes('IA') || el.href?.includes('ia-king');
+            return text === 'IA KING' || text.includes('IA KING') || el.href?.includes('ia-king');
         });
 
         // Se encontrou ambos, inserir entre eles
         if (codigosLink && iaLink) {
-            // Verificar se já existe
-            const existingEmpresa = Array.from(document.querySelectorAll('.nav-link, a')).find(el => {
+            // Verificar se já existe no menu lateral (não em toda a página)
+            const existingEmpresa = Array.from(sidebarNav.querySelectorAll('.nav-link, a')).find(el => {
                 const text = (el.textContent || '').trim();
-                return text.includes('Modo Empresa') || text.includes('Empresa');
+                return (text.includes('Modo Empresa') || (text.includes('Empresa') && el.getAttribute('data-empresa-admin')));
             });
 
             if (existingEmpresa) {
-                console.log('✅ Botão "Modo Empresa" já existe');
+                console.log('✅ Botão "Modo Empresa" já existe no menu admin');
                 return;
             }
 
@@ -87,21 +106,27 @@
         // Aguardar DOM estar pronto
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                setTimeout(addEmpresaButton, 500);
+                setTimeout(addEmpresaButton, 1000);
             });
         } else {
-            setTimeout(addEmpresaButton, 500);
+            setTimeout(addEmpresaButton, 1000);
         }
 
-        // Observar mudanças no DOM
-        const observer = new MutationObserver(() => {
-            setTimeout(addEmpresaButton, 300);
-        });
+        // Observar mudanças no DOM (apenas no menu lateral do admin)
+        const sidebarNav = document.querySelector('.sidebar-nav, nav.sidebar-nav');
+        if (sidebarNav) {
+            const observer = new MutationObserver(() => {
+                // Verificar novamente se ainda estamos no admin
+                if (isAdminPage) {
+                    setTimeout(addEmpresaButton, 500);
+                }
+            });
 
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+            observer.observe(sidebarNav, {
+                childList: true,
+                subtree: false // Apenas observar filhos diretos
+            });
+        }
     }
 
     init();
