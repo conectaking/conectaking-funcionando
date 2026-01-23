@@ -1,0 +1,185 @@
+/**
+ * Correção do Menu Mobile - CSS
+ * Remove overlay preto problemático e garante que o menu funcione corretamente
+ */
+
+/* Remover overlay preto problemático em mobile */
+@media (max-width: 768px) {
+    /* Overlay que fica atrás do sidebar */
+    .sidebar-overlay,
+    .menu-overlay,
+    .mobile-menu-overlay,
+    [class*="overlay"][class*="sidebar"],
+    [class*="overlay"][class*="menu"] {
+        background: rgba(0, 0, 0, 0.5) !important;
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+    }
+    
+    /* Garantir que overlay não fique preto demais */
+    body.menu-open::before,
+    body.sidebar-open::before,
+    body.mobile-menu-open::before {
+        display: none !important;
+    }
+    
+    /* Sidebar mobile */
+    .sidebar,
+    .mobile-sidebar,
+    .nav-sidebar,
+    [class*="sidebar"]:not(.cart-sidebar):not(.share-menu) {
+        position: fixed !important;
+        top: 0 !important;
+        left: -100% !important;
+        width: 80% !important;
+        max-width: 320px !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        z-index: 1000 !important;
+        transition: left 0.3s ease, transform 0.3s ease !important;
+        transform: translateX(0) !important;
+        background: #141417 !important;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    /* Sidebar aberto */
+    .sidebar.open,
+    .sidebar.active,
+    .sidebar.show,
+    .mobile-sidebar.open,
+    .mobile-sidebar.active,
+    [class*="sidebar"].open,
+    [class*="sidebar"].active {
+        left: 0 !important;
+        transform: translateX(0) !important;
+    }
+    
+    /* Sidebar fechado */
+    .sidebar:not(.open):not(.active):not(.show),
+    .mobile-sidebar:not(.open):not(.active),
+    [class*="sidebar"]:not(.open):not(.active):not(.show) {
+        left: -100% !important;
+        transform: translateX(-100%) !important;
+    }
+    
+    /* Overlay - mostrar apenas quando sidebar estiver aberto */
+    .sidebar-overlay,
+    .menu-overlay,
+    .mobile-menu-overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        z-index: 999 !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        transition: opacity 0.3s ease, visibility 0.3s ease !important;
+    }
+    
+    /* Overlay ativo */
+    .sidebar-overlay.active,
+    .sidebar-overlay.show,
+    .menu-overlay.active,
+    .menu-overlay.show,
+    .mobile-menu-overlay.active {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    /* Overlay inativo */
+    .sidebar-overlay:not(.active):not(.show),
+    .menu-overlay:not(.active):not(.show),
+    .mobile-menu-overlay:not(.active) {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
+    /* Remover qualquer elemento que esteja causando "erro preto" */
+    body.menu-open > *:not(.sidebar):not(.mobile-sidebar):not([class*="sidebar"]):not(.sidebar-overlay):not(.menu-overlay) {
+        /* Não aplicar nada aqui, apenas garantir que não há elementos bloqueando */
+    }
+    
+    /* Garantir que conteúdo principal não fique completamente invisível */
+    main,
+    .main-content,
+    .content-area,
+    [class*="content"]:not(.sidebar):not([class*="sidebar"]) {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Quando menu está aberto, apenas escurecer levemente o conteúdo */
+    body.menu-open main,
+    body.menu-open .main-content,
+    body.sidebar-open main,
+    body.sidebar-open .main-content {
+        opacity: 0.6 !important;
+        transition: opacity 0.3s ease !important;
+    }
+    
+    /* Botão hamburger */
+    .hamburger,
+    .menu-toggle,
+    .mobile-menu-toggle,
+    [class*="hamburger"],
+    [class*="menu-toggle"] {
+        cursor: pointer !important;
+        z-index: 1001 !important;
+        position: relative !important;
+    }
+    
+    /* Botão de fechar */
+    .close-menu,
+    .menu-close,
+    .sidebar-close,
+    [class*="close-menu"],
+    [class*="menu-close"] {
+        cursor: pointer !important;
+        z-index: 1002 !important;
+        position: relative !important;
+    }
+}
+
+/* Garantir que não há elementos fixos causando "erro preto" */
+@media (max-width: 768px) {
+    /* Remover qualquer backdrop fixo problemático */
+    body::before,
+    body::after,
+    html::before,
+    html::after {
+        display: none !important;
+        content: none !important;
+    }
+    
+    /* Garantir que body não tenha background preto quando menu está aberto */
+    body.menu-open,
+    body.sidebar-open {
+        background: #0D0D0F !important;
+        overflow: hidden !important;
+    }
+    
+    /* Remover qualquer elemento que cubra toda a tela com background preto */
+    *[style*="background: rgba(0,0,0"]:not(.sidebar-overlay):not(.menu-overlay),
+    *[style*="background:rgb(0,0,0"]:not(.sidebar-overlay):not(.menu-overlay),
+    *[style*="background:#000"]:not(.sidebar-overlay):not(.menu-overlay) {
+        /* Verificar se não é um overlay legítimo */
+    }
+}
+
+/* Animações suaves */
+.sidebar,
+.mobile-sidebar,
+[class*="sidebar"]:not(.cart-sidebar) {
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Garantir que sidebar não interfira com outros elementos */
+.sidebar.open ~ *,
+.mobile-sidebar.open ~ * {
+    /* Não aplicar transformações que possam quebrar layout */
+}
