@@ -119,16 +119,16 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
         }
         
         // Enriquecer planos com informações de pagamento baseado no billingType
-        // O preço no banco é ANUAL, então:
-        // - Se for mensal: divide por 12
-        // - Se for anual: aplica desconto de 20%
+        // O preço no banco é ANUAL (R$ 700, R$ 1000, etc.)
+        // - Se for mensal: aumenta 20% e divide por 12 → (basePrice × 1.2) / 12
+        // - Se for anual: desconto de 20% → basePrice × 0.8
         const enrichedPlans = plansResult.rows.map(plan => {
             const basePrice = parseFloat(plan.price) || 0;
             let displayPrice = basePrice;
             
             if (billingType === 'monthly') {
-                // Valor mensal = valor anual / 12
-                displayPrice = basePrice / 12;
+                // Valor mensal = (valor anual + 20%) / 12
+                displayPrice = (basePrice * 1.2) / 12;
             } else if (billingType === 'annual') {
                 // Valor anual com desconto de 20%
                 displayPrice = basePrice * 0.8;
@@ -165,8 +165,10 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
             const basePrice = parseFloat(currentPlan.price) || 0;
             let displayPrice = basePrice;
             if (billingType === 'monthly') {
-                displayPrice = basePrice / 12;
+                // Valor mensal = (valor anual + 20%) / 12
+                displayPrice = (basePrice * 1.2) / 12;
             } else if (billingType === 'annual') {
+                // Valor anual com desconto de 20%
                 displayPrice = basePrice * 0.8;
             }
             const installmentInfo = calculateInstallmentPrice(displayPrice, 12);
@@ -367,16 +369,16 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
         const plansResult = await client.query(plansQuery);
         
         // Enriquecer planos com informações de pagamento baseado no billingType
-        // O preço no banco é ANUAL, então:
-        // - Se for mensal: divide por 12
-        // - Se for anual: aplica desconto de 20%
+        // O preço no banco é ANUAL (R$ 700, R$ 1000, etc.)
+        // - Se for mensal: aumenta 20% e divide por 12 → (basePrice × 1.2) / 12
+        // - Se for anual: desconto de 20% → basePrice × 0.8
         const enrichedPlans = plansResult.rows.map(plan => {
             const basePrice = parseFloat(plan.price) || 0;
             let displayPrice = basePrice;
             
             if (billingType === 'monthly') {
-                // Valor mensal = valor anual / 12
-                displayPrice = basePrice / 12;
+                // Valor mensal = (valor anual + 20%) / 12
+                displayPrice = (basePrice * 1.2) / 12;
             } else if (billingType === 'annual') {
                 // Valor anual com desconto de 20%
                 displayPrice = basePrice * 0.8;
