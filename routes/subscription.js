@@ -137,17 +137,25 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
         });
         
         // Determinar qual plano o usuário tem baseado no account_type
-        // Por enquanto, mapeamos:
-        // - individual -> basic ou premium (precisaria de campo adicional para diferenciar)
-        // - business_owner -> enterprise
+        const accountTypeToPlanCode = {
+            'individual': 'basic',
+            'business_owner': 'king_corporate',
+            'basic': 'basic',
+            'premium': 'premium',
+            'king_base': 'king_base',
+            'king_finance': 'king_finance',
+            'king_finance_plus': 'king_finance_plus',
+            'king_premium_plus': 'king_premium_plus',
+            'king_corporate': 'king_corporate',
+            'enterprise': 'king_corporate'
+        };
+        
         let currentPlan = null;
-        if (user.account_type === 'individual') {
-            // Por padrão, assumimos basic. Em produção, você pode adicionar um campo subscription_plan_code na tabela users
-            currentPlan = plansResult.rows.find(p => p.plan_code === 'basic') || plansResult.rows[0];
-        } else if (user.account_type === 'business_owner') {
-            currentPlan = plansResult.rows.find(p => p.plan_code === 'enterprise') || plansResult.rows[2];
-        } else if (user.account_type === 'free') {
+        if (user.account_type === 'free') {
             currentPlan = null; // Usuário free não tem plano
+        } else {
+            const planCode = accountTypeToPlanCode[user.account_type] || 'basic';
+            currentPlan = enrichedPlans.find(p => p.plan_code === planCode);
         }
         
         res.json({
@@ -161,12 +169,7 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
                 createdAt: user.created_at,
                 isAdmin: user.is_admin
             },
-            currentPlan: currentPlan ? {
-                ...currentPlan,
-                billingType: billingType,
-                displayPrice: enrichedPlans.find(p => p.plan_code === currentPlan.plan_code)?.displayPrice || currentPlan.price,
-                paymentOptions: enrichedPlans.find(p => p.plan_code === currentPlan.plan_code)?.paymentOptions || {}
-            } : null,
+            currentPlan: currentPlan,
             availablePlans: enrichedPlans,
             billingType: billingType
         });

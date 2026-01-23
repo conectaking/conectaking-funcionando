@@ -173,31 +173,41 @@ function renderPlanCardDashboard(plan, modules = null, billingType = 'monthly') 
     const paymentOptions = plan.paymentOptions || {};
     const planBillingType = plan.billingType || billingType || 'monthly';
     
-    // Calcular preço baseado no billingType
-    // O preço no banco é ANUAL (R$ 700, R$ 1000, etc.)
-    // - Se for mensal: usa o valor da parcela de 12x do anual (com acréscimo de 20%)
-    // - Se for anual: usa o valor exato do banco
-    let basePrice = parseFloat(plan.price) || 0;
-    let displayPrice = basePrice;
+    // Valores mensais fixos conforme especificação do usuário
+    const monthlyValues = {
+        'basic': 70.00,              // King Start: R$ 70,00
+        'premium': 100.00,           // King Prime: R$ 100,00
+        'king_base': 100.00,        // King Essential: R$ 100,00
+        'king_finance': 120.00,      // King Finance: proporcional
+        'king_finance_plus': 140.00, // King Finance Plus: proporcional
+        'king_premium_plus': 150.00, // King Premium Plus: proporcional
+        'king_corporate': 150.00     // King Corporate: proporcional
+    };
     
+    const basePrice = parseFloat(plan.price) || 0;
+    const planCode = plan.plan_code;
+    const monthlyPrice = monthlyValues[planCode] || (basePrice / 12);
+    
+    let displayPrice;
     if (planBillingType === 'monthly') {
-        // Calcular valor da parcela de 12x do anual (com acréscimo de 20%)
-        const annualWithIncrease = basePrice * 1.2; // Acréscimo de 20%
-        displayPrice = annualWithIncrease / 12; // Valor mensal = parcela de 12x
-    } else if (planBillingType === 'annual') {
-        // Valor anual = valor exato do banco (R$ 700, R$ 1000, etc.)
+        // Valor mensal fixo conforme especificação
+        displayPrice = monthlyPrice;
+    } else {
+        // Valor anual = valor exato do banco
         displayPrice = basePrice;
     }
     
+    // Usar paymentOptions da API se disponível, senão calcular
     const pixPrice = paymentOptions.pix?.price || displayPrice;
     const installmentInfo = paymentOptions.installment;
     
     // Calcular valores se paymentOptions não vier da API (fallback)
     let installmentPrice = null;
     let installmentValue = null;
-    if (!installmentInfo && displayPrice) {
-        installmentPrice = displayPrice * 1.2; // Acréscimo de 20%
-        installmentValue = installmentPrice / 12;
+    if (!installmentInfo && planCode !== 'basic') {
+        // Outros planos: 12x no cartão
+        installmentPrice = monthlyPrice * 12;
+        installmentValue = monthlyPrice;
     } else if (installmentInfo) {
         installmentPrice = installmentInfo.totalPrice;
         installmentValue = installmentInfo.installmentValue;
@@ -205,7 +215,7 @@ function renderPlanCardDashboard(plan, modules = null, billingType = 'monthly') 
     
     // Títulos de pagamento
     const pixTitle = paymentOptions.pix?.title || 'À vista no Pix';
-    const cardTitle = paymentOptions.installment?.title || 'Até 12 meses';
+    const cardTitle = paymentOptions.installment?.title || '12x no cartão';
     
     // Label de período
     const periodLabel = planBillingType === 'annual' ? '/ano' : '/mês';
@@ -218,11 +228,20 @@ function renderPlanCardDashboard(plan, modules = null, billingType = 'monthly') 
                 <span class="plan-amount">${pixPrice.toFixed(2).replace('.', ',')}</span>
                 <span class="plan-period" style="font-size: 0.9rem; color: var(--text-secondary, #888888);">${periodLabel}</span>
             </div>
-            ${installmentPrice && planBillingType === 'annual' ? `
+            ${planCode === 'basic' ? `
+            <!-- King Start: apenas PIX -->
+            <div class="plan-payment-methods" style="margin-top: 12px; padding: 12px; background: rgba(255, 199, 0, 0.05); border-radius: 8px; border: 1px solid rgba(255, 199, 0, 0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.9rem; color: var(--text-primary, #FFFFFF); font-weight: 600;">${pixTitle}:</span>
+                    <span style="font-size: 0.9rem; color: #FFC700; font-weight: 700;">R$ ${pixPrice.toFixed(2).replace('.', ',')}${planBillingType === 'monthly' ? ' por mês' : ' à vista'}</span>
+                </div>
+            </div>
+            ` : installmentPrice ? `
+            <!-- Outros planos: PIX + Cartão 12x -->
             <div class="plan-payment-methods" style="margin-top: 12px; padding: 12px; background: rgba(255, 199, 0, 0.05); border-radius: 8px; border: 1px solid rgba(255, 199, 0, 0.2);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <span style="font-size: 0.9rem; color: var(--text-primary, #FFFFFF); font-weight: 600;">${pixTitle}:</span>
-                    <span style="font-size: 0.9rem; color: #FFC700; font-weight: 700;">R$ ${pixPrice.toFixed(2).replace('.', ',')}</span>
+                    <span style="font-size: 0.9rem; color: #FFC700; font-weight: 700;">R$ ${pixPrice.toFixed(2).replace('.', ',')}${planBillingType === 'monthly' ? ' por mês' : ' à vista'}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-size: 0.9rem; color: var(--text-primary, #FFFFFF); font-weight: 600;">${cardTitle}:</span>
@@ -356,8 +375,10 @@ function renderPlanCardDashboard(plan, modules = null, billingType = 'monthly') 
                 ` : ''}
             </ul>
             <div class="plan-actions">
-                <a id="whatsapp-btn-${plan.plan_code}" href="https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Gostaria de assinar o plano *${plan.plan_name}*\n\n*Forma de Pagamento:* Pix (À vista)\n*Valor:* R$ ${pixPrice.toFixed(2).replace('.', ',')}\n\n*Opção de Parcelamento:*\nCartão: Até 12 meses (12x de R$ ${installmentValue ? installmentValue.toFixed(2).replace('.', ',') : '0,00'})\n\nPor favor, envie a chave PIX para confirmação.`)}" target="_blank" class="btn btn-primary" style="width: 100%; margin-bottom: 10px;">
-                    <i class="fab fa-whatsapp"></i> Assinar agora
+                <a id="whatsapp-btn-${plan.plan_code}" href="https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(planCode === 'basic' 
+                    ? `Olá! Gostaria de assinar o plano *${plan.plan_name}*\n\n*Forma de Pagamento:* Pix\n*Valor:* R$ ${pixPrice.toFixed(2).replace('.', ',')}${planBillingType === 'monthly' ? ' por mês' : ' à vista'}\n\nPor favor, envie a chave PIX para confirmação.`
+                    : `Olá! Gostaria de assinar o plano *${plan.plan_name}*\n\n*Forma de Pagamento:*\n- Pix: R$ ${pixPrice.toFixed(2).replace('.', ',')}${planBillingType === 'monthly' ? ' por mês' : ' à vista'}\n- Cartão: 12x de R$ ${installmentValue ? installmentValue.toFixed(2).replace('.', ',') : '0,00'}\n\nPor favor, envie a chave PIX para confirmação.`)}" target="_blank" class="btn btn-primary" style="width: 100%; margin-bottom: 10px;">
+                    <i class="fab fa-whatsapp"></i> ${ctaText}
                 </a>
                 <button class="btn btn-secondary" style="width: 100%;" onclick="copyPixKey('${pix || ''}')">
                     <i class="fas fa-copy"></i> Copiar Chave PIX
