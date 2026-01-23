@@ -1,0 +1,120 @@
+/**
+ * Estilos para Modo Empresa e Alterar Logo no Dashboard
+ */
+
+/* Botão Modo Empresa ao lado de Perfis (área principal) */
+[data-empresa-button="true"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+[data-empresa-button="true"]:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFC700;
+}
+
+[data-empresa-button="true"].active {
+    background: #FFC700;
+    color: #000;
+    font-weight: 600;
+}
+
+/* Container de tabs (Perfis e Empresa) */
+.tabs-container {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    align-items: center;
+}
+
+/* Seção Alterar Logo */
+.alterar-logo-section {
+    margin-top: 24px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.alterar-logo-section .form-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.alterar-logo-section .form-label i {
+    color: #FFC700;
+}
+
+.logo-upload-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.logo-upload-container button {
+    background: #FFC700;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+}
+
+.logo-upload-container button:hover {
+    background: #FFD700;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 199, 0, 0.3);
+}
+
+.logo-preview {
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.logo-preview img {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.alterar-logo-section .form-text {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+    margin-top: 8px;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .alterar-logo-section {
+        padding: 16px;
+    }
+
+    .logo-upload-container button {
+        width: 100%;
+        justify-content: center;
+    }
+}
