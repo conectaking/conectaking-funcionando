@@ -266,6 +266,7 @@ router.get('/users', protectAdmin, async (req, res) => {
 
 router.put('/users/:id/manage', protectAdmin, async (req, res) => {
     const { id } = req.params;
+    // subscriptionStatus ainda pode vir no body (compatibilidade), mas não será usado
     const { email, accountType, isAdmin, subscriptionStatus, expiresAt, maxTeamInvites  } = req.body; 
     const adminUserId = req.user.userId;
 
@@ -299,14 +300,15 @@ router.put('/users/:id/manage', protectAdmin, async (req, res) => {
         }
         
         const expiresAtForDb = expiresAt ? expiresAt : null;
-        const statusForDb = subscriptionStatus ? subscriptionStatus : null;
+        // subscriptionStatus não é mais atualizado via esta rota (gerenciado automaticamente)
+        // Mantemos o campo no banco mas não atualizamos via esta rota
 
         const { rows } = await client.query(
             `UPDATE users 
-             SET email = $1, account_type = $2, is_admin = $3, subscription_status = $4, subscription_expires_at = $5, max_team_invites = $6
-             WHERE id = $7 
+             SET email = $1, account_type = $2, is_admin = $3, subscription_expires_at = $4, max_team_invites = $5
+             WHERE id = $6 
              RETURNING id, email, account_type, is_admin, subscription_status, subscription_expires_at, max_team_invites`,
-            [email, accountType, isAdmin, statusForDb, expiresAtForDb, maxInvites, id]
+            [email, accountType, isAdmin, expiresAtForDb, maxInvites, id]
         );
 
         await client.query('COMMIT');
