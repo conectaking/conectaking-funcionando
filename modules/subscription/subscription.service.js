@@ -60,11 +60,16 @@ class SubscriptionService {
         return plans.map(plan => {
             const basePrice = parseFloat(plan.price) || 0;
             
-            // Se for anual, calcular preço anual com desconto
+            // O preço no banco é ANUAL, então:
+            // - Se for mensal: divide por 12
+            // - Se for anual: aplica desconto de 20%
             let displayPrice = basePrice;
-            if (billingType === 'annual') {
-                const annualInfo = this.calculateAnnualPrice(basePrice, 20);
-                displayPrice = annualInfo.finalAnnualPrice;
+            if (billingType === 'monthly') {
+                // Valor mensal = valor anual / 12
+                displayPrice = basePrice / 12;
+            } else if (billingType === 'annual') {
+                // Valor anual com desconto de 20%
+                displayPrice = basePrice * 0.8;
             }
             
             const installmentInfo = this.calculateInstallmentPrice(displayPrice, 12);
