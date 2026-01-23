@@ -148,8 +148,21 @@ router.get('/plans', protectUser, asyncHandler(async (req, res) => {
         `;
         const plansResult = await client.query(plansQuery);
         
+        // Garantir que os campos customizados sejam sempre strings (não null)
+        const plansWithCustomFields = plansResult.rows.map(plan => ({
+            ...plan,
+            custom_included_modules: plan.custom_included_modules !== null && plan.custom_included_modules !== undefined 
+                ? plan.custom_included_modules 
+                : '',
+            custom_excluded_modules: plan.custom_excluded_modules !== null && plan.custom_excluded_modules !== undefined 
+                ? plan.custom_excluded_modules 
+                : ''
+        }));
+        
+        console.log(`📤 Retornando ${plansWithCustomFields.length} planos com campos customizados`);
+        
         res.json({
-            plans: plansResult.rows
+            plans: plansWithCustomFields
         });
     } catch (error) {
         console.error('❌ Erro ao buscar planos:', error);
@@ -432,16 +445,30 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
             
             const updatedPlan = finalPlanResult.rows[0];
             
+            // Garantir que os campos customizados sejam sempre retornados (mesmo que vazios)
+            const responsePlan = {
+                ...updatedPlan,
+                custom_included_modules: updatedPlan.custom_included_modules !== null && updatedPlan.custom_included_modules !== undefined 
+                    ? updatedPlan.custom_included_modules 
+                    : '',
+                custom_excluded_modules: updatedPlan.custom_excluded_modules !== null && updatedPlan.custom_excluded_modules !== undefined 
+                    ? updatedPlan.custom_excluded_modules 
+                    : ''
+            };
+            
             console.log('✅ Plano atualizado:', {
-                plan_name: updatedPlan.plan_name,
-                custom_included_modules: updatedPlan.custom_included_modules || '(vazio)',
-                custom_excluded_modules: updatedPlan.custom_excluded_modules || '(vazio)',
+                plan_name: responsePlan.plan_name,
+                plan_code: responsePlan.plan_code,
+                custom_included_modules: `"${responsePlan.custom_included_modules}"`,
+                custom_excluded_modules: `"${responsePlan.custom_excluded_modules}"`,
+                custom_included_length: responsePlan.custom_included_modules.length,
+                custom_excluded_length: responsePlan.custom_excluded_modules.length,
                 modulesUpdated: (included_modules !== undefined || excluded_modules !== undefined) ? true : false
             });
             
             res.json({
                 message: 'Plano atualizado com sucesso.',
-                plan: updatedPlan,
+                plan: responsePlan,
                 modulesUpdated: (included_modules !== undefined || excluded_modules !== undefined) ? true : false
             });
         } catch (error) {
@@ -483,9 +510,20 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
         `;
         const plansResult = await client.query(plansQuery);
         
+        // Garantir que os campos customizados sejam sempre strings (não null) para a página pública
+        const plansWithCustomFields = plansResult.rows.map(plan => ({
+            ...plan,
+            custom_included_modules: plan.custom_included_modules !== null && plan.custom_included_modules !== undefined 
+                ? plan.custom_included_modules 
+                : '',
+            custom_excluded_modules: plan.custom_excluded_modules !== null && plan.custom_excluded_modules !== undefined 
+                ? plan.custom_excluded_modules 
+                : ''
+        }));
+        
         res.json({
             success: true,
-            plans: plansResult.rows
+            plans: plansWithCustomFields
         });
     } catch (error) {
         console.error('❌ Erro ao buscar planos públicos:', error);
