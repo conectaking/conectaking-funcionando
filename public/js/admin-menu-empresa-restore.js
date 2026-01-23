@@ -32,6 +32,47 @@
             return;
         }
 
+        // PRIMEIRO: Verificar se já existe no menu lateral (pode estar no HTML)
+        const existingEmpresa = Array.from(sidebarNav.querySelectorAll('.nav-link, a')).find(el => {
+            const text = (el.textContent || '').trim();
+            const hasDataAttr = el.getAttribute('data-empresa-admin') === 'true';
+            const hasTarget = el.getAttribute('data-target') === 'empresa-admin-pane';
+            return hasDataAttr || hasTarget || text.includes('Modo Empresa');
+        });
+
+        if (existingEmpresa) {
+            console.log('✅ Botão "Modo Empresa" já existe no menu admin (encontrado no HTML)');
+            // Garantir que está visível e com as classes corretas
+            existingEmpresa.style.display = '';
+            existingEmpresa.style.visibility = 'visible';
+            existingEmpresa.style.opacity = '1';
+            if (!existingEmpresa.classList.contains('nav-link')) {
+                existingEmpresa.classList.add('nav-link');
+            }
+            // Garantir que está na posição correta
+            const codigosLink = Array.from(sidebarNav.querySelectorAll('.nav-link, a')).find(el => {
+                const text = (el.textContent || '').trim();
+                return text.includes('Gerenciar') && (text.includes('Código') || text.includes('código') || text.includes('Códigos'));
+            });
+            const iaLink = Array.from(sidebarNav.querySelectorAll('.nav-link, a')).find(el => {
+                const text = (el.textContent || '').trim();
+                return text === 'IA KING' || text.includes('IA KING') || el.href?.includes('ia-king');
+            });
+            if (codigosLink && iaLink && existingEmpresa.parentElement) {
+                const codigosIndex = Array.from(existingEmpresa.parentElement.children).indexOf(codigosLink);
+                const iaIndex = Array.from(existingEmpresa.parentElement.children).indexOf(iaLink);
+                const empresaIndex = Array.from(existingEmpresa.parentElement.children).indexOf(existingEmpresa);
+                // Se não está entre códigos e IA, reposicionar
+                if (empresaIndex < codigosIndex || empresaIndex > iaIndex) {
+                    if (iaIndex > codigosIndex) {
+                        existingEmpresa.parentElement.insertBefore(existingEmpresa, iaLink);
+                        console.log('✅ Botão "Modo Empresa" reposicionado entre "Gerenciar Códigos" e "IA KING"');
+                    }
+                }
+            }
+            return;
+        }
+
         // Procurar por "Gerenciar Códigos" dentro do menu lateral
         const codigosLink = Array.from(sidebarNav.querySelectorAll('.nav-link, a')).find(el => {
             const text = (el.textContent || '').trim();
@@ -46,16 +87,6 @@
 
         // Se encontrou ambos, inserir entre eles
         if (codigosLink && iaLink) {
-            // Verificar se já existe no menu lateral (não em toda a página)
-            const existingEmpresa = Array.from(sidebarNav.querySelectorAll('.nav-link, a')).find(el => {
-                const text = (el.textContent || '').trim();
-                return (text.includes('Modo Empresa') || (text.includes('Empresa') && el.getAttribute('data-empresa-admin')));
-            });
-
-            if (existingEmpresa) {
-                console.log('✅ Botão "Modo Empresa" já existe no menu admin');
-                return;
-            }
 
             // Criar botão Empresa baseado no link de códigos
             const empresaLink = codigosLink.cloneNode(true);
