@@ -443,18 +443,26 @@
             setupMobileMenuListeners();
             removeBlackOverlay();
             
-            // Verificar se menu está aberto mas não deveria estar
-            const sidebar = document.querySelector('.sidebar, .mobile-sidebar, [class*="sidebar"]');
-            if (sidebar) {
-                const style = window.getComputedStyle(sidebar);
-                const rect = sidebar.getBoundingClientRect();
-                const isVisible = rect.left >= 0 || style.left === '0px' || style.transform === 'translateX(0px)';
-                const hasOpenClass = sidebar.classList.contains('open') || sidebar.classList.contains('active');
-                
-                // Se não tem classe open mas está visível, pode ser um bug - forçar fechar
-                if (isVisible && !hasOpenClass && window.innerWidth <= 768) {
-                    console.log('⚠️ Menu está visível mas não tem classe open, forçando fechar...');
-                    closeMobileMenu();
+            // Verificar se menu está aberto mas não deveria estar (em mobile)
+            if (window.innerWidth <= 768) {
+                const sidebar = document.querySelector('.sidebar, .mobile-sidebar, [class*="sidebar"]');
+                if (sidebar) {
+                    const style = window.getComputedStyle(sidebar);
+                    const rect = sidebar.getBoundingClientRect();
+                    const isVisible = rect.left >= 0 || 
+                                    style.left === '0px' || 
+                                    style.transform === 'translateX(0px)' ||
+                                    style.transform === 'translateX(0)';
+                    const hasOpenClass = sidebar.classList.contains('open') || 
+                                       sidebar.classList.contains('active') ||
+                                       sidebar.classList.contains('show');
+                    
+                    // Se está visível mas não tem classe open, ou se não deveria estar aberto
+                    // (exceto se o usuário acabou de clicar no hamburger - isso é tratado pelos listeners)
+                    if (isVisible && !hasOpenClass) {
+                        console.log('⚠️ Menu está visível mas não tem classe open, forçando fechar...');
+                        closeMobileMenu();
+                    }
                 }
             }
         }, 1500);
