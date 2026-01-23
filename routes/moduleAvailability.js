@@ -157,15 +157,21 @@ router.put('/plan-availability', protectUser, asyncHandler(async (req, res) => {
         const userId = req.user.userId;
         const { updates } = req.body; // Array de { module_type, plan_code, is_available }
         
+        console.log(`🔄 Recebida requisição para atualizar módulos. User ID: ${userId}, Updates: ${updates?.length || 0}`);
+        
         // Verificar se é admin
         const adminCheck = await client.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
         if (adminCheck.rows.length === 0 || !adminCheck.rows[0].is_admin) {
+            console.warn(`⚠️ Tentativa de acesso negado. User ID: ${userId}, is_admin: ${adminCheck.rows[0]?.is_admin}`);
             return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem editar.' });
         }
         
         if (!Array.isArray(updates) || updates.length === 0) {
+            console.error('❌ Lista de atualizações inválida:', { updates, type: typeof updates, isArray: Array.isArray(updates) });
             return res.status(400).json({ message: 'Lista de atualizações inválida.' });
         }
+        
+        console.log(`📋 Processando ${updates.length} atualizações de módulos`);
         
         await client.query('BEGIN');
         
@@ -173,18 +179,24 @@ router.put('/plan-availability', protectUser, asyncHandler(async (req, res) => {
             let updatedCount = 0;
             let createdCount = 0;
             
-            for (const update of updates) {
+            for (let i = 0; i < updates.length; i++) {
+                const update = updates[i];
                 const { module_type, plan_code, is_available } = update;
+                
+                console.log(`🔍 Processando update ${i + 1}/${updates.length}:`, { module_type, plan_code, is_available, type: typeof is_available });
                 
                 // Validação rigorosa
                 if (!module_type || typeof module_type !== 'string') {
-                    throw new Error(`module_type inválido: ${module_type} (tipo: ${typeof module_type})`);
+                    console.error(`❌ Update ${i + 1} inválido - module_type:`, { module_type, type: typeof module_type, update });
+                    throw new Error(`module_type inválido no update ${i + 1}: ${JSON.stringify(module_type)} (tipo: ${typeof module_type})`);
                 }
                 if (!plan_code || typeof plan_code !== 'string') {
-                    throw new Error(`plan_code inválido: ${plan_code} (tipo: ${typeof plan_code})`);
+                    console.error(`❌ Update ${i + 1} inválido - plan_code:`, { plan_code, type: typeof plan_code, update });
+                    throw new Error(`plan_code inválido no update ${i + 1}: ${JSON.stringify(plan_code)} (tipo: ${typeof plan_code})`);
                 }
                 if (typeof is_available !== 'boolean') {
-                    throw new Error(`is_available deve ser boolean, recebido: ${is_available} (tipo: ${typeof is_available})`);
+                    console.error(`❌ Update ${i + 1} inválido - is_available:`, { is_available, type: typeof is_available, update });
+                    throw new Error(`is_available deve ser boolean no update ${i + 1}, recebido: ${JSON.stringify(is_available)} (tipo: ${typeof is_available})`);
                 }
                 
                 // Verificar se registro existe
