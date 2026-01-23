@@ -41,6 +41,8 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
                 plan_code,
                 plan_name,
                 price,
+                monthly_price,
+                annual_price,
                 description,
                 features,
                 whatsapp_number,
@@ -49,7 +51,7 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
                 is_active
             FROM subscription_plans
             WHERE is_active = true
-            ORDER BY price ASC
+            ORDER BY COALESCE(monthly_price, price) ASC
         `;
         const plansResult = await client.query(plansQuery);
         
@@ -107,6 +109,8 @@ router.get('/plans', protectUser, asyncHandler(async (req, res) => {
                 plan_code,
                 plan_name,
                 price,
+                monthly_price,
+                annual_price,
                 description,
                 features,
                 whatsapp_number,
@@ -117,7 +121,7 @@ router.get('/plans', protectUser, asyncHandler(async (req, res) => {
                 updated_at
             FROM subscription_plans
             WHERE is_active = true
-            ORDER BY price ASC
+            ORDER BY COALESCE(monthly_price, price) ASC
         `;
         const plansResult = await client.query(plansQuery);
         
@@ -138,7 +142,7 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
     try {
         const userId = req.user.userId;
         const planId = parseInt(req.params.id, 10);
-        const { plan_name, price, description, features, whatsapp_number, whatsapp_message, pix_key, is_active } = req.body;
+        const { plan_name, price, monthly_price, annual_price, description, features, whatsapp_number, whatsapp_message, pix_key, is_active } = req.body;
         
         // Verificar se é admin
         const adminCheck = await client.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
@@ -164,6 +168,14 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
         if (price !== undefined) {
             updateFields.push(`price = $${paramIndex++}`);
             updateValues.push(parseFloat(price));
+        }
+        if (monthly_price !== undefined) {
+            updateFields.push(`monthly_price = $${paramIndex++}`);
+            updateValues.push(monthly_price ? parseFloat(monthly_price) : null);
+        }
+        if (annual_price !== undefined) {
+            updateFields.push(`annual_price = $${paramIndex++}`);
+            updateValues.push(annual_price ? parseFloat(annual_price) : null);
         }
         if (description !== undefined) {
             updateFields.push(`description = $${paramIndex++}`);
@@ -233,6 +245,8 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
                 plan_code,
                 plan_name,
                 price,
+                monthly_price,
+                annual_price,
                 description,
                 features,
                 whatsapp_number,
@@ -241,7 +255,7 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
                 is_active
             FROM subscription_plans
             WHERE is_active = true
-            ORDER BY price ASC
+            ORDER BY COALESCE(monthly_price, price) ASC
         `;
         const plansResult = await client.query(plansQuery);
         
