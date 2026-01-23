@@ -136,8 +136,8 @@ router.get('/plans', protectUser, asyncHandler(async (req, res) => {
                 whatsapp_message,
                 pix_key,
                 is_active,
-                custom_included_modules,
-                custom_excluded_modules,
+                COALESCE(custom_included_modules, '') as custom_included_modules,
+                COALESCE(custom_excluded_modules, '') as custom_excluded_modules,
                 created_at,
                 updated_at
             FROM subscription_plans
