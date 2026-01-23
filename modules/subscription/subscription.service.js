@@ -61,15 +61,15 @@ class SubscriptionService {
             const basePrice = parseFloat(plan.price) || 0;
             
             // O preço no banco é ANUAL (R$ 700, R$ 1000, etc.)
-            // - Se for mensal: aumenta 20% e divide por 12 → (basePrice × 1.2) / 12
-            // - Se for anual: desconto de 20% → basePrice × 0.8
+            // - Se for mensal: divide por 12 (valor mensal)
+            // - Se for anual: usa o valor exato do banco
             let displayPrice = basePrice;
             if (billingType === 'monthly') {
-                // Valor mensal = (valor anual + 20%) / 12
-                displayPrice = (basePrice * 1.2) / 12;
+                // Valor mensal = valor anual / 12
+                displayPrice = basePrice / 12;
             } else if (billingType === 'annual') {
-                // Valor anual com desconto de 20%
-                displayPrice = basePrice * 0.8;
+                // Valor anual = valor exato do banco (R$ 700, R$ 1000, etc.)
+                displayPrice = basePrice;
             }
             
             const installmentInfo = this.calculateInstallmentPrice(displayPrice, 12);
