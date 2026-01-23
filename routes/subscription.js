@@ -116,6 +116,7 @@ router.get('/plans', protectUser, asyncHandler(async (req, res) => {
                 created_at,
                 updated_at
             FROM subscription_plans
+            WHERE is_active = true
             ORDER BY price ASC
         `;
         const plansResult = await client.query(plansQuery);
