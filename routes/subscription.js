@@ -261,8 +261,20 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
             }
             
             // Processar módulos incluídos e não incluídos
+            console.log('🔍 Verificando módulos recebidos:', {
+                included_modules: included_modules,
+                excluded_modules: excluded_modules,
+                included_modules_type: typeof included_modules,
+                excluded_modules_type: typeof excluded_modules,
+                planCode: planCode
+            });
+            
             if ((included_modules !== undefined || excluded_modules !== undefined) && planCode) {
                 console.log('🔄 Processando módulos para o plano:', planCode);
+                console.log('📥 Dados recebidos:', {
+                    included_modules: included_modules,
+                    excluded_modules: excluded_modules
+                });
                 
                 // Mapear nomes de módulos para códigos
                 const moduleNameToCode = {
@@ -277,14 +289,21 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
                 };
                 
                 // Processar módulos incluídos
-                const includedList = included_modules 
+                const includedList = included_modules && included_modules.trim()
                     ? included_modules.split(',').map(m => m.trim()).filter(m => m)
                     : [];
                 
                 // Processar módulos não incluídos
-                const excludedList = excluded_modules 
+                const excludedList = excluded_modules && excluded_modules.trim()
                     ? excluded_modules.split(',').map(m => m.trim()).filter(m => m)
                     : [];
+                
+                console.log('📋 Listas processadas:', {
+                    includedList: includedList,
+                    excludedList: excludedList,
+                    includedCount: includedList.length,
+                    excludedCount: excludedList.length
+                });
                 
                 // Criar sets para busca rápida
                 const includedSet = new Set(includedList);
