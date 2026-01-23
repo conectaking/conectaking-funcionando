@@ -68,8 +68,31 @@ router.get('/plan-availability', protectUser, asyncHandler(async (req, res) => {
             return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem acessar.' });
         }
         
-        // Buscar todos os módulos e sua disponibilidade por plano
-        // Apenas módulos que existem e estão ativos no sistema
+        // Buscar planos ativos da tabela subscription_plans
+        const plansResult = await client.query(`
+            SELECT plan_code, plan_name, price
+            FROM subscription_plans
+            WHERE is_active = true
+            ORDER BY price ASC
+        `);
+        
+        const activePlans = plansResult.rows.map(row => ({
+            plan_code: row.plan_code,
+            plan_name: row.plan_name,
+            price: parseFloat(row.price)
+        }));
+        
+        // Buscar todos os módulos únicos que existem na tabela
+        const allModulesResult = await client.query(`
+            SELECT DISTINCT module_type
+            FROM module_plan_availability
+            ORDER BY module_type
+        `);
+        
+        const allModuleTypes = allModulesResult.rows.map(r => r.module_type);
+        
+        // Buscar disponibilidade de módulos por plano (apenas para planos ativos)
+        const planCodes = activePlans.map(p => p.plan_code);
         const availabilityQuery = `
             SELECT 
                 mpa.id,
@@ -78,34 +101,41 @@ router.get('/plan-availability', protectUser, asyncHandler(async (req, res) => {
                 mpa.is_available,
                 mpa.updated_at
             FROM module_plan_availability mpa
-            WHERE mpa.module_type IN (
-                'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode',
-                'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
-                'spotify', 'linkedin', 'pinterest',
-                'link', 'portfolio', 'banner', 'carousel', 
-                'youtube_embed', 'sales_page', 'digital_form',
-                'finance', 'agenda', 'contract'
-            )
+            WHERE mpa.module_type = ANY($1)
+            AND mpa.plan_code = ANY($2)
             ORDER BY mpa.module_type, mpa.plan_code
         `;
-        const availabilityResult = await client.query(availabilityQuery);
+        const availabilityResult = await client.query(availabilityQuery, [allModuleTypes, planCodes]);
         
         // Organizar por módulo
         const modulesMap = {};
+        allModuleTypes.forEach(moduleType => {
+            modulesMap[moduleType] = {
+                module_type: moduleType,
+                plans: {}
+            };
+            
+            // Inicializar todos os planos ativos para este módulo
+            activePlans.forEach(plan => {
+                modulesMap[moduleType].plans[plan.plan_code] = {
+                    is_available: false,
+                    id: null
+                };
+            });
+        });
+        
+        // Preencher com dados da tabela
         availabilityResult.rows.forEach(row => {
-            if (!modulesMap[row.module_type]) {
-                modulesMap[row.module_type] = {
-                    module_type: row.module_type,
-                    plans: {}
+            if (modulesMap[row.module_type] && modulesMap[row.module_type].plans[row.plan_code]) {
+                modulesMap[row.module_type].plans[row.plan_code] = {
+                    is_available: row.is_available,
+                    id: row.id
                 };
             }
-            modulesMap[row.module_type].plans[row.plan_code] = {
-                is_available: row.is_available,
-                id: row.id
-            };
         });
         
         res.json({
+            plans: activePlans,
             modules: Object.values(modulesMap)
         });
     } catch (error) {
