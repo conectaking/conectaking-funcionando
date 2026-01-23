@@ -384,15 +384,15 @@ router.get('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
             planCode = 'basic';
         }
         
-        // Lista completa de todos os módulos possíveis
-        const allModuleTypes = [
-            'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode',
-            'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
-            'spotify', 'linkedin', 'pinterest',
-            'link', 'portfolio', 'banner', 'carousel', 
-            'youtube_embed', 'sales_page', 'digital_form',
-            'finance', 'agenda', 'contract'
-        ];
+        // Buscar TODOS os módulos que existem na tabela (de qualquer plano)
+        // Isso garante que só mostramos módulos que realmente existem no sistema
+        const allModulesInSystemResult = await client.query(`
+            SELECT DISTINCT module_type
+            FROM module_plan_availability
+            ORDER BY module_type
+        `);
+        
+        const allModuleTypes = allModulesInSystemResult.rows.map(r => r.module_type);
         
         // Buscar módulos que estão disponíveis no plano base do usuário
         const baseModulesResult = await client.query(`
@@ -403,9 +403,9 @@ router.get('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
         
         const baseModules = new Set(baseModulesResult.rows.map(r => r.module_type));
         
-        console.log(`📋 Usuário: ${user.email}, Plan Code: ${planCode}, Módulos no plano base: ${baseModulesResult.rows.length}`);
+        console.log(`📋 Usuário: ${user.email}, Plan Code: ${planCode}, Módulos no sistema: ${allModuleTypes.length}, Módulos no plano base: ${baseModulesResult.rows.length}`);
         
-        // Criar lista de todos os módulos com status correto
+        // Criar lista de todos os módulos que existem no sistema, verificando se estão no plano base
         const allModules = allModuleTypes.map(moduleType => ({
             module_type: moduleType,
             in_base_plan: baseModules.has(moduleType),
