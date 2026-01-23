@@ -170,11 +170,21 @@ router.put('/plan-availability', protectUser, asyncHandler(async (req, res) => {
         await client.query('BEGIN');
         
         try {
+            let updatedCount = 0;
+            let createdCount = 0;
+            
             for (const update of updates) {
                 const { module_type, plan_code, is_available } = update;
                 
-                if (!module_type || !plan_code || typeof is_available !== 'boolean') {
-                    throw new Error('Dados de atualização inválidos');
+                // Validação rigorosa
+                if (!module_type || typeof module_type !== 'string') {
+                    throw new Error(`module_type inválido: ${module_type} (tipo: ${typeof module_type})`);
+                }
+                if (!plan_code || typeof plan_code !== 'string') {
+                    throw new Error(`plan_code inválido: ${plan_code} (tipo: ${typeof plan_code})`);
+                }
+                if (typeof is_available !== 'boolean') {
+                    throw new Error(`is_available deve ser boolean, recebido: ${is_available} (tipo: ${typeof is_available})`);
                 }
                 
                 // Verificar se registro existe
@@ -186,59 +196,46 @@ router.put('/plan-availability', protectUser, asyncHandler(async (req, res) => {
                 
                 if (checkResult.rows.length > 0) {
                     // Atualizar existente
-                    const updateResult = await client.query(`
+                    await client.query(`
                         UPDATE module_plan_availability 
                         SET is_available = $1, updated_at = CURRENT_TIMESTAMP
                         WHERE module_type = $2 AND plan_code = $3
-                        RETURNING id, is_available
                     `, [is_available, module_type, plan_code]);
-                    console.log(`✅ Módulo ${module_type} para ${plan_code} atualizado: is_available = ${is_available}`);
+                    updatedCount++;
                 } else {
                     // Criar novo
-                    const insertResult = await client.query(`
+                    await client.query(`
                         INSERT INTO module_plan_availability (module_type, plan_code, is_available)
                         VALUES ($1, $2, $3)
-                        RETURNING id, is_available
                     `, [module_type, plan_code, is_available]);
-                    console.log(`✅ Módulo ${module_type} para ${plan_code} criado: is_available = ${is_available}`);
+                    createdCount++;
                 }
             }
             
             await client.query('COMMIT');
             
-            console.log(`✅ Commit realizado: ${updates.length} módulos atualizados`);
-            
-            // Verificar se os dados foram realmente salvos (usando ANY para array)
-            if (updates.length > 0) {
-                const moduleTypes = [...new Set(updates.map(u => u.module_type))];
-                const planCodes = [...new Set(updates.map(u => u.plan_code))];
-                
-                const verifyQuery = `
-                    SELECT module_type, plan_code, is_available
-                    FROM module_plan_availability
-                    WHERE module_type = ANY($1)
-                    AND plan_code = ANY($2)
-                `;
-                const verifyResult = await client.query(verifyQuery, [moduleTypes, planCodes]);
-                console.log(`🔍 Verificação: ${verifyResult.rows.length} registros encontrados após commit`);
-                
-                // Log detalhado dos registros verificados
-                verifyResult.rows.forEach(row => {
-                    console.log(`   ✓ ${row.module_type} para ${row.plan_code}: is_available = ${row.is_available}`);
-                });
-            }
+            console.log(`✅ Commit realizado: ${updates.length} módulos processados (${updatedCount} atualizados, ${createdCount} criados)`);
             
             res.json({
                 message: 'Disponibilidade de módulos atualizada com sucesso.',
                 updated: updates.length,
-                verified: verifyResult.rows.length
+                updatedCount: updatedCount,
+                createdCount: createdCount
             });
         } catch (error) {
             await client.query('ROLLBACK');
+            console.error('❌ Erro na transação (ROLLBACK executado):', error.message);
+            console.error('Stack:', error.stack);
             throw error;
         }
     } catch (error) {
-        console.error('❌ Erro ao atualizar disponibilidade de módulos:', error);
+        console.error('❌ Erro ao atualizar disponibilidade de módulos:', error.message);
+        console.error('Stack completo:', error.stack);
+        console.error('Detalhes do erro:', {
+            name: error.name,
+            message: error.message,
+            code: error.code
+        });
         throw error;
     } finally {
         client.release();
