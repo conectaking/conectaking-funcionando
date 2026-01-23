@@ -186,25 +186,52 @@ router.put('/plan-availability', protectUser, asyncHandler(async (req, res) => {
                 
                 if (checkResult.rows.length > 0) {
                     // Atualizar existente
-                    await client.query(`
+                    const updateResult = await client.query(`
                         UPDATE module_plan_availability 
                         SET is_available = $1, updated_at = CURRENT_TIMESTAMP
                         WHERE module_type = $2 AND plan_code = $3
+                        RETURNING id, is_available
                     `, [is_available, module_type, plan_code]);
+                    console.log(`✅ Módulo ${module_type} para ${plan_code} atualizado: is_available = ${is_available}`);
                 } else {
                     // Criar novo
-                    await client.query(`
+                    const insertResult = await client.query(`
                         INSERT INTO module_plan_availability (module_type, plan_code, is_available)
                         VALUES ($1, $2, $3)
+                        RETURNING id, is_available
                     `, [module_type, plan_code, is_available]);
+                    console.log(`✅ Módulo ${module_type} para ${plan_code} criado: is_available = ${is_available}`);
                 }
             }
             
             await client.query('COMMIT');
             
+            console.log(`✅ Commit realizado: ${updates.length} módulos atualizados`);
+            
+            // Verificar se os dados foram realmente salvos (usando ANY para array)
+            if (updates.length > 0) {
+                const moduleTypes = [...new Set(updates.map(u => u.module_type))];
+                const planCodes = [...new Set(updates.map(u => u.plan_code))];
+                
+                const verifyQuery = `
+                    SELECT module_type, plan_code, is_available
+                    FROM module_plan_availability
+                    WHERE module_type = ANY($1)
+                    AND plan_code = ANY($2)
+                `;
+                const verifyResult = await client.query(verifyQuery, [moduleTypes, planCodes]);
+                console.log(`🔍 Verificação: ${verifyResult.rows.length} registros encontrados após commit`);
+                
+                // Log detalhado dos registros verificados
+                verifyResult.rows.forEach(row => {
+                    console.log(`   ✓ ${row.module_type} para ${row.plan_code}: is_available = ${row.is_available}`);
+                });
+            }
+            
             res.json({
                 message: 'Disponibilidade de módulos atualizada com sucesso.',
-                updated: updates.length
+                updated: updates.length,
+                verified: verifyResult.rows.length
             });
         } catch (error) {
             await client.query('ROLLBACK');
