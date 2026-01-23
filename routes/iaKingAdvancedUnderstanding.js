@@ -549,9 +549,9 @@ const VIRTUAL_CARD_KNOWLEDGE = {
     ],
     plans: [
         { name: 'Free', price: 'R$ 0,00', duration: '30 dias', features: ['Período de teste'] },
-        { name: 'King Start', price: 'R$ 700,00', duration: 'Pix', features: ['ConectaKing NFC', 'Cartão personalizado', 'Links essenciais', 'Sem alteração de logo'] },
-        { name: 'King Prime', price: 'R$ 1.000,00', duration: 'Pix', features: ['NFC Premium', 'Links ilimitados', 'Portfólio', 'Atualizações assistidas', 'Com alteração de logo'] },
-        { name: 'King Corporate', price: 'R$ 2.300,00', duration: 'Pix', features: ['Modo Empresa', '3 cartões', 'Página institucional', 'Suporte prioritário', 'Logo personalizável'] }
+        { name: 'King Start', price: 'R$ 700,00', duration: 'pagamento único', features: ['ConectaKing NFC', 'Cartão personalizado', 'Links essenciais', 'Sem alteração de logo'] },
+        { name: 'King Prime', price: 'R$ 1.000,00', duration: 'pagamento único', features: ['NFC Premium', 'Links ilimitados', 'Portfólio', 'Atualizações assistidas', 'Com alteração de logo'] },
+        { name: 'King Corporate', price: 'R$ 2.300,00', duration: 'pagamento único', features: ['Modo Empresa', '3 cartões', 'Página institucional', 'Suporte prioritário', 'Logo personalizável'] }
     ]
 };
 

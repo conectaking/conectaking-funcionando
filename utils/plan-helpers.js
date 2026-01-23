@@ -48,7 +48,8 @@ async function getUserPlan(userId) {
         if (user.account_type === 'business_owner') {
             planCode = 'king_corporate';
         } else if (user.account_type === 'individual_com_logo') {
-            planCode = 'premium';
+            // ATUALIZADO: individual_com_logo agora mapeia para king_corporate
+            planCode = 'king_corporate';
         } else if (user.account_type === 'individual') {
             planCode = 'basic';
         }

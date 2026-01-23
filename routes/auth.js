@@ -64,11 +64,7 @@ router.post(
             
             const newUser = newUserResult.rows[0];
 
-            // Inserir perfil com logo_spacing padrão 'center' para evitar violação de constraint
-            await client.query(
-                'INSERT INTO user_profiles (user_id, display_name, logo_spacing) VALUES ($1, $2, $3)', 
-                [newUser.id, newUser.email, 'center']
-            );
+            await client.query('INSERT INTO user_profiles (user_id, display_name) VALUES ($1, $2)', [newUser.id, newUser.email]);
             
             await client.query('UPDATE registration_codes SET is_claimed = TRUE, claimed_by_user_id = $1, claimed_at = NOW() WHERE code = $2', [newUser.id, registrationCode]);
             

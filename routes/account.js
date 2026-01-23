@@ -57,7 +57,14 @@ router.get('/status', protectUser, async (req, res) => {
 router.post('/upgrade', protectUser, async (req, res) => {
     const { targetUserId, newPlan } = req.body; 
     
-    if (!['individual', 'individual_com_logo', 'business_owner', 'free'].includes(newPlan)) {
+    // Planos válidos (incluindo novos planos King)
+    const validPlans = [
+        'individual', 'individual_com_logo', 'business_owner', 'free',
+        'king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate',
+        'basic', 'premium', 'enterprise'
+    ];
+    
+    if (!validPlans.includes(newPlan)) {
         return res.status(400).json({ message: 'Plano inválido.' });
     }
 

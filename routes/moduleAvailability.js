@@ -462,8 +462,9 @@ router.get('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
                 'king_premium_plus': 'king_premium_plus',
                 'king_corporate': 'king_corporate',
                 'individual': 'basic',
-                'individual_com_logo': 'premium',
-                'business_owner': 'enterprise',
+                // ATUALIZADO: individual_com_logo agora mapeia para king_corporate
+                'individual_com_logo': 'king_corporate',
+                'business_owner': 'king_corporate',
                 'free': 'free'
             };
             
@@ -490,7 +491,8 @@ router.get('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
                         'premium': 'king_premium_plus', // premium -> king_premium_plus (equivalente)
                         'enterprise': 'king_corporate',  // enterprise -> king_corporate (equivalente)
                         'individual': 'king_base',
-                        'individual_com_logo': 'king_premium_plus',
+                        // ATUALIZADO: individual_com_logo agora mapeia para king_corporate
+                        'individual_com_logo': 'king_corporate',
                         'business_owner': 'king_corporate'
                     };
                     
@@ -626,82 +628,7 @@ router.put('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
     }
 }));
 
-// DELETE /api/modules/individual-plans/:userId/:moduleType - Remover módulo individual de um usuário (ADM)
-router.delete('/individual-plans/:userId/:moduleType', protectUser, asyncHandler(async (req, res) => {
-    const client = await db.pool.connect();
-    try {
-        const adminUserId = req.user.userId;
-        const targetUserId = req.params.userId;
-        const moduleType = req.params.moduleType;
-        
-        // Verificar se é admin
-        const adminCheck = await client.query('SELECT is_admin FROM users WHERE id = $1', [adminUserId]);
-        if (adminCheck.rows.length === 0 || !adminCheck.rows[0].is_admin) {
-            return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem acessar.' });
-        }
-        
-        // Verificar se o usuário existe
-        const userResult = await client.query('SELECT id FROM users WHERE id = $1', [targetUserId]);
-        if (userResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Usuário não encontrado.' });
-        }
-        
-        // Remover módulo individual
-        const result = await client.query(
-            'DELETE FROM individual_user_plans WHERE user_id = $1 AND module_type = $2',
-            [targetUserId, moduleType]
-        );
-        
-        if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'Módulo individual não encontrado para este usuário.' });
-        }
-        
-        res.json({
-            message: 'Módulo individual removido com sucesso.'
-        });
-    } catch (error) {
-        console.error('❌ Erro ao remover módulo individual:', error);
-        throw error;
-    } finally {
-        client.release();
-    }
-}));
 
-// DELETE /api/modules/individual-plans/:userId - Remover todos os módulos individuais de um usuário (ADM)
-router.delete('/individual-plans/:userId', protectUser, asyncHandler(async (req, res) => {
-    const client = await db.pool.connect();
-    try {
-        const adminUserId = req.user.userId;
-        const targetUserId = req.params.userId;
-        
-        // Verificar se é admin
-        const adminCheck = await client.query('SELECT is_admin FROM users WHERE id = $1', [adminUserId]);
-        if (adminCheck.rows.length === 0 || !adminCheck.rows[0].is_admin) {
-            return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem acessar.' });
-        }
-        
-        // Verificar se o usuário existe
-        const userResult = await client.query('SELECT id FROM users WHERE id = $1', [targetUserId]);
-        if (userResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Usuário não encontrado.' });
-        }
-        
-        // Remover todos os módulos individuais
-        const result = await client.query(
-            'DELETE FROM individual_user_plans WHERE user_id = $1',
-            [targetUserId]
-        );
-        
-        res.json({
-            message: `Todos os módulos individuais foram removidos do usuário. (${result.rowCount} módulo(s) removido(s))`
-        });
-    } catch (error) {
-        console.error('❌ Erro ao remover módulos individuais:', error);
-        throw error;
-    } finally {
-        client.release();
-    }
-}));
 
 module.exports = router;
 

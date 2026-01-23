@@ -2,24 +2,82 @@
 const express = require('express');
 const { nanoid } = require('nanoid');
 const db = require('../db');
-const { protectUser } = require('../middleware/protectUser'); 
+const { protectUser } = require('../middleware/protectUser');
+const multer = require('multer');
+const FormData = require('form-data');
+const fetch = require('node-fetch');
+const config = require('../config'); 
 
 const router = express.Router();
 
-const protectBusinessOwner = (req, res, next) => {
-    if (req.user && req.user.accountType === 'business_owner') {
-        next();
-    } else {
-        res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais.' });
+// Configurar multer para upload de logo
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Apenas arquivos de imagem são permitidos.'), false);
+        }
+    }
+});
+
+// Middleware para verificar modo empresa (só King Corporate)
+const protectBusinessOwner = async (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autenticado.' });
+    }
+
+    try {
+        const accountType = req.user.accountType;
+        
+        // Só King Corporate tem modo empresa
+        if (accountType === 'king_corporate' || accountType === 'business_owner') {
+            return next();
+        }
+
+        res.status(403).json({ 
+            message: 'Acesso negado. Modo Empresa disponível apenas para planos King Corporate.' 
+        });
+    } catch (error) {
+        console.error('Erro ao verificar modo empresa:', error);
+        res.status(500).json({ message: 'Erro ao verificar permissões.' });
     }
 };
 
-// Middleware para permitir business_owner e individual_com_logo (para personalização de logo)
-const protectBusinessOwnerOrLogo = (req, res, next) => {
-    if (req.user && (req.user.accountType === 'business_owner' || req.user.accountType === 'individual_com_logo')) {
-        next();
-    } else {
-        res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais ou individuais com logo.' });
+// Middleware para permitir planos que podem alterar logo
+// Planos permitidos: king_finance, king_finance_plus, king_premium_plus, king_corporate
+const protectBusinessOwnerOrLogo = async (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autenticado.' });
+    }
+
+    try {
+        const accountType = req.user.accountType;
+        
+        // Planos que podem alterar logo
+        const plansWithLogo = [
+            'king_finance',
+            'king_finance_plus',
+            'king_premium_plus',
+            'king_corporate',
+            // Planos antigos (compatibilidade)
+            'business_owner',
+            'individual_com_logo'
+        ];
+
+        // Verificar se accountType está na lista
+        if (plansWithLogo.includes(accountType)) {
+            return next();
+        }
+
+        res.status(403).json({ 
+            message: 'Acesso negado. Apenas planos King Finance, King Finance Plus, King Premium Plus ou King Corporate podem alterar a logo.' 
+        });
+    } catch (error) {
+        console.error('Erro ao verificar permissão de logo:', error);
+        res.status(500).json({ message: 'Erro ao verificar permissões.' });
     }
 };
 
@@ -76,6 +134,75 @@ router.post('/generate-code', protectUser, protectBusinessOwner, async (req, res
     }
 });
 
+// POST /api/business/logo - Upload de logo da empresa
+router.post('/logo', protectUser, protectBusinessOwnerOrLogo, upload.single('logo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
+        }
+
+        const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+        const apiToken = process.env.CLOUDFLARE_API_TOKEN || config.cloudflare?.apiToken;
+
+        if (!accountId || !apiToken) {
+            return res.status(500).json({ message: 'Erro de configuração do servidor.' });
+        }
+
+        // Obter URL de upload do Cloudflare
+        const authResponse = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2/direct_upload`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiToken}`
+            }
+        });
+
+        const authData = await authResponse.json();
+
+        if (!authData.success || !authData.result) {
+            return res.status(500).json({ message: 'Falha ao obter URL de upload.' });
+        }
+
+        const { uploadURL, id: imageId } = authData.result;
+
+        // Fazer upload da imagem
+        const formData = new FormData();
+        formData.append('file', req.file.buffer, {
+            filename: req.file.originalname || 'logo.jpg',
+            contentType: req.file.mimetype
+        });
+
+        const uploadResponse = await fetch(uploadURL, {
+            method: 'POST',
+            body: formData,
+            headers: formData.getHeaders()
+        });
+
+        if (!uploadResponse.ok) {
+            return res.status(500).json({ message: 'Falha ao fazer upload da imagem.' });
+        }
+
+        // Construir URL final
+        const accountHash = config.cloudflare?.accountHash || accountId;
+        const logoUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
+
+        // Salvar no banco
+        await db.query(
+            'UPDATE users SET company_logo_url = $1 WHERE id = $2',
+            [logoUrl, req.user.userId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Logo atualizada com sucesso!',
+            logoUrl: logoUrl
+        });
+    } catch (error) {
+        console.error('Erro ao fazer upload de logo:', error);
+        res.status(500).json({ message: 'Erro ao fazer upload da logo.' });
+    }
+});
+
+// PUT /api/business/branding - Atualizar configurações de branding (logo, tamanho, link)
 router.put('/branding', protectUser, protectBusinessOwnerOrLogo, async (req, res) => {
     const { logoUrl, logoSize, logoLink } = req.body;
     const ownerId = req.user.userId;
