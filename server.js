@@ -722,20 +722,38 @@ cron.schedule('0 2 * * *', async () => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Executar migrations automaticamente antes de iniciar o servidor
-async function startServer() {
+// Executar migrations automaticamente de forma assíncrona (não bloqueia o startup)
+async function runMigrationsAsync() {
     try {
-        logger.info('🔄 Verificando e executando migrations pendentes...');
-        await autoMigrate.runPendingMigrations();
-        logger.info('✅ Migrations verificadas. Iniciando servidor...\n');
+        logger.info('🔄 Verificando e executando migrations pendentes (em background)...');
+        const result = await autoMigrate.runPendingMigrations();
+        if (result.executed > 0) {
+            logger.info(`✅ ${result.executed} migration(s) executada(s) com sucesso`);
+        } else {
+            logger.info('✅ Nenhuma migration pendente');
+        }
     } catch (error) {
         logger.error('❌ Erro ao executar migrations automáticas:', error);
-        logger.warn('⚠️  Servidor será iniciado mesmo com erro nas migrations. Verifique manualmente.');
+        logger.warn('⚠️  Migrations falharam, mas servidor continua rodando. Verifique manualmente.');
     }
-    
+}
+
+// Iniciar servidor imediatamente (migrations rodam em background)
+function startServer() {
     const PORT = config.port;
+    
+    // Iniciar servidor primeiro (não espera migrations)
     app.listen(PORT, () => {
         logger.info(`👑 Servidor Conecta King rodando na porta ${PORT} (${config.nodeEnv})`);
+        logger.info('📡 Servidor pronto para receber requisições\n');
+    });
+    
+    // Executar migrations em background (não bloqueia o startup)
+    // Isso permite que o Render marque o deploy como completo mais rápido
+    setImmediate(() => {
+        runMigrationsAsync().catch(err => {
+            logger.error('Erro ao executar migrations em background:', err);
+        });
     });
 }
 
