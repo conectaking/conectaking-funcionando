@@ -57,45 +57,83 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
         const plansResult = await client.query(plansQuery);
         
         // Enriquecer planos com informações de pagamento baseado no billingType
+        // Valores mensais fixos conforme especificação do usuário
+        const monthlyValues = {
+            'basic': 70.00,              // King Start: R$ 70,00
+            'premium': 100.00,           // King Prime: R$ 100,00
+            'king_base': 100.00,        // King Essential: R$ 100,00
+            'king_finance': 120.00,      // King Finance: proporcional
+            'king_finance_plus': 140.00, // King Finance Plus: proporcional
+            'king_premium_plus': 150.00, // King Premium Plus: proporcional
+            'king_corporate': 150.00     // King Corporate: proporcional
+        };
+
         const enrichedPlans = plansResult.rows.map(plan => {
             const basePrice = parseFloat(plan.price) || 0;
-            let displayPrice = basePrice;
+            const planCode = plan.plan_code;
+            const monthlyPrice = monthlyValues[planCode] || (basePrice / 12);
             
+            let displayPrice;
             if (billingType === 'monthly') {
-                // Calcular valor da parcela de 12x do anual (com acréscimo de 20%)
-                const annualWithIncrease = basePrice * 1.2; // Acréscimo de 20%
-                displayPrice = annualWithIncrease / 12; // Valor mensal = parcela de 12x
-            } else if (billingType === 'annual') {
-                // Valor anual = valor exato do banco (R$ 700, R$ 1000, etc.)
+                // Valor mensal fixo conforme especificação
+                displayPrice = monthlyPrice;
+            } else {
+                // Valor anual = valor exato do banco
                 displayPrice = basePrice;
             }
             
-            const installmentPrice = displayPrice * 1.2;
-            const installmentValue = installmentPrice / 12;
+            // Valor total para parcelamento em 12x
+            const totalForInstallments = monthlyPrice * 12;
+            const installmentValue = monthlyPrice;
             
-            return {
-                ...plan,
-                billingType: billingType,
-                displayPrice: displayPrice,
-                paymentOptions: {
-                    pix: {
-                        method: 'PIX',
-                        price: displayPrice,
-                        label: 'Pix',
-                        title: 'À vista no Pix',
-                        description: 'Pagamento à vista via Pix'
-                    },
-                    installment: {
-                        method: 'CARTÃO',
-                        totalPrice: installmentPrice,
-                        installmentValue: installmentValue,
-                        installments: 12,
-                        label: 'Até 12x',
-                        title: 'Até 12 meses',
-                        description: `Até 12x de R$ ${installmentValue.toFixed(2).replace('.', ',')}`
+            // King Start: apenas PIX (sem cartão)
+            if (planCode === 'basic') {
+                return {
+                    ...plan,
+                    billingType: billingType,
+                    displayPrice: displayPrice,
+                    monthlyPrice: monthlyPrice,
+                    paymentOptions: {
+                        pix: {
+                            method: 'PIX',
+                            price: displayPrice,
+                            label: 'Pix',
+                            title: 'À vista no Pix',
+                            description: billingType === 'monthly'
+                                ? `R$ ${displayPrice.toFixed(2).replace('.', ',')} por mês`
+                                : `R$ ${displayPrice.toFixed(2).replace('.', ',')} à vista`
+                        }
                     }
-                }
-            };
+                };
+            } else {
+                // Outros planos: PIX + Cartão 12x
+                return {
+                    ...plan,
+                    billingType: billingType,
+                    displayPrice: displayPrice,
+                    monthlyPrice: monthlyPrice,
+                    paymentOptions: {
+                        pix: {
+                            method: 'PIX',
+                            price: displayPrice,
+                            label: 'Pix',
+                            title: 'À vista no Pix',
+                            description: billingType === 'monthly'
+                                ? `R$ ${displayPrice.toFixed(2).replace('.', ',')} por mês`
+                                : `R$ ${displayPrice.toFixed(2).replace('.', ',')} à vista`
+                        },
+                        installment: {
+                            method: 'CARTÃO',
+                            totalPrice: totalForInstallments,
+                            installmentValue: installmentValue,
+                            installments: 12,
+                            label: '12x',
+                            title: '12x no cartão',
+                            description: `12x de R$ ${installmentValue.toFixed(2).replace('.', ',')}`
+                        }
+                    }
+                };
+            }
         });
         
         // Determinar qual plano o usuário tem baseado no account_type
