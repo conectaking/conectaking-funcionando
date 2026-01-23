@@ -5,7 +5,8 @@
 /* Modal de seleção de usuário na área de conteúdo */
 .user-selector-modal[data-moved="true"],
 .select-user-modal[data-moved="true"],
-[class*="user-select"][data-moved="true"] {
+[class*="user-select"][data-moved="true"],
+[data-moved="true"] {
     position: relative !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -16,6 +17,21 @@
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
     z-index: 100 !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* Forçar remoção de estilos de sidebar para qualquer elemento movido */
+[data-moved="true"] {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
 }
 
 /* Conteúdo do modal */
@@ -96,15 +112,19 @@
     background: #dc2626 !important;
     color: white !important;
     border: none !important;
-    padding: 8px 16px !important;
-    border-radius: 6px !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
     cursor: pointer !important;
-    font-size: 0.875rem !important;
+    font-size: 0.9rem !important;
     font-weight: 600 !important;
     transition: all 0.2s ease !important;
-    display: inline-flex !important;
+    display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-top: 12px !important;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3) !important;
 }
 
 .remove-plan-btn:hover {
