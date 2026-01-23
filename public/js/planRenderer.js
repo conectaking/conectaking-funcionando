@@ -175,26 +175,37 @@ function renderPlanCardDashboard(plan, modules = null, billingType = 'monthly') 
     
     // Valores mensais fixos conforme especificação do usuário
     const monthlyValues = {
-        'basic': 70.00,              // King Start: R$ 70,00
-        'premium': 100.00,           // King Prime: R$ 100,00
-        'king_base': 100.00,        // King Essential: R$ 100,00
+        'basic': 70.00,              // King Start: R$ 70,00/mês
+        'premium': 100.00,           // King Prime: R$ 100,00/mês
+        'king_base': 150.00,        // King Essential/Alta: R$ 150,00/mês
         'king_finance': 120.00,      // King Finance: proporcional
         'king_finance_plus': 140.00, // King Finance Plus: proporcional
-        'king_premium_plus': 150.00, // King Premium Plus: proporcional
-        'king_corporate': 150.00     // King Corporate: proporcional
+        'king_premium_plus': 150.00, // King Premium Plus: R$ 150,00/mês
+        'king_corporate': 150.00     // King Corporate: R$ 150,00/mês
     };
     
-    const basePrice = parseFloat(plan.price) || 0;
+    // Valores anuais (com 20% de desconto aplicado)
+    const annualValues = {
+        'basic': (70 * 12) * 0.8,              // King Start: R$ 672,00/ano
+        'premium': (100 * 12) * 0.8,           // King Prime: R$ 960,00/ano
+        'king_base': (150 * 12) * 0.8,        // King Essential: R$ 1.440,00/ano
+        'king_finance': (120 * 12) * 0.8,      // King Finance: R$ 1.152,00/ano
+        'king_finance_plus': (140 * 12) * 0.8, // King Finance Plus: R$ 1.344,00/ano
+        'king_premium_plus': (150 * 12) * 0.8, // King Premium Plus: R$ 1.440,00/ano
+        'king_corporate': (150 * 12) * 0.8     // King Corporate: R$ 1.440,00/ano
+    };
+    
     const planCode = plan.plan_code;
-    const monthlyPrice = monthlyValues[planCode] || (basePrice / 12);
+    const monthlyPrice = monthlyValues[planCode] || 0;
+    const annualPrice = annualValues[planCode] || 0;
     
     let displayPrice;
     if (planBillingType === 'monthly') {
         // Valor mensal fixo conforme especificação
         displayPrice = monthlyPrice;
     } else {
-        // Valor anual = valor exato do banco
-        displayPrice = basePrice;
+        // Valor anual com 20% de desconto
+        displayPrice = annualPrice;
     }
     
     // Usar paymentOptions da API se disponível, senão calcular
@@ -213,8 +224,9 @@ function renderPlanCardDashboard(plan, modules = null, billingType = 'monthly') 
         installmentValue = installmentInfo.installmentValue;
     }
     
-    // Títulos de pagamento
-    const pixTitle = paymentOptions.pix?.title || 'À vista no Pix';
+    // Títulos de pagamento (no modo anual, mostrar "no Pix" em vez de "Pagamento Único")
+    const pixTitle = paymentOptions.pix?.title || (planBillingType === 'annual' ? 'no Pix' : 'À vista no Pix');
+    const pixLabel = paymentOptions.pix?.label || (planBillingType === 'annual' ? 'no Pix' : 'Pix');
     const cardTitle = paymentOptions.installment?.title || '12x no cartão';
     
     // Label de período
@@ -232,20 +244,28 @@ function renderPlanCardDashboard(plan, modules = null, billingType = 'monthly') 
             <!-- King Start: apenas PIX -->
             <div class="plan-payment-methods" style="margin-top: 12px; padding: 12px; background: rgba(255, 199, 0, 0.05); border-radius: 8px; border: 1px solid rgba(255, 199, 0, 0.2);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 0.9rem; color: var(--text-primary, #FFFFFF); font-weight: 600;">${pixTitle}:</span>
-                    <span style="font-size: 0.9rem; color: #FFC700; font-weight: 700;">R$ ${pixPrice.toFixed(2).replace('.', ',')}${planBillingType === 'monthly' ? ' por mês' : ' à vista'}</span>
+                    <span style="font-size: 0.9rem; color: var(--text-primary, #FFFFFF); font-weight: 600;">${pixLabel}:</span>
+                    <span style="font-size: 0.9rem; color: #FFC700; font-weight: 700;">R$ ${pixPrice.toFixed(2).replace('.', ',')}${planBillingType === 'monthly' ? ' por mês' : ' no Pix'}</span>
                 </div>
             </div>
-            ` : installmentPrice ? `
-            <!-- Outros planos: PIX + Cartão 12x -->
+            ` : installmentPrice && planBillingType === 'monthly' ? `
+            <!-- Outros planos: PIX + Cartão 12x (apenas no modo mensal) -->
             <div class="plan-payment-methods" style="margin-top: 12px; padding: 12px; background: rgba(255, 199, 0, 0.05); border-radius: 8px; border: 1px solid rgba(255, 199, 0, 0.2);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 0.9rem; color: var(--text-primary, #FFFFFF); font-weight: 600;">${pixTitle}:</span>
-                    <span style="font-size: 0.9rem; color: #FFC700; font-weight: 700;">R$ ${pixPrice.toFixed(2).replace('.', ',')}${planBillingType === 'monthly' ? ' por mês' : ' à vista'}</span>
+                    <span style="font-size: 0.9rem; color: var(--text-primary, #FFFFFF); font-weight: 600;">${pixLabel}:</span>
+                    <span style="font-size: 0.9rem; color: #FFC700; font-weight: 700;">R$ ${pixPrice.toFixed(2).replace('.', ',')} por mês</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-size: 0.9rem; color: var(--text-primary, #FFFFFF); font-weight: 600;">${cardTitle}:</span>
                     <span style="font-size: 0.9rem; color: var(--text-secondary, #888888);">12x de R$ ${installmentValue.toFixed(2).replace('.', ',')}</span>
+                </div>
+            </div>
+            ` : planBillingType === 'annual' ? `
+            <!-- Outros planos: apenas PIX no modo anual -->
+            <div class="plan-payment-methods" style="margin-top: 12px; padding: 12px; background: rgba(255, 199, 0, 0.05); border-radius: 8px; border: 1px solid rgba(255, 199, 0, 0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.9rem; color: var(--text-primary, #FFFFFF); font-weight: 600;">${pixLabel}:</span>
+                    <span style="font-size: 0.9rem; color: #FFC700; font-weight: 700;">R$ ${pixPrice.toFixed(2).replace('.', ',')} no Pix</span>
                 </div>
             </div>
             ` : ''}

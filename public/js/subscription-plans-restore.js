@@ -83,14 +83,14 @@
         const monthlyBtn = document.createElement('button');
         monthlyBtn.id = 'billing-monthly-dashboard';
         monthlyBtn.className = 'billing-toggle-btn active';
-        monthlyBtn.textContent = 'Mensal';
+        monthlyBtn.textContent = 'Mês';
         monthlyBtn.onclick = () => window.switchBillingTypeDashboard('monthly');
         monthlyBtn.style.cssText = 'padding: 12px 24px; border: none; border-radius: 8px; background: var(--yellow-primary, #FFC700); color: var(--black-absolute, #000); font-weight: 600; cursor: pointer; transition: all 0.3s;';
         
         const annualBtn = document.createElement('button');
         annualBtn.id = 'billing-annual-dashboard';
         annualBtn.className = 'billing-toggle-btn';
-        annualBtn.textContent = 'Anual -20%';
+        annualBtn.textContent = 'Ano';
         annualBtn.onclick = () => window.switchBillingTypeDashboard('annual');
         annualBtn.style.cssText = 'padding: 12px 24px; border: none; border-radius: 8px; background: transparent; color: var(--white, #FFFFFF); font-weight: 600; cursor: pointer; transition: all 0.3s;';
         
@@ -125,30 +125,42 @@
             // Enriquecer planos com informações de pagamento
             // Valores mensais fixos conforme especificação do usuário
             const monthlyValues = {
-                'basic': 70.00,              // King Start: R$ 70,00
-                'premium': 100.00,           // King Prime: R$ 100,00
-                'king_base': 100.00,        // King Essential: R$ 100,00
+                'basic': 70.00,              // King Start: R$ 70,00/mês
+                'premium': 100.00,           // King Prime: R$ 100,00/mês
+                'king_base': 150.00,        // King Essential/Alta: R$ 150,00/mês
                 'king_finance': 120.00,      // King Finance: proporcional
                 'king_finance_plus': 140.00, // King Finance Plus: proporcional
-                'king_premium_plus': 150.00, // King Premium Plus: proporcional
-                'king_corporate': 150.00     // King Corporate: proporcional
+                'king_premium_plus': 150.00, // King Premium Plus: R$ 150,00/mês
+                'king_corporate': 150.00     // King Corporate: R$ 150,00/mês
+            };
+            
+            // Valores anuais (com 20% de desconto aplicado)
+            // Fórmula: (valor_mensal * 12) * 0.8 = valor_anual_com_desconto
+            const annualValues = {
+                'basic': (70 * 12) * 0.8,              // King Start: R$ 672,00/ano (R$ 70 * 12 * 0.8)
+                'premium': (100 * 12) * 0.8,           // King Prime: R$ 960,00/ano (R$ 100 * 12 * 0.8)
+                'king_base': (150 * 12) * 0.8,        // King Essential: R$ 1.440,00/ano (R$ 150 * 12 * 0.8)
+                'king_finance': (120 * 12) * 0.8,      // King Finance: R$ 1.152,00/ano
+                'king_finance_plus': (140 * 12) * 0.8, // King Finance Plus: R$ 1.344,00/ano
+                'king_premium_plus': (150 * 12) * 0.8, // King Premium Plus: R$ 1.440,00/ano
+                'king_corporate': (150 * 12) * 0.8     // King Corporate: R$ 1.440,00/ano
             };
 
             const enrichedPlans = plans.map(plan => {
-                const basePrice = parseFloat(plan.price) || 0;
                 const planCode = plan.plan_code;
-                const monthlyPrice = monthlyValues[planCode] || (basePrice / 12);
+                const monthlyPrice = monthlyValues[planCode] || 0;
+                const annualPrice = annualValues[planCode] || 0;
                 
                 let displayPrice;
                 if (billingType === 'monthly') {
                     // Valor mensal fixo conforme especificação
                     displayPrice = monthlyPrice;
                 } else {
-                    // Valor anual = valor exato do banco
-                    displayPrice = basePrice;
+                    // Valor anual com 20% de desconto
+                    displayPrice = annualPrice;
                 }
                 
-                // Valor total para parcelamento em 12x
+                // Valor total para parcelamento em 12x (apenas no modo mensal)
                 const totalForInstallments = monthlyPrice * 12;
                 const installmentValue = monthlyPrice;
                 
@@ -159,45 +171,53 @@
                         billingType: billingType,
                         displayPrice: displayPrice,
                         monthlyPrice: monthlyPrice,
+                        annualPrice: annualPrice,
                         paymentOptions: {
                             pix: {
                                 method: 'PIX',
                                 price: displayPrice,
-                                label: 'Pix',
-                                title: 'À vista no Pix',
+                                label: billingType === 'annual' ? 'no Pix' : 'Pix',
+                                title: billingType === 'annual' ? 'no Pix' : 'À vista no Pix',
                                 description: billingType === 'monthly'
                                     ? `R$ ${displayPrice.toFixed(2).replace('.', ',')} por mês`
-                                    : `R$ ${displayPrice.toFixed(2).replace('.', ',')} à vista`
+                                    : `R$ ${displayPrice.toFixed(2).replace('.', ',')} no Pix`
                             }
                         }
                     };
                 } else {
-                    // Outros planos: PIX + Cartão 12x
+                    // Outros planos: PIX + Cartão 12x (apenas no modo mensal)
+                    const paymentOptions = {
+                        pix: {
+                            method: 'PIX',
+                            price: displayPrice,
+                            label: billingType === 'annual' ? 'no Pix' : 'Pix',
+                            title: billingType === 'annual' ? 'no Pix' : 'À vista no Pix',
+                            description: billingType === 'monthly'
+                                ? `R$ ${displayPrice.toFixed(2).replace('.', ',')} por mês`
+                                : `R$ ${displayPrice.toFixed(2).replace('.', ',')} no Pix`
+                        }
+                    };
+                    
+                    // Adicionar opção de cartão apenas no modo mensal
+                    if (billingType === 'monthly') {
+                        paymentOptions.installment = {
+                            method: 'CARTÃO',
+                            totalPrice: totalForInstallments,
+                            installmentValue: installmentValue,
+                            installments: 12,
+                            label: '12x',
+                            title: '12x no cartão',
+                            description: `12x de R$ ${installmentValue.toFixed(2).replace('.', ',')}`
+                        };
+                    }
+                    
                     return {
                         ...plan,
                         billingType: billingType,
                         displayPrice: displayPrice,
                         monthlyPrice: monthlyPrice,
-                        paymentOptions: {
-                            pix: {
-                                method: 'PIX',
-                                price: displayPrice,
-                                label: 'Pix',
-                                title: 'À vista no Pix',
-                                description: billingType === 'monthly'
-                                    ? `R$ ${displayPrice.toFixed(2).replace('.', ',')} por mês`
-                                    : `R$ ${displayPrice.toFixed(2).replace('.', ',')} à vista`
-                            },
-                            installment: {
-                                method: 'CARTÃO',
-                                totalPrice: totalForInstallments,
-                                installmentValue: installmentValue,
-                                installments: 12,
-                                label: '12x',
-                                title: '12x no cartão',
-                                description: `12x de R$ ${installmentValue.toFixed(2).replace('.', ',')}`
-                            }
-                        }
+                        annualPrice: annualPrice,
+                        paymentOptions: paymentOptions
                     };
                 }
             });
