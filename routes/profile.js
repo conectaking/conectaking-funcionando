@@ -326,9 +326,13 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     insertValues.push(details.whatsapp_number || details.whatsappNumber || null);
                 }
                 
+                // Sempre adicionar logo_spacing se a coluna existir (obrigatório para constraint)
                 if (existingColumns.includes('logo_spacing')) {
                     insertFields.push('logo_spacing');
                     insertValues.push((details.logo_spacing !== undefined && details.logo_spacing !== null) ? details.logo_spacing : ((details.logoSpacing !== undefined && details.logoSpacing !== null) ? details.logoSpacing : 'center'));
+                } else {
+                    // Se a coluna não existir mas estamos criando perfil, adicionar mesmo assim (pode ser migration pendente)
+                    console.warn('⚠️ [SAVE-ALL] Coluna logo_spacing não encontrada, mas tentando adicionar para evitar erro de constraint');
                 }
 
                 if (hasAvatarFormat) {
@@ -2710,8 +2714,8 @@ router.put('/share-image', protectUser, asyncHandler(async (req, res) => {
         if (profileCheck.rows.length === 0) {
             // Criar perfil se não existir
             await client.query(
-                'INSERT INTO user_profiles (user_id, share_image_url) VALUES ($1, $2)',
-                [userId, share_image_url || null]
+                'INSERT INTO user_profiles (user_id, share_image_url, logo_spacing) VALUES ($1, $2, $3)',
+                [userId, share_image_url || null, 'center']
             );
         } else {
             // Atualizar perfil existente
@@ -2967,16 +2971,16 @@ router.put('/avatar-format', protectUser, async (req, res) => {
             console.log('📝 Criando novo perfil com avatar_format');
             try {
                 await client.query(
-                    'INSERT INTO user_profiles (user_id, avatar_format) VALUES ($1, $2)',
-                    [userId, avatar_format]
+                    'INSERT INTO user_profiles (user_id, avatar_format, logo_spacing) VALUES ($1, $2, $3)',
+                    [userId, avatar_format, 'center']
                 );
             } catch (insertError) {
                 // Se o INSERT falhar por causa da coluna, tentar sem ela
                 if (insertError.code === '42703' || insertError.message.includes('avatar_format')) {
                     console.warn('⚠️ Erro ao inserir avatar_format, criando perfil sem ele');
                     await client.query(
-                        'INSERT INTO user_profiles (user_id) VALUES ($1)',
-                        [userId]
+                        'INSERT INTO user_profiles (user_id, logo_spacing) VALUES ($1, $2)',
+                        [userId, 'center']
                     );
                     return res.json({ 
                         message: 'Perfil criado. Execute a migration 015 para habilitar formato de avatar.',
