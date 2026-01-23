@@ -98,10 +98,37 @@ const validateRequestSize = (maxSize = 5 * 1024 * 1024) => { // 5MB padrão
     };
 };
 
+/**
+ * Rate limiter para proteger contra bots e ataques
+ * Aplicado a rotas suspeitas como /admin, /index.php, etc.
+ */
+const botLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 10, // Máximo 10 requisições por 15 minutos
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { trustProxy: true },
+    skipSuccessfulRequests: false,
+    message: 'Muitas tentativas. Tente novamente em 15 minutos.',
+    handler: (req, res) => {
+        logger.warn('Rate limit de bot excedido', {
+            ip: req.ip,
+            path: req.path,
+            method: req.method,
+            userAgent: req.get('user-agent')
+        });
+        res.status(429).json({
+            success: false,
+            message: 'Muitas tentativas. Tente novamente em 15 minutos.'
+        });
+    }
+});
+
 module.exports = {
     strictLimiter,
     passwordResetLimiter,
     securityHeaders,
-    validateRequestSize
+    validateRequestSize,
+    botLimiter
 };
 
