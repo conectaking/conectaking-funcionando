@@ -171,7 +171,9 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
         }
         if (features !== undefined) {
             updateFields.push(`features = $${paramIndex++}`);
-            updateValues.push(JSON.stringify(features));
+            // Se features já é string, usar diretamente; se for objeto, fazer stringify
+            const featuresValue = typeof features === 'string' ? features : JSON.stringify(features);
+            updateValues.push(featuresValue);
         }
         if (whatsapp_number !== undefined) {
             updateFields.push(`whatsapp_number = $${paramIndex++}`);
