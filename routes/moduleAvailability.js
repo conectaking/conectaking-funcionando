@@ -400,19 +400,80 @@ router.get('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
         // Mapear account_type para plan_code (garantir compatibilidade)
         let planCode = user.account_type || 'free';
         
-        // Verificar se o plan_code existe na tabela, se não, tentar mapear
-        const planCheck = await client.query(`
+        // Buscar todos os plan_codes que existem na tabela module_plan_availability
+        const availablePlanCodesResult = await client.query(`
             SELECT DISTINCT plan_code 
             FROM module_plan_availability 
-            WHERE plan_code = $1 
-            LIMIT 1
-        `, [planCode]);
+            ORDER BY plan_code
+        `);
         
-        // Se o plan_code não existir, usar 'basic' como fallback
-        if (planCheck.rows.length === 0) {
-            console.log(`⚠️ Plan code '${planCode}' não encontrado, usando 'basic' como fallback`);
-            planCode = 'basic';
+        const availablePlanCodes = availablePlanCodesResult.rows.map(r => r.plan_code);
+        
+        // Verificar se o plan_code do usuário existe na tabela
+        if (!availablePlanCodes.includes(planCode)) {
+            // Tentar mapear account_type para plan_code conhecido
+            const planCodeMap = {
+                'basic': 'basic',
+                'premium': 'premium',
+                'enterprise': 'enterprise',
+                'king_base': 'king_base',
+                'king_finance': 'king_finance',
+                'king_finance_plus': 'king_finance_plus',
+                'king_premium_plus': 'king_premium_plus',
+                'king_corporate': 'king_corporate',
+                'individual': 'basic',
+                'individual_com_logo': 'premium',
+                'business_owner': 'enterprise',
+                'free': 'free'
+            };
+            
+            // Tentar mapear
+            const mappedPlanCode = planCodeMap[planCode];
+            
+            if (mappedPlanCode && availablePlanCodes.includes(mappedPlanCode)) {
+                console.log(`📋 Plan code '${planCode}' mapeado para '${mappedPlanCode}'`);
+                planCode = mappedPlanCode;
+            } else {
+                // Buscar plan_code da tabela subscription_plans
+                const subscriptionPlanResult = await client.query(`
+                    SELECT plan_code
+                    FROM subscription_plans
+                    WHERE plan_code = $1 AND is_active = true
+                    LIMIT 1
+                `, [planCode]);
+                
+                if (subscriptionPlanResult.rows.length > 0) {
+                    // O plan_code existe em subscription_plans
+                    // Mapear para planos equivalentes na tabela module_plan_availability
+                    const equivalentMap = {
+                        'basic': 'king_base',      // basic -> king_base (equivalente)
+                        'premium': 'king_premium_plus', // premium -> king_premium_plus (equivalente)
+                        'enterprise': 'king_corporate',  // enterprise -> king_corporate (equivalente)
+                        'individual': 'king_base',
+                        'individual_com_logo': 'king_premium_plus',
+                        'business_owner': 'king_corporate'
+                    };
+                    
+                    const equivalentPlan = equivalentMap[planCode];
+                    
+                    if (equivalentPlan && availablePlanCodes.includes(equivalentPlan)) {
+                        console.log(`📋 Plan code '${planCode}' mapeado para equivalente '${equivalentPlan}'`);
+                        planCode = equivalentPlan;
+                    } else if (availablePlanCodes.length > 0) {
+                        // Usar o primeiro plano disponível como fallback
+                        planCode = availablePlanCodes[0];
+                        console.log(`⚠️ Plan code '${user.account_type}' não encontrado, usando '${planCode}' como fallback`);
+                    }
+                } else if (availablePlanCodes.length > 0) {
+                    // Usar o primeiro plano disponível como fallback
+                    planCode = availablePlanCodes[0];
+                    console.log(`⚠️ Plan code '${user.account_type}' não encontrado, usando '${planCode}' como fallback`);
+                }
+            }
         }
+        
+        console.log(`📋 Plan codes disponíveis: ${availablePlanCodes.join(', ')}`);
+        console.log(`📋 Usuário: ${user.email}, Account Type: ${user.account_type}, Plan Code usado: ${planCode}`);
         
         // Buscar TODOS os módulos que existem na tabela (de qualquer plano)
         // Isso garante que só mostramos módulos que realmente existem no sistema
