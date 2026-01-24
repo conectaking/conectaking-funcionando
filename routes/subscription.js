@@ -314,7 +314,7 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
                     excluded_modules: excluded_modules
                 });
                 
-                // Mapear nomes de módulos para códigos
+                // Mapear nomes de módulos para códigos (inclui Modo Empresa – separação de pacotes)
                 const moduleNameToCode = {
                     'Carrossel': 'carousel',
                     'Loja Virtual': 'sales_page',
@@ -323,7 +323,8 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
                     'Banner': 'banner',
                     'Gestão Financeira': 'finance',
                     'Contratos': 'contract',
-                    'Agenda Inteligente': 'agenda'
+                    'Agenda Inteligente': 'agenda',
+                    'Modo Empresa': 'modo_empresa'
                 };
                 
                 // Processar módulos incluídos
@@ -423,7 +424,7 @@ router.put('/plans/:id', protectUser, asyncHandler(async (req, res) => {
                     SELECT module_type, is_available 
                     FROM module_plan_availability 
                     WHERE plan_code = $1 
-                    AND module_type IN ('carousel', 'sales_page', 'digital_form', 'portfolio', 'banner', 'finance', 'contract', 'agenda')
+                    AND module_type IN ('carousel', 'sales_page', 'digital_form', 'portfolio', 'banner', 'finance', 'contract', 'agenda', 'modo_empresa')
                     ORDER BY module_type
                 `;
                 const verifyResult = await client.query(verifyQuery, [planCode]);

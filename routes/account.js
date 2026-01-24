@@ -44,8 +44,21 @@ router.get('/status', protectUser, async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
-        
-        res.json(result.rows[0]);
+
+        const user = result.rows[0];
+        const planCode = user.accountType || user.account_type;
+        let hasModoEmpresa = false;
+        if (planCode) {
+            const mod = await db.query(
+                `SELECT 1 FROM module_plan_availability 
+                 WHERE module_type = 'modo_empresa' AND plan_code = $1 AND is_available = true`,
+                [planCode]
+            );
+            hasModoEmpresa = mod.rows.length > 0;
+        }
+        user.hasModoEmpresa = hasModoEmpresa;
+
+        res.json(user);
 
     } catch (error) {
         console.error("Erro ao buscar status da conta:", error);

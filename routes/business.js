@@ -2,11 +2,47 @@
 const express = require('express');
 const { nanoid } = require('nanoid');
 const db = require('../db');
-const { protectUser } = require('../middleware/protectUser'); 
+const { protectUser } = require('../middleware/protectUser');
 
 const router = express.Router();
 
-// Modo empresa: King Corporate, business_owner, enterprise. ADM principal tem acesso a tudo.
+/**
+ * Enriquecer req.user com is_admin e account_type do DB.
+ * ADM sempre tem acesso ao modo empresa; não depende do JWT.
+ */
+async function enrichUserForBusiness(req, res, next) {
+    if (!req.user || !req.user.userId) {
+        return next();
+    }
+    try {
+        const r = await db.query(
+            'SELECT is_admin, account_type FROM users WHERE id = $1',
+            [req.user.userId]
+        );
+        if (r.rows.length > 0) {
+            req.user.is_admin = r.rows[0].is_admin;
+            req.user.isAdmin = r.rows[0].is_admin === true;
+            req.user.account_type = r.rows[0].account_type;
+            req.user.accountType = r.rows[0].account_type;
+        }
+        const planCode = req.user.accountType || req.user.account_type;
+        if (planCode) {
+            const mod = await db.query(
+                `SELECT 1 FROM module_plan_availability 
+                 WHERE module_type = 'modo_empresa' AND plan_code = $1 AND is_available = true`,
+                [planCode]
+            );
+            req.user.hasModoEmpresa = mod.rows.length > 0;
+        } else {
+            req.user.hasModoEmpresa = false;
+        }
+    } catch (e) {
+        console.warn('enrichUserForBusiness:', e.message);
+    }
+    next();
+}
+
+// Modo empresa: King Corporate, business_owner, enterprise, ou plano com modo_empresa. ADM tem acesso sempre.
 const protectBusinessOwner = (req, res, next) => {
     if (!req.user) {
         return res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais.' });
@@ -14,14 +50,15 @@ const protectBusinessOwner = (req, res, next) => {
     const accountType = req.user.accountType || req.user.account_type;
     const isAdmin = req.user.isAdmin === true || req.user.is_admin === true;
     const hasEnterprise = accountType === 'business_owner' || accountType === 'king_corporate' || accountType === 'enterprise';
-    if (isAdmin || hasEnterprise) {
+    const hasModoEmpresa = req.user.hasModoEmpresa === true;
+    if (isAdmin || hasEnterprise || hasModoEmpresa) {
         next();
     } else {
-        res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais (King Corporate) ou ADM.' });
+        res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais (King Corporate), plano com Modo Empresa ou ADM.' });
     }
 };
 
-// Middleware para permitir business_owner, individual_com_logo e king_corporate (para personalização de logo)
+// Middleware para permitir business_owner, individual_com_logo, king_corporate (para personalização de logo)
 const protectBusinessOwnerOrLogo = (req, res, next) => {
     if (!req.user) {
         return res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais ou individuais com logo.' });
@@ -36,7 +73,7 @@ const protectBusinessOwnerOrLogo = (req, res, next) => {
     }
 };
 
-router.get('/team', protectUser, protectBusinessOwner, async (req, res) => {
+router.get('/team', protectUser, enrichUserForBusiness, protectBusinessOwner, async (req, res) => {
     try {
         const { rows } = await db.query(
             `SELECT u.id, p.display_name, u.email, u.created_at 
@@ -51,7 +88,7 @@ router.get('/team', protectUser, protectBusinessOwner, async (req, res) => {
     }
 });
 
-router.post('/generate-code', protectUser, protectBusinessOwner, async (req, res) => {
+router.post('/generate-code', protectUser, enrichUserForBusiness, protectBusinessOwner, async (req, res) => {
     const ownerId = req.user.userId;
     const client = await db.pool.connect();
 
@@ -89,7 +126,7 @@ router.post('/generate-code', protectUser, protectBusinessOwner, async (req, res
     }
 });
 
-router.put('/branding', protectUser, protectBusinessOwnerOrLogo, async (req, res) => {
+router.put('/branding', protectUser, enrichUserForBusiness, protectBusinessOwnerOrLogo, async (req, res) => {
     const { logoUrl, logoSize, logoLink } = req.body;
     const ownerId = req.user.userId;
 
@@ -110,7 +147,7 @@ router.put('/branding', protectUser, protectBusinessOwnerOrLogo, async (req, res
     }
 });
 
-router.post('/codes/generate-manual', protectUser, protectBusinessOwner, async (req, res) => {
+router.post('/codes/generate-manual', protectUser, enrichUserForBusiness, protectBusinessOwner, async (req, res) => {
     const { customCode } = req.body;
     const ownerId = req.user.userId;
     const client = await db.pool.connect();
@@ -154,7 +191,7 @@ router.post('/codes/generate-manual', protectUser, protectBusinessOwner, async (
     }
 });
 
-router.get('/codes', protectUser, protectBusinessOwner, async (req, res) => {
+router.get('/codes', protectUser, enrichUserForBusiness, protectBusinessOwner, async (req, res) => {
     try {
         const { rows } = await db.query(
             `SELECT code, is_claimed, claimed_at, 
