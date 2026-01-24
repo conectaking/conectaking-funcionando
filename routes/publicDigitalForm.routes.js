@@ -651,418 +651,10 @@ router.get('/kingforms/:slug', asyncHandler(async (req, res) => {
  * Rota alternativa para links únicos com slug: GET /:slug/form/share/:token
  * Permite URLs personalizadas como /usuario/form/share/meu-link-personalizado
  */
-router.get('/:slug/form/share/:token', asyncHandler(async (req, res) => {
-    const { slug, token } = req.params;
-    
-    // LOG CRÍTICO: Confirmar que a rota está sendo chamada
-    logger.info(`🔍 [ROUTE] Rota /:slug/form/share/:token chamada - slug: "${slug}", token: "${token}", path: "${req.path}", url: "${req.url}", originalUrl: "${req.originalUrl}"`);
-    
-    // Headers para evitar cache
-    const now = Date.now();
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-    res.set('X-Timestamp', now.toString());
-    
-    const client = await db.pool.connect();
-    
-    try {
-        let actualToken = token;
-        let itemRes = null;
-        
-        // PRIORIDADE 1: Buscar por cadastro_links.slug (links personalizados múltiplos)
-        // PRIORIDADE 2: Buscar por cadastro_slug (link único do item)
-        logger.info(`🔍 [CADASTRO_LINKS] Buscando por cadastro_links.slug ou cadastro_slug: "${token}", slug: "${slug}"`);
-        
-        let cadastroLinkData = null; // Armazenar dados do link personalizado se encontrado
-        
-        try {
-            // Primeiro, tentar buscar em cadastro_links (múltiplos links personalizados)
-            // O slug do link é único, então não precisamos verificar o profile_slug
-            logger.info(`🔍 [CADASTRO_LINKS] Buscando link personalizado com slug: "${token}"`);
-            const cadastroLinksRes = await client.query(`
-                SELECT 
-                    pi.*, 
-                    u.profile_slug,
-                    cl.id as cadastro_link_id,
-                    cl.expires_at as link_expires_at,
-                    cl.max_uses as link_max_uses,
-                    cl.current_uses as link_current_uses
-                FROM profile_items pi
-                INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-                INNER JOIN users u ON pi.user_id = u.id
-                INNER JOIN cadastro_links cl ON cl.guest_list_item_id = gli.id
-                WHERE cl.slug = $1
-                AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
-                AND pi.is_active = true
-            `, [token]);
-            
-            logger.info(`🔍 [CADASTRO_LINKS] Resultado da busca em cadastro_links: ${cadastroLinksRes.rows.length} resultado(s)`);
-            
-            if (cadastroLinksRes.rows.length > 0) {
-                const linkRow = cadastroLinksRes.rows[0];
-                logger.info(`✅ [CADASTRO_LINKS] Link encontrado via cadastro_links: "${token}" para usuário "${slug}"`);
-                
-                // Validar expiração
-                if (linkRow.link_expires_at && new Date(linkRow.link_expires_at) < new Date()) {
-                    logger.warn(`⚠️ [CADASTRO_LINKS] Link expirado: ${token}`);
-                    return res.status(410).render('linkExpired', {
-                        profileSlug: linkRow.profile_slug || slug
-                    });
-                }
-                
-                // Validar limite de usos
-                if (linkRow.link_max_uses !== 999999 && linkRow.link_current_uses >= linkRow.link_max_uses) {
-                    logger.warn(`⚠️ [CADASTRO_LINKS] Link esgotado: ${token}`);
-                    return res.status(410).render('linkExpired', {
-                        reason: 'Este link atingiu o limite máximo de usos.',
-                        profileSlug: linkRow.profile_slug || slug
-                    });
-                }
-                
-                // Armazenar dados do link para incrementar contador depois
-                cadastroLinkData = {
-                    id: linkRow.cadastro_link_id,
-                    current_uses: linkRow.link_current_uses
-                };
-                
-                actualToken = token;
-                itemRes = cadastroLinksRes;
-            } else {
-                // Se não encontrou em cadastro_links, tentar cadastro_slug (link único)
-                // Para cadastro_slug, o slug na URL pode não corresponder ao profile_slug
-                // Então vamos buscar primeiro sem verificar o profile_slug, e depois validar se encontrou
-                let cadastroSlugRes = await client.query(`
-                    SELECT pi.*, u.profile_slug
-                    FROM profile_items pi
-                    INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-                    INNER JOIN users u ON pi.user_id = u.id
-                    WHERE gli.cadastro_slug = $1 
-                    AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
-                    AND pi.is_active = true
-                `, [token]);
-                
-                // Se encontrou mas o profile_slug não corresponde, ainda assim usar (slug pode estar incorreto na URL mas o token é válido)
-                // Só fazer fallback se não encontrou nada
-                if (cadastroSlugRes.rows.length === 0 && slug) {
-                    // Tentar novamente verificando o profile_slug como fallback
-                    cadastroSlugRes = await client.query(`
-                        SELECT pi.*, u.profile_slug
-                        FROM profile_items pi
-                        INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-                        INNER JOIN users u ON pi.user_id = u.id
-                        WHERE gli.cadastro_slug = $1 
-                        AND u.profile_slug = $2
-                        AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') 
-                        AND pi.is_active = true
-                    `, [token, slug]);
-                }
-                
-                logger.info(`🔍 [CADASTRO_SLUG] Resultado da busca: ${cadastroSlugRes.rows.length} resultado(s)`);
-                
-                if (cadastroSlugRes.rows.length > 0) {
-                    const item = cadastroSlugRes.rows[0];
-                    logger.info(`✅ [CADASTRO_SLUG] Link encontrado via cadastro_slug: "${token}" para usuário "${slug}"`);
-                    
-                    actualToken = token;
-                    itemRes = cadastroSlugRes;
-                }
-            }
-        } catch (cadastroError) {
-            logger.warn(`⚠️ [CADASTRO_LINKS] Erro ao buscar cadastro_links/cadastro_slug:`, cadastroError);
-        }
-        
-        // IMPORTANTE: Processar diretamente usando a mesma lógica da rota /form/share/:token
-        // Isso mantém o slug na URL e evita redirecionamento
-        logger.info(`🔗 [ROUTE] Processando link via /:slug/form/share/:token, token: ${actualToken}, slug: ${slug}, itemRes já definido: ${!!itemRes}`);
-        
-        // Se itemRes já foi definido (por cadastro_slug acima), usar diretamente
-        // Caso contrário, buscar dados do item usando actualToken
-        if (!itemRes || !itemRes.rows || itemRes.rows.length === 0) {
-            logger.info(`🔍 [ROUTE] itemRes não encontrado, buscando por actualToken: ${actualToken}`);
-            
-            // PRIORIDADE 1: Tentar buscar por share_token direto
-            itemRes = await client.query(
-                `SELECT pi.* 
-                 FROM profile_items pi
-                 WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
-                [actualToken]
-            );
-            
-            // PRIORIDADE 2: Tentar buscar por cadastro_slug (pode ser que actualToken seja cadastro_slug)
-            if (!itemRes || itemRes.rows.length === 0) {
-                const cadastroRes = await client.query(`
-                    SELECT pi.* 
-                    FROM profile_items pi
-                    INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-                    WHERE gli.cadastro_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
-                    [actualToken]
-                );
-                
-                if (cadastroRes.rows.length > 0) {
-                    itemRes = cadastroRes;
-                }
-            }
-        } else {
-            logger.info(`✅ [ROUTE] Usando itemRes já encontrado anteriormente`);
-        }
-        
-        if (!itemRes || itemRes.rows.length === 0) {
-            logger.error(`❌ [ROUTE] itemRes não encontrado após todas as buscas - slug: "${slug}", token: "${token}", actualToken: "${actualToken}"`);
-            return res.status(404).send(`<h1>404 - Formulário não encontrado</h1><p>O link compartilhável é inválido ou expirou.</p><p><strong>Debug:</strong> slug="${slug}", token="${token}"</p>`);
-        }
-        
-        const item = itemRes.rows[0];
-        // Extrair userId e itemId corretamente
-        // Quando vem de cadastro_links, o item já tem pi.*, então item.id é o profile_item_id
-        // Quando vem de cadastro_slug, também tem pi.*, então item.id é o profile_item_id
-        let finalUserId = item.user_id;
-        let itemIdInt = item.id; // item.id sempre será o profile_item_id quando vem de pi.*
-        const isGuestList = item.item_type === 'guest_list';
-        
-        // Se userId não foi encontrado, buscar do profile_item
-        if (!finalUserId && itemIdInt) {
-            const userRes = await client.query('SELECT user_id FROM profile_items WHERE id = $1', [itemIdInt]);
-            if (userRes.rows.length > 0) {
-                finalUserId = userRes.rows[0].user_id;
-            }
-        }
-        
-        // Validar que temos os dados necessários
-        if (!itemIdInt || isNaN(parseInt(itemIdInt, 10))) {
-            logger.error(`❌ [ROUTE] itemId inválido - itemId: ${itemIdInt}, item:`, item);
-            client.release();
-            return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>ID do formulário inválido.</p>');
-        }
-        
-        itemIdInt = parseInt(itemIdInt, 10);
-        
-        if (!finalUserId) {
-            logger.error(`❌ [ROUTE] userId não encontrado - itemId: ${itemIdInt}, item:`, item);
-            client.release();
-            return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>Dados incompletos para carregar o formulário.</p>');
-        }
-        
-        
-        // Continuar com a lógica normal de renderização do formulário
-        // Buscar dados do formulário com verificação de colunas
-        const columnCheck = await client.query(`
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'digital_form_items' 
-            AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit')
-        `);
-        
-        const hasEnableWhatsapp = columnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
-        const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
-        
-        // Buscar dados de digital_form_items
-        let formRes;
-        try {
-            formRes = await client.query(
-                `SELECT * FROM digital_form_items 
-                 WHERE profile_item_id = $1 
-                 ORDER BY 
-                    COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
-                    id DESC 
-                 LIMIT 1`,
-                [itemIdInt]
-            );
-        } catch (queryError) {
-            logger.error(`❌ [ROUTE] Erro ao buscar digital_form_items para itemId ${itemIdInt}:`, queryError);
-            client.release();
-            return res.status(500).json({
-                success: false,
-                message: 'Erro interno do servidor'
-            });
-        }
+router.get('/:slug/form/share/:token', (req, res) => res.redirect(301, '/kingforms/' + encodeURIComponent(req.params.token)));
 
-        if (formRes.rows.length === 0) {
-            logger.warn(`⚠️ [ROUTE] digital_form_items não encontrado para itemId: ${itemIdInt}`);
-            client.release();
-            return res.status(404).send('<h1>404 - Dados do formulário não encontrados</h1>');
-        }
-
-        let formData = formRes.rows[0];
-        
-        // Buscar dados de guest_list_items se necessário
-        const guestListColumnsCheck = await client.query(`
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'guest_list_items' 
-            AND column_name IN ('card_color', 'enable_whatsapp', 'enable_guest_list_submit')
-        `);
-        const hasGuestListCardColor = guestListColumnsCheck.rows.some(r => r.column_name === 'card_color');
-        const guestListHasEnableWhatsapp = guestListColumnsCheck.rows.some(r => r.column_name === 'enable_whatsapp');
-        const guestListHasEnableGuestListSubmit = guestListColumnsCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
-        
-        let guestListSelectFields = 'primary_color, secondary_color, text_color, background_color, header_image_url, background_image_url, background_opacity, theme, updated_at';
-        if (hasGuestListCardColor) {
-            guestListSelectFields += ', card_color';
-        }
-        if (guestListHasEnableWhatsapp) {
-            guestListSelectFields += ', enable_whatsapp';
-        }
-        if (guestListHasEnableGuestListSubmit) {
-            guestListSelectFields += ', enable_guest_list_submit';
-        }
-        
-        const guestListRes = await client.query(
-            `SELECT ${guestListSelectFields}
-             FROM guest_list_items 
-             WHERE profile_item_id = $1 
-             ORDER BY 
-                COALESCE(updated_at, '1970-01-01'::timestamp) DESC, 
-                id DESC 
-             LIMIT 1`,
-            [itemIdInt]
-        );
-        
-        if (guestListRes.rows.length > 0 && isGuestList) {
-            const guestListData = guestListRes.rows[0];
-            if (guestListData.primary_color) formData.primary_color = guestListData.primary_color;
-            if (guestListData.secondary_color) formData.secondary_color = guestListData.secondary_color;
-            if (guestListData.text_color) formData.text_color = guestListData.text_color;
-            if (guestListData.background_color) formData.background_color = guestListData.background_color;
-            if (guestListData.header_image_url) formData.header_image_url = guestListData.header_image_url;
-            if (guestListData.background_image_url) formData.background_image_url = guestListData.background_image_url;
-            if (guestListData.background_opacity !== null && guestListData.background_opacity !== undefined) {
-                formData.background_opacity = guestListData.background_opacity;
-            }
-            if (guestListData.theme) formData.theme = guestListData.theme;
-            if (hasGuestListCardColor && guestListData.card_color) formData.card_color = guestListData.card_color;
-            if (guestListHasEnableWhatsapp && guestListData.enable_whatsapp !== undefined) {
-                formData.enable_whatsapp = guestListData.enable_whatsapp;
-            }
-            if (guestListHasEnableGuestListSubmit && guestListData.enable_guest_list_submit !== undefined) {
-                formData.enable_guest_list_submit = guestListData.enable_guest_list_submit;
-            }
-        }
-        
-        // Garantir valores padrão
-        if (hasEnableWhatsapp && (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null)) {
-            formData.enable_whatsapp = true;
-        } else if (!hasEnableWhatsapp) {
-            formData.enable_whatsapp = true;
-        }
-        
-        if (hasEnableGuestListSubmit && (formData.enable_guest_list_submit === undefined || formData.enable_guest_list_submit === null)) {
-            formData.enable_guest_list_submit = false;
-        } else if (!hasEnableGuestListSubmit) {
-            formData.enable_guest_list_submit = false;
-        }
-        
-        // Garantir secondary_color
-        if (!formData.secondary_color || formData.secondary_color === 'null' || formData.secondary_color === 'undefined' || 
-            formData.secondary_color === null || formData.secondary_color === undefined ||
-            (typeof formData.secondary_color === 'string' && formData.secondary_color.trim() === '')) {
-            formData.secondary_color = formData.primary_color || '#4A90E2';
-        }
-        
-        // Processar form_fields
-        if (formData.form_fields) {
-            if (typeof formData.form_fields === 'string') {
-                try {
-                    formData.form_fields = JSON.parse(formData.form_fields);
-                } catch (e) {
-                    formData.form_fields = [];
-                }
-            }
-            if (!Array.isArray(formData.form_fields)) {
-                formData.form_fields = [];
-            }
-        } else {
-            formData.form_fields = [];
-        }
-        
-        // Buscar profile_slug - usar o slug da URL original
-        const profileSlug = slug;
-        
-        // Garantir show_logo_corner
-        if (formData.show_logo_corner === undefined) {
-            formData.show_logo_corner = false;
-        }
-        
-        // Headers de cache
-        res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
-        if (formData.updated_at) {
-            res.set('X-Form-Updated-At', new Date(formData.updated_at).getTime().toString());
-        }
-        res.set('X-Cache-Timestamp', Date.now().toString());
-        
-        // Sanitizar dados (se a função existir)
-        let sanitizedFormData = formData;
-        try {
-            sanitizedFormData = sanitizeFormDataForRender(formData);
-        } catch (e) {
-            logger.warn('⚠️ Erro ao sanitizar dados:', e);
-            sanitizedFormData = formData;
-        }
-        
-        // Criar objeto item completo para renderização
-        const itemForRender = {
-            id: itemIdInt,
-            user_id: finalUserId,
-            item_type: item.item_type || item.item_type,
-            is_active: item.is_active !== false
-        };
-        
-        // Renderizar página (manter o slug original na URL)
-        client.release();
-        
-        return res.render('digitalForm', {
-            item: itemForRender,
-            formData: sanitizedFormData,
-            profileSlug: profileSlug,
-            slug: profileSlug,
-            itemId: itemIdInt,
-            _timestamp: Date.now(),
-            _cacheBust: `?t=${Date.now()}`
-        });
-        
-    } catch (error) {
-        logger.error('Erro ao processar link personalizado:', {
-            error: error.message,
-            slug,
-            token,
-            stack: error.stack,
-            path: req.path,
-            url: req.url
-        });
-        
-        // Garantir que o client seja liberado em caso de erro
-        try {
-            if (client) {
-                client.release();
-            }
-        } catch (releaseError) {
-            logger.warn('Erro ao liberar client após erro:', releaseError);
-        }
-        
-        // Retornar JSON se for uma requisição AJAX ou se o Accept header indicar JSON
-        if (req.headers.accept && req.headers.accept.includes('application/json')) {
-            return res.status(500).json({
-                success: false,
-                message: 'Erro interno do servidor'
-            });
-        }
-        
-        return res.status(500).render('formError', {
-            title: 'Erro',
-            message: 'Erro ao processar o link. Tente novamente mais tarde.',
-            errorCode: 'INTERNAL_ERROR'
-        });
-    } finally {
-        // Garantir que o client sempre seja liberado
-        try {
-            if (client && !client.released) {
-                client.release();
-            }
-        } catch (releaseError) {
-            logger.warn('Erro ao liberar client no finally:', releaseError);
-        }
-    }
-}));
+/** Redireciona /:slug/forms/:token (ex: usuario/forms/cleciocastro) para link curto */
+router.get('/:slug/forms/:token', (req, res) => res.redirect(301, '/kingforms/' + encodeURIComponent(req.params.token)));
 
 /**
  * Rota pública: GET /:slug/form/:itemId
@@ -2262,12 +1854,13 @@ router.post('/:slug/form/:itemId/submit',
             let formUrlForSubmit = null;
             const refererSubmit = req.headers.referer || req.headers.referrer || '';
             
-            if (refererSubmit && (refererSubmit.includes('/form/share/') || refererSubmit.includes('/kingforms/'))) {
+            if (refererSubmit && (refererSubmit.includes('/form/share/') || refererSubmit.includes('/kingforms/') || refererSubmit.includes('/forms/'))) {
                 try {
                     const refererUrl = new URL(refererSubmit);
-                    const refererPath = refererUrl.pathname.replace(/\/success.*$/, '');
-                    formUrlForSubmit = refererPath;
-                    logger.info(`✅ [SUBMIT] Usando URL do referer (link personalizado): ${formUrlForSubmit}`);
+                    const path = refererUrl.pathname.replace(/\/success.*$/, '');
+                    const m = path.match(/\/(?:kingforms|form\/share|forms)\/([^\/\?]+)/);
+                    formUrlForSubmit = m ? `/kingforms/${m[1]}` : path;
+                    logger.info(`✅ [SUBMIT] Usando link curto: ${formUrlForSubmit}`);
                 } catch (urlError) {
                     logger.warn(`⚠️ [SUBMIT] Erro ao parsear referer URL:`, urlError.message);
                 }
@@ -2678,16 +2271,13 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
         let formUrl = null;
         const referer = req.headers.referer || req.headers.referrer || '';
         
-        if (referer && (referer.includes('/form/share/') || referer.includes('/kingforms/'))) {
-            // Extrair URL do link personalizado do referer
+        if (referer && (referer.includes('/form/share/') || referer.includes('/kingforms/') || referer.includes('/forms/'))) {
             try {
                 const refererUrl = new URL(referer);
-                // Pegar caminho completo do referer (incluindo /form/share/slug)
-                const refererPath = refererUrl.pathname;
-                // Remover /success se estiver no caminho
-                const cleanPath = refererPath.replace(/\/success.*$/, '');
-                formUrl = cleanPath;
-                logger.info(`✅ [SUCCESS] Usando URL do referer (link personalizado): ${formUrl}`);
+                const path = refererUrl.pathname.replace(/\/success.*$/, '');
+                const m = path.match(/\/(?:kingforms|form\/share|forms)\/([^\/\?]+)/);
+                formUrl = m ? `/kingforms/${m[1]}` : path;
+                logger.info(`✅ [SUCCESS] Usando link curto: ${formUrl}`);
             } catch (urlError) {
                 logger.warn(`⚠️ [SUCCESS] Erro ao parsear referer URL:`, urlError.message);
             }
@@ -2725,14 +2315,17 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             }
         }
         
-        // PRIORIDADE 3: Se não encontrou link ativo, usar referer completo como fallback
+        // PRIORIDADE 3: Fallback do referer — extrair slug e usar /kingforms/slug
         if (!formUrl && referer) {
             try {
                 const refererUrl = new URL(referer);
-                const refererPath = refererUrl.pathname.replace(/\/success.*$/, '');
-                if (refererPath && refererPath !== '/' && (refererPath.includes('/form/') || refererPath.includes('/kingforms/'))) {
-                    formUrl = refererPath;
-                    logger.info(`✅ [SUCCESS] Usando referer como fallback: ${formUrl}`);
+                const path = refererUrl.pathname.replace(/\/success.*$/, '');
+                if (path && path !== '/') {
+                    const m = path.match(/\/(?:kingforms|form\/share|forms)\/([^\/\?]+)/);
+                    if (m) {
+                        formUrl = `/kingforms/${m[1]}`;
+                        logger.info(`✅ [SUCCESS] Fallback referer → link curto: ${formUrl}`);
+                    }
                 }
             } catch (urlError) {
                 // Ignorar erro
