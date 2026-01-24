@@ -97,83 +97,11 @@ const formSubmissionLimiter = rateLimit({
 });
 
 /**
- * Rota pública: GET /form/share/:token
- * Acesso via link compartilhável (formulário oculto do cartão público)
- * Também aceita: GET /:slug/form/share/:token (para links personalizados)
+ * Redirect: GET /form/share/:token → GET /form/:token (link curto)
+ * Mantém /form/share/xxx como rota que redireciona para /form/xxx
  */
-router.get('/form/share/:token', asyncHandler(async (req, res) => {
-    const { token } = req.params;
-    
-    // Headers AGressivos para evitar cache no navegador e servidor
-    const now = Date.now();
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0, proxy-revalidate');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-    res.set('Last-Modified', new Date(now).toUTCString());
-    res.set('ETag', `"${now}"`);
-    res.set('X-Timestamp', now.toString());
-    res.set('X-No-Cache', '1');
-    
-    
-    const client = await db.pool.connect();
-    
-    try {
-        // Inicializar itemRes como null
-        let itemRes = null;
-        
-        // Buscar formulário pelo share_token ou cadastro_slug
-        // PRIORIDADE 1: Tentar pelo share_token (sistema normal)
-        itemRes = await client.query(
-            `SELECT pi.* 
-             FROM profile_items pi
-             WHERE pi.share_token = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
-            [token]
-        );
+router.get('/form/share/:token', (req, res) => res.redirect(301, '/form/' + encodeURIComponent(req.params.token)));
 
-        // PRIORIDADE 2: Tentar pelo cadastro_slug (sistema normal - agora com validação de validade e limite de usos)
-        let cadastroLinkData = null;
-        if (!itemRes || itemRes.rows.length === 0) {
-            const cadastroRes = await client.query(
-                `SELECT pi.*, 
-                        u.profile_slug,
-                        gli.cadastro_expires_at,
-                        gli.cadastro_max_uses,
-                        gli.cadastro_current_uses
-                 FROM profile_items pi
-                 INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
-                 INNER JOIN users u ON pi.user_id = u.id
-                 WHERE gli.cadastro_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true`,
-                [token]
-            );
-            
-            if (cadastroRes.rows.length > 0) {
-                itemRes = cadastroRes;
-                cadastroLinkData = cadastroRes.rows[0];
-                const userProfileSlug = cadastroLinkData.profile_slug;
-                
-                // Validar validade do link de cadastro
-                if (cadastroLinkData.cadastro_expires_at) {
-                    const expiresAt = new Date(cadastroLinkData.cadastro_expires_at);
-                    if (expiresAt < new Date()) {
-                        logger.warn(`❌ [CADASTRO_LINK] Link de cadastro expirado: ${token}, expirou em: ${expiresAt.toISOString()}`);
-                        return res.status(410).render('linkExpired', {
-                            profileSlug: userProfileSlug
-                        });
-                    }
-                }
-                
-                // Validar limite de usos
-                const maxUses = cadastroLinkData.cadastro_max_uses || 999999;
-                const currentUses = cadastroLinkData.cadastro_current_uses || 0;
-                if (currentUses >= maxUses) {
-                    logger.warn(`❌ [CADASTRO_LINK] Link de cadastro atingiu limite de usos: ${token}, usos: ${currentUses}/${maxUses}`);
-                    return res.status(410).render('linkExpired', {
-                        reason: 'Este link atingiu o limite máximo de usos.',
-                        profileSlug: userProfileSlug
-                    });
-                }
-            }
-        }
 
         if (!itemRes || itemRes.rows.length === 0) {
             return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>O link compartilhável é inválido ou expirou.</p>');
