@@ -500,10 +500,10 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
 }));
 
 /**
- * GET /kingforms/:slug - Link curto para formulário (ex: /kingforms/cleciocastro)
- * Substitui /usuario/form/share/cleciocastro por URL mais curta
+ * Handler compartilhado: formulário por slug (usado em GET /form/:slug).
+ * GET /kingforms/:slug redireciona 301 para /form/:slug.
  */
-router.get('/kingforms/:slug', asyncHandler(async (req, res) => {
+const renderFormBySlug = asyncHandler(async (req, res) => {
     const slug = req.params.slug;
     const now = Date.now();
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
@@ -635,26 +635,28 @@ router.get('/kingforms/:slug', asyncHandler(async (req, res) => {
             _cacheBust: `?t=${Date.now()}`
         });
     } catch (err) {
-        logger.error('Erro /kingforms/:slug:', err);
+        logger.error('Erro /form/:slug:', err);
         try { if (typeof client !== 'undefined' && client) client.release(); } catch (e) {}
         return res.status(500).render('formError', { title: 'Erro', message: 'Erro ao carregar formulário.', errorCode: 'INTERNAL_ERROR' });
     } finally {
         try { if (typeof client !== 'undefined' && client && !client.released) client.release(); } catch (e) {}
     }
-}));
+});
+
+/** GET /form/:slug - Link curto personalizado (ex: /form/lideresposicionados) */
+router.get('/form/:slug', renderFormBySlug);
+
+/** Redirect: /kingforms/:slug → /form/:slug */
+router.get('/kingforms/:slug', (req, res) => res.redirect(301, '/form/' + encodeURIComponent(req.params.slug)));
 
 /**
- * Rota pública: GET /:slug/form/:itemId
- * Renderiza o formulário digital público
+ * Rota alternativa para links únicos: GET /:slug/form/share/:token
+ * Redireciona para link curto /form/:token
  */
-/**
- * Rota alternativa para links únicos com slug: GET /:slug/form/share/:token
- * Permite URLs personalizadas como /usuario/form/share/meu-link-personalizado
- */
-router.get('/:slug/form/share/:token', (req, res) => res.redirect(301, '/kingforms/' + encodeURIComponent(req.params.token)));
+router.get('/:slug/form/share/:token', (req, res) => res.redirect(301, '/form/' + encodeURIComponent(req.params.token)));
 
-/** Redireciona /:slug/forms/:token (ex: usuario/forms/cleciocastro) para link curto */
-router.get('/:slug/forms/:token', (req, res) => res.redirect(301, '/kingforms/' + encodeURIComponent(req.params.token)));
+/** Redireciona /:slug/forms/:token (ex: usuario/forms/cleciocastro) para /form/:token */
+router.get('/:slug/forms/:token', (req, res) => res.redirect(301, '/form/' + encodeURIComponent(req.params.token)));
 
 /**
  * Rota pública: GET /:slug/form/:itemId
@@ -1691,22 +1693,22 @@ router.post('/:slug/form/:itemId/submit',
                 const currentUrl = req.url || req.originalUrl || '';
                 let cadastroToken = null;
                 
-                // Extrair token do referer (form/share ou kingforms)
+                // Extrair token do referer (form/share, /form/slug ou kingforms)
                 if (referer.includes('/form/share/')) {
                     const tokenMatch = referer.match(/\/form\/share\/([^\/\?]+)/);
                     if (tokenMatch && tokenMatch[1] && !tokenMatch[1].startsWith('unique_')) cadastroToken = tokenMatch[1];
                 }
-                if (!cadastroToken && referer.includes('/kingforms/')) {
-                    const tokenMatch = referer.match(/\/kingforms\/([^\/\?]+)/);
-                    if (tokenMatch && tokenMatch[1] && !tokenMatch[1].startsWith('unique_')) cadastroToken = tokenMatch[1];
+                if (!cadastroToken && (referer.includes('/form/') || referer.includes('/kingforms/'))) {
+                    const tokenMatch = referer.match(/\/(?:form|kingforms)\/([^\/\?]+)/);
+                    if (tokenMatch && tokenMatch[1] && !tokenMatch[1].startsWith('unique_') && tokenMatch[1] !== 'share') cadastroToken = tokenMatch[1];
                 }
                 if (!cadastroToken && currentUrl.includes('/form/share/')) {
                     const urlMatch = currentUrl.match(/\/form\/share\/([^\/\?]+)/);
                     if (urlMatch && urlMatch[1] && !urlMatch[1].startsWith('unique_')) cadastroToken = urlMatch[1];
                 }
-                if (!cadastroToken && currentUrl.includes('/kingforms/')) {
-                    const urlMatch = currentUrl.match(/\/kingforms\/([^\/\?]+)/);
-                    if (urlMatch && urlMatch[1] && !urlMatch[1].startsWith('unique_')) cadastroToken = urlMatch[1];
+                if (!cadastroToken && (currentUrl.includes('/form/') || currentUrl.includes('/kingforms/'))) {
+                    const urlMatch = currentUrl.match(/\/(?:form|kingforms)\/([^\/\?]+)/);
+                    if (urlMatch && urlMatch[1] && !urlMatch[1].startsWith('unique_') && urlMatch[1] !== 'share') cadastroToken = urlMatch[1];
                 }
                 
                 // Se encontrou um token, tentar incrementar
@@ -1854,12 +1856,12 @@ router.post('/:slug/form/:itemId/submit',
             let formUrlForSubmit = null;
             const refererSubmit = req.headers.referer || req.headers.referrer || '';
             
-            if (refererSubmit && (refererSubmit.includes('/form/share/') || refererSubmit.includes('/kingforms/') || refererSubmit.includes('/forms/'))) {
+            if (refererSubmit && (refererSubmit.includes('/form/') || refererSubmit.includes('/kingforms/') || refererSubmit.includes('/forms/'))) {
                 try {
                     const refererUrl = new URL(refererSubmit);
                     const path = refererUrl.pathname.replace(/\/success.*$/, '');
-                    const m = path.match(/\/(?:kingforms|form\/share|forms)\/([^\/\?]+)/);
-                    formUrlForSubmit = m ? `/kingforms/${m[1]}` : path;
+                    const m = path.match(/\/(?:kingforms|form\/share|forms|form)\/([^\/\?]+)/);
+                    formUrlForSubmit = m ? `/form/${m[1]}` : path;
                     logger.info(`✅ [SUBMIT] Usando link curto: ${formUrlForSubmit}`);
                 } catch (urlError) {
                     logger.warn(`⚠️ [SUBMIT] Erro ao parsear referer URL:`, urlError.message);
@@ -1889,7 +1891,7 @@ router.post('/:slug/form/:itemId/submit',
                         
                         if (activeLinkRes.rows.length > 0) {
                             const activeLinkSlug = activeLinkRes.rows[0].slug;
-                            formUrlForSubmit = `/kingforms/${activeLinkSlug}`;
+                            formUrlForSubmit = `/form/${activeLinkSlug}`;
                             logger.info(`✅ [SUBMIT] Link ativo encontrado: ${formUrlForSubmit}`);
                         }
                     }
@@ -2267,16 +2269,16 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
         });
         
         // Determinar URL do formulário para botão "Preencher Novamente"
-        // PRIORIDADE 1: Usar referer se for link personalizado (/form/share/ ou /kingforms/)
+        // PRIORIDADE 1: Usar referer se for link personalizado (/form/, /form/share/, /kingforms/, /forms/)
         let formUrl = null;
         const referer = req.headers.referer || req.headers.referrer || '';
         
-        if (referer && (referer.includes('/form/share/') || referer.includes('/kingforms/') || referer.includes('/forms/'))) {
+        if (referer && (referer.includes('/form/') || referer.includes('/kingforms/') || referer.includes('/forms/'))) {
             try {
                 const refererUrl = new URL(referer);
                 const path = refererUrl.pathname.replace(/\/success.*$/, '');
-                const m = path.match(/\/(?:kingforms|form\/share|forms)\/([^\/\?]+)/);
-                formUrl = m ? `/kingforms/${m[1]}` : path;
+                const m = path.match(/\/(?:kingforms|form\/share|forms|form)\/([^\/\?]+)/);
+                formUrl = m ? `/form/${m[1]}` : path;
                 logger.info(`✅ [SUCCESS] Usando link curto: ${formUrl}`);
             } catch (urlError) {
                 logger.warn(`⚠️ [SUCCESS] Erro ao parsear referer URL:`, urlError.message);
@@ -2306,7 +2308,7 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
                     
                     if (activeLinkRes.rows.length > 0) {
                         const activeLinkSlug = activeLinkRes.rows[0].slug;
-                        formUrl = `/kingforms/${activeLinkSlug}`;
+                        formUrl = `/form/${activeLinkSlug}`;
                         logger.info(`✅ [SUCCESS] Link ativo encontrado: ${formUrl}`);
                     }
                 }
@@ -2315,15 +2317,15 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             }
         }
         
-        // PRIORIDADE 3: Fallback do referer — extrair slug e usar /kingforms/slug
+        // PRIORIDADE 3: Fallback do referer — extrair slug e usar /form/slug
         if (!formUrl && referer) {
             try {
                 const refererUrl = new URL(referer);
                 const path = refererUrl.pathname.replace(/\/success.*$/, '');
                 if (path && path !== '/') {
-                    const m = path.match(/\/(?:kingforms|form\/share|forms)\/([^\/\?]+)/);
+                    const m = path.match(/\/(?:kingforms|form\/share|forms|form)\/([^\/\?]+)/);
                     if (m) {
-                        formUrl = `/kingforms/${m[1]}`;
+                        formUrl = `/form/${m[1]}`;
                         logger.info(`✅ [SUCCESS] Fallback referer → link curto: ${formUrl}`);
                     }
                 }

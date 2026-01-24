@@ -1977,12 +1977,12 @@ if (typeof details === 'undefined' || !details) {
                             }
                             
                             // Usar link ativo se existir, senão não mostrar link (desabilitar botão)
-                            // Formato curto: /kingforms/cleciocastro (em vez de /usuario/form/share/cleciocastro)
+                            // Formato curto: /form/lideresposicionados (ex: https://.../form/lideresposicionados)
                             let formUrl = '#';
                             let hasActiveLink = false;
                             if (profileSlug) {
                                 if (item.active_cadastro_link_slug) {
-                                    formUrl = `/kingforms/${item.active_cadastro_link_slug}`;
+                                    formUrl = `/form/${item.active_cadastro_link_slug}`;
                                     hasActiveLink = true;
                                 } else {
                                     // Se não houver link ativo, desabilitar (não usar link padrão)
