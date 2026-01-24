@@ -1457,6 +1457,10 @@
                     fieldGroup.classList.remove('field-error', 'field-valid');
                     const errorMsg = fieldGroup.querySelector('.field-error-message');
                     if (errorMsg) errorMsg.remove();
+                    // Não validar campos condicionais ocultos (evita falso "corrija os erros")
+                    const isCondHidden = fieldGroup.classList.contains('conditional-field') &&
+                        (window.getComputedStyle(fieldGroup).display === 'none');
+                    if (isCondHidden) return;
                 }
                 
                 // Validar campo obrigatório
@@ -1687,6 +1691,7 @@
             } else {
                 // Mensagem global
                 const form = document.getElementById('digital-form');
+                document.querySelectorAll('.form-error-message').forEach(function(el) { el.remove(); });
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'form-error-message';
                 errorDiv.style.cssText = `
@@ -1781,8 +1786,10 @@
             const validation = validateForm();
             if (!validation.isValid) {
                 restoreButton(submitBtn, originalHTML);
-                // Scroll para o primeiro erro
-                const firstError = document.querySelector('.field-error');
+                // Scroll para o primeiro erro visível (ignorar condicionais ocultos)
+                const firstError = Array.from(document.querySelectorAll('.field-error')).find(function(el) {
+                    return window.getComputedStyle(el).display !== 'none' && el.offsetParent !== null;
+                });
                 if (firstError) {
                     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
@@ -2390,7 +2397,9 @@
                 // Validar formulário antes de enviar
                 const validation = validateForm();
                 if (!validation.isValid) {
-                    const firstError = document.querySelector('.field-error');
+                    const firstError = Array.from(document.querySelectorAll('.field-error')).find(function(el) {
+                        return window.getComputedStyle(el).display !== 'none' && el.offsetParent !== null;
+                    });
                     if (firstError) {
                         firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
