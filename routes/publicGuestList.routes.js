@@ -193,12 +193,14 @@ router.get('/confirm/:identifier', asyncHandler(async (req, res) => {
             ORDER BY created_at DESC
         `, [guestList.id]);
         
+        const guests = guestsResult.rows || [];
         res.render('guestListConfirm', {
             guestList,
-            guests: guestsResult.rows,
+            guests,
             token: guestList.confirmation_token || identifier,
             profileItemId: guestList.profile_item_id,
-            tab: tab
+            tab: tab,
+            viewOnly: false
         });
     } catch (error) {
         logger.error('Erro ao carregar página de confirmação:', error);

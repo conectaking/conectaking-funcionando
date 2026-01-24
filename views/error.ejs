@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof title !== 'undefined' ? title : 'Erro' %> - Conecta King</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0D0D0F 0%, #1C1C21 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #ECECEC;
+        }
+        .container {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 48px;
+            max-width: 560px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon { font-size: 64px; color: #FFC700; margin-bottom: 24px; }
+        h1 { font-size: 24px; margin-bottom: 16px; color: #FFF; }
+        .message { font-size: 16px; color: #A1A1A1; line-height: 1.6; margin-bottom: 32px; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #FFC700, #FFA500);
+            color: #000;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,199,0,0.4); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon"><i class="fas fa-exclamation-circle"></i></div>
+        <h1><%= typeof title !== 'undefined' ? title : 'Erro' %></h1>
+        <p class="message"><%= typeof message !== 'undefined' ? message : 'Ocorreu um erro. Tente novamente.' %></p>
+        <a href="javascript:history.back()" class="btn"><i class="fas fa-arrow-left"></i> Voltar</a>
+    </div>
+</body>
+</html>

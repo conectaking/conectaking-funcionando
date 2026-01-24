@@ -500,6 +500,150 @@ router.get('/form/share/:token', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /kingforms/:slug - Link curto para formulário (ex: /kingforms/cleciocastro)
+ * Substitui /usuario/form/share/cleciocastro por URL mais curta
+ */
+router.get('/kingforms/:slug', asyncHandler(async (req, res) => {
+    const slug = req.params.slug;
+    const now = Date.now();
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('X-Timestamp', now.toString());
+
+    let client;
+    client = await db.pool.connect();
+    try {
+        let itemRes = null;
+        const cadastroLinksRes = await client.query(`
+            SELECT pi.*, u.profile_slug,
+                cl.id as cadastro_link_id, cl.expires_at as link_expires_at,
+                cl.max_uses as link_max_uses, cl.current_uses as link_current_uses
+            FROM profile_items pi
+            INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+            INNER JOIN users u ON pi.user_id = u.id
+            INNER JOIN cadastro_links cl ON cl.guest_list_item_id = gli.id
+            WHERE cl.slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
+        `, [slug]);
+
+        if (cadastroLinksRes.rows.length > 0) {
+            const linkRow = cadastroLinksRes.rows[0];
+            if (linkRow.link_expires_at && new Date(linkRow.link_expires_at) < new Date()) {
+                return res.status(410).render('linkExpired', { profileSlug: linkRow.profile_slug || '' });
+            }
+            if (linkRow.link_max_uses !== 999999 && linkRow.link_current_uses >= linkRow.link_max_uses) {
+                return res.status(410).render('linkExpired', { reason: 'Este link atingiu o limite máximo de usos.', profileSlug: linkRow.profile_slug || '' });
+            }
+            itemRes = cadastroLinksRes;
+        }
+
+        if (!itemRes || itemRes.rows.length === 0) {
+            const cadastroSlugRes = await client.query(`
+                SELECT pi.*, u.profile_slug
+                FROM profile_items pi
+                INNER JOIN guest_list_items gli ON gli.profile_item_id = pi.id
+                INNER JOIN users u ON pi.user_id = u.id
+                WHERE gli.cadastro_slug = $1 AND (pi.item_type = 'digital_form' OR pi.item_type = 'guest_list') AND pi.is_active = true
+            `, [slug]);
+            if (cadastroSlugRes.rows.length > 0) itemRes = cadastroSlugRes;
+        }
+
+        if (!itemRes || itemRes.rows.length === 0) {
+            return res.status(404).send('<h1>404 - Formulário não encontrado</h1><p>O link é inválido ou expirou.</p>');
+        }
+
+        const item = itemRes.rows[0];
+        const profileSlug = item.profile_slug || '';
+        const itemIdInt = parseInt(item.id, 10);
+        const finalUserId = item.user_id;
+        const isGuestList = item.item_type === 'guest_list';
+
+        const columnCheck = await client.query(`
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name = 'digital_form_items' AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit')
+        `);
+        const hasEnableWhatsapp = columnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+        const hasEnableGuestListSubmit = columnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+
+        const formRes = await client.query(
+            `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
+            [itemIdInt]
+        );
+        if (formRes.rows.length === 0) {
+            return res.status(404).send('<h1>404 - Dados do formulário não encontrados</h1>');
+        }
+
+        let formData = formRes.rows[0];
+        const guestListColumnsCheck = await client.query(`
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name = 'guest_list_items' AND column_name IN ('card_color', 'enable_whatsapp', 'enable_guest_list_submit')
+        `);
+        const hasGuestListCardColor = guestListColumnsCheck.rows.some(r => r.column_name === 'card_color');
+        const guestListHasEnableWhatsapp = guestListColumnsCheck.rows.some(r => r.column_name === 'enable_whatsapp');
+        const guestListHasEnableGuestListSubmit = guestListColumnsCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
+        let guestListSelectFields = 'primary_color, secondary_color, text_color, background_color, header_image_url, background_image_url, background_opacity, theme, updated_at';
+        if (hasGuestListCardColor) guestListSelectFields += ', card_color';
+        if (guestListHasEnableWhatsapp) guestListSelectFields += ', enable_whatsapp';
+        if (guestListHasEnableGuestListSubmit) guestListSelectFields += ', enable_guest_list_submit';
+
+        const guestListRes = await client.query(
+            `SELECT ${guestListSelectFields} FROM guest_list_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
+            [itemIdInt]
+        );
+        if (guestListRes.rows.length > 0 && isGuestList) {
+            const g = guestListRes.rows[0];
+            if (g.primary_color) formData.primary_color = g.primary_color;
+            if (g.secondary_color) formData.secondary_color = g.secondary_color;
+            if (g.text_color) formData.text_color = g.text_color;
+            if (g.background_color) formData.background_color = g.background_color;
+            if (g.header_image_url) formData.header_image_url = g.header_image_url;
+            if (g.background_image_url) formData.background_image_url = g.background_image_url;
+            if (g.background_opacity != null) formData.background_opacity = g.background_opacity;
+            if (g.theme) formData.theme = g.theme;
+            if (hasGuestListCardColor && g.card_color) formData.card_color = g.card_color;
+            if (guestListHasEnableWhatsapp && g.enable_whatsapp !== undefined) formData.enable_whatsapp = g.enable_whatsapp;
+            if (guestListHasEnableGuestListSubmit && g.enable_guest_list_submit !== undefined) formData.enable_guest_list_submit = g.enable_guest_list_submit;
+        }
+        if (hasEnableWhatsapp && (formData.enable_whatsapp === undefined || formData.enable_whatsapp === null)) formData.enable_whatsapp = true;
+        else if (!hasEnableWhatsapp) formData.enable_whatsapp = true;
+        if (hasEnableGuestListSubmit && (formData.enable_guest_list_submit === undefined || formData.enable_guest_list_submit === null)) formData.enable_guest_list_submit = false;
+        else if (!hasEnableGuestListSubmit) formData.enable_guest_list_submit = false;
+        if (!formData.secondary_color || formData.secondary_color === 'null' || (typeof formData.secondary_color === 'string' && formData.secondary_color.trim() === '')) {
+            formData.secondary_color = formData.primary_color || '#4A90E2';
+        }
+        if (formData.form_fields) {
+            formData.form_fields = typeof formData.form_fields === 'string' ? (() => { try { return JSON.parse(formData.form_fields); } catch (e) { return []; } })() : formData.form_fields;
+            if (!Array.isArray(formData.form_fields)) formData.form_fields = [];
+        } else formData.form_fields = [];
+        if (formData.show_logo_corner === undefined) formData.show_logo_corner = false;
+
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+        if (formData.updated_at) res.set('X-Form-Updated-At', new Date(formData.updated_at).getTime().toString());
+        res.set('X-Cache-Timestamp', Date.now().toString());
+
+        let sanitizedFormData = formData;
+        try { sanitizedFormData = sanitizeFormDataForRender(formData); } catch (e) { sanitizedFormData = formData; }
+
+        const itemForRender = { id: itemIdInt, user_id: finalUserId, item_type: item.item_type || 'digital_form', is_active: item.is_active !== false };
+        return res.render('digitalForm', {
+            item: itemForRender,
+            formData: sanitizedFormData,
+            profileSlug,
+            slug: profileSlug,
+            itemId: itemIdInt,
+            _timestamp: Date.now(),
+            _cacheBust: `?t=${Date.now()}`
+        });
+    } catch (err) {
+        logger.error('Erro /kingforms/:slug:', err);
+        try { if (typeof client !== 'undefined' && client) client.release(); } catch (e) {}
+        return res.status(500).render('formError', { title: 'Erro', message: 'Erro ao carregar formulário.', errorCode: 'INTERNAL_ERROR' });
+    } finally {
+        try { if (typeof client !== 'undefined' && client && !client.released) client.release(); } catch (e) {}
+    }
+}));
+
+/**
  * Rota pública: GET /:slug/form/:itemId
  * Renderiza o formulário digital público
  */
@@ -1955,20 +2099,22 @@ router.post('/:slug/form/:itemId/submit',
                 const currentUrl = req.url || req.originalUrl || '';
                 let cadastroToken = null;
                 
-                // Extrair token do referer primeiro
+                // Extrair token do referer (form/share ou kingforms)
                 if (referer.includes('/form/share/')) {
                     const tokenMatch = referer.match(/\/form\/share\/([^\/\?]+)/);
-                    if (tokenMatch && tokenMatch[1] && !tokenMatch[1].startsWith('unique_')) {
-                        cadastroToken = tokenMatch[1];
-                    }
+                    if (tokenMatch && tokenMatch[1] && !tokenMatch[1].startsWith('unique_')) cadastroToken = tokenMatch[1];
                 }
-                
-                // Se não encontrou no referer, tentar da URL atual
+                if (!cadastroToken && referer.includes('/kingforms/')) {
+                    const tokenMatch = referer.match(/\/kingforms\/([^\/\?]+)/);
+                    if (tokenMatch && tokenMatch[1] && !tokenMatch[1].startsWith('unique_')) cadastroToken = tokenMatch[1];
+                }
                 if (!cadastroToken && currentUrl.includes('/form/share/')) {
                     const urlMatch = currentUrl.match(/\/form\/share\/([^\/\?]+)/);
-                    if (urlMatch && urlMatch[1] && !urlMatch[1].startsWith('unique_')) {
-                        cadastroToken = urlMatch[1];
-                    }
+                    if (urlMatch && urlMatch[1] && !urlMatch[1].startsWith('unique_')) cadastroToken = urlMatch[1];
+                }
+                if (!cadastroToken && currentUrl.includes('/kingforms/')) {
+                    const urlMatch = currentUrl.match(/\/kingforms\/([^\/\?]+)/);
+                    if (urlMatch && urlMatch[1] && !urlMatch[1].startsWith('unique_')) cadastroToken = urlMatch[1];
                 }
                 
                 // Se encontrou um token, tentar incrementar
@@ -2116,7 +2262,7 @@ router.post('/:slug/form/:itemId/submit',
             let formUrlForSubmit = null;
             const refererSubmit = req.headers.referer || req.headers.referrer || '';
             
-            if (refererSubmit && refererSubmit.includes('/form/share/')) {
+            if (refererSubmit && (refererSubmit.includes('/form/share/') || refererSubmit.includes('/kingforms/'))) {
                 try {
                     const refererUrl = new URL(refererSubmit);
                     const refererPath = refererUrl.pathname.replace(/\/success.*$/, '');
@@ -2150,7 +2296,7 @@ router.post('/:slug/form/:itemId/submit',
                         
                         if (activeLinkRes.rows.length > 0) {
                             const activeLinkSlug = activeLinkRes.rows[0].slug;
-                            formUrlForSubmit = `/${slug}/form/share/${activeLinkSlug}`;
+                            formUrlForSubmit = `/kingforms/${activeLinkSlug}`;
                             logger.info(`✅ [SUBMIT] Link ativo encontrado: ${formUrlForSubmit}`);
                         }
                     }
@@ -2528,11 +2674,11 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
         });
         
         // Determinar URL do formulário para botão "Preencher Novamente"
-        // PRIORIDADE 1: Usar referer se for um link personalizado (contém /form/share/)
+        // PRIORIDADE 1: Usar referer se for link personalizado (/form/share/ ou /kingforms/)
         let formUrl = null;
         const referer = req.headers.referer || req.headers.referrer || '';
         
-        if (referer && referer.includes('/form/share/')) {
+        if (referer && (referer.includes('/form/share/') || referer.includes('/kingforms/'))) {
             // Extrair URL do link personalizado do referer
             try {
                 const refererUrl = new URL(referer);
@@ -2570,7 +2716,7 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
                     
                     if (activeLinkRes.rows.length > 0) {
                         const activeLinkSlug = activeLinkRes.rows[0].slug;
-                        formUrl = `/${slug}/form/share/${activeLinkSlug}`;
+                        formUrl = `/kingforms/${activeLinkSlug}`;
                         logger.info(`✅ [SUCCESS] Link ativo encontrado: ${formUrl}`);
                     }
                 }
@@ -2584,7 +2730,7 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             try {
                 const refererUrl = new URL(referer);
                 const refererPath = refererUrl.pathname.replace(/\/success.*$/, '');
-                if (refererPath && refererPath !== '/' && refererPath.includes('/form/')) {
+                if (refererPath && refererPath !== '/' && (refererPath.includes('/form/') || refererPath.includes('/kingforms/'))) {
                     formUrl = refererPath;
                     logger.info(`✅ [SUCCESS] Usando referer como fallback: ${formUrl}`);
                 }

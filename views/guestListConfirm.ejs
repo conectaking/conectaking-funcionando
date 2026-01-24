@@ -423,20 +423,20 @@
         
         <div class="stats">
             <div class="stat-card">
-                <div class="value" id="total-count"><%= guests.length %></div>
+                <div class="value" id="total-count"><%= (typeof guests !== 'undefined' && Array.isArray(guests)) ? guests.length : 0 %></div>
                 <div class="label">Total</div>
             </div>
             <div class="stat-card">
-                <div class="value" id="confirmed-count"><%= guests.filter(g => g.status === 'confirmed').length %></div>
+                <div class="value" id="confirmed-count"><%= (typeof guests !== 'undefined' && Array.isArray(guests)) ? guests.filter(g => g.status === 'confirmed' || g.status === 'checked_in').length : 0 %></div>
                 <div class="label">Confirmados</div>
             </div>
             <div class="stat-card">
-                <div class="value" id="pending-count"><%= guests.filter(g => g.status === 'registered').length %></div>
+                <div class="value" id="pending-count"><%= (typeof guests !== 'undefined' && Array.isArray(guests)) ? guests.filter(g => g.status === 'registered').length : 0 %></div>
                 <div class="label">Pendentes</div>
             </div>
         </div>
         
-        <% if (!viewOnly) { %>
+        <% if (!viewOnly && (typeof guests !== 'undefined' && Array.isArray(guests) && guests.length > 0)) { %>
         <div class="admin-actions">
             <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #ECECEC; font-weight: 600;">
@@ -690,14 +690,16 @@
             });
         }
         
-        // Inicializar contador ao carregar
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', updateSelectedCount);
-        } else {
-            updateSelectedCount();
+        // Inicializar contador ao carregar (apenas se existir o form)
+        if (form) {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', updateSelectedCount);
+            } else {
+                updateSelectedCount();
+            }
         }
         
-        // Função para excluir convidado individual
+        // Função para excluir convidado individual (apenas se houver botões)
         document.querySelectorAll('.delete-guest-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const guestId = parseInt(btn.dataset.guestId);

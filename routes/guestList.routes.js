@@ -1032,7 +1032,8 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
         if (enable_whatsapp !== undefined || enable_guest_list_submit !== undefined || 
             form_logo_url !== undefined || button_logo_url !== undefined || 
             button_logo_size !== undefined || show_logo_corner !== undefined ||
-            event_title !== undefined || custom_form_fields !== undefined ||
+            event_title !== undefined || event_date !== undefined || event_location !== undefined ||
+            custom_form_fields !== undefined ||
             decorative_bar_color !== undefined || card_color !== undefined || separator_line_color !== undefined) {
             const digitalFormUpdateFields = [];
             const digitalFormUpdateValues = [];
@@ -1043,7 +1044,7 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'digital_form_items' 
-                AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit', 'form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'form_title', 'form_fields', 'decorative_bar_color', 'card_color', 'separator_line_color', 'primary_color', 'secondary_color', 'text_color')
+                AND column_name IN ('enable_whatsapp', 'enable_guest_list_submit', 'form_logo_url', 'button_logo_url', 'button_logo_size', 'show_logo_corner', 'form_title', 'form_fields', 'event_date', 'event_address', 'decorative_bar_color', 'card_color', 'separator_line_color', 'primary_color', 'secondary_color', 'text_color')
             `);
             const hasEnableWhatsapp = digitalFormColumnCheck.rows.some(r => r.column_name === 'enable_whatsapp');
             const hasEnableGuestListSubmit = digitalFormColumnCheck.rows.some(r => r.column_name === 'enable_guest_list_submit');
@@ -1106,6 +1107,20 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 digitalFormUpdateFields.push(`form_title = $${digitalFormParamIndex++}`);
                 digitalFormUpdateValues.push(event_title);
                 logger.info(`📝 [GUEST_LIST] Sincronizando event_title (${event_title}) para form_title em digital_form_items`);
+            }
+
+            // Sincronizar event_date e event_location (-> event_address) em digital_form_items
+            const hasEventDate = digitalFormColumnCheck.rows.some(r => r.column_name === 'event_date');
+            const hasEventAddress = digitalFormColumnCheck.rows.some(r => r.column_name === 'event_address');
+            if (event_date !== undefined && hasEventDate) {
+                digitalFormUpdateFields.push(`event_date = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(event_date || null);
+                logger.info(`📅 [GUEST_LIST] Sincronizando event_date em digital_form_items`);
+            }
+            if (event_location !== undefined && hasEventAddress) {
+                digitalFormUpdateFields.push(`event_address = $${digitalFormParamIndex++}`);
+                digitalFormUpdateValues.push(event_location || null);
+                logger.info(`📍 [GUEST_LIST] Sincronizando event_location -> event_address em digital_form_items`);
             }
             
             // IMPORTANTE: Sincronizar custom_form_fields para form_fields em digital_form_items

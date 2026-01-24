@@ -656,7 +656,9 @@
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; color: <%= formData.text_color || '#333333' %>; font-size: 14px; margin-bottom: 4px;">Endereço do Evento</div>
                                 <div style="color: <%= formData.text_color || '#666666' %>; font-size: 16px; line-height: 1.6;">
-                                    <%= formData.event_address %>
+                                    <a href="https://www.google.com/maps/search/?api=1&query=<%= encodeURIComponent(formData.event_address) %>" target="_blank" rel="noopener noreferrer" style="color: <%= secondaryColor || primaryColor || '#4A90E2' %>; text-decoration: none; font-weight: 600; border-bottom: 1px solid <%= secondaryColor || primaryColor || '#4A90E2' %>;" title="Abrir no Google Maps">
+                                        <%= formData.event_address %> <i class="fas fa-external-link-alt" style="font-size: 12px; margin-left: 4px;"></i>
+                                    </a>
                                 </div>
                             </div>
                         </div>
