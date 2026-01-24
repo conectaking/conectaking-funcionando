@@ -72,7 +72,8 @@ router.get('/:id/cadastro-links', protectUser, asyncHandler(async (req, res) => 
             created_at: link.created_at,
             isExpired: link.is_expired,
             isUsed: link.is_used,
-            isActiveForProfile: link.is_active_for_profile || false
+            isActiveForProfile: link.is_active_for_profile || false,
+            short_url: `/form/${link.slug}`
         }));
         
         res.json({
@@ -208,7 +209,8 @@ router.post('/:id/cadastro-links', protectUser, asyncHandler(async (req, res) =>
                 description: newLink.description,
                 expires_at: newLink.expires_at,
                 max_uses: newLink.max_uses,
-                current_uses: newLink.current_uses
+                current_uses: newLink.current_uses,
+                short_url: `/form/${newLink.slug}`
             }
         });
     } catch (error) {
