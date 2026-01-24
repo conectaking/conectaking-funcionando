@@ -6,17 +6,30 @@ const { protectUser } = require('../middleware/protectUser');
 
 const router = express.Router();
 
+// Modo empresa: King Corporate, business_owner, enterprise. ADM principal tem acesso a tudo.
 const protectBusinessOwner = (req, res, next) => {
-    if (req.user && req.user.accountType === 'business_owner') {
+    if (!req.user) {
+        return res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais.' });
+    }
+    const accountType = req.user.accountType || req.user.account_type;
+    const isAdmin = req.user.isAdmin === true || req.user.is_admin === true;
+    const hasEnterprise = accountType === 'business_owner' || accountType === 'king_corporate' || accountType === 'enterprise';
+    if (isAdmin || hasEnterprise) {
         next();
     } else {
-        res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais.' });
+        res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais (King Corporate) ou ADM.' });
     }
 };
 
-// Middleware para permitir business_owner e individual_com_logo (para personalização de logo)
+// Middleware para permitir business_owner, individual_com_logo e king_corporate (para personalização de logo)
 const protectBusinessOwnerOrLogo = (req, res, next) => {
-    if (req.user && (req.user.accountType === 'business_owner' || req.user.accountType === 'individual_com_logo')) {
+    if (!req.user) {
+        return res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais ou individuais com logo.' });
+    }
+    const accountType = req.user.accountType || req.user.account_type;
+    const isAdmin = req.user.isAdmin === true || req.user.is_admin === true;
+    const allowed = accountType === 'business_owner' || accountType === 'individual_com_logo' || accountType === 'king_corporate' || accountType === 'enterprise';
+    if (isAdmin || allowed) {
         next();
     } else {
         res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais ou individuais com logo.' });
