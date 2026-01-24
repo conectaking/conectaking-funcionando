@@ -251,10 +251,21 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             }
         }
         
-        // Novos campos de personalização - verificar se existem antes de atualizar
+        // Nome do evento (event_title_custom) - SEMPRE salvar quando enviado (corrige "não salva")
+        const eventTitleCustomCheck = await client.query(`
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'guest_list_items' AND column_name = 'event_title_custom'
+        `);
+        if (event_title_custom !== undefined && eventTitleCustomCheck.rows.length > 0) {
+            updateFields.push(`event_title_custom = $${paramIndex++}`);
+            updateValues.push(event_title_custom !== null && String(event_title_custom).trim() !== '' ? String(event_title_custom).trim() : null);
+            logger.info(`📝 [CUSTOMIZE-PORTARIA] Salvando event_title_custom: "${event_title_custom}"`);
+        }
+        
+        // Novos campos de personalização - verificar se existem antes de atualizar (exceto event_title_custom, já tratado acima)
         const customFields = [
-            { field: 'event_title_custom', value: event_title_custom },
             { field: 'title_text_color', value: title_text_color },
+            // event_title_custom removido da lista - tratado explicitamente acima
             { field: 'qr_code_button_text', value: qr_code_button_text },
             { field: 'qr_code_button_color', value: qr_code_button_color },
             { field: 'qr_code_button_color_secondary', value: qr_code_button_color_secondary },
@@ -312,6 +323,16 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             try {
                 const result = await client.query(updateQuery, updateValues);
                 console.log(`✅ [CUSTOMIZE-PORTARIA] Atualização bem-sucedida. Registros afetados: ${result.rowCount}`);
+                // Sincronizar event_title_custom -> form_title em digital_form_items (King Forms)
+                if (event_title_custom !== undefined) {
+                    const formTitleVal = event_title_custom !== null && String(event_title_custom).trim() !== ''
+                        ? String(event_title_custom).trim() : null;
+                    await client.query(`
+                        UPDATE digital_form_items SET form_title = COALESCE($1, form_title), updated_at = NOW()
+                        WHERE profile_item_id = $2
+                    `, [formTitleVal || 'Formulário King', listId]);
+                    logger.info(`📝 [CUSTOMIZE-PORTARIA] form_title sincronizado em digital_form_items: "${formTitleVal || 'Formulário King'}"`);
+                }
             } catch (queryError) {
                 console.error(`❌ [CUSTOMIZE-PORTARIA] Erro na query SQL:`, queryError);
                 console.error(`❌ [CUSTOMIZE-PORTARIA] Query:`, updateQuery);

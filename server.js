@@ -127,7 +127,9 @@ app.use(helmet({
                 "https://*.lightwidget.com",
                 "https://www.youtube.com",
                 "https://*.youtube.com",
-                "https://*.googlevideo.com"
+                "https://*.googlevideo.com",
+                "https://www.google.com",
+                "https://*.google.com"
             ],
             connectSrc: [
                 "'self'",
