@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const portariaRouter = express.Router();
 const db = require('../db');
 const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
@@ -374,9 +375,10 @@ router.get('/view/:itemId', asyncHandler(async (req, res) => {
 }));
 
 /**
- * GET /guest-list/view-full/:token - Visualização pública completa (portaria - todas as abas)
+ * Handler compartilhado: visualização completa da portaria (usado em GET /portaria/:token).
+ * GET /guest-list/view-full/:token redireciona 301 para /portaria/:token.
  */
-router.get('/view-full/:token', asyncHandler(async (req, res) => {
+const renderPortariaViewFull = asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const { token } = req.params;
@@ -738,12 +740,19 @@ router.get('/view-full/:token', asyncHandler(async (req, res) => {
     } finally {
         client.release();
     }
-}));
+});
+
+/** Redirect: /guest-list/view-full/:token → /portaria/:token (link curto) */
+router.get('/view-full/:token', (req, res) => res.redirect(301, '/portaria/' + encodeURIComponent(req.params.token)));
+
+/** GET /portaria/:token - Link curto da portaria (visualização completa) */
+portariaRouter.get('/:token', renderPortariaViewFull);
 
 /**
  * POST /guest-list/view-full/:token/checkin/:guestId - Confirmar chegada (portaria pública)
+ * POST /portaria/:token/checkin/:guestId - Mesmo, via link curto.
  */
-router.post('/view-full/:token/checkin/:guestId', asyncHandler(async (req, res) => {
+const portariaCheckinHandler = asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const { token, guestId } = req.params;
@@ -802,7 +811,10 @@ router.post('/view-full/:token/checkin/:guestId', asyncHandler(async (req, res) 
     } finally {
         client.release();
     }
-}));
+});
+
+router.post('/view-full/:token/checkin/:guestId', portariaCheckinHandler);
+portariaRouter.post('/:token/checkin/:guestId', portariaCheckinHandler);
 
 /**
  * GET /guest-list/verify/qr/:qrToken - Verificar dados do cliente pelo QR Code (sem confirmar)
@@ -1287,4 +1299,5 @@ router.post('/confirm/cpf', asyncHandler(async (req, res) => {
 }));
 
 module.exports = router;
+module.exports.portaria = portariaRouter;
 

@@ -600,6 +600,7 @@ app.use('/api/guest-lists', apiLimiter, cadastroLinksRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListCustomizeRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListRoutes);
 app.use('/guest-list', publicGuestListRoutes);
+app.use('/portaria', publicGuestListRoutes.portaria);
 app.use('/api/webhooks', apiLimiter, webhooksRoutes);
 app.use('/api/push', apiLimiter, pushNotificationsRoutes);
 

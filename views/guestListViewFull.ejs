@@ -2601,7 +2601,7 @@
                 button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirmando...';
                 
                 try {
-                    const response = await fetch(`/guest-list/view-full/${token}/checkin/${guestId}`, {
+                    const response = await fetch(`/portaria/${token}/checkin/${guestId}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -2625,7 +2625,7 @@
             } else {
                 // Fallback se não encontrar o botão
                 try {
-                    const response = await fetch(`/guest-list/view-full/${token}/checkin/${guestId}`, {
+                    const response = await fetch(`/portaria/${token}/checkin/${guestId}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
