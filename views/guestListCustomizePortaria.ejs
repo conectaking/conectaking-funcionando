@@ -759,7 +759,7 @@
                 form_logo_url: document.getElementById('form_logo_url').value,
                 theme_portaria: document.getElementById('theme_portaria').value,
                 // Novos campos de personalização
-                event_title_custom: document.getElementById('event_title_custom')?.value || null,
+                event_title_custom: (document.getElementById('event_title_custom')?.value ?? '').trim() || null,
                 title_text_color: document.getElementById('title_text_color')?.value || null,
                 qr_code_button_text: document.getElementById('qr_code_button_text')?.value || null,
                 qr_code_button_color: document.getElementById('qr_code_button_color')?.value || null,
