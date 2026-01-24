@@ -79,6 +79,7 @@ app.use(helmet({
                 "https://www.youtube.com",
                 "https://www.youtube.com/iframe_api",
                 "https://www.googletagmanager.com",
+                "https://unpkg.com",
                 "blob:"
             ],
             scriptSrcAttr: [
@@ -88,7 +89,8 @@ app.use(helmet({
                 "'self'", 
                 "'unsafe-inline'", 
                 "https://cdnjs.cloudflare.com", 
-                "https://fonts.googleapis.com"
+                "https://fonts.googleapis.com",
+                "https://unpkg.com"
             ],
             imgSrc: [
                 "'self'", 
@@ -110,7 +112,8 @@ app.use(helmet({
                 "https://snapwidget.com",
                 "https://*.snapwidget.com",
                 "https://lightwidget.com",
-                "https://*.lightwidget.com"
+                "https://*.lightwidget.com",
+                "https://*.tile.openstreetmap.org"
             ],
             fontSrc: [
                 "'self'", 
@@ -155,7 +158,9 @@ app.use(helmet({
                 "https://stats.g.doubleclick.net",
                 "https://www.google.com",
                 "https://overbridgenet.com",
-                "https://*.overbridgenet.com"
+                "https://*.overbridgenet.com",
+                "https://nominatim.openstreetmap.org",
+                "https://*.tile.openstreetmap.org"
             ],
             mediaSrc: [
                 "'self'",

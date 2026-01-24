@@ -572,6 +572,9 @@
             }
         }
     </style>
+    <% if (formData.event_address) { %>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <% } %>
 </head>
 <body class="digital-form-page theme-<%= formData.theme || 'light' %>" data-form-id="<%= item.id %>" data-whatsapp="<%= formData.whatsapp_number || '' %>" style="<% if (formData.background_color && !formData.background_image_url) { %>background-color: <%= formData.background_color %> !important;<% } %>">
     <!-- Header Image -->
@@ -656,23 +659,15 @@
                                 <i class="fas fa-map-marker-alt" style="color: <%= secondaryColor || primaryColor || '#FFC700' %>; font-size: 18px;"></i>
                                 <span style="font-weight: 600; color: <%= formData.text_color || '#333333' %>; font-size: 14px;">Endereço do Evento</span>
                             </div>
-                            <div style="position: relative; width: 100%; height: 220px; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,0.5); border: 1px solid rgba(255,199,0,0.3);" class="map-clickable-container">
-                                <iframe 
-                                    src="https://www.google.com/maps?q=<%= encodeURIComponent(formData.event_address) %>&output=embed&z=16" 
-                                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; pointer-events: none;"
-                                    allowfullscreen="" 
-                                    loading="lazy" 
-                                    referrerpolicy="no-referrer-when-downgrade"
-                                    title="Mapa do evento">
-                                </iframe>
+                            <div style="position: relative; width: 100%; height: 220px; border-radius: 12px; overflow: hidden; background: #e8eaed; border: 1px solid rgba(255,199,0,0.3);" class="map-clickable-container">
+                                <div id="event-address-map" style="width: 100%; height: 220px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 14px;">Carregando mapa...</div>
                                 <a 
                                     href="https://www.google.com/maps/dir/?api=1&destination=<%= encodeURIComponent(formData.event_address) %>&travelmode=driving" 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    class="map-routes-overlay"
-                                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px; background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%); text-decoration: none; color: white; transition: opacity 0.2s;"
-                                    title="Clique para abrir rotas a partir da sua localização no Google Maps">
-                                    <span style="background: rgba(0,0,0,0.7); padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;"><i class="fas fa-route"></i> Clique para ver rotas</span>
+                                    style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"
+                                    title="Abrir rotas no Google Maps">
+                                    <i class="fas fa-route"></i> Clique para ver rotas
                                 </a>
                             </div>
                             <div style="margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.5); border-radius: 12px; color: <%= formData.text_color || '#666666' %>; font-size: 15px; line-height: 1.6;">
@@ -2679,6 +2674,42 @@
             </p>
         </div>
     </footer>
+    <% if (formData.event_address) { %>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+    (function() {
+        var address = <%- JSON.stringify(formData.event_address) %>;
+        var mapEl = document.getElementById('event-address-map');
+        if (!mapEl || !address) return;
+        fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(address) + '&format=json&limit=1', {
+            headers: { 'Accept': 'application/json', 'User-Agent': 'ConectaKingForm/1.0' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data || !data[0]) {
+                mapEl.style.display = 'flex';
+                mapEl.style.alignItems = 'center';
+                mapEl.style.justifyContent = 'center';
+                mapEl.style.padding = '1rem';
+                mapEl.innerHTML = '<p style="margin:0;color:#666;">Endereço no mapa: use o botão abaixo para ver rotas.</p>';
+                return;
+            }
+            var lat = parseFloat(data[0].lat);
+            var lon = parseFloat(data[0].lon);
+            var map = L.map('event-address-map').setView([lat, lon], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
+            L.marker([lat, lon]).addTo(map);
+        })
+        .catch(function() {
+            mapEl.style.display = 'flex';
+            mapEl.style.alignItems = 'center';
+            mapEl.style.justifyContent = 'center';
+            mapEl.style.padding = '1rem';
+            mapEl.innerHTML = '<p style="margin:0;color:#666;">Não foi possível carregar o mapa. Use o botão abaixo para ver rotas.</p>';
+        });
+    })();
+    </script>
+    <% } %>
 </body>
 </html>
 
