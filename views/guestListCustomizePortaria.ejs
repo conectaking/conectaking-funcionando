@@ -489,24 +489,9 @@
                         <i class="fas fa-images"></i> Imagens
                     </label>
                     
-                    <label>Banner/Header</label>
-                    <div class="image-upload-area <%= guestList.header_image_url ? 'has-image' : '' %>" id="header_image_area" onclick="if(!event.target.closest('.img-actions')&&!event.target.closest('#header_image_filled')) document.getElementById('header_image_input').click();">
-                        <div id="header_image_empty" style="display: <%= guestList.header_image_url ? 'none' : 'block' %>; cursor: pointer;" onclick="document.getElementById('header_image_input').click();">
-                            <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
-                            <p style="color: #A1A1A1;">Clique para adicionar banner</p>
-                        </div>
-                        <div id="header_image_filled" style="display: <%= guestList.header_image_url ? 'block' : 'none' %>;">
-                            <img src="<%= guestList.header_image_url || '' %>" class="image-preview" id="header_image_preview" alt="Banner">
-                            <div class="img-actions">
-                                <button type="button" class="btn-img-action btn-trocar" onclick="event.stopPropagation(); document.getElementById('header_image_input').click();"><i class="fas fa-exchange-alt"></i> Trocar imagem</button>
-                                <button type="button" class="btn-img-action btn-remover" onclick="event.stopPropagation(); removePortariaImage('header_image');"><i class="fas fa-trash-alt"></i> Remover</button>
-                            </div>
-                        </div>
-                        <input type="file" id="header_image_input" accept="image/*" style="display: none;" onchange="handleImageUpload('header_image', this)">
-                    </div>
-                    <input type="hidden" id="header_image_url" name="header_image_url" value="<%= guestList.header_image_url || '' %>">
-                    <label style="margin-top: 12px; display: block;">Enquadramento do banner</label>
-                    <p style="font-size: 12px; color: #A1A1A1; margin-bottom: 8px;">Só vale para a portaria; não altera o formulário de inscrição.</p>
+                    <label>Banner da portaria</label>
+                    <p style="font-size: 13px; color: #A1A1A1; margin-bottom: 10px;">A portaria usa a mesma imagem da <strong>abertura do evento</strong> (definida em Links personalizados / Confirmação). Aqui você só ajusta o enquadramento.</p>
+                    <label style="margin-top: 8px; display: block;">Enquadramento do banner</label>
                     <select id="header_banner_fit" name="header_banner_fit" style="width: 100%; padding: 10px 12px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: #ECECEC; font-size: 14px;">
                         <option value="auto" <%= (guestList.header_banner_fit !== 'cover') ? 'selected' : '' %>>Automático — mostrar inteiro, não cortar</option>
                         <option value="cover" <%= guestList.header_banner_fit === 'cover' ? 'selected' : '' %>>Preencher — pode cortar bordas</option>
@@ -771,7 +756,6 @@
                 background_color: g('background_color'),
                 background_image_url: g('background_image_url'),
                 background_opacity: gn('background_opacity', 1.0),
-                header_image_url: g('header_image_url'),
                 header_banner_fit: (document.getElementById('header_banner_fit') && document.getElementById('header_banner_fit').value) ? document.getElementById('header_banner_fit').value : 'auto',
                 form_logo_url: g('form_logo_url'),
                 theme_portaria: g('theme_portaria'),
@@ -984,7 +968,6 @@
                 background_color: document.getElementById('background_color').value,
                 background_image_url: document.getElementById('background_image_url').value,
                 background_opacity: parseFloat(document.getElementById('background_opacity').value) || 1.0,
-                header_image_url: document.getElementById('header_image_url').value,
                 header_banner_fit: (document.getElementById('header_banner_fit') && document.getElementById('header_banner_fit').value) ? document.getElementById('header_banner_fit').value : 'auto',
                 form_logo_url: document.getElementById('form_logo_url').value,
                 theme_portaria: document.getElementById('theme_portaria').value,
