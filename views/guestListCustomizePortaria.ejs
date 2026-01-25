@@ -761,6 +761,52 @@
         
         if (initialTheme && initialTheme !== 'default') applyTheme(initialTheme);
         
+        function getPortariaFormPayload() {
+            var g = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
+            var gn = function(id, def) { var el = document.getElementById(id); return el ? (parseFloat(el.value) || def) : def; };
+            return {
+                primary_color: g('primary_color'),
+                secondary_color: g('secondary_color'),
+                text_color: g('text_color'),
+                background_color: g('background_color'),
+                background_image_url: g('background_image_url'),
+                background_opacity: gn('background_opacity', 1.0),
+                header_image_url: g('header_image_url'),
+                header_banner_fit: (document.getElementById('header_banner_fit') && document.getElementById('header_banner_fit').value) ? document.getElementById('header_banner_fit').value : 'auto',
+                form_logo_url: g('form_logo_url'),
+                theme_portaria: g('theme_portaria'),
+                event_title_custom: (g('event_title_custom') || '').trim() || null,
+                portaria_subtitle: (g('portaria_subtitle') || '').trim() || 'Visualização completa para portaria',
+                title_text_color: document.getElementById('title_text_color') ? document.getElementById('title_text_color').value : null,
+                qr_code_button_text: g('qr_code_button_text'),
+                qr_code_button_color: g('qr_code_button_color'),
+                qr_code_button_color_secondary: g('qr_code_button_color_secondary'),
+                qr_code_button_text_color: g('qr_code_button_text_color'),
+                search_button_color: g('search_button_color'),
+                search_button_color_secondary: g('search_button_color_secondary'),
+                search_button_text_color: g('search_button_text_color'),
+                search_input_text_color: g('search_input_text_color'),
+                quick_confirm_title_color: document.getElementById('quick_confirm_title_color') ? document.getElementById('quick_confirm_title_color').value : null,
+                quick_confirm_icon_color: document.getElementById('quick_confirm_icon_color') ? document.getElementById('quick_confirm_icon_color').value : null,
+                stats_number_color: document.getElementById('stats_number_color') ? document.getElementById('stats_number_color').value : null
+            };
+        }
+        
+        function savePortariaAfterUpload() {
+            if (!authToken || !profileItemId) return;
+            var payload = getPortariaFormPayload();
+            var url = (window.location.origin || '') + '/api/guest-lists/' + profileItemId + '/customize-portaria';
+            fetch(url, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+                body: JSON.stringify(payload),
+                credentials: 'same-origin'
+            }).then(function(r) {
+                if (r.ok) console.log('✅ Imagem da portaria salva no servidor.');
+                else r.text().then(function(t) { console.warn('⚠️ Falha ao salvar imagem da portaria:', t); });
+            }).catch(function(e) { console.warn('⚠️ Erro ao persistir imagem da portaria:', e); });
+        }
+        
         function removePortariaImage(type) {
             var urlField = type === 'header_image' ? 'header_image_url' : type === 'logo_image' ? 'form_logo_url' : 'background_image_url';
             var emptyId = type === 'header_image' ? 'header_image_empty' : type === 'logo_image' ? 'logo_image_empty' : 'background_image_empty';
@@ -871,7 +917,10 @@
                     return;
                 }
                 
-                var imageUrl = (data && (data.url || data.imageUrl)) ? (data.url || data.imageUrl) : null;
+                var imageUrl = (data && (data.url || data.imageUrl || (data.data && (data.data.url || data.data.imageUrl)))) 
+                    ? (data.url || data.imageUrl || (data.data && (data.data.url || data.data.imageUrl))) 
+                    : null;
+                console.log('📥 URL da imagem no response:', imageUrl, 'data:', data);
                 
                 if (response.ok && imageUrl) {
                     var previewId = type === 'header_image' ? 'header_image_preview' : type === 'logo_image' ? 'logo_image_preview' : 'background_image_preview';
@@ -879,14 +928,15 @@
                     var filledEl = document.getElementById(filledId);
                     document.getElementById(urlField).value = imageUrl;
                     var preview = document.getElementById(previewId);
-                    if (preview) preview.src = imageUrl;
+                    if (preview) { preview.src = imageUrl; preview.style.display = ''; }
                     restoreEmptyBlock();
                     if (emptyEl) emptyEl.style.display = 'none';
-                    if (filledEl) filledEl.style.display = 'block';
+                    if (filledEl) { filledEl.style.display = 'block'; if (filledEl.querySelector('img')) filledEl.querySelector('img').src = imageUrl; }
                     if (areaEl) areaEl.classList.add('has-image');
                     input.value = '';
                     setUploadState(false, null);
                     console.log('✅ Imagem enviada com sucesso:', imageUrl);
+                    savePortariaAfterUpload();
                 } else {
                     var errorMessage = (data && (data.message || data.error)) ? (data.message || data.error) : 'Erro desconhecido';
                     console.error('❌ Erro no upload:', data);
