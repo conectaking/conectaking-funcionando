@@ -632,6 +632,10 @@ app.use('/vcard', vcardRoutes);
 const publicLegalRoutes = require('./routes/publicLegal.routes');
 app.use('/', publicLegalRoutes);
 
+// Recuperar senha e resetar senha (páginas EJS)
+const publicPasswordRoutes = require('./routes/publicPassword.routes');
+app.use('/', publicPasswordRoutes);
+
 // Rotas do módulo Sales Page
 // IMPORTANTE: Rotas específicas (analytics) devem vir ANTES das rotas genéricas (/:id)
 app.use('/api/v1/sales-pages', apiLimiter, analyticsRoutesSalesPage);

@@ -87,7 +87,8 @@ async function sendWelcomeEmail(userEmail, userName) {
  * Envia email de recuperação de senha
  */
 async function sendPasswordResetEmail(userEmail, resetToken) {
-    const resetUrl = `${config.urls.frontend}/resetar-senha.html?token=${resetToken}`;
+    const baseUrl = config.urls.api || config.urls.frontend || 'https://conectaking-api.onrender.com';
+    const resetUrl = `${baseUrl.replace(/\/$/, '')}/resetar-senha?token=${resetToken}`;
     const subject = 'Recuperação de Senha - Conecta King';
     const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #1a1a1a; color: #ffffff;">

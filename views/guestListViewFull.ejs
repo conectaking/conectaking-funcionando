@@ -66,15 +66,8 @@
         }
         
         .header {
-            <% if (typeof guestList !== 'undefined' && guestList && guestList.header_image_url) { %>
-            background: linear-gradient(135deg, rgba(0,0,0,0.6), rgba(0,0,0,0.4));
-            background-image: url('<%= guestList.header_image_url %>');
-            background-size: cover;
-            background-position: center;
-            background-blend-mode: overlay;
-            <% } else { %>
+            /* Sempre usar cor (gradiente). A foto de abertura fica apenas no banner (img), não aqui. */
             background: linear-gradient(135deg, <%= (typeof guestList !== 'undefined' && guestList && guestList.primary_color) ? guestList.primary_color : '#FFC700' %> 0%, <%= (typeof guestList !== 'undefined' && guestList && guestList.secondary_color) ? guestList.secondary_color : '#FFB700' %> 100%);
-            <% } %>
             margin-bottom: 0;
             padding: 40px 30px;
             border-radius: 0;
