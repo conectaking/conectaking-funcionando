@@ -56,7 +56,7 @@
             padding: 0;
         }
         
-        /* Banner/Header Image - enquadramento automático, sem cortar a área importante */
+        /* Banner/Header Image - portaria apenas */
         .header-banner-wrap {
             width: 100%;
             margin-bottom: 0;
@@ -75,11 +75,32 @@
             object-position: center center;
             display: block;
         }
+        /* Modo automático: mostrar banner inteiro, não cortar (opção da portaria) */
+        .header-banner-wrap.header-banner-fit-auto {
+            aspect-ratio: auto;
+            max-height: min(70vh, 520px);
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header-banner-wrap.header-banner-fit-auto .header-banner {
+            position: static;
+            width: 100%;
+            height: auto;
+            max-height: min(70vh, 520px);
+            object-fit: contain;
+            object-position: center center;
+        }
         @media (max-width: 768px) {
-            .header-banner-wrap { aspect-ratio: 16 / 9; }
+            .header-banner-wrap:not(.header-banner-fit-auto) { aspect-ratio: 16 / 9; }
+            .header-banner-wrap.header-banner-fit-auto { max-height: min(60vh, 400px); }
+            .header-banner-wrap.header-banner-fit-auto .header-banner { max-height: min(60vh, 400px); }
         }
         @media (max-width: 480px) {
-            .header-banner-wrap { aspect-ratio: 3 / 2; }
+            .header-banner-wrap:not(.header-banner-fit-auto) { aspect-ratio: 3 / 2; }
+            .header-banner-wrap.header-banner-fit-auto { max-height: min(50vh, 320px); }
+            .header-banner-wrap.header-banner-fit-auto .header-banner { max-height: min(50vh, 320px); }
         }
         
         .header {
@@ -938,9 +959,9 @@
 </head>
 <body>
     <div class="container">
-        <!-- Banner/Header Image (se configurado) - wrapper para enquadramento automático -->
+        <!-- Banner/Header Image (se configurado) - opção de enquadramento só na portaria -->
         <% if (typeof guestList !== 'undefined' && guestList && guestList.header_image_url) { %>
-        <div class="header-banner-wrap">
+        <div class="header-banner-wrap<%= (guestList.header_banner_fit === 'auto') ? ' header-banner-fit-auto' : '' %>">
             <img src="<%= guestList.header_image_url %>" alt="Banner do Evento" class="header-banner">
         </div>
         <% } %>

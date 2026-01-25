@@ -497,6 +497,7 @@ const renderPortariaViewFull = asyncHandler(async (req, res) => {
         if (!guestList.background_color) guestList.background_color = '#0D0D0F';
         if (guestList.background_opacity === null || guestList.background_opacity === undefined) guestList.background_opacity = 1.0;
         if (!guestList.theme_portaria) guestList.theme_portaria = 'default';
+        if (guestList.header_banner_fit !== 'auto' && guestList.header_banner_fit !== 'cover') guestList.header_banner_fit = 'cover';
         
         logger.info(`🎨 [PORTARIA] Cores carregadas APENAS de guest_list_items:`, {
             primary_color: guestList.primary_color,

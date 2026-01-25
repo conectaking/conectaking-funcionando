@@ -465,6 +465,12 @@
                         <input type="file" id="header_image_input" accept="image/*" style="display: none;" onchange="handleImageUpload('header_image', this)">
                     </div>
                     <input type="hidden" id="header_image_url" name="header_image_url" value="<%= guestList.header_image_url || '' %>">
+                    <label style="margin-top: 12px; display: block;">Enquadramento do banner</label>
+                    <p style="font-size: 12px; color: #A1A1A1; margin-bottom: 8px;">Só vale para a portaria; não altera o formulário de inscrição.</p>
+                    <select id="header_banner_fit" name="header_banner_fit" style="width: 100%; padding: 10px 12px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: #ECECEC; font-size: 14px;">
+                        <option value="auto" <%= (guestList.header_banner_fit || 'cover') === 'auto' ? 'selected' : '' %>>Automático — mostrar inteiro, não cortar</option>
+                        <option value="cover" <%= (guestList.header_banner_fit || 'cover') === 'cover' ? 'selected' : '' %>>Preencher — pode cortar bordas</option>
+                    </select>
                     
                     <label style="margin-top: 16px;">Logo</label>
                     <div class="image-upload-area <%= guestList.form_logo_url ? 'has-image' : '' %>" onclick="document.getElementById('logo_image_input').click()">
@@ -803,6 +809,7 @@
                 background_image_url: document.getElementById('background_image_url').value,
                 background_opacity: parseFloat(document.getElementById('background_opacity').value) || 1.0,
                 header_image_url: document.getElementById('header_image_url').value,
+                header_banner_fit: (document.getElementById('header_banner_fit') && document.getElementById('header_banner_fit').value) ? document.getElementById('header_banner_fit').value : 'cover',
                 form_logo_url: document.getElementById('form_logo_url').value,
                 theme_portaria: document.getElementById('theme_portaria').value,
                 // Novos campos de personalização

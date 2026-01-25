@@ -140,6 +140,7 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             background_image_url,
             background_opacity,
             header_image_url,
+            header_banner_fit,
             form_logo_url,
             theme_portaria,
             // Novos campos de personalização
@@ -212,6 +213,17 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
         if (header_image_url !== undefined) {
             updateFields.push(`header_image_url = $${paramIndex++}`);
             updateValues.push(header_image_url || null);
+        }
+        if (header_banner_fit !== undefined) {
+            const bannerFitCheck = await client.query(`
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'guest_list_items' AND column_name = 'header_banner_fit'
+            `);
+            if (bannerFitCheck.rows.length > 0) {
+                const val = (header_banner_fit === 'auto' || header_banner_fit === 'cover') ? header_banner_fit : 'cover';
+                updateFields.push(`header_banner_fit = $${paramIndex++}`);
+                updateValues.push(val);
+            }
         }
         if (form_logo_url !== undefined) {
             // Verificar se a coluna existe antes de atualizar (case-insensitive)
