@@ -218,9 +218,44 @@
         .image-preview {
             width: 100%;
             max-height: 200px;
-            object-fit: cover;
+            object-fit: contain;
             border-radius: 12px;
             display: block;
+        }
+        .img-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn-img-action {
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-img-action.btn-trocar {
+            background: rgba(255,199,0,0.2);
+            color: #FFC700;
+            border: 1px solid rgba(255,199,0,0.5);
+        }
+        .btn-img-action.btn-trocar:hover {
+            background: rgba(255,199,0,0.3);
+        }
+        .btn-img-action.btn-remover {
+            background: rgba(220,38,38,0.2);
+            color: #f87171;
+            border: 1px solid rgba(220,38,38,0.5);
+        }
+        .btn-img-action.btn-remover:hover {
+            background: rgba(220,38,38,0.3);
         }
         
         .btn-save {
@@ -455,43 +490,58 @@
                     </label>
                     
                     <label>Banner/Header</label>
-                    <div class="image-upload-area <%= guestList.header_image_url ? 'has-image' : '' %>" onclick="document.getElementById('header_image_input').click()">
-                        <% if (guestList.header_image_url) { %>
-                            <img src="<%= guestList.header_image_url %>" class="image-preview" id="header_image_preview">
-                        <% } else { %>
+                    <div class="image-upload-area <%= guestList.header_image_url ? 'has-image' : '' %>" id="header_image_area" onclick="if(!event.target.closest('.img-actions')&&!event.target.closest('#header_image_filled')) document.getElementById('header_image_input').click();">
+                        <div id="header_image_empty" style="display: <%= guestList.header_image_url ? 'none' : 'block' %>;">
                             <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
                             <p style="color: #A1A1A1;">Clique para adicionar banner</p>
-                        <% } %>
+                        </div>
+                        <div id="header_image_filled" style="display: <%= guestList.header_image_url ? 'block' : 'none' %>;">
+                            <img src="<%= guestList.header_image_url || '' %>" class="image-preview" id="header_image_preview" alt="Banner">
+                            <div class="img-actions">
+                                <button type="button" class="btn-img-action btn-trocar" onclick="event.stopPropagation(); document.getElementById('header_image_input').click();"><i class="fas fa-exchange-alt"></i> Trocar imagem</button>
+                                <button type="button" class="btn-img-action btn-remover" onclick="event.stopPropagation(); removePortariaImage('header_image');"><i class="fas fa-trash-alt"></i> Remover</button>
+                            </div>
+                        </div>
                         <input type="file" id="header_image_input" accept="image/*" style="display: none;" onchange="handleImageUpload('header_image', this)">
                     </div>
                     <input type="hidden" id="header_image_url" name="header_image_url" value="<%= guestList.header_image_url || '' %>">
                     <label style="margin-top: 12px; display: block;">Enquadramento do banner</label>
                     <p style="font-size: 12px; color: #A1A1A1; margin-bottom: 8px;">Só vale para a portaria; não altera o formulário de inscrição.</p>
                     <select id="header_banner_fit" name="header_banner_fit" style="width: 100%; padding: 10px 12px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: #ECECEC; font-size: 14px;">
-                        <option value="auto" <%= (guestList.header_banner_fit || 'cover') === 'auto' ? 'selected' : '' %>>Automático — mostrar inteiro, não cortar</option>
-                        <option value="cover" <%= (guestList.header_banner_fit || 'cover') === 'cover' ? 'selected' : '' %>>Preencher — pode cortar bordas</option>
+                        <option value="auto" <%= (guestList.header_banner_fit !== 'cover') ? 'selected' : '' %>>Automático — mostrar inteiro, não cortar</option>
+                        <option value="cover" <%= guestList.header_banner_fit === 'cover' ? 'selected' : '' %>>Preencher — pode cortar bordas</option>
                     </select>
                     
                     <label style="margin-top: 16px;">Logo</label>
-                    <div class="image-upload-area <%= guestList.form_logo_url ? 'has-image' : '' %>" onclick="document.getElementById('logo_image_input').click()">
-                        <% if (guestList.form_logo_url) { %>
-                            <img src="<%= guestList.form_logo_url %>" class="image-preview" id="logo_image_preview">
-                        <% } else { %>
+                    <div class="image-upload-area <%= guestList.form_logo_url ? 'has-image' : '' %>" id="logo_image_area" onclick="if(!event.target.closest('.img-actions')&&!event.target.closest('#logo_image_filled')) document.getElementById('logo_image_input').click();">
+                        <div id="logo_image_empty" style="display: <%= guestList.form_logo_url ? 'none' : 'block' %>;">
                             <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
                             <p style="color: #A1A1A1;">Clique para adicionar logo</p>
-                        <% } %>
+                        </div>
+                        <div id="logo_image_filled" style="display: <%= guestList.form_logo_url ? 'block' : 'none' %>;">
+                            <img src="<%= guestList.form_logo_url || '' %>" class="image-preview" id="logo_image_preview" alt="Logo">
+                            <div class="img-actions">
+                                <button type="button" class="btn-img-action btn-trocar" onclick="event.stopPropagation(); document.getElementById('logo_image_input').click();"><i class="fas fa-exchange-alt"></i> Trocar imagem</button>
+                                <button type="button" class="btn-img-action btn-remover" onclick="event.stopPropagation(); removePortariaImage('logo_image');"><i class="fas fa-trash-alt"></i> Remover</button>
+                            </div>
+                        </div>
                         <input type="file" id="logo_image_input" accept="image/*" style="display: none;" onchange="handleImageUpload('logo_image', this)">
                     </div>
                     <input type="hidden" id="form_logo_url" name="form_logo_url" value="<%= guestList.form_logo_url || '' %>">
                     
                     <label style="margin-top: 16px;">Imagem de Fundo</label>
-                    <div class="image-upload-area <%= guestList.background_image_url ? 'has-image' : '' %>" onclick="document.getElementById('background_image_input').click()">
-                        <% if (guestList.background_image_url) { %>
-                            <img src="<%= guestList.background_image_url %>" class="image-preview" id="background_image_preview">
-                        <% } else { %>
+                    <div class="image-upload-area <%= guestList.background_image_url ? 'has-image' : '' %>" id="background_image_area" onclick="if(!event.target.closest('.img-actions')&&!event.target.closest('#background_image_filled')) document.getElementById('background_image_input').click();">
+                        <div id="background_image_empty" style="display: <%= guestList.background_image_url ? 'none' : 'block' %>;">
                             <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
                             <p style="color: #A1A1A1;">Clique para adicionar fundo</p>
-                        <% } %>
+                        </div>
+                        <div id="background_image_filled" style="display: <%= guestList.background_image_url ? 'block' : 'none' %>;">
+                            <img src="<%= guestList.background_image_url || '' %>" class="image-preview" id="background_image_preview" alt="Fundo">
+                            <div class="img-actions">
+                                <button type="button" class="btn-img-action btn-trocar" onclick="event.stopPropagation(); document.getElementById('background_image_input').click();"><i class="fas fa-exchange-alt"></i> Trocar imagem</button>
+                                <button type="button" class="btn-img-action btn-remover" onclick="event.stopPropagation(); removePortariaImage('background_image');"><i class="fas fa-trash-alt"></i> Remover</button>
+                            </div>
+                        </div>
                         <input type="file" id="background_image_input" accept="image/*" style="display: none;" onchange="handleImageUpload('background_image', this)">
                     </div>
                     <input type="hidden" id="background_image_url" name="background_image_url" value="<%= guestList.background_image_url || '' %>">
@@ -711,6 +761,21 @@
         
         if (initialTheme && initialTheme !== 'default') applyTheme(initialTheme);
         
+        function removePortariaImage(type) {
+            var urlField = type === 'header_image' ? 'header_image_url' : type === 'logo_image' ? 'form_logo_url' : 'background_image_url';
+            var emptyId = type === 'header_image' ? 'header_image_empty' : type === 'logo_image' ? 'logo_image_empty' : 'background_image_empty';
+            var filledId = type === 'header_image' ? 'header_image_filled' : type === 'logo_image' ? 'logo_image_filled' : 'background_image_filled';
+            var areaId = type === 'header_image' ? 'header_image_area' : type === 'logo_image' ? 'logo_image_area' : 'background_image_area';
+            var el = document.getElementById(urlField);
+            if (el) el.value = '';
+            var emptyEl = document.getElementById(emptyId);
+            var filledEl = document.getElementById(filledId);
+            var areaEl = document.getElementById(areaId);
+            if (emptyEl) emptyEl.style.display = 'block';
+            if (filledEl) filledEl.style.display = 'none';
+            if (areaEl) areaEl.classList.remove('has-image');
+        }
+        
         async function handleImageUpload(type, input) {
             const file = input.files[0];
             if (!file) return;
@@ -774,13 +839,19 @@
                     const previewId = type === 'header_image' ? 'header_image_preview' : 
                                     type === 'logo_image' ? 'logo_image_preview' : 
                                     'background_image_preview';
+                    const emptyId = type === 'header_image' ? 'header_image_empty' : type === 'logo_image' ? 'logo_image_empty' : 'background_image_empty';
+                    const filledId = type === 'header_image' ? 'header_image_filled' : type === 'logo_image' ? 'logo_image_filled' : 'background_image_filled';
+                    const areaId = type === 'header_image' ? 'header_image_area' : type === 'logo_image' ? 'logo_image_area' : 'background_image_area';
                     
                     document.getElementById(urlField).value = data.url;
                     const preview = document.getElementById(previewId);
-                    if (preview) {
-                        preview.src = data.url;
-                        preview.parentElement.classList.add('has-image');
-                    }
+                    if (preview) preview.src = data.url;
+                    var emptyEl = document.getElementById(emptyId);
+                    var filledEl = document.getElementById(filledId);
+                    var areaEl = document.getElementById(areaId);
+                    if (emptyEl) emptyEl.style.display = 'none';
+                    if (filledEl) filledEl.style.display = 'block';
+                    if (areaEl) areaEl.classList.add('has-image');
                     console.log('✅ Imagem enviada com sucesso:', data.url);
                 } else {
                     const errorMessage = data.message || data.error || 'Erro desconhecido';
@@ -811,7 +882,7 @@
                 background_image_url: document.getElementById('background_image_url').value,
                 background_opacity: parseFloat(document.getElementById('background_opacity').value) || 1.0,
                 header_image_url: document.getElementById('header_image_url').value,
-                header_banner_fit: (document.getElementById('header_banner_fit') && document.getElementById('header_banner_fit').value) ? document.getElementById('header_banner_fit').value : 'cover',
+                header_banner_fit: (document.getElementById('header_banner_fit') && document.getElementById('header_banner_fit').value) ? document.getElementById('header_banner_fit').value : 'auto',
                 form_logo_url: document.getElementById('form_logo_url').value,
                 theme_portaria: document.getElementById('theme_portaria').value,
                 // Novos campos de personalização

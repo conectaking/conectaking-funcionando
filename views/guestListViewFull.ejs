@@ -961,7 +961,7 @@
     <div class="container">
         <!-- Banner/Header Image (se configurado) - opção de enquadramento só na portaria -->
         <% if (typeof guestList !== 'undefined' && guestList && guestList.header_image_url) { %>
-        <div class="header-banner-wrap<%= (guestList.header_banner_fit === 'auto') ? ' header-banner-fit-auto' : '' %>">
+        <div class="header-banner-wrap<%= (guestList.header_banner_fit !== 'cover') ? ' header-banner-fit-auto' : '' %>">
             <img src="<%= guestList.header_image_url %>" alt="Banner do Evento" class="header-banner">
         </div>
         <% } %>
