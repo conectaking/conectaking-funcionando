@@ -228,6 +228,11 @@ const renderFormBySlug = asyncHandler(async (req, res) => {
         try { sanitizedFormData = sanitizeFormDataForRender(formData); } catch (e) { sanitizedFormData = formData; }
 
         const itemForRender = { id: itemIdInt, user_id: finalUserId, item_type: item.item_type || 'digital_form', is_active: item.is_active !== false };
+        const baseUrl = `${req.protocol}://${req.get('host') || 'tag.conectaking.com.br'}`;
+        const pathNoQuery = (req.originalUrl || req.path || '').split('?')[0] || `/form/${req.params.slug}`;
+        const _canonicalFormUrl = baseUrl + pathNoQuery;
+        let _ogImageUrl = sanitizedFormData.header_image_url || null;
+        if (_ogImageUrl && !/^https?:\/\//i.test(_ogImageUrl)) _ogImageUrl = _ogImageUrl.startsWith('/') ? baseUrl + _ogImageUrl : null;
         return res.render('digitalForm', {
             item: itemForRender,
             formData: sanitizedFormData,
@@ -235,7 +240,9 @@ const renderFormBySlug = asyncHandler(async (req, res) => {
             slug: profileSlug,
             itemId: itemIdInt,
             _timestamp: Date.now(),
-            _cacheBust: `?t=${Date.now()}`
+            _cacheBust: `?t=${Date.now()}`,
+            _canonicalFormUrl,
+            _ogImageUrl: _ogImageUrl || undefined
         });
     } catch (err) {
         logger.error('Erro /form/:slug:', err);
@@ -858,16 +865,23 @@ router.get('/:slug/form/:itemId', asyncHandler(async (req, res) => {
             form_title: sanitizedFormData.form_title
         });
         
-        // Renderizar página com cache busting
+        const baseUrl = `${req.protocol}://${req.get('host') || 'tag.conectaking.com.br'}`;
+        const pathNoQuery = (req.originalUrl || req.path || '').split('?')[0] || `/${slug}/form/${itemIdInt}`;
+        const _canonicalFormUrl = baseUrl + pathNoQuery;
+        let _ogImageUrl = sanitizedFormData.header_image_url || null;
+        if (_ogImageUrl && !/^https?:\/\//i.test(_ogImageUrl)) _ogImageUrl = _ogImageUrl.startsWith('/') ? baseUrl + _ogImageUrl : null;
+        
         res.render('digitalForm', {
             item: item,
             formData: sanitizedFormData,
             profileSlug: profileSlug,
             slug: slug,
             itemId: itemIdInt,
-            _timestamp: Date.now(), // Timestamp único para forçar atualização
-            _cacheBust: `?t=${Date.now()}`, // Cache busting para assets
+            _timestamp: Date.now(),
+            _cacheBust: `?t=${Date.now()}`,
             _updatedAt: sanitizedFormData.updated_at ? new Date(sanitizedFormData.updated_at).getTime() : Date.now(),
+            _canonicalFormUrl,
+            _ogImageUrl: _ogImageUrl || undefined,
             _debug: {
                 primary_color: sanitizedFormData.primary_color,
                 secondary_color: sanitizedFormData.secondary_color,
