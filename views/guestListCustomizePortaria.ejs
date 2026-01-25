@@ -803,69 +803,108 @@
             const formData = new FormData();
             formData.append('image', file);
             
+            var urlField = type === 'header_image' ? 'header_image_url' : type === 'logo_image' ? 'form_logo_url' : 'background_image_url';
+            var emptyId = type === 'header_image' ? 'header_image_empty' : type === 'logo_image' ? 'logo_image_empty' : 'background_image_empty';
+            var areaId = type === 'header_image' ? 'header_image_area' : type === 'logo_image' ? 'logo_image_area' : 'background_image_area';
+            var areaEl = document.getElementById(areaId);
+            
+            var filledId = type === 'header_image' ? 'header_image_filled' : type === 'logo_image' ? 'logo_image_filled' : 'background_image_filled';
+            var inputId = type === 'header_image' ? 'header_image_input' : type === 'logo_image' ? 'logo_image_input' : 'background_image_input';
+            
+            function restoreEmptyBlock() {
+                var emptyEl = document.getElementById(emptyId);
+                if (!emptyEl) return;
+                var label = type === 'header_image' ? 'banner' : type === 'logo_image' ? 'logo' : 'fundo';
+                emptyEl.innerHTML = '<i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i><p style="color: #A1A1A1;">Clique para adicionar ' + label + '</p>';
+                emptyEl.style.display = 'block';
+                emptyEl.onclick = function() { document.getElementById(inputId).click(); };
+            }
+            
+            function setUploadState(loading, errorMsg) {
+                var emptyEl = document.getElementById(emptyId);
+                var filledEl = document.getElementById(filledId);
+                if (loading) {
+                    if (filledEl) filledEl.style.display = 'none';
+                    if (emptyEl) {
+                        emptyEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size: 48px; color: #FFC700;"></i><p style="color: #A1A1A1; margin-top: 12px;">Enviando imagem...</p>';
+                        emptyEl.style.display = 'block';
+                    }
+                }
+                if (areaEl) {
+                    var prev = areaEl.querySelector('.upload-error-msg');
+                    if (prev) prev.remove();
+                    if (errorMsg) {
+                        var err = document.createElement('p');
+                        err.className = 'upload-error-msg';
+                        err.style.cssText = 'color: #f87171; font-size: 13px; margin-top: 8px;';
+                        err.textContent = errorMsg;
+                        areaEl.appendChild(err);
+                    }
+                }
+            }
+            
+            setUploadState(true, null);
+            
             try {
-                // Determinar URL base (usar URL completa se necessário)
-                const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                    ? 'https://conectaking-api.onrender.com' 
-                    : '';
+                // Sempre usar o mesmo origem da página para o upload (evita erro em iframe/redirecionamento)
+                var uploadUrl = (window.location.origin || '') + '/api/upload/image';
                 
-                const response = await fetch(`${apiBaseUrl}/api/upload/image`, {
+                const response = await fetch(uploadUrl, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: formData
+                    headers: { 'Authorization': 'Bearer ' + authToken },
+                    body: formData,
+                    credentials: 'same-origin'
                 });
                 
-                console.log('📥 Resposta do upload:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    ok: response.ok
-                });
+                console.log('📥 Resposta do upload:', { status: response.status, ok: response.ok });
                 
-                // Verificar se a resposta é JSON antes de fazer parse
-                const contentType = response.headers.get('content-type');
-                let data;
-                
-                if (contentType && contentType.includes('application/json')) {
+                var contentType = response.headers.get('content-type');
+                var data;
+                if (contentType && contentType.indexOf('application/json') !== -1) {
                     data = await response.json();
                 } else {
-                    const text = await response.text();
+                    var text = await response.text();
                     console.error('Resposta não é JSON:', text);
-                    throw new Error(`Resposta inválida do servidor: ${text.substring(0, 200)}`);
+                    setUploadState(false, 'Resposta inválida do servidor.');
+                    restoreEmptyBlock();
+                    input.value = '';
+                    return;
                 }
                 
-                if (response.ok && data.url) {
-                    const urlField = type === 'header_image' ? 'header_image_url' : 
-                                   type === 'logo_image' ? 'form_logo_url' : 
-                                   'background_image_url';
-                    const previewId = type === 'header_image' ? 'header_image_preview' : 
-                                    type === 'logo_image' ? 'logo_image_preview' : 
-                                    'background_image_preview';
-                    const emptyId = type === 'header_image' ? 'header_image_empty' : type === 'logo_image' ? 'logo_image_empty' : 'background_image_empty';
-                    const filledId = type === 'header_image' ? 'header_image_filled' : type === 'logo_image' ? 'logo_image_filled' : 'background_image_filled';
-                    const areaId = type === 'header_image' ? 'header_image_area' : type === 'logo_image' ? 'logo_image_area' : 'background_image_area';
-                    
-                    document.getElementById(urlField).value = data.url;
-                    const preview = document.getElementById(previewId);
-                    if (preview) preview.src = data.url;
+                var imageUrl = (data && (data.url || data.imageUrl)) ? (data.url || data.imageUrl) : null;
+                
+                if (response.ok && imageUrl) {
+                    var previewId = type === 'header_image' ? 'header_image_preview' : type === 'logo_image' ? 'logo_image_preview' : 'background_image_preview';
                     var emptyEl = document.getElementById(emptyId);
                     var filledEl = document.getElementById(filledId);
-                    var areaEl = document.getElementById(areaId);
+                    document.getElementById(urlField).value = imageUrl;
+                    var preview = document.getElementById(previewId);
+                    if (preview) preview.src = imageUrl;
+                    restoreEmptyBlock();
                     if (emptyEl) emptyEl.style.display = 'none';
                     if (filledEl) filledEl.style.display = 'block';
                     if (areaEl) areaEl.classList.add('has-image');
                     input.value = '';
-                    console.log('✅ Imagem enviada com sucesso:', data.url);
+                    setUploadState(false, null);
+                    console.log('✅ Imagem enviada com sucesso:', imageUrl);
                 } else {
-                    const errorMessage = data.message || data.error || 'Erro desconhecido';
+                    var errorMessage = (data && (data.message || data.error)) ? (data.message || data.error) : 'Erro desconhecido';
                     console.error('❌ Erro no upload:', data);
-                    alert('❌ Erro ao fazer upload: ' + errorMessage);
+                    setUploadState(false, errorMessage);
+                    restoreEmptyBlock();
+                    var filledEl = document.getElementById(filledId);
+                    if (filledEl) filledEl.style.display = 'none';
+                    if (areaEl) areaEl.classList.remove('has-image');
+                    input.value = '';
                 }
             } catch (error) {
                 console.error('❌ Erro ao fazer upload:', error);
-                console.error('❌ Stack trace:', error.stack);
-                alert('❌ Erro ao fazer upload da imagem: ' + (error.message || 'Erro de conexão. Verifique sua internet e tente novamente.'));
+                setUploadState(false, (error.message || 'Erro de conexão. Tente novamente.'));
+                restoreEmptyBlock();
+                var filledEl = document.getElementById(filledId);
+                if (filledEl) filledEl.style.display = 'none';
+                if (areaEl) areaEl.classList.remove('has-image');
+                input.value = '';
             }
         }
         
