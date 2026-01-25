@@ -491,7 +491,7 @@
                     
                     <label>Banner/Header</label>
                     <div class="image-upload-area <%= guestList.header_image_url ? 'has-image' : '' %>" id="header_image_area" onclick="if(!event.target.closest('.img-actions')&&!event.target.closest('#header_image_filled')) document.getElementById('header_image_input').click();">
-                        <div id="header_image_empty" style="display: <%= guestList.header_image_url ? 'none' : 'block' %>;">
+                        <div id="header_image_empty" style="display: <%= guestList.header_image_url ? 'none' : 'block' %>; cursor: pointer;" onclick="document.getElementById('header_image_input').click();">
                             <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
                             <p style="color: #A1A1A1;">Clique para adicionar banner</p>
                         </div>
@@ -514,7 +514,7 @@
                     
                     <label style="margin-top: 16px;">Logo</label>
                     <div class="image-upload-area <%= guestList.form_logo_url ? 'has-image' : '' %>" id="logo_image_area" onclick="if(!event.target.closest('.img-actions')&&!event.target.closest('#logo_image_filled')) document.getElementById('logo_image_input').click();">
-                        <div id="logo_image_empty" style="display: <%= guestList.form_logo_url ? 'none' : 'block' %>;">
+                        <div id="logo_image_empty" style="display: <%= guestList.form_logo_url ? 'none' : 'block' %>; cursor: pointer;" onclick="document.getElementById('logo_image_input').click();">
                             <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
                             <p style="color: #A1A1A1;">Clique para adicionar logo</p>
                         </div>
@@ -531,7 +531,7 @@
                     
                     <label style="margin-top: 16px;">Imagem de Fundo</label>
                     <div class="image-upload-area <%= guestList.background_image_url ? 'has-image' : '' %>" id="background_image_area" onclick="if(!event.target.closest('.img-actions')&&!event.target.closest('#background_image_filled')) document.getElementById('background_image_input').click();">
-                        <div id="background_image_empty" style="display: <%= guestList.background_image_url ? 'none' : 'block' %>;">
+                        <div id="background_image_empty" style="display: <%= guestList.background_image_url ? 'none' : 'block' %>; cursor: pointer;" onclick="document.getElementById('background_image_input').click();">
                             <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
                             <p style="color: #A1A1A1;">Clique para adicionar fundo</p>
                         </div>
@@ -766,8 +766,11 @@
             var emptyId = type === 'header_image' ? 'header_image_empty' : type === 'logo_image' ? 'logo_image_empty' : 'background_image_empty';
             var filledId = type === 'header_image' ? 'header_image_filled' : type === 'logo_image' ? 'logo_image_filled' : 'background_image_filled';
             var areaId = type === 'header_image' ? 'header_image_area' : type === 'logo_image' ? 'logo_image_area' : 'background_image_area';
+            var inputId = type === 'header_image' ? 'header_image_input' : type === 'logo_image' ? 'logo_image_input' : 'background_image_input';
             var el = document.getElementById(urlField);
             if (el) el.value = '';
+            var inputEl = document.getElementById(inputId);
+            if (inputEl) inputEl.value = '';
             var emptyEl = document.getElementById(emptyId);
             var filledEl = document.getElementById(filledId);
             var areaEl = document.getElementById(areaId);
@@ -852,6 +855,7 @@
                     if (emptyEl) emptyEl.style.display = 'none';
                     if (filledEl) filledEl.style.display = 'block';
                     if (areaEl) areaEl.classList.add('has-image');
+                    input.value = '';
                     console.log('✅ Imagem enviada com sucesso:', data.url);
                 } else {
                     const errorMessage = data.message || data.error || 'Erro desconhecido';
