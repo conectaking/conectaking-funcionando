@@ -1123,22 +1123,20 @@ router.post('/:slug/form/:itemId/submit',
                 if (guestListRes.rows.length > 0) {
                     const guestListItemId = guestListRes.rows[0].id;
                     
-                    // Mapear campos do formulário para campos da lista de convidados
-                    // IMPORTANTE: Buscar valores de múltiplos campos possíveis
+                    const looksLikeEmail = (s) => typeof s === 'string' && s.includes('@') && s.includes('.');
+                    const notEmail = (s) => typeof s === 'string' && s.trim() && !s.includes('@');
+                    const emailCandidates = [responder_email, response_data.email, response_data['Email']].filter(Boolean);
+                    const phoneCandidates = [responder_phone, response_data.whatsapp, response_data.phone, response_data.telefone, response_data['Telefone/WhatsApp']].filter(Boolean);
+                    const pickEmail = () => { for (const c of emailCandidates) { if (looksLikeEmail(c)) return c.trim(); } return null; };
+                    const pickPhone = () => { for (const c of phoneCandidates) { if (notEmail(c)) return c.trim(); } return ''; };
+                    let doc = response_data.document || response_data.cpf || response_data.cnpj || response_data['CPF'] || response_data['CNPJ'] || null;
+                    if (doc && typeof doc === 'string') doc = doc.replace(/[.\-\s]/g, '').trim();
                     const guestData = {
                         name: responder_name || response_data.name || response_data.nome || response_data['Nome completo'] || response_data.nome_completo || 'Visitante',
-                        whatsapp: responder_phone || response_data.whatsapp || response_data.phone || response_data.telefone || response_data['Telefone/WhatsApp'] || '',
-                        email: responder_email || response_data.email || response_data['Email'] || null,
-                        phone: response_data.phone || response_data.telefone || response_data['Telefone'] || null,
-                        document: (() => {
-                            // Buscar CPF/CNPJ de múltiplos campos possíveis
-                            const doc = response_data.document || response_data.cpf || response_data.cnpj || response_data['CPF'] || response_data['CNPJ'] || null;
-                            // IMPORTANTE: Remover formatação (pontos, traços, espaços) antes de salvar
-                            if (doc && typeof doc === 'string') {
-                                return doc.replace(/[.\-\s]/g, '').trim();
-                            }
-                            return doc;
-                        })(),
+                        whatsapp: pickPhone(),
+                        email: pickEmail(),
+                        phone: (() => { const p = response_data.phone || response_data.telefone || response_data['Telefone']; return (p && notEmail(p)) ? String(p).trim() : null; })(),
+                        document: doc,
                         address: response_data.address || response_data.endereco || response_data['Endereço'] || response_data['Endereço completo'] || null,
                         neighborhood: response_data.neighborhood || response_data.bairro || response_data['Bairro'] || null,
                         city: response_data.city || response_data.cidade || response_data['Cidade'] || null,
@@ -1153,10 +1151,8 @@ router.post('/:slug/form/:itemId/submit',
                         guestData.name = 'Visitante';
                     }
                     
-                    // Validar WhatsApp (obrigatório para lista de convidados)
                     if (!guestData.whatsapp || !guestData.whatsapp.trim()) {
-                        // Se não tiver WhatsApp, usar phone ou email como fallback
-                        guestData.whatsapp = guestData.phone || guestData.email || '';
+                        guestData.whatsapp = (guestData.phone && !String(guestData.phone).includes('@')) ? guestData.phone : '';
                     }
                     
                     logger.info('💾 [SUBMIT] Salvando convidado na lista:', {

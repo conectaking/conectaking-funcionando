@@ -2691,13 +2691,46 @@
             `;
             modalContent.onclick = function(e) { e.stopPropagation(); };
             
-            // Extrair nome, email e whatsapp
-            let displayName = guest.name || '';
-            let displayEmail = guest.email || '';
-            let displayWhatsapp = guest.whatsapp || guest.phone || '';
-            let displayCPF = guest.document || '';
+            let displayName = '';
+            let displayEmail = '';
+            let displayWhatsapp = '';
+            let displayCPF = '';
             
-            // Formatar CPF
+            let customResponses = {};
+            try {
+                customResponses = typeof guest.custom_responses === 'string' 
+                    ? JSON.parse(guest.custom_responses) 
+                    : (guest.custom_responses || {});
+            } catch (e) {}
+            
+            if (formFields && Array.isArray(formFields) && formFields.length > 0 && Object.keys(customResponses).length > 0) {
+                formFields.forEach(function(field, idx) {
+                    const fieldId = field.id || ('field_' + idx);
+                    const raw = customResponses[fieldId];
+                    if (raw == null) return;
+                    const valueStr = (Array.isArray(raw) ? (raw[0] || '') : raw).toString().trim();
+                    const label = (field.label || '').toLowerCase();
+                    const tid = (field.id || '').toLowerCase();
+                    if (!valueStr) return;
+                    if (!displayName && (label.includes('nome') || label.includes('name') || tid.includes('nome') || tid.includes('name'))) {
+                        displayName = valueStr;
+                    }
+                    if (!displayEmail && (label.includes('email') || label.includes('e-mail') || tid.includes('email')) && valueStr.indexOf('@') >= 0) {
+                        displayEmail = valueStr;
+                    }
+                    if (!displayWhatsapp && (label.includes('whatsapp') || label.includes('telefone') || label.includes('phone') || tid.includes('whatsapp') || tid.includes('telefone') || tid.includes('phone')) && valueStr.indexOf('@') < 0) {
+                        displayWhatsapp = valueStr;
+                    }
+                    if (!displayCPF && (label.includes('cpf') || label.includes('documento') || label.includes('document') || tid.includes('cpf') || tid.includes('documento'))) {
+                        displayCPF = valueStr;
+                    }
+                });
+            }
+            if (!displayName || displayName.toLowerCase() === 'visitante') displayName = guest.name || '';
+            if (!displayEmail) displayEmail = guest.email || '';
+            if (!displayWhatsapp) displayWhatsapp = guest.whatsapp || guest.phone || '';
+            if (!displayCPF) displayCPF = guest.document || '';
+            
             if (displayCPF) {
                 const cleanCPF = displayCPF.replace(/\D/g, '');
                 if (cleanCPF.length === 11) {
@@ -2707,69 +2740,10 @@
                 }
             }
             displayCPF = displayCPF || '-';
-            
-            // Tentar extrair de custom_responses se necessário (usar fieldId = field.id || field_INDEX)
-            try {
-                const customResp = typeof guest.custom_responses === 'string' 
-                    ? JSON.parse(guest.custom_responses) 
-                    : (guest.custom_responses || {});
-                
-                if (formFields && Array.isArray(formFields)) {
-                    formFields.forEach((field, idx) => {
-                        const fieldId = field.id || ('field_' + idx);
-                        const raw = customResp[fieldId];
-                        if (raw == null) return;
-                        const valueStr = Array.isArray(raw) ? (raw[0] || '').toString().trim() : (raw || '').toString().trim();
-                        const label = (field.label || '').toLowerCase();
-                        
-                        if ((!displayName || displayName.toLowerCase() === 'visitante') && 
-                            (label.includes('nome') || label.includes('name'))) {
-                            displayName = valueStr;
-                        }
-                        if ((!displayWhatsapp || displayWhatsapp.trim() === '') && 
-                            (label.includes('whatsapp') || label.includes('telefone') || label.includes('phone'))) {
-                            displayWhatsapp = valueStr;
-                        }
-                        if ((!displayEmail || displayEmail.trim() === '') && 
-                            (label.includes('email') || label.includes('e-mail'))) {
-                            displayEmail = valueStr;
-                        }
-                        if ((!displayCPF || displayCPF === '-') && 
-                            (label.includes('cpf') || label.includes('documento') || label.includes('document'))) {
-                            displayCPF = valueStr;
-                        }
-                    });
-                }
-            } catch (e) {}
-            
-            // Formatar CPF novamente se veio de customResponses
-            if (displayCPF && displayCPF !== '-') {
-                const cleanCPF = displayCPF.replace(/\D/g, '');
-                if (cleanCPF.length === 11) {
-                    displayCPF = cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-                } else {
-                    displayCPF = displayCPF.trim();
-                }
-            }
-            displayCPF = displayCPF || '-';
-            
             displayName = (displayName && displayName.trim() && displayName.toLowerCase() !== 'visitante') ? displayName.trim() : 'Sem nome';
             displayEmail = (displayEmail && displayEmail.trim()) ? displayEmail.trim() : '-';
             displayWhatsapp = (displayWhatsapp && displayWhatsapp.trim()) ? displayWhatsapp.trim() : '-';
             
-            // Parsear custom_responses
-            let customResponses = {};
-            if (guest.custom_responses) {
-                try {
-                    customResponses = typeof guest.custom_responses === 'string' 
-                        ? JSON.parse(guest.custom_responses) 
-                        : guest.custom_responses;
-                } catch (e) {
-                    customResponses = {};
-                }
-            }
-            
-            // Gerar código da inscrição
             const inscricaoCode = `King-${guest.id}-${new Date(guest.created_at).getFullYear()}${String(new Date(guest.created_at).getMonth() + 1).padStart(2, '0')}${String(new Date(guest.created_at).getDate()).padStart(2, '0')}`;
             
             // Preparar HTML dos campos do formulário COM PERGUNTAS E RESPOSTAS

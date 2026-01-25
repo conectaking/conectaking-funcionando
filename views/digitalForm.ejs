@@ -1828,185 +1828,121 @@
             // Coletar dados de todos os campos dinâmicos - CORRIGIDO: Uma única passagem
             const data = {};
             const responseData = {};
+            const formEl = document.getElementById('digital-form');
+            const formQuery = (sel) => (formEl && formEl.querySelector(sel)) || document.querySelector(sel);
+            const formQueryAll = (sel) => (formEl && formEl.querySelectorAll(sel)) || document.querySelectorAll(sel);
             
             // IMPORTANTE: Garantir que currentFormFields esteja definido
-            // Usar fieldsToSubmit que já foi processado acima
             let fieldsToProcess = fieldsToSubmit || currentFormFields || window.formFields || formDataObj.form_fields || [];
             if (typeof fieldsToProcess === 'string') {
-                try {
-                    fieldsToProcess = JSON.parse(fieldsToProcess);
-                } catch (e) {
-                    console.error('❌ [SUBMIT] Erro ao parsear fieldsToProcess:', e);
-                    fieldsToProcess = [];
-                }
+                try { fieldsToProcess = JSON.parse(fieldsToProcess); } catch (e) { fieldsToProcess = []; }
             }
-            if (!Array.isArray(fieldsToProcess)) {
-                fieldsToProcess = [];
-            }
+            if (!Array.isArray(fieldsToProcess)) fieldsToProcess = [];
             
             fieldsToProcess.forEach((field, index) => {
-                // IMPORTANTE: Usar o mesmo padrão de ID usado na renderização
                 const fieldId = field.id || `field_${index}`;
-                const fieldName = fieldId; // name e id são iguais na renderização
+                const fieldName = fieldId;
                 const fieldLabel = field.label || 'Campo sem título';
-                
-                console.log(`🔍 [SUBMIT] Coletando campo ${index + 1}:`, {
-                    fieldId,
-                    fieldName,
-                    fieldLabel,
-                    type: field.type
-                });
                 
                 try {
                     if (field.type === 'checkbox') {
-                        // Checkboxes: múltiplos valores
-                        const checkboxes = document.querySelectorAll(`input[type="checkbox"][name="${fieldName}"]:checked`);
+                        const checkboxes = formQueryAll(`input[type="checkbox"][name="${fieldName}"]:checked`);
                         if (checkboxes.length > 0) {
                             responseData[fieldId] = Array.from(checkboxes).map(cb => cb.value);
                             data[fieldId] = responseData[fieldId].join(', ');
-                            console.log(`✅ [SUBMIT] Checkbox coletado:`, responseData[fieldId]);
                         }
                     } else if (field.type === 'multiple_choice_grid' || field.type === 'checkbox_grid') {
-                        // Grids: estrutura complexa
                         const gridData = {};
                         if (field.rows && Array.isArray(field.rows)) {
                             field.rows.forEach(row => {
                                 const rowName = `${fieldName}_${row}`;
                                 if (field.type === 'multiple_choice_grid') {
-                                    const selected = document.querySelector(`input[type="radio"][name="${rowName}"]:checked`);
-                                    if (selected) {
-                                        gridData[row] = selected.value;
-                                    }
+                                    const selected = formQuery(`input[type="radio"][name="${rowName}"]:checked`);
+                                    if (selected) gridData[row] = selected.value;
                                 } else {
-                                    const selected = document.querySelectorAll(`input[type="checkbox"][name="${rowName}"]:checked`);
-                                    if (selected.length > 0) {
-                                        gridData[row] = Array.from(selected).map(cb => cb.value);
-                                    }
+                                    const selected = formQueryAll(`input[type="checkbox"][name="${rowName}"]:checked`);
+                                    if (selected.length > 0) gridData[row] = Array.from(selected).map(cb => cb.value);
                                 }
                             });
                             if (Object.keys(gridData).length > 0) {
                                 responseData[fieldId] = gridData;
-                                // Formatar para WhatsApp
                                 let gridText = '';
                                 Object.entries(gridData).forEach(([row, value]) => {
                                     gridText += `${row}: ${Array.isArray(value) ? value.join(', ') : value}\n`;
                                 });
                                 data[fieldId] = gridText.trim();
-                                console.log(`✅ [SUBMIT] Grid coletado:`, gridData);
                             }
                         }
                     } else if (field.type === 'multiple_choice' || field.type === 'yes_no' || field.type === 'linear_scale' || field.type === 'rating') {
-                        // Radio buttons: valor único
-                        const selected = document.querySelector(`input[type="radio"][name="${fieldName}"]:checked`);
+                        const selected = formQuery(`input[type="radio"][name="${fieldName}"]:checked`);
                         if (selected) {
                             responseData[fieldId] = selected.value;
                             data[fieldId] = selected.value;
-                            console.log(`✅ [SUBMIT] Radio coletado:`, selected.value);
                         }
                     } else if (field.type === 'dropdown' || field.type === 'select') {
-                        // Dropdown/Select
-                        const select = document.querySelector(`select[name="${fieldName}"], select#field-${index}`);
+                        const select = formQuery(`select[name="${fieldName}"]`) || formQuery(`select#field-${index}`);
                         if (select && select.value) {
                             responseData[fieldId] = select.value;
                             data[fieldId] = select.value;
-                            console.log(`✅ [SUBMIT] Select coletado:`, select.value);
                         }
                     } else {
-                        // Campos de texto, número, data, email, textarea, etc.
-                        // IMPORTANTE: Tentar ambos os seletores para garantir compatibilidade
-                        const input = document.querySelector(`#field-${index}, input[name="${fieldName}"], textarea[name="${fieldName}"], textarea#field-${index}`);
+                        // Texto, número, data, email, tel, etc. PRIORIDADE: name (evita troca por índice)
+                        const input = formQuery(`input[name="${fieldName}"], textarea[name="${fieldName}"]`) ||
+                            formQuery(`#field-${index}`) || formQuery(`input#field-${index}, textarea#field-${index}`);
                         if (input) {
-                            const value = input.value ? input.value.trim() : '';
+                            const value = (input.value || '').trim();
                             if (value || field.required) {
                                 responseData[fieldId] = value;
                                 data[fieldId] = value;
-                                console.log(`✅ [SUBMIT] Input coletado (${field.type}):`, value ? 'tem valor' : 'vazio mas obrigatório');
                             }
-                        } else {
-                            console.warn(`⚠️ [SUBMIT] Campo não encontrado no DOM:`, {
-                                fieldId,
-                                fieldName,
-                                index,
-                                type: field.type,
-                                selector1: `#field-${index}`,
-                                selector2: `input[name="${fieldName}"]`
-                            });
                         }
                     }
                 } catch (fieldError) {
                     console.error(`❌ [SUBMIT] Erro ao coletar campo ${fieldId}:`, fieldError);
-                    // Continuar coletando outros campos mesmo se um falhar
                 }
             });
             
-            // IMPORTANTE: Extrair nome, email e telefone dos campos coletados
-            // Procurar por campos com labels ou tipos específicos que indiquem nome, email ou telefone
+            // Extrair nome, email, telefone e CPF pelos labels/tipos (evitar trocar valores)
             let extractedName = null;
             let extractedEmail = null;
             let extractedPhone = null;
+            let extractedDocument = null;
             
-            // Procurar nos campos coletados
             fieldsToProcess.forEach((field, index) => {
                 const fieldId = field.id || `field_${index}`;
                 const fieldLabel = (field.label || '').toLowerCase().trim();
-                const fieldType = field.type || '';
-                const fieldValue = responseData[fieldId] || data[fieldId] || '';
+                const fieldType = (field.type || '').toLowerCase();
+                const raw = responseData[fieldId] || data[fieldId] || '';
+                const fieldValue = typeof raw === 'string' ? raw.trim() : '';
+                if (!fieldValue) return;
                 
-                // Extrair nome
-                if (!extractedName && fieldValue && typeof fieldValue === 'string' && fieldValue.trim().length >= 2) {
-                    if (fieldLabel.includes('nome') || fieldLabel.includes('name') || 
-                        fieldId.toLowerCase().includes('nome') || fieldId.toLowerCase().includes('name')) {
-                        extractedName = fieldValue.trim();
-                        console.log('✅ [SUBMIT] Nome extraído do campo:', fieldLabel, '=', extractedName);
-                    }
+                if (!extractedName && (fieldLabel.includes('nome') || fieldLabel.includes('name') || fieldId.toLowerCase().includes('nome') || fieldId.toLowerCase().includes('name'))) {
+                    extractedName = fieldValue;
                 }
-                
-                // Extrair email
-                if (!extractedEmail && fieldValue && typeof fieldValue === 'string' && fieldValue.trim()) {
-                    if (fieldType === 'email' || fieldLabel.includes('email') || fieldLabel.includes('e-mail') ||
-                        fieldId.toLowerCase().includes('email')) {
-                        const emailValue = fieldValue.trim();
-                        // Validar formato básico de email
-                        if (emailValue.includes('@') && emailValue.includes('.')) {
-                            extractedEmail = emailValue;
-                            console.log('✅ [SUBMIT] Email extraído do campo:', fieldLabel, '=', extractedEmail);
-                        }
-                    }
+                if (!extractedEmail && (fieldType === 'email' || fieldLabel.includes('email') || fieldLabel.includes('e-mail') || fieldId.toLowerCase().includes('email'))) {
+                    if (fieldValue.includes('@') && fieldValue.includes('.')) extractedEmail = fieldValue;
                 }
-                
-                // Extrair telefone
-                if (!extractedPhone && fieldValue && typeof fieldValue === 'string' && fieldValue.trim()) {
-                    if (fieldType === 'phone' || fieldLabel.includes('telefone') || fieldLabel.includes('whatsapp') ||
-                        fieldLabel.includes('phone') || fieldId.toLowerCase().includes('telefone') ||
-                        fieldId.toLowerCase().includes('whatsapp') || fieldId.toLowerCase().includes('phone')) {
-                        extractedPhone = fieldValue.trim();
-                        console.log('✅ [SUBMIT] Telefone extraído do campo:', fieldLabel, '=', extractedPhone);
-                    }
+                if (!extractedPhone && (fieldType === 'phone' || fieldType === 'tel' || fieldLabel.includes('telefone') || fieldLabel.includes('whatsapp') || fieldLabel.includes('phone') || fieldId.toLowerCase().includes('telefone') || fieldId.toLowerCase().includes('whatsapp') || fieldId.toLowerCase().includes('phone'))) {
+                    if (!fieldValue.includes('@')) extractedPhone = fieldValue;
+                }
+                if (!extractedDocument && (fieldLabel.includes('cpf') || fieldLabel.includes('documento') || fieldLabel.includes('document') || fieldId.toLowerCase().includes('cpf') || fieldId.toLowerCase().includes('documento'))) {
+                    extractedDocument = fieldValue;
                 }
             });
             
-            // Se não encontrou pelos labels, tentar pelos primeiros campos preenchidos
             if (!extractedName && Object.keys(responseData).length > 0) {
-                const firstFieldValue = Object.values(responseData)[0];
-                if (firstFieldValue && typeof firstFieldValue === 'string' && firstFieldValue.trim().length >= 2) {
-                    extractedName = firstFieldValue.trim();
-                    console.log('✅ [SUBMIT] Nome extraído do primeiro campo preenchido:', extractedName);
-                }
+                const first = Object.values(responseData)[0];
+                if (typeof first === 'string' && first.trim().length >= 2) extractedName = first.trim();
             }
+            if (extractedDocument) responseData['CPF'] = extractedDocument;
             
             // Verificar se há dados coletados
             console.log('📊 [SUBMIT] Dados coletados:', {
                 responseDataKeys: Object.keys(responseData),
-                responseDataCount: Object.keys(responseData).length,
-                responseData: responseData,
-                dataKeys: Object.keys(data),
-                dataCount: Object.keys(data).length,
-                data: data,
-                fieldsCount: fieldsToProcess.length,
-                extractedName: extractedName,
-                extractedEmail: extractedEmail,
-                extractedPhone: extractedPhone,
-                hasData: Object.keys(responseData).length > 0 || Object.keys(data).length > 0
+                extractedName: !!extractedName,
+                extractedEmail: !!extractedEmail,
+                extractedPhone: !!extractedPhone,
+                extractedDocument: !!extractedDocument
             });
             
             // IMPORTANTE: Validar se pelo menos alguns dados foram coletados
@@ -2044,15 +1980,14 @@
             
             const submitUrl = `/${slug}/form/${itemId}/submit`;
             
-            // IMPORTANTE: Garantir que valores vazios sejam null, não strings vazias
-            const finalName = (extractedName || data.name || '').trim();
-            const finalEmail = (extractedEmail || data.email || '').trim();
-            const finalPhone = (extractedPhone || data.phone || '').trim();
+            const finalName = (extractedName || '').trim();
+            const finalEmail = (extractedEmail || '').trim();
+            const finalPhone = (extractedPhone || '').trim();
             
             const submitPayload = {
                 response_data: responseData,
                 responder_name: finalName.length >= 2 ? finalName : null,
-                responder_email: finalEmail.length > 0 && finalEmail.includes('@') ? finalEmail : null,
+                responder_email: (finalEmail.length > 0 && finalEmail.includes('@')) ? finalEmail : null,
                 responder_phone: finalPhone.length > 0 ? finalPhone : null,
                 session_id: sessionId,
             };
