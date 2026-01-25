@@ -2708,35 +2708,50 @@
             }
             displayCPF = displayCPF || '-';
             
-            // Tentar extrair de custom_responses se necessário
+            // Tentar extrair de custom_responses se necessário (usar fieldId = field.id || field_INDEX)
             try {
-                const customResponses = typeof guest.custom_responses === 'string' 
+                const customResp = typeof guest.custom_responses === 'string' 
                     ? JSON.parse(guest.custom_responses) 
                     : (guest.custom_responses || {});
                 
                 if (formFields && Array.isArray(formFields)) {
-                    formFields.forEach(field => {
-                        if (field.id && customResponses[field.id]) {
-                            const value = customResponses[field.id];
-                            const valueStr = Array.isArray(value) ? value[0] : (value || '').toString().trim();
-                            const label = (field.label || '').toLowerCase();
-                            
-                            if ((!displayName || displayName.toLowerCase() === 'visitante') && 
-                                (label.includes('nome') || label.includes('name'))) {
-                                displayName = valueStr;
-                            }
-                            if ((!displayWhatsapp || displayWhatsapp.trim() === '') && 
-                                (label.includes('whatsapp') || label.includes('telefone') || label.includes('phone'))) {
-                                displayWhatsapp = valueStr;
-                            }
-                            if ((!displayEmail || displayEmail.trim() === '') && 
-                                (label.includes('email') || label.includes('e-mail'))) {
-                                displayEmail = valueStr;
-                            }
+                    formFields.forEach((field, idx) => {
+                        const fieldId = field.id || ('field_' + idx);
+                        const raw = customResp[fieldId];
+                        if (raw == null) return;
+                        const valueStr = Array.isArray(raw) ? (raw[0] || '').toString().trim() : (raw || '').toString().trim();
+                        const label = (field.label || '').toLowerCase();
+                        
+                        if ((!displayName || displayName.toLowerCase() === 'visitante') && 
+                            (label.includes('nome') || label.includes('name'))) {
+                            displayName = valueStr;
+                        }
+                        if ((!displayWhatsapp || displayWhatsapp.trim() === '') && 
+                            (label.includes('whatsapp') || label.includes('telefone') || label.includes('phone'))) {
+                            displayWhatsapp = valueStr;
+                        }
+                        if ((!displayEmail || displayEmail.trim() === '') && 
+                            (label.includes('email') || label.includes('e-mail'))) {
+                            displayEmail = valueStr;
+                        }
+                        if ((!displayCPF || displayCPF === '-') && 
+                            (label.includes('cpf') || label.includes('documento') || label.includes('document'))) {
+                            displayCPF = valueStr;
                         }
                     });
                 }
             } catch (e) {}
+            
+            // Formatar CPF novamente se veio de customResponses
+            if (displayCPF && displayCPF !== '-') {
+                const cleanCPF = displayCPF.replace(/\D/g, '');
+                if (cleanCPF.length === 11) {
+                    displayCPF = cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                } else {
+                    displayCPF = displayCPF.trim();
+                }
+            }
+            displayCPF = displayCPF || '-';
             
             displayName = (displayName && displayName.trim() && displayName.toLowerCase() !== 'visitante') ? displayName.trim() : 'Sem nome';
             displayEmail = (displayEmail && displayEmail.trim()) ? displayEmail.trim() : '-';
@@ -2758,51 +2773,51 @@
             const inscricaoCode = `King-${guest.id}-${new Date(guest.created_at).getFullYear()}${String(new Date(guest.created_at).getMonth() + 1).padStart(2, '0')}${String(new Date(guest.created_at).getDate()).padStart(2, '0')}`;
             
             // Preparar HTML dos campos do formulário COM PERGUNTAS E RESPOSTAS
+            // CRÍTICO: iterar na ordem de form_fields para manter nomes e respostas corretos
             let formFieldsHTML = '';
-            if (Object.keys(customResponses).length > 0 && formFields && Array.isArray(formFields) && formFields.length > 0) {
-                formFieldsHTML = Object.entries(customResponses).map(([key, value]) => {
-                    // Tentar obter o label do campo
-                    let label = getFieldLabel(key);
-                    
-                    // Se o label ainda for igual à chave (não encontrou), tentar mais uma vez
-                    if (label === key || label === key.toString()) {
-                        // Tentar usar a chave como índice numérico direto
-                        const numKey = parseInt(key);
-                        if (!isNaN(numKey) && numKey >= 0 && numKey < formFields.length) {
-                            label = formFields[numKey].label || formFields[numKey].question || label;
-                        }
-                    }
-                    
-                    let displayValue = Array.isArray(value) ? value.join(', ') : (value || '');
-                    
-                    // Formatação especial para arrays (como checkbox, multiple_choice)
-                    let formattedValue = displayValue;
-                    if (Array.isArray(value) && value.length > 1) {
-                        formattedValue = value.map(v => `<div style="margin-left: 16px; margin-top: 4px;">• ${String(v)}</div>`).join('');
-                    }
-                    
-                    return `
-                        <div style="margin-bottom: 16px; padding: 16px; background: rgba(255,199,0,0.1); border-radius: 12px; border-left: 4px solid #FFC700;">
-                            <div style="font-weight: 700; color: #FFC700; margin-bottom: 8px; font-size: 15px;">
-                                <i class="fas fa-question-circle"></i> ${label}
-                            </div>
-                            <div style="color: #ECECEC; font-size: 14px; line-height: 1.6; ${Array.isArray(value) && value.length > 1 ? 'padding-left: 8px;' : ''}">
-                                ${formattedValue || '<span style="color: #A1A1A1; font-style: italic;">Não informado</span>'}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+            const shownKeys = new Set();
+            function formatFieldValue(val) {
+                if (val == null) return '';
+                if (Array.isArray(val)) return val.join(', ');
+                if (typeof val === 'object') {
+                    const parts = [];
+                    Object.entries(val).forEach(function(e) { parts.push(e[0] + ': ' + (Array.isArray(e[1]) ? e[1].join(', ') : e[1])); });
+                    return parts.join('\n');
+                }
+                return String(val).trim();
+            }
+            function renderFormFieldRow(label, value, isArray) {
+                let formattedValue = formatFieldValue(value);
+                if (Array.isArray(value) && value.length > 1) {
+                    formattedValue = value.map(function(v) { return '<div style="margin-left: 16px; margin-top: 4px;">• ' + String(v) + '</div>'; }).join('');
+                }
+                return '<div style="margin-bottom: 16px; padding: 16px; background: rgba(255,199,0,0.1); border-radius: 12px; border-left: 4px solid #FFC700;">' +
+                    '<div style="font-weight: 700; color: #FFC700; margin-bottom: 8px; font-size: 15px;">' +
+                    '<i class="fas fa-question-circle"></i> ' + label + '</div>' +
+                    '<div style="color: #ECECEC; font-size: 14px; line-height: 1.6; ' + (Array.isArray(value) && value.length > 1 ? 'padding-left: 8px;' : '') + '">' +
+                    (formattedValue || '<span style="color: #A1A1A1; font-style: italic;">Não informado</span>') + '</div></div>';
+            }
+            if (formFields && Array.isArray(formFields) && formFields.length > 0) {
+                formFields.forEach(function(field, idx) {
+                    const fieldId = field.id || ('field_' + idx);
+                    shownKeys.add(String(fieldId));
+                    const label = field.label || field.question || field.name || ('Campo ' + (idx + 1));
+                    const value = customResponses[fieldId];
+                    formFieldsHTML += renderFormFieldRow(label, value, Array.isArray(value));
+                });
+                Object.keys(customResponses).forEach(function(key) {
+                    if (shownKeys.has(key)) return;
+                    const label = getFieldLabel(key);
+                    const value = customResponses[key];
+                    formFieldsHTML += renderFormFieldRow(label, value, Array.isArray(value));
+                });
             } else if (Object.keys(customResponses).length > 0) {
-                // Fallback se não tiver formFields
-                formFieldsHTML = Object.entries(customResponses).map(([key, value]) => {
-                    let label = getFieldLabel(key);
-                    const displayValue = Array.isArray(value) ? value.join(', ') : (value || '');
-                    return `
-                        <div style="margin-bottom: 12px; padding: 12px; background: rgba(255,255,255,0.04); border-radius: 8px; border-left: 4px solid #FFC700;">
-                            <strong style="color: #FFC700; display: block; margin-bottom: 6px;">${label}:</strong> 
-                            <span style="color: #ECECEC;">${displayValue}</span>
-                        </div>
-                    `;
+                formFieldsHTML = Object.entries(customResponses).map(function(e) {
+                    const label = getFieldLabel(e[0]);
+                    const displayValue = formatFieldValue(e[1]);
+                    return '<div style="margin-bottom: 12px; padding: 12px; background: rgba(255,255,255,0.04); border-radius: 8px; border-left: 4px solid #FFC700;">' +
+                        '<strong style="color: #FFC700; display: block; margin-bottom: 6px;">' + label + ':</strong> ' +
+                        '<span style="color: #ECECEC;">' + displayValue + '</span></div>';
                 }).join('');
             }
             
@@ -2876,7 +2891,7 @@
                         </div>
                         <div><strong>Inscrito em:</strong> ${guest.created_at ? formatDateBrasilia(guest.created_at) : '-'}</div>
                         ${guest.confirmed_at ? `<div><strong>Confirmado em:</strong> ${formatDateBrasilia(guest.confirmed_at)}</div>` : ''}
-                        ${guest.checked_in_at ? `<div><strong>Conferido em:</strong> ${formatDateBrasilia(guest.checked_in_at)}</div>` : ''}
+                        ${guest.checked_in_at ? `<div><strong>Chegou em:</strong> ${formatDateBrasilia(guest.checked_in_at)}</div>` : ''}
                     </div>
                 </div>
                 

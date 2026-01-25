@@ -1641,11 +1641,12 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Perfil não encontrado</h1>');
         }
 
-        // Buscar dados do formulário (primeiro de digital_form_items)
+        // Buscar dados do formulário (inclui form_fields para ordem correta na exibição)
         const formRes = await client.query(
             `SELECT dfi.form_title, dfi.enable_whatsapp, dfi.enable_guest_list_submit, 
                     dfi.whatsapp_number, dfi.primary_color, dfi.secondary_color,
-                    dfi.background_color, dfi.background_image_url, dfi.background_opacity
+                    dfi.background_color, dfi.background_image_url, dfi.background_opacity,
+                    dfi.form_fields
              FROM digital_form_items dfi
              INNER JOIN profile_items pi ON pi.id = dfi.profile_item_id
              WHERE dfi.profile_item_id = $1 AND pi.user_id = $2
@@ -1659,7 +1660,14 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
         }
 
         let formData = formRes.rows[0];
-        
+        let formFields = [];
+        if (formData.form_fields) {
+            try {
+                formFields = typeof formData.form_fields === 'string' ? JSON.parse(formData.form_fields) : formData.form_fields;
+                if (!Array.isArray(formFields)) formFields = [];
+            } catch (e) { formFields = []; }
+        }
+
         // IMPORTANTE: Verificar se há dados em guest_list_items também (para enable_guest_list_submit)
         try {
             const guestListCheck = await client.query(`
@@ -1961,7 +1969,8 @@ router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
             backgroundOpacity: formData.background_opacity || 1.0,
             autoRedirect: false,
             submittedData: submittedData,
-            responseData: responseData
+            responseData: responseData,
+            formFields: formFields
         });
 
     } catch (error) {

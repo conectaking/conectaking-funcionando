@@ -499,22 +499,68 @@
                 </div>
                 <% } %>
                 <% if (typeof responseData.response_data === 'object' && responseData.response_data) { %>
-                    <% Object.keys(responseData.response_data).forEach(key => { %>
-                        <% 
-                            const value = responseData.response_data[key];
-                            const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
-                        %>
-                        <% if (displayValue && displayValue.toString().trim() !== '' && key !== 'name' && key !== 'nome' && key !== 'email' && key !== 'phone' && key !== 'whatsapp' && key !== 'telefone') { %>
-                        <div style="padding: 16px; background: white; border-radius: 10px; border-left: 4px solid <%= primaryColor || '#4A90E2' %>; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                            <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600;">
-                                <%= key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+                    <%
+                        const rd = responseData.response_data;
+                        const skipKeys = ['name','nome','email','phone','whatsapp','telefone'];
+                        const fmt = (v) => { if (v == null) return ''; if (Array.isArray(v)) return v.join(', '); if (typeof v === 'object') return JSON.stringify(v); return String(v).trim(); };
+                        let shown = new Set();
+                    %>
+                    <% if (typeof formFields !== 'undefined' && formFields && Array.isArray(formFields) && formFields.length > 0) { %>
+                        <% formFields.forEach((field, idx) => { %>
+                            <%
+                                const fid = field.id || ('field_' + idx);
+                                shown.add(String(fid));
+                                if (skipKeys.includes(String(fid).toLowerCase())) return;
+                                const val = rd[fid];
+                                const disp = fmt(val);
+                            %>
+                            <% if (disp) { %>
+                            <div style="padding: 16px; background: white; border-radius: 10px; border-left: 4px solid <%= primaryColor || '#4A90E2' %>; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600;">
+                                    <%= field.label || field.question || field.name || ('Campo ' + (idx + 1)) %>
+                                </div>
+                                <div style="font-size: 17px; color: #202124; font-weight: 600; line-height: 1.5;">
+                                    <%= disp %>
+                                </div>
                             </div>
-                            <div style="font-size: 17px; color: #202124; font-weight: 600; line-height: 1.5;">
-                                <%= displayValue %>
+                            <% } %>
+                        <% }); %>
+                        <% Object.keys(rd).forEach(key => { %>
+                            <% if (shown.has(key) || skipKeys.includes(String(key).toLowerCase())) return; %>
+                            <%
+                                const val = rd[key];
+                                const disp = fmt(val);
+                            %>
+                            <% if (disp) { %>
+                            <div style="padding: 16px; background: white; border-radius: 10px; border-left: 4px solid <%= primaryColor || '#4A90E2' %>; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600;">
+                                    <%= String(key).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+                                </div>
+                                <div style="font-size: 17px; color: #202124; font-weight: 600; line-height: 1.5;">
+                                    <%= disp %>
+                                </div>
                             </div>
-                        </div>
-                        <% } %>
-                    <% }); %>
+                            <% } %>
+                        <% }); %>
+                    <% } else { %>
+                        <% Object.keys(rd).forEach(key => { %>
+                            <% if (skipKeys.includes(String(key).toLowerCase())) return; %>
+                            <%
+                                const val = rd[key];
+                                const disp = fmt(val);
+                            %>
+                            <% if (disp) { %>
+                            <div style="padding: 16px; background: white; border-radius: 10px; border-left: 4px solid <%= primaryColor || '#4A90E2' %>; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                <div style="font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600;">
+                                    <%= String(key).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+                                </div>
+                                <div style="font-size: 17px; color: #202124; font-weight: 600; line-height: 1.5;">
+                                    <%= disp %>
+                                </div>
+                            </div>
+                            <% } %>
+                        <% }); %>
+                    <% } %>
                 <% } %>
             </div>
         </div>
