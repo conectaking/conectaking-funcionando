@@ -792,7 +792,7 @@
             };
         }
         
-        function savePortariaAfterUpload() {
+        function savePortariaAfterUpload(reloadAfterSave) {
             if (!authToken || !profileItemId) return;
             var payload = getPortariaFormPayload();
             var url = (window.location.origin || '') + '/api/guest-lists/' + profileItemId + '/customize-portaria';
@@ -802,8 +802,14 @@
                 body: JSON.stringify(payload),
                 credentials: 'same-origin'
             }).then(function(r) {
-                if (r.ok) console.log('✅ Imagem da portaria salva no servidor.');
-                else r.text().then(function(t) { console.warn('⚠️ Falha ao salvar imagem da portaria:', t); });
+                if (r.ok) {
+                    console.log('✅ Imagem da portaria salva no servidor.');
+                    if (reloadAfterSave) {
+                        setTimeout(function() { window.location.reload(); }, 400);
+                    }
+                } else {
+                    r.text().then(function(t) { console.warn('⚠️ Falha ao salvar imagem da portaria:', t); });
+                }
             }).catch(function(e) { console.warn('⚠️ Erro ao persistir imagem da portaria:', e); });
         }
         
@@ -928,15 +934,19 @@
                     var filledEl = document.getElementById(filledId);
                     document.getElementById(urlField).value = imageUrl;
                     var preview = document.getElementById(previewId);
-                    if (preview) { preview.src = imageUrl; preview.style.display = ''; }
+                    if (preview) { preview.src = imageUrl; preview.style.display = ''; preview.removeAttribute('hidden'); }
                     restoreEmptyBlock();
                     if (emptyEl) emptyEl.style.display = 'none';
-                    if (filledEl) { filledEl.style.display = 'block'; if (filledEl.querySelector('img')) filledEl.querySelector('img').src = imageUrl; }
+                    if (filledEl) {
+                        filledEl.style.display = 'block';
+                        var img = filledEl.querySelector('img') || document.getElementById(previewId);
+                        if (img) { img.src = imageUrl; img.alt = type === 'header_image' ? 'Banner' : type === 'logo_image' ? 'Logo' : 'Fundo'; }
+                    }
                     if (areaEl) areaEl.classList.add('has-image');
                     input.value = '';
                     setUploadState(false, null);
                     console.log('✅ Imagem enviada com sucesso:', imageUrl);
-                    savePortariaAfterUpload();
+                    savePortariaAfterUpload(true);
                 } else {
                     var errorMessage = (data && (data.message || data.error)) ? (data.message || data.error) : 'Erro desconhecido';
                     console.error('❌ Erro no upload:', data);
