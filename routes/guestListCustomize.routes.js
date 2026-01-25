@@ -145,6 +145,7 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             theme_portaria,
             // Novos campos de personalização
             event_title_custom,
+            portaria_subtitle,
             title_text_color,
             qr_code_button_text,
             qr_code_button_color,
@@ -272,6 +273,18 @@ router.put('/:id/customize-portaria', protectUser, asyncHandler(async (req, res)
             updateFields.push(`event_title_custom = $${paramIndex++}`);
             updateValues.push(event_title_custom !== null && String(event_title_custom).trim() !== '' ? String(event_title_custom).trim() : null);
             logger.info(`📝 [CUSTOMIZE-PORTARIA] Salvando event_title_custom: "${event_title_custom}"`);
+        }
+        
+        if (portaria_subtitle !== undefined) {
+            const portariaSubtitleCheck = await client.query(`
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'guest_list_items' AND column_name = 'portaria_subtitle'
+            `);
+            if (portariaSubtitleCheck.rows.length > 0) {
+                const val = (portaria_subtitle != null && String(portaria_subtitle).trim() !== '') ? String(portaria_subtitle).trim() : 'Visualização completa para portaria';
+                updateFields.push(`portaria_subtitle = $${paramIndex++}`);
+                updateValues.push(val);
+            }
         }
         
         // Novos campos de personalização - verificar se existem antes de atualizar (exceto event_title_custom, já tratado acima)

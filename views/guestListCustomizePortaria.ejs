@@ -511,6 +511,8 @@
                     
                     <label style="margin-top: 12px;">Título "Inscrição no Curso"</label>
                     <input type="text" id="event_title_custom" name="event_title_custom" value="<%= guestList.event_title_custom || guestList.event_title || 'Inscrição no Curso' %>" placeholder="Ex: Inscrição no Curso" style="margin-bottom: 8px;">
+                    <label style="margin-top: 12px;">Subtítulo (abaixo do título)</label>
+                    <input type="text" id="portaria_subtitle" name="portaria_subtitle" value="<%= guestList.portaria_subtitle || 'Visualização completa para portaria' %>" placeholder="Ex: Visualização completa para portaria" style="margin-bottom: 8px;">
                     <label style="margin-top: 8px; font-size: 12px;">Cor do Texto do Título</label>
                     <div class="color-input-wrapper">
                         <input type="color" id="title_text_color" value="<%= guestList.title_text_color || '#FFFFFF' %>" onchange="updateColor('title_text_color', this.value)">
@@ -814,6 +816,7 @@
                 theme_portaria: document.getElementById('theme_portaria').value,
                 // Novos campos de personalização
                 event_title_custom: (document.getElementById('event_title_custom')?.value ?? '').trim() || null,
+                portaria_subtitle: (document.getElementById('portaria_subtitle')?.value ?? '').trim() || 'Visualização completa para portaria',
                 title_text_color: document.getElementById('title_text_color')?.value || null,
                 qr_code_button_text: document.getElementById('qr_code_button_text')?.value || null,
                 qr_code_button_color: document.getElementById('qr_code_button_color')?.value || null,

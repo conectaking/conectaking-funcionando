@@ -976,7 +976,7 @@
                 <% } %>
                 <div class="header-text">
                     <h1 style="color: <%= (typeof guestList !== 'undefined' && guestList && guestList.title_text_color) ? guestList.title_text_color : '#FFFFFF' %>;"><i class="fas fa-users"></i> <%= (typeof guestList !== 'undefined' && guestList && guestList.event_title_custom) ? guestList.event_title_custom : ((typeof guestList !== 'undefined' && guestList && guestList.event_title) ? guestList.event_title : 'Inscrição no Curso') %></h1>
-                    <p class="header-subtitle">Visualização completa para portaria</p>
+                    <p class="header-subtitle"><%= (typeof guestList !== 'undefined' && guestList && guestList.portaria_subtitle) ? guestList.portaria_subtitle : 'Visualização completa para portaria' %></p>
                     <% if (typeof guestList !== 'undefined' && guestList && guestList.event_description) { %>
                     <p style="margin-top: 8px; font-size: 15px; color: rgba(255,255,255,0.8);"><%= guestList.event_description %></p>
                     <% } %>
