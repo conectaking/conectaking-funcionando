@@ -303,17 +303,23 @@
                         <i class="fas fa-images"></i> Imagens
                     </label>
                     
-                    <label>Banner/Header</label>
+                    <label>Imagem de abertura do evento</label>
                     <div class="image-upload-area <%= guestList.header_image_url ? 'has-image' : '' %>" onclick="document.getElementById('header_image_input').click()">
                         <% if (guestList.header_image_url) { %>
                             <img src="<%= guestList.header_image_url %>" class="image-preview" id="header_image_preview">
                         <% } else { %>
                             <i class="fas fa-image" style="font-size: 48px; color: #A1A1A1; margin-bottom: 12px;"></i>
-                            <p style="color: #A1A1A1;">Clique para adicionar banner</p>
+                            <p style="color: #A1A1A1;">Clique para adicionar imagem de abertura</p>
                         <% } %>
                         <input type="file" id="header_image_input" accept="image/*" style="display: none;" onchange="handleImageUpload('header_image', this)">
                     </div>
                     <input type="hidden" id="header_image_url" name="header_image_url" value="<%= guestList.header_image_url || '' %>">
+                    <p style="font-size: 12px; color: #A1A1A1; margin-top: 8px; margin-bottom: 0; line-height: 1.5;">
+                        <strong>Tamanho recomendado para ficar padrão:</strong><br>
+                        <span style="color: #FFC700;">• Desktop:</span> 1920 × 800 px (largura × altura)<br>
+                        <span style="color: #FFC700;">• Mobile:</span> 1080 × 1350 px
+                    </p>
+                    <p style="font-size: 11px; color: #888; margin-top: 4px;">Você pode usar a mesma imagem nos dois; o sistema ajusta o enquadramento.</p>
                     
                     <label style="margin-top: 16px;">Logo</label>
                     <div class="image-upload-area <%= guestList.form_logo_url ? 'has-image' : '' %>" onclick="document.getElementById('logo_image_input').click()">
