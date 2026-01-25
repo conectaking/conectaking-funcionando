@@ -58,18 +58,19 @@ const protectBusinessOwner = (req, res, next) => {
     }
 };
 
-// Middleware para permitir business_owner, individual_com_logo, king_corporate (para personalização de logo)
+// Middleware para personalização de logo: planos com direito a logo (sem exigir Modo Empresa)
+const planosComPersonalizarLogo = ['king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'business_owner', 'individual_com_logo', 'enterprise'];
 const protectBusinessOwnerOrLogo = (req, res, next) => {
     if (!req.user) {
-        return res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais ou individuais com logo.' });
+        return res.status(403).json({ message: 'Acesso negado. Faça login para personalizar o logo.' });
     }
     const accountType = req.user.accountType || req.user.account_type;
     const isAdmin = req.user.isAdmin === true || req.user.is_admin === true;
-    const allowed = accountType === 'business_owner' || accountType === 'individual_com_logo' || accountType === 'king_corporate' || accountType === 'enterprise';
+    const allowed = planosComPersonalizarLogo.includes(accountType);
     if (isAdmin || allowed) {
         next();
     } else {
-        res.status(403).json({ message: 'Acesso negado. Apenas para contas empresariais ou individuais com logo.' });
+        res.status(403).json({ message: 'Acesso negado. A personalização de logo está disponível apenas para os planos King Finance, King Finance Plus, King Premium Plus e King Corporate.' });
     }
 };
 
