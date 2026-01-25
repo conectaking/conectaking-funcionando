@@ -92,15 +92,15 @@ router.get('/:slug/produto/:productId', asyncHandler(async (req, res) => {
                 u.id AS user_id,
                 p.*,
                 CASE
-                    WHEN u.account_type = 'business_owner' OR u.account_type = 'individual_com_logo' THEN u.company_logo_url
+                    WHEN u.account_type IN ('business_owner', 'individual_com_logo', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate') THEN u.company_logo_url
                     ELSE parent.company_logo_url
                 END AS company_logo_url,
                 CASE
-                    WHEN u.account_type = 'business_owner' OR u.account_type = 'individual_com_logo' THEN u.company_logo_size
+                    WHEN u.account_type IN ('business_owner', 'individual_com_logo', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate') THEN u.company_logo_size
                     ELSE parent.company_logo_size
                 END AS company_logo_size,
                 CASE
-                    WHEN u.account_type = 'business_owner' OR u.account_type = 'individual_com_logo' THEN u.company_logo_link
+                    WHEN u.account_type IN ('business_owner', 'individual_com_logo', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate') THEN u.company_logo_link
                     ELSE parent.company_logo_link
                 END AS company_logo_link
             FROM users u
