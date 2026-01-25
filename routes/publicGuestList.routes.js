@@ -506,16 +506,24 @@ const renderPortariaViewFull = asyncHandler(async (req, res) => {
             profile_item_id: guestList.profile_item_id
         });
         
-        // Aplicar tema pré-definido se selecionado
+        // Aplicar tema pré-definido se selecionado (mesmas definições da tela Personalizar Portaria)
         if (guestList.theme_portaria && guestList.theme_portaria !== 'default') {
             const themes = {
-                dark: { primary: '#FFC700', secondary: '#FFB700', text: '#ECECEC', background: '#0D0D0F' },
+                dark: { primary: '#1C1C21', secondary: '#0D0D0F', text: '#E0E0E0', background: '#0D0D0F' },
+                black: { primary: '#2D2D2D', secondary: '#000000', text: '#FFFFFF', background: '#0A0A0A' },
                 light: { primary: '#4A90E2', secondary: '#357ABD', text: '#333333', background: '#FFFFFF' },
+                'red-black': { primary: '#DC2626', secondary: '#000000', text: '#FFFFFF', background: '#1A1A1A' },
                 premium: { primary: '#667EEA', secondary: '#764BA2', text: '#FFFFFF', background: '#1A1A2E' },
+                'premium-gold': { primary: '#D4AF37', secondary: '#B8860B', text: '#1A1A1A', background: '#1C1C1C' },
+                golden: { primary: '#FFD700', secondary: '#B8860B', text: '#1A1A1A', background: '#2C2416' },
+                'premium-red': { primary: '#DC2626', secondary: '#991B1B', text: '#FFFFFF', background: '#0D0D0F' },
                 modern: { primary: '#F093FB', secondary: '#F5576C', text: '#FFFFFF', background: '#0D0D0F' },
-                elegant: { primary: '#D4AF37', secondary: '#B8860B', text: '#ECECEC', background: '#1C1C1C' }
+                elegant: { primary: '#434343', secondary: '#000000', text: '#ECECEC', background: '#1C1C1C' },
+                blue: { primary: '#3B82F6', secondary: '#1D4ED8', text: '#FFFFFF', background: '#0F172A' },
+                green: { primary: '#22C55E', secondary: '#15803D', text: '#FFFFFF', background: '#0D0D0F' },
+                ocean: { primary: '#06B6D4', secondary: '#0891B2', text: '#FFFFFF', background: '#0C4A6E' },
+                violet: { primary: '#8B5CF6', secondary: '#6D28D9', text: '#FFFFFF', background: '#1E1B4B' }
             };
-            
             if (themes[guestList.theme_portaria] && !guestList.primary_color_override) {
                 guestList.primary_color = themes[guestList.theme_portaria].primary;
                 guestList.secondary_color = themes[guestList.theme_portaria].secondary;
