@@ -2673,6 +2673,14 @@ router.post('/import-form', protectUser, asyncHandler(async (req, res) => {
             console.error('Erro ao copiar digital_form_items na importação (fallback):', formCopyErr.message);
             await copyDigitalFormItemsFallback(client, sourceId, newItem.id, ' (cópia)');
         }
+        // Se o formulário está em modo "Lista de Convidados", as perguntas estão em guest_list_items.custom_form_fields — copiar também
+        const hasGuestList = await client.query(
+            'SELECT 1 FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
+            [sourceId]
+        );
+        if (hasGuestList.rows.length > 0) {
+            await copyGuestListItemsFull(client, sourceId, newItem.id, ' (cópia)');
+        }
         res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
         res.status(201).json({ id: newItem.id, itemId: newItem.id, title: newItem.title, ...newItem });
     } catch (error) {
