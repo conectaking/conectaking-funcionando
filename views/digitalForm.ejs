@@ -681,7 +681,7 @@
                             <div id="event-address-map-container" 
                                  class="event-map-wrapper" 
                                  data-address="<%= (formData.event_address || '').replace(/"/g, '&quot;') %>"
-                                 style="position: relative; width: 100%; height: 260px; border-radius: 16px; overflow: hidden; background: linear-gradient(145deg, #f0f2f5 0%, #e4e8ec 100%); border: 1px solid rgba(255,199,0,0.35); box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 12px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6); cursor: pointer;">
+                                 style="position: relative; width: 100%; height: 260px; border-radius: 16px; overflow: hidden; background: linear-gradient(145deg, #f0f2f5 0%, #e4e8ec 100%); border: 1px solid rgba(255,199,0,0.35); box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 12px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6);">
                                 <div id="event-address-map" style="width: 100%; height: 100%; min-height: 260px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 14px;">Carregando mapa...</div>
                                 <!-- Overlay de escolha: Google Maps ou Waze -->
                                 <div id="map-routes-choice" class="map-routes-choice-overlay" style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); z-index: 1001; border-radius: 16px; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 20px;">
@@ -2673,13 +2673,7 @@
             if (panel) panel.style.display = 'flex';
         }
 
-        if (container) {
-            container.onclick = function(e) {
-                if (e.target.id === 'map-routes-trigger' || e.target.closest('#map-routes-trigger')) return;
-                if (e.target.id === 'map-routes-choice' || e.target.closest('#map-routes-choice')) return;
-                openRoutesChoice();
-            };
-        }
+        // Opção de rota (Waze/Google) só ao clicar no botão "Clique para ver rotas", não no mapa
         var trigger = document.getElementById('map-routes-trigger');
         if (trigger) {
             trigger.onclick = function(e) { e.preventDefault(); e.stopPropagation(); openRoutesChoice(); };
