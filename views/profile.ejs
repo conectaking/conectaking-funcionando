@@ -1416,33 +1416,45 @@ if (typeof details === 'undefined' || !details) {
                                             return sanitized.length === 11 ? sanitized : null;
                                         }
                                         
-                                        // Construir URL do embed clean com parâmetros
+                                        // Detectar se é live por canal (embed/live_stream?channel=)
+                                        function isLiveByChannelUrl(url) {
+                                            return url && (url.indexOf('live_stream') !== -1 || (url.indexOf('channel=') !== -1 && url.indexOf('youtube') !== -1));
+                                        }
+                                        
+                                        // Construir URL do embed clean com parâmetros (vídeo/shorts ou live por vídeo)
                                         function buildCleanEmbedUrl(videoId, compatMode, origin) {
-                                            // Usar youtube.com padrão (mais compatível) com fallback para nocookie
-                                            // youtube-nocookie.com pode ser bloqueado em alguns casos
                                             var domain = 'www.youtube.com';
                                             var baseUrl = 'https://' + domain + '/embed/' + videoId;
-                                            
                                             var params = new URLSearchParams();
-                                            
-                                            // Parâmetros para minimizar UI do YouTube
                                             params.append('modestbranding', '1');
                                             params.append('rel', '0');
-                                            // SEMPRE usar controls=1 para evitar bloqueios (modo compatível por padrão)
                                             params.append('controls', '1');
-                                            params.append('fs', '0'); // Desabilitar fullscreen
-                                            params.append('disablekb', '1'); // Desabilitar teclado
-                                            params.append('iv_load_policy', '3'); // Sem anotações
-                                            params.append('playsinline', '1'); // Mobile inline
-                                            params.append('cc_load_policy', '0'); // Sem legendas automáticas
-                                            
-                                            // Parâmetros de API
+                                            params.append('fs', '0');
+                                            params.append('disablekb', '1');
+                                            params.append('iv_load_policy', '3');
+                                            params.append('playsinline', '1');
+                                            params.append('cc_load_policy', '0');
                                             params.append('enablejsapi', '1');
-                                            if (origin) {
-                                                params.append('origin', origin);
-                                            }
-                                            
+                                            if (origin) params.append('origin', origin);
                                             return baseUrl + '?' + params.toString();
+                                        }
+                                        
+                                        // Adicionar parâmetros clean a uma URL de live por canal
+                                        function addParamsToLiveStreamUrl(baseUrl, origin) {
+                                            try {
+                                                var u = new URL(baseUrl);
+                                                u.searchParams.set('modestbranding', '1');
+                                                u.searchParams.set('rel', '0');
+                                                u.searchParams.set('controls', '1');
+                                                u.searchParams.set('fs', '0');
+                                                u.searchParams.set('disablekb', '1');
+                                                u.searchParams.set('iv_load_policy', '3');
+                                                u.searchParams.set('playsinline', '1');
+                                                u.searchParams.set('cc_load_policy', '0');
+                                                u.searchParams.set('enablejsapi', '1');
+                                                if (origin) u.searchParams.set('origin', origin);
+                                                return u.toString();
+                                            } catch (e) { return baseUrl; }
                                         }
                                         
                                         // Inicializar player
@@ -1455,29 +1467,30 @@ if (typeof details === 'undefined' || !details) {
                                         }
                                         
                                         var origin = window.location.protocol + '//' + window.location.host;
-                                        var videoId = extractVideoId(youtubeUrl);
+                                        var embedUrl;
                                         
-                                        if (!videoId) {
-                                            console.error('Não foi possível extrair ID do YouTube da URL:', youtubeUrl);
-                                            container.innerHTML = '<div class="embed-error">URL do YouTube inválida. Verifique o link no painel.<br><small>URL recebida: ' + (youtubeUrl.length > 50 ? youtubeUrl.substring(0, 50) + '...' : youtubeUrl) + '</small></div>';
-                                            return;
+                                        if (isLiveByChannelUrl(youtubeUrl)) {
+                                            // Live por canal: usar a URL tal qual e apenas acrescentar parâmetros
+                                            embedUrl = addParamsToLiveStreamUrl(youtubeUrl, origin);
+                                        } else {
+                                            var videoId = extractVideoId(youtubeUrl);
+                                            if (!videoId) {
+                                                console.error('Não foi possível extrair ID do YouTube da URL:', youtubeUrl);
+                                                container.innerHTML = '<div class="embed-error">URL do YouTube inválida. Verifique o link no painel.<br><small>URL recebida: ' + (youtubeUrl.length > 50 ? youtubeUrl.substring(0, 50) + '...' : youtubeUrl) + '</small></div>';
+                                                return;
+                                            }
+                                            videoId = sanitizeVideoId(videoId);
+                                            if (!videoId) {
+                                                console.error('ID do YouTube inválido após sanitização');
+                                                container.innerHTML = '<div class="embed-error">ID do vídeo inválido. Verifique o link no painel.</div>';
+                                                return;
+                                            }
+                                            embedUrl = buildCleanEmbedUrl(videoId, true, origin);
                                         }
                                         
-                                        videoId = sanitizeVideoId(videoId);
-                                        if (!videoId) {
-                                            console.error('ID do YouTube inválido após sanitização');
-                                            container.innerHTML = '<div class="embed-error">ID do vídeo inválido. Verifique o link no painel.</div>';
-                                            return;
-                                        }
-                                        
-                                        // Sempre usar modo compatível (controls=1) para evitar bloqueios
-                                        var compatMode = true;
-                                        var embedUrl = buildCleanEmbedUrl(videoId, compatMode, origin);
-                                        
-                                        console.log('Carregando vídeo do YouTube:', {
-                                            videoId: videoId,
-                                            embedUrl: embedUrl.substring(0, 100) + '...',
-                                            originalUrl: youtubeUrl.substring(0, 50) + '...'
+                                        console.log('Carregando YouTube:', {
+                                            embedUrl: embedUrl.substring(0, 100) + (embedUrl.length > 100 ? '...' : ''),
+                                            originalUrl: youtubeUrl.substring(0, 60) + (youtubeUrl.length > 60 ? '...' : '')
                                         });
                                         
                                         iframe.src = embedUrl;

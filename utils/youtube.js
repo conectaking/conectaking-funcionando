@@ -7,13 +7,13 @@
 function extractYouTubeVideoId(input) {
     if (!input || typeof input !== 'string') return null;
     
-    // Se já é apenas um ID válido (11 caracteres alfanuméricos)
+    // Se já é apenas um ID válido (11 caracteres alfanuméricos) — não confundir com channel ID (24 chars)
     const cleanId = input.trim();
     if (/^[a-zA-Z0-9_-]{11}$/.test(cleanId)) {
         return cleanId;
     }
     
-    // Padrões para extrair ID de URLs
+    // Padrões para extrair ID de URLs (vídeo/shorts/live por vídeo)
     const patterns = [
         /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
         /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
@@ -29,6 +29,28 @@ function extractYouTubeVideoId(input) {
         }
     }
     
+    return null;
+}
+
+/**
+ * Extrai o ID do canal do YouTube para embed de live por canal
+ * Suporta: embed/live_stream?channel=, /channel/UC..., ?channel= e &channel=
+ * Formato do channel ID: normalmente UC + 22 caracteres (24 no total)
+ * @param {string} input - URL do YouTube com canal ou embed de live
+ * @returns {string|null} - ID do canal ou null
+ */
+function extractYouTubeChannelId(input) {
+    if (!input || typeof input !== 'string') return null;
+    const s = input.trim();
+    // live_stream?channel=UC... ou /embed/live_stream?channel=UC...
+    const m1 = s.match(/(?:live_stream\?|&)channel=([A-Za-z0-9_-]{24})/);
+    if (m1 && m1[1]) return m1[1];
+    // /channel/UC...
+    const m2 = s.match(/youtube\.com\/channel\/(UC[A-Za-z0-9_-]{22})/);
+    if (m2 && m2[1]) return m2[1];
+    // channel= em qualquer query string
+    const m3 = s.match(/[?&]channel=(UC[A-Za-z0-9_-]{22})/);
+    if (m3 && m3[1]) return m3[1];
     return null;
 }
 
@@ -53,25 +75,33 @@ function sanitizeYouTubeId(videoId) {
 
 /**
  * Converte URL do YouTube para formato de embed
+ * Suporta: vídeo normal, Shorts, live por vídeo e live por canal (embed/live_stream?channel=).
  * @param {string} url - URL do YouTube em qualquer formato
  * @returns {string} - URL no formato de embed
  */
 function convertYouTubeUrlToEmbed(url) {
     if (!url || typeof url !== 'string') return '';
-    
-    const videoId = extractYouTubeVideoId(url);
-    if (!videoId) return url; // Retorna a URL original se não conseguir extrair o ID
-    
-    // Remove parâmetros de timestamp e outros da URL
-    const cleanVideoId = videoId.split('&')[0].split('?')[0].split('#')[0];
-    
+    const u = url.trim();
+    if (!u) return '';
+
+    // 1) Live por canal: embed permanente da live do canal
+    const channelId = extractYouTubeChannelId(u);
+    if (channelId) {
+        return `https://www.youtube.com/embed/live_stream?channel=${channelId}`;
+    }
+
+    // 2) Vídeo normal, Shorts ou live com link de vídeo (video ID)
+    const videoId = extractYouTubeVideoId(u);
+    if (!videoId) return u;
+
+    const cleanVideoId = String(videoId).split('&')[0].split('?')[0].split('#')[0];
     return `https://www.youtube.com/embed/${cleanVideoId}`;
 }
 
 /**
  * Constrói URL completa do embed do YouTube com parâmetros "clean"
- * Usa youtube-nocookie.com para privacidade e minimiza UI do YouTube
- * @param {string} input - URL do YouTube ou apenas o ID do vídeo
+ * Suporta vídeo, Shorts e live por canal.
+ * @param {string} input - URL do YouTube ou apenas o ID do vídeo/canal
  * @param {Object} options - Opções de configuração
  * @param {boolean} options.autoplay - Auto-reproduzir vídeo (padrão: false)
  * @param {boolean} options.mute - Vídeo mudo (padrão: false)
@@ -84,65 +114,46 @@ function buildYouTubeEmbedUrl(input, options = {}) {
     const {
         autoplay = false,
         mute = false,
-        controls = false, // Modo ultra clean por padrão
+        controls = false,
         origin = null,
-        useNoCookie = false // Usar youtube.com por padrão (mais compatível, evita bloqueios)
+        useNoCookie = false
     } = options;
-    
-    // Extrair e sanitizar ID do vídeo
-    let videoId = extractYouTubeVideoId(input);
-    if (!videoId) {
-        // Tentar sanitizar se for apenas um ID
-        videoId = sanitizeYouTubeId(input);
-    }
-    
-    if (!videoId) {
-        // Se não conseguiu extrair, retorna URL original ou vazia
-        return input || '';
-    }
-    
-    // Sanitizar novamente para garantir segurança
-    videoId = sanitizeYouTubeId(videoId);
-    if (!videoId) {
-        return '';
-    }
-    
-    // Usar youtube.com por padrão (mais compatível)
-    // youtube-nocookie.com pode causar bloqueios em alguns casos
+
     const domain = useNoCookie ? 'www.youtube-nocookie.com' : 'www.youtube.com';
-    const baseUrl = `https://${domain}/embed/${videoId}`;
-    
-    // Construir parâmetros conforme especificação
     const params = new URLSearchParams();
-    
-    // Parâmetros para minimizar UI do YouTube
-    params.append('modestbranding', '1'); // Reduz branding do YouTube
-    params.append('rel', '0'); // Não mostrar vídeos relacionados
-    // SEMPRE usar controls=1 por padrão para evitar bloqueios
-    // Se controls=false foi especificado, ainda usar 1 para compatibilidade
-    params.append('controls', '1'); // Controles sempre ativos para evitar bloqueios
-    params.append('fs', '0'); // Desabilitar botão fullscreen
-    params.append('disablekb', '1'); // Desabilitar controles de teclado
-    params.append('iv_load_policy', '3'); // Desabilitar anotações
-    params.append('playsinline', '1'); // Reproduzir inline no mobile
-    params.append('cc_load_policy', '0'); // Não carregar legendas automaticamente
-    
-    // Parâmetros de reprodução
+    params.append('modestbranding', '1');
+    params.append('rel', '0');
+    params.append('controls', '1');
+    params.append('fs', '0');
+    params.append('disablekb', '1');
+    params.append('iv_load_policy', '3');
+    params.append('playsinline', '1');
+    params.append('cc_load_policy', '0');
+    params.append('enablejsapi', '1');
+    if (origin) params.append('origin', origin);
     if (autoplay) params.append('autoplay', '1');
     if (mute) params.append('mute', '1');
-    
-    // Parâmetros de API (necessário para algumas funcionalidades)
-    params.append('enablejsapi', '1');
-    if (origin) {
-        params.append('origin', origin);
+
+    // Live por canal
+    const channelId = extractYouTubeChannelId(input);
+    if (channelId) {
+        const base = `https://${domain}/embed/live_stream?channel=${channelId}`;
+        return `${base}&${params.toString()}`;
     }
-    
-    // Construir URL final
+
+    // Vídeo / Shorts / live por vídeo
+    let videoId = extractYouTubeVideoId(input) || sanitizeYouTubeId(input);
+    if (!videoId) return input || '';
+    videoId = sanitizeYouTubeId(videoId);
+    if (!videoId) return '';
+
+    const baseUrl = `https://${domain}/embed/${videoId}`;
     return `${baseUrl}?${params.toString()}`;
 }
 
-module.exports = { 
-    extractYouTubeVideoId, 
+module.exports = {
+    extractYouTubeVideoId,
+    extractYouTubeChannelId,
     sanitizeYouTubeId,
     convertYouTubeUrlToEmbed,
     buildYouTubeEmbedUrl
