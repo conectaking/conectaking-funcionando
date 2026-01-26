@@ -2488,6 +2488,145 @@ router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) =
 }));
 
 // ===========================================
+// COMPARTILHAR FORMULÁRIO PRONTO (importar em outra conta)
+// ===========================================
+
+// POST /api/profile/items/digital_form/:id/create-import-link - Gera link para outro usuário importar este formulário
+router.post('/items/digital_form/:id/create-import-link', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const itemId = parseInt(req.params.id, 10);
+        if (!itemId || isNaN(itemId)) return res.status(400).json({ message: 'ID do formulário inválido.' });
+        const check = await client.query(
+            'SELECT id, item_type FROM profile_items WHERE id = $1 AND user_id = $2',
+            [itemId, userId]
+        );
+        if (check.rows.length === 0) return res.status(404).json({ message: 'Formulário não encontrado ou não é seu.' });
+        if (check.rows[0].item_type !== 'digital_form') return res.status(400).json({ message: 'Este item não é um formulário.' });
+        const crypto = require('crypto');
+        const token = crypto.randomBytes(24).toString('hex');
+        await client.query(
+            'UPDATE profile_items SET import_token = $1 WHERE id = $2 AND user_id = $3',
+            [token, itemId, userId]
+        );
+        res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
+        res.json({ token });
+    } catch (error) {
+        console.error('Erro ao criar link de importação:', error);
+        res.status(500).json({ message: error.message || 'Erro ao criar link.' });
+    } finally {
+        client.release();
+    }
+}));
+
+// GET /api/profile/import-form-info?token= - Info pública do formulário para mostrar antes de importar (sem auth)
+router.get('/import-form-info', asyncHandler(async (req, res) => {
+    const token = (req.query.token || '').trim();
+    if (!token) return res.status(400).json({ message: 'Token não informado.' });
+    const client = await db.pool.connect();
+    try {
+        const row = await client.query(
+            `SELECT pi.id, pi.title, pi.import_token, p.display_name
+             FROM profile_items pi
+             LEFT JOIN user_profiles p ON p.user_id = pi.user_id
+             WHERE pi.import_token = $1 AND pi.item_type = 'digital_form'`,
+            [token]
+        );
+        if (row.rows.length === 0) return res.status(404).json({ message: 'Link inválido ou expirado.' });
+        const r = row.rows[0];
+        res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
+        res.json({ formTitle: r.title || 'Formulário King', ownerName: r.display_name || 'Um usuário' });
+    } catch (error) {
+        console.error('Erro ao buscar info de importação:', error);
+        res.status(500).json({ message: 'Erro ao validar link.' });
+    } finally {
+        client.release();
+    }
+}));
+
+// POST /api/profile/import-form - Importa formulário para a conta do usuário logado (body: { token })
+router.post('/import-form', protectUser, asyncHandler(async (req, res) => {
+    const token = (req.body && req.body.token) ? String(req.body.token).trim() : '';
+    if (!token) return res.status(400).json({ message: 'Token não informado.' });
+    const client = await db.pool.connect();
+    try {
+        const targetUserId = req.user.userId;
+        const src = await client.query(
+            `SELECT id, user_id, item_type, title FROM profile_items WHERE import_token = $1 AND item_type = 'digital_form'`,
+            [token]
+        );
+        if (src.rows.length === 0) return res.status(404).json({ message: 'Link inválido ou expirado.' });
+        const sourceId = src.rows[0].id;
+        const item = src.rows[0];
+        const nextOrder = await client.query(
+            'SELECT COALESCE(MAX(display_order), -1) + 1 AS next_order FROM profile_items WHERE user_id = $1',
+            [targetUserId]
+        );
+        const display_order = nextOrder.rows[0].next_order;
+        const copyFields = ['item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'is_active', 'logo_size', 'pix_key', 'recipient_name', 'pix_amount', 'pix_description', 'pdf_url', 'whatsapp_message', 'aspect_ratio'];
+        const existingCols = await client.query(
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'profile_items' AND column_name = ANY($1)",
+            [copyFields]
+        );
+        const colNames = ['user_id', 'display_order', ...existingCols.rows.map(r => r.column_name)];
+        const itemRow = (await client.query('SELECT * FROM profile_items WHERE id = $1', [sourceId])).rows[0];
+        const vals = [targetUserId, display_order, ...existingCols.rows.map(r => (itemRow[r.column_name] != null ? itemRow[r.column_name] : null))];
+        const placeholders = vals.map((_, i) => `$${i + 1}`).join(', ');
+        const ins = await client.query(
+            `INSERT INTO profile_items (${colNames.join(', ')}) VALUES (${placeholders}) RETURNING *`,
+            vals
+        );
+        const newItem = ins.rows[0];
+        const df = await client.query(
+            `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
+            [sourceId]
+        );
+        if (df.rows.length > 0) {
+            const d = df.rows[0];
+            const formFieldsJson = (() => { const v = d.form_fields; if (v == null) return null; return typeof v === 'string' ? v : JSON.stringify(v || []); })();
+            try {
+                const colRes = await client.query(
+                    `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name != 'id' ORDER BY ordinal_position`
+                );
+                const cols = colRes.rows.map(r => r.column_name);
+                const isJsonb = colRes.rows.map(r => r.data_type === 'jsonb');
+                const valsDf = cols.map((c, i) => {
+                    if (c === 'profile_item_id') return newItem.id;
+                    if (c === 'form_title') return (d.form_title || '') + ' (cópia)';
+                    const v = d[c];
+                    if (v === undefined || v === null) return null;
+                    if (isJsonb[i]) return typeof v === 'string' ? v : JSON.stringify(v);
+                    return v;
+                });
+                const ph = cols.map((c, i) => (isJsonb[i] ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
+                await client.query(`INSERT INTO digital_form_items (${cols.join(', ')}) VALUES (${ph})`, valsDf);
+            } catch (formCopyErr) {
+                const hasFormFieldsCol = await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name = 'form_fields'`);
+                if (hasFormFieldsCol.rows.length > 0) {
+                    await client.query(
+                        `INSERT INTO digital_form_items (profile_item_id, form_title, display_format, form_fields) VALUES ($1, $2, $3, $4::jsonb)`,
+                        [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button', formFieldsJson || '[]']
+                    );
+                } else {
+                    await client.query(
+                        `INSERT INTO digital_form_items (profile_item_id, form_title, display_format) VALUES ($1, $2, $3)`,
+                        [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button']
+                    );
+                }
+            }
+        }
+        res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
+        res.status(201).json(newItem);
+    } catch (error) {
+        console.error('Erro ao importar formulário:', error);
+        res.status(500).json({ message: error.message || 'Erro ao importar.' });
+    } finally {
+        client.release();
+    }
+}));
+
+// ===========================================
 // ROTAS PARA GERENCIAR ITENS (ITEMS) - CONTINUAÇÃO
 // ===========================================
 
