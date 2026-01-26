@@ -2417,6 +2417,41 @@ async function copyDigitalFormItemsFallback(client, sourceId, newProfileItemId, 
     );
 }
 
+// Colunas que devem ser regeneradas ou anuladas ao copiar guest_list (tokens únicos, slugs únicos)
+const GUEST_LIST_TOKEN_COLS = ['registration_token', 'confirmation_token', 'public_view_token'];
+const GUEST_LIST_NULL_ON_COPY = ['portaria_slug', 'cadastro_slug'];
+
+// Copia TODOS os dados de guest_list_items (perguntas custom_form_fields, imagens, cores, etc.) para um novo profile_item_id
+async function copyGuestListItemsFull(client, sourceId, newProfileItemId, titleSuffix = ' (cópia)') {
+    const gl = await client.query(
+        `SELECT * FROM guest_list_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
+        [sourceId]
+    );
+    if (gl.rows.length === 0) return;
+    const g = gl.rows[0];
+    const crypto = require('crypto');
+    const colRes = await client.query(
+        `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'guest_list_items' AND column_name NOT IN ('id', 'created_at', 'updated_at') ORDER BY ordinal_position`
+    );
+    const cols = colRes.rows.map(r => r.column_name);
+    const isJsonb = colRes.rows.map(r => r.data_type === 'jsonb');
+    const vals = cols.map((c, i) => {
+        if (c === 'profile_item_id') return newProfileItemId;
+        if (c === 'event_title') return (g.event_title || '') + titleSuffix;
+        if (GUEST_LIST_TOKEN_COLS.includes(c)) return crypto.randomBytes(16).toString('hex');
+        if (GUEST_LIST_NULL_ON_COPY.includes(c)) return null;
+        const v = g[c];
+        if (v === undefined || v === null) return null;
+        if (isJsonb[i]) return typeof v === 'string' ? v : JSON.stringify(v);
+        return v;
+    });
+    const placeholders = cols.map((c, i) => (isJsonb[i] ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
+    await client.query(
+        `INSERT INTO guest_list_items (${cols.join(', ')}) VALUES (${placeholders})`,
+        vals
+    );
+}
+
 // POST /api/profile/items/:id/duplicate - Duplicar módulo (copia configuração e dados relacionados)
 router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
@@ -2493,16 +2528,7 @@ router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) =
             }
         }
         if (item.item_type === 'guest_list') {
-            const gl = await client.query('SELECT * FROM guest_list_items WHERE profile_item_id = $1', [sourceId]);
-            if (gl.rows.length > 0) {
-                const g = gl.rows[0];
-                const crypto = require('crypto');
-                await client.query(
-                    `INSERT INTO guest_list_items (profile_item_id, event_title, event_description, event_date, event_time, event_location, max_guests, require_confirmation, allow_self_registration, registration_token, confirmation_token)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-                    [newItem.id, (g.event_title || '') + ' (cópia)', g.event_description, g.event_date, g.event_time, g.event_location, g.max_guests, g.require_confirmation, g.allow_self_registration, crypto.randomBytes(16).toString('hex'), crypto.randomBytes(16).toString('hex')]
-                );
-            }
+            await copyGuestListItemsFull(client, sourceId, newItem.id, ' (cópia)');
         }
         res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
         res.status(201).json(newItem);
