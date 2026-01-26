@@ -2347,6 +2347,34 @@ router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
+// Copia TODOS os dados de digital_form_items (perguntas, fotos, textos, cores, etc.) para um novo profile_item_id
+async function copyDigitalFormItemsFull(client, sourceId, newProfileItemId, titleSuffix = ' (cópia)') {
+    const df = await client.query(
+        `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
+        [sourceId]
+    );
+    if (df.rows.length === 0) return;
+    const d = df.rows[0];
+    const colRes = await client.query(
+        `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name NOT IN ('id', 'created_at', 'updated_at') ORDER BY ordinal_position`
+    );
+    const cols = colRes.rows.map(r => r.column_name);
+    const isJsonb = colRes.rows.map(r => r.data_type === 'jsonb');
+    const vals = cols.map((c, i) => {
+        if (c === 'profile_item_id') return newProfileItemId;
+        if (c === 'form_title') return (d.form_title || '') + titleSuffix;
+        const v = d[c];
+        if (v === undefined || v === null) return null;
+        if (isJsonb[i]) return typeof v === 'string' ? v : JSON.stringify(v);
+        return v;
+    });
+    const placeholders = cols.map((c, i) => (isJsonb[i] ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
+    await client.query(
+        `INSERT INTO digital_form_items (${cols.join(', ')}) VALUES (${placeholders})`,
+        vals
+    );
+}
+
 // POST /api/profile/items/:id/duplicate - Duplicar módulo (copia configuração e dados relacionados)
 router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
@@ -2404,52 +2432,21 @@ router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) =
             }
         }
         if (item.item_type === 'digital_form') {
-            const df = await client.query(
-                `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
-                [sourceId]
-            );
-            if (df.rows.length > 0) {
-                const d = df.rows[0];
-                const formFieldsJson = (() => {
-                    const v = d.form_fields;
-                    if (v == null) return null;
-                    return typeof v === 'string' ? v : JSON.stringify(v || []);
-                })();
-                try {
-                    const colRes = await client.query(
-                        `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name != 'id' ORDER BY ordinal_position`
-                    );
-                    const cols = colRes.rows.map(r => r.column_name);
-                    const isJsonb = colRes.rows.map(r => r.data_type === 'jsonb');
-                    const vals = cols.map((c, i) => {
-                        if (c === 'profile_item_id') return newItem.id;
-                        if (c === 'form_title') return (d.form_title || '') + ' (cópia)';
-                        const v = d[c];
-                        if (v === undefined || v === null) return null;
-                        if (isJsonb[i]) return typeof v === 'string' ? v : JSON.stringify(v);
-                        return v;
-                    });
-                    const placeholders = cols.map((c, i) => (isJsonb[i] ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
+            try {
+                await copyDigitalFormItemsFull(client, sourceId, newItem.id, ' (cópia)');
+            } catch (formCopyErr) {
+                console.error('Erro ao copiar digital_form_items (fallback):', formCopyErr.message);
+                const df = await client.query(
+                    `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
+                    [sourceId]
+                );
+                if (df.rows.length > 0) {
+                    const d = df.rows[0];
+                    const formFieldsJson = d.form_fields == null ? '[]' : (typeof d.form_fields === 'string' ? d.form_fields : JSON.stringify(d.form_fields || []));
                     await client.query(
-                        `INSERT INTO digital_form_items (${cols.join(', ')}) VALUES (${placeholders})`,
-                        vals
+                        `INSERT INTO digital_form_items (profile_item_id, form_title, display_format, form_fields, form_logo_url, form_description, banner_image_url, header_image_url, background_image_url, background_opacity, theme, primary_color, secondary_color, text_color, button_logo_url, button_logo_size) VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+                        [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button', formFieldsJson, d.form_logo_url, d.form_description, d.banner_image_url, d.header_image_url, d.background_image_url, d.background_opacity != null ? d.background_opacity : 1, d.theme || 'light', d.primary_color, d.secondary_color, d.text_color, d.button_logo_url, d.button_logo_size]
                     );
-                } catch (formCopyErr) {
-                    console.error('Erro ao copiar digital_form_items (tentando fallback):', formCopyErr.message);
-                    const hasFormFieldsCol = await client.query(
-                        `SELECT 1 FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name = 'form_fields'`
-                    );
-                    if (hasFormFieldsCol.rows.length > 0) {
-                        await client.query(
-                            `INSERT INTO digital_form_items (profile_item_id, form_title, display_format, form_fields) VALUES ($1, $2, $3, $4::jsonb)`,
-                            [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button', formFieldsJson || '[]']
-                        );
-                    } else {
-                        await client.query(
-                            `INSERT INTO digital_form_items (profile_item_id, form_title, display_format) VALUES ($1, $2, $3)`,
-                            [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button']
-                        );
-                    }
                 }
             }
         }
@@ -2604,42 +2601,21 @@ router.post('/import-form', protectUser, asyncHandler(async (req, res) => {
             vals
         );
         const newItem = ins.rows[0];
-        const df = await client.query(
-            `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
-            [sourceId]
-        );
-        if (df.rows.length > 0) {
-            const d = df.rows[0];
-            const formFieldsJson = (() => { const v = d.form_fields; if (v == null) return null; return typeof v === 'string' ? v : JSON.stringify(v || []); })();
-            try {
-                const colRes = await client.query(
-                    `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name != 'id' ORDER BY ordinal_position`
+        try {
+            await copyDigitalFormItemsFull(client, sourceId, newItem.id, ' (cópia)');
+        } catch (formCopyErr) {
+            console.error('Erro ao copiar digital_form_items na importação (fallback):', formCopyErr.message);
+            const df = await client.query(
+                `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
+                [sourceId]
+            );
+            if (df.rows.length > 0) {
+                const d = df.rows[0];
+                const formFieldsJson = d.form_fields == null ? '[]' : (typeof d.form_fields === 'string' ? d.form_fields : JSON.stringify(d.form_fields || []));
+                await client.query(
+                    `INSERT INTO digital_form_items (profile_item_id, form_title, display_format, form_fields, form_logo_url, form_description, banner_image_url, header_image_url, background_image_url, background_opacity, theme, primary_color, secondary_color, text_color, button_logo_url, button_logo_size) VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+                    [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button', formFieldsJson, d.form_logo_url, d.form_description, d.banner_image_url, d.header_image_url, d.background_image_url, d.background_opacity != null ? d.background_opacity : 1, d.theme || 'light', d.primary_color, d.secondary_color, d.text_color, d.button_logo_url, d.button_logo_size]
                 );
-                const cols = colRes.rows.map(r => r.column_name);
-                const isJsonb = colRes.rows.map(r => r.data_type === 'jsonb');
-                const valsDf = cols.map((c, i) => {
-                    if (c === 'profile_item_id') return newItem.id;
-                    if (c === 'form_title') return (d.form_title || '') + ' (cópia)';
-                    const v = d[c];
-                    if (v === undefined || v === null) return null;
-                    if (isJsonb[i]) return typeof v === 'string' ? v : JSON.stringify(v);
-                    return v;
-                });
-                const ph = cols.map((c, i) => (isJsonb[i] ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
-                await client.query(`INSERT INTO digital_form_items (${cols.join(', ')}) VALUES (${ph})`, valsDf);
-            } catch (formCopyErr) {
-                const hasFormFieldsCol = await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name = 'form_fields'`);
-                if (hasFormFieldsCol.rows.length > 0) {
-                    await client.query(
-                        `INSERT INTO digital_form_items (profile_item_id, form_title, display_format, form_fields) VALUES ($1, $2, $3, $4::jsonb)`,
-                        [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button', formFieldsJson || '[]']
-                    );
-                } else {
-                    await client.query(
-                        `INSERT INTO digital_form_items (profile_item_id, form_title, display_format) VALUES ($1, $2, $3)`,
-                        [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button']
-                    );
-                }
             }
         }
         res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
