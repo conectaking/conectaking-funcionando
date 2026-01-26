@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <title><%= salesPage.meta_title || salesPage.store_title || 'Loja' %></title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="<%= typeof faviconUrl !== 'undefined' ? faviconUrl : 'https://i.ibb.co/60sW9k75/logo.png' %>">
+    <link rel="apple-touch-icon" href="<%= typeof faviconUrl !== 'undefined' ? faviconUrl : 'https://i.ibb.co/60sW9k75/logo.png' %>">
     
     <meta name="description" content="<%= salesPage.meta_description || salesPage.store_description || '' %>">
     

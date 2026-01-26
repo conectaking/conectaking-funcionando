@@ -6,6 +6,8 @@
     <!-- IMPORTANTE: Permitir acesso à câmera -->
     <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=()">
     <title>Lista de Convidados - <%= guestList.event_title || 'Evento' %></title>
+    <link rel="icon" type="image/png" href="<%= typeof faviconUrl !== 'undefined' ? faviconUrl : 'https://i.ibb.co/60sW9k75/logo.png' %>">
+    <link rel="apple-touch-icon" href="<%= typeof faviconUrl !== 'undefined' ? faviconUrl : 'https://i.ibb.co/60sW9k75/logo.png' %>">
     <% if (typeof ogImageUrl !== 'undefined' && ogImageUrl) { %>
     <meta property="og:type" content="website">
     <meta property="og:title" content="<%= typeof ogTitle !== 'undefined' ? ogTitle : ('Lista de Convidados - ' + (guestList.event_title || 'Evento')) %>">

@@ -9,7 +9,8 @@
     <meta name="cache-timestamp" content="<%= typeof _timestamp !== 'undefined' ? _timestamp : Date.now() %>">
     <meta name="updated-at" content="<%= typeof _updatedAt !== 'undefined' ? _updatedAt : Date.now() %>">
     <title><%= formData.form_title || 'Formulário Digital' %></title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico<%= typeof _cacheBust !== 'undefined' ? _cacheBust : '' %>">
+    <link rel="icon" type="image/png" href="<%= typeof faviconUrl !== 'undefined' ? faviconUrl : 'https://i.ibb.co/60sW9k75/logo.png' %>">
+    <link rel="apple-touch-icon" href="<%= typeof faviconUrl !== 'undefined' ? faviconUrl : 'https://i.ibb.co/60sW9k75/logo.png' %>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">

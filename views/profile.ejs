@@ -13,7 +13,8 @@ if (typeof details === 'undefined' || !details) {
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title><%= (details && details.display_name) ? details.display_name : 'Conecta King' %></title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="<%= typeof faviconUrl !== 'undefined' ? faviconUrl : 'https://i.ibb.co/60sW9k75/logo.png' %>">
+    <link rel="apple-touch-icon" href="<%= typeof faviconUrl !== 'undefined' ? faviconUrl : 'https://i.ibb.co/60sW9k75/logo.png' %>">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

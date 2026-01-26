@@ -336,13 +336,13 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
 }));
 
-// Rota específica para favicon.ico (evitar 404)
+// Rota para favicon: usa logomarca quando public/favicon.ico não existe
 app.get('/favicon.ico', (req, res) => {
     const faviconPath = path.join(__dirname, 'public', 'favicon.ico');
+    const logoUrl = process.env.FAVICON_URL || 'https://i.ibb.co/60sW9k75/logo.png';
     res.sendFile(faviconPath, (err) => {
         if (err) {
-            // Se não existir, retornar 204 (No Content) em vez de 404
-            res.status(204).end();
+            res.redirect(302, logoUrl);
         }
     });
 });
@@ -350,6 +350,9 @@ app.get('/favicon.ico', (req, res) => {
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// Favicon: logomarca em todas as páginas (variável FAVICON_URL no .env para customizar)
+app.locals.faviconUrl = process.env.FAVICON_URL || 'https://i.ibb.co/60sW9k75/logo.png';
 
 // Cache-buster para assets estáticos em views EJS
 const appVersion =
