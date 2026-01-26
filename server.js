@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const compression = require('compression');
 const cors = require('cors');
-const path = require('path'); 
+const path = require('path');
+const fs = require('fs');
 const cron = require('node-cron');
 const db = require('./db');
 const nodemailer = require('nodemailer');
@@ -336,23 +337,36 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
 }));
 
+// URL da logomarca (favicon em todas as páginas)
+const logoFaviconUrl = process.env.FAVICON_URL || 'https://i.ibb.co/60sW9k75/logo.png';
+
 // Rota para favicon: usa logomarca quando public/favicon.ico não existe
 app.get('/favicon.ico', (req, res) => {
     const faviconPath = path.join(__dirname, 'public', 'favicon.ico');
-    const logoUrl = process.env.FAVICON_URL || 'https://i.ibb.co/60sW9k75/logo.png';
     res.sendFile(faviconPath, (err) => {
         if (err) {
-            res.redirect(302, logoUrl);
+            res.redirect(302, logoFaviconUrl);
         }
     });
+});
+
+// Rota /logo.png para o painel e landing usarem como favicon (mesma origem ou API)
+const rootLogoPath = path.join(__dirname, 'logo.png');
+app.get('/logo.png', (req, res) => {
+    if (fs.existsSync(rootLogoPath)) {
+        res.type('image/png');
+        res.sendFile(rootLogoPath);
+    } else {
+        res.redirect(302, logoFaviconUrl);
+    }
 });
 
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Favicon: logomarca em todas as páginas (variável FAVICON_URL no .env para customizar)
-app.locals.faviconUrl = process.env.FAVICON_URL || 'https://i.ibb.co/60sW9k75/logo.png';
+// Favicon: logomarca em todas as páginas (usa mesma URL das rotas acima)
+app.locals.faviconUrl = logoFaviconUrl;
 
 // Cache-buster para assets estáticos em views EJS
 const appVersion =
