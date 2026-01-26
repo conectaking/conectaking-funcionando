@@ -2347,6 +2347,17 @@ router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
+// Colunas prioritárias para fallback (perguntas + imagens + temas). Usar só as que existirem na tabela.
+const DIGITAL_FORM_FALLBACK_COLS = [
+    'profile_item_id', 'form_title', 'display_format', 'form_fields', 'form_logo_url', 'form_description',
+    'banner_image_url', 'header_image_url', 'background_image_url', 'background_opacity', 'theme',
+    'primary_color', 'secondary_color', 'text_color', 'button_logo_url', 'button_logo_size',
+    'whatsapp_number', 'welcome_text', 'prayer_requests_text', 'meetings_text',
+    'background_color', 'card_color', 'decorative_bar_color', 'separator_line_color',
+    'enable_whatsapp', 'enable_guest_list_submit', 'enable_pastor_button', 'pastor_whatsapp_number', 'pastor_button_name',
+    'show_logo_corner', 'event_date', 'event_address', 'send_mode'
+];
+
 // Copia TODOS os dados de digital_form_items (perguntas, fotos, textos, cores, etc.) para um novo profile_item_id
 async function copyDigitalFormItemsFull(client, sourceId, newProfileItemId, titleSuffix = ' (cópia)') {
     const df = await client.query(
@@ -2360,6 +2371,37 @@ async function copyDigitalFormItemsFull(client, sourceId, newProfileItemId, titl
     );
     const cols = colRes.rows.map(r => r.column_name);
     const isJsonb = colRes.rows.map(r => r.data_type === 'jsonb');
+    const vals = cols.map((c, i) => {
+        if (c === 'profile_item_id') return newProfileItemId;
+        if (c === 'form_title') return (d.form_title || '') + titleSuffix;
+        const v = d[c];
+        if (v === undefined || v === null) return null;
+        if (isJsonb[i]) return typeof v === 'string' ? v : JSON.stringify(v);
+        return v;
+    });
+    const placeholders = cols.map((c, i) => (isJsonb[i] ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
+    await client.query(
+        `INSERT INTO digital_form_items (${cols.join(', ')}) VALUES (${placeholders})`,
+        vals
+    );
+}
+
+// Fallback: insere em digital_form_items usando apenas colunas que existem na tabela (evita erro em DBs com migrações parciais)
+async function copyDigitalFormItemsFallback(client, sourceId, newProfileItemId, titleSuffix = ' (cópia)') {
+    const df = await client.query(
+        `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
+        [sourceId]
+    );
+    if (df.rows.length === 0) return;
+    const d = df.rows[0];
+    const existingRes = await client.query(
+        `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name NOT IN ('id', 'created_at', 'updated_at') ORDER BY ordinal_position`
+    );
+    const existingSet = new Set(existingRes.rows.map(r => r.column_name));
+    const typeByCol = Object.fromEntries(existingRes.rows.map(r => [r.column_name, r.data_type]));
+    const cols = DIGITAL_FORM_FALLBACK_COLS.filter(c => existingSet.has(c));
+    if (cols.length === 0) return;
+    const isJsonb = cols.map(c => typeByCol[c] === 'jsonb');
     const vals = cols.map((c, i) => {
         if (c === 'profile_item_id') return newProfileItemId;
         if (c === 'form_title') return (d.form_title || '') + titleSuffix;
@@ -2436,18 +2478,7 @@ router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) =
                 await copyDigitalFormItemsFull(client, sourceId, newItem.id, ' (cópia)');
             } catch (formCopyErr) {
                 console.error('Erro ao copiar digital_form_items (fallback):', formCopyErr.message);
-                const df = await client.query(
-                    `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
-                    [sourceId]
-                );
-                if (df.rows.length > 0) {
-                    const d = df.rows[0];
-                    const formFieldsJson = d.form_fields == null ? '[]' : (typeof d.form_fields === 'string' ? d.form_fields : JSON.stringify(d.form_fields || []));
-                    await client.query(
-                        `INSERT INTO digital_form_items (profile_item_id, form_title, display_format, form_fields, form_logo_url, form_description, banner_image_url, header_image_url, background_image_url, background_opacity, theme, primary_color, secondary_color, text_color, button_logo_url, button_logo_size) VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-                        [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button', formFieldsJson, d.form_logo_url, d.form_description, d.banner_image_url, d.header_image_url, d.background_image_url, d.background_opacity != null ? d.background_opacity : 1, d.theme || 'light', d.primary_color, d.secondary_color, d.text_color, d.button_logo_url, d.button_logo_size]
-                    );
-                }
+                await copyDigitalFormItemsFallback(client, sourceId, newItem.id, ' (cópia)');
             }
         }
         if (item.item_type === 'contract') {
@@ -2605,21 +2636,10 @@ router.post('/import-form', protectUser, asyncHandler(async (req, res) => {
             await copyDigitalFormItemsFull(client, sourceId, newItem.id, ' (cópia)');
         } catch (formCopyErr) {
             console.error('Erro ao copiar digital_form_items na importação (fallback):', formCopyErr.message);
-            const df = await client.query(
-                `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
-                [sourceId]
-            );
-            if (df.rows.length > 0) {
-                const d = df.rows[0];
-                const formFieldsJson = d.form_fields == null ? '[]' : (typeof d.form_fields === 'string' ? d.form_fields : JSON.stringify(d.form_fields || []));
-                await client.query(
-                    `INSERT INTO digital_form_items (profile_item_id, form_title, display_format, form_fields, form_logo_url, form_description, banner_image_url, header_image_url, background_image_url, background_opacity, theme, primary_color, secondary_color, text_color, button_logo_url, button_logo_size) VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-                    [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button', formFieldsJson, d.form_logo_url, d.form_description, d.banner_image_url, d.header_image_url, d.background_image_url, d.background_opacity != null ? d.background_opacity : 1, d.theme || 'light', d.primary_color, d.secondary_color, d.text_color, d.button_logo_url, d.button_logo_size]
-                );
-            }
+            await copyDigitalFormItemsFallback(client, sourceId, newItem.id, ' (cópia)');
         }
         res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
-        res.status(201).json(newItem);
+        res.status(201).json({ id: newItem.id, itemId: newItem.id, title: newItem.title, ...newItem });
     } catch (error) {
         console.error('Erro ao importar formulário:', error);
         res.status(500).json({ message: error.message || 'Erro ao importar.' });
