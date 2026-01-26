@@ -2410,26 +2410,47 @@ router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) =
             );
             if (df.rows.length > 0) {
                 const d = df.rows[0];
-                const colRes = await client.query(
-                    `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name != 'id' ORDER BY ordinal_position`
-                );
-                const cols = colRes.rows.map(r => r.column_name);
-                const isJsonb = colRes.rows.map(r => r.data_type === 'jsonb');
-                const vals = cols.map((c, i) => {
-                    if (c === 'profile_item_id') return newItem.id;
-                    if (c === 'form_title') return (d.form_title || '') + ' (cópia)';
-                    const v = d[c];
-                    if (v === undefined || v === null) return null;
-                    if (isJsonb[i]) {
-                        return typeof v === 'string' ? v : JSON.stringify(v);
+                const formFieldsJson = (() => {
+                    const v = d.form_fields;
+                    if (v == null) return null;
+                    return typeof v === 'string' ? v : JSON.stringify(v || []);
+                })();
+                try {
+                    const colRes = await client.query(
+                        `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name != 'id' ORDER BY ordinal_position`
+                    );
+                    const cols = colRes.rows.map(r => r.column_name);
+                    const isJsonb = colRes.rows.map(r => r.data_type === 'jsonb');
+                    const vals = cols.map((c, i) => {
+                        if (c === 'profile_item_id') return newItem.id;
+                        if (c === 'form_title') return (d.form_title || '') + ' (cópia)';
+                        const v = d[c];
+                        if (v === undefined || v === null) return null;
+                        if (isJsonb[i]) return typeof v === 'string' ? v : JSON.stringify(v);
+                        return v;
+                    });
+                    const placeholders = cols.map((c, i) => (isJsonb[i] ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
+                    await client.query(
+                        `INSERT INTO digital_form_items (${cols.join(', ')}) VALUES (${placeholders})`,
+                        vals
+                    );
+                } catch (formCopyErr) {
+                    console.error('Erro ao copiar digital_form_items (tentando fallback):', formCopyErr.message);
+                    const hasFormFieldsCol = await client.query(
+                        `SELECT 1 FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name = 'form_fields'`
+                    );
+                    if (hasFormFieldsCol.rows.length > 0) {
+                        await client.query(
+                            `INSERT INTO digital_form_items (profile_item_id, form_title, display_format, form_fields) VALUES ($1, $2, $3, $4::jsonb)`,
+                            [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button', formFieldsJson || '[]']
+                        );
+                    } else {
+                        await client.query(
+                            `INSERT INTO digital_form_items (profile_item_id, form_title, display_format) VALUES ($1, $2, $3)`,
+                            [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button']
+                        );
                     }
-                    return v;
-                });
-                const placeholders = cols.map((c, i) => (isJsonb[i] ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
-                await client.query(
-                    `INSERT INTO digital_form_items (${cols.join(', ')}) VALUES (${placeholders})`,
-                    vals
-                );
+                }
             }
         }
         if (item.item_type === 'contract') {
@@ -2459,7 +2480,8 @@ router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) =
         res.status(201).json(newItem);
     } catch (error) {
         console.error("Erro ao duplicar item:", error);
-        res.status(500).json({ message: 'Erro ao duplicar item.', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
+        const msg = error.message || 'Erro ao duplicar item.';
+        res.status(500).json({ message: msg, error: process.env.NODE_ENV === 'development' ? msg : undefined });
     } finally {
         client.release();
     }
