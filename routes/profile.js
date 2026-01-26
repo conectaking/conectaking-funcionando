@@ -2491,7 +2491,7 @@ router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) =
 // COMPARTILHAR FORMULÁRIO PRONTO (importar em outra conta)
 // ===========================================
 
-// POST /api/profile/items/digital_form/:id/create-import-link - Gera link para outro usuário importar este formulário
+// POST /api/profile/items/digital_form/:id/create-import-link - Gera link e código para outro usuário importar este formulário
 router.post('/items/digital_form/:id/create-import-link', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
@@ -2506,12 +2506,26 @@ router.post('/items/digital_form/:id/create-import-link', protectUser, asyncHand
         if (check.rows[0].item_type !== 'digital_form') return res.status(400).json({ message: 'Este item não é um formulário.' });
         const crypto = require('crypto');
         const token = crypto.randomBytes(24).toString('hex');
-        await client.query(
-            'UPDATE profile_items SET import_token = $1 WHERE id = $2 AND user_id = $3',
-            [token, itemId, userId]
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = 'KING-';
+        for (let i = 0; i < 5; i++) code += chars[crypto.randomInt(0, chars.length)];
+        const hasCodeCol = await client.query(
+            "SELECT 1 FROM information_schema.columns WHERE table_name = 'profile_items' AND column_name = 'import_code'"
         );
+        if (hasCodeCol.rows.length > 0) {
+            await client.query(
+                'UPDATE profile_items SET import_token = $1, import_code = $2 WHERE id = $3 AND user_id = $4',
+                [token, code, itemId, userId]
+            );
+        } else {
+            await client.query(
+                'UPDATE profile_items SET import_token = $1 WHERE id = $2 AND user_id = $3',
+                [token, itemId, userId]
+            );
+            code = null;
+        }
         res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
-        res.json({ token });
+        res.json({ token, code: code || token.substring(0, 10) });
     } catch (error) {
         console.error('Erro ao criar link de importação:', error);
         res.status(500).json({ message: error.message || 'Erro ao criar link.' });
@@ -2520,20 +2534,26 @@ router.post('/items/digital_form/:id/create-import-link', protectUser, asyncHand
     }
 }));
 
-// GET /api/profile/import-form-info?token= - Info pública do formulário para mostrar antes de importar (sem auth)
+// GET /api/profile/import-form-info?token= ou ?code= - Info pública do formulário (sem auth)
 router.get('/import-form-info', asyncHandler(async (req, res) => {
-    const token = (req.query.token || '').trim();
-    if (!token) return res.status(400).json({ message: 'Token não informado.' });
+    const token = (req.query.token || req.query.code || '').trim();
+    if (!token) return res.status(400).json({ message: 'Token ou código não informado.' });
     const client = await db.pool.connect();
     try {
+        const hasCodeCol = await client.query(
+            "SELECT 1 FROM information_schema.columns WHERE table_name = 'profile_items' AND column_name = 'import_code'"
+        );
+        const whereClause = hasCodeCol.rows.length > 0
+            ? '(pi.import_token = $1 OR pi.import_code = $1)'
+            : 'pi.import_token = $1';
         const row = await client.query(
-            `SELECT pi.id, pi.title, pi.import_token, p.display_name
+            `SELECT pi.id, pi.title, p.display_name
              FROM profile_items pi
              LEFT JOIN user_profiles p ON p.user_id = pi.user_id
-             WHERE pi.import_token = $1 AND pi.item_type = 'digital_form'`,
+             WHERE pi.item_type = 'digital_form' AND ${whereClause}`,
             [token]
         );
-        if (row.rows.length === 0) return res.status(404).json({ message: 'Link inválido ou expirado.' });
+        if (row.rows.length === 0) return res.status(404).json({ message: 'Link ou código inválido.' });
         const r = row.rows[0];
         res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
         res.json({ formTitle: r.title || 'Formulário King', ownerName: r.display_name || 'Um usuário' });
