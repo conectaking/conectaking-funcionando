@@ -2688,11 +2688,10 @@
                 container.setAttribute('data-lat', lat);
                 container.setAttribute('data-lon', lon);
             }
-            var map = L.map('event-address-map', { zoomControl: true }).setView([lat, lon], 15);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                subdomains: 'abcd',
-                maxZoom: 20
+            var map = L.map('event-address-map', { zoomControl: true }).setView([lat, lon], 17);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+                maxZoom: 19
             }).addTo(map);
             var pinIcon = L.divIcon({
                 className: 'event-map-pin',
@@ -2706,12 +2705,10 @@
         if (savedLat != null && savedLon != null && !isNaN(savedLat) && !isNaN(savedLon)) {
             drawMap(savedLat, savedLon);
         } else {
-            fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(address) + '&format=json&limit=1', {
-                headers: { 'Accept': 'application/json', 'User-Agent': 'ConectaKingForm/1.0' }
-            })
+            fetch('https://photon.komoot.io/api/?q=' + encodeURIComponent(address) + '&limit=1&lang=pt')
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                if (!data || !data[0]) {
+                if (!data || !data.features || !data.features[0]) {
                     mapEl.style.display = 'flex';
                     mapEl.style.alignItems = 'center';
                     mapEl.style.justifyContent = 'center';
@@ -2719,8 +2716,9 @@
                     mapEl.innerHTML = '<p style="margin:0;color:#666;">Endereço no mapa: use o botão abaixo para ver rotas.</p>';
                     return;
                 }
-                var lat = parseFloat(data[0].lat);
-                var lon = parseFloat(data[0].lon);
+                var coords = data.features[0].geometry.coordinates;
+                var lon = coords[0];
+                var lat = coords[1];
                 drawMap(lat, lon);
             })
             .catch(function() {

@@ -114,7 +114,8 @@ app.use(helmet({
                 "https://lightwidget.com",
                 "https://*.lightwidget.com",
                 "https://*.tile.openstreetmap.org",
-                "https://*.basemaps.cartocdn.com"
+                "https://*.basemaps.cartocdn.com",
+                "https://server.arcgisonline.com"
             ],
             fontSrc: [
                 "'self'", 
@@ -162,7 +163,8 @@ app.use(helmet({
                 "https://*.overbridgenet.com",
                 "https://nominatim.openstreetmap.org",
                 "https://*.tile.openstreetmap.org",
-                "https://*.basemaps.cartocdn.com"
+                "https://*.basemaps.cartocdn.com",
+                "https://photon.komoot.io"
             ],
             mediaSrc: [
                 "'self'",
