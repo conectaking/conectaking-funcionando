@@ -113,7 +113,8 @@ app.use(helmet({
                 "https://*.snapwidget.com",
                 "https://lightwidget.com",
                 "https://*.lightwidget.com",
-                "https://*.tile.openstreetmap.org"
+                "https://*.tile.openstreetmap.org",
+                "https://*.basemaps.cartocdn.com"
             ],
             fontSrc: [
                 "'self'", 
@@ -160,7 +161,8 @@ app.use(helmet({
                 "https://overbridgenet.com",
                 "https://*.overbridgenet.com",
                 "https://nominatim.openstreetmap.org",
-                "https://*.tile.openstreetmap.org"
+                "https://*.tile.openstreetmap.org",
+                "https://*.basemaps.cartocdn.com"
             ],
             mediaSrc: [
                 "'self'",
