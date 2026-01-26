@@ -1514,7 +1514,9 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             enable_guest_list_submit,
             send_mode,
             event_date,
-            event_address
+            event_address,
+            event_address_lat,
+            event_address_lon
         } = req.body;
 
         if (!itemId || isNaN(itemId)) {
@@ -1787,6 +1789,32 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                         itemId: itemId,
                         event_address: event_address
                     });
+                }
+            }
+            if (event_address_lat !== undefined && event_address_lat !== null && event_address_lat !== '') {
+                const coordCheck = await client.query(`
+                    SELECT column_name FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'event_address_lat'
+                `);
+                if (coordCheck.rows.length > 0) {
+                    const lat = parseFloat(event_address_lat);
+                    if (!isNaN(lat)) {
+                        updateFormFields.push(`event_address_lat = $${formParamIndex++}`);
+                        updateFormValues.push(lat);
+                    }
+                }
+            }
+            if (event_address_lon !== undefined && event_address_lon !== null && event_address_lon !== '') {
+                const coordCheck = await client.query(`
+                    SELECT column_name FROM information_schema.columns 
+                    WHERE table_name = 'digital_form_items' AND column_name = 'event_address_lon'
+                `);
+                if (coordCheck.rows.length > 0) {
+                    const lon = parseFloat(event_address_lon);
+                    if (!isNaN(lon)) {
+                        updateFormFields.push(`event_address_lon = $${formParamIndex++}`);
+                        updateFormValues.push(lon);
+                    }
                 }
             }
             if (prayer_requests_text !== undefined) {
