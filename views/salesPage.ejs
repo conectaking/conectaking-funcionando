@@ -178,9 +178,14 @@
     <!-- Products Grid -->
     <main class="products-section">
         <div class="container">
-            <div class="products-header">
-                <h2 class="section-title">Produtos</h2>
-                <div class="view-controls">
+            <div class="products-toolbar">
+                <div class="products-search-wrap">
+                    <i class="fas fa-search products-search-icon"></i>
+                    <input type="text" id="products-search-input" class="products-search-input" placeholder="Buscar produto..." autocomplete="off" aria-label="Buscar produto">
+                </div>
+                <div class="products-header">
+                    <h2 class="section-title">Produtos <span id="products-count" class="products-count"></span></h2>
+                    <div class="view-controls">
                     <div class="view-mode-controls">
                         <button class="view-btn active" data-mode="grid" title="Modo Miniatura">
                             <i class="fas fa-th"></i>
@@ -201,6 +206,17 @@
                         </button>
                     </div>
                 </div>
+                </div>
+            </div>
+            <div class="products-sort-wrap">
+                <label for="products-sort" class="products-sort-label">Ordenar:</label>
+                <select id="products-sort" class="products-sort-select" aria-label="Ordenar produtos">
+                    <option value="order">Padrão</option>
+                    <option value="price-asc">Menor preço</option>
+                    <option value="price-desc">Maior preço</option>
+                    <option value="name-asc">Nome A–Z</option>
+                    <option value="name-desc">Nome Z–A</option>
+                </select>
             </div>
             <div class="products-filter-tabs-public">
                 <button class="filter-tab-public active" data-filter="all">
@@ -227,7 +243,7 @@
                     productBadgeForFilter = 'destaque';
                 }
                 %>
-                <div class="product-card" data-product-id="<%= product.id %>" data-product-badge="<%= productBadgeForFilter %>">
+                <div class="product-card" data-product-id="<%= product.id %>" data-product-badge="<%= productBadgeForFilter %>" data-product-name="<%= (product.name || '').replace(/"/g, '&quot;') %>" data-product-description="<%= (product.description || '').replace(/"/g, '&quot;').substring(0, 500) %>" data-product-price="<%= product.price %>">
                     <a href="<%= productUrl %>" class="product-link" data-product-id="<%= product.id %>">
                         <% if (product.image_url) { %>
                         <div class="product-image">
@@ -274,6 +290,11 @@
                         </div>
                     </a>
                     <div class="product-actions">
+                        <% if (product.youtube_video_url) { %>
+                        <button type="button" class="view-video-btn btn-watch-video" data-video-url="<%= (product.youtube_video_url || '').replace(/"/g, '&quot;') %>" title="Vídeo sobre o produto">
+                            <i class="fab fa-youtube"></i> Veja o vídeo para mais explicação
+                        </button>
+                        <% } %>
                         <button class="add-to-cart-btn" data-product-id="<%= product.id %>" data-product-name="<%= product.name %>" data-product-price="<%= product.price %>">
                             <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
                         </button>
@@ -284,12 +305,18 @@
                 </div>
                 <% }); %>
                 <% } else { %>
-                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-color);">
-                    <i class="fas fa-box-open" style="font-size: 4rem; opacity: 0.5; margin-bottom: 20px; display: block;"></i>
-                    <h3 style="font-size: 1.5rem; margin: 0 0 10px 0; color: var(--text-color);">Nenhum produto disponível</h3>
-                    <p style="opacity: 0.7; margin: 0;">A loja ainda não possui produtos cadastrados ou publicados.</p>
+                <div class="products-empty-state" id="products-empty-initial">
+                    <i class="fas fa-box-open" aria-hidden="true"></i>
+                    <h3>Nenhum produto disponível</h3>
+                    <p>A loja ainda não possui produtos cadastrados ou publicados.</p>
                 </div>
                 <% } %>
+                <div class="products-empty-state products-empty-search" id="products-empty-search" style="display: none;">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    <h3>Nenhum produto encontrado</h3>
+                    <p>Não há produtos com esse termo ou filtro. Tente outra busca ou veja todos.</p>
+                    <button type="button" class="btn-clear-search" id="btn-clear-search"><i class="fas fa-times-circle"></i> Limpar e ver todos</button>
+                </div>
             </div>
         </div>
     </main>
@@ -312,8 +339,9 @@
             <div class="checkout-form">
                 <input type="text" id="customer-name" placeholder="Seu nome (opcional)" class="checkout-input">
                 <textarea id="customer-observation" placeholder="Observação (opcional)" class="checkout-textarea"></textarea>
+                <p class="checkout-whatsapp-hint">Você será redirecionado ao WhatsApp para finalizar o pedido.</p>
                 <button class="checkout-btn" id="checkout-btn">
-                    <i class="fab fa-whatsapp"></i> Finalizar Compra
+                    <i class="fab fa-whatsapp"></i> Enviar pedido por WhatsApp
                 </button>
             </div>
         </div>
@@ -324,10 +352,29 @@
 
     <!-- Footer -->
     <footer class="sales-footer">
+        <div class="sales-footer-trust">
+            <div class="container">
+                <div class="trust-strip">
+                    <span class="trust-item"><i class="fas fa-lock" aria-hidden="true"></i> Compra segura</span>
+                    <span class="trust-item"><i class="fab fa-whatsapp" aria-hidden="true"></i> Atendimento via WhatsApp</span>
+                    <span class="trust-item"><i class="fas fa-truck" aria-hidden="true"></i> Entrega para todo o Brasil</span>
+                </div>
+            </div>
+        </div>
         <div class="container">
-            <p>&copy; <%= new Date().getFullYear() %> <%= salesPage.store_title || 'Loja' %>. Todos os direitos reservados.</p>
+            <p class="sales-footer-copy">&copy; <%= new Date().getFullYear() %> <%= salesPage.store_title || 'Loja' %>. Todos os direitos reservados.</p>
         </div>
     </footer>
+
+    <!-- Modal Vídeo do Produto -->
+    <div class="product-video-overlay" id="product-video-overlay" style="display: none;">
+        <div class="product-video-modal">
+            <button type="button" class="product-video-close" id="product-video-close" aria-label="Fechar"><i class="fas fa-times"></i></button>
+            <div class="product-video-wrap">
+                <iframe id="product-video-iframe" title="Vídeo do produto" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/salesPage.js"></script>
 </body>

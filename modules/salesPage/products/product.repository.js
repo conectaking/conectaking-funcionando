@@ -16,7 +16,8 @@ class ProductRepository {
             image_url,
             display_order,
             status,
-            badge
+            badge,
+            youtube_video_url
         } = data;
 
         const client = await db.pool.connect();
@@ -33,14 +34,14 @@ class ProductRepository {
             const result = await client.query(
                 `INSERT INTO sales_page_products (
                     sales_page_id, name, description, price, compare_price,
-                    stock, variations, image_url, display_order, status, badge
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                    stock, variations, image_url, display_order, status, badge, youtube_video_url
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
                 RETURNING *`,
                 [
                     sales_page_id, name, description || null, price,
                     compare_price || null, stock, variations || null,
                     image_url || null, display_order || 0, finalStatus,
-                    badge || null
+                    badge || null, youtube_video_url || null
                 ]
             );
             console.log(`✅ [PRODUCT-REPO] Produto criado com sucesso: ID ${result.rows[0].id}, status: ${result.rows[0].status}`);

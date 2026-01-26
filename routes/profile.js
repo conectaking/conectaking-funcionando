@@ -2347,6 +2347,105 @@ router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
+// POST /api/profile/items/:id/duplicate - Duplicar módulo (copia configuração e dados relacionados)
+router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) => {
+    const client = await db.pool.connect();
+    try {
+        const userId = req.user.userId;
+        const sourceId = parseInt(req.params.id, 10);
+        if (!sourceId || isNaN(sourceId)) {
+            return res.status(400).json({ message: 'ID do item inválido.' });
+        }
+        const src = await client.query(
+            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
+            [sourceId, userId]
+        );
+        if (src.rows.length === 0) {
+            return res.status(404).json({ message: 'Item não encontrado ou sem permissão.' });
+        }
+        const item = src.rows[0];
+        const nextOrder = await client.query(
+            'SELECT COALESCE(MAX(display_order), -1) + 1 AS next_order FROM profile_items WHERE user_id = $1',
+            [userId]
+        );
+        const display_order = nextOrder.rows[0].next_order;
+        const copyFields = ['user_id', 'item_type', 'title', 'destination_url', 'image_url', 'icon_class', 'is_active', 'logo_size', 'pix_key', 'recipient_name', 'pix_amount', 'pix_description', 'pdf_url', 'whatsapp_message', 'aspect_ratio'];
+        const existingCols = await client.query(
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'profile_items' AND column_name = ANY($1)",
+            [copyFields]
+        );
+        const colNames = ['display_order', ...existingCols.rows.map(r => r.column_name)];
+        const vals = [display_order, ...existingCols.rows.map(r => (item[r.column_name] != null ? item[r.column_name] : null))];
+        const placeholders = vals.map((_, i) => `$${i + 1}`).join(', ');
+        const ins = await client.query(
+            `INSERT INTO profile_items (${colNames.join(', ')}) VALUES (${placeholders}) RETURNING *`,
+            vals
+        );
+        const newItem = ins.rows[0];
+        if (item.item_type === 'sales_page') {
+            const sp = await client.query('SELECT * FROM sales_pages WHERE profile_item_id = $1', [sourceId]);
+            if (sp.rows.length > 0) {
+                const s = sp.rows[0];
+                const crypto = require('crypto');
+                const newSp = await client.query(
+                    `INSERT INTO sales_pages (profile_item_id, slug, store_title, store_description, button_text, button_logo_url, theme, background_color, text_color, button_color, button_text_color, background_image_url, whatsapp_number, meta_title, meta_description, meta_image_url, preview_token, status)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
+                    [newItem.id, (s.slug || 'loja') + '-copia-' + Date.now().toString(36), (s.store_title || '') + ' (cópia)', s.store_description, s.button_text, s.button_logo_url, s.theme, s.background_color, s.text_color, s.button_color, s.button_text_color, s.background_image_url, s.whatsapp_number, s.meta_title, s.meta_description, s.meta_image_url, crypto.randomBytes(32).toString('hex'), 'DRAFT']
+                );
+                const newSpId = newSp.rows[0].id;
+                const prods = await client.query('SELECT * FROM sales_page_products WHERE sales_page_id = $1 ORDER BY display_order', [s.id]);
+                for (const p of prods.rows) {
+                    await client.query(
+                        `INSERT INTO sales_page_products (sales_page_id, name, description, price, compare_price, stock, variations, image_url, display_order, status, badge, youtube_video_url)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+                        [newSpId, p.name, p.description, p.price, p.compare_price, p.stock, p.variations, p.image_url, p.display_order, p.status, p.badge, p.youtube_video_url || null]
+                    );
+                }
+            }
+        }
+        if (item.item_type === 'digital_form') {
+            const df = await client.query('SELECT * FROM digital_form_items WHERE profile_item_id = $1', [sourceId]);
+            if (df.rows.length > 0) {
+                const d = df.rows[0];
+                await client.query(
+                    `INSERT INTO digital_form_items (profile_item_id, form_title, display_format) VALUES ($1, $2, $3)`,
+                    [newItem.id, (d.form_title || '') + ' (cópia)', d.display_format || 'button']
+                );
+            }
+        }
+        if (item.item_type === 'contract') {
+            const ci = await client.query('SELECT * FROM contract_items WHERE profile_item_id = $1', [sourceId]);
+            if (ci.rows.length > 0) {
+                const c = ci.rows[0];
+                await client.query(
+                    `INSERT INTO contract_items (profile_item_id, contract_title, contract_type, contract_template, require_signature, require_stamp, allow_digital_signature, allow_photo_signature, stamp_image_url, stamp_text)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                    [newItem.id, (c.contract_title || '') + ' (cópia)', c.contract_type, c.contract_template, c.require_signature, c.require_stamp, c.allow_digital_signature, c.allow_photo_signature, c.stamp_image_url, c.stamp_text]
+                );
+            }
+        }
+        if (item.item_type === 'guest_list') {
+            const gl = await client.query('SELECT * FROM guest_list_items WHERE profile_item_id = $1', [sourceId]);
+            if (gl.rows.length > 0) {
+                const g = gl.rows[0];
+                const crypto = require('crypto');
+                await client.query(
+                    `INSERT INTO guest_list_items (profile_item_id, event_title, event_description, event_date, event_time, event_location, max_guests, require_confirmation, allow_self_registration, registration_token, confirmation_token)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                    [newItem.id, (g.event_title || '') + ' (cópia)', g.event_description, g.event_date, g.event_time, g.event_location, g.max_guests, g.require_confirmation, g.allow_self_registration, crypto.randomBytes(16).toString('hex'), crypto.randomBytes(16).toString('hex')]
+                );
+            }
+        }
+        res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
+        res.status(201).json(newItem);
+    } catch (error) {
+        console.error("Erro ao duplicar item:", error);
+        res.status(500).json({ message: 'Erro ao duplicar item.', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
+    } finally {
+        client.release();
+    }
+}));
+
 // ===========================================
 // ROTAS PARA GERENCIAR ITENS (ITEMS) - CONTINUAÇÃO
 // ===========================================

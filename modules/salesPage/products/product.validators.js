@@ -109,6 +109,11 @@ class ProductValidators {
         if (data.display_order !== undefined) {
             sanitized.display_order = parseInt(data.display_order) || 0;
         }
+        if (data.youtube_video_url !== undefined) {
+            sanitized.youtube_video_url = data.youtube_video_url && typeof data.youtube_video_url === 'string'
+                ? data.youtube_video_url.trim() || null
+                : null;
+        }
 
         const fieldsToCopy = ['sales_page_id', 'image_url', 'status', 'badge', 'is_featured'];
         fieldsToCopy.forEach(field => {
