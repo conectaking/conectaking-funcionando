@@ -671,16 +671,27 @@
                                 <i class="fas fa-map-marker-alt" style="color: <%= secondaryColor || primaryColor || '#FFC700' %>; font-size: 18px;"></i>
                                 <span style="font-weight: 600; color: <%= formData.text_color || '#333333' %>; font-size: 14px;">Endereço do Evento</span>
                             </div>
-                            <div style="position: relative; width: 100%; height: 220px; border-radius: 12px; overflow: hidden; background: #e8eaed; border: 1px solid rgba(255,199,0,0.3);" class="map-clickable-container">
-                                <div id="event-address-map" style="width: 100%; height: 220px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 14px;">Carregando mapa...</div>
-                                <a 
-                                    href="https://www.google.com/maps/dir/?api=1&destination=<%= encodeURIComponent(formData.event_address) %>&travelmode=driving" 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"
-                                    title="Abrir rotas no Google Maps">
+                            <div id="event-address-map-container" 
+                                 class="event-map-wrapper" 
+                                 data-address="<%= (formData.event_address || '').replace(/"/g, '&quot;') %>"
+                                 style="position: relative; width: 100%; height: 260px; border-radius: 16px; overflow: hidden; background: linear-gradient(145deg, #f0f2f5 0%, #e4e8ec 100%); border: 1px solid rgba(255,199,0,0.35); box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 12px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6); cursor: pointer;">
+                                <div id="event-address-map" style="width: 100%; height: 100%; min-height: 260px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 14px;">Carregando mapa...</div>
+                                <!-- Overlay de escolha: Google Maps ou Waze -->
+                                <div id="map-routes-choice" class="map-routes-choice-overlay" style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); z-index: 1001; border-radius: 16px; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 20px;">
+                                    <span style="color: #fff; font-size: 15px; font-weight: 600;">Como deseja ver as rotas?</span>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                                        <a id="route-google" href="#" target="_blank" rel="noopener noreferrer" class="map-route-option" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: #fff; color: #333; border-radius: 12px; font-weight: 600; text-decoration: none; box-shadow: 0 4px 14px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s;">
+                                            <i class="fab fa-google" style="color: #4285F4; font-size: 20px;"></i> Google Maps
+                                        </a>
+                                        <a id="route-waze" href="#" target="_blank" rel="noopener noreferrer" class="map-route-option" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: #fff; color: #333; border-radius: 12px; font-weight: 600; text-decoration: none; box-shadow: 0 4px 14px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s;">
+                                            <i class="fab fa-waze" style="color: #33ccff; font-size: 20px;"></i> Waze
+                                        </a>
+                                    </div>
+                                    <button type="button" onclick="document.getElementById('map-routes-choice').style.display='none'" style="background: transparent; border: 1px solid rgba(255,255,255,0.5); color: #fff; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;">Fechar</button>
+                                </div>
+                                <button type="button" id="map-routes-trigger" class="map-routes-trigger-btn" style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 1000; background: linear-gradient(135deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.75) 100%); color: white; padding: 10px 20px; border: none; border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); transition: transform 0.2s, box-shadow 0.2s;">
                                     <i class="fas fa-route"></i> Clique para ver rotas
-                                </a>
+                                </button>
                             </div>
                             <div style="margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.5); border-radius: 12px; color: <%= formData.text_color || '#666666' %>; font-size: 15px; line-height: 1.6;">
                                 <i class="fas fa-map-pin" style="color: <%= secondaryColor || primaryColor || '#FFC700' %>; margin-right: 6px;"></i>
