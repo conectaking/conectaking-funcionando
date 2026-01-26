@@ -2515,6 +2515,15 @@ router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) =
                 console.error('Erro ao copiar digital_form_items (fallback):', formCopyErr.message);
                 await copyDigitalFormItemsFallback(client, sourceId, newItem.id, ' (cópia)');
             }
+            // Formulário pode estar em modo "Lista de Convidados": perguntas estão em guest_list_items.custom_form_fields
+            // Se existir guest_list_items para o mesmo profile_item, copiar também para o duplicado
+            const hasGuestList = await client.query(
+                'SELECT 1 FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
+                [sourceId]
+            );
+            if (hasGuestList.rows.length > 0) {
+                await copyGuestListItemsFull(client, sourceId, newItem.id, ' (cópia)');
+            }
         }
         if (item.item_type === 'contract') {
             const ci = await client.query('SELECT * FROM contract_items WHERE profile_item_id = $1', [sourceId]);
