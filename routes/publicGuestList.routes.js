@@ -726,6 +726,15 @@ const renderPortariaViewFull = asyncHandler(async (req, res) => {
             guestListId: guestList.id
         });
         
+        // Meta para prévia no WhatsApp: mesma imagem do link de inscrição (header_image_url)
+        const baseUrl = `${req.protocol}://${req.get('host') || ''}`;
+        let ogImageUrl = guestList.header_image_url || null;
+        if (ogImageUrl && !/^https?:\/\//i.test(ogImageUrl)) {
+            ogImageUrl = ogImageUrl.startsWith('/') ? baseUrl + ogImageUrl : null;
+        }
+        const ogTitle = `Lista de Convidados - Inscrição para Evento ${(guestList.event_title || guestList.title || 'Evento').replace(/"/g, '&quot;')}`;
+        const ogDescription = (guestList.portaria_subtitle || 'Check-in e lista de convidados').replace(/"/g, '&quot;');
+        
         res.render('guestListViewFull', {
             guestList,
             registeredGuests: finalRegisteredGuests, // TODOS os convidados (para aba Cadastrados)
@@ -736,7 +745,10 @@ const renderPortariaViewFull = asyncHandler(async (req, res) => {
             profileItemId: guestList.profile_item_id,
             formFields: formFields, // Campos do formulário para mapear labels
             formatDateBrasilia: formatDateBrasilia, // Função helper para formatar datas
-            formatDateOnlyBrasilia: formatDateOnlyBrasilia // Função helper para formatar apenas data
+            formatDateOnlyBrasilia: formatDateOnlyBrasilia, // Função helper para formatar apenas data
+            ogImageUrl: ogImageUrl || undefined,
+            ogTitle,
+            ogDescription
         });
     } catch (error) {
         logger.error('Erro ao carregar visualização completa:', error);
