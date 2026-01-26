@@ -2404,20 +2404,28 @@ router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) =
             }
         }
         if (item.item_type === 'digital_form') {
-            const df = await client.query('SELECT * FROM digital_form_items WHERE profile_item_id = $1', [sourceId]);
+            const df = await client.query(
+                `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
+                [sourceId]
+            );
             if (df.rows.length > 0) {
                 const d = df.rows[0];
                 const colRes = await client.query(
-                    `SELECT column_name FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name != 'id' ORDER BY ordinal_position`
+                    `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'digital_form_items' AND column_name != 'id' ORDER BY ordinal_position`
                 );
                 const cols = colRes.rows.map(r => r.column_name);
-                const vals = cols.map(c => {
+                const isJsonb = colRes.rows.map(r => r.data_type === 'jsonb');
+                const vals = cols.map((c, i) => {
                     if (c === 'profile_item_id') return newItem.id;
                     if (c === 'form_title') return (d.form_title || '') + ' (cópia)';
                     const v = d[c];
-                    return v !== undefined && v !== null ? v : null;
+                    if (v === undefined || v === null) return null;
+                    if (isJsonb[i]) {
+                        return typeof v === 'string' ? v : JSON.stringify(v);
+                    }
+                    return v;
                 });
-                const placeholders = cols.map((c, i) => (c === 'form_fields' ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
+                const placeholders = cols.map((c, i) => (isJsonb[i] ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
                 await client.query(
                     `INSERT INTO digital_form_items (${cols.join(', ')}) VALUES (${placeholders})`,
                     vals
