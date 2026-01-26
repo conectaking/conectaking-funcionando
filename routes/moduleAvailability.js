@@ -290,11 +290,19 @@ router.get('/available', protectUser, asyncHandler(async (req, res) => {
             ORDER BY module_type
         `;
         const modulesResult = await client.query(modulesQuery, [accountType]);
-        
+        let availableModules = modulesResult.rows.map(r => r.module_type);
+
+        // Agenda Inteligente e Contratos: só para ADM principal (em desenvolvimento). Ocultar dos demais.
+        const adminRes = await client.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+        const isAdmin = adminRes.rows.length > 0 && adminRes.rows[0].is_admin === true;
+        if (!isAdmin) {
+            availableModules = availableModules.filter(m => m !== 'agenda' && m !== 'contract');
+        }
+
         res.json({
             account_type: accountType,
             plan_code: planCode || null,
-            available_modules: modulesResult.rows.map(r => r.module_type)
+            available_modules: availableModules
         });
     } catch (error) {
         console.error('❌ Erro ao buscar módulos disponíveis:', error);
