@@ -2761,16 +2761,28 @@ router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
         const userResult = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
         const profileId = userResult.rows[0]?.id || userId;
 
-        // Se for digital_form, buscar dados do formulário
-        let responseData = result.rows[0];
+        // Formato igual ao item em GET /api/profile (com digital_form_data ou guest_list_data)
+        let responseData = { ...result.rows[0], profile_id: profileId };
         if (responseData.item_type === 'digital_form') {
             const formResult = await client.query(
-                'SELECT * FROM digital_form_items WHERE profile_item_id = $1',
+                `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
                 [itemId]
             );
             if (formResult.rows.length > 0) {
-                responseData.form_data = formResult.rows[0];
+                responseData.digital_form_data = formResult.rows[0];
+                if (responseData.digital_form_data.form_fields && typeof responseData.digital_form_data.form_fields === 'string') {
+                    try { responseData.digital_form_data.form_fields = JSON.parse(responseData.digital_form_data.form_fields); } catch (_) { responseData.digital_form_data.form_fields = []; }
+                }
+            } else {
+                responseData.digital_form_data = { form_fields: [] };
             }
+        }
+        if (responseData.item_type === 'guest_list') {
+            const glResult = await client.query(
+                `SELECT * FROM guest_list_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
+                [itemId]
+            );
+            responseData.guest_list_data = glResult.rows.length > 0 ? glResult.rows[0] : {};
         }
 
         // Evitar cache do navegador
@@ -2779,13 +2791,7 @@ router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
             'Pragma': 'no-cache',
             'Expires': '0'
         });
-        res.json({ 
-            success: true, 
-            data: {
-                ...responseData,
-                profile_id: profileId
-            }
-        });
+        res.json({ success: true, data: responseData });
     } catch (error) {
         console.error("Erro ao buscar item:", error);
         res.status(500).json({ success: false, error: 'Erro ao buscar item.' });
