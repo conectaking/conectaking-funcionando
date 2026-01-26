@@ -1390,12 +1390,13 @@ if (typeof details === 'undefined' || !details) {
                                                 return cleanId;
                                             }
                                             
-                                            // Padrões para extrair ID de URLs
+                                            // Padrões para extrair ID de URLs (inclui youtube.com/live/VIDEO_ID)
                                             var patterns = [
                                                 /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
                                                 /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
                                                 /youtu\.be\/([a-zA-Z0-9_-]{11})/,
                                                 /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+                                                /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
                                                 /youtube-nocookie\.com\/embed\/([a-zA-Z0-9_-]{11})/
                                             ];
                                             
