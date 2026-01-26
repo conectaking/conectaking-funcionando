@@ -249,9 +249,9 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     
                     console.log(`🔍 [INSTAGRAM] URL normalizada: ${urlToProcess}`);
                     
-                    // Verificar se é um post (contém /p/ ou /reel/)
-                    const isPost = urlToProcess.includes('/p/') || urlToProcess.includes('/reel/');
-                    console.log(`🔍 [INSTAGRAM] É post? ${isPost}`);
+                    // Verificar se é post/reel/vídeo incorporável (contém /p/, /reel/ ou /tv/)
+                    const isPost = urlToProcess.includes('/p/') || urlToProcess.includes('/reel/') || urlToProcess.includes('/tv/');
+                    console.log(`🔍 [INSTAGRAM] É post/reel/vídeo? ${isPost}`);
                     
                     if (isPost) {
                         // Normalizar URL para usar na API oEmbed

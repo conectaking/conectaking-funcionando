@@ -10734,6 +10734,7 @@ O Conecta King é ideal para profissionais, empresas e empreendedores que querem
                 'banner': 'Banner',
                 'carousel': 'Carrossel',
                 'youtube_embed': 'YouTube Incorporado',
+                'instagram_embed': 'Instagram Incorporado',
                 'sales_page': 'Página de Vendas'
             };
             

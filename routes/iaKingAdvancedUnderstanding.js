@@ -533,6 +533,7 @@ const VIRTUAL_CARD_KNOWLEDGE = {
         { name: 'banner', description: 'Banner de imagem', icon: 'fas fa-image' },
         { name: 'carousel', description: 'Carrossel de imagens', icon: 'fas fa-images' },
         { name: 'youtube_embed', description: 'Vídeo incorporado do YouTube', icon: 'fab fa-youtube' },
+        { name: 'instagram_embed', description: 'Vídeo ou publicação incorporada do Instagram', icon: 'fab fa-instagram' },
         { name: 'sales_page', description: 'Página completa de vendas personalizada', icon: 'fas fa-store' }
     ],
     features: [
