@@ -2565,18 +2565,24 @@ router.get('/import-form-info', asyncHandler(async (req, res) => {
     }
 }));
 
-// POST /api/profile/import-form - Importa formulário para a conta do usuário logado (body: { token })
+// POST /api/profile/import-form - Importa formulário (body: { token } ou { code })
 router.post('/import-form', protectUser, asyncHandler(async (req, res) => {
-    const token = (req.body && req.body.token) ? String(req.body.token).trim() : '';
-    if (!token) return res.status(400).json({ message: 'Token não informado.' });
+    const tokenOrCode = (req.body && (req.body.token || req.body.code)) ? String(req.body.token || req.body.code).trim() : '';
+    if (!tokenOrCode) return res.status(400).json({ message: 'Token ou código não informado.' });
     const client = await db.pool.connect();
     try {
         const targetUserId = req.user.userId;
-        const src = await client.query(
-            `SELECT id, user_id, item_type, title FROM profile_items WHERE import_token = $1 AND item_type = 'digital_form'`,
-            [token]
+        const hasCodeCol = await client.query(
+            "SELECT 1 FROM information_schema.columns WHERE table_name = 'profile_items' AND column_name = 'import_code'"
         );
-        if (src.rows.length === 0) return res.status(404).json({ message: 'Link inválido ou expirado.' });
+        const whereClause = hasCodeCol.rows.length > 0
+            ? '(import_token = $1 OR import_code = $1) AND item_type = \'digital_form\''
+            : 'import_token = $1 AND item_type = \'digital_form\'';
+        const src = await client.query(
+            `SELECT id, user_id, item_type, title FROM profile_items WHERE ${whereClause}`,
+            [tokenOrCode]
+        );
+        if (src.rows.length === 0) return res.status(404).json({ message: 'Link ou código inválido.' });
         const sourceId = src.rows[0].id;
         const item = src.rows[0];
         const nextOrder = await client.query(
