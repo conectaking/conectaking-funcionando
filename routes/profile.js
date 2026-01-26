@@ -2628,10 +2628,12 @@ router.get('/import-form-info', asyncHandler(async (req, res) => {
     }
 }));
 
-// POST /api/profile/import-form - Importa formulário (body: { token } ou { code })
+// POST /api/profile/import-form - Importa formulário (body: { token } ou { code }; opcional: { intoItemId } = importar dentro do formulário atual)
 router.post('/import-form', protectUser, asyncHandler(async (req, res) => {
     const tokenOrCode = (req.body && (req.body.token || req.body.code)) ? String(req.body.token || req.body.code).trim() : '';
     if (!tokenOrCode) return res.status(400).json({ message: 'Token ou código não informado.' });
+    const intoItemId = req.body && (req.body.intoItemId != null || req.body.into_item_id != null)
+        ? parseInt(String(req.body.intoItemId || req.body.into_item_id), 10) : null;
     const client = await db.pool.connect();
     try {
         const targetUserId = req.user.userId;
@@ -2647,7 +2649,38 @@ router.post('/import-form', protectUser, asyncHandler(async (req, res) => {
         );
         if (src.rows.length === 0) return res.status(404).json({ message: 'Link ou código inválido.' });
         const sourceId = src.rows[0].id;
-        const item = src.rows[0];
+
+        // Modo "importar dentro deste formulário": não cria novo módulo, só sobrescreve o conteúdo do item atual
+        if (intoItemId && !isNaN(intoItemId)) {
+            const targetCheck = await client.query(
+                'SELECT id, item_type FROM profile_items WHERE id = $1 AND user_id = $2',
+                [intoItemId, targetUserId]
+            );
+            if (targetCheck.rows.length === 0) return res.status(404).json({ message: 'Formulário de destino não encontrado ou sem permissão.' });
+            const targetType = targetCheck.rows[0].item_type;
+            if (targetType !== 'digital_form' && targetType !== 'guest_list') {
+                return res.status(400).json({ message: 'Só é possível importar em um formulário digital ou lista de convidados.' });
+            }
+            await client.query('DELETE FROM digital_form_items WHERE profile_item_id = $1', [intoItemId]);
+            try {
+                await copyDigitalFormItemsFull(client, sourceId, intoItemId, '');
+            } catch (formCopyErr) {
+                console.error('Erro ao copiar digital_form_items na importação-into (fallback):', formCopyErr.message);
+                await copyDigitalFormItemsFallback(client, sourceId, intoItemId, '');
+            }
+            const hasGuestList = await client.query(
+                'SELECT 1 FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
+                [sourceId]
+            );
+            await client.query('DELETE FROM guest_list_items WHERE profile_item_id = $1', [intoItemId]);
+            if (hasGuestList.rows.length > 0) {
+                await copyGuestListItemsFull(client, sourceId, intoItemId, '');
+            }
+            res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
+            return res.status(200).json({ id: intoItemId, itemId: intoItemId, into: true });
+        }
+
+        // Modo clássico: cria novo módulo (duplicar)
         const nextOrder = await client.query(
             'SELECT COALESCE(MAX(display_order), -1) + 1 AS next_order FROM profile_items WHERE user_id = $1',
             [targetUserId]
@@ -2673,7 +2706,6 @@ router.post('/import-form', protectUser, asyncHandler(async (req, res) => {
             console.error('Erro ao copiar digital_form_items na importação (fallback):', formCopyErr.message);
             await copyDigitalFormItemsFallback(client, sourceId, newItem.id, ' (cópia)');
         }
-        // Se o formulário está em modo "Lista de Convidados", as perguntas estão em guest_list_items.custom_form_fields — copiar também
         const hasGuestList = await client.query(
             'SELECT 1 FROM guest_list_items WHERE profile_item_id = $1 LIMIT 1',
             [sourceId]
