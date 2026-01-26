@@ -2653,6 +2653,8 @@
     <script>
     (function() {
         var address = <%- JSON.stringify(formData.event_address) %>;
+        var savedLat = <%= (typeof formData.event_address_lat !== 'undefined' && formData.event_address_lat != null && formData.event_address_lat !== '') ? Number(formData.event_address_lat) : 'null' %>;
+        var savedLon = <%= (typeof formData.event_address_lon !== 'undefined' && formData.event_address_lon != null && formData.event_address_lon !== '') ? Number(formData.event_address_lon) : 'null' %>;
         var mapEl = document.getElementById('event-address-map');
         var container = document.getElementById('event-address-map-container');
         if (!mapEl || !address) return;
@@ -2687,21 +2689,7 @@
             choicePanel.onclick = function(e) { if (e.target === choicePanel) choicePanel.style.display = 'none'; };
         }
 
-        fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(address) + '&format=json&limit=1', {
-            headers: { 'Accept': 'application/json', 'User-Agent': 'ConectaKingForm/1.0' }
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (!data || !data[0]) {
-                mapEl.style.display = 'flex';
-                mapEl.style.alignItems = 'center';
-                mapEl.style.justifyContent = 'center';
-                mapEl.style.padding = '1rem';
-                mapEl.innerHTML = '<p style="margin:0;color:#666;">Endereço no mapa: use o botão abaixo para ver rotas.</p>';
-                return;
-            }
-            var lat = parseFloat(data[0].lat);
-            var lon = parseFloat(data[0].lon);
+        function drawMap(lat, lon) {
             if (container) {
                 container.setAttribute('data-lat', lat);
                 container.setAttribute('data-lon', lon);
@@ -2719,14 +2707,36 @@
                 iconAnchor: [18, 36]
             });
             L.marker([lat, lon], { icon: pinIcon }).addTo(map);
-        })
-        .catch(function() {
-            mapEl.style.display = 'flex';
-            mapEl.style.alignItems = 'center';
-            mapEl.style.justifyContent = 'center';
-            mapEl.style.padding = '1rem';
-            mapEl.innerHTML = '<p style="margin:0;color:#666;">Não foi possível carregar o mapa. Use o botão abaixo para ver rotas.</p>';
-        });
+        }
+
+        if (savedLat != null && savedLon != null && !isNaN(savedLat) && !isNaN(savedLon)) {
+            drawMap(savedLat, savedLon);
+        } else {
+            fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(address) + '&format=json&limit=1', {
+                headers: { 'Accept': 'application/json', 'User-Agent': 'ConectaKingForm/1.0' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data || !data[0]) {
+                    mapEl.style.display = 'flex';
+                    mapEl.style.alignItems = 'center';
+                    mapEl.style.justifyContent = 'center';
+                    mapEl.style.padding = '1rem';
+                    mapEl.innerHTML = '<p style="margin:0;color:#666;">Endereço no mapa: use o botão abaixo para ver rotas.</p>';
+                    return;
+                }
+                var lat = parseFloat(data[0].lat);
+                var lon = parseFloat(data[0].lon);
+                drawMap(lat, lon);
+            })
+            .catch(function() {
+                mapEl.style.display = 'flex';
+                mapEl.style.alignItems = 'center';
+                mapEl.style.justifyContent = 'center';
+                mapEl.style.padding = '1rem';
+                mapEl.innerHTML = '<p style="margin:0;color:#666;">Não foi possível carregar o mapa. Use o botão abaixo para ver rotas.</p>';
+            });
+        }
     })();
     </script>
     <% } %>
