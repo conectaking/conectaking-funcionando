@@ -21,12 +21,30 @@ router.get('/details', protectUser, async (req, res) => {
     }
 });
 
+// Mapeamento account_type -> plan_code (igual ao moduleAvailability e subscription) para Separação de Pacotes
+const accountTypeToPlanCode = {
+    'individual': 'basic',
+    'individual_com_logo': 'premium',
+    'basic': 'basic',
+    'premium': 'premium',
+    'business_owner': 'king_corporate',
+    'enterprise': 'king_corporate',
+    'king_base': 'king_base',
+    'king_essential': 'king_essential',
+    'king_finance': 'king_finance',
+    'king_finance_plus': 'king_finance_plus',
+    'king_premium_plus': 'king_premium_plus',
+    'king_corporate': 'king_corporate',
+    'free': 'free'
+};
+
 router.get('/status', protectUser, async (req, res) => {
     try {
         const query = `
             SELECT 
                 u.id, u.email,
                 u.account_type AS "accountType",
+                u.subscription_id AS "subscriptionId",
                 u.is_admin AS "isAdmin",    
                 p.display_name AS "name",
                 p.profile_image_url AS "profileImageUrl",
@@ -46,7 +64,20 @@ router.get('/status', protectUser, async (req, res) => {
         }
 
         const user = result.rows[0];
-        const planCode = user.accountType || user.account_type;
+        let planCode = null;
+        if (user.subscriptionId) {
+            const planRow = await db.query(
+                'SELECT plan_code FROM subscription_plans WHERE id = $1 AND is_active = true',
+                [user.subscriptionId]
+            );
+            if (planRow.rows.length > 0) {
+                planCode = planRow.rows[0].plan_code;
+            }
+        }
+        if (!planCode) {
+            const accountType = user.accountType || user.account_type;
+            planCode = accountTypeToPlanCode[accountType] || accountType;
+        }
         let hasModoEmpresa = false;
         if (planCode) {
             const mod = await db.query(

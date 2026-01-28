@@ -57,8 +57,7 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
         `;
         const plansResult = await client.query(plansQuery);
         
-        // Determinar qual plano o usuário tem baseado no account_type
-        // Mapear account_type para plan_code
+        // Determinar qual plano o usuário tem: PRIORIDADE 1 = subscription_id (Separação de Pacotes)
         const accountTypeToPlanCode = {
             'individual': 'basic',
             'individual_com_logo': 'premium',
@@ -67,6 +66,7 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
             'business_owner': 'king_corporate',
             'enterprise': 'king_corporate',
             'king_base': 'king_base',
+            'king_essential': 'king_essential',
             'king_finance': 'king_finance',
             'king_finance_plus': 'king_finance_plus',
             'king_premium_plus': 'king_premium_plus',
@@ -74,18 +74,26 @@ router.get('/info', protectUser, asyncHandler(async (req, res) => {
         };
         
         let currentPlan = null;
-        const planCode = accountTypeToPlanCode[user.account_type];
         
-        if (planCode) {
-            currentPlan = plansResult.rows.find(p => p.plan_code === planCode);
+        // Prioridade 1: plano da assinatura (quando admin coloca cliente em um plano, subscription_id é usado)
+        if (user.subscription_id) {
+            currentPlan = plansResult.rows.find(p => p.id === user.subscription_id);
         }
         
-        // Se não encontrou pelo mapeamento, tentar encontrar pelo account_type diretamente
+        // Prioridade 2: mapear account_type para plan_code
+        if (!currentPlan) {
+            const planCode = accountTypeToPlanCode[user.account_type];
+            if (planCode) {
+                currentPlan = plansResult.rows.find(p => p.plan_code === planCode);
+            }
+        }
+        
+        // Prioridade 3: account_type como plan_code direto
         if (!currentPlan && user.account_type) {
             currentPlan = plansResult.rows.find(p => p.plan_code === user.account_type);
         }
         
-        // Se ainda não encontrou e não é free, usar o primeiro plano como fallback
+        // Fallback: se não é free, usar o primeiro plano
         if (!currentPlan && user.account_type !== 'free') {
             currentPlan = plansResult.rows[0];
         }

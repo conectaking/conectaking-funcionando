@@ -255,41 +255,75 @@ router.put('/plan-availability', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
+// Mapeamento account_type -> plan_code (compatível com subscription_plans e module_plan_availability)
+const accountTypeToPlanCode = {
+    'individual': 'basic',
+    'individual_com_logo': 'premium',
+    'basic': 'basic',
+    'premium': 'premium',
+    'business_owner': 'king_corporate',
+    'enterprise': 'king_corporate',
+    'king_base': 'king_base',
+    'king_essential': 'king_essential',
+    'king_finance': 'king_finance',
+    'king_finance_plus': 'king_finance_plus',
+    'king_premium_plus': 'king_premium_plus',
+    'king_corporate': 'king_corporate',
+    'free': 'free'
+};
+
 // GET /api/modules/available - Buscar módulos disponíveis para o usuário atual ou por plan_code
+// IMPORTANTE: Usa o plano da ASSINATURA (subscription_id) para respeitar a Separação de Pacotes.
+// Apenas os módulos marcados como disponíveis para esse plano na configuração admin são retornados.
 router.get('/available', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const userId = req.user.userId;
-        const planCode = req.query.plan_code; // Parâmetro opcional para buscar por plan_code
+        const planCodeQuery = req.query.plan_code; // Parâmetro opcional para buscar por plan_code
         
+        let planCode; // plan_code usado na tabela module_plan_availability (ex: basic, premium, king_prime, etc.)
         let accountType;
         
-        if (planCode) {
-            // Mapear plan_code para account_type
-            const planCodeMap = {
-                'individual': 'individual',
-                'individual_com_logo': 'individual_com_logo',
-                'business_owner': 'business_owner',
-                'free': 'free'
-            };
-            accountType = planCodeMap[planCode] || planCode;
+        if (planCodeQuery) {
+            planCode = accountTypeToPlanCode[planCodeQuery] || planCodeQuery;
+            accountType = planCodeQuery;
         } else {
-            // Buscar account_type do usuário
-            const userQuery = await client.query('SELECT account_type FROM users WHERE id = $1', [userId]);
+            // Buscar usuário com subscription_id e account_type
+            const userQuery = await client.query(
+                'SELECT account_type, subscription_id FROM users WHERE id = $1',
+                [userId]
+            );
             if (userQuery.rows.length === 0) {
                 return res.status(404).json({ message: 'Usuário não encontrado.' });
             }
-            accountType = userQuery.rows[0].account_type;
+            const user = userQuery.rows[0];
+            accountType = user.account_type;
+            
+            // Prioridade 1: usar o plano da assinatura (Separação de Pacotes)
+            if (user.subscription_id) {
+                const planResult = await client.query(
+                    'SELECT plan_code FROM subscription_plans WHERE id = $1 AND is_active = true',
+                    [user.subscription_id]
+                );
+                if (planResult.rows.length > 0) {
+                    planCode = planResult.rows[0].plan_code;
+                }
+            }
+            
+            // Prioridade 2: mapear account_type para plan_code
+            if (!planCode) {
+                planCode = accountTypeToPlanCode[accountType] || accountType;
+            }
         }
         
-        // Buscar módulos disponíveis para este plano
+        // Buscar APENAS os módulos marcados como disponíveis (is_available = true) para este plano
         const modulesQuery = `
             SELECT DISTINCT module_type
             FROM module_plan_availability
             WHERE plan_code = $1 AND is_available = true
             ORDER BY module_type
         `;
-        const modulesResult = await client.query(modulesQuery, [accountType]);
+        const modulesResult = await client.query(modulesQuery, [planCode]);
         let availableModules = modulesResult.rows.map(r => r.module_type);
 
         // Agenda Inteligente e Contratos: só para ADM principal (em desenvolvimento). Ocultar dos demais.
@@ -301,7 +335,7 @@ router.get('/available', protectUser, asyncHandler(async (req, res) => {
 
         res.json({
             account_type: accountType,
-            plan_code: planCode || null,
+            plan_code: planCode,
             available_modules: availableModules
         });
     } catch (error) {
