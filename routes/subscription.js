@@ -155,9 +155,11 @@ router.get('/plans', protectUser, asyncHandler(async (req, res) => {
             ORDER BY COALESCE(monthly_price, price) ASC
         `;
         const plansResult = await client.query(plansQuery);
+        // ADM Principal é interno: não exibir na página de assinatura
+        const plansFiltered = (plansResult.rows || []).filter(p => p.plan_code !== 'adm_principal' && p.plan_code !== 'abm');
         
         // Garantir que os campos customizados sejam sempre strings (não null)
-        const plansWithCustomFields = plansResult.rows.map(plan => ({
+        const plansWithCustomFields = plansFiltered.map(plan => ({
             ...plan,
             custom_included_modules: plan.custom_included_modules !== null && plan.custom_included_modules !== undefined 
                 ? plan.custom_included_modules 
@@ -166,8 +168,6 @@ router.get('/plans', protectUser, asyncHandler(async (req, res) => {
                 ? plan.custom_excluded_modules 
                 : ''
         }));
-        
-        console.log(`📤 Retornando ${plansWithCustomFields.length} planos com campos customizados`);
         
         res.json({
             plans: plansWithCustomFields
@@ -518,9 +518,11 @@ router.get('/plans-public', asyncHandler(async (req, res) => {
             ORDER BY COALESCE(monthly_price, price) ASC
         `;
         const plansResult = await client.query(plansQuery);
+        // ADM Principal é interno: não exibir no site público
+        const plansFiltered = (plansResult.rows || []).filter(p => p.plan_code !== 'adm_principal' && p.plan_code !== 'abm');
         
         // Garantir que os campos customizados sejam sempre strings (não null) para a página pública
-        const plansWithCustomFields = plansResult.rows.map(plan => ({
+        const plansWithCustomFields = plansFiltered.map(plan => ({
             ...plan,
             custom_included_modules: plan.custom_included_modules !== null && plan.custom_included_modules !== undefined 
                 ? plan.custom_included_modules 
