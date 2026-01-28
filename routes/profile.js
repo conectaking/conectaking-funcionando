@@ -182,19 +182,33 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             }
             return item;
         }));
-        
+
+        // Normalizar itens para o frontend (dashboard/mobile): garantir campos usados em layout
+        const normalizedItems = (items || []).map((item, index) => {
+            const row = item && typeof item === 'object' ? item : {};
+            return {
+                ...row,
+                id: row.id ?? null,
+                item_type: row.item_type ?? 'link',
+                title: row.title ?? row.item_type ?? '',
+                display_order: typeof row.display_order === 'number' ? row.display_order : index,
+                is_active: row.is_active !== false,
+                image_url: row.image_url ?? null
+            };
+        });
+
         const details = profileRes.rows[0];
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
-        
+
         console.log('📱 [GET /api/profile] WhatsApp retornado:', details.whatsapp);
         console.log('📱 [GET /api/profile] Coluna whatsapp existe?', existingColumns.includes('whatsapp'));
 
         const fullProfile = {
             details: details,
-            items: items || []
+            items: normalizedItems
         };
-        
+
         res.json(fullProfile);
 
     } catch (error) {
