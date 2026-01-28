@@ -9,6 +9,8 @@
 -- ============================================
 -- 1. CONTAS COM subscription_id INATIVO
 -- ============================================
+-- Comentado: Execute individualmente se necessário
+/*
 SELECT 
     'subscription_id INATIVO' AS problema,
     u.id AS user_id,
@@ -57,10 +59,13 @@ WHERE u.subscription_id IS NOT NULL
       END
   )
 ORDER BY u.email;
+*/
 
 -- ============================================
 -- 3. CONTAS SEM MÓDULOS (plan_code não retorna módulos)
 -- ============================================
+-- Comentado: Execute individualmente se necessário
+/*
 WITH user_plans AS (
     SELECT 
         u.id AS user_id,
@@ -111,10 +116,13 @@ GROUP BY
     sp.plan_code, sp.plan_name, sp.is_active, up.plan_code_resolvido
 HAVING COUNT(mpa.module_type) FILTER (WHERE mpa.is_available = true) = 0
 ORDER BY up.email;
+*/
 
 -- ============================================
 -- 4. CONTAS SEM subscription_id E SEM account_type VÁLIDO
 -- ============================================
+-- Comentado: Execute individualmente se necessário
+/*
 SELECT 
     'SEM PLANO DEFINIDO' AS problema,
     u.id AS user_id,
@@ -139,6 +147,7 @@ WHERE u.subscription_id IS NULL
       )
   )
 ORDER BY u.email;
+*/
 
 -- ============================================
 -- 5. RELATÓRIO COMPLETO (TODOS OS PROBLEMAS)
