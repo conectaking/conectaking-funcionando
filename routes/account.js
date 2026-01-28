@@ -70,23 +70,45 @@ router.get('/status', protectUser, async (req, res) => {
 
         const user = result.rows[0];
         let planCode = null;
+        let planSource = null; // para debug: de onde veio o planCode
+        
+        // Prioridade 1: subscription_id (plano da assinatura)
         if (user.subscriptionId) {
             const planRow = await db.query(
-                'SELECT plan_code FROM subscription_plans WHERE id = $1 AND is_active = true',
+                'SELECT plan_code, plan_name, is_active FROM subscription_plans WHERE id = $1',
                 [user.subscriptionId]
             );
             if (planRow.rows.length > 0) {
-                planCode = planRow.rows[0].plan_code;
+                const plan = planRow.rows[0];
+                if (plan.is_active) {
+                    planCode = plan.plan_code;
+                    planSource = `subscription_id=${user.subscriptionId} (${plan.plan_name}, ${plan.plan_code})`;
+                } else {
+                    console.warn(`⚠️ Usuário ${user.email} (${req.user.userId}) tem subscription_id=${user.subscriptionId} mas o plano ${plan.plan_code} está INATIVO. Usando account_type como fallback.`);
+                }
+            } else {
+                console.warn(`⚠️ Usuário ${user.email} (${req.user.userId}) tem subscription_id=${user.subscriptionId} mas o plano não existe na tabela subscription_plans. Usando account_type como fallback.`);
             }
         }
+        
+        // Prioridade 2: account_type mapeado
         if (!planCode) {
             const accountType = user.accountType || user.account_type;
             planCode = accountTypeToPlanCode[accountType] || accountType;
+            if (planCode && planCode !== accountType) {
+                planSource = `account_type=${accountType} → mapeado para ${planCode}`;
+            } else if (planCode) {
+                planSource = `account_type=${accountType} (usado diretamente)`;
+            }
         }
-        // Conta sem plano definido: usar basic para não ficar sem módulos (ex.: email antigo sem subscription_id)
+        
+        // Fallback: conta sem plano definido usa basic (King Start)
         if (!planCode) {
             planCode = 'basic';
+            planSource = 'fallback (sem subscription_id e sem account_type válido)';
         }
+        
+        console.log(`📦 Usuário ${user.email} (${req.user.userId}): planCode=${planCode} (${planSource})`);
 
         // Módulos do plano base + extras individuais - exclusões (igual /api/modules/available)
         // Frontend usa para esconder botões: Gestão Financeira, Contratos, Agenda, Modo Empresa (igual Modo Empresa)
@@ -99,6 +121,11 @@ router.get('/status', protectUser, async (req, res) => {
                 [planCode]
             );
             baseModules = baseRes.rows.map(r => r.module_type);
+            if (baseModules.length === 0) {
+                console.warn(`⚠️ Usuário ${user.email} (${req.user.userId}): planCode=${planCode} não retornou nenhum módulo da tabela module_plan_availability. Verifique se o plano existe e tem módulos configurados.`);
+            } else {
+                console.log(`✅ Usuário ${user.email} (${req.user.userId}): ${baseModules.length} módulos encontrados para planCode=${planCode}: ${baseModules.slice(0, 5).join(', ')}${baseModules.length > 5 ? '...' : ''}`);
+            }
         }
         const indRes = await db.query(
             'SELECT module_type FROM individual_user_plans WHERE user_id = $1',
@@ -129,6 +156,119 @@ router.get('/status', protectUser, async (req, res) => {
     } catch (error) {
         console.error("Erro ao buscar status da conta:", error);
         res.status(500).json({ message: 'Erro ao buscar dados da conta.' });
+    }
+});
+
+// GET /api/account/debug-plan/:email - Diagnóstico: verificar plano e módulos de uma conta específica (ADM)
+router.get('/debug-plan/:email', protectUser, async (req, res) => {
+    try {
+        const { email } = req.params;
+        
+        // Verificar se é admin
+        const adminCheck = await db.query('SELECT is_admin FROM users WHERE id = $1', [req.user.userId]);
+        if (!adminCheck.rows.length || !adminCheck.rows[0].is_admin) {
+            return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem usar esta rota.' });
+        }
+        
+        // Buscar usuário pelo email
+        const userQuery = await db.query(
+            `SELECT id, email, account_type, subscription_id FROM users WHERE email = $1`,
+            [email]
+        );
+        
+        if (userQuery.rows.length === 0) {
+            return res.status(404).json({ message: `Usuário com email ${email} não encontrado.` });
+        }
+        
+        const user = userQuery.rows[0];
+        let planCode = null;
+        let planInfo = null;
+        let planSource = null;
+        
+        // Verificar subscription_id
+        if (user.subscription_id) {
+            const planRow = await db.query(
+                'SELECT id, plan_code, plan_name, price, monthly_price, annual_price, is_active FROM subscription_plans WHERE id = $1',
+                [user.subscription_id]
+            );
+            if (planRow.rows.length > 0) {
+                planInfo = planRow.rows[0];
+                if (planInfo.is_active) {
+                    planCode = planInfo.plan_code;
+                    planSource = `subscription_id=${user.subscription_id}`;
+                } else {
+                    planSource = `subscription_id=${user.subscription_id} (PLANO INATIVO: ${planInfo.plan_code})`;
+                }
+            } else {
+                planSource = `subscription_id=${user.subscription_id} (PLANO NÃO EXISTE NA TABELA)`;
+            }
+        }
+        
+        // Verificar account_type
+        if (!planCode) {
+            const accountType = user.account_type;
+            planCode = accountTypeToPlanCode[accountType] || accountType;
+            if (planCode && planCode !== accountType) {
+                planSource = `account_type=${accountType} → mapeado para ${planCode}`;
+            } else if (planCode) {
+                planSource = `account_type=${accountType} (usado diretamente)`;
+            }
+        }
+        
+        // Fallback
+        if (!planCode) {
+            planCode = 'basic';
+            planSource = 'fallback (sem subscription_id e sem account_type válido)';
+        }
+        
+        // Buscar módulos disponíveis
+        const modulesRes = await db.query(
+            `SELECT module_type, is_available FROM module_plan_availability WHERE plan_code = $1 ORDER BY module_type`,
+            [planCode]
+        );
+        
+        const availableModules = modulesRes.rows.filter(r => r.is_available).map(r => r.module_type);
+        const unavailableModules = modulesRes.rows.filter(r => !r.is_available).map(r => r.module_type);
+        
+        // Buscar módulos individuais e exclusões
+        const indRes = await db.query(
+            'SELECT module_type FROM individual_user_plans WHERE user_id = $1',
+            [user.id]
+        ).catch(() => ({ rows: [] }));
+        const exclRes = await db.query(
+            'SELECT module_type FROM individual_user_plan_exclusions WHERE user_id = $1',
+            [user.id]
+        ).catch(() => ({ rows: [] }));
+        
+        res.json({
+            user: {
+                id: user.id,
+                email: user.email,
+                account_type: user.account_type,
+                subscription_id: user.subscription_id
+            },
+            plan_resolution: {
+                plan_code: planCode,
+                source: planSource,
+                subscription_plan: planInfo
+            },
+            modules: {
+                available: availableModules,
+                unavailable: unavailableModules,
+                individual_adds: indRes.rows.map(r => r.module_type),
+                individual_exclusions: exclRes.rows.map(r => r.module_type),
+                final_available: [...new Set([...availableModules, ...indRes.rows.map(r => r.module_type)].filter(m => !exclRes.rows.some(e => e.module_type === m)))].sort()
+            },
+            flags: {
+                hasFinance: availableModules.includes('finance') || indRes.rows.some(r => r.module_type === 'finance'),
+                hasContract: availableModules.includes('contract') || indRes.rows.some(r => r.module_type === 'contract'),
+                hasAgenda: availableModules.includes('agenda') || indRes.rows.some(r => r.module_type === 'agenda'),
+                hasModoEmpresa: availableModules.includes('modo_empresa') || indRes.rows.some(r => r.module_type === 'modo_empresa')
+            }
+        });
+    } catch (error) {
+        console.error("Erro ao diagnosticar plano:", error);
+        res.status(500).json({ message: 'Erro ao diagnosticar plano da conta.' });
     }
 });
 

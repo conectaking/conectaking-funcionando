@@ -307,17 +307,29 @@ router.get('/available', protectUser, asyncHandler(async (req, res) => {
             // Prioridade 1: usar o plano da assinatura (Separação de Pacotes)
             if (user.subscription_id) {
                 const planResult = await client.query(
-                    'SELECT plan_code FROM subscription_plans WHERE id = $1 AND is_active = true',
+                    'SELECT plan_code, plan_name, is_active FROM subscription_plans WHERE id = $1',
                     [user.subscription_id]
                 );
                 if (planResult.rows.length > 0) {
-                    planCode = planResult.rows[0].plan_code;
+                    const plan = planResult.rows[0];
+                    if (plan.is_active) {
+                        planCode = plan.plan_code;
+                    } else {
+                        console.warn(`⚠️ /api/modules/available: Usuário ${userId} tem subscription_id=${user.subscription_id} mas o plano ${plan.plan_code} está INATIVO. Usando account_type como fallback.`);
+                    }
+                } else {
+                    console.warn(`⚠️ /api/modules/available: Usuário ${userId} tem subscription_id=${user.subscription_id} mas o plano não existe. Usando account_type como fallback.`);
                 }
             }
             
             // Prioridade 2: mapear account_type para plan_code
             if (!planCode) {
                 planCode = accountTypeToPlanCode[accountType] || accountType;
+            }
+            
+            // Fallback: conta sem plano definido usa basic
+            if (!planCode) {
+                planCode = 'basic';
             }
         }
         
@@ -330,6 +342,10 @@ router.get('/available', protectUser, asyncHandler(async (req, res) => {
         `;
         const modulesResult = await client.query(modulesQuery, [planCode]);
         let availableModules = modulesResult.rows.map(r => r.module_type);
+        
+        if (availableModules.length === 0) {
+            console.warn(`⚠️ /api/modules/available: planCode=${planCode} não retornou nenhum módulo. Verifique se o plano existe em module_plan_availability e tem módulos com is_available=true.`);
+        }
 
         // Aplicar personalização por usuário (apenas quando não é query por plan_code)
         if (!planCodeQuery) {
