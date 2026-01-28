@@ -14,6 +14,7 @@
         var token = null;
         try {
             if (typeof localStorage !== 'undefined') token = localStorage.getItem('token');
+            if (!token && typeof localStorage !== 'undefined') token = localStorage.getItem('conectaKingToken');
             if (!token && typeof sessionStorage !== 'undefined') token = sessionStorage.getItem('token');
         } catch (e) {}
         var headers = { 'Content-Type': 'application/json' };
@@ -68,7 +69,8 @@
      * Chame após o DOM estar pronto (ex.: no load do dashboard).
      */
     function initModulesByPlan() {
-        fetch(API_BASE + '/api/account/status', { credentials: 'include', headers: getAuthHeaders() })
+        var url = (API_BASE || (typeof window !== 'undefined' && window.API_URL)) + '/api/account/status';
+        fetch(url, { credentials: 'include', headers: getAuthHeaders() })
             .then(function (r) {
                 if (!r.ok) return Promise.reject(new Error('Não autenticado'));
                 return r.json();
