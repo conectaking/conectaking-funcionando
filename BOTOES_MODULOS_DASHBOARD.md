@@ -10,41 +10,63 @@ Os botões **Gestão Financeira**, **Contratos** e **Agenda Inteligente** devem 
 
 A resposta inclui:
 
-- `hasModoEmpresa` – já existia; usar para mostrar/ocultar o botão Modo Empresa
-- `hasFinance` – **novo**; usar para mostrar/ocultar o botão **Gestão Financeira**
-- `hasContract` – **novo**; usar para mostrar/ocultar o botão **Contratos**
-- `hasAgenda` – **novo**; usar para mostrar/ocultar o botão **Agenda Inteligente**
+- `hasModoEmpresa` – mostrar/ocultar Modo Empresa
+- `hasFinance` – mostrar/ocultar **Gestão Financeira**
+- `hasContract` – mostrar/ocultar **Contratos**
+- `hasAgenda` – mostrar/ocultar **Agenda Inteligente**
 
-Cada um é `true` quando o usuário tem o módulo (plano base + extras individuais − exclusões).
+Cada um é `true` quando o usuário tem o módulo no plano (plano base + extras individuais − exclusões).
 
 ---
 
-## O que o frontend deve fazer
+## Solução rápida: script pronto (public_html/dashboard.html)
 
-1. Chamar **GET `/api/account/status`** (com token) ao carregar o dashboard.
-2. No menu/sidebar:
-   - Mostrar **Modo Empresa** só se `user.hasModoEmpresa === true`.
-   - Mostrar **Gestão Financeira** só se `user.hasFinance === true`.
-   - Mostrar **Contratos** só se `user.hasContract === true`.
-   - Mostrar **Agenda Inteligente** só se `user.hasAgenda === true`.
+Foi criado o script **`public/js/dashboard-ocultar-modulos-por-plano.js`** neste repositório. Use-o no seu dashboard (`public_html/`):
 
-Exemplo (pseudo-código):
+### 1. Copiar o script para o seu dashboard
+
+- Copie o arquivo **`public/js/dashboard-ocultar-modulos-por-plano.js`** para dentro da pasta **`public_html`** do seu projeto (por exemplo: `public_html/js/dashboard-ocultar-modulos-por-plano.js`).
+
+### 2. Incluir no `dashboard.html`
+
+No **`dashboard.html`**, antes do `</body>`, adicione:
+
+```html
+<!-- Oculta Gestão Financeira, Contratos e Agenda conforme o plano -->
+<script>
+  // Se o dashboard estiver em outro endereço que a API (ex.: 5500 vs 3000), defina a URL da API:
+  // window.API_BASE = 'http://localhost:3000';
+</script>
+<script src="js/dashboard-ocultar-modulos-por-plano.js"></script>
+```
+
+Se o dashboard e a API estiverem em portas diferentes (ex.: dashboard em `127.0.0.1:5500` e API em `http://localhost:3000`), descomente e ajuste:
+
+```html
+<script> window.API_BASE = 'http://localhost:3000'; </script>
+<script src="js/dashboard-ocultar-modulos-por-plano.js"></script>
+```
+
+(Use a URL real da sua API, por exemplo em produção: `https://sua-api.com`.)
+
+### 3. O que o script faz
+
+- Ao carregar a página, chama **GET `/api/account/status`** (com o token em `localStorage`/`sessionStorage` ou cookie).
+- Esconde no menu os itens cujo texto contém **"Gestão Financeira"**, **"Contratos"**, **"Agenda Inteligente"** ou **"Modo Empresa"** quando o usuário **não** tem esse módulo (`hasFinance`, `hasContract`, `hasAgenda`, `hasModoEmpresa` = false).
+
+Não é obrigatório alterar o HTML: o script procura pelos textos. Se quiser, pode marcar cada item do menu com `data-module="finance"`, `data-module="contract"`, `data-module="agenda"` ou `data-module="modo_empresa"` para o script achar com mais precisão.
+
+---
+
+## Se você já chama `/api/account/status` no dashboard
+
+Se o seu `dashboard.js` já carrega o usuário (por exemplo em `user` ou `account`), basta aplicar a visibilidade após receber a resposta:
 
 ```js
-// Após carregar user = await fetch('/api/account/status').then(r => r.json())
-
-if (user.hasModoEmpresa) {
-  // mostrar link/botão Modo Empresa
-}
-if (user.hasFinance) {
-  // mostrar link/botão Gestão Financeira
-}
-if (user.hasContract) {
-  // mostrar link/botão Contratos
-}
-if (user.hasAgenda) {
-  // mostrar link/botão Agenda Inteligente
+// Após obter user (ex.: do GET /api/account/status)
+if (window.applyModulesVisibility) {
+  window.applyModulesVisibility(user);
 }
 ```
 
-Assim, quem não tem o módulo no plano não vê o botão (e não acessa a rota, que já retorna 403 no backend).
+Assim, quem não tem o módulo no plano não vê o botão (e ao tentar acessar a rota recebe 403 no backend).
