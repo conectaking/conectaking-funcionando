@@ -8,6 +8,7 @@ const logger = require('../utils/logger');
 const { asyncHandler, ValidationError, UnauthorizedError } = require('../middleware/errorHandler');
 const { validateRegistration, validateLogin, handleValidationErrors } = require('../utils/validation');
 const { generateTokenPair, saveRefreshToken, validateRefreshToken, revokeRefreshToken } = require('../middleware/refreshToken');
+const { emailLocalPartWithoutDots } = require('../utils/emailHelpers');
 
 const router = express.Router();
 
@@ -102,8 +103,18 @@ router.post(
                 // Configurar statement_timeout no client
                 await client.query('SET statement_timeout = 30000'); // 30 segundos
                 
-                // Timeout adicional para garantir (30 segundos)
-                const queryPromise = client.query('SELECT * FROM users WHERE email = $1', [email]);
+                // Buscar por email. Contas antigas foram salvas sem pontos na parte local;
+                // tentar também a versão sem pontos para compatibilidade.
+                const queryPromise = (async () => {
+                    let res = await client.query('SELECT * FROM users WHERE email = $1', [email]);
+                    if (res.rows.length === 0) {
+                        const alt = emailLocalPartWithoutDots(email);
+                        if (alt !== email) {
+                            res = await client.query('SELECT * FROM users WHERE email = $1', [alt]);
+                        }
+                    }
+                    return res;
+                })();
                 const timeoutPromise = new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('Timeout: Query do banco demorou mais de 30 segundos')), 30000)
                 );

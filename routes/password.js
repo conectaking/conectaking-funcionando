@@ -20,6 +20,7 @@ const {
 const { sendPasswordResetEmail } = require('../utils/email');
 const { success, error, validationError } = require('../utils/response');
 const { passwordResetLimiter } = require('../middleware/security');
+const { emailLocalPartWithoutDots } = require('../utils/emailHelpers');
 
 const router = express.Router();
 
@@ -34,8 +35,14 @@ router.post(
     asyncHandler(async (req, res) => {
         const { email } = req.body;
 
-        // Buscar usuário
-        const userResult = await db.query('SELECT id, email FROM users WHERE email = $1', [email]);
+        // Buscar usuário. Contas antigas podem ter email sem pontos na parte local.
+        let userResult = await db.query('SELECT id, email FROM users WHERE email = $1', [email]);
+        if (userResult.rows.length === 0) {
+            const alt = emailLocalPartWithoutDots(email);
+            if (alt !== email) {
+                userResult = await db.query('SELECT id, email FROM users WHERE email = $1', [alt]);
+            }
+        }
         
         // Sempre retorna sucesso (por segurança, não revela se email existe)
         if (userResult.rows.length === 0) {
