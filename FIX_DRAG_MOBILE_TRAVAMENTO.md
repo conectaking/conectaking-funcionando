@@ -1,6 +1,13 @@
 # Correção: Arraste de Módulos Travando no Mobile
 
-Quando o arraste (drag) dos módulos ativos **trava** no meio do gesto no celular (Android, Xiaomi, iPhone), use os ajustes abaixo no **projeto do dashboard** (onde está o `dashboard.js` e o Sortable).
+Quando o arraste (drag) dos módulos ativos **trava** ou fica difícil no celular (Android, Xiaomi, iPhone), use os ajustes abaixo no **projeto do dashboard** (onde está o `dashboard.js` e o Sortable).
+
+---
+
+## 0. Opção mais fácil no mobile: use as setas ↑↓
+
+No celular é **bem mais estável** mover módulos com as **setas “subir” / “descer”** do que arrastando. O CSS em `dashboard-modulos-mobile-fix.css` já deixa essas setas com área de toque ≥ 44px no mobile.  
+Peça ao usuário: *“No celular, use as setinhas ↑ e ↓ para mudar a ordem; no computador pode arrastar.”*
 
 ---
 
@@ -11,6 +18,8 @@ O arquivo `dashboard-modulos-mobile-fix.css` foi atualizado com:
 - **Handle de arraste** (`.module-drag-handle`): `touch-action: none`, área de toque ≥ 44px
 - **Containers da lista** (`#items-container`, `.modules-list`, etc.): `overflow-y: auto`, `-webkit-overflow-scrolling: touch`, `touch-action: pan-y`
 - **Item em drag** (`.sortable-dragging`): `touch-action: none` apenas no item arrastado
+- **Durante o drag** (`body.sortable-dragging-active`): o container da lista fica com `overflow: hidden` e `touch-action: none` para o scroll não “roubar” o dedo
+- **Setas ↑↓ no mobile**: área de toque ≥ 44px em `.module-drag-controls` e botões de subir/descer
 
 Garanta que esse CSS esteja carregado na página "Módulos Ativos".
 
@@ -54,6 +63,9 @@ var sortableOpts = {
         if (isMobile) {
             document.body.classList.add('sortable-dragging-active');
             evt.item.style.touchAction = 'none';
+            // opcional: travar scroll do container durante o drag
+            var list = document.getElementById('items-container') || document.querySelector('.modules-list, .items-container');
+            if (list) list.classList.add('is-dragging');
         }
         // … resto do onStart (ex.: estilo “levantar”)
     },
@@ -61,6 +73,8 @@ var sortableOpts = {
         if (isMobile) {
             document.body.classList.remove('sortable-dragging-active');
             evt.item.style.touchAction = '';
+            var list = document.getElementById('items-container') || document.querySelector('.modules-list, .items-container');
+            if (list) list.classList.remove('is-dragging');
         }
         // … salvar ordem, etc.
     }
