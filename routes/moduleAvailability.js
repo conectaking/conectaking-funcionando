@@ -722,7 +722,20 @@ router.put('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
     }
 }));
 
-
+// GET /api/modules/configure-modules-page/:userId - Página para configurar módulos (todos editáveis, inclusive "Já no plano")
+router.get('/configure-modules-page/:userId', protectUser, asyncHandler(async (req, res) => {
+    const adminUserId = req.user.userId;
+    const targetUserId = req.params.userId;
+    const adminCheck = await db.query('SELECT is_admin FROM users WHERE id = $1', [adminUserId]);
+    if (adminCheck.rows.length === 0 || !adminCheck.rows[0].is_admin) {
+        return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
+    }
+    res.render('configureModules', {
+        userId: targetUserId,
+        userName: '',
+        planName: ''
+    });
+}));
 
 module.exports = router;
 

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Módulos para <%= typeof userName !== 'undefined' ? userName : 'Usuário' %></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0D0D0F 0%, #1C1C21 100%);
+            min-height: 100vh;
+            color: #ECECEC;
+            padding: 24px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { font-size: 1.5rem; margin-bottom: 8px; color: #FFC700; }
+        .plan-base { color: #888; font-size: 0.9rem; margin-bottom: 16px; }
+        .instrucao {
+            background: rgba(255,199,0,0.1);
+            border: 1px solid rgba(255,199,0,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+        }
+        .module-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .module-info { flex: 1; }
+        .module-name { font-weight: 600; margin-bottom: 4px; }
+        .module-tag {
+            display: inline-block;
+            background: rgba(255,199,0,0.2);
+            color: #FFC700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+        .module-hint {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 4px;
+        }
+        .module-hint.ja-no-plano { color: #4ade80; }
+        .module-hint.adicionar { color: #60a5fa; }
+        .module-check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .module-check input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #FFC700;
+        }
+        .module-check input[type="checkbox"]:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .module-check label {
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #aaa;
+            user-select: none;
+        }
+        .btn-salvar {
+            margin-top: 24px;
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #FFC700, #F59E0B);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .btn-salvar:hover { opacity: 0.95; }
+        .btn-salvar:disabled { opacity: 0.6; cursor: not-allowed; }
+        .loading { text-align: center; padding: 40px; color: #888; }
+        .error { background: rgba(239,68,68,0.2); border: 1px solid #ef4444; border-radius: 8px; padding: 12px; margin-bottom: 16px; color: #fca5a5; }
+        .success { background: rgba(34,197,94,0.2); border: 1px solid #22c55e; border-radius: 8px; padding: 12px; margin-bottom: 16px; color: #86efac; }
+        .back-link { display: inline-block; margin-bottom: 16px; color: #FFC700; text-decoration: none; font-size: 0.9rem; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="javascript:history.back()" class="back-link"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <h1>Configurar Módulos para <span id="user-name"><%= typeof userName !== 'undefined' ? userName : '...' %></span></h1>
+        <p class="plan-base">Plano base: <span id="plan-name"><%= typeof planName !== 'undefined' ? planName : '...' %></span></p>
+        <div class="instrucao">
+            Marque os módulos que este usuário deve ter. Desmarque para <strong>tirar do plano</strong> (incluindo os que já estão no plano base). Todos os quadradinhos podem ser clicados.
+        </div>
+        <div id="message"></div>
+        <div id="content">
+            <div class="loading" id="loading">Carregando módulos...</div>
+            <div id="modules-list" style="display: none;"></div>
+        </div>
+        <button type="button" class="btn-salvar" id="btn-salvar" style="display: none;" disabled>Salvar alterações</button>
+    </div>
+
+    <script>
+        (function() {
+            const userId = '<%= typeof userId !== 'undefined' ? userId : '' %>';
+            const apiBase = ''; // same origin
+
+            const moduleLabels = {
+                agenda: 'Agenda Inteligente',
+                banner: 'Banner',
+                carousel: 'Carrossel',
+                contract: 'Contrato Digital',
+                digital_form: 'King Forms',
+                email: 'Email',
+                finance: 'Gestão Financeira',
+                instagram: 'Instagram',
+                link: 'Link',
+                modo_empresa: 'Modo Empresa',
+                portfolio: 'Portfólio',
+                pix: 'PIX',
+                pix_qrcode: 'PIX QR Code',
+                sales_page: 'Loja Virtual',
+                whatsapp: 'WhatsApp'
+            };
+
+            function getLabel(type) {
+                return moduleLabels[type] || type;
+            }
+
+            function showMessage(text, isError) {
+                const el = document.getElementById('message');
+                el.className = isError ? 'error' : 'success';
+                el.textContent = text;
+                el.style.display = text ? 'block' : 'none';
+            }
+
+            function getAuthHeaders() {
+                const token = typeof window !== 'undefined' && (window.localStorage && window.localStorage.getItem('token')) || (window.sessionStorage && window.sessionStorage.getItem('token'));
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                return headers;
+            }
+
+            function loadModules() {
+                fetch(apiBase + '/api/modules/individual-plans/' + userId, { credentials: 'include', headers: getAuthHeaders() })
+                    .then(function(r) {
+                        if (!r.ok) throw new Error('Não foi possível carregar. Faça login como administrador.');
+                        return r.json();
+                    })
+                    .then(function(data) {
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('user-name').textContent = data.user && data.user.name ? data.user.name : data.user.email || 'Usuário';
+                        if (data.plan_code) {
+                            const planNames = { basic: 'King Start', premium: 'King Prime', king_base: 'King Essential', king_essential: 'King Essential', king_finance: 'King Finance', king_finance_plus: 'King Finance Plus', king_premium_plus: 'King Premium Plus', king_corporate: 'King Corporate', free: 'Free' };
+                            document.getElementById('plan-name').textContent = planNames[data.plan_code] || data.plan_code;
+                        }
+                        const list = document.getElementById('modules-list');
+                        list.style.display = 'block';
+                        list.innerHTML = '';
+                        (data.modules || []).forEach(function(m) {
+                            const card = document.createElement('div');
+                            card.className = 'module-card';
+                            const hintClass = m.in_base_plan ? 'ja-no-plano' : 'adicionar';
+                            const hintText = m.in_base_plan ? 'Já no plano (pode desmarcar para tirar)' : 'Adicionar';
+                            card.innerHTML =
+                                '<div class="module-info">' +
+                                '<div class="module-name">' + getLabel(m.module_type) + '</div>' +
+                                '<span class="module-tag">' + m.module_type + '</span>' +
+                                '<div class="module-hint ' + hintClass + '">' + hintText + '</div>' +
+                                '</div>' +
+                                '<div class="module-check">' +
+                                '<input type="checkbox" id="chk-' + m.module_type + '" data-module="' + m.module_type + '" ' + (m.is_active ? 'checked' : '') + '>' +
+                                '<label for="chk-' + m.module_type + '">Ativo</label>' +
+                                '</div>';
+                            list.appendChild(card);
+                        });
+                        document.getElementById('btn-salvar').style.display = 'block';
+                        document.getElementById('btn-salvar').disabled = false;
+                    })
+                    .catch(function(e) {
+                        document.getElementById('loading').textContent = 'Erro: ' + (e.message || 'Falha ao carregar.');
+                        showMessage(e.message || 'Erro ao carregar módulos. Verifique se está logado como administrador.', true);
+                    });
+            }
+
+            document.getElementById('btn-salvar').addEventListener('click', function() {
+                const checkboxes = document.querySelectorAll('#modules-list input[type="checkbox"]:checked');
+                const modules = Array.from(checkboxes).map(function(cb) { return cb.getAttribute('data-module'); });
+                const btn = document.getElementById('btn-salvar');
+                btn.disabled = true;
+                btn.textContent = 'Salvando...';
+                fetch(apiBase + '/api/modules/individual-plans/' + userId, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ modules: modules })
+                })
+                    .then(function(r) {
+                        if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'Erro ao salvar'); });
+                        return r.json();
+                    })
+                    .then(function() {
+                        showMessage('Módulos atualizados com sucesso. Alterações em "Já no plano" e "Adicionar" foram salvas.', false);
+                        btn.disabled = false;
+                        btn.textContent = 'Salvar alterações';
+                    })
+                    .catch(function(e) {
+                        showMessage(e.message || 'Erro ao salvar.', true);
+                        btn.disabled = false;
+                        btn.textContent = 'Salvar alterações';
+                    });
+            });
+
+            if (userId) loadModules();
+            else {
+                document.getElementById('loading').textContent = 'ID do usuário não informado.';
+            }
+        })();
+    </script>
+</body>
+</html>

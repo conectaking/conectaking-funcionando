@@ -4,6 +4,16 @@
 
 A opção **"Já no plano"** agora é **editável**. O admin pode desmarcar módulos que estão no plano base para um usuário (ex.: tirar Banner ou Carrossel de um usuário King Prime).
 
+### Página pronta no backend (todos os checkboxes clicáveis)
+
+Se a tela "Configurar Módulos" do seu dashboard ainda desabilita "Já no plano", use esta URL (logado como admin):
+
+**`/api/modules/configure-modules-page/:userId`**
+
+Exemplo: `https://seusite.com/api/modules/configure-modules-page/abc-123` (substitua `abc-123` pelo ID do usuário).
+
+Nessa página, **todos** os módulos têm checkbox **ativo**; marcar = usuário tem o módulo, desmarcar = tirar (incluindo os que estão "Já no plano"). Ao salvar, as alterações são gravadas (exclusões e extras).
+
 ---
 
 ## Backend (API)
