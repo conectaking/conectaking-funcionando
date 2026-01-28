@@ -7,6 +7,28 @@
 -- Faça backup antes de executar!
 
 -- ============================================
+-- 0. BACKUP: Fazer backup das contas que serão alteradas
+-- ============================================
+-- Execute esta query primeiro para salvar os dados antes de corrigir:
+
+SELECT 
+    id, 
+    email, 
+    account_type, 
+    subscription_id,
+    created_at
+FROM users 
+WHERE subscription_id IS NULL
+  AND (account_type IS NULL OR account_type::text NOT IN (
+      'individual', 'individual_com_logo', 'basic', 'premium',
+      'king_start', 'king_prime', 'king_base', 'king_essential',
+      'king_finance', 'king_finance_plus', 'king_premium_plus',
+      'king_corporate', 'business_owner', 'enterprise',
+      'free', 'adm_principal', 'abm'
+  ))
+ORDER BY email;
+
+-- ============================================
 -- 1. PREVIEW: Ver quais contas serão corrigidas
 -- ============================================
 -- Execute esta consulta primeiro para ver o que será alterado:
@@ -86,8 +108,7 @@ ORDER BY problema, email;
 
 /*
 UPDATE users 
-SET account_type = 'basic'::account_type_enum,
-    updated_at = NOW()
+SET account_type = 'basic'::account_type_enum
 WHERE subscription_id IS NULL
   AND (account_type IS NULL OR account_type::text NOT IN (
       'individual', 'individual_com_logo', 'basic', 'premium',
@@ -145,8 +166,7 @@ contas_sem_modulos AS (
     HAVING COUNT(mpa.module_type) FILTER (WHERE mpa.is_available = true) = 0
 )
 UPDATE users u
-SET account_type = 'basic'::account_type_enum,
-    updated_at = NOW()
+SET account_type = 'basic'::account_type_enum
 FROM contas_sem_modulos csm
 WHERE u.id = csm.user_id
   AND u.subscription_id IS NULL;  -- Só atualizar se não tiver subscription_id (para não sobrescrever plano da assinatura)

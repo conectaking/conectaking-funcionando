@@ -206,6 +206,22 @@ A resposta mostrará:
 
 ---
 
+## Script de Correção Automática
+
+Após identificar as contas com problemas usando `126_diagnosticar_contas_sem_modulos.sql`, você pode usar o script `128_corrigir_contas_sem_modulos.sql` para corrigir automaticamente:
+
+1. **Execute primeiro a seção 1 (PREVIEW)** para ver quais contas serão corrigidas
+2. **Revise os resultados** e confirme que está correto
+3. **Descomente as seções 2 e 3** (remova `/*` e `*/`) para executar as correções
+4. **Execute a seção 4** para verificar se ainda há problemas
+
+**IMPORTANTE:** 
+- Faça **backup** antes de executar os UPDATEs
+- Os UPDATEs estão **comentados por padrão** para evitar execução acidental
+- Apenas contas **sem subscription_id** serão atualizadas (para não sobrescrever planos de assinatura)
+
+---
+
 ## Suporte
 
 Se encontrar problemas ao executar os scripts ou precisar de ajuda para interpretar os resultados, verifique:
