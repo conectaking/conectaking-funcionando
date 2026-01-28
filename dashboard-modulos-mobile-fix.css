@@ -602,3 +602,75 @@ body {
 .items-editor > *:last-child {
     margin-bottom: 20px;
 }
+
+/* ============================================
+   DRAG NO MOBILE – REDUZIR TRAVAMENTO
+   Só o handle e o item em drag têm touch-action: none.
+   Containers permitem scroll e não engolem o gesto.
+   ============================================ */
+
+/* Handle de arraste: área de toque maior e captura do toque */
+.module-drag-handle,
+[class*="drag-handle"],
+[class*="grip-vertical"] {
+    touch-action: none !important;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grab;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.module-drag-handle:active,
+[class*="drag-handle"]:active {
+    cursor: grabbing;
+}
+
+/* Containers da lista: permitir scroll e não travar o drag */
+@media (max-width: 768px) {
+    #items-container,
+    #items-editor,
+    .items-container,
+    .items-editor,
+    .modules-list,
+    .modules-container {
+        overflow-x: hidden;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        /* Não usar touch-action no container para não conflitar com o handle */
+        touch-action: pan-y;
+    }
+
+    .editor-area,
+    .main-content {
+        overflow-x: hidden;
+        touch-action: pan-y;
+    }
+}
+
+/* Item sendo arrastado: apenas ele bloqueia o scroll da página */
+.sortable-dragging,
+.sortable-dragging-mobile,
+.module-item.sortable-ghost,
+.module-item.ui-sortable-helper {
+    touch-action: none !important;
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+    transform: scale(1.02);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+/* Durante o drag, não travar o body inteiro */
+body.sortable-dragging-active {
+    overflow: visible;
+    touch-action: unset;
+}
+body.sortable-dragging-active .module-drag-handle,
+body.sortable-dragging-active .sortable-dragging,
+body.sortable-dragging-active .sortable-dragging-mobile {
+    touch-action: none !important;
+}
