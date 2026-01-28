@@ -32,7 +32,7 @@ Resumo: corrija apenas o link “Esqueci senha” no login para a URL da API. O 
 
 ---
 
-## Outras soluções (redirect, proxy)
+## Outras soluções (redirect no frontend ou proxy)
 
 ### Opção A: Redirecionar no frontend
 
@@ -87,13 +87,7 @@ Assim, **conectaking.com.br/recuperar-senha** é atendido pela API, e o 404 some
 
 ### Opção C: Link “Esqueci senha” direto para a API
 
-No **login** (e onde mais tiver “Esqueci senha”):
-
-- Em vez de `href="/recuperar-senha"`, usar  
-  `href="https://SUA_URL_DA_API/recuperar-senha"`.
-
-O usuário passa a abrir a página de recuperação **na API**.  
-O e-mail de reset já deve usar `FRONTEND_URL` ou `API_URL` conforme configurado no backend; o importante é que **recuperar** e **resetar** estejam na mesma base (API ou frontend) que você usar no link e no e-mail.
+O mesmo que a **Solução rápida** acima: alterar o “Esqueci senha” no login para `href="https://SUA_URL_DA_API/recuperar-senha"`. O link do e-mail já usa a API.
 
 ---
 
