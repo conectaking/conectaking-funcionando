@@ -94,32 +94,30 @@ async function removePasswordResetToken(token) {
 }
 
 /**
- * Valida força da senha
+ * Valida força da senha (alinhado ao registro: min 6, maiúscula, minúscula e número)
  */
 function validatePasswordStrength(password) {
     const errors = [];
 
-    if (password.length < 8) {
-        errors.push('A senha deve ter no mínimo 8 caracteres');
+    if (password.length < 6) {
+        errors.push('A senha deve ter no mínimo 6 caracteres');
     }
 
     if (password.length > 128) {
         errors.push('A senha deve ter no máximo 128 caracteres');
     }
 
-    // Validação mais flexível: apenas letras e números
-    if (!/[a-zA-Z]/.test(password)) {
-        errors.push('A senha deve conter pelo menos uma letra');
+    if (!/[a-z]/.test(password)) {
+        errors.push('A senha deve conter pelo menos uma letra minúscula');
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        errors.push('A senha deve conter pelo menos uma letra maiúscula');
     }
 
     if (!/[0-9]/.test(password)) {
         errors.push('A senha deve conter pelo menos um número');
     }
-
-    // Opcional: caracteres especiais
-    // if (!/[!@#$%^&*]/.test(password)) {
-    //     errors.push('A senha deve conter pelo menos um caractere especial');
-    // }
 
     return {
         valid: errors.length === 0,

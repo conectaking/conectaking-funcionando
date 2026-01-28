@@ -17,7 +17,11 @@ function initEmailTransporter() {
         return transporter;
     }
 
-    // Configuração do transporter (ajustar conforme necessário)
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        logger.warn('SMTP não configurado: defina SMTP_USER e SMTP_PASS para envio de e-mails (recuperação de senha, etc.).');
+        return null;
+    }
+
     transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
         port: parseInt(process.env.SMTP_PORT || '587'),
@@ -87,8 +91,8 @@ async function sendWelcomeEmail(userEmail, userName) {
  * Envia email de recuperação de senha
  */
 async function sendPasswordResetEmail(userEmail, resetToken) {
-    const baseUrl = config.urls.api || config.urls.frontend || 'https://conectaking-api.onrender.com';
-    const resetUrl = `${baseUrl.replace(/\/$/, '')}/resetar-senha?token=${resetToken}`;
+    const baseUrl = config.urls.frontend || config.urls.api || 'https://conectaking.com.br';
+    const resetUrl = `${baseUrl.replace(/\/$/, '')}/resetar-senha?token=${encodeURIComponent(resetToken)}`;
     const subject = 'Recuperação de Senha - Conecta King';
     const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #1a1a1a; color: #ffffff;">

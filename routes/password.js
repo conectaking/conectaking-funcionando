@@ -18,7 +18,7 @@ const {
     validatePasswordStrength
 } = require('../utils/password');
 const { sendPasswordResetEmail } = require('../utils/email');
-const { success, error, validationError } = require('../utils/response');
+const { success, error } = require('../utils/response');
 const { passwordResetLimiter } = require('../middleware/security');
 const { emailLocalPartWithoutDots } = require('../utils/emailHelpers');
 
@@ -52,12 +52,20 @@ router.post(
 
         const user = userResult.rows[0];
 
-        // Gerar token
         const token = generatePasswordResetToken();
         await savePasswordResetToken(user.id, token);
 
-        // Enviar email
-        await sendPasswordResetEmail(user.email, token);
+        const sendResult = await sendPasswordResetEmail(user.email, token);
+        if (!sendResult || !sendResult.success) {
+            logger.error('Falha ao enviar email de recuperação de senha', {
+                userId: user.id,
+                error: sendResult?.error || 'desconhecido'
+            });
+            return res.status(503).json({
+                success: false,
+                message: 'Não foi possível enviar o e-mail de recuperação. Verifique se o e-mail está correto e tente novamente em alguns minutos.'
+            });
+        }
 
         logger.info('Email de recuperação de senha enviado', { userId: user.id });
 
@@ -78,10 +86,10 @@ router.post(
     asyncHandler(async (req, res) => {
         const { token, password } = req.body;
 
-        // Validar força da senha
         const passwordValidation = validatePasswordStrength(password);
         if (!passwordValidation.valid) {
-            return validationError(res, passwordValidation.errors);
+            const msg = (passwordValidation.errors && passwordValidation.errors[0]) || 'Senha inválida. Use no mínimo 6 caracteres, com maiúscula, minúscula e número.';
+            return error(res, msg, 400);
         }
 
         // Validar token

@@ -56,9 +56,10 @@ const errorHandler = (err, req, res, next) => {
 
     // Erros de autenticação/autorização
     if (err.name === 'UnauthorizedError' || err.status === 401) {
+        const msg = (err.name === 'UnauthorizedError' && err.message) ? err.message : 'Não autorizado';
         return res.status(401).json({
             success: false,
-            message: 'Não autorizado'
+            message: msg
         });
     }
 
