@@ -146,7 +146,10 @@
             }
 
             function getAuthHeaders() {
-                const token = typeof window !== 'undefined' && (window.localStorage && window.localStorage.getItem('token')) || (window.sessionStorage && window.sessionStorage.getItem('token'));
+                const token = typeof window !== 'undefined' && (
+                    (window.localStorage && (window.localStorage.getItem('conectaKingToken') || window.localStorage.getItem('token'))) ||
+                    (window.sessionStorage && (window.sessionStorage.getItem('conectaKingToken') || window.sessionStorage.getItem('token')))
+                );
                 const headers = { 'Content-Type': 'application/json' };
                 if (token) headers['Authorization'] = 'Bearer ' + token;
                 return headers;
