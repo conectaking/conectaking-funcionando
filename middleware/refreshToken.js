@@ -64,21 +64,12 @@ async function saveRefreshToken(userId, refreshToken) {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 30);
 
-        // Salva novo token (simplificado - PostgreSQL não tem ON CONFLICT com múltiplas colunas fácil)
-        // Deleta token antigo se existir e insere novo
+        // Insere novo token (cada login gera token único; tabela permite múltiplos por user_id para vários dispositivos)
         await db.query(
-            `INSERT INTO refresh_tokens (user_id, token, expires_at) 
-             VALUES ($1, $2, $3)
-             ON CONFLICT (user_id, token) DO UPDATE SET expires_at = $3`,
-            [userId, refreshToken, expiresAt]
-        ).catch(err => {
-            // Se não tem ON CONFLICT suportado, tenta sem
-            return db.query(
             `INSERT INTO refresh_tokens (user_id, token, expires_at) 
              VALUES ($1, $2, $3)`,
             [userId, refreshToken, expiresAt]
         );
-        });
 
         logger.debug('Refresh token salvo', { userId });
     } catch (error) {
