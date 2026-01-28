@@ -35,7 +35,9 @@ const accountTypeToPlanCode = {
     'king_finance_plus': 'king_finance_plus',
     'king_premium_plus': 'king_premium_plus',
     'king_corporate': 'king_corporate',
-    'free': 'free'
+    'free': 'free',
+    'adm_principal': 'adm_principal',
+    'abm': 'adm_principal'
 };
 
 router.get('/status', protectUser, async (req, res) => {
@@ -111,6 +113,14 @@ router.get('/status', protectUser, async (req, res) => {
         user.hasFinance = hasModule('finance');
         user.hasContract = hasModule('contract');
         user.hasAgenda = hasModule('agenda');
+
+        // ADM sempre vê todos os módulos (Gestão Financeira, Contratos, Agenda, Modo Empresa)
+        if (user.isAdmin === true || user.is_admin === true) {
+            user.hasModoEmpresa = true;
+            user.hasFinance = true;
+            user.hasContract = true;
+            user.hasAgenda = true;
+        }
 
         res.json(user);
 
