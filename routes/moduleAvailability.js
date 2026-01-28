@@ -324,14 +324,8 @@ router.get('/available', protectUser, asyncHandler(async (req, res) => {
             ORDER BY module_type
         `;
         const modulesResult = await client.query(modulesQuery, [planCode]);
-        let availableModules = modulesResult.rows.map(r => r.module_type);
-
-        // Agenda Inteligente e Contratos: só para ADM principal (em desenvolvimento). Ocultar dos demais.
-        const adminRes = await client.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
-        const isAdmin = adminRes.rows.length > 0 && adminRes.rows[0].is_admin === true;
-        if (!isAdmin) {
-            availableModules = availableModules.filter(m => m !== 'agenda' && m !== 'contract');
-        }
+        const availableModules = modulesResult.rows.map(r => r.module_type);
+        // Respeitar apenas a Separação de Pacotes: só retorna o que está marcado para o plano (sem filtrar agenda/contract por admin).
 
         res.json({
             account_type: accountType,

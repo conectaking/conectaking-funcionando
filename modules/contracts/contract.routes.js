@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('./contract.controller');
 const { protectUser } = require('../../middleware/protectUser');
+const { requireModule } = require('../../middleware/requireModule');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const multer = require('multer');
 
@@ -18,8 +19,9 @@ const upload = multer({
     }
 });
 
-// Todas as rotas requerem autenticação
+// Autenticação + plano deve ter módulo Contratos (Separação de Pacotes)
 router.use(protectUser);
+router.use(requireModule('contract'));
 
 // Templates
 router.get('/templates', asyncHandler(async (req, res) => {

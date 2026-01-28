@@ -1,12 +1,14 @@
 /**
- * Middleware de proteção para rotas do módulo Agenda
- * Isolado - usa protectUser internamente mas é próprio do módulo agenda
+ * Middleware de proteção para rotas do módulo Agenda.
+ * Exige autenticação E que o plano do usuário tenha o módulo "agenda" na Separação de Pacotes.
  */
 
 const { protectUser } = require('./protectUser');
+const { requireModule } = require('./requireModule');
 
+// Primeiro autentica, depois verifica se o plano tem Agenda Inteligente
 const protectAgenda = (req, res, next) => {
-    return protectUser(req, res, next);
+    protectUser(req, res, () => requireModule('agenda')(req, res, next));
 };
 
 module.exports = { protectAgenda };
