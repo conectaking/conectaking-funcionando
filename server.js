@@ -648,14 +648,13 @@ app.use('/agenda', publicAgendaRoutes);
 app.use('/contract', publicContractRoutes);
 app.use('/vcard', vcardRoutes);
 
-// IMPORTANTE: Rotas públicas legais (Política de Privacidade e Termos de Serviço)
-// DEVEM vir ANTES de todas as rotas genéricas (/) para evitar interceptação
-const publicLegalRoutes = require('./routes/publicLegal.routes');
-app.use('/', publicLegalRoutes);
-
-// Recuperar senha e resetar senha (páginas EJS)
+// Recuperar senha e resetar senha – PRIMEIRO para não serem capturadas por /:slug
 const publicPasswordRoutes = require('./routes/publicPassword.routes');
 app.use('/', publicPasswordRoutes);
+
+// Rotas públicas legais (Política de Privacidade e Termos de Serviço)
+const publicLegalRoutes = require('./routes/publicLegal.routes');
+app.use('/', publicLegalRoutes);
 
 // Rotas do módulo Sales Page
 // IMPORTANTE: Rotas específicas (analytics) devem vir ANTES das rotas genéricas (/:id)

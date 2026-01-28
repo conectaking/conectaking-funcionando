@@ -20,8 +20,8 @@ function hexToRgb(hex) {
 router.get('/:identifier', asyncHandler(async (req, res) => {
     const { identifier } = req.params;
     
-    // Ignorar rotas legais (privacidade e termos) - devem ser processadas por rotas específicas
-    if (identifier === 'privacidade' || identifier === 'termos') {
+    const reserved = ['privacidade', 'termos', 'recuperar-senha', 'resetar-senha', 'esqueci-senha', 'forgot'];
+    if (reserved.includes(identifier)) {
         return res.status(404).send('404 - Página não encontrada');
     }
     
