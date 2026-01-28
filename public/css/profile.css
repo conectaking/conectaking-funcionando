@@ -8,6 +8,9 @@
 html {
     overflow-x: hidden;
     width: 100%;
+    /* Safe-area para iPhone/Android com notch ou home indicator */
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
 }
 
 body {
@@ -17,6 +20,7 @@ body {
     align-items: flex-start;
     min-height: 100vh;
     padding: 24px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 0));
     margin: 0;
     box-sizing: border-box;
     width: 100%;
@@ -177,7 +181,8 @@ body {
 /* Media queries para mobile - corrigir layout quebrado */
 @media (max-width: 768px) {
     body { 
-        padding: 12px; 
+        padding: 12px;
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 0));
         min-height: 100vh;
         box-sizing: border-box;
     }
@@ -186,6 +191,7 @@ body {
         width: 100%;
         max-width: 100%;
         gap: 16px;
+        padding-bottom: env(safe-area-inset-bottom, 0);
     }
     
     .profile-card { 
@@ -248,6 +254,7 @@ body {
     
     .profile-items-container {
         gap: 12px;
+        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
     }
     
     .profile-link, 
