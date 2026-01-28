@@ -14,9 +14,27 @@ Ou seja: o 404 não é do backend, e sim do **frontend** que não expõe essa UR
 
 ---
 
-## Soluções
+## Solução rápida (recomendada)
 
-### Opção 1: Redirecionar no frontend (recomendado)
+**1. Link “Esqueci senha” no login (frontend)**  
+No HTML/JS do login (em `public_html/`), altere o link de “Esqueci senha” para apontar para a **API**:
+
+- **Antes:** `href="/recuperar-senha"` ou `href="https://conectaking.com.br/recuperar-senha"`
+- **Depois:** `href="https://conectaking-api.onrender.com/recuperar-senha"`  
+  (ou a URL real da sua API, se for outra)
+
+Assim, o clique em “Esqueci senha” leva direto para a página de recuperação na API, sem 404.
+
+**2. Link no e-mail de recuperação**  
+O backend já foi ajustado: o link de “Resetar senha” no e-mail usa a **URL da API** (`config.urls.api`). O usuário que clica no e-mail cai em `API/resetar-senha?token=...`, que funciona.
+
+Resumo: corrija apenas o link “Esqueci senha” no login para a URL da API. O fluxo completo (esqueci senha → e-mail → nova senha) passa a funcionar.
+
+---
+
+## Outras soluções (redirect, proxy)
+
+### Opção A: Redirecionar no frontend
 
 Criar **recuperar-senha.html** (e se quiser **resetar-senha.html**) no `public_html/` que **redirecionam** para a API.
 
@@ -57,7 +75,7 @@ Se em algum lugar do frontend você usar **conectaking.com.br/resetar-senha**, a
 
 ---
 
-### Opção 2: Proxy /recuperar-senha e /resetar-senha para a API
+### Opção B: Proxy /recuperar-senha e /resetar-senha para a API
 
 No servidor que responde por **conectaking.com.br**:
 
@@ -67,7 +85,7 @@ Assim, **conectaking.com.br/recuperar-senha** é atendido pela API, e o 404 some
 
 ---
 
-### Opção 3: Link “Esqueci senha” direto para a API
+### Opção C: Link “Esqueci senha” direto para a API
 
 No **login** (e onde mais tiver “Esqueci senha”):
 
