@@ -97,4 +97,6 @@ O mesmo que a **Solução rápida** acima: alterar o “Esqueci senha” no logi
 - O perfil público **não** trata mais `recuperar-senha` nem `resetar-senha` como `/:slug`.
 
 Ou seja: **no backend**, essas URLs estão corretas. O 404 em **conectaking.com.br/recuperar-senha** vem do **frontend** (public_html) não oferecer essa rota.  
-Resolvendo com uma das opções acima (redirect, proxy ou link direto para a API), o “Esqueci senha” deixa de dar 404.
+Resolvendo com a **solução rápida** (link “Esqueci senha” para a API) ou com redirect/proxy, o “Esqueci senha” deixa de dar 404.
+
+**Variáveis de ambiente:** Confirme que `API_URL` está definida (ex.: `https://conectaking-api.onrender.com`). O link de “Resetar senha” no e-mail usa essa URL.
