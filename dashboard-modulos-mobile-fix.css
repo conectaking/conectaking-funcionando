@@ -1,0 +1,604 @@
+/* ============================================
+   AJUSTES MOBILE - TELA "MÓDULOS ATIVOS"
+   Dashboard: conectaking.com.br/c
+   ============================================ */
+
+/* 1. VIEWPORT E SAFE-AREA BASE */
+html {
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+}
+
+body {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* 2. CONTAINER PRINCIPAL DA LISTA DE MÓDULOS */
+/* Ajuste os seletores conforme o ID/classe real do seu código */
+#items-container,
+#items-editor,
+.items-container,
+.items-editor,
+.modules-list,
+.modules-container {
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0));
+    box-sizing: border-box;
+}
+
+/* 3. CARD DE MÓDULO - ESTRUTURA BASE */
+.module-item,
+.module-card,
+.item-card {
+    display: flex;
+    align-items: stretch;
+    padding: 12px;
+    gap: 10px;
+    margin-bottom: 12px;
+    background: rgba(28, 28, 33, 0.9);
+    border-radius: 12px;
+    overflow: visible;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* 4. CONTROLES DE ARRASTAR (setas cima/baixo) */
+.module-drag-controls,
+.drag-controls,
+.reorder-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    padding-right: 4px;
+}
+
+/* 5. WRAPPER DO CONTEÚDO (ícone + info + ações) */
+.module-content-wrapper,
+.content-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 14px; /* GAP CRÍTICO: evita toggle em cima do ícone */
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* 6. ÍCONE DO MÓDULO - TAMANHO FIXO */
+.module-icon,
+.item-icon,
+.module-image {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 20, 23, 0.5);
+    box-sizing: border-box;
+}
+
+.module-icon img,
+.item-icon img,
+.module-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 7. SEÇÃO DE INFORMAÇÕES (nome + ações) */
+.module-info-section,
+.info-section {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+/* 8. NOME DO MÓDULO */
+.module-name,
+.item-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ECECEC;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+}
+
+/* 9. LINHA DE AÇÕES (toggle + editar + duplicar + apagar) */
+.module-actions-inline,
+.actions-inline,
+.module-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* 10. TOGGLE SWITCH - NÃO DEVE SOBREPOR ÍCONE */
+.module-actions-inline .toggle,
+.module-actions-inline input[type="checkbox"].toggle,
+.toggle-switch {
+    flex-shrink: 0;
+    margin: 0;
+    width: 44px;
+    height: 24px;
+    position: relative;
+    cursor: pointer;
+}
+
+/* 11. BOTÕES DE AÇÃO (editar, duplicar, apagar) */
+.module-actions-inline button,
+.module-actions-inline .btn-edit,
+.module-actions-inline .btn-duplicate,
+.module-actions-inline .btn-delete,
+.btn-edit,
+.btn-duplicate,
+.btn-delete {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    flex-shrink: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(40, 40, 45, 0.8);
+    border: none;
+    border-radius: 6px;
+    color: #ECECEC;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s, transform 0.1s;
+    box-sizing: border-box;
+}
+
+.module-actions-inline button:hover,
+.module-actions-inline .btn-edit:hover,
+.module-actions-inline .btn-duplicate:hover,
+.module-actions-inline .btn-delete:hover {
+    background: rgba(60, 60, 65, 0.9);
+    transform: scale(1.05);
+}
+
+/* 12. BOTÃO "ADICIONAR" */
+.btn-add,
+.add-button,
+#add-module-btn {
+    width: 100%;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    background: #00C853;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+}
+
+/* 13. BOTÃO "PUBLICAR ALTERAÇÕES" */
+.btn-publish,
+.publish-button,
+#publish-btn {
+    width: 100%;
+    padding: 16px;
+    margin-top: 20px;
+    margin-bottom: calc(20px + env(safe-area-inset-bottom, 0));
+    background: #00C853;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+
+/* ============================================
+   MEDIA QUERIES - MOBILE GERAL
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* Container principal */
+    #items-container,
+    #items-editor,
+    .items-container,
+    .items-editor,
+    .modules-list,
+    .modules-container {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-bottom: calc(140px + env(safe-area-inset-bottom, 0));
+    }
+
+    /* Card de módulo */
+    .module-item,
+    .module-card,
+    .item-card {
+        padding: 12px;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    /* Wrapper do conteúdo - GAP CRÍTICO */
+    .module-content-wrapper,
+    .content-wrapper {
+        gap: 14px; /* Espaço entre ícone e área de ações */
+    }
+
+    /* Ícone */
+    .module-icon,
+    .item-icon,
+    .module-image {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* Nome do módulo */
+    .module-name,
+    .item-name {
+        font-size: 0.9rem;
+    }
+
+    /* Ações inline */
+    .module-actions-inline,
+    .actions-inline {
+        gap: 6px;
+    }
+
+    /* Toggle */
+    .module-actions-inline .toggle,
+    .toggle-switch {
+        width: 42px;
+        height: 22px;
+    }
+
+    /* Botões de ação */
+    .module-actions-inline button,
+    .btn-edit,
+    .btn-duplicate,
+    .btn-delete {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
+        font-size: 0.8rem;
+    }
+}
+
+/* ============================================
+   MEDIA QUERIES - TELAS PEQUENAS (360px-430px)
+   Samsung Galaxy S8+, iPhone SE, etc.
+   ============================================ */
+
+@media (max-width: 430px) {
+    /* Container principal - MAIS ESPAÇO EM BAIXO */
+    #items-container,
+    #items-editor,
+    .items-container,
+    .items-editor,
+    .modules-list,
+    .modules-container {
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-bottom: calc(160px + env(safe-area-inset-bottom, 0));
+    }
+
+    /* Card de módulo */
+    .module-item,
+    .module-card,
+    .item-card {
+        padding: 10px;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    /* Wrapper - GAP AINDA MAIOR se necessário */
+    .module-content-wrapper,
+    .content-wrapper {
+        gap: 12px;
+    }
+
+    /* Ícone um pouco menor */
+    .module-icon,
+    .item-icon,
+    .module-image {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    /* Nome do módulo */
+    .module-name,
+    .item-name {
+        font-size: 0.85rem;
+    }
+
+    /* Ações inline */
+    .module-actions-inline,
+    .actions-inline {
+        gap: 5px;
+    }
+
+    /* Toggle menor */
+    .module-actions-inline .toggle,
+    .toggle-switch {
+        width: 40px;
+        height: 20px;
+    }
+
+    /* Botões de ação menores */
+    .module-actions-inline button,
+    .btn-edit,
+    .btn-duplicate,
+    .btn-delete {
+        width: 26px;
+        height: 26px;
+        min-width: 26px;
+        min-height: 26px;
+        font-size: 0.75rem;
+    }
+
+    /* Botão Adicionar */
+    .btn-add,
+    .add-button,
+    #add-module-btn {
+        padding: 12px 14px;
+        font-size: 0.95rem;
+    }
+
+    /* Botão Publicar */
+    .btn-publish,
+    .publish-button,
+    #publish-btn {
+        padding: 14px;
+        font-size: 1rem;
+        margin-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+    }
+}
+
+/* ============================================
+   MEDIA QUERIES - IPHONE 16/17 (393px-410px)
+   ============================================ */
+
+@media (min-width: 393px) and (max-width: 410px) {
+    /* Container principal */
+    #items-container,
+    #items-editor,
+    .items-container,
+    .items-editor,
+    .modules-list,
+    .modules-container {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-bottom: calc(150px + env(safe-area-inset-bottom, 0));
+    }
+
+    /* Card de módulo */
+    .module-item,
+    .module-card,
+    .item-card {
+        padding: 11px;
+        gap: 12px;
+    }
+
+    /* Wrapper - GAP CRÍTICO para evitar toggle em cima do ícone */
+    .module-content-wrapper,
+    .content-wrapper {
+        gap: 13px;
+    }
+
+    /* Ícone */
+    .module-icon,
+    .item-icon,
+    .module-image {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        min-height: 42px;
+    }
+
+    /* Nome do módulo */
+    .module-name,
+    .item-name {
+        font-size: 0.88rem;
+    }
+
+    /* Ações inline */
+    .module-actions-inline,
+    .actions-inline {
+        gap: 6px;
+    }
+
+    /* Toggle */
+    .module-actions-inline .toggle,
+    .toggle-switch {
+        width: 41px;
+        height: 21px;
+    }
+
+    /* Botões de ação */
+    .module-actions-inline button,
+    .btn-edit,
+    .btn-duplicate,
+    .btn-delete {
+        width: 27px;
+        height: 27px;
+        min-width: 27px;
+        min-height: 27px;
+    }
+}
+
+/* ============================================
+   MEDIA QUERIES - TELAS MUITO PEQUENAS (<360px)
+   ============================================ */
+
+@media (max-width: 360px) {
+    /* Container principal */
+    #items-container,
+    #items-editor,
+    .items-container,
+    .items-editor,
+    .modules-list,
+    .modules-container {
+        padding-left: 8px;
+        padding-right: 8px;
+        padding-bottom: calc(170px + env(safe-area-inset-bottom, 0));
+    }
+
+    /* Card de módulo */
+    .module-item,
+    .module-card,
+    .item-card {
+        padding: 8px;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    /* Wrapper */
+    .module-content-wrapper,
+    .content-wrapper {
+        gap: 10px;
+    }
+
+    /* Ícone menor */
+    .module-icon,
+    .item-icon,
+    .module-image {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        min-height: 36px;
+    }
+
+    /* Nome do módulo */
+    .module-name,
+    .item-name {
+        font-size: 0.8rem;
+    }
+
+    /* Ações inline */
+    .module-actions-inline,
+    .actions-inline {
+        gap: 4px;
+    }
+
+    /* Toggle menor */
+    .module-actions-inline .toggle,
+    .toggle-switch {
+        width: 38px;
+        height: 19px;
+    }
+
+    /* Botões de ação menores */
+    .module-actions-inline button,
+    .btn-edit,
+    .btn-duplicate,
+    .btn-delete {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        min-height: 24px;
+        font-size: 0.7rem;
+    }
+
+    /* Botão Adicionar */
+    .btn-add,
+    .add-button,
+    #add-module-btn {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+
+    /* Botão Publicar */
+    .btn-publish,
+    .publish-button,
+    #publish-btn {
+        padding: 12px;
+        font-size: 0.95rem;
+        margin-bottom: calc(14px + env(safe-area-inset-bottom, 0));
+    }
+}
+
+/* ============================================
+   CORREÇÕES ESPECÍFICAS
+   ============================================ */
+
+/* Garantir que ícones não sejam cortados */
+.module-icon,
+.item-icon,
+.module-image {
+    overflow: hidden !important;
+}
+
+.module-icon img,
+.item-icon img,
+.module-image img {
+    object-fit: cover !important;
+}
+
+/* Garantir que botões fiquem dentro do card */
+.module-item,
+.module-card,
+.item-card {
+    overflow: visible !important;
+}
+
+/* Evitar que texto do nome seja cortado demais */
+.module-name,
+.item-name {
+    max-width: 100%;
+    word-break: break-word;
+    white-space: normal;
+    line-height: 1.3;
+}
+
+/* Ajuste para o ícone amarelo (olho) ao lado de "Adicionar" */
+.btn-add i.fa-eye,
+.add-button i.fa-eye {
+    flex-shrink: 0;
+    margin-left: auto;
+    margin-right: 8px;
+}
+
+/* Garantir que o último módulo seja acessível */
+#items-container > *:last-child,
+#items-editor > *:last-child,
+.items-container > *:last-child,
+.items-editor > *:last-child {
+    margin-bottom: 20px;
+}
