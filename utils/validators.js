@@ -6,11 +6,13 @@ const { body, param, query } = require('express-validator');
 
 /**
  * Validação de email
+ * gmail_remove_dots: false — preserva pontos na parte local (ex.: user.name@exemplo.com).
+ * Por padrão, normalizeEmail() remove os pontos; isso quebra o cadastro com convite.
  */
 const emailValidator = body('email')
     .isEmail()
     .withMessage('Por favor, forneça um e-mail válido.')
-    .normalizeEmail();
+    .normalizeEmail({ gmail_remove_dots: false });
 
 /**
  * Validação de senha
