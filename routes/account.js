@@ -78,16 +78,39 @@ router.get('/status', protectUser, async (req, res) => {
             const accountType = user.accountType || user.account_type;
             planCode = accountTypeToPlanCode[accountType] || accountType;
         }
-        let hasModoEmpresa = false;
+
+        // Módulos do plano base + extras individuais - exclusões (igual /api/modules/available)
+        // Frontend usa para esconder botões: Gestão Financeira, Contratos, Agenda, Modo Empresa (igual Modo Empresa)
+        let baseModules = [];
+        let individualModules = [];
+        let excludedModules = [];
         if (planCode) {
-            const mod = await db.query(
-                `SELECT 1 FROM module_plan_availability 
-                 WHERE module_type = 'modo_empresa' AND plan_code = $1 AND is_available = true`,
+            const baseRes = await db.query(
+                `SELECT module_type FROM module_plan_availability WHERE plan_code = $1 AND is_available = true`,
                 [planCode]
             );
-            hasModoEmpresa = mod.rows.length > 0;
+            baseModules = baseRes.rows.map(r => r.module_type);
         }
-        user.hasModoEmpresa = hasModoEmpresa;
+        const indRes = await db.query(
+            'SELECT module_type FROM individual_user_plans WHERE user_id = $1',
+            [req.user.userId]
+        ).catch(() => ({ rows: [] }));
+        individualModules = (indRes.rows || []).map(r => r.module_type);
+        const exclRes = await db.query(
+            'SELECT module_type FROM individual_user_plan_exclusions WHERE user_id = $1',
+            [req.user.userId]
+        ).catch(() => ({ rows: [] }));
+        excludedModules = (exclRes.rows || []).map(r => r.module_type);
+
+        const baseSet = new Set(baseModules);
+        const individualSet = new Set(individualModules);
+        const excludedSet = new Set(excludedModules);
+        const hasModule = (type) => (baseSet.has(type) && !excludedSet.has(type)) || individualSet.has(type);
+
+        user.hasModoEmpresa = hasModule('modo_empresa');
+        user.hasFinance = hasModule('finance');
+        user.hasContract = hasModule('contract');
+        user.hasAgenda = hasModule('agenda');
 
         res.json(user);
 
