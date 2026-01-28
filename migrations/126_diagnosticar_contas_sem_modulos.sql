@@ -68,7 +68,7 @@ WITH user_plans AS (
         u.account_type,
         u.subscription_id,
         CASE 
-            WHEN u.subscription_id IS NOT NULL THEN (
+            WHEN u.subscription_id IS NOT NULL AND u.subscription_id ~ '^[0-9]+$' THEN (
                 SELECT sp.plan_code 
                 FROM subscription_plans sp 
                 WHERE sp.id = CAST(u.subscription_id AS INTEGER) AND sp.is_active = true
@@ -98,7 +98,12 @@ SELECT
     up.plan_code_resolvido,
     COUNT(mpa.module_type) FILTER (WHERE mpa.is_available = true) AS total_modulos
 FROM user_plans up
-LEFT JOIN subscription_plans sp ON up.subscription_id = sp.id
+LEFT JOIN subscription_plans sp ON (
+    CASE 
+        WHEN up.subscription_id ~ '^[0-9]+$' THEN CAST(up.subscription_id AS INTEGER)
+        ELSE NULL
+    END
+) = sp.id
 LEFT JOIN module_plan_availability mpa ON up.plan_code_resolvido = mpa.plan_code
 WHERE up.plan_code_resolvido IS NOT NULL
 GROUP BY 
@@ -130,7 +135,7 @@ WHERE u.subscription_id IS NULL
           'king_start', 'king_prime', 'king_base', 'king_essential',
           'king_finance', 'king_finance_plus', 'king_premium_plus',
           'king_corporate', 'business_owner', 'enterprise',
-          'free', 'adm_principal', 'abm'
+          'free', 'adm_principal', 'abm', 'team_member'
       )
   )
 ORDER BY u.email;
@@ -145,7 +150,7 @@ WITH user_plans AS (
         u.account_type,
         u.subscription_id,
         CASE 
-            WHEN u.subscription_id IS NOT NULL THEN (
+            WHEN u.subscription_id IS NOT NULL AND u.subscription_id ~ '^[0-9]+$' THEN (
                 SELECT sp.plan_code 
                 FROM subscription_plans sp 
                 WHERE sp.id = CAST(u.subscription_id AS INTEGER) AND sp.is_active = true
@@ -306,7 +311,7 @@ WITH user_plans AS (
         u.account_type,
         u.subscription_id,
         CASE 
-            WHEN u.subscription_id IS NOT NULL THEN (
+            WHEN u.subscription_id IS NOT NULL AND u.subscription_id ~ '^[0-9]+$' THEN (
                 SELECT sp.plan_code 
                 FROM subscription_plans sp 
                 WHERE sp.id = CAST(u.subscription_id AS INTEGER) AND sp.is_active = true
