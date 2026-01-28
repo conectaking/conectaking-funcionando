@@ -339,13 +339,54 @@ WITH user_plans AS (
     FROM users u
 ),
 problemas AS (
-    SELECT 'subscription_id INATIVO' AS problema FROM users u INNER JOIN subscription_plans sp ON (CASE WHEN u.subscription_id ~ '^[0-9]+$' THEN CAST(u.subscription_id AS INTEGER) ELSE NULL END) = sp.id WHERE u.subscription_id IS NOT NULL AND u.subscription_id ~ '^[0-9]+$' AND sp.is_active = false
+    SELECT 'subscription_id INATIVO' AS problema 
+    FROM users u 
+    INNER JOIN subscription_plans sp ON (
+        CASE 
+            WHEN u.subscription_id IS NOT NULL AND u.subscription_id ~ '^[0-9]+$' 
+            THEN CAST(u.subscription_id AS INTEGER) 
+            ELSE NULL 
+        END
+    ) = sp.id 
+    WHERE u.subscription_id IS NOT NULL 
+      AND u.subscription_id ~ '^[0-9]+$' 
+      AND sp.is_active = false
     UNION ALL
-    SELECT 'subscription_id INEXISTENTE' FROM users u WHERE u.subscription_id IS NOT NULL AND u.subscription_id ~ '^[0-9]+$' AND NOT EXISTS (SELECT 1 FROM subscription_plans sp WHERE sp.id = CASE WHEN u.subscription_id ~ '^[0-9]+$' THEN CAST(u.subscription_id AS INTEGER) ELSE NULL END)
+    SELECT 'subscription_id INEXISTENTE' 
+    FROM users u 
+    WHERE u.subscription_id IS NOT NULL 
+      AND u.subscription_id ~ '^[0-9]+$' 
+      AND NOT EXISTS (
+          SELECT 1 FROM subscription_plans sp 
+          WHERE sp.id = (
+              CASE 
+                  WHEN u.subscription_id ~ '^[0-9]+$' 
+                  THEN CAST(u.subscription_id AS INTEGER) 
+                  ELSE NULL 
+              END
+          )
+      )
     UNION ALL
-    SELECT 'SEM MÓDULOS' FROM user_plans up LEFT JOIN module_plan_availability mpa ON up.plan_code_resolvido = mpa.plan_code WHERE up.plan_code_resolvido IS NOT NULL GROUP BY up.user_id HAVING COUNT(mpa.module_type) FILTER (WHERE mpa.is_available = true) = 0
+    SELECT 'SEM MÓDULOS' 
+    FROM user_plans up 
+    LEFT JOIN module_plan_availability mpa ON up.plan_code_resolvido = mpa.plan_code 
+    WHERE up.plan_code_resolvido IS NOT NULL 
+    GROUP BY up.user_id 
+    HAVING COUNT(mpa.module_type) FILTER (WHERE mpa.is_available = true) = 0
     UNION ALL
-    SELECT 'SEM PLANO DEFINIDO' FROM users u WHERE u.subscription_id IS NULL AND (u.account_type IS NULL OR u.account_type::text NOT IN ('individual', 'individual_com_logo', 'basic', 'premium', 'king_start', 'king_prime', 'king_base', 'king_essential', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'business_owner', 'enterprise', 'free', 'adm_principal', 'abm', 'team_member'))
+    SELECT 'SEM PLANO DEFINIDO' 
+    FROM users u 
+    WHERE u.subscription_id IS NULL 
+      AND (
+          u.account_type IS NULL 
+          OR u.account_type::text NOT IN (
+              'individual', 'individual_com_logo', 'basic', 'premium', 
+              'king_start', 'king_prime', 'king_base', 'king_essential',
+              'king_finance', 'king_finance_plus', 'king_premium_plus',
+              'king_corporate', 'business_owner', 'enterprise',
+              'free', 'adm_principal', 'abm', 'team_member'
+          )
+      )
 )
 SELECT 
     problema,
