@@ -67,7 +67,16 @@ async function sendEmail(to, subject, html, text = null, attachments = []) {
         
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        logger.error('Erro ao enviar email', error);
+        // Log detalhado para diagnóstico (Gmail: Invalid login, ECONNREFUSED, etc.)
+        logger.error('Erro ao enviar email', {
+            to,
+            subject,
+            message: error.message,
+            code: error.code,
+            command: error.command,
+            response: error.response,
+            responseCode: error.responseCode
+        });
         return { success: false, error: error.message };
     }
 }

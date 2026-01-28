@@ -57,13 +57,14 @@ router.post(
 
         const sendResult = await sendPasswordResetEmail(user.email, token);
         if (!sendResult || !sendResult.success) {
-            logger.error('Falha ao enviar email de recuperação de senha', {
+            logger.error('Falha ao enviar email de recuperação de senha (Gmail/SMTP)', {
                 userId: user.id,
+                email: user.email,
                 error: sendResult?.error || 'desconhecido'
             });
             return res.status(503).json({
                 success: false,
-                message: 'Não foi possível enviar o e-mail de recuperação. Verifique se o e-mail está correto e tente novamente em alguns minutos.'
+                message: 'Não foi possível enviar o e-mail de recuperação. Verifique se o e-mail está correto e tente novamente em alguns minutos. Em caso de erro persistente, confira SMTP_USER/SMTP_PASS no servidor.'
             });
         }
 
