@@ -256,15 +256,18 @@ router.put('/plan-availability', protectUser, asyncHandler(async (req, res) => {
 }));
 
 // Mapeamento account_type -> plan_code (compatível com subscription_plans e module_plan_availability)
+// King Start = basic; King Prime = premium (nomes de exibição podem variar)
 const accountTypeToPlanCode = {
     'individual': 'basic',
     'individual_com_logo': 'premium',
     'basic': 'basic',
+    'king_start': 'basic',
     'premium': 'premium',
+    'king_prime': 'premium',
     'business_owner': 'king_corporate',
     'enterprise': 'king_corporate',
     'king_base': 'king_base',
-    'king_essential': 'king_essential',
+    'king_essential': 'king_base',
     'king_finance': 'king_finance',
     'king_finance_plus': 'king_finance_plus',
     'king_premium_plus': 'king_premium_plus',
