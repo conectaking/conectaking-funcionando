@@ -21,16 +21,19 @@ router.get('/details', protectUser, async (req, res) => {
     }
 });
 
-// Mapeamento account_type -> plan_code (igual ao moduleAvailability e subscription) para Separação de Pacotes
+// Mapeamento account_type -> plan_code (igual ao moduleAvailability e subscription_plans) para Separação de Pacotes
+// Os plan_code na tabela module_plan_availability são: basic, premium, king_base, king_finance, etc.
 const accountTypeToPlanCode = {
     'individual': 'basic',
     'individual_com_logo': 'premium',
     'basic': 'basic',
+    'king_start': 'basic',
     'premium': 'premium',
+    'king_prime': 'premium',
     'business_owner': 'king_corporate',
     'enterprise': 'king_corporate',
     'king_base': 'king_base',
-    'king_essential': 'king_essential',
+    'king_essential': 'king_base',
     'king_finance': 'king_finance',
     'king_finance_plus': 'king_finance_plus',
     'king_premium_plus': 'king_premium_plus',
@@ -80,6 +83,10 @@ router.get('/status', protectUser, async (req, res) => {
             const accountType = user.accountType || user.account_type;
             planCode = accountTypeToPlanCode[accountType] || accountType;
         }
+        // Conta sem plano definido: usar basic para não ficar sem módulos (ex.: email antigo sem subscription_id)
+        if (!planCode) {
+            planCode = 'basic';
+        }
 
         // Módulos do plano base + extras individuais - exclusões (igual /api/modules/available)
         // Frontend usa para esconder botões: Gestão Financeira, Contratos, Agenda, Modo Empresa (igual Modo Empresa)
@@ -115,6 +122,7 @@ router.get('/status', protectUser, async (req, res) => {
         user.hasFinance = hasModule('finance');
         user.hasContract = hasModule('contract');
         user.hasAgenda = hasModule('agenda');
+        user.plan_code = planCode; // para debug: qual plano foi usado para calcular os módulos
 
         res.json(user);
 
