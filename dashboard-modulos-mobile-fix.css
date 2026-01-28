@@ -680,7 +680,11 @@ body.sortable-dragging-active #items-container,
 body.sortable-dragging-active #items-editor,
 body.sortable-dragging-active .items-container,
 body.sortable-dragging-active .modules-list,
-body.sortable-dragging-active .modules-container {
+body.sortable-dragging-active .modules-container,
+#items-container.is-dragging,
+#items-editor.is-dragging,
+.items-container.is-dragging,
+.modules-list.is-dragging {
     overflow: hidden !important;
     touch-action: none !important;
     -webkit-overflow-scrolling: auto;
@@ -707,9 +711,7 @@ body.sortable-dragging-active .modules-container {
     .drag-controls button,
     .reorder-controls button,
     .btn-move-up,
-    .btn-move-down,
-    .module-drag-controls i.fa-chevron-up,
-    .module-drag-controls i.fa-chevron-down {
+    .btn-move-down {
         min-width: 44px !important;
         min-height: 44px !important;
         padding: 10px !important;
