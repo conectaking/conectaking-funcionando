@@ -24,7 +24,7 @@ WHERE subscription_id IS NULL
       'king_start', 'king_prime', 'king_base', 'king_essential',
       'king_finance', 'king_finance_plus', 'king_premium_plus',
       'king_corporate', 'business_owner', 'enterprise',
-      'free', 'adm_principal', 'abm'
+      'free', 'adm_principal', 'abm', 'team_member'
   ))
 ORDER BY email;
 
@@ -45,7 +45,7 @@ WITH user_plans AS (
                 FROM subscription_plans sp 
                 WHERE sp.id = CAST(u.subscription_id AS INTEGER) AND sp.is_active = true
             )
-            WHEN u.account_type::text IN ('individual', 'basic', 'king_start') THEN 'basic'
+            WHEN u.account_type::text IN ('individual', 'basic', 'king_start', 'team_member') THEN 'basic'
             WHEN u.account_type::text IN ('individual_com_logo', 'premium', 'king_prime') THEN 'premium'
             WHEN u.account_type::text = 'king_base' OR u.account_type::text = 'king_essential' THEN 'king_base'
             WHEN u.account_type::text = 'king_finance' THEN 'king_finance'
@@ -115,7 +115,7 @@ WHERE subscription_id IS NULL
       'king_start', 'king_prime', 'king_base', 'king_essential',
       'king_finance', 'king_finance_plus', 'king_premium_plus',
       'king_corporate', 'business_owner', 'enterprise',
-      'free', 'adm_principal', 'abm'
+      'free', 'adm_principal', 'abm', 'team_member'
   ));
 
 -- Verificar quantas contas foram corrigidas
@@ -144,7 +144,7 @@ WITH user_plans AS (
                 FROM subscription_plans sp 
                 WHERE sp.id = CAST(u.subscription_id AS INTEGER) AND sp.is_active = true
             )
-            WHEN u.account_type::text IN ('individual', 'basic', 'king_start') THEN 'basic'
+            WHEN u.account_type::text IN ('individual', 'basic', 'king_start', 'team_member') THEN 'basic'
             WHEN u.account_type::text IN ('individual_com_logo', 'premium', 'king_prime') THEN 'premium'
             WHEN u.account_type::text = 'king_base' OR u.account_type::text = 'king_essential' THEN 'king_base'
             WHEN u.account_type::text = 'king_finance' THEN 'king_finance'
@@ -197,7 +197,7 @@ WITH user_plans AS (
                 FROM subscription_plans sp 
                 WHERE sp.id = CAST(u.subscription_id AS INTEGER) AND sp.is_active = true
             )
-            WHEN u.account_type::text IN ('individual', 'basic', 'king_start') THEN 'basic'
+            WHEN u.account_type::text IN ('individual', 'basic', 'king_start', 'team_member') THEN 'basic'
             WHEN u.account_type::text IN ('individual_com_logo', 'premium', 'king_prime') THEN 'premium'
             WHEN u.account_type::text = 'king_base' OR u.account_type::text = 'king_essential' THEN 'king_base'
             WHEN u.account_type::text = 'king_finance' THEN 'king_finance'

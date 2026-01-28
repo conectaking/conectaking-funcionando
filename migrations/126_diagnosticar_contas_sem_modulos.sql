@@ -73,7 +73,7 @@ WITH user_plans AS (
                 FROM subscription_plans sp 
                 WHERE sp.id = CAST(u.subscription_id AS INTEGER) AND sp.is_active = true
             )
-            WHEN u.account_type::text IN ('individual', 'basic', 'king_start') THEN 'basic'
+            WHEN u.account_type::text IN ('individual', 'basic', 'king_start', 'team_member') THEN 'basic'
             WHEN u.account_type::text IN ('individual_com_logo', 'premium', 'king_prime') THEN 'premium'
             WHEN u.account_type::text = 'king_base' OR u.account_type::text = 'king_essential' THEN 'king_base'
             WHEN u.account_type::text = 'king_finance' THEN 'king_finance'
@@ -150,7 +150,7 @@ WITH user_plans AS (
                 FROM subscription_plans sp 
                 WHERE sp.id = CAST(u.subscription_id AS INTEGER) AND sp.is_active = true
             )
-            WHEN u.account_type::text IN ('individual', 'basic', 'king_start') THEN 'basic'
+            WHEN u.account_type::text IN ('individual', 'basic', 'king_start', 'team_member') THEN 'basic'
             WHEN u.account_type::text IN ('individual_com_logo', 'premium', 'king_prime') THEN 'premium'
             WHEN u.account_type::text = 'king_base' OR u.account_type::text = 'king_essential' THEN 'king_base'
             WHEN u.account_type::text = 'king_finance' THEN 'king_finance'
@@ -268,7 +268,7 @@ problemas AS (
               'king_start', 'king_prime', 'king_base', 'king_essential',
               'king_finance', 'king_finance_plus', 'king_premium_plus',
               'king_corporate', 'business_owner', 'enterprise',
-              'free', 'adm_principal', 'abm'
+              'free', 'adm_principal', 'abm', 'team_member'
           )
       )
 )
@@ -311,7 +311,7 @@ WITH user_plans AS (
                 FROM subscription_plans sp 
                 WHERE sp.id = CAST(u.subscription_id AS INTEGER) AND sp.is_active = true
             )
-            WHEN u.account_type::text IN ('individual', 'basic', 'king_start') THEN 'basic'
+            WHEN u.account_type::text IN ('individual', 'basic', 'king_start', 'team_member') THEN 'basic'
             WHEN u.account_type::text IN ('individual_com_logo', 'premium', 'king_prime') THEN 'premium'
             WHEN u.account_type::text = 'king_base' OR u.account_type::text = 'king_essential' THEN 'king_base'
             WHEN u.account_type::text = 'king_finance' THEN 'king_finance'
@@ -331,7 +331,7 @@ problemas AS (
     UNION ALL
     SELECT 'SEM MÓDULOS' FROM user_plans up LEFT JOIN module_plan_availability mpa ON up.plan_code_resolvido = mpa.plan_code WHERE up.plan_code_resolvido IS NOT NULL GROUP BY up.user_id HAVING COUNT(mpa.module_type) FILTER (WHERE mpa.is_available = true) = 0
     UNION ALL
-    SELECT 'SEM PLANO DEFINIDO' FROM users u WHERE u.subscription_id IS NULL AND (u.account_type IS NULL OR u.account_type::text NOT IN ('individual', 'individual_com_logo', 'basic', 'premium', 'king_start', 'king_prime', 'king_base', 'king_essential', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'business_owner', 'enterprise', 'free', 'adm_principal', 'abm'))
+    SELECT 'SEM PLANO DEFINIDO' FROM users u WHERE u.subscription_id IS NULL AND (u.account_type IS NULL OR u.account_type::text NOT IN ('individual', 'individual_com_logo', 'basic', 'premium', 'king_start', 'king_prime', 'king_base', 'king_essential', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'business_owner', 'enterprise', 'free', 'adm_principal', 'abm', 'team_member'))
 )
 SELECT 
     problema,

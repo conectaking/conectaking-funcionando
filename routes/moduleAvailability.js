@@ -274,7 +274,8 @@ const accountTypeToPlanCode = {
     'king_corporate': 'king_corporate',
     'free': 'free',
     'adm_principal': 'adm_principal',
-    'abm': 'adm_principal'
+    'abm': 'adm_principal',
+    'team_member': 'basic'  // Membros de equipe usam plano básico
 };
 
 // GET /api/modules/available - Buscar módulos disponíveis para o usuário atual ou por plan_code

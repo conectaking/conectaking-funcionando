@@ -40,7 +40,8 @@ const accountTypeToPlanCode = {
     'king_corporate': 'king_corporate',
     'free': 'free',
     'adm_principal': 'adm_principal',
-    'abm': 'adm_principal'
+    'abm': 'adm_principal',
+    'team_member': 'basic'  // Membros de equipe usam plano básico
 };
 
 router.get('/status', protectUser, async (req, res) => {

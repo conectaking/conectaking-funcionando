@@ -214,7 +214,7 @@ resolved_plan AS (
                     FROM subscription_plans sp 
                     WHERE sp.id = CAST(ud.subscription_id AS INTEGER) AND sp.is_active = true
                 )
-                WHEN ud.account_type::text IN ('individual', 'basic', 'king_start') THEN 'basic'
+                WHEN ud.account_type::text IN ('individual', 'basic', 'king_start', 'team_member') THEN 'basic'
                 WHEN ud.account_type::text IN ('individual_com_logo', 'premium', 'king_prime') THEN 'premium'
                 WHEN ud.account_type::text = 'king_base' OR ud.account_type::text = 'king_essential' THEN 'king_base'
                 WHEN ud.account_type::text = 'king_finance' THEN 'king_finance'
