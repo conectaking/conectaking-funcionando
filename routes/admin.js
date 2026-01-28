@@ -264,22 +264,29 @@ router.get('/users', protectAdmin, async (req, res) => {
     }
 });
 
+/** Formato básico de e-mail; pontos na parte local são preservados. */
+function isValidEmail(s) {
+    if (typeof s !== 'string') return false;
+    const t = s.trim();
+    return t.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+}
+
 router.put('/users/:id/manage', protectAdmin, async (req, res) => {
     const { id } = req.params;
-    const { email, accountType, isAdmin, subscriptionStatus, expiresAt, maxTeamInvites  } = req.body; 
+    const { email, accountType, isAdmin, subscriptionStatus, expiresAt, maxTeamInvites } = req.body;
     const adminUserId = req.user.userId;
 
     if (parseInt(id, 10) === adminUserId && isAdmin === false) {
         return res.status(403).json({ message: 'Você não pode remover seu próprio status de administrador.' });
     }
-    const validAccountTypes = ['basic', 'premium', 'king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'team_member', 
-                               'free', 'individual', 'individual_com_logo', 'business_owner']; // Manter compatibilidade
-    if (!email || !validAccountTypes.includes(accountType) || typeof isAdmin !== 'boolean') {
+    const validAccountTypes = ['basic', 'premium', 'king_base', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate', 'team_member',
+        'free', 'individual', 'individual_com_logo', 'business_owner'];
+    if (!validAccountTypes.includes(accountType) || typeof isAdmin !== 'boolean') {
         return res.status(400).json({ message: 'Dados inválidos.' });
     }
     const maxInvites = (accountType === 'king_corporate' || accountType === 'business_owner') ? parseInt(maxTeamInvites, 10) : 3;
     if (isNaN(maxInvites) || maxInvites < 0) {
-        return res.status(400).json({ message: 'O valor para máximo de convites é inválido.'});
+        return res.status(400).json({ message: 'O valor para máximo de convites é inválido.' });
     }
 
     const client = await db.pool.connect();
@@ -291,22 +298,32 @@ router.put('/users/:id/manage', protectAdmin, async (req, res) => {
             return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
 
-        if (currentUser.rows[0].email !== email) {
-            const emailExists = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
-            if (emailExists.rows.length > 0) {
-                return res.status(409).json({ message: 'O novo e-mail fornecido já está em uso por outra conta.' });
+        const currentEmail = currentUser.rows[0].email;
+        let emailToUse = currentEmail;
+
+        if (email != null && String(email).trim() !== '') {
+            const e = String(email).trim();
+            if (!isValidEmail(e)) {
+                return res.status(400).json({ message: 'E-mail inválido.' });
+            }
+            if (e !== currentEmail) {
+                const emailExists = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [e, id]);
+                if (emailExists.rows.length > 0) {
+                    return res.status(409).json({ message: 'O novo e-mail já está em uso por outra conta.' });
+                }
+                emailToUse = e;
             }
         }
-        
-        const expiresAtForDb = expiresAt ? expiresAt : null;
-        const statusForDb = subscriptionStatus ? subscriptionStatus : null;
+
+        const expiresAtForDb = expiresAt || null;
+        const statusForDb = subscriptionStatus || null;
 
         const { rows } = await client.query(
             `UPDATE users 
              SET email = $1, account_type = $2, is_admin = $3, subscription_status = $4, subscription_expires_at = $5, max_team_invites = $6
              WHERE id = $7 
              RETURNING id, email, account_type, is_admin, subscription_status, subscription_expires_at, max_team_invites`,
-            [email, accountType, isAdmin, statusForDb, expiresAtForDb, maxInvites, id]
+            [emailToUse, accountType, isAdmin, statusForDb, expiresAtForDb, maxInvites, id]
         );
 
         await client.query('COMMIT');
@@ -315,7 +332,7 @@ router.put('/users/:id/manage', protectAdmin, async (req, res) => {
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error("Erro ao gerenciar usuário:", error);
+        console.error('Erro ao gerenciar usuário:', error);
         res.status(500).json({ message: 'Erro ao atualizar dados do usuário.' });
     } finally {
         client.release();
