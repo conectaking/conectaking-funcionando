@@ -62,6 +62,27 @@ function requireModule(moduleType) {
                 planCode = accountTypeToPlanCode[user.account_type] || user.account_type;
             }
 
+            // Planos individuais: "tirar do plano" (exclusão) remove acesso mesmo que o plano tenha
+            const exclRow = await db.query(
+                'SELECT 1 FROM individual_user_plan_exclusions WHERE user_id = $1 AND module_type = $2',
+                [userId, moduleType]
+            ).catch(() => ({ rows: [] }));
+            if (exclRow.rows && exclRow.rows.length > 0) {
+                return res.status(403).json({
+                    message: 'Este módulo foi removido do seu plano pelo administrador.',
+                    code: 'MODULE_EXCLUDED'
+                });
+            }
+
+            // Módulo extra (adicionar) concede acesso mesmo que o plano não tenha
+            const indRow = await db.query(
+                'SELECT 1 FROM individual_user_plans WHERE user_id = $1 AND module_type = $2',
+                [userId, moduleType]
+            ).catch(() => ({ rows: [] }));
+            if (indRow.rows && indRow.rows.length > 0) {
+                return next();
+            }
+
             const modRow = await db.query(
                 `SELECT 1 FROM module_plan_availability 
                  WHERE plan_code = $1 AND module_type = $2 AND is_available = true`,

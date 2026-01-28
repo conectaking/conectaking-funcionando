@@ -316,7 +316,7 @@ router.get('/available', protectUser, asyncHandler(async (req, res) => {
             }
         }
         
-        // Buscar APENAS os módulos marcados como disponíveis (is_available = true) para este plano
+        // Buscar módulos do plano base
         const modulesQuery = `
             SELECT DISTINCT module_type
             FROM module_plan_availability
@@ -324,8 +324,22 @@ router.get('/available', protectUser, asyncHandler(async (req, res) => {
             ORDER BY module_type
         `;
         const modulesResult = await client.query(modulesQuery, [planCode]);
-        const availableModules = modulesResult.rows.map(r => r.module_type);
-        // Respeitar apenas a Separação de Pacotes: só retorna o que está marcado para o plano (sem filtrar agenda/contract por admin).
+        let availableModules = modulesResult.rows.map(r => r.module_type);
+
+        // Aplicar personalização por usuário (apenas quando não é query por plan_code)
+        if (!planCodeQuery) {
+            const exclusionsResult = await client.query(
+                `SELECT module_type FROM individual_user_plan_exclusions WHERE user_id = $1`,
+                [userId]
+            ).catch(() => ({ rows: [] }));
+            const exclusions = new Set((exclusionsResult.rows || []).map(r => r.module_type));
+            const individualResult = await client.query(
+                `SELECT module_type FROM individual_user_plans WHERE user_id = $1`,
+                [userId]
+            ).catch(() => ({ rows: [] }));
+            const individualAdds = new Set((individualResult.rows || []).map(r => r.module_type));
+            availableModules = [...new Set([...availableModules, ...individualAdds].filter(m => !exclusions.has(m)))].sort();
+        }
 
         res.json({
             account_type: accountType,
@@ -465,17 +479,30 @@ router.get('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
         
         const user = userResult.rows[0];
         
-        // Buscar módulos individuais do usuário
+        // Buscar módulos individuais (extras) e exclusões (tirar do plano)
         const individualModulesResult = await client.query(`
-            SELECT module_type
-            FROM individual_user_plans
-            WHERE user_id = $1
+            SELECT module_type FROM individual_user_plans WHERE user_id = $1
         `, [targetUserId]);
-        
         const individualModules = individualModulesResult.rows.map(r => r.module_type);
+        const exclusionsResult = await client.query(`
+            SELECT module_type FROM individual_user_plan_exclusions WHERE user_id = $1
+        `, [targetUserId]).catch(() => ({ rows: [] }));
+        const excludedModules = new Set((exclusionsResult.rows || []).map(r => r.module_type));
         
-        // Mapear account_type para plan_code (garantir compatibilidade)
-        let planCode = user.account_type || 'free';
+        // Resolver plan_code: prioridade subscription_id (plano da assinatura), depois account_type
+        let planCode = null;
+        const userWithSub = await client.query(
+            'SELECT account_type, subscription_id FROM users WHERE id = $1',
+            [targetUserId]
+        );
+        if (userWithSub.rows.length > 0 && userWithSub.rows[0].subscription_id) {
+            const planRow = await client.query(
+                'SELECT plan_code FROM subscription_plans WHERE id = $1 AND is_active = true',
+                [userWithSub.rows[0].subscription_id]
+            );
+            if (planRow.rows.length > 0) planCode = planRow.rows[0].plan_code;
+        }
+        if (!planCode) planCode = user.account_type || 'free';
         
         // Buscar todos os plan_codes que existem na tabela module_plan_availability
         const availablePlanCodesResult = await client.query(`
@@ -573,17 +600,26 @@ router.get('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
         
         console.log(`📋 Usuário: ${user.email}, Plan Code: ${planCode}, Módulos no sistema: ${allModuleTypes.length}, Módulos no plano base: ${baseModulesResult.rows.length}`);
         
-        // Criar lista de todos os módulos que existem no sistema, verificando se estão no plano base
-        const allModules = allModuleTypes.map(moduleType => ({
-            module_type: moduleType,
-            in_base_plan: baseModules.has(moduleType),
-            is_individual: individualModules.includes(moduleType)
-        }));
+        // Lista de módulos: in_base_plan, is_individual (extra), is_excluded (tirou do plano). Todos editáveis.
+        const allModules = allModuleTypes.map(moduleType => {
+            const inBase = baseModules.has(moduleType);
+            const isIndividual = individualModules.includes(moduleType);
+            const isExcluded = excludedModules.has(moduleType);
+            const isActive = (inBase && !isExcluded) || isIndividual;
+            return {
+                module_type: moduleType,
+                in_base_plan: inBase,
+                is_individual: isIndividual,
+                is_excluded: isExcluded,
+                is_active: isActive  // efetivo: marcado = usuário tem acesso
+            };
+        });
         
         res.json({
             user: user,
             plan_code: planCode,
-            modules: allModules
+            modules: allModules,
+            can_edit_base_modules: true  // frontend pode habilitar checkbox em "Já no plano" para tirar do plano
         });
     } catch (error) {
         console.error('❌ Erro ao buscar módulos do usuário:', error);
@@ -593,13 +629,15 @@ router.get('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
     }
 }));
 
-// PUT /api/modules/individual-plans/:userId - Atualizar módulos individuais de um usuário (ADM)
+// PUT /api/modules/individual-plans/:userId - Atualizar módulos do usuário (ADM)
+// modules = lista completa de module_type que devem estar ATIVOS (inclui "já no plano" e "adicionar")
+// Permite "tirar do plano": desmarcar um módulo que está no plano base grava em exclusions.
 router.put('/individual-plans/:userId', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const adminUserId = req.user.userId;
         const targetUserId = req.params.userId;
-        const { modules } = req.body; // Array de module_type que devem estar ativos
+        const { modules } = req.body; // Array de module_type que devem estar ATIVOS (lista completa)
         
         // Verificar se é admin
         const adminCheck = await client.query('SELECT is_admin FROM users WHERE id = $1', [adminUserId]);
@@ -608,36 +646,57 @@ router.put('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
         }
         
         if (!Array.isArray(modules)) {
-            return res.status(400).json({ message: 'modules deve ser um array.' });
+            return res.status(400).json({ message: 'modules deve ser um array (lista de module_type ativos).' });
         }
         
-        // Buscar account_type do usuário
-        const userResult = await client.query('SELECT account_type FROM users WHERE id = $1', [targetUserId]);
+        const userResult = await client.query(
+            'SELECT account_type, subscription_id FROM users WHERE id = $1',
+            [targetUserId]
+        );
         if (userResult.rows.length === 0) {
             return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
         
-        // Mapear account_type para plan_code (garantir compatibilidade)
         let planCode = userResult.rows[0].account_type || 'free';
+        if (userResult.rows[0].subscription_id) {
+            const planRow = await client.query(
+                'SELECT plan_code FROM subscription_plans WHERE id = $1 AND is_active = true',
+                [userResult.rows[0].subscription_id]
+            );
+            if (planRow.rows.length > 0) planCode = planRow.rows[0].plan_code;
+        }
+        
+        const activeSet = new Set(modules);
+        
+        const baseModulesResult = await client.query(`
+            SELECT module_type FROM module_plan_availability
+            WHERE plan_code = $1 AND is_available = true
+        `, [planCode]);
+        const baseModules = new Set(baseModulesResult.rows.map(r => r.module_type));
         
         await client.query('BEGIN');
         
         try {
-            // Remover todos os módulos individuais existentes
             await client.query('DELETE FROM individual_user_plans WHERE user_id = $1', [targetUserId]);
+            await client.query(
+                'DELETE FROM individual_user_plan_exclusions WHERE user_id = $1',
+                [targetUserId]
+            ).catch(() => {});
             
-            // Buscar módulos que estão no plano base
-            const baseModulesResult = await client.query(`
-                SELECT module_type
-                FROM module_plan_availability
-                WHERE plan_code = $1 AND is_available = true
-            `, [planCode]);
+            // Exclusões: módulos do plano base que o admin desmarcou (tirar do plano)
+            for (const moduleType of baseModules) {
+                if (!activeSet.has(moduleType)) {
+                    await client.query(`
+                        INSERT INTO individual_user_plan_exclusions (user_id, module_type)
+                        VALUES ($1, $2)
+                        ON CONFLICT (user_id, module_type) DO NOTHING
+                    `, [targetUserId, moduleType]).catch(() => {});
+                }
+            }
             
-            const baseModules = baseModulesResult.rows.map(r => r.module_type);
-            
-            // Inserir apenas módulos que NÃO estão no plano base
-            for (const moduleType of modules) {
-                if (!baseModules.includes(moduleType)) {
+            // Extras: módulos ativos que não estão no plano base (adicionar)
+            for (const moduleType of activeSet) {
+                if (!baseModules.has(moduleType)) {
                     await client.query(`
                         INSERT INTO individual_user_plans (user_id, module_type, plan_code)
                         VALUES ($1, $2, $3)
@@ -649,7 +708,7 @@ router.put('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
             await client.query('COMMIT');
             
             res.json({
-                message: 'Módulos individuais atualizados com sucesso.'
+                message: 'Módulos atualizados com sucesso. Alterações em "Já no plano" e "Adicionar" foram salvas.'
             });
         } catch (error) {
             await client.query('ROLLBACK');
