@@ -674,3 +674,55 @@ body.sortable-dragging-active .sortable-dragging,
 body.sortable-dragging-active .sortable-dragging-mobile {
     touch-action: none !important;
 }
+
+/* Durante o drag: container da lista não rola, dedo 100% no arraste */
+body.sortable-dragging-active #items-container,
+body.sortable-dragging-active #items-editor,
+body.sortable-dragging-active .items-container,
+body.sortable-dragging-active .modules-list,
+body.sortable-dragging-active .modules-container {
+    overflow: hidden !important;
+    touch-action: none !important;
+    -webkit-overflow-scrolling: auto;
+}
+
+/* ============================================
+   MOBILE: SETAS ↑↓ BEM GRANDES (alternativa ao arraste)
+   No celular é mais fácil tocar nas setas do que arrastar.
+   ============================================ */
+@media (max-width: 768px) {
+    .module-drag-controls,
+    .drag-controls,
+    .reorder-controls,
+    .module-drag-controls-inner {
+        min-height: 48px;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+    .module-drag-controls button,
+    .module-drag-controls a,
+    .module-drag-controls [role="button"],
+    .module-drag-controls .btn-move-up,
+    .module-drag-controls .btn-move-down,
+    .drag-controls button,
+    .reorder-controls button,
+    .btn-move-up,
+    .btn-move-down,
+    .module-drag-controls i.fa-chevron-up,
+    .module-drag-controls i.fa-chevron-down {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        padding: 10px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.1rem !important;
+    }
+    /* Garantir que o pai das setas tenha área clicável grande */
+    .module-drag-controls > *,
+    .drag-controls > *,
+    .reorder-controls > * {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
