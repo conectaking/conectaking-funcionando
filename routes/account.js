@@ -109,18 +109,12 @@ router.get('/status', protectUser, async (req, res) => {
         const excludedSet = new Set(excludedModules);
         const hasModule = (type) => (baseSet.has(type) && !excludedSet.has(type)) || individualSet.has(type);
 
+        // Visibilidade dos módulos: segue exatamente a Separação de Módulos (module_plan_availability + individual_user_plans − exclusions)
+        // Nenhum override para admin: o que está ativo/desativado no painel "Módulos por Plano" vale para todos, inclusive ADM.
         user.hasModoEmpresa = hasModule('modo_empresa');
         user.hasFinance = hasModule('finance');
         user.hasContract = hasModule('contract');
         user.hasAgenda = hasModule('agenda');
-
-        // ADM sempre vê todos os módulos (Gestão Financeira, Contratos, Agenda, Modo Empresa)
-        if (user.isAdmin === true || user.is_admin === true) {
-            user.hasModoEmpresa = true;
-            user.hasFinance = true;
-            user.hasContract = true;
-            user.hasAgenda = true;
-        }
 
         res.json(user);
 
