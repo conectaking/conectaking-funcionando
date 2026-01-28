@@ -203,3 +203,9 @@ Se os seletores não baterem ou precisar de ajustes específicos:
 2. **Ou abra o projeto do dashboard no Cursor** para eu ajustar diretamente
 
 O arquivo `dashboard-modulos-mobile-fix.css` está pronto para uso! 🎉
+
+---
+
+## 📌 Arraste travando no mobile?
+
+Se o **arrastar para reordenar** os módulos estiver travando no celular, use o guia **`FIX_DRAG_MOBILE_TRAVAMENTO.md`**: lá estão os ajustes de CSS (já no `dashboard-modulos-mobile-fix.css`) e as opções do Sortable para aplicar no `dashboard.js`.
