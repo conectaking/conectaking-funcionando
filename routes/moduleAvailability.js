@@ -269,7 +269,9 @@ const accountTypeToPlanCode = {
     'king_finance_plus': 'king_finance_plus',
     'king_premium_plus': 'king_premium_plus',
     'king_corporate': 'king_corporate',
-    'free': 'free'
+    'free': 'free',
+    'adm_principal': 'adm_principal',
+    'abm': 'adm_principal'
 };
 
 // GET /api/modules/available - Buscar módulos disponíveis para o usuário atual ou por plan_code

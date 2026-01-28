@@ -2,6 +2,20 @@
 -- 1) Cria plano ADM Principal para uso do administrador (todos os módulos ativos).
 -- 2) Garante que King Start (basic) NÃO tenha finance, contract, agenda.
 -- 3) Garante que King Finance, King Finance Plus e King Premium Plus TENHAM finance, contract, agenda.
+-- 4) Adiciona tipo de conta 'adm_principal' para poder atribuir ao usuário ADM.
+
+-- ========== 0. Tipo de conta ADM Principal ==========
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_enum
+        WHERE enumlabel = 'adm_principal'
+        AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'account_type_enum')
+    ) THEN
+        ALTER TYPE account_type_enum ADD VALUE 'adm_principal';
+        RAISE NOTICE 'Valor adm_principal adicionado ao account_type_enum.';
+    END IF;
+END $$;
 
 -- ========== 1. Plano ADM Principal ==========
 INSERT INTO subscription_plans (plan_code, plan_name, price, description, features, is_active)
