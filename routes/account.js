@@ -153,6 +153,16 @@ router.get('/status', protectUser, async (req, res) => {
         user.hasBranding = hasModule('branding');
         user.plan_code = planCode; // para debug: qual plano foi usado para calcular os módulos
         
+        // Buscar limites de links (módulo isolado)
+        try {
+            const linkLimitsService = require('../modules/linkLimits/linkLimits.service');
+            user.linkLimits = await linkLimitsService.getUserLinkLimits(userId);
+        } catch (limitError) {
+            // Se houver erro, não quebrar a resposta, apenas logar
+            console.warn('Erro ao buscar limites de links:', limitError.message);
+            user.linkLimits = {};
+        }
+        
         // Log detalhado para debug
         console.log(`🔍 [${user.email}] Visibilidade dos módulos:`, {
             planCode: planCode,

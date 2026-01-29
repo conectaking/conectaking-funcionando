@@ -52,6 +52,7 @@ const publicContractRoutes = require('./routes/publicContract.routes');
 const webhooksRoutes = require('./routes/webhooks.routes');
 const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
 const checkinRoutes = require('./routes/checkin.routes');
+const linkLimitsRoutes = require('./modules/linkLimits/linkLimits.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize, botLimiter } = require('./middleware/security');
 const autoMigrate = require('./utils/auto-migrate');
@@ -593,6 +594,7 @@ app.use('/api/account', apiLimiter, accountRoutes);
 app.use('/api/profile', apiLimiter, profileRoutes);
 app.use('/api/subscription', apiLimiter, subscriptionRoutes);
 app.use('/api/modules', apiLimiter, moduleAvailabilityRoutes);
+app.use('/api/link-limits', apiLimiter, linkLimitsRoutes);
 app.use('/log', loggerRoutes);
 // Endpoint agregado de check-in (rate limit específico - 120/min)
 app.use('/api/checkin', checkinLimiter, checkinRoutes);

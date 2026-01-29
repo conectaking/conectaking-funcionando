@@ -2893,6 +2893,28 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
             return res.status(400).json({ message: 'Tipo de item é obrigatório.' });
         }
 
+        // Verificar limite de links (módulo isolado)
+        try {
+            const linkLimitsService = require('../modules/linkLimits/linkLimits.service');
+            const limitCheck = await linkLimitsService.checkLinkLimit(userId, item_type);
+            
+            if (!limitCheck.allowed) {
+                // Buscar sugestão de upgrade
+                const upgradeSuggestion = await linkLimitsService.getUpgradeSuggestion(userId, item_type);
+                
+                return res.status(403).json({
+                    error: 'LIMIT_EXCEEDED',
+                    message: limitCheck.message || `Você atingiu o limite de ${limitCheck.limit} links do tipo ${item_type} no seu plano atual. Faça upgrade para adicionar mais links!`,
+                    current: limitCheck.current,
+                    limit: limitCheck.limit,
+                    upgrade_suggestion: upgradeSuggestion
+                });
+            }
+        } catch (limitError) {
+            // Se houver erro na verificação de limite, logar mas continuar (comportamento seguro)
+            console.warn('Erro ao verificar limite de links (continuando):', limitError.message);
+        }
+
         // Obter próxima ordem
         const orderResult = await client.query(
             'SELECT COALESCE(MAX(display_order), -1) + 1 as next_order FROM profile_items WHERE user_id = $1',
