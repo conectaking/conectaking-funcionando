@@ -151,6 +151,21 @@ router.get('/status', protectUser, async (req, res) => {
         user.hasContract = hasModule('contract');
         user.hasAgenda = hasModule('agenda');
         user.plan_code = planCode; // para debug: qual plano foi usado para calcular os módulos
+        
+        // Log detalhado para debug
+        console.log(`🔍 [${user.email}] Visibilidade dos módulos:`, {
+            planCode: planCode,
+            baseModules: Array.from(baseSet),
+            individualModules: Array.from(individualSet),
+            excludedModules: Array.from(excludedSet),
+            hasFinance: user.hasFinance,
+            hasContract: user.hasContract,
+            hasAgenda: user.hasAgenda,
+            hasModoEmpresa: user.hasModoEmpresa,
+            financeInBase: baseSet.has('finance'),
+            financeInIndividual: individualSet.has('finance'),
+            financeExcluded: excludedSet.has('finance')
+        });
 
         res.json(user);
 

@@ -27,7 +27,17 @@
      * @param {Object} user - Objeto com hasFinance, hasContract, hasAgenda, hasModoEmpresa (boolean)
      */
     function applyModulesVisibility(user) {
-        if (!user) return;
+        if (!user) {
+            console.warn('[applyModulesVisibility] Usuário não fornecido');
+            return;
+        }
+
+        console.log('[applyModulesVisibility] Aplicando visibilidade dos módulos:', {
+            hasFinance: user.hasFinance,
+            hasContract: user.hasContract,
+            hasAgenda: user.hasAgenda,
+            hasModoEmpresa: user.hasModoEmpresa
+        });
 
         var map = [
             { key: 'hasFinance', module: 'finance', labels: ['Gestão Financeira', 'Gestao Financeira'] },
@@ -37,14 +47,34 @@
         ];
 
         map.forEach(function (item) {
-            var show = user[item.key] === true;
+            // Verificar se o módulo está ativo (true ou 1 ou 'true')
+            var show = user[item.key] === true || user[item.key] === 1 || user[item.key] === 'true';
+            
+            // Buscar elementos por data-module primeiro
             var els = document.querySelectorAll('[data-module="' + item.module + '"]');
+            
+            // Se não encontrou, buscar por texto
             if (els.length === 0) {
                 els = findElementsByText(item.labels);
             }
+            
+            console.log('[applyModulesVisibility] Módulo ' + item.module + ': show=' + show + ', encontrados ' + els.length + ' elementos');
+            
             els.forEach(function (el) {
                 var parent = el.closest('a, li, .nav-item, .menu-item, [role="menuitem"]') || el;
-                parent.style.display = show ? '' : 'none';
+                
+                if (show) {
+                    // Mostrar: remover display:none e garantir que está visível
+                    parent.style.display = '';
+                    parent.style.visibility = '';
+                    parent.removeAttribute('hidden');
+                    parent.classList.remove('hidden', 'd-none');
+                    console.log('[applyModulesVisibility] ✅ Mostrando:', item.module, parent);
+                } else {
+                    // Ocultar: definir display:none
+                    parent.style.display = 'none';
+                    console.log('[applyModulesVisibility] ❌ Ocultando:', item.module, parent);
+                }
             });
         });
     }
@@ -70,21 +100,48 @@
      */
     function initModulesByPlan() {
         var url = (API_BASE || (typeof window !== 'undefined' && window.API_URL)) + '/api/account/status';
+        console.log('[initModulesByPlan] Buscando status do usuário em:', url);
         fetch(url, { credentials: 'include', headers: getAuthHeaders() })
             .then(function (r) {
-                if (!r.ok) return Promise.reject(new Error('Não autenticado'));
+                if (!r.ok) {
+                    console.warn('[initModulesByPlan] Resposta não OK:', r.status);
+                    return Promise.reject(new Error('Não autenticado'));
+                }
                 return r.json();
             })
             .then(function (user) {
+                console.log('[initModulesByPlan] Status recebido:', {
+                    email: user.email,
+                    hasFinance: user.hasFinance,
+                    hasContract: user.hasContract,
+                    hasAgenda: user.hasAgenda
+                });
                 applyModulesVisibility(user);
             })
-            .catch(function () {});
+            .catch(function (err) {
+                console.warn('[initModulesByPlan] Erro ao buscar status:', err);
+            });
     }
 
-    if (typeof document !== 'undefined' && document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initModulesByPlan);
-    } else if (typeof document !== 'undefined') {
-        initModulesByPlan();
+    // Executar quando DOM estiver pronto
+    if (typeof document !== 'undefined') {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('[dashboard-ocultar-modulos] DOM carregado, inicializando...');
+                setTimeout(initModulesByPlan, 100); // Pequeno delay para garantir que outros scripts carregaram
+            });
+        } else {
+            console.log('[dashboard-ocultar-modulos] DOM já carregado, inicializando...');
+            setTimeout(initModulesByPlan, 100);
+        }
+        
+        // Também executar quando a página estiver completamente carregada
+        if (typeof window !== 'undefined') {
+            window.addEventListener('load', function() {
+                console.log('[dashboard-ocultar-modulos] Página completamente carregada, verificando novamente...');
+                setTimeout(initModulesByPlan, 500);
+            });
+        }
     }
 
     global.applyModulesVisibility = applyModulesVisibility;
