@@ -36,14 +36,16 @@
             hasFinance: user.hasFinance,
             hasContract: user.hasContract,
             hasAgenda: user.hasAgenda,
-            hasModoEmpresa: user.hasModoEmpresa
+            hasModoEmpresa: user.hasModoEmpresa,
+            hasBranding: user.hasBranding
         });
 
         var map = [
             { key: 'hasFinance', module: 'finance', labels: ['Gestão Financeira', 'Gestao Financeira'] },
             { key: 'hasContract', module: 'contract', labels: ['Contratos'] },
             { key: 'hasAgenda', module: 'agenda', labels: ['Agenda Inteligente', 'Agenda'] },
-            { key: 'hasModoEmpresa', module: 'modo_empresa', labels: ['Modo Empresa'] }
+            { key: 'hasModoEmpresa', module: 'modo_empresa', labels: ['Modo Empresa'] },
+            { key: 'hasBranding', module: 'branding', labels: ['Personalização da Marca', 'Personalizacao da Marca'] }
         ];
 
         map.forEach(function (item) {

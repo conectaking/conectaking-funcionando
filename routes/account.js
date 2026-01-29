@@ -150,6 +150,7 @@ router.get('/status', protectUser, async (req, res) => {
         user.hasFinance = hasModule('finance');
         user.hasContract = hasModule('contract');
         user.hasAgenda = hasModule('agenda');
+        user.hasBranding = hasModule('branding');
         user.plan_code = planCode; // para debug: qual plano foi usado para calcular os módulos
         
         // Log detalhado para debug
@@ -162,6 +163,7 @@ router.get('/status', protectUser, async (req, res) => {
             hasContract: user.hasContract,
             hasAgenda: user.hasAgenda,
             hasModoEmpresa: user.hasModoEmpresa,
+            hasBranding: user.hasBranding,
             financeInBase: baseSet.has('finance'),
             financeInIndividual: individualSet.has('finance'),
             financeExcluded: excludedSet.has('finance')
@@ -279,7 +281,8 @@ router.get('/debug-plan/:email', protectUser, async (req, res) => {
                 hasFinance: availableModules.includes('finance') || indRes.rows.some(r => r.module_type === 'finance'),
                 hasContract: availableModules.includes('contract') || indRes.rows.some(r => r.module_type === 'contract'),
                 hasAgenda: availableModules.includes('agenda') || indRes.rows.some(r => r.module_type === 'agenda'),
-                hasModoEmpresa: availableModules.includes('modo_empresa') || indRes.rows.some(r => r.module_type === 'modo_empresa')
+                hasModoEmpresa: availableModules.includes('modo_empresa') || indRes.rows.some(r => r.module_type === 'modo_empresa'),
+                hasBranding: availableModules.includes('branding') || indRes.rows.some(r => r.module_type === 'branding')
             }
         });
     } catch (error) {
