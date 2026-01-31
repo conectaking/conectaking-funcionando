@@ -267,10 +267,12 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   const scale = clamp(parseFloat(watermark?.scale), 0.10, 0.85);
   const rot = parseInt(watermark?.rotate || 0, 10) || 0;
   const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
-  // "Automático": usar o maior lado para não ficar minúsculo em foto vertical
   const maxSide = Math.max(outW, outH);
-  const boxW = Math.max(140, Math.round(maxSide * scale));
-  const boxH = Math.max(140, Math.round(maxSide * scale));
+  // Automático (ajustar na foto): escala respeitando o formato da foto
+  // - horizontal: logo tende a crescer na largura
+  // - vertical: logo tende a crescer na altura
+  const boxW = Math.max(140, Math.round(outW * scale));
+  const boxH = Math.max(140, Math.round(outH * scale));
   const wmPng = await sharp(wmBuf)
     .rotate() // EXIF
     .rotate(rotate) // correção manual
@@ -282,6 +284,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   // aplica no centro com opacidade usando SVG mask simples
   if (watermark?.mode === 'tile') {
     // Mosaico (tipo álbum): repete a logo na foto inteira
+    // Para o mosaico, o espaçamento usa o maior lado (mais estável)
     const b64 = wmPng.toString('base64');
     const step = Math.max(180, Math.round(maxSide * (scale * 1.35)));
     const w = outW;
