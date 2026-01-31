@@ -104,6 +104,25 @@ function buildCfUrl(imageId) {
   return `https://imagedelivery.net/${hash}/${imageId}/public`;
 }
 
+async function deleteCloudflareImage(imageId) {
+  // Deletar do Cloudflare Images (não é R2)
+  const accountId = getCfAccountId();
+  const apiToken = getCfApiToken();
+  if (!accountId || !apiToken) return false;
+
+  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`;
+  const resp = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${apiToken}`,
+      Accept: 'application/json'
+    }
+  });
+  // Se já não existir (404), tratamos como "ok"
+  if (resp.status === 404) return true;
+  return resp.ok;
+}
+
 async function fetchCloudflareImageBuffer(imageId) {
   // Preferir delivery (rápido) quando houver account hash
   const deliveryUrl = buildCfUrl(imageId);
@@ -817,7 +836,7 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
   try {
     const userId = req.user.userId;
     const own = await client.query(
-      `SELECT p.id
+      `SELECT p.id, p.file_path
        FROM king_photos p
        JOIN king_galleries g ON g.id = p.gallery_id
        JOIN profile_items pi ON pi.id = g.profile_item_id
@@ -825,8 +844,42 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
       [photoId, userId]
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
-    await client.query('DELETE FROM king_photos WHERE id=$1', [photoId]);
+    const filePath = String(own.rows[0].file_path || '');
+    const imageId = filePath.startsWith('cfimage:') ? filePath.replace('cfimage:', '') : null;
+
+    // Apagar do banco primeiro
+    await client.query('BEGIN');
     await client.query('DELETE FROM king_selections WHERE photo_id=$1', [photoId]);
+    await client.query('DELETE FROM king_photos WHERE id=$1', [photoId]);
+    await client.query('COMMIT');
+
+    // Depois tenta apagar no Cloudflare (sem quebrar o fluxo se falhar)
+    if (imageId) {
+      try {
+        // Segurança: só apaga do Cloudflare se não houver outras referências
+        const stillUsedPhotos = await client.query(
+          'SELECT 1 FROM king_photos WHERE file_path=$1 LIMIT 1',
+          [`cfimage:${imageId}`]
+        );
+
+        let stillUsedWatermark = { rows: [] };
+        const hasWm = await hasColumn(client, 'king_galleries', 'watermark_path');
+        if (hasWm) {
+          stillUsedWatermark = await client.query(
+            'SELECT 1 FROM king_galleries WHERE watermark_path=$1 LIMIT 1',
+            [`cfimage:${imageId}`]
+          );
+        }
+
+        const stillUsed = stillUsedPhotos.rows.length > 0 || stillUsedWatermark.rows.length > 0;
+        if (!stillUsed) {
+          await deleteCloudflareImage(imageId);
+        }
+      } catch (e) {
+        // Ignorar: exclusão no Cloudflare é best-effort
+      }
+    }
+
     res.json({ success: true });
   } finally {
     client.release();
