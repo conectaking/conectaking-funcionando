@@ -109,8 +109,31 @@ router.get('/galleries', protectUser, asyncHandler(async (req, res) => {
         photosByGallery[p.gallery_id].push(p);
       });
     }
+    // incluir contagem de selecionadas e feedback (quando houver)
+    let selectionStats = {};
+    if (ids.length) {
+      const sRes = await client.query(
+        `SELECT gallery_id, COUNT(*)::int AS selected_count, MAX(feedback_cliente) AS feedback_cliente
+         FROM king_selections
+         WHERE gallery_id = ANY($1::int[])
+         GROUP BY gallery_id`,
+        [ids]
+      );
+      sRes.rows.forEach(r => {
+        selectionStats[r.gallery_id] = {
+          selected_count: r.selected_count || 0,
+          feedback_cliente: r.feedback_cliente || null
+        };
+      });
+    }
     const payload = galleries.map(g => ({ ...g, photos: photosByGallery[g.id] || [] }));
-    res.json({ success: true, galleries: payload });
+    const payloadWithStats = payload.map(g => ({
+      ...g,
+      selected_count: selectionStats[g.id]?.selected_count || 0,
+      feedback_cliente: selectionStats[g.id]?.feedback_cliente || null,
+      photos_count: (g.photos || []).length
+    }));
+    res.json({ success: true, galleries: payloadWithStats });
   } finally {
     client.release();
   }
@@ -243,6 +266,37 @@ router.post('/galleries/:id/photos', protectUser, asyncHandler(async (req, res) 
       [galleryId, file_path, original_name || 'foto', parseInt(order || 0, 10) || 0]
     );
     res.status(201).json({ success: true, photo: ins.rows[0] });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/galleries/:id/reset-password', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const { senha } = req.body || {};
+  if (!galleryId || !senha) return res.status(400).json({ message: 'galleryId e senha são obrigatórios' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const g = await client.query(
+      `SELECT g.*
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (g.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+
+    const senha_hash = await bcrypt.hash(String(senha), 10);
+    const hasEnc = await hasColumn(client, 'king_galleries', 'senha_enc');
+    if (hasEnc) {
+      const senha_enc = encryptPassword(String(senha));
+      await client.query('UPDATE king_galleries SET senha_hash=$1, senha_enc=$2, updated_at=NOW() WHERE id=$3', [senha_hash, senha_enc, galleryId]);
+    } else {
+      await client.query('UPDATE king_galleries SET senha_hash=$1, updated_at=NOW() WHERE id=$2', [senha_hash, galleryId]);
+    }
+    res.json({ success: true, client_password: String(senha) });
   } finally {
     client.release();
   }
