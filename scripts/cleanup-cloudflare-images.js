@@ -74,6 +74,15 @@ function getCfAuthHeaders() {
   return null;
 }
 
+function getCfAuthMode() {
+  const apiToken = getCfApiToken();
+  if (apiToken) return 'bearer_token';
+  const apiKey = getCfGlobalApiKey();
+  const email = getCfAuthEmail();
+  if (apiKey && email) return 'email_global_key';
+  return 'missing';
+}
+
 function extractCloudflareImageIdFromUrl(url) {
   const u = String(url || '').trim();
   const m = u.match(/^https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\/[^/?#]+/i);
@@ -282,6 +291,7 @@ async function main() {
   const dryRun = String(process.env.DRY_RUN || '1') !== '0';
   const minAgeDays = parseFloat(process.env.MIN_AGE_DAYS || '0') || 0;
   const repoRoot = path.resolve(__dirname, '..');
+  console.log(`Auth Cloudflare: ${getCfAuthMode()}`);
 
   const client = await db.pool.connect();
   try {
