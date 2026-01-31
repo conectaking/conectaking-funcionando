@@ -172,14 +172,26 @@ async function fetchCloudflareImageBuffer(imageId) {
 async function loadWatermarkForGallery(pgClient, galleryId) {
   const hasMode = await hasColumn(pgClient, 'king_galleries', 'watermark_mode');
   const hasPath = await hasColumn(pgClient, 'king_galleries', 'watermark_path');
-  if (!hasMode && !hasPath) return { mode: 'x', path: null };
+  const hasOpacity = await hasColumn(pgClient, 'king_galleries', 'watermark_opacity');
+  const hasScale = await hasColumn(pgClient, 'king_galleries', 'watermark_scale');
+  if (!hasMode && !hasPath && !hasOpacity && !hasScale) return { mode: 'x', path: null, opacity: 0.30, scale: 0.28 };
   const cols = [
     hasMode ? 'watermark_mode' : `'x'::text AS watermark_mode`,
-    hasPath ? 'watermark_path' : 'NULL::text AS watermark_path'
+    hasPath ? 'watermark_path' : 'NULL::text AS watermark_path',
+    hasOpacity ? 'watermark_opacity' : '0.30::numeric AS watermark_opacity',
+    hasScale ? 'watermark_scale' : '0.28::numeric AS watermark_scale'
   ].join(', ');
   const res = await pgClient.query(`SELECT ${cols} FROM king_galleries WHERE id=$1`, [galleryId]);
-  if (!res.rows.length) return { mode: 'x', path: null };
-  return { mode: res.rows[0].watermark_mode || 'x', path: res.rows[0].watermark_path || null };
+  if (!res.rows.length) return { mode: 'x', path: null, opacity: 0.30, scale: 0.28 };
+  const row = res.rows[0] || {};
+  const op = parseFloat(row.watermark_opacity);
+  const sc = parseFloat(row.watermark_scale);
+  return {
+    mode: row.watermark_mode || 'x',
+    path: row.watermark_path || null,
+    opacity: Number.isFinite(op) ? op : 0.30,
+    scale: Number.isFinite(sc) ? sc : 0.28
+  };
 }
 
 async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
@@ -188,11 +200,14 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   let pipeline = img.resize(outW, outH, { fit: 'inside' });
 
   // 1) X (default)
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
+  const opDefaultX = clamp(parseFloat(watermark?.opacity), 0.05, 0.60);
   if (!watermark || watermark.mode === 'x' || !watermark.path) {
+    const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
     const svg = Buffer.from(
       `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
-         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
        </svg>`
     );
     pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
@@ -217,20 +232,25 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   const wmBufRaw = await fetchCloudflareImageBuffer(imageId);
   if (!wmBufRaw) {
     // fallback X
+    const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
     const svg = Buffer.from(
       `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
-         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
        </svg>`
     );
     pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
     return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
   const wmBuf = wmBufRaw;
-  const wmTargetW = Math.max(120, Math.round(outW * 0.28));
+  const opacity = clamp(parseFloat(watermark?.opacity), 0.05, 0.80);
+  const scale = clamp(parseFloat(watermark?.scale), 0.10, 0.45);
+  const boxW = Math.max(140, Math.round(outW * scale));
+  const boxH = Math.max(140, Math.round(outH * scale));
   const wmPng = await sharp(wmBuf)
     .rotate()
-    .resize({ width: wmTargetW, withoutEnlargement: true })
+    // fit "inside" ajusta automaticamente para logo horizontal/vertical
+    .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: true })
     .png()
     .toBuffer();
 
@@ -247,7 +267,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     input: wmPng,
     gravity: 'center',
     blend: 'over',
-    opacity: 0.28
+    opacity
   }]);
   return pipeline.jpeg({ quality: 82 }).toBuffer();
 }
@@ -539,7 +559,9 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'allow_comments',
     'allow_social_sharing',
     'watermark_mode',
-    'watermark_path'
+    'watermark_path',
+    'watermark_opacity',
+    'watermark_scale'
   ];
 
   const body = req.body || {};
@@ -570,6 +592,14 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing') val = !!val;
       if (key === 'cliente_email') val = String(val || '').toLowerCase().trim();
       if (key === 'data_trabalho' && val) val = String(val).slice(0, 10);
+      if (key === 'watermark_opacity') {
+        const n = parseFloat(val);
+        val = Number.isFinite(n) ? Math.max(0.05, Math.min(0.80, n)) : 0.30;
+      }
+      if (key === 'watermark_scale') {
+        const n = parseFloat(val);
+        val = Number.isFinite(n) ? Math.max(0.10, Math.min(0.45, n)) : 0.28;
+      }
       sets.push(`${key}=$${idx++}`);
       values.push(val);
     }
@@ -678,6 +708,13 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const outH = Math.max(1, Math.round(height * scale));
 
     const wm = await loadWatermarkForGallery(client, photo.gallery_id);
+    // Overrides (preview em tempo real no admin)
+    const qMode = (req.query.wm_mode || '').toString();
+    if (['x', 'logo'].includes(qMode)) wm.mode = qMode;
+    const qOp = parseFloat(req.query.wm_opacity);
+    if (Number.isFinite(qOp)) wm.opacity = qOp;
+    const qScale = parseFloat(req.query.wm_scale);
+    if (Number.isFinite(qScale)) wm.scale = qScale;
     const out = await buildWatermarkedJpeg({
       imgBuffer: buf,
       outW,
