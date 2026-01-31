@@ -98,6 +98,34 @@ function getCfApiToken() {
   );
 }
 
+function getCfGlobalApiKey() {
+  return process.env.CLOUDFLARE_API_KEY || null;
+}
+
+function getCfAuthEmail() {
+  return process.env.CLOUDFLARE_EMAIL || null;
+}
+
+function getCfAuthHeaders(accept = 'application/json') {
+  const apiToken = getCfApiToken();
+  if (apiToken) {
+    return {
+      Authorization: `Bearer ${String(apiToken).trim()}`,
+      Accept: accept
+    };
+  }
+  const apiKey = getCfGlobalApiKey();
+  const email = getCfAuthEmail();
+  if (apiKey && email) {
+    return {
+      'X-Auth-Email': String(email).trim(),
+      'X-Auth-Key': String(apiKey).trim(),
+      Accept: accept
+    };
+  }
+  return null;
+}
+
 function buildCfUrl(imageId) {
   const hash = getAccountHash();
   if (!hash) return null;
@@ -107,16 +135,13 @@ function buildCfUrl(imageId) {
 async function deleteCloudflareImage(imageId) {
   // Deletar do Cloudflare Images (não é R2)
   const accountId = getCfAccountId();
-  const apiToken = getCfApiToken();
-  if (!accountId || !apiToken) return false;
+  const headers = getCfAuthHeaders('application/json');
+  if (!accountId || !headers) return false;
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`;
   const resp = await fetch(url, {
     method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${apiToken}`,
-      Accept: 'application/json'
-    }
+    headers
   });
   // Se já não existir (404), tratamos como "ok"
   if (resp.status === 404) return true;
@@ -133,15 +158,12 @@ async function fetchCloudflareImageBuffer(imageId) {
 
   // Fallback: API blob (não depende de account hash)
   const accountId = getCfAccountId();
-  const apiToken = getCfApiToken();
-  if (!accountId || !apiToken) return null;
+  const headers = getCfAuthHeaders('image/*');
+  if (!accountId || !headers) return null;
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}/blob`;
   const imgRes = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${apiToken}`,
-      Accept: 'image/*'
-    }
+    headers
   });
   if (!imgRes.ok) return null;
   return imgRes.buffer();

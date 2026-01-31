@@ -46,6 +46,34 @@ function getCfApiToken() {
   );
 }
 
+function getCfGlobalApiKey() {
+  return process.env.CLOUDFLARE_API_KEY || null;
+}
+
+function getCfAuthEmail() {
+  return process.env.CLOUDFLARE_EMAIL || null;
+}
+
+function getCfAuthHeaders() {
+  const apiToken = getCfApiToken();
+  if (apiToken) {
+    return {
+      Authorization: `Bearer ${String(apiToken).trim()}`,
+      Accept: 'application/json'
+    };
+  }
+  const apiKey = getCfGlobalApiKey();
+  const email = getCfAuthEmail();
+  if (apiKey && email) {
+    return {
+      'X-Auth-Email': String(email).trim(),
+      'X-Auth-Key': String(apiKey).trim(),
+      Accept: 'application/json'
+    };
+  }
+  return null;
+}
+
 function extractCloudflareImageIdFromUrl(url) {
   const u = String(url || '').trim();
   const m = u.match(/^https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\/[^/?#]+/i);
@@ -189,19 +217,30 @@ async function listCloudflareImages({ accountId, apiToken }) {
   const perPage = 100;
   let page = 1;
   const out = [];
+  const headers = getCfAuthHeaders();
+  if (!headers) {
+    throw new Error(
+      'Faltam credenciais do Cloudflare: use CLOUDFLARE_API_TOKEN (recomendado) OU (CLOUDFLARE_EMAIL + CLOUDFLARE_API_KEY).'
+    );
+  }
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1?page=${page}&per_page=${perPage}`;
     // eslint-disable-next-line no-await-in-loop
     const resp = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${apiToken}`,
-        Accept: 'application/json'
-      }
+      headers
     });
     if (!resp.ok) {
       const t = await resp.text().catch(() => '');
+      if (resp.status === 401) {
+        throw new Error(
+          `Falha ao listar imagens (401 Authentication error). ` +
+          `Seu token/chave não está válido OU não tem permissão de Cloudflare Images. ` +
+          `Crie um API Token com: Account -> Cloudflare Images -> Read (e Edit se for deletar). ` +
+          `Detalhe: ${t}`
+        );
+      }
       throw new Error(`Falha ao listar imagens (status ${resp.status}): ${t}`);
     }
     // eslint-disable-next-line no-await-in-loop
@@ -216,12 +255,11 @@ async function listCloudflareImages({ accountId, apiToken }) {
 
 async function deleteCloudflareImage({ accountId, apiToken, imageId }) {
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`;
+  const headers = getCfAuthHeaders();
+  if (!headers) return false;
   const resp = await fetch(url, {
     method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${apiToken}`,
-      Accept: 'application/json'
-    }
+    headers
   });
   if (resp.status === 404) return true;
   return resp.ok;
@@ -234,9 +272,11 @@ function daysBetween(a, b) {
 
 async function main() {
   const accountId = getCfAccountId();
-  const apiToken = getCfApiToken();
-  if (!accountId || !apiToken) {
-    throw new Error('Faltam envs: CF_IMAGES_ACCOUNT_ID e/ou CF_IMAGES_API_TOKEN (ou CLOUDFLARE_*).');
+  if (!accountId) {
+    throw new Error('Falta CLOUDFLARE_ACCOUNT_ID (ou CF_IMAGES_ACCOUNT_ID).');
+  }
+  if (!getCfAuthHeaders()) {
+    throw new Error('Faltam credenciais do Cloudflare: use CLOUDFLARE_API_TOKEN OU (CLOUDFLARE_EMAIL + CLOUDFLARE_API_KEY).');
   }
 
   const dryRun = String(process.env.DRY_RUN || '1') !== '0';
@@ -248,7 +288,7 @@ async function main() {
     const referencedDb = await collectReferencedImageIds(client);
     const referencedFiles = collectReferencedImageIdsFromFiles({ rootDir: repoRoot });
     const referenced = new Set([...referencedDb, ...referencedFiles]);
-    const all = await listCloudflareImages({ accountId, apiToken });
+    const all = await listCloudflareImages({ accountId });
 
     const now = new Date();
     const candidates = all.filter(img => {
@@ -279,7 +319,7 @@ async function main() {
         continue;
       }
       // eslint-disable-next-line no-await-in-loop
-      const deleted = await deleteCloudflareImage({ accountId, apiToken, imageId: id });
+      const deleted = await deleteCloudflareImage({ accountId, imageId: id });
       if (deleted) {
         ok += 1;
         console.log(`[OK] deletado ${id}`);

@@ -50,18 +50,43 @@ function getCfApiToken() {
     );
 }
 
+function getCfGlobalApiKey() {
+    return process.env.CLOUDFLARE_API_KEY || null;
+}
+
+function getCfAuthEmail() {
+    return process.env.CLOUDFLARE_EMAIL || null;
+}
+
+function getCfAuthHeaders() {
+    const apiToken = getCfApiToken();
+    if (apiToken) {
+        return {
+            Authorization: `Bearer ${String(apiToken).trim()}`,
+            Accept: 'application/json'
+        };
+    }
+    const apiKey = getCfGlobalApiKey();
+    const email = getCfAuthEmail();
+    if (apiKey && email) {
+        return {
+            'X-Auth-Email': String(email).trim(),
+            'X-Auth-Key': String(apiKey).trim(),
+            Accept: 'application/json'
+        };
+    }
+    return null;
+}
+
 async function deleteCloudflareImageById(imageId) {
     const accountId = getCfAccountId();
-    const apiToken = getCfApiToken();
-    if (!accountId || !apiToken || !imageId) return false;
+    const headers = getCfAuthHeaders();
+    if (!accountId || !headers || !imageId) return false;
 
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`;
     const resp = await fetch(url, {
         method: 'DELETE',
-        headers: {
-            Authorization: `Bearer ${apiToken}`,
-            Accept: 'application/json'
-        }
+        headers
     });
     if (resp.status === 404) return true; // já não existe
     return resp.ok;
