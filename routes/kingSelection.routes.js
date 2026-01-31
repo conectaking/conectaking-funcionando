@@ -149,24 +149,28 @@ async function deleteCloudflareImage(imageId) {
 }
 
 async function fetchCloudflareImageBuffer(imageId) {
-  // Preferir delivery (rápido) quando houver account hash
-  const deliveryUrl = buildCfUrl(imageId);
-  if (deliveryUrl) {
-    const imgRes = await fetch(deliveryUrl);
+  // 1) Preferir API blob (mais confiável para "logo" e não depende de variant)
+  const accountId = getCfAccountId();
+  const headers = getCfAuthHeaders('image/*');
+  if (accountId && headers) {
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}/blob`;
+    const imgRes = await fetch(url, { headers });
     if (imgRes.ok) return imgRes.buffer();
   }
 
-  // Fallback: API blob (não depende de account hash)
-  const accountId = getCfAccountId();
-  const headers = getCfAuthHeaders('image/*');
-  if (!accountId || !headers) return null;
+  // 2) Fallback: delivery (quando não há credenciais de API disponíveis)
+  const deliveryUrl = buildCfUrl(imageId);
+  if (deliveryUrl) {
+    // tentar variants comuns
+    const variants = ['public', 'preview', 'thumbnail'];
+    for (const v of variants) {
+      // eslint-disable-next-line no-await-in-loop
+      const r = await fetch(`https://imagedelivery.net/${getAccountHash()}/${imageId}/${v}`);
+      if (r.ok) return r.buffer();
+    }
+  }
 
-  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}/blob`;
-  const imgRes = await fetch(url, {
-    headers
-  });
-  if (!imgRes.ok) return null;
-  return imgRes.buffer();
+  return null;
 }
 
 async function loadWatermarkForGallery(pgClient, galleryId) {
@@ -251,16 +255,11 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
 
   const wmBufRaw = await fetchCloudflareImageBuffer(logoImageId);
   if (!wmBufRaw) {
-    // fallback X
-    const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
-    const svg = Buffer.from(
-      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
-         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-       </svg>`
-    );
-    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
-    return pipeline.jpeg({ quality: 82 }).toBuffer();
+    // Se o usuário escolheu logomarca/mosaico e a logo não pode ser carregada,
+    // é melhor falhar (admin verá erro) do que “trocar” por X e confundir.
+    const err = new Error('Falha ao carregar logomarca no Cloudflare (verifique CF_IMAGES_ACCOUNT_ID + token/key).');
+    err.statusCode = 424;
+    throw err;
   }
   const wmBuf = wmBufRaw;
   const opacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
