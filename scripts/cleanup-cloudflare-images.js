@@ -335,6 +335,14 @@ async function main() {
   const repoRoot = path.resolve(__dirname, '..');
   console.log(`Auth Cloudflare: ${getCfAuthMode()}`);
 
+  const maxDelete = parseInt(process.env.MAX_DELETE || '0', 10) || 0; // 0 = sem limite
+  const sleepMs = parseInt(process.env.SLEEP_MS || '0', 10) || 0;
+  const outFile = (process.env.OUT_FILE || '').toString().trim();
+  const confirm = (process.env.CONFIRM_DELETE || '').toString().trim().toUpperCase();
+  if (!dryRun && confirm !== 'SIM') {
+    throw new Error('Para deletar de verdade, use CONFIRM_DELETE=SIM junto com DRY_RUN=0.');
+  }
+
   const client = await db.pool.connect();
   try {
     const referencedDb = await collectReferencedImageIds(client);
@@ -360,9 +368,36 @@ async function main() {
     console.log(`Referenciadas total (banco + site): ${referenced.size}`);
     console.log(`Órfãs candidatas (minAgeDays=${minAgeDays}): ${candidates.length}`);
     console.log(`Modo: ${dryRun ? 'DRY_RUN (não deleta)' : 'DELETE (vai deletar)'}`);
+    if (!dryRun) {
+      console.log(`MAX_DELETE: ${maxDelete > 0 ? maxDelete : 'sem limite'}`);
+      console.log(`SLEEP_MS: ${sleepMs}`);
+    }
+
+    if (outFile) {
+      try {
+        const payload = candidates.map(img => ({
+          id: img.id,
+          filename: img.filename || null,
+          uploaded: img.uploaded || null
+        }));
+        fs.writeFileSync(outFile, JSON.stringify({
+          generated_at: new Date().toISOString(),
+          cloudflare_images_total: all.length,
+          referenced_db: referencedDb.size,
+          referenced_files: referencedFiles.size,
+          orphan_candidates: candidates.length,
+          min_age_days: minAgeDays,
+          candidates: payload
+        }, null, 2), 'utf8');
+        console.log(`Lista salva em: ${outFile}`);
+      } catch (e) {
+        console.log(`Falha ao salvar OUT_FILE (${outFile}): ${e.message}`);
+      }
+    }
 
     let ok = 0;
     let fail = 0;
+    let processed = 0;
 
     for (const img of candidates) {
       const id = img.id;
@@ -370,8 +405,13 @@ async function main() {
         console.log(`[DRY] deletaria ${id} (${img.filename || 'sem-nome'})`);
         continue;
       }
+      if (maxDelete > 0 && processed >= maxDelete) {
+        console.log(`Parando por MAX_DELETE=${maxDelete}`);
+        break;
+      }
       // eslint-disable-next-line no-await-in-loop
       const deleted = await deleteCloudflareImage({ accountId, imageId: id });
+      processed += 1;
       if (deleted) {
         ok += 1;
         console.log(`[OK] deletado ${id}`);
@@ -379,10 +419,14 @@ async function main() {
         fail += 1;
         console.log(`[FAIL] não deletou ${id}`);
       }
+      if (sleepMs > 0) {
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(r => setTimeout(r, sleepMs));
+      }
     }
 
     if (!dryRun) {
-      console.log(`Final: deletadas=${ok} falhas=${fail}`);
+      console.log(`Final: processadas=${processed} deletadas=${ok} falhas=${fail}`);
     }
   } finally {
     client.release();
