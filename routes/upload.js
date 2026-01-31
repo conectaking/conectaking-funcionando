@@ -24,12 +24,33 @@ const upload = multer({
 });
 
 router.post('/auth', protectUser, asyncHandler(async (req, res) => {
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-    const apiToken = process.env.CLOUDFLARE_API_TOKEN || config.cloudflare.apiToken;
+    const accountId =
+        process.env.CF_IMAGES_ACCOUNT_ID ||
+        process.env.CLOUDFLARE_ACCOUNT_ID ||
+        process.env.CLOUDFLARE_IMAGES_ACCOUNT_ID ||
+        null;
 
-    if (!accountId || !apiToken) {
+    const apiToken =
+        process.env.CF_IMAGES_API_TOKEN ||
+        process.env.CLOUDFLARE_API_TOKEN ||
+        (config.cloudflare && config.cloudflare.apiToken) ||
+        null;
+
+    const apiKey = process.env.CLOUDFLARE_API_KEY || null;
+    const email = process.env.CLOUDFLARE_EMAIL || null;
+
+    const headers = apiToken
+        ? { 'Authorization': `Bearer ${String(apiToken).trim()}`, 'Accept': 'application/json' }
+        : (apiKey && email)
+            ? { 'X-Auth-Email': String(email).trim(), 'X-Auth-Key': String(apiKey).trim(), 'Accept': 'application/json' }
+            : null;
+
+    if (!accountId || !headers) {
         logger.error('Credenciais do Cloudflare não encontradas');
-        throw new Error('Erro de configuração do servidor.');
+        return res.status(500).json({
+            success: false,
+            message: 'Cloudflare não configurado (CF_IMAGES_ACCOUNT_ID / CF_IMAGES_API_TOKEN ou CLOUDFLARE_EMAIL + CLOUDFLARE_API_KEY).'
+        });
     }
 
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2/direct_upload`;
@@ -37,9 +58,7 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
     try {
         const response = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiToken}`
-            }
+            headers
         });
 
         const data = await response.json();
@@ -50,11 +69,17 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
                 imageId: data.result.id,
                 uploadURL: data.result.uploadURL
             });
+            const accountHash =
+                (config.cloudflare && config.cloudflare.accountHash) ||
+                process.env.CLOUDFLARE_ACCOUNT_HASH ||
+                process.env.CF_IMAGES_ACCOUNT_HASH ||
+                null;
+
             res.json({
                 success: true,
                 uploadURL: data.result.uploadURL,
                 imageId: data.result.id,
-                accountHash: config.cloudflare.accountHash || accountId // Incluir accountHash se disponível
+                accountHash: accountHash // Incluir hash real (para delivery URL), se disponível
             });
         } else {
             logger.error('Erro da API Cloudflare', { errors: data.errors });
