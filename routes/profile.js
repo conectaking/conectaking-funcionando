@@ -3105,6 +3105,22 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
         res.status(201).json(newItem);
     } catch (error) {
         console.error("Erro ao criar item:", error);
+
+        // Mensagem amigável para o caso comum: ENUM não atualizado no banco
+        // (ex.: invalid input value for enum item_type_enum: "king_selection")
+        const isEnumError =
+            error && (
+                error.code === '22P02' ||
+                (typeof error.message === 'string' && error.message.toLowerCase().includes('invalid input value for enum'))
+            );
+
+        if (isEnumError) {
+            return res.status(500).json({
+                message: 'Erro ao criar item: o banco de dados ainda não foi atualizado para este tipo de módulo. Execute as migrations (especialmente a que adiciona o valor no item_type_enum).',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+
         res.status(500).json({ message: 'Erro ao criar item.', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
     } finally {
         client.release();
