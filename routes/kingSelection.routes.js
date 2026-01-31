@@ -206,7 +206,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
 
   // 1) X (default)
   const clamp = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
-  const opDefaultX = clamp(parseFloat(watermark?.opacity), 0.05, 0.60);
+  const opDefaultX = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
   if (!watermark || watermark.mode === 'x' || !watermark.path) {
     const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
     const svg = Buffer.from(
@@ -258,8 +258,8 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
   const wmBuf = wmBufRaw;
-  const opacity = clamp(parseFloat(watermark?.opacity), 0.05, 0.80);
-  const scale = clamp(parseFloat(watermark?.scale), 0.10, 0.45);
+  const opacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
+  const scale = clamp(parseFloat(watermark?.scale), 0.10, 0.85);
   // "Automático": usar o maior lado para não ficar minúsculo em foto vertical
   const maxSide = Math.max(outW, outH);
   const boxW = Math.max(140, Math.round(maxSide * scale));
@@ -272,20 +272,34 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     .toBuffer();
 
   // aplica no centro com opacidade usando SVG mask simples
-  const svg = Buffer.from(
-    `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="transparent"/>
-    </svg>`
-  );
-  pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
-
-  // Para opacidade: converte logo em PNG e aplica com blend "over" + opacity via composite (sharp suporta 'opacity' a partir de v0.33+)
-  pipeline = pipeline.composite([{
-    input: wmPng,
-    gravity: 'center',
-    blend: 'over',
-    opacity
-  }]);
+  if (watermark?.mode === 'tile') {
+    // Mosaico (tipo álbum): repete a logo na foto inteira
+    const b64 = wmPng.toString('base64');
+    const step = Math.max(180, Math.round(maxSide * (scale * 1.35)));
+    const w = outW;
+    const h = outH;
+    const svg = Buffer.from(
+      `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="p" patternUnits="userSpaceOnUse" width="${step}" height="${step}">
+            <image href="data:image/png;base64,${b64}" x="0" y="0" width="${boxW}" height="${boxH}" opacity="${opacity}"/>
+          </pattern>
+        </defs>
+        <g transform="rotate(-25 ${Math.round(w / 2)} ${Math.round(h / 2)})">
+          <rect x="-${w}" y="-${h}" width="${w * 3}" height="${h * 3}" fill="url(#p)"/>
+        </g>
+      </svg>`
+    );
+    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+  } else {
+    // Central
+    pipeline = pipeline.composite([{
+      input: wmPng,
+      gravity: 'center',
+      blend: 'over',
+      opacity
+    }]);
+  }
   return pipeline.jpeg({ quality: 82 }).toBuffer();
 }
 
@@ -611,11 +625,11 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'data_trabalho' && val) val = String(val).slice(0, 10);
       if (key === 'watermark_opacity') {
         const n = parseFloat(val);
-        val = Number.isFinite(n) ? Math.max(0.05, Math.min(0.80, n)) : 0.30;
+        val = Number.isFinite(n) ? Math.max(0.0, Math.min(1.0, n)) : 0.30;
       }
       if (key === 'watermark_scale') {
         const n = parseFloat(val);
-        val = Number.isFinite(n) ? Math.max(0.10, Math.min(0.45, n)) : 0.28;
+        val = Number.isFinite(n) ? Math.max(0.10, Math.min(0.85, n)) : 0.28;
       }
       sets.push(`${key}=$${idx++}`);
       values.push(val);
@@ -727,7 +741,7 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const wm = await loadWatermarkForGallery(client, photo.gallery_id);
     // Overrides (preview em tempo real no admin)
     const qMode = (req.query.wm_mode || '').toString();
-    if (['x', 'logo', 'none'].includes(qMode)) wm.mode = qMode;
+    if (['x', 'logo', 'tile', 'none'].includes(qMode)) wm.mode = qMode;
     const qOp = parseFloat(req.query.wm_opacity);
     if (Number.isFinite(qOp)) wm.opacity = qOp;
     const qScale = parseFloat(req.query.wm_scale);
