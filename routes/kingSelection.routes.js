@@ -80,10 +80,52 @@ function getAccountHash() {
   );
 }
 
+function getCfAccountId() {
+  return (
+    process.env.CF_IMAGES_ACCOUNT_ID ||
+    process.env.CLOUDFLARE_ACCOUNT_ID ||
+    process.env.CLOUDFLARE_IMAGES_ACCOUNT_ID ||
+    null
+  );
+}
+
+function getCfApiToken() {
+  return (
+    (config.cloudflare && config.cloudflare.apiToken) ||
+    process.env.CF_IMAGES_API_TOKEN ||
+    process.env.CLOUDFLARE_API_TOKEN ||
+    null
+  );
+}
+
 function buildCfUrl(imageId) {
   const hash = getAccountHash();
   if (!hash) return null;
   return `https://imagedelivery.net/${hash}/${imageId}/public`;
+}
+
+async function fetchCloudflareImageBuffer(imageId) {
+  // Preferir delivery (rápido) quando houver account hash
+  const deliveryUrl = buildCfUrl(imageId);
+  if (deliveryUrl) {
+    const imgRes = await fetch(deliveryUrl);
+    if (imgRes.ok) return imgRes.buffer();
+  }
+
+  // Fallback: API blob (não depende de account hash)
+  const accountId = getCfAccountId();
+  const apiToken = getCfApiToken();
+  if (!accountId || !apiToken) return null;
+
+  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}/blob`;
+  const imgRes = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${apiToken}`,
+      Accept: 'image/*'
+    }
+  });
+  if (!imgRes.ok) return null;
+  return imgRes.buffer();
 }
 
 async function loadWatermarkForGallery(pgClient, galleryId) {
@@ -131,21 +173,8 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   }
 
   const imageId = fp.replace('cfimage:', '');
-  const url = buildCfUrl(imageId);
-  if (!url) {
-    // sem hash: volta pro X
-    const svg = Buffer.from(
-      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
-         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-       </svg>`
-    );
-    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
-    return pipeline.jpeg({ quality: 82 }).toBuffer();
-  }
-
-  const wmRes = await fetch(url);
-  if (!wmRes.ok) {
+  const wmBufRaw = await fetchCloudflareImageBuffer(imageId);
+  if (!wmBufRaw) {
     // fallback X
     const svg = Buffer.from(
       `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
@@ -156,7 +185,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
     return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
-  const wmBuf = await wmRes.buffer();
+  const wmBuf = wmBufRaw;
   const wmTargetW = Math.max(120, Math.round(outW * 0.28));
   const wmPng = await sharp(wmBuf)
     .rotate()
@@ -594,12 +623,8 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const fp = String(photo.file_path || '');
     if (!fp.startsWith('cfimage:')) return res.status(500).send('Formato de arquivo inválido');
     const imageId = fp.replace('cfimage:', '');
-    const url = buildCfUrl(imageId);
-    if (!url) return res.status(500).send('Cloudflare não configurado');
-
-    const imgRes = await fetch(url);
-    if (!imgRes.ok) return res.status(502).send('Falha ao buscar imagem');
-    const buf = await imgRes.buffer();
+    const buf = await fetchCloudflareImageBuffer(imageId);
+    if (!buf) return res.status(500).send('Cloudflare não configurado (hash ou API token)');
 
     // Watermark X (30%) e resize 1200
     const img = sharp(buf).rotate();
