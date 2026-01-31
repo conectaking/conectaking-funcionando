@@ -69,13 +69,117 @@ function decryptPassword(payload) {
 }
 
 function getAccountHash() {
-  return config.cloudflare?.accountHash || process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CF_IMAGES_ACCOUNT_ID || null;
+  // ATENÇÃO:
+  // Para URL de entrega (imagedelivery.net) é necessário o "account hash" do Cloudflare Images,
+  // NÃO o Account ID. Sem isso, o preview quebra (thumbnail não carrega).
+  return (
+    (config.cloudflare && config.cloudflare.accountHash) ||
+    process.env.CLOUDFLARE_ACCOUNT_HASH ||
+    process.env.CF_IMAGES_ACCOUNT_HASH ||
+    null
+  );
 }
 
 function buildCfUrl(imageId) {
   const hash = getAccountHash();
   if (!hash) return null;
   return `https://imagedelivery.net/${hash}/${imageId}/public`;
+}
+
+async function loadWatermarkForGallery(pgClient, galleryId) {
+  const hasMode = await hasColumn(pgClient, 'king_galleries', 'watermark_mode');
+  const hasPath = await hasColumn(pgClient, 'king_galleries', 'watermark_path');
+  if (!hasMode && !hasPath) return { mode: 'x', path: null };
+  const cols = [
+    hasMode ? 'watermark_mode' : `'x'::text AS watermark_mode`,
+    hasPath ? 'watermark_path' : 'NULL::text AS watermark_path'
+  ].join(', ');
+  const res = await pgClient.query(`SELECT ${cols} FROM king_galleries WHERE id=$1`, [galleryId]);
+  if (!res.rows.length) return { mode: 'x', path: null };
+  return { mode: res.rows[0].watermark_mode || 'x', path: res.rows[0].watermark_path || null };
+}
+
+async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
+  const img = sharp(imgBuffer).rotate();
+  // base: sempre resize inside
+  let pipeline = img.resize(outW, outH, { fit: 'inside' });
+
+  // 1) X (default)
+  if (!watermark || watermark.mode === 'x' || !watermark.path) {
+    const svg = Buffer.from(
+      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+       </svg>`
+    );
+    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+    return pipeline.jpeg({ quality: 82 }).toBuffer();
+  }
+
+  // 2) Logo (watermark_path = cfimage:<id>)
+  const fp = String(watermark.path || '');
+  if (!fp.startsWith('cfimage:')) {
+    // fallback seguro
+    const svg = Buffer.from(
+      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+       </svg>`
+    );
+    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+    return pipeline.jpeg({ quality: 82 }).toBuffer();
+  }
+
+  const imageId = fp.replace('cfimage:', '');
+  const url = buildCfUrl(imageId);
+  if (!url) {
+    // sem hash: volta pro X
+    const svg = Buffer.from(
+      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+       </svg>`
+    );
+    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+    return pipeline.jpeg({ quality: 82 }).toBuffer();
+  }
+
+  const wmRes = await fetch(url);
+  if (!wmRes.ok) {
+    // fallback X
+    const svg = Buffer.from(
+      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+       </svg>`
+    );
+    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+    return pipeline.jpeg({ quality: 82 }).toBuffer();
+  }
+  const wmBuf = await wmRes.buffer();
+  const wmTargetW = Math.max(120, Math.round(outW * 0.28));
+  const wmPng = await sharp(wmBuf)
+    .rotate()
+    .resize({ width: wmTargetW, withoutEnlargement: true })
+    .png()
+    .toBuffer();
+
+  // aplica no centro com opacidade usando SVG mask simples
+  const svg = Buffer.from(
+    `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="transparent"/>
+    </svg>`
+  );
+  pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+
+  // Para opacidade: converte logo em PNG e aplica com blend "over" + opacity via composite (sharp suporta 'opacity' a partir de v0.33+)
+  pipeline = pipeline.composite([{
+    input: wmPng,
+    gravity: 'center',
+    blend: 'over',
+    opacity: 0.28
+  }]);
+  return pipeline.jpeg({ quality: 82 }).toBuffer();
 }
 
 // ===== Admin =====
@@ -468,26 +572,23 @@ router.get('/galleries/:id/export', protectUser, asyncHandler(async (req, res) =
   }
 }));
 
-// ===== Preview watermarked (admin usa token query; cliente usará ct depois) =====
-router.get('/photos/:photoId/preview', asyncHandler(async (req, res) => {
-  // permitir admin via token query/header (reutiliza protectUser manualmente)
-  // Para MVP: se vier token válido, ok. (cliente será implementado na próxima página)
-  // Se não tiver token, negar.
-  const token = (req.query.token || '').toString();
-  if (!token) return res.status(401).send('Não autorizado');
-
-  // validar token com o mesmo secret do sistema
-  const jwt = require('jsonwebtoken');
-  try {
-    jwt.verify(token, config.jwt.secret);
-  } catch (e) {
-    return res.status(401).send('Token inválido');
-  }
+// ===== Preview watermarked (ADMIN) =====
+router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res) => {
+  // IMPORTANTE: aqui é ADMIN, então além de validar token,
+  // precisamos garantir que a foto pertence ao usuário logado.
 
   const photoId = parseInt(req.params.photoId, 10);
   const client = await db.pool.connect();
   try {
-    const pRes = await client.query('SELECT * FROM king_photos WHERE id=$1', [photoId]);
+    const userId = req.user.userId;
+    const pRes = await client.query(
+      `SELECT p.*, g.id AS gallery_id
+       FROM king_photos p
+       JOIN king_galleries g ON g.id = p.gallery_id
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE p.id=$1 AND pi.user_id=$2`,
+      [photoId, userId]
+    );
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
     const fp = String(photo.file_path || '');
@@ -510,19 +611,13 @@ router.get('/photos/:photoId/preview', asyncHandler(async (req, res) => {
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
 
-    // SVG overlay X com opacidade 0.3
-    const svg = Buffer.from(
-      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
-         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-       </svg>`
-    );
-
-    const out = await img
-      .resize(outW, outH, { fit: 'inside' })
-      .composite([{ input: svg, top: 0, left: 0 }])
-      .jpeg({ quality: 82 })
-      .toBuffer();
+    const wm = await loadWatermarkForGallery(client, photo.gallery_id);
+    const out = await buildWatermarkedJpeg({
+      imgBuffer: buf,
+      outW,
+      outH,
+      watermark: wm
+    });
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
@@ -587,7 +682,10 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).send('Galeria não encontrada');
     const galleryId = gRes.rows[0].id;
 
-    const pRes = await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [galleryId]);
+    const hasCover = await hasColumn(client, 'king_photos', 'is_cover');
+    const pRes = hasCover
+      ? await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY is_cover DESC, "order" ASC, id ASC LIMIT 1', [galleryId])
+      : await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [galleryId]);
     if (pRes.rows.length === 0) return res.status(404).send('Sem fotos');
     const photo = pRes.rows[0];
     const fp = String(photo.file_path || '');
@@ -626,6 +724,164 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cache-Control', 'public, max-age=900'); // 15min
+    res.send(out);
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== Admin: ações de fotos (favorito/capa/substituir/excluir/download) =====
+router.patch('/photos/:photoId', protectUser, asyncHandler(async (req, res) => {
+  const photoId = parseInt(req.params.photoId, 10);
+  if (!photoId) return res.status(400).json({ message: 'photoId inválido' });
+
+  const { is_favorite, is_cover, original_name, order } = req.body || {};
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT p.id, p.gallery_id
+       FROM king_photos p
+       JOIN king_galleries g ON g.id = p.gallery_id
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE p.id=$1 AND pi.user_id=$2`,
+      [photoId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    const galleryId = own.rows[0].gallery_id;
+
+    const sets = [];
+    const values = [];
+    let i = 1;
+
+    if (typeof is_favorite !== 'undefined' && await hasColumn(client, 'king_photos', 'is_favorite')) {
+      sets.push(`is_favorite=$${i++}`);
+      values.push(!!is_favorite);
+    }
+    if (typeof original_name !== 'undefined') {
+      sets.push(`original_name=$${i++}`);
+      values.push(String(original_name || '').slice(0, 500));
+    }
+    if (typeof order !== 'undefined') {
+      sets.push(`"order"=$${i++}`);
+      values.push(parseInt(order || 0, 10) || 0);
+    }
+
+    // capa: limpar outras e setar esta
+    if (typeof is_cover !== 'undefined' && await hasColumn(client, 'king_photos', 'is_cover')) {
+      if (is_cover) {
+        await client.query('UPDATE king_photos SET is_cover=FALSE WHERE gallery_id=$1', [galleryId]);
+        sets.push(`is_cover=$${i++}`);
+        values.push(true);
+      } else {
+        sets.push(`is_cover=$${i++}`);
+        values.push(false);
+      }
+    }
+
+    if (!sets.length) return res.json({ success: true });
+    values.push(photoId);
+    await client.query(`UPDATE king_photos SET ${sets.join(', ')} WHERE id=$${i}`, values);
+    res.json({ success: true });
+  } finally {
+    client.release();
+  }
+}));
+
+router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => {
+  const photoId = parseInt(req.params.photoId, 10);
+  if (!photoId) return res.status(400).json({ message: 'photoId inválido' });
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT p.id
+       FROM king_photos p
+       JOIN king_galleries g ON g.id = p.gallery_id
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE p.id=$1 AND pi.user_id=$2`,
+      [photoId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    await client.query('DELETE FROM king_photos WHERE id=$1', [photoId]);
+    await client.query('DELETE FROM king_selections WHERE photo_id=$1', [photoId]);
+    res.json({ success: true });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/photos/:photoId/replace', protectUser, asyncHandler(async (req, res) => {
+  const photoId = parseInt(req.params.photoId, 10);
+  const { imageId, original_name } = req.body || {};
+  if (!photoId || !imageId) return res.status(400).json({ message: 'photoId e imageId são obrigatórios' });
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT p.id
+       FROM king_photos p
+       JOIN king_galleries g ON g.id = p.gallery_id
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE p.id=$1 AND pi.user_id=$2`,
+      [photoId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    const file_path = `cfimage:${imageId}`;
+    await client.query(
+      'UPDATE king_photos SET file_path=$1, original_name=$2 WHERE id=$3',
+      [file_path, String(original_name || 'foto').slice(0, 500), photoId]
+    );
+    res.json({ success: true });
+  } finally {
+    client.release();
+  }
+}));
+
+router.get('/photos/:photoId/download', protectUser, asyncHandler(async (req, res) => {
+  const photoId = parseInt(req.params.photoId, 10);
+  if (!photoId) return res.status(400).send('photoId inválido');
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const pRes = await client.query(
+      `SELECT p.*, g.id AS gallery_id
+       FROM king_photos p
+       JOIN king_galleries g ON g.id = p.gallery_id
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE p.id=$1 AND pi.user_id=$2`,
+      [photoId, userId]
+    );
+    if (!pRes.rows.length) return res.status(404).send('Não encontrado');
+    const photo = pRes.rows[0];
+
+    const fp = String(photo.file_path || '');
+    if (!fp.startsWith('cfimage:')) return res.status(500).send('Formato de arquivo inválido');
+    const imageId = fp.replace('cfimage:', '');
+    const url = buildCfUrl(imageId);
+    if (!url) return res.status(500).send('Cloudflare não configurado');
+
+    const imgRes = await fetch(url);
+    if (!imgRes.ok) return res.status(502).send('Falha ao buscar imagem');
+    const buf = await imgRes.buffer();
+
+    // download como preview com marca (mais seguro). Se quiser original no futuro, adiciona mode=original.
+    const img = sharp(buf).rotate();
+    const meta = await img.metadata();
+    const width = meta.width || 2400;
+    const height = meta.height || 2400;
+    const max = 2400;
+    const scale = Math.min(max / Math.max(width, height), 1);
+    const outW = Math.max(1, Math.round(width * scale));
+    const outH = Math.max(1, Math.round(height * scale));
+    const wm = await loadWatermarkForGallery(client, photo.gallery_id);
+    const out = await buildWatermarkedJpeg({ imgBuffer: buf, outW, outH, watermark: wm });
+
+    const filename = (photo.original_name || `foto-${photoId}.jpg`).toString().replace(/[\/\\:*?"<>|]+/g, '-');
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Content-Disposition', `attachment; filename="${filename.endsWith('.jpg') || filename.endsWith('.jpeg') ? filename : filename + '.jpg'}"`);
     res.send(out);
   } finally {
     client.release();
@@ -870,18 +1126,13 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
 
-    const svg = Buffer.from(
-      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
-         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-       </svg>`
-    );
-
-    const out = await img
-      .resize(outW, outH, { fit: 'inside' })
-      .composite([{ input: svg, top: 0, left: 0 }])
-      .jpeg({ quality: 82 })
-      .toBuffer();
+    const wm = await loadWatermarkForGallery(client, payload.galleryId);
+    const out = await buildWatermarkedJpeg({
+      imgBuffer: buf,
+      outW,
+      outH,
+      watermark: wm
+    });
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
