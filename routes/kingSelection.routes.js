@@ -267,6 +267,25 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   const rot = parseInt(watermark?.rotate || 0, 10) || 0;
   const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
   const maxSide = Math.max(outW, outH);
+
+  async function applyOpacityPng(pngBuf, op) {
+    const o = clamp(parseFloat(op), 0.0, 1.0);
+    if (o >= 0.999) return pngBuf;
+    const meta = await sharp(pngBuf).metadata();
+    const w = meta.width || 1;
+    const h = meta.height || 1;
+    const svgMask = Buffer.from(
+      `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="white" fill-opacity="${o}"/>
+      </svg>`
+    );
+    // dest-in multiplica o alfa do PNG pela opacidade desejada
+    return sharp(pngBuf)
+      .ensureAlpha()
+      .composite([{ input: svgMask, top: 0, left: 0, blend: 'dest-in' }])
+      .png()
+      .toBuffer();
+  }
   // Automático (ajustar na foto): escala respeitando o formato da foto
   // - horizontal: logo tende a crescer na largura
   // - vertical: logo tende a crescer na altura
@@ -278,26 +297,36 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
 
   // Normal (cobrir a foto inteira): expande a logomarca para preencher a imagem (sem mosaico)
   if (watermark?.mode === 'full') {
-    const wmFull = await wmBase
-      .resize({ width: outW, height: outH, fit: 'cover', withoutEnlargement: false })
+    const zoom = Math.max(1.0, scale); // em "cobrir", tamanho vira zoom (>= 1)
+    const w = Math.max(1, Math.round(outW * zoom));
+    const h = Math.max(1, Math.round(outH * zoom));
+    let wmFull = await wmBase
+      .resize({ width: w, height: h, fit: 'cover', withoutEnlargement: false })
       .png()
       .toBuffer();
-    pipeline = pipeline.composite([{
-      input: wmFull,
-      top: 0,
-      left: 0,
-      blend: 'over',
-      opacity
-    }]);
+    // aplica opacidade de forma compatível (não depende do composite.opacity)
+    wmFull = await applyOpacityPng(wmFull, opacity);
+    // centraliza/corta para o tamanho final
+    const left = Math.max(0, Math.floor((w - outW) / 2));
+    const top = Math.max(0, Math.floor((h - outH) / 2));
+    if (w !== outW || h !== outH) {
+      wmFull = await sharp(wmFull)
+        .extract({ left, top, width: Math.min(outW, w), height: Math.min(outH, h) })
+        .resize(outW, outH, { fit: 'fill' })
+        .png()
+        .toBuffer();
+    }
+    pipeline = pipeline.composite([{ input: wmFull, top: 0, left: 0, blend: 'over' }]);
     return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
 
   // Automático (ajustar no meio): fit inside e permite aumentar até 500%
-  const wmPng = await wmBase
+  let wmPng = await wmBase
     // fit "inside" ajusta automaticamente para logo horizontal/vertical
     .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: false })
     .png()
     .toBuffer();
+  wmPng = await applyOpacityPng(wmPng, opacity);
 
   // aplica no centro com opacidade usando SVG mask simples
   if (watermark?.mode === 'tile') {
@@ -311,7 +340,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
       `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="p" patternUnits="userSpaceOnUse" width="${step}" height="${step}">
-            <image href="data:image/png;base64,${b64}" x="0" y="0" width="${boxW}" height="${boxH}" opacity="${opacity}"/>
+            <image href="data:image/png;base64,${b64}" x="0" y="0" width="${boxW}" height="${boxH}"/>
           </pattern>
         </defs>
         <g transform="rotate(-25 ${Math.round(w / 2)} ${Math.round(h / 2)})">
@@ -325,8 +354,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     pipeline = pipeline.composite([{
       input: wmPng,
       gravity: 'center',
-      blend: 'over',
-      opacity
+      blend: 'over'
     }]);
   }
   return pipeline.jpeg({ quality: 82 }).toBuffer();
