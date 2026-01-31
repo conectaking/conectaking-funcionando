@@ -56,6 +56,7 @@ const webhooksRoutes = require('./routes/webhooks.routes');
 const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
 const checkinRoutes = require('./routes/checkin.routes');
 const linkLimitsRoutes = require('./modules/linkLimits/linkLimits.routes');
+const kingSelectionRoutes = require('./routes/kingSelection.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize, botLimiter } = require('./middleware/security');
 const autoMigrate = require('./utils/auto-migrate');
@@ -715,6 +716,7 @@ app.use('/api/admin', adminLimiter, ogImageRoutes); // Rotas de personalização
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/upload/pdf', uploadLimiter, pdfUploadRoutes);
 app.use('/api/upload', uploadLimiter, uploadRoutes);
+app.use('/api/king-selection', apiLimiter, kingSelectionRoutes);
 app.use('/download', downloadRoutes);
 app.use('/api/pix', apiLimiter, pixRoutes);
 app.use('/api/business', apiLimiter, businessRoutes);
