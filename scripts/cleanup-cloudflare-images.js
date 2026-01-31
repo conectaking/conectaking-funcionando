@@ -55,31 +55,50 @@ function getCfAuthEmail() {
 }
 
 function getCfAuthHeaders() {
+  const mode = String(process.env.CF_AUTH_MODE || 'auto').trim().toLowerCase();
+
   const apiToken = getCfApiToken();
-  if (apiToken) {
-    return {
-      Authorization: `Bearer ${String(apiToken).trim()}`,
-      Accept: 'application/json'
-    };
-  }
   const apiKey = getCfGlobalApiKey();
   const email = getCfAuthEmail();
-  if (apiKey && email) {
-    return {
-      'X-Auth-Email': String(email).trim(),
-      'X-Auth-Key': String(apiKey).trim(),
-      Accept: 'application/json'
-    };
+
+  const useBearer = () => ({
+    Authorization: `Bearer ${String(apiToken).trim()}`,
+    Accept: 'application/json'
+  });
+  const useEmailKey = () => ({
+    'X-Auth-Email': String(email).trim(),
+    'X-Auth-Key': String(apiKey).trim(),
+    Accept: 'application/json'
+  });
+
+  if (mode === 'bearer_token') {
+    if (!apiToken) return null;
+    return useBearer();
   }
+  if (mode === 'email_global_key') {
+    if (!apiKey || !email) return null;
+    return useEmailKey();
+  }
+
+  // auto (padrão): se existir email+key, usar eles; senão, bearer
+  // Isso evita ficar preso em token inválido quando você quer forçar a varredura via Global API Key.
+  if (apiKey && email) return useEmailKey();
+  if (apiToken) return useBearer();
   return null;
 }
 
 function getCfAuthMode() {
+  const mode = String(process.env.CF_AUTH_MODE || 'auto').trim().toLowerCase();
   const apiToken = getCfApiToken();
-  if (apiToken) return 'bearer_token';
   const apiKey = getCfGlobalApiKey();
   const email = getCfAuthEmail();
+
+  if (mode === 'bearer_token') return apiToken ? 'bearer_token' : 'missing_bearer_token';
+  if (mode === 'email_global_key') return (apiKey && email) ? 'email_global_key' : 'missing_email_or_key';
+
+  // auto
   if (apiKey && email) return 'email_global_key';
+  if (apiToken) return 'bearer_token';
   return 'missing';
 }
 
