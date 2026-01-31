@@ -2,8 +2,118 @@ const express = require('express');
 const db = require('../db');
 const { protectUser } = require('../middleware/protectUser');
 const { asyncHandler } = require('../middleware/errorHandler');
+const fetch = require('node-fetch');
+const config = require('../config');
 
 const router = express.Router();
+
+// ============================================================
+// Cloudflare Images helpers (deleção de imagens órfãs)
+// ============================================================
+const _cfSchemaCache = { columns: new Map() };
+async function hasColumn(client, table, column) {
+    const key = `${table}.${column}`;
+    if (_cfSchemaCache.columns.has(key)) return _cfSchemaCache.columns.get(key);
+    const r = await client.query(
+        `SELECT 1 FROM information_schema.columns
+         WHERE table_schema='public' AND table_name=$1 AND column_name=$2
+         LIMIT 1`,
+        [table, column]
+    );
+    const ok = r.rows.length > 0;
+    _cfSchemaCache.columns.set(key, ok);
+    return ok;
+}
+
+function extractCloudflareImageIdFromUrl(url) {
+    const u = String(url || '').trim();
+    // https://imagedelivery.net/<ACCOUNT_HASH>/<IMAGE_ID>/<VARIANT>
+    const m = u.match(/^https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\/[^/?#]+/i);
+    return m ? m[1] : null;
+}
+
+function getCfAccountId() {
+    return (
+        process.env.CF_IMAGES_ACCOUNT_ID ||
+        process.env.CLOUDFLARE_ACCOUNT_ID ||
+        process.env.CLOUDFLARE_IMAGES_ACCOUNT_ID ||
+        null
+    );
+}
+
+function getCfApiToken() {
+    return (
+        process.env.CF_IMAGES_API_TOKEN ||
+        process.env.CLOUDFLARE_API_TOKEN ||
+        (config.cloudflare && config.cloudflare.apiToken) ||
+        null
+    );
+}
+
+async function deleteCloudflareImageById(imageId) {
+    const accountId = getCfAccountId();
+    const apiToken = getCfApiToken();
+    if (!accountId || !apiToken || !imageId) return false;
+
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`;
+    const resp = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+            Authorization: `Bearer ${apiToken}`,
+            Accept: 'application/json'
+        }
+    });
+    if (resp.status === 404) return true; // já não existe
+    return resp.ok;
+}
+
+async function isCloudflareImageReferenced(client, imageId) {
+    // Procura o padrão "/<imageId>/" em várias colunas que guardam URLs de imagem.
+    // Importante: checamos existência de colunas/tabelas para não quebrar ambientes com migrations parciais.
+    const like = `%/${imageId}/%`;
+    const checks = [];
+
+    // profile_items.image_url (banners, links, etc.)
+    checks.push({ table: 'profile_items', col: 'image_url' });
+    // user_profiles
+    checks.push({ table: 'user_profiles', col: 'profile_image_url' });
+    checks.push({ table: 'user_profiles', col: 'background_image_url' });
+    checks.push({ table: 'user_profiles', col: 'share_image_url' });
+    // guest_list_items (portaria)
+    checks.push({ table: 'guest_list_items', col: 'header_image_url' });
+    checks.push({ table: 'guest_list_items', col: 'background_image_url' });
+    // digital_form_items
+    checks.push({ table: 'digital_form_items', col: 'banner_image_url' });
+    checks.push({ table: 'digital_form_items', col: 'header_image_url' });
+    checks.push({ table: 'digital_form_items', col: 'background_image_url' });
+    checks.push({ table: 'digital_form_items', col: 'form_logo_url' });
+    checks.push({ table: 'digital_form_items', col: 'button_logo_url' });
+    // sales_pages / products
+    checks.push({ table: 'sales_pages', col: 'button_logo_url' });
+    checks.push({ table: 'sales_pages', col: 'background_image_url' });
+    checks.push({ table: 'sales_pages', col: 'meta_image_url' });
+    checks.push({ table: 'sales_page_products', col: 'image_url' });
+    // contracts
+    checks.push({ table: 'contract_items', col: 'stamp_image_url' });
+
+    for (const c of checks) {
+        // eslint-disable-next-line no-await-in-loop
+        const ok = await hasColumn(client, c.table, c.col);
+        if (!ok) continue;
+        // eslint-disable-next-line no-await-in-loop
+        const r = await client.query(`SELECT 1 FROM ${c.table} WHERE ${c.col} LIKE $1 LIMIT 1`, [like]);
+        if (r.rows.length) return true;
+    }
+
+    // Carrossel: normalmente fica em profile_items.destination_url como JSON, então checamos também.
+    // (Só se a coluna existir)
+    if (await hasColumn(client, 'profile_items', 'destination_url')) {
+        const r = await client.query(`SELECT 1 FROM profile_items WHERE destination_url LIKE $1 LIMIT 1`, [like]);
+        if (r.rows.length) return true;
+    }
+
+    return false;
+}
 
 function hexToRgb(hex) {
     if (!hex || typeof hex !== 'string') return { r: 20, g: 20, b: 23 };
@@ -952,6 +1062,7 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
             title: checkRes.rows[0].title,
             currentImageUrl: checkRes.rows[0].image_url ? checkRes.rows[0].image_url.substring(0, 50) + '...' : 'null'
         });
+        const previousImageUrl = checkRes.rows[0].image_url || null;
 
         // Verificar quais colunas existem na tabela
         const columnsCheck = await client.query(`
@@ -1060,6 +1171,24 @@ router.put('/items/banner/:id', protectUser, asyncHandler(async (req, res) => {
 
             console.log(`✅ Banner ${itemId} atualizado com sucesso`);
             console.log(`📸 image_url salvo: ${result.rows[0].image_url ? 'Sim (' + result.rows[0].image_url.substring(0, 50) + '...)' : 'Não'}`);
+
+            // Se trocou/limpou a imagem do banner, apagar a imagem anterior do Cloudflare (se não estiver sendo usada em outro lugar)
+            if (image_url !== undefined) {
+                const nextUrl = result.rows[0].image_url || null;
+                const prevId = extractCloudflareImageIdFromUrl(previousImageUrl);
+                const nextId = extractCloudflareImageIdFromUrl(nextUrl);
+
+                if (prevId && prevId !== nextId) {
+                    try {
+                        const stillUsed = await isCloudflareImageReferenced(client, prevId);
+                        if (!stillUsed) {
+                            await deleteCloudflareImageById(prevId);
+                        }
+                    } catch (e) {
+                        // best-effort: não quebrar a atualização do banner
+                    }
+                }
+            }
 
             // Evitar cache do navegador
             res.set({
@@ -2360,6 +2489,58 @@ router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
             return res.status(404).json({ message: 'Item não encontrado ou você não tem permissão para removê-lo.' });
         }
 
+        // Coletar possíveis imagens para apagar do Cloudflare após o delete (best-effort)
+        const imagesToMaybeDelete = [];
+        const itemRow = checkRes.rows[0];
+        const itemImageId = extractCloudflareImageIdFromUrl(itemRow.image_url);
+        if (itemImageId) imagesToMaybeDelete.push(itemImageId);
+
+        // digital_form pode ter outras imagens em digital_form_items
+        if (itemRow.item_type === 'digital_form') {
+            try {
+                const dfRes = await client.query(
+                    `SELECT * FROM digital_form_items
+                     WHERE profile_item_id = $1
+                     ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC
+                     LIMIT 1`,
+                    [itemId]
+                );
+                if (dfRes.rows.length) {
+                    const df = dfRes.rows[0];
+                    const cols = ['banner_image_url', 'header_image_url', 'background_image_url', 'form_logo_url', 'button_logo_url'];
+                    for (const c of cols) {
+                        const id = extractCloudflareImageIdFromUrl(df[c]);
+                        if (id) imagesToMaybeDelete.push(id);
+                    }
+                }
+            } catch (e) {
+                // ignora
+            }
+        }
+
+        // guest_list pode ter imagens em guest_list_items
+        if (itemRow.item_type === 'guest_list') {
+            try {
+                const glRes = await client.query(
+                    `SELECT * FROM guest_list_items
+                     WHERE profile_item_id = $1
+                     ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC
+                     LIMIT 1`,
+                    [itemId]
+                );
+                if (glRes.rows.length) {
+                    const gl = glRes.rows[0];
+                    const cols = ['header_image_url', 'background_image_url'];
+                    for (const c of cols) {
+                        const id = extractCloudflareImageIdFromUrl(gl[c]);
+                        if (id) imagesToMaybeDelete.push(id);
+                    }
+                }
+            } catch (e) {
+                // ignora
+            }
+        }
+
         // Deletar produtos do catálogo se for product_catalog
         if (checkRes.rows[0].item_type === 'product_catalog') {
             await client.query('DELETE FROM product_catalog_items WHERE profile_item_id = $1', [itemId]);
@@ -2379,6 +2560,20 @@ router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
         // Deletar o item
         await client.query('DELETE FROM profile_items WHERE id = $1 AND user_id = $2', [itemId, userId]);
         console.log(`✅ Item ${itemId} deletado com sucesso`);
+
+        // Apagar do Cloudflare (se não estiver sendo usado por nenhum outro módulo)
+        for (const imageId of Array.from(new Set(imagesToMaybeDelete))) {
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                const stillUsed = await isCloudflareImageReferenced(client, imageId);
+                if (!stillUsed) {
+                    // eslint-disable-next-line no-await-in-loop
+                    await deleteCloudflareImageById(imageId);
+                }
+            } catch (e) {
+                // best-effort
+            }
+        }
         
         res.json({ message: 'Item removido com sucesso!' });
     } catch (error) {
