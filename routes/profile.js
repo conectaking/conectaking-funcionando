@@ -3114,9 +3114,18 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
                 (typeof error.message === 'string' && error.message.toLowerCase().includes('invalid input value for enum'))
             );
 
+        const isCheckViolation = error && error.code === '23514';
+
         if (isEnumError) {
             return res.status(500).json({
                 message: 'Erro ao criar item: o banco de dados ainda não foi atualizado para este tipo de módulo. Execute as migrations (especialmente a que adiciona o valor no item_type_enum).',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+
+        if (isCheckViolation) {
+            return res.status(500).json({
+                message: 'Erro ao criar item: o banco de dados ainda está bloqueando este tipo de módulo por uma constraint. Execute as migrations de sincronização do item_type (enum/check).',
                 error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
