@@ -174,23 +174,28 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const hasPath = await hasColumn(pgClient, 'king_galleries', 'watermark_path');
   const hasOpacity = await hasColumn(pgClient, 'king_galleries', 'watermark_opacity');
   const hasScale = await hasColumn(pgClient, 'king_galleries', 'watermark_scale');
-  if (!hasMode && !hasPath && !hasOpacity && !hasScale) return { mode: 'x', path: null, opacity: 0.30, scale: 0.28 };
+  const hasRotate = await hasColumn(pgClient, 'king_galleries', 'watermark_rotate');
+  if (!hasMode && !hasPath && !hasOpacity && !hasScale && !hasRotate) return { mode: 'x', path: null, opacity: 0.30, scale: 0.28, rotate: 0 };
   const cols = [
     hasMode ? 'watermark_mode' : `'x'::text AS watermark_mode`,
     hasPath ? 'watermark_path' : 'NULL::text AS watermark_path',
     hasOpacity ? 'watermark_opacity' : '0.30::numeric AS watermark_opacity',
-    hasScale ? 'watermark_scale' : '0.28::numeric AS watermark_scale'
+    hasScale ? 'watermark_scale' : '0.28::numeric AS watermark_scale',
+    hasRotate ? 'watermark_rotate' : '0::int AS watermark_rotate'
   ].join(', ');
   const res = await pgClient.query(`SELECT ${cols} FROM king_galleries WHERE id=$1`, [galleryId]);
-  if (!res.rows.length) return { mode: 'x', path: null, opacity: 0.30, scale: 0.28 };
+  if (!res.rows.length) return { mode: 'x', path: null, opacity: 0.30, scale: 0.28, rotate: 0 };
   const row = res.rows[0] || {};
   const op = parseFloat(row.watermark_opacity);
   const sc = parseFloat(row.watermark_scale);
+  const rot = parseInt(row.watermark_rotate || 0, 10) || 0;
+  const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
   return {
     mode: row.watermark_mode || 'x',
     path: row.watermark_path || null,
     opacity: Number.isFinite(op) ? op : 0.30,
-    scale: Number.isFinite(sc) ? sc : 0.28
+    scale: Number.isFinite(sc) ? sc : 0.28,
+    rotate
   };
 }
 
@@ -260,12 +265,15 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   const wmBuf = wmBufRaw;
   const opacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
   const scale = clamp(parseFloat(watermark?.scale), 0.10, 0.85);
+  const rot = parseInt(watermark?.rotate || 0, 10) || 0;
+  const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
   // "Automático": usar o maior lado para não ficar minúsculo em foto vertical
   const maxSide = Math.max(outW, outH);
   const boxW = Math.max(140, Math.round(maxSide * scale));
   const boxH = Math.max(140, Math.round(maxSide * scale));
   const wmPng = await sharp(wmBuf)
-    .rotate()
+    .rotate() // EXIF
+    .rotate(rotate) // correção manual
     // fit "inside" ajusta automaticamente para logo horizontal/vertical
     .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: true })
     .png()
@@ -592,7 +600,8 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'watermark_mode',
     'watermark_path',
     'watermark_opacity',
-    'watermark_scale'
+    'watermark_scale',
+    'watermark_rotate'
   ];
 
   const body = req.body || {};
@@ -630,6 +639,10 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'watermark_scale') {
         const n = parseFloat(val);
         val = Number.isFinite(n) ? Math.max(0.10, Math.min(0.85, n)) : 0.28;
+      }
+      if (key === 'watermark_rotate') {
+        const n = parseInt(val || 0, 10) || 0;
+        val = [0, 90, 180, 270].includes(n) ? n : 0;
       }
       sets.push(`${key}=$${idx++}`);
       values.push(val);
@@ -746,6 +759,8 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     if (Number.isFinite(qOp)) wm.opacity = qOp;
     const qScale = parseFloat(req.query.wm_scale);
     if (Number.isFinite(qScale)) wm.scale = qScale;
+    const qRot = parseInt(req.query.wm_rotate || 0, 10);
+    if ([0, 90, 180, 270].includes(qRot)) wm.rotate = qRot;
     const out = await buildWatermarkedJpeg({
       imgBuffer: buf,
       outW,
