@@ -199,6 +199,11 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   // base: sempre resize inside
   let pipeline = img.resize(outW, outH, { fit: 'inside' });
 
+  // 0) Sem marca d'água
+  if (watermark && watermark.mode === 'none') {
+    return pipeline.jpeg({ quality: 82 }).toBuffer();
+  }
+
   // 1) X (default)
   const clamp = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
   const opDefaultX = clamp(parseFloat(watermark?.opacity), 0.05, 0.60);
@@ -215,8 +220,19 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   }
 
   // 2) Logo (watermark_path = cfimage:<id>)
-  const fp = String(watermark.path || '');
-  if (!fp.startsWith('cfimage:')) {
+  const fpRaw = String(watermark.path || '').trim();
+  const fp = fpRaw.toLowerCase().startsWith('cfimage:') ? fpRaw : fpRaw; // preservar case do id
+
+  // aceitar também URL imagedelivery.net (caso alguém salve assim)
+  let logoImageId = null;
+  if (fpRaw.toLowerCase().startsWith('cfimage:')) {
+    logoImageId = fpRaw.slice('cfimage:'.length).trim();
+  } else {
+    const m = fpRaw.match(/^https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\//i);
+    if (m && m[1]) logoImageId = m[1];
+  }
+
+  if (!logoImageId) {
     // fallback seguro
     const svg = Buffer.from(
       `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
@@ -228,8 +244,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
 
-  const imageId = fp.replace('cfimage:', '');
-  const wmBufRaw = await fetchCloudflareImageBuffer(imageId);
+  const wmBufRaw = await fetchCloudflareImageBuffer(logoImageId);
   if (!wmBufRaw) {
     // fallback X
     const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
@@ -245,8 +260,10 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   const wmBuf = wmBufRaw;
   const opacity = clamp(parseFloat(watermark?.opacity), 0.05, 0.80);
   const scale = clamp(parseFloat(watermark?.scale), 0.10, 0.45);
-  const boxW = Math.max(140, Math.round(outW * scale));
-  const boxH = Math.max(140, Math.round(outH * scale));
+  // "Automático": usar o maior lado para não ficar minúsculo em foto vertical
+  const maxSide = Math.max(outW, outH);
+  const boxW = Math.max(140, Math.round(maxSide * scale));
+  const boxH = Math.max(140, Math.round(maxSide * scale));
   const wmPng = await sharp(wmBuf)
     .rotate()
     // fit "inside" ajusta automaticamente para logo horizontal/vertical
@@ -710,7 +727,7 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const wm = await loadWatermarkForGallery(client, photo.gallery_id);
     // Overrides (preview em tempo real no admin)
     const qMode = (req.query.wm_mode || '').toString();
-    if (['x', 'logo'].includes(qMode)) wm.mode = qMode;
+    if (['x', 'logo', 'none'].includes(qMode)) wm.mode = qMode;
     const qOp = parseFloat(req.query.wm_opacity);
     if (Number.isFinite(qOp)) wm.opacity = qOp;
     const qScale = parseFloat(req.query.wm_scale);
