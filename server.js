@@ -4,6 +4,9 @@ const compression = require('compression');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
+const { URL } = require('url');
 const cron = require('node-cron');
 const db = require('./db');
 const nodemailer = require('nodemailer');
@@ -317,6 +320,108 @@ app.use(validateRequestSize(config.upload.maxFileSize)); // Valida tamanho de re
 app.use(express.json({ limit: `${config.upload.maxFileSize / 1024 / 1024}mb` }));
 app.use(requestLogger); 
 
+// ============================================
+// KingSelection (Laravel) - Proxy por caminho
+// Mantém o mesmo domínio: /kingselection/*
+// ============================================
+function proxyKingSelection(req, res, next) {
+    const base = process.env.KINGSELECTION_BASE_URL;
+    if (!base) {
+        return res.status(503).json({
+            success: false,
+            message: 'KingSelection indisponível (KINGSELECTION_BASE_URL não configurada).'
+        });
+    }
+
+    let targetBase;
+    try {
+        targetBase = new URL(base);
+    } catch (e) {
+        return res.status(500).json({
+            success: false,
+            message: 'Config inválida: KINGSELECTION_BASE_URL não é uma URL válida.'
+        });
+    }
+
+    // Express ao montar em /kingselection, deixa req.url como o caminho relativo (ex.: /admin?x=1)
+    const targetUrl = new URL(req.url || '/', targetBase);
+    const isHttps = targetUrl.protocol === 'https:';
+    const lib = isHttps ? https : http;
+
+    // Copiar headers e ajustar host
+    const headers = { ...req.headers };
+    headers.host = targetUrl.host;
+    headers['x-forwarded-host'] = headers['x-forwarded-host'] || req.get('host');
+    headers['x-forwarded-proto'] = headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+    headers['x-forwarded-for'] = headers['x-forwarded-for'] || req.ip;
+    headers['x-forwarded-prefix'] = headers['x-forwarded-prefix'] || '/kingselection';
+
+    const proxyReq = lib.request(
+        {
+            protocol: targetUrl.protocol,
+            hostname: targetUrl.hostname,
+            port: targetUrl.port || (isHttps ? 443 : 80),
+            method: req.method,
+            path: targetUrl.pathname + targetUrl.search,
+            headers
+        },
+        (proxyRes) => {
+            res.status(proxyRes.statusCode || 502);
+            // Repasse de headers (evitar sobrescrever headers proibidos pelo Node)
+            Object.entries(proxyRes.headers || {}).forEach(([k, v]) => {
+                if (typeof v !== 'undefined') res.setHeader(k, v);
+            });
+            proxyRes.pipe(res);
+        }
+    );
+
+    proxyReq.on('error', (err) => {
+        // Não quebrar o servidor por falha no proxy
+        logger.error('❌ Erro no proxy do KingSelection', {
+            message: err.message,
+            target: String(targetUrl)
+        });
+        res.status(502).json({
+            success: false,
+            message: 'Falha ao conectar ao serviço do KingSelection.'
+        });
+    });
+
+    // Enviar body (stream)
+    if (req.readable) {
+        req.pipe(proxyReq);
+    } else {
+        proxyReq.end();
+    }
+}
+
+// Proxy deve vir ANTES do static, para não colidir com arquivos
+app.use('/kingselection', proxyKingSelection);
+
+// ============================================
+// Frontend estático (Hostinger → Render/Node)
+// Serve public_html/ como origem do domínio
+// ============================================
+const publicHtmlDir = path.join(__dirname, 'public_html');
+app.use(express.static(publicHtmlDir, {
+    etag: false,
+    lastModified: false,
+    maxAge: 0,
+    immutable: false,
+    setHeaders: (res, filePath) => {
+        // Forçar atualização dos arquivos do painel/landing
+        if (filePath.endsWith('.js') || filePath.endsWith('.css') || filePath.endsWith('.html')) {
+            res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.set('Pragma', 'no-cache');
+            res.set('Expires', '0');
+        } else {
+            res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.set('Pragma', 'no-cache');
+            res.set('Expires', '0');
+        }
+    }
+}));
+
 // Servir arquivos estáticos SEM cache (forçar atualização no host)
 app.use(express.static(path.join(__dirname, 'public'), {
     etag: false,
@@ -394,9 +499,14 @@ app.use((req, res, next) => {
     next();
 });
 
-// Rota raiz para health checks de serviços de monitoramento (Render, etc.)
+// Rota raiz: servir o frontend (landing)
 app.get('/', (req, res) => {
-    res.status(200).json({
+    const indexPath = path.join(publicHtmlDir, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        return res.sendFile(indexPath);
+    }
+    // Fallback: manter resposta JSON se o index não existir
+    return res.status(200).json({
         status: 'ok',
         service: 'Conecta King API',
         timestamp: new Date().toISOString(),
@@ -543,7 +653,8 @@ app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) =
                 'spotify', 'linkedin', 'pinterest',
                 'link', 'portfolio', 'banner', 'carousel', 
                 'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
-                'finance', 'agenda', 'contract'
+                'finance', 'agenda', 'contract',
+                'king_selection'
             )
             ORDER BY mpa.module_type, mpa.plan_code
         `;

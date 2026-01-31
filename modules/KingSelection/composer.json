@@ -1,0 +1,24 @@
+{
+  "name": "conectaking/kingselection",
+  "description": "Módulo KingSelection (Laravel) isolado para Conecta King",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": "^8.2",
+    "laravel/framework": "^11.0",
+    "firebase/php-jwt": "^6.11"
+  },
+  "autoload": {
+    "psr-4": {
+      "KingSelection\\\\": "app/"
+    }
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+    ]
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
+
