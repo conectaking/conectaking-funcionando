@@ -7,8 +7,66 @@ const fetch = require('node-fetch');
 const sharp = require('sharp');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const router = express.Router();
+
+// Cache simples para introspecção de schema (evita queries repetidas)
+const _schemaCache = {
+  columns: new Map()
+};
+
+async function hasColumn(pgClient, tableName, columnName) {
+  const key = `${tableName}.${columnName}`;
+  if (_schemaCache.columns.has(key)) return _schemaCache.columns.get(key);
+  const res = await pgClient.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = $1
+       AND column_name = $2
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+  const ok = res.rows.length > 0;
+  _schemaCache.columns.set(key, ok);
+  return ok;
+}
+
+function getPwCryptoKey() {
+  // Chave para criptografar a senha do cliente (para o fotógrafo conseguir reenviar via WhatsApp)
+  // Preferir variável específica; fallback para o jwt.secret.
+  const raw = (process.env.KINGSELECTION_PW_KEY || config.jwt.secret || '').toString();
+  // Derivar 32 bytes estáveis
+  return crypto.createHash('sha256').update(raw).digest();
+}
+
+function encryptPassword(plain) {
+  const iv = crypto.randomBytes(12);
+  const key = getPwCryptoKey();
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const enc = Buffer.concat([cipher.update(String(plain), 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  // formato: base64(iv).base64(tag).base64(ciphertext)
+  return `${iv.toString('base64')}.${tag.toString('base64')}.${enc.toString('base64')}`;
+}
+
+function decryptPassword(payload) {
+  try {
+    const [ivB64, tagB64, dataB64] = String(payload || '').split('.');
+    if (!ivB64 || !tagB64 || !dataB64) return null;
+    const iv = Buffer.from(ivB64, 'base64');
+    const tag = Buffer.from(tagB64, 'base64');
+    const data = Buffer.from(dataB64, 'base64');
+    const key = getPwCryptoKey();
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(tag);
+    const out = Buffer.concat([decipher.update(data), decipher.final()]);
+    return out.toString('utf8');
+  } catch (e) {
+    return null;
+  }
+}
 
 function getAccountHash() {
   return config.cloudflare?.accountHash || process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CF_IMAGES_ACCOUNT_ID || null;
@@ -62,7 +120,7 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
   const client = await db.pool.connect();
   try {
     const userId = req.user.userId;
-    const { profileItemId, nome_projeto, cliente_email, senha, total_fotos_contratadas } = req.body || {};
+    const { profileItemId, nome_projeto, cliente_email, senha, total_fotos_contratadas, min_selections } = req.body || {};
     const pid = parseInt(profileItemId, 10);
     if (!pid || !nome_projeto || !cliente_email || !senha) {
       return res.status(400).json({ message: 'Campos obrigatórios: profileItemId, nome_projeto, cliente_email, senha' });
@@ -91,13 +149,46 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
     const bcrypt = require('bcryptjs');
     const senha_hash = await bcrypt.hash(String(senha), 10);
 
-    const ins = await client.query(
-      `INSERT INTO king_galleries (profile_item_id, nome_projeto, slug, cliente_email, senha_hash, status, total_fotos_contratadas)
-       VALUES ($1,$2,$3,$4,$5,'preparacao',$6)
-       RETURNING *`,
-      [pid, nome_projeto, slug, String(cliente_email).toLowerCase(), senha_hash, parseInt(total_fotos_contratadas || 0, 10) || 0]
-    );
-    res.status(201).json({ success: true, gallery: ins.rows[0] });
+    const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
+    const hasEnc = await hasColumn(client, 'king_galleries', 'senha_enc');
+    const minSel = parseInt(min_selections || 0, 10) || 0;
+    const total = parseInt(total_fotos_contratadas || 0, 10) || 0;
+
+    let ins;
+    if (hasMin && hasEnc) {
+      const senha_enc = encryptPassword(String(senha));
+      ins = await client.query(
+        `INSERT INTO king_galleries (profile_item_id, nome_projeto, slug, cliente_email, senha_hash, senha_enc, status, total_fotos_contratadas, min_selections)
+         VALUES ($1,$2,$3,$4,$5,$6,'preparacao',$7,$8)
+         RETURNING *`,
+        [pid, nome_projeto, slug, String(cliente_email).toLowerCase(), senha_hash, senha_enc, total, minSel]
+      );
+    } else if (hasEnc) {
+      const senha_enc = encryptPassword(String(senha));
+      ins = await client.query(
+        `INSERT INTO king_galleries (profile_item_id, nome_projeto, slug, cliente_email, senha_hash, senha_enc, status, total_fotos_contratadas)
+         VALUES ($1,$2,$3,$4,$5,$6,'preparacao',$7)
+         RETURNING *`,
+        [pid, nome_projeto, slug, String(cliente_email).toLowerCase(), senha_hash, senha_enc, total]
+      );
+    } else if (hasMin) {
+      ins = await client.query(
+        `INSERT INTO king_galleries (profile_item_id, nome_projeto, slug, cliente_email, senha_hash, status, total_fotos_contratadas, min_selections)
+         VALUES ($1,$2,$3,$4,$5,'preparacao',$6,$7)
+         RETURNING *`,
+        [pid, nome_projeto, slug, String(cliente_email).toLowerCase(), senha_hash, total, minSel]
+      );
+    } else {
+      ins = await client.query(
+        `INSERT INTO king_galleries (profile_item_id, nome_projeto, slug, cliente_email, senha_hash, status, total_fotos_contratadas)
+         VALUES ($1,$2,$3,$4,$5,'preparacao',$6)
+         RETURNING *`,
+        [pid, nome_projeto, slug, String(cliente_email).toLowerCase(), senha_hash, total]
+      );
+    }
+
+    // Retorna a senha em plaintext apenas na criação (para o fotógrafo copiar/enviar)
+    res.status(201).json({ success: true, gallery: ins.rows[0], client_password: String(senha) });
   } finally {
     client.release();
   }
@@ -152,6 +243,65 @@ router.post('/galleries/:id/photos', protectUser, asyncHandler(async (req, res) 
       [galleryId, file_path, original_name || 'foto', parseInt(order || 0, 10) || 0]
     );
     res.status(201).json({ success: true, photo: ins.rows[0] });
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== Admin export (Lightroom / Windows / Finder) =====
+router.get('/galleries/:id/export', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const gRes = await client.query(
+      `SELECT g.*
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (gRes.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+    const g = gRes.rows[0];
+
+    const sRes = await client.query(
+      `SELECT p.original_name, s.feedback_cliente
+       FROM king_selections s
+       JOIN king_photos p ON p.id = s.photo_id
+       WHERE s.gallery_id=$1
+       ORDER BY p."order" ASC, p.id ASC`,
+      [galleryId]
+    );
+    const names = sRes.rows.map(r => r.original_name).filter(Boolean);
+    const feedback = (sRes.rows.find(r => r.feedback_cliente)?.feedback_cliente) || null;
+
+    const lightroom = names.join(', ');
+    const windows = names.map(n => `"${String(n).replace(/\"/g, '')}"`).join(' OR ');
+    const finder = names.join(' OR ');
+
+    const hasEnc = await hasColumn(client, 'king_galleries', 'senha_enc');
+    const senha_plain = hasEnc ? decryptPassword(g.senha_enc) : null;
+
+    res.json({
+      success: true,
+      gallery: {
+        id: g.id,
+        nome_projeto: g.nome_projeto,
+        slug: g.slug,
+        cliente_email: g.cliente_email,
+        status: g.status,
+        total_fotos_contratadas: g.total_fotos_contratadas,
+        min_selections: g.min_selections ?? 0,
+        senha: senha_plain
+      },
+      feedback,
+      lightroom,
+      windows,
+      finder,
+      count: names.length
+    });
   } finally {
     client.release();
   }
@@ -217,6 +367,104 @@ router.get('/photos/:photoId/preview', asyncHandler(async (req, res) => {
     res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
+    res.send(out);
+  } finally {
+    client.release();
+  }
+}));
+
+// ============================================================
+// ===== Público (antes do login): capa + informações ==========
+// ============================================================
+router.get('/public/gallery', asyncHandler(async (req, res) => {
+  const slug = (req.query.slug || '').toString().trim();
+  if (!slug) return res.status(400).json({ message: 'slug é obrigatório.' });
+
+  const client = await db.pool.connect();
+  try {
+    const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
+    const gRes = await client.query(
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}
+       FROM king_galleries
+       WHERE slug=$1`,
+      [slug]
+    );
+    if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const g = gRes.rows[0];
+
+    const pRes = await client.query('SELECT id FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [g.id]);
+    const coverPhotoId = pRes.rows.length ? pRes.rows[0].id : null;
+
+    const totalPhotosRes = await client.query('SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id=$1', [g.id]);
+    const totalPhotos = totalPhotosRes.rows[0]?.c || 0;
+
+    res.json({
+      success: true,
+      gallery: {
+        id: g.id,
+        nome_projeto: g.nome_projeto,
+        slug: g.slug,
+        status: g.status,
+        total_fotos_contratadas: g.total_fotos_contratadas || 0,
+        min_selections: hasMin ? (g.min_selections || 0) : 0,
+        total_photos: totalPhotos,
+        cover_photo_id: coverPhotoId
+      }
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+router.get('/public/cover', asyncHandler(async (req, res) => {
+  const slug = (req.query.slug || '').toString().trim();
+  if (!slug) return res.status(400).send('slug é obrigatório');
+
+  const client = await db.pool.connect();
+  try {
+    const gRes = await client.query('SELECT id FROM king_galleries WHERE slug=$1', [slug]);
+    if (gRes.rows.length === 0) return res.status(404).send('Galeria não encontrada');
+    const galleryId = gRes.rows[0].id;
+
+    const pRes = await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [galleryId]);
+    if (pRes.rows.length === 0) return res.status(404).send('Sem fotos');
+    const photo = pRes.rows[0];
+    const fp = String(photo.file_path || '');
+    if (!fp.startsWith('cfimage:')) return res.status(500).send('Formato de arquivo inválido');
+    const imageId = fp.replace('cfimage:', '');
+    const url = buildCfUrl(imageId);
+    if (!url) return res.status(500).send('Cloudflare não configurado');
+
+    const imgRes = await fetch(url);
+    if (!imgRes.ok) return res.status(502).send('Falha ao buscar imagem');
+    const buf = await imgRes.buffer();
+
+    // Capa: preview watermarked + blur leve, 1400px
+    const img = sharp(buf).rotate();
+    const meta = await img.metadata();
+    const width = meta.width || 1400;
+    const height = meta.height || 900;
+    const max = 1400;
+    const scale = Math.min(max / Math.max(width, height), 1);
+    const outW = Math.max(1, Math.round(width * scale));
+    const outH = Math.max(1, Math.round(height * scale));
+
+    const svg = Buffer.from(
+      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.22" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.22" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+       </svg>`
+    );
+
+    const out = await img
+      .resize(outW, outH, { fit: 'inside' })
+      .composite([{ input: svg, top: 0, left: 0 }])
+      .blur(2.2)
+      .jpeg({ quality: 78 })
+      .toBuffer();
+
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=900'); // 15min
     res.send(out);
   } finally {
     client.release();
@@ -330,6 +578,45 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
       [req.ksClient.galleryId, photoId]
     );
     res.json({ success: true, selected: true });
+  } finally {
+    client.release();
+  }
+}));
+
+// Seleção em massa (para "Selecionar todas" / "Limpar seleção")
+router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) => {
+  const { slug, mode, photo_ids } = req.body || {};
+  if (!slug || !mode) return res.status(400).json({ message: 'slug e mode são obrigatórios.' });
+  if (String(slug) !== req.ksClient.slug) return res.status(403).json({ message: 'Sem permissão.' });
+  if (!['select', 'unselect'].includes(String(mode))) return res.status(400).json({ message: 'mode inválido.' });
+
+  const ids = Array.isArray(photo_ids) ? photo_ids.map(x => parseInt(x, 10)).filter(Boolean) : [];
+  const client = await db.pool.connect();
+  try {
+    if (String(mode) === 'unselect') {
+      if (ids.length) {
+        await client.query('DELETE FROM king_selections WHERE gallery_id=$1 AND photo_id = ANY($2::int[])', [req.ksClient.galleryId, ids]);
+      } else {
+        await client.query('DELETE FROM king_selections WHERE gallery_id=$1', [req.ksClient.galleryId]);
+      }
+      return res.json({ success: true });
+    }
+
+    // select
+    if (!ids.length) return res.json({ success: true });
+    // garante que ids pertencem à galeria
+    const validRes = await client.query('SELECT id FROM king_photos WHERE gallery_id=$1 AND id = ANY($2::int[])', [req.ksClient.galleryId, ids]);
+    const validIds = validRes.rows.map(r => r.id);
+    if (!validIds.length) return res.json({ success: true });
+
+    const values = validIds.map((pid, idx) => `($1,$${idx + 2},NULL)`).join(',');
+    await client.query(
+      `INSERT INTO king_selections (gallery_id, photo_id, feedback_cliente)
+       VALUES ${values}
+       ON CONFLICT (gallery_id, photo_id) DO NOTHING`,
+      [req.ksClient.galleryId, ...validIds]
+    );
+    res.json({ success: true });
   } finally {
     client.release();
   }
