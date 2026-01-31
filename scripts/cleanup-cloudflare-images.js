@@ -23,6 +23,8 @@
 require('dotenv').config();
 
 const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
 const db = require('../db');
 const config = require('../config');
 
@@ -120,6 +122,68 @@ async function collectReferencedImageIds(client) {
   return ids;
 }
 
+function collectReferencedImageIdsFromFiles({ rootDir }) {
+  // Varre arquivos do "site" (public_html, views, public, etc.) para achar URLs imagedelivery.net
+  // e evitar deletar imagens ainda referenciadas em HTML/JS/CSS/EJS.
+  const ids = new Set();
+  const allowExt = new Set(['.html', '.js', '.css', '.ejs', '.md', '.json', '.txt']);
+  const skipDirs = new Set([
+    '.git',
+    'node_modules',
+    '.cursor',
+    'terminals',
+    'dist',
+    'build'
+  ]);
+
+  const toScan = [
+    path.join(rootDir, 'public_html'),
+    path.join(rootDir, 'views'),
+    path.join(rootDir, 'public')
+  ];
+
+  function addFromString(s) {
+    if (!s) return;
+    const matches = String(s).matchAll(/https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\/[^"\s)]+/gi);
+    for (const m of matches) {
+      if (m && m[1]) ids.add(m[1]);
+    }
+  }
+
+  function walk(dir) {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (_) {
+      return;
+    }
+    for (const ent of entries) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) {
+        if (skipDirs.has(ent.name)) continue;
+        walk(full);
+        continue;
+      }
+      const ext = path.extname(ent.name).toLowerCase();
+      if (!allowExt.has(ext)) continue;
+      // Evitar ler arquivos enormes
+      try {
+        const st = fs.statSync(full);
+        if (st.size > 5 * 1024 * 1024) continue; // 5MB
+      } catch (_) {}
+      try {
+        const content = fs.readFileSync(full, 'utf8');
+        addFromString(content);
+      } catch (_) {
+        // ignora arquivos binários ou com encoding diferente
+      }
+    }
+  }
+
+  for (const d of toScan) walk(d);
+  return ids;
+}
+
 async function listCloudflareImages({ accountId, apiToken }) {
   // API v4 images/v1 lista paginada
   const perPage = 100;
@@ -177,10 +241,13 @@ async function main() {
 
   const dryRun = String(process.env.DRY_RUN || '1') !== '0';
   const minAgeDays = parseFloat(process.env.MIN_AGE_DAYS || '0') || 0;
+  const repoRoot = path.resolve(__dirname, '..');
 
   const client = await db.pool.connect();
   try {
-    const referenced = await collectReferencedImageIds(client);
+    const referencedDb = await collectReferencedImageIds(client);
+    const referencedFiles = collectReferencedImageIdsFromFiles({ rootDir: repoRoot });
+    const referenced = new Set([...referencedDb, ...referencedFiles]);
     const all = await listCloudflareImages({ accountId, apiToken });
 
     const now = new Date();
@@ -196,7 +263,9 @@ async function main() {
     });
 
     console.log(`Cloudflare imagens: ${all.length}`);
-    console.log(`Referenciadas no banco: ${referenced.size}`);
+    console.log(`Referenciadas no banco: ${referencedDb.size}`);
+    console.log(`Referenciadas em arquivos (site): ${referencedFiles.size}`);
+    console.log(`Referenciadas total (banco + site): ${referenced.size}`);
     console.log(`Órfãs candidatas (minAgeDays=${minAgeDays}): ${candidates.length}`);
     console.log(`Modo: ${dryRun ? 'DRY_RUN (não deleta)' : 'DELETE (vai deletar)'}`);
 
