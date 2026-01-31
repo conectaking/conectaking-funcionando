@@ -1127,12 +1127,8 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     const fp = String(photo.file_path || '');
     if (!fp.startsWith('cfimage:')) return res.status(500).send('Formato de arquivo inválido');
     const imageId = fp.replace('cfimage:', '');
-    const url = buildCfUrl(imageId);
-    if (!url) return res.status(500).send('Cloudflare não configurado');
-
-    const imgRes = await fetch(url);
-    if (!imgRes.ok) return res.status(502).send('Falha ao buscar imagem');
-    const buf = await imgRes.buffer();
+    const buf = await fetchCloudflareImageBuffer(imageId);
+    if (!buf) return res.status(500).send('Cloudflare não configurado (hash ou API token)');
 
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
