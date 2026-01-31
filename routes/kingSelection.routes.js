@@ -302,6 +302,113 @@ router.post('/galleries/:id/reset-password', protectUser, asyncHandler(async (re
   }
 }));
 
+router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const gRes = await client.query(
+      `SELECT g.*
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const g = gRes.rows[0];
+
+    const pRes = await client.query(
+      `SELECT id, gallery_id, original_name, "order", created_at
+       FROM king_photos
+       WHERE gallery_id=$1
+       ORDER BY "order" ASC, id ASC`,
+      [galleryId]
+    );
+    const sRes = await client.query(
+      `SELECT photo_id, feedback_cliente, created_at
+       FROM king_selections
+       WHERE gallery_id=$1
+       ORDER BY created_at ASC`,
+      [galleryId]
+    );
+    const selectedPhotoIds = sRes.rows.map(r => r.photo_id);
+    const feedback = sRes.rows.find(r => r.feedback_cliente)?.feedback_cliente || null;
+    res.json({
+      success: true,
+      gallery: { ...g, photos: pRes.rows, selectedPhotoIds, feedback_cliente: feedback }
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+
+  const allowed = [
+    'nome_projeto',
+    'status',
+    'total_fotos_contratadas',
+    'min_selections',
+    'access_mode',
+    'is_published',
+    'cliente_nome',
+    'cliente_email',
+    'cliente_telefone',
+    'categoria',
+    'data_trabalho',
+    'idioma',
+    'mensagem_acesso',
+    'allow_download',
+    'allow_comments',
+    'allow_social_sharing',
+    'watermark_mode',
+    'watermark_path'
+  ];
+
+  const body = req.body || {};
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+
+    // montar update apenas com colunas existentes
+    const sets = [];
+    const values = [];
+    let idx = 1;
+
+    for (const key of allowed) {
+      if (!(key in body)) continue;
+      const exists = await hasColumn(client, 'king_galleries', key);
+      if (!exists) continue;
+
+      let val = body[key];
+      if (key === 'total_fotos_contratadas' || key === 'min_selections') val = parseInt(val || 0, 10) || 0;
+      if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing') val = !!val;
+      if (key === 'cliente_email') val = String(val || '').toLowerCase().trim();
+      if (key === 'data_trabalho' && val) val = String(val).slice(0, 10);
+      sets.push(`${key}=$${idx++}`);
+      values.push(val);
+    }
+
+    if (!sets.length) return res.json({ success: true });
+    values.push(galleryId);
+    await client.query(`UPDATE king_galleries SET ${sets.join(', ')}, updated_at=NOW() WHERE id=$${idx}`, values);
+    res.json({ success: true });
+  } finally {
+    client.release();
+  }
+}));
+
 // ===== Admin export (Lightroom / Windows / Finder) =====
 router.get('/galleries/:id/export', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
