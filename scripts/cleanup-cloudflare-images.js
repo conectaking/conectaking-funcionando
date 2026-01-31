@@ -108,6 +108,30 @@ function extractCloudflareImageIdFromUrl(url) {
   return m ? m[1] : null;
 }
 
+function extractCloudflareImageIdsFromAnyText(text) {
+  const out = new Set();
+  const s = String(text || '');
+  if (!s) return out;
+
+  // imagedelivery URL
+  const urlMatches = s.matchAll(/https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\/[^"\s)]+/gi);
+  for (const m of urlMatches) {
+    if (m && m[1]) out.add(m[1]);
+  }
+
+  // cfimage:<id> (usado no KingSelection e em marca d'água)
+  const cfMatches = s.matchAll(/cfimage:([a-z0-9-]+)/gi);
+  for (const m of cfMatches) {
+    if (m && m[1]) out.add(m[1]);
+  }
+
+  // fallback (1 URL)
+  const one = extractCloudflareImageIdFromUrl(s);
+  if (one) out.add(one);
+
+  return out;
+}
+
 async function hasColumn(client, table, column) {
   const r = await client.query(
     `SELECT 1 FROM information_schema.columns
@@ -119,7 +143,10 @@ async function hasColumn(client, table, column) {
 }
 
 async function collectReferencedImageIds(client) {
-  // Lista de tabelas/colunas onde guardamos URLs do Cloudflare Images
+  // Lista de tabelas/colunas onde guardamos referências do Cloudflare Images
+  // Pode ser:
+  // - URL imagedelivery.net/.../<imageId>/...
+  // - cfimage:<imageId>
   const candidates = [
     { table: 'profile_items', col: 'image_url' },
     { table: 'profile_items', col: 'destination_url' }, // carrossel (JSON/text)
@@ -143,7 +170,11 @@ async function collectReferencedImageIds(client) {
 
     { table: 'sales_page_products', col: 'image_url' },
 
-    { table: 'contract_items', col: 'stamp_image_url' }
+    { table: 'contract_items', col: 'stamp_image_url' },
+
+    // KingSelection (fotos e marca d’água)
+    { table: 'king_photos', col: 'file_path' },
+    { table: 'king_galleries', col: 'watermark_path' }
   ];
 
   const ids = new Set();
@@ -152,27 +183,21 @@ async function collectReferencedImageIds(client) {
     const ok = await hasColumn(client, c.table, c.col);
     if (!ok) continue;
 
-    // Busca só strings que parecem Cloudflare Images
+    // Busca só strings que parecem Cloudflare Images (URL ou cfimage)
     // eslint-disable-next-line no-await-in-loop
     const r = await client.query(
       `SELECT ${c.col} AS v
        FROM ${c.table}
        WHERE ${c.col} ILIKE '%imagedelivery.net/%'
+          OR ${c.col} ILIKE '%cfimage:%'
        LIMIT 50000`
     );
 
     for (const row of r.rows) {
       const v = row.v;
       if (!v) continue;
-      const s = String(v);
-      // Pode conter múltiplas URLs (ex: JSON do carrossel); extrai todas as ocorrências
-      const matches = s.matchAll(/https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\/[^"\s)]+/gi);
-      for (const m of matches) {
-        if (m && m[1]) ids.add(m[1]);
-      }
-      // fallback simples
-      const one = extractCloudflareImageIdFromUrl(s);
-      if (one) ids.add(one);
+      const found = extractCloudflareImageIdsFromAnyText(v);
+      for (const id of found) ids.add(id);
     }
   }
   return ids;
@@ -200,10 +225,8 @@ function collectReferencedImageIdsFromFiles({ rootDir }) {
 
   function addFromString(s) {
     if (!s) return;
-    const matches = String(s).matchAll(/https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\/[^"\s)]+/gi);
-    for (const m of matches) {
-      if (m && m[1]) ids.add(m[1]);
-    }
+    const found = extractCloudflareImageIdsFromAnyText(s);
+    for (const id of found) ids.add(id);
   }
 
   function walk(dir) {
