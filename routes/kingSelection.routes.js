@@ -263,7 +263,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   }
   const wmBuf = wmBufRaw;
   const opacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
-  const scale = clamp(parseFloat(watermark?.scale), 0.10, 0.85);
+  const scale = clamp(parseFloat(watermark?.scale), 0.10, 5.0);
   const rot = parseInt(watermark?.rotate || 0, 10) || 0;
   const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
   const maxSide = Math.max(outW, outH);
@@ -272,11 +272,30 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   // - vertical: logo tende a crescer na altura
   const boxW = Math.max(140, Math.round(outW * scale));
   const boxH = Math.max(140, Math.round(outH * scale));
-  const wmPng = await sharp(wmBuf)
+  const wmBase = sharp(wmBuf)
     .rotate() // EXIF
-    .rotate(rotate) // correção manual
+    .rotate(rotate); // correção manual
+
+  // Normal (cobrir a foto inteira): expande a logomarca para preencher a imagem (sem mosaico)
+  if (watermark?.mode === 'full') {
+    const wmFull = await wmBase
+      .resize({ width: outW, height: outH, fit: 'cover', withoutEnlargement: false })
+      .png()
+      .toBuffer();
+    pipeline = pipeline.composite([{
+      input: wmFull,
+      top: 0,
+      left: 0,
+      blend: 'over',
+      opacity
+    }]);
+    return pipeline.jpeg({ quality: 82 }).toBuffer();
+  }
+
+  // Automático (ajustar no meio): fit inside e permite aumentar até 500%
+  const wmPng = await wmBase
     // fit "inside" ajusta automaticamente para logo horizontal/vertical
-    .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: true })
+    .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: false })
     .png()
     .toBuffer();
 
@@ -640,7 +659,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       }
       if (key === 'watermark_scale') {
         const n = parseFloat(val);
-        val = Number.isFinite(n) ? Math.max(0.10, Math.min(0.85, n)) : 0.28;
+        val = Number.isFinite(n) ? Math.max(0.10, Math.min(5.0, n)) : 0.28;
       }
       if (key === 'watermark_rotate') {
         const n = parseInt(val || 0, 10) || 0;
@@ -756,7 +775,7 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const wm = await loadWatermarkForGallery(client, photo.gallery_id);
     // Overrides (preview em tempo real no admin)
     const qMode = (req.query.wm_mode || '').toString();
-    if (['x', 'logo', 'tile', 'none'].includes(qMode)) wm.mode = qMode;
+    if (['x', 'logo', 'full', 'tile', 'none'].includes(qMode)) wm.mode = qMode;
     const qOp = parseFloat(req.query.wm_opacity);
     if (Number.isFinite(qOp)) wm.opacity = qOp;
     const qScale = parseFloat(req.query.wm_scale);
