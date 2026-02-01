@@ -13,6 +13,133 @@ const path = require('path');
 
 const router = express.Router();
 
+function normDigits(str) {
+  return String(str || '').replace(/[^\d]/g, '');
+}
+
+async function notifyWhatsAppSelectionFinalized({
+  pgClient,
+  galleryId,
+  clientId,
+  feedback
+}) {
+  // Best-effort: nunca falhar a finalização por causa de notificação
+  const enabled = ['1', 'true', 'sim', 'yes', 'on'].includes(String(process.env.KINGSELECTION_NOTIFY_WHATSAPP || '').trim().toLowerCase());
+  if (!enabled) return;
+
+  // Buscar dono da galeria (para pegar whatsapp configurado em user_profiles)
+  const ownerRes = await pgClient.query(
+    `SELECT pi.user_id, g.nome_projeto, g.slug, g.cliente_email
+     FROM king_galleries g
+     JOIN profile_items pi ON pi.id = g.profile_item_id
+     WHERE g.id=$1
+     LIMIT 1`,
+    [galleryId]
+  );
+  if (!ownerRes.rows.length) return;
+  const owner = ownerRes.rows[0];
+
+  // WhatsApp configurado em "Configurações" (user_profiles.whatsapp_number)
+  let whatsapp = null;
+  try {
+    const hasWhats = await hasColumn(pgClient, 'user_profiles', 'whatsapp_number');
+    if (hasWhats) {
+      const wRes = await pgClient.query(
+        `SELECT whatsapp_number
+         FROM user_profiles
+         WHERE user_id=$1
+         ORDER BY COALESCE(updated_at, created_at) DESC NULLS LAST, id DESC
+         LIMIT 1`,
+        [owner.user_id]
+      );
+      whatsapp = wRes.rows?.[0]?.whatsapp_number || null;
+    }
+  } catch (_) {}
+
+  // Fallback via env (se quiser forçar)
+  whatsapp = whatsapp || process.env.KINGSELECTION_NOTIFY_WHATSAPP_NUMBER || null;
+  if (!whatsapp) return;
+
+  // Cliente que finalizou
+  let clientName = null;
+  let clientEmail = null;
+  if (clientId && (await hasTable(pgClient, 'king_gallery_clients'))) {
+    const cRes = await pgClient.query(
+      'SELECT nome, email FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1',
+      [clientId, galleryId]
+    );
+    clientName = cRes.rows?.[0]?.nome || null;
+    clientEmail = cRes.rows?.[0]?.email || null;
+  }
+  clientEmail = clientEmail || owner.cliente_email || null;
+
+  // Quantidade selecionada (por cliente se disponível)
+  let selectedCount = 0;
+  try {
+    const hasSelClient = await hasColumn(pgClient, 'king_selections', 'client_id');
+    let countRes;
+    if (hasSelClient && clientId) {
+      countRes = await pgClient.query('SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
+    } else if (hasSelClient) {
+      countRes = await pgClient.query('SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL', [galleryId]);
+    } else {
+      countRes = await pgClient.query('SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id=$1', [galleryId]);
+    }
+    selectedCount = countRes.rows?.[0]?.c || 0;
+  } catch (_) {}
+
+  const proj = owner.nome_projeto || owner.slug || 'Galeria';
+  const when = new Date().toLocaleString('pt-BR');
+  const msgLines = [
+    '✅ SELEÇÃO FINALIZADA (KingSelection)',
+    '',
+    `Projeto: ${proj}`,
+    `Slug: ${owner.slug || '-'}`,
+    `Cliente: ${clientName || '-'} ${clientEmail ? `(${clientEmail})` : ''}`.trim(),
+    `Selecionadas: ${selectedCount}`,
+    feedback && String(feedback).trim() ? `Mensagem do cliente: ${String(feedback).trim().slice(0, 600)}` : null,
+    `Quando: ${when}`,
+    '',
+    `GalleryId: ${galleryId}`
+  ].filter(Boolean);
+  const text = msgLines.join('\n');
+
+  // Provider 1: Webhook (genérico)
+  const webhookUrl = (process.env.KINGSELECTION_NOTIFY_WEBHOOK_URL || '').toString().trim();
+  if (webhookUrl) {
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'kingselection.finalized',
+          galleryId,
+          slug: owner.slug,
+          project: proj,
+          clientId: clientId || null,
+          clientEmail,
+          selectedCount,
+          feedback: (feedback && String(feedback).trim()) ? String(feedback).trim() : null,
+          whatsapp: String(whatsapp || ''),
+          message: text
+        })
+      });
+    } catch (_) {}
+  }
+
+  // Provider 2: CallMeBot (opcional) - envia WhatsApp de verdade
+  const callmebotKey = (process.env.KINGSELECTION_CALLMEBOT_APIKEY || process.env.CALLMEBOT_APIKEY || '').toString().trim();
+  if (callmebotKey) {
+    try {
+      const phone = normDigits(whatsapp);
+      if (phone) {
+        const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(callmebotKey)}`;
+        await fetch(url, { method: 'GET' });
+      }
+    } catch (_) {}
+  }
+}
+
 // Cache simples para introspecção de schema (evita queries repetidas)
 const _schemaCache = {
   columns: new Map(),
@@ -2237,6 +2364,16 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       }
       await client.query('UPDATE king_galleries SET status=$1, updated_at=NOW() WHERE id=$2', ['revisao', galleryId]);
     }
+
+    // Notificação WhatsApp (best-effort)
+    try {
+      await notifyWhatsAppSelectionFinalized({
+        pgClient: client,
+        galleryId,
+        clientId: cid,
+        feedback
+      });
+    } catch (_) {}
 
     res.json({ success: true });
   } finally {
