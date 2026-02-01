@@ -915,6 +915,9 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'cliente_nome',
     'cliente_email',
     'cliente_telefone',
+    'cliente_nota',
+    'allow_self_signup',
+    'client_enabled',
     'categoria',
     'data_trabalho',
     'idioma',
@@ -964,7 +967,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
 
       let val = body[key];
       if (key === 'total_fotos_contratadas' || key === 'min_selections') val = parseInt(val || 0, 10) || 0;
-      if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing') val = !!val;
+      if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing' || key === 'allow_self_signup' || key === 'client_enabled') val = !!val;
       if (key === 'cliente_email') val = String(val || '').toLowerCase().trim();
       if (key === 'data_trabalho' && val) val = String(val).slice(0, 10);
       if (key === 'watermark_opacity') {
@@ -1172,8 +1175,10 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
   const client = await db.pool.connect();
   try {
     const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
+    const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+    const hasEnabled = await hasColumn(client, 'king_galleries', 'client_enabled');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasSelf ? ', allow_self_signup' : ''}${hasEnabled ? ', client_enabled' : ''}
        FROM king_galleries
        WHERE slug=$1`,
       [slug]
@@ -1196,6 +1201,8 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
         status: g.status,
         total_fotos_contratadas: g.total_fotos_contratadas || 0,
         min_selections: hasMin ? (g.min_selections || 0) : 0,
+        allow_self_signup: hasSelf ? !!g.allow_self_signup : false,
+        client_enabled: hasEnabled ? !!g.client_enabled : true,
         total_photos: totalPhotos,
         cover_photo_id: coverPhotoId
       }
@@ -1491,6 +1498,11 @@ router.post('/client/login', asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const g = gRes.rows[0];
 
+    const hasEnabled = await hasColumn(client, 'king_galleries', 'client_enabled');
+    if (hasEnabled && g.client_enabled === false) {
+      return res.status(401).json({ message: 'Acesso desativado. Solicite um novo acesso ao fotógrafo.' });
+    }
+
     if (String(email).toLowerCase().trim() !== String(g.cliente_email).toLowerCase().trim()) {
       return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
     }
@@ -1503,6 +1515,63 @@ router.post('/client/login', asyncHandler(async (req, res) => {
       { expiresIn: '14d' }
     );
     res.json({ success: true, token });
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== Cliente: autocadastro (se habilitado na galeria) =====
+router.post('/client/register', asyncHandler(async (req, res) => {
+  const { slug, nome, email, telefone } = req.body || {};
+  if (!slug || !nome || !email) return res.status(400).json({ message: 'Informe slug, nome e e-mail.' });
+
+  const client = await db.pool.connect();
+  try {
+    const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+    const hasEnabled = await hasColumn(client, 'king_galleries', 'client_enabled');
+    const hasEnc = await hasColumn(client, 'king_galleries', 'senha_enc');
+
+    const gRes = await client.query('SELECT * FROM king_galleries WHERE slug=$1', [String(slug)]);
+    if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const g = gRes.rows[0];
+
+    if (!hasSelf || !g.allow_self_signup) {
+      return res.status(403).json({ message: 'Autocadastro desativado nesta galeria.' });
+    }
+
+    // Como o modelo atual é 1 cliente por galeria, só permite autocadastro quando o acesso estiver desativado.
+    if (hasEnabled && g.client_enabled !== false) {
+      return res.status(409).json({ message: 'Já existe um cliente cadastrado para esta galeria. Solicite acesso ao fotógrafo.' });
+    }
+
+    // gera senha simples (6 dígitos)
+    const pass = String(Math.floor(100000 + Math.random() * 900000));
+    const senha_hash = await bcrypt.hash(pass, 10);
+    const senha_enc = hasEnc ? encryptPassword(pass) : null;
+
+    const emailNorm = String(email).toLowerCase().trim();
+    const telNorm = String(telefone || '').trim();
+    const nomeNorm = String(nome || '').trim().slice(0, 255);
+
+    if (hasEnc) {
+      await client.query(
+        'UPDATE king_galleries SET cliente_nome=$1, cliente_email=$2, cliente_telefone=$3, senha_hash=$4, senha_enc=$5, client_enabled=$6, updated_at=NOW() WHERE id=$7',
+        [nomeNorm, emailNorm, telNorm || null, senha_hash, senha_enc, true, g.id]
+      );
+    } else {
+      await client.query(
+        'UPDATE king_galleries SET cliente_nome=$1, cliente_email=$2, cliente_telefone=$3, senha_hash=$4, client_enabled=$5, updated_at=NOW() WHERE id=$6',
+        [nomeNorm, emailNorm, telNorm || null, senha_hash, true, g.id]
+      );
+    }
+
+    const token = jwt.sign(
+      { type: 'kingselection_client', galleryId: g.id, slug: g.slug },
+      config.jwt.secret,
+      { expiresIn: '14d' }
+    );
+
+    res.json({ success: true, token, client_password: pass });
   } finally {
     client.release();
   }
