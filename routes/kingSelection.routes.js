@@ -331,8 +331,31 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   const strict = !!watermark?.strict;
   let localDefaultBuf = null;
 
+  // Para o modo "Marca d'água da Conecta King" (tile_dense), a regra é:
+  // - sempre usar a marca padrão do sistema, mesmo que exista marca personalizada enviada.
+  // Assim, o cliente pode enviar uma marca, mas só será usada quando selecionar o modo "logo".
+  if (mode === 'tile_dense') {
+    localDefaultBuf = await fetchDefaultWatermarkAssetBuffer();
+    if (!localDefaultBuf) {
+      if (strict) {
+        const err = new Error('Marca d’água padrão não encontrada no servidor. Faça deploy do arquivo (public_html/marca dagua KingSelection .png) ou defina KINGSELECTION_DEFAULT_WATERMARK_FILE.');
+        err.statusCode = 500;
+        throw err;
+      }
+      const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
+      const svg = Buffer.from(
+        `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+           <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+           <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         </svg>`
+      );
+      pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+      return pipeline.jpeg({ quality: 82 }).toBuffer();
+    }
+  }
+
   // Se não há marca d’água personalizada, usar a marca d’água oficial do sistema
-  if (!fpRaw) {
+  if (!fpRaw && !localDefaultBuf) {
     localDefaultBuf = await fetchDefaultWatermarkAssetBuffer();
     if (!localDefaultBuf) {
       if (strict) {
@@ -362,7 +385,8 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   }
 
   let wmCloudBuf = null;
-  if (logoImageId) {
+  // Só tentamos usar a marca personalizada quando não for tile_dense.
+  if (logoImageId && mode !== 'tile_dense') {
     wmCloudBuf = await fetchCloudflareImageBuffer(logoImageId);
   }
   // Se falhou carregar personalizada e temos a oficial, usa a oficial (exceto no modo estrito: mostra erro)
@@ -375,7 +399,8 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   if (!strict && fpRaw && !wmCloudBuf && !localDefaultBuf) {
     localDefaultBuf = await fetchDefaultWatermarkAssetBuffer();
   }
-  const wmBufRaw = wmCloudBuf || localDefaultBuf;
+  // Se for tile_dense, força o padrão (ignora custom).
+  const wmBufRaw = (mode === 'tile_dense') ? localDefaultBuf : (wmCloudBuf || localDefaultBuf);
   if (!wmBufRaw) {
     // fallback seguro
     const xOpacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0) || 0.30;
@@ -445,6 +470,18 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     }
     pipeline = pipeline.composite([{ input: wmFull, top: 0, left: 0, blend: 'over' }]);
     return pipeline.jpeg({ quality: 82 }).toBuffer();
+  }
+
+  // Modo "logo" = marca d'água personalizada (se não existir, no preview do admin mostramos erro claro)
+  if (watermark?.mode === 'logo' && fpRaw && fpRaw.toLowerCase().startsWith('cfimage:') && !wmCloudBuf && strict) {
+    const err = new Error('Não foi possível carregar sua marca d’água personalizada no Cloudflare (tente novamente em alguns segundos).');
+    err.statusCode = 424;
+    throw err;
+  }
+  if (watermark?.mode === 'logo' && !fpRaw && strict) {
+    const err = new Error('Envie sua marca d’água personalizada para usar este modo.');
+    err.statusCode = 422;
+    throw err;
   }
 
   // Automático (ajustar no meio): fit inside e permite aumentar até 500%
