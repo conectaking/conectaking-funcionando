@@ -389,8 +389,10 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   if (logoImageId && mode !== 'tile_dense') {
     wmCloudBuf = await fetchCloudflareImageBuffer(logoImageId);
   }
-  // Se falhou carregar personalizada e temos a oficial, usa a oficial (exceto no modo estrito: mostra erro)
-  if (strict && fpRaw && !wmCloudBuf && fpRaw.toLowerCase().startsWith('cfimage:')) {
+  // Se falhou carregar personalizada e temos a oficial, usa a oficial.
+  // Atenção: no modo "tile_dense" (Conecta King), a personalizada é ignorada por regra,
+  // então não deve gerar erro mesmo em modo estrito.
+  if (strict && mode !== 'tile_dense' && fpRaw && !wmCloudBuf && fpRaw.toLowerCase().startsWith('cfimage:')) {
     const err = new Error('Falha ao carregar marca d’água personalizada no Cloudflare (verifique CF_IMAGES_ACCOUNT_ID + token/key).');
     err.statusCode = 424;
     throw err;
