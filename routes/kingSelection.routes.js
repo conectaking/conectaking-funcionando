@@ -15,7 +15,8 @@ const router = express.Router();
 
 // Cache simples para introspecção de schema (evita queries repetidas)
 const _schemaCache = {
-  columns: new Map()
+  columns: new Map(),
+  tables: new Map()
 };
 
 async function hasColumn(pgClient, tableName, columnName) {
@@ -32,6 +33,21 @@ async function hasColumn(pgClient, tableName, columnName) {
   );
   const ok = res.rows.length > 0;
   _schemaCache.columns.set(key, ok);
+  return ok;
+}
+
+async function hasTable(pgClient, tableName) {
+  const key = `table:${tableName}`;
+  if (_schemaCache.tables.has(key)) return _schemaCache.tables.get(key);
+  const res = await pgClient.query(
+    `SELECT 1
+     FROM information_schema.tables
+     WHERE table_schema='public' AND table_name=$1
+     LIMIT 1`,
+    [tableName]
+  );
+  const ok = res.rows.length > 0;
+  _schemaCache.tables.set(key, ok);
   return ok;
 }
 
@@ -865,6 +881,19 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const g = gRes.rows[0];
 
+    // Clientes (multi-client)
+    let clients = [];
+    if (await hasTable(client, 'king_gallery_clients')) {
+      const cRes = await client.query(
+        `SELECT id, nome, email, telefone, enabled, created_at
+         FROM king_gallery_clients
+         WHERE gallery_id=$1
+         ORDER BY created_at ASC, id ASC`,
+        [galleryId]
+      );
+      clients = cRes.rows || [];
+    }
+
     const hasFav = await hasColumn(client, 'king_photos', 'is_favorite');
     const hasCover = await hasColumn(client, 'king_photos', 'is_cover');
     const cols = [
@@ -894,8 +923,236 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     const feedback = sRes.rows.find(r => r.feedback_cliente)?.feedback_cliente || null;
     res.json({
       success: true,
-      gallery: { ...g, photos: pRes.rows, selectedPhotoIds, feedback_cliente: feedback }
+      gallery: { ...g, photos: pRes.rows, selectedPhotoIds, feedback_cliente: feedback, clients }
     });
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== Admin: CRUD de clientes (multi-client) =====
+router.get('/galleries/:id/clients', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+
+    if (!(await hasTable(client, 'king_gallery_clients'))) {
+      return res.json({ success: true, clients: [] });
+    }
+
+    const cRes = await client.query(
+      `SELECT id, nome, email, telefone, enabled, created_at
+       FROM king_gallery_clients
+       WHERE gallery_id=$1
+       ORDER BY created_at ASC, id ASC`,
+      [galleryId]
+    );
+    res.json({ success: true, clients: cRes.rows || [] });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/galleries/:id/clients', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const { nome, email, telefone, senha, note } = req.body || {};
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  if (!nome || !email) return res.status(400).json({ message: 'Informe nome e e-mail.' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+
+    if (!(await hasTable(client, 'king_gallery_clients'))) {
+      return res.status(500).json({ message: 'Tabela de clientes não disponível (migração pendente).' });
+    }
+
+    const pass = String(senha || Math.floor(100000 + Math.random() * 900000));
+    const senha_hash = await bcrypt.hash(pass, 10);
+    const senha_enc = encryptPassword(pass);
+    const emailNorm = String(email).toLowerCase().trim();
+    const telNorm = String(telefone || '').trim();
+    const nomeNorm = String(nome || '').trim().slice(0, 255);
+    const noteVal = (note == null) ? null : String(note).trim();
+
+    let ins;
+    try {
+      ins = await client.query(
+        `INSERT INTO king_gallery_clients (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, note, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,TRUE,$7,NOW(),NOW())
+         RETURNING id, nome, email, telefone, enabled, created_at`,
+        [galleryId, nomeNorm, emailNorm, telNorm || null, senha_hash, senha_enc, noteVal]
+      );
+    } catch (e) {
+      // unique index (gallery_id, lower(email))
+      if (String(e.message || '').toLowerCase().includes('uniq_king_gallery_clients_gallery_email')) {
+        return res.status(409).json({ message: 'Já existe um cliente com este e-mail nesta galeria.' });
+      }
+      throw e;
+    }
+
+    res.status(201).json({ success: true, client: ins.rows[0], client_password: pass });
+  } finally {
+    client.release();
+  }
+}));
+
+router.put('/galleries/:id/clients/:clientId', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'IDs inválidos' });
+
+  const { nome, email, telefone, enabled, note } = req.body || {};
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_gallery_clients'))) {
+      return res.status(500).json({ message: 'Tabela de clientes não disponível (migração pendente).' });
+    }
+
+    const sets = [];
+    const values = [];
+    let idx = 1;
+    if (typeof nome !== 'undefined') { sets.push(`nome=$${idx++}`); values.push(String(nome || '').trim().slice(0, 255)); }
+    if (typeof email !== 'undefined') { sets.push(`email=$${idx++}`); values.push(String(email || '').toLowerCase().trim()); }
+    if (typeof telefone !== 'undefined') { sets.push(`telefone=$${idx++}`); values.push(String(telefone || '').trim() || null); }
+    if (typeof enabled !== 'undefined') { sets.push(`enabled=$${idx++}`); values.push(!!enabled); }
+    if (typeof note !== 'undefined') { sets.push(`note=$${idx++}`); values.push((note == null) ? null : String(note).trim()); }
+
+    if (!sets.length) return res.json({ success: true });
+
+    values.push(galleryId, clientId);
+    await client.query(
+      `UPDATE king_gallery_clients
+       SET ${sets.join(', ')}, updated_at=NOW()
+       WHERE gallery_id=$${idx++} AND id=$${idx}`,
+      values
+    );
+    res.json({ success: true });
+  } finally {
+    client.release();
+  }
+}));
+
+router.delete('/galleries/:id/clients/:clientId', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'IDs inválidos' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_gallery_clients'))) {
+      return res.status(500).json({ message: 'Tabela de clientes não disponível (migração pendente).' });
+    }
+
+    // desativa ao invés de deletar (mais seguro)
+    await client.query(
+      'UPDATE king_gallery_clients SET enabled=FALSE, updated_at=NOW() WHERE gallery_id=$1 AND id=$2',
+      [galleryId, clientId]
+    );
+    res.json({ success: true });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/galleries/:id/clients/:clientId/reset-password', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const { senha } = req.body || {};
+  if (!galleryId || !clientId || !senha) return res.status(400).json({ message: 'Informe galleryId, clientId e senha.' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_gallery_clients'))) {
+      return res.status(500).json({ message: 'Tabela de clientes não disponível (migração pendente).' });
+    }
+
+    const senha_hash = await bcrypt.hash(String(senha), 10);
+    const senha_enc = encryptPassword(String(senha));
+    await client.query(
+      'UPDATE king_gallery_clients SET senha_hash=$1, senha_enc=$2, updated_at=NOW() WHERE gallery_id=$3 AND id=$4',
+      [senha_hash, senha_enc, galleryId, clientId]
+    );
+    res.json({ success: true, client_password: String(senha) });
+  } finally {
+    client.release();
+  }
+}));
+
+router.get('/galleries/:id/clients/:clientId/password', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'IDs inválidos' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_gallery_clients'))) {
+      return res.status(500).json({ message: 'Tabela de clientes não disponível (migração pendente).' });
+    }
+    const cRes = await client.query(
+      'SELECT senha_enc FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2',
+      [galleryId, clientId]
+    );
+    const enc = cRes.rows?.[0]?.senha_enc || null;
+    const plain = enc ? decryptPassword(enc) : null;
+    if (!plain) return res.status(409).json({ message: 'Senha indisponível. Gere uma nova senha em Editar.' });
+    res.json({ success: true, password: plain });
   } finally {
     client.release();
   }
@@ -1498,16 +1755,38 @@ router.post('/client/login', asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const g = gRes.rows[0];
 
-    const hasEnabled = await hasColumn(client, 'king_galleries', 'client_enabled');
-    if (hasEnabled && g.client_enabled === false) {
-      return res.status(401).json({ message: 'Acesso desativado. Solicite um novo acesso ao fotógrafo.' });
+    const emailNorm = String(email).toLowerCase().trim();
+
+    // Se existir tabela de clientes, validar contra ela (multi-client).
+    if (await hasTable(client, 'king_gallery_clients')) {
+      const cRes = await client.query(
+        `SELECT id, senha_hash, enabled
+         FROM king_gallery_clients
+         WHERE gallery_id=$1 AND lower(email)=lower($2)
+         ORDER BY id ASC
+         LIMIT 1`,
+        [g.id, emailNorm]
+      );
+      if (cRes.rows.length) {
+        const c = cRes.rows[0];
+        if (c.enabled === false) return res.status(401).json({ message: 'Acesso desativado. Solicite um novo acesso ao fotógrafo.' });
+        const ok = await bcrypt.compare(String(senha), String(c.senha_hash));
+        if (!ok) return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
+        const token = jwt.sign(
+          { type: 'kingselection_client', galleryId: g.id, slug: g.slug },
+          config.jwt.secret,
+          { expiresIn: '14d' }
+        );
+        return res.json({ success: true, token });
+      }
+      // se não encontrou cliente, cai para o modelo antigo (compatibilidade)
     }
 
-    if (String(email).toLowerCase().trim() !== String(g.cliente_email).toLowerCase().trim()) {
+    if (String(emailNorm) !== String(g.cliente_email).toLowerCase().trim()) {
       return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
     }
-    const ok = await bcrypt.compare(String(senha), String(g.senha_hash));
-    if (!ok) return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
+    const okLegacy = await bcrypt.compare(String(senha), String(g.senha_hash));
+    if (!okLegacy) return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
 
     const token = jwt.sign(
       { type: 'kingselection_client', galleryId: g.id, slug: g.slug },
@@ -1528,7 +1807,6 @@ router.post('/client/register', asyncHandler(async (req, res) => {
   const client = await db.pool.connect();
   try {
     const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
-    const hasEnabled = await hasColumn(client, 'king_galleries', 'client_enabled');
     const hasEnc = await hasColumn(client, 'king_galleries', 'senha_enc');
 
     const gRes = await client.query('SELECT * FROM king_galleries WHERE slug=$1', [String(slug)]);
@@ -1539,30 +1817,29 @@ router.post('/client/register', asyncHandler(async (req, res) => {
       return res.status(403).json({ message: 'Autocadastro desativado nesta galeria.' });
     }
 
-    // Como o modelo atual é 1 cliente por galeria, só permite autocadastro quando o acesso estiver desativado.
-    if (hasEnabled && g.client_enabled !== false) {
-      return res.status(409).json({ message: 'Já existe um cliente cadastrado para esta galeria. Solicite acesso ao fotógrafo.' });
+    // Multi-client: cria um novo cliente nesta galeria.
+    if (!(await hasTable(client, 'king_gallery_clients'))) {
+      return res.status(500).json({ message: 'Tabela de clientes não disponível (migração pendente).' });
     }
 
-    // gera senha simples (6 dígitos)
     const pass = String(Math.floor(100000 + Math.random() * 900000));
     const senha_hash = await bcrypt.hash(pass, 10);
-    const senha_enc = hasEnc ? encryptPassword(pass) : null;
-
+    const senha_enc = hasEnc ? encryptPassword(pass) : encryptPassword(pass); // sempre gera, mesmo sem senha_enc no gallery
     const emailNorm = String(email).toLowerCase().trim();
     const telNorm = String(telefone || '').trim();
     const nomeNorm = String(nome || '').trim().slice(0, 255);
 
-    if (hasEnc) {
+    try {
       await client.query(
-        'UPDATE king_galleries SET cliente_nome=$1, cliente_email=$2, cliente_telefone=$3, senha_hash=$4, senha_enc=$5, client_enabled=$6, updated_at=NOW() WHERE id=$7',
-        [nomeNorm, emailNorm, telNorm || null, senha_hash, senha_enc, true, g.id]
+        `INSERT INTO king_gallery_clients (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,TRUE,NOW(),NOW())`,
+        [g.id, nomeNorm, emailNorm, telNorm || null, senha_hash, senha_enc]
       );
-    } else {
-      await client.query(
-        'UPDATE king_galleries SET cliente_nome=$1, cliente_email=$2, cliente_telefone=$3, senha_hash=$4, client_enabled=$5, updated_at=NOW() WHERE id=$6',
-        [nomeNorm, emailNorm, telNorm || null, senha_hash, true, g.id]
-      );
+    } catch (e) {
+      if (String(e.message || '').toLowerCase().includes('uniq_king_gallery_clients_gallery_email')) {
+        return res.status(409).json({ message: 'Já existe um cliente com este e-mail nesta galeria.' });
+      }
+      throw e;
     }
 
     const token = jwt.sign(
