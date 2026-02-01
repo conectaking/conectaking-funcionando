@@ -577,6 +577,37 @@ router.post('/galleries/:id/photos', protectUser, asyncHandler(async (req, res) 
   }
 }));
 
+// ===== Admin: baixar/visualizar arquivo da marca d'água (logo) =====
+router.get('/galleries/:id/watermark-file', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).send('galleryId inválido');
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const gRes = await client.query(
+      `SELECT g.watermark_path
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (!gRes.rows.length) return res.status(404).send('Galeria não encontrada');
+    const fp = String(gRes.rows[0].watermark_path || '');
+    if (!fp.startsWith('cfimage:')) return res.status(404).send('Sem marca d’água');
+    const imageId = fp.replace('cfimage:', '').trim();
+    const buf = await fetchCloudflareImageBuffer(imageId);
+    if (!buf) return res.status(500).send('Cloudflare não configurado (token/key)');
+    const out = await sharp(buf).rotate().resize(560, 560, { fit: 'inside' }).png().toBuffer();
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    return res.send(out);
+  } finally {
+    client.release();
+  }
+}));
+
 router.post('/galleries/:id/reset-password', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   const { senha } = req.body || {};
