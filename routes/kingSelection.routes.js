@@ -8,6 +8,8 @@ const sharp = require('sharp');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const router = express.Router();
 
@@ -132,6 +134,23 @@ function buildCfUrl(imageId) {
   return `https://imagedelivery.net/${hash}/${imageId}/public`;
 }
 
+function getDefaultWatermarkAssetAbsPath() {
+  // Marca d’água oficial (arquivo no projeto)
+  // Pode ser sobrescrita via env: KINGSELECTION_DEFAULT_WATERMARK_FILE (caminho relativo ao repo)
+  const rel = (process.env.KINGSELECTION_DEFAULT_WATERMARK_FILE || '').toString().trim();
+  if (rel) return path.resolve(__dirname, '..', rel);
+  return path.resolve(__dirname, '..', 'public_html', 'marca dagua KingSelection .png');
+}
+
+async function fetchDefaultWatermarkAssetBuffer() {
+  const abs = getDefaultWatermarkAssetAbsPath();
+  try {
+    return await fs.promises.readFile(abs);
+  } catch (e) {
+    return null;
+  }
+}
+
 async function deleteCloudflareImage(imageId) {
   // Deletar do Cloudflare Images (não é R2)
   const accountId = getCfAccountId();
@@ -216,7 +235,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   // 1) X (default)
   const clamp = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
   const opDefaultX = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
-  if (!watermark || watermark.mode === 'x' || !watermark.path) {
+  if (!watermark || watermark.mode === 'x') {
     const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
     const svg = Buffer.from(
       `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
@@ -228,9 +247,91 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
 
-  // 2) Logo (watermark_path = cfimage:<id>)
+  // 2) Marca d’água por arquivo (Cloudflare) ou padrão do sistema
   const fpRaw = String(watermark.path || '').trim();
-  const fp = fpRaw.toLowerCase().startsWith('cfimage:') ? fpRaw : fpRaw; // preservar case do id
+  const mode = String(watermark.mode || 'x');
+
+  // Padrão oficial: se o modo for "tile_dense" e não houver arquivo enviado, usa o PNG local do projeto
+  if (mode === 'tile_dense' && !fpRaw) {
+    const buf = await fetchDefaultWatermarkAssetBuffer();
+    if (!buf) {
+      // fallback seguro para X
+      const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
+      const svg = Buffer.from(
+        `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+           <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+           <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         </svg>`
+      );
+      pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+      return pipeline.jpeg({ quality: 82 }).toBuffer();
+    }
+
+    const opacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
+    const scale = clamp(parseFloat(watermark?.scale), 0.10, 5.0);
+    const zoom = Math.max(0.50, scale); // evita "sumir" quando slider estiver baixo
+    const rot = parseInt(watermark?.rotate || 0, 10) || 0;
+    const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
+
+    // Opacidade confiável (multiplicando o alfa)
+    async function applyOpacityPng(pngBuf, op) {
+      const o = clamp(parseFloat(op), 0.0, 1.0);
+      if (o >= 0.999) return pngBuf;
+      const meta = await sharp(pngBuf).metadata();
+      const w = meta.width || 1;
+      const h = meta.height || 1;
+      const svgMask = Buffer.from(
+        `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="white" fill-opacity="${o}"/>
+        </svg>`
+      );
+      return sharp(pngBuf)
+        .ensureAlpha()
+        .composite([{ input: svgMask, top: 0, left: 0, blend: 'dest-in' }])
+        .png()
+        .toBuffer();
+    }
+
+    const w = Math.max(1, Math.round(outW * zoom));
+    const h = Math.max(1, Math.round(outH * zoom));
+    let wmFull = await sharp(buf)
+      .rotate()
+      .rotate(rotate)
+      .resize({ width: w, height: h, fit: 'cover', withoutEnlargement: false })
+      .png()
+      .toBuffer();
+    wmFull = await applyOpacityPng(wmFull, opacity);
+    const left = Math.max(0, Math.floor((w - outW) / 2));
+    const top = Math.max(0, Math.floor((h - outH) / 2));
+    if (w !== outW || h !== outH) {
+      wmFull = await sharp(wmFull)
+        .extract({ left, top, width: Math.min(outW, w), height: Math.min(outH, h) })
+        .resize(outW, outH, { fit: 'fill' })
+        .png()
+        .toBuffer();
+    }
+    pipeline = pipeline.composite([{ input: wmFull, top: 0, left: 0, blend: 'over' }]);
+    return pipeline.jpeg({ quality: 82 }).toBuffer();
+  }
+
+  // Se o usuário escolheu modos que precisam de arquivo e não enviou nenhum, cai em X (ou erro no modo estrito)
+  if (!fpRaw) {
+    const strict = !!watermark?.strict;
+    if (strict) {
+      const err = new Error('Envie uma marca d’água para usar este modo.');
+      err.statusCode = 422;
+      throw err;
+    }
+    const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
+    const svg = Buffer.from(
+      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+       </svg>`
+    );
+    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+    return pipeline.jpeg({ quality: 82 }).toBuffer();
+  }
 
   // aceitar também URL imagedelivery.net (caso alguém salve assim)
   let logoImageId = null;
@@ -508,6 +609,20 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
     }
 
     // Retorna a senha em plaintext apenas na criação (para o fotógrafo copiar/enviar)
+    // Padrão do sistema: marca d'água completa (tile_dense), sem precisar enviar arquivo
+    const hasWmMode = await hasColumn(client, 'king_galleries', 'watermark_mode');
+    if (hasWmMode) {
+      try {
+        await client.query(
+          `UPDATE king_galleries
+           SET watermark_mode=$1
+           WHERE id=$2 AND (watermark_mode IS NULL OR watermark_mode='')`,
+          ['tile_dense', ins.rows[0].id]
+        );
+        ins.rows[0].watermark_mode = 'tile_dense';
+      } catch (_) {}
+    }
+
     res.status(201).json({ success: true, gallery: ins.rows[0], client_password: String(senha) });
   } finally {
     client.release();
@@ -593,10 +708,15 @@ router.get('/galleries/:id/watermark-file', protectUser, asyncHandler(async (req
     );
     if (!gRes.rows.length) return res.status(404).send('Galeria não encontrada');
     const fp = String(gRes.rows[0].watermark_path || '');
-    if (!fp.startsWith('cfimage:')) return res.status(404).send('Sem marca d’água');
-    const imageId = fp.replace('cfimage:', '').trim();
-    const buf = await fetchCloudflareImageBuffer(imageId);
-    if (!buf) return res.status(500).send('Cloudflare não configurado (token/key)');
+    let buf = null;
+    if (fp.startsWith('cfimage:')) {
+      const imageId = fp.replace('cfimage:', '').trim();
+      buf = await fetchCloudflareImageBuffer(imageId);
+    } else {
+      // sem arquivo enviado: devolve a marca d'água padrão do sistema
+      buf = await fetchDefaultWatermarkAssetBuffer();
+    }
+    if (!buf) return res.status(500).send('Não foi possível carregar a marca d’água (Cloudflare/token ou arquivo padrão).');
     const out = await sharp(buf).rotate().resize(560, 560, { fit: 'inside' }).png().toBuffer();
     res.set('Content-Type', 'image/png');
     res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
