@@ -10,6 +10,13 @@ require('dotenv').config();
 
 const router = express.Router();
 
+// Cloudflare Images /direct_upload tem rate-limit agressivo.
+// Se várias pessoas (ou o uploader em paralelo) chamarem /api/upload/auth, isso estoura 429.
+// Aqui nós SERIALIZAMOS as chamadas ao Cloudflare e colocamos um intervalo mínimo entre elas.
+let _cfAuthQueue = Promise.resolve();
+let _cfLastAuthAt = 0;
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 // Configurar multer para upload de imagens em memória
 const upload = multer({ 
     storage: multer.memoryStorage(),
@@ -63,73 +70,87 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
         return { response, data, text };
     }
 
-    // Backoff simples para rate-limit (429) e instabilidades (5xx)
-    const maxAttempts = 5;
-    let attempt = 0;
-    let waitMs = 400;
+    async function runThrottled() {
+        // Espaçamento entre chamadas ao Cloudflare (ajuda muito no 429 code 971)
+        const minGapMs = 5500;
+        const since = Date.now() - _cfLastAuthAt;
+        if (since < minGapMs) await sleep(minGapMs - since);
 
-    while (attempt < maxAttempts) {
-        attempt += 1;
-        try {
-            // eslint-disable-next-line no-await-in-loop
-            const { response, data, text } = await tryOnce();
+        // Backoff simples para rate-limit (429) e instabilidades (5xx)
+        const maxAttempts = 5;
+        let attempt = 0;
+        let waitMs = 800;
 
-            if (response.ok && data && data.success && data.result) {
-                logger.debug('URL de upload do Cloudflare gerada', {
-                    userId: req.user.userId,
-                    imageId: data.result.id,
-                    uploadURL: data.result.uploadURL
-                });
-                const accountHash =
-                    (config.cloudflare && config.cloudflare.accountHash) ||
-                    process.env.CLOUDFLARE_ACCOUNT_HASH ||
-                    process.env.CF_IMAGES_ACCOUNT_HASH ||
-                    null;
-
-                return res.json({
-                    success: true,
-                    uploadURL: data.result.uploadURL,
-                    imageId: data.result.id,
-                    accountHash
-                });
-            }
-
-            const cfMsg =
-                (data && data.errors && data.errors[0] && data.errors[0].message) ||
-                (data && data.message) ||
-                text ||
-                'Falha ao obter URL de upload.';
-
-            // Rate-limit / instabilidade: retry
-            if ((response.status === 429 || response.status >= 500) && attempt < maxAttempts) {
-                const retryAfter = parseInt(response.headers.get('retry-after') || '0', 10);
-                const sleepMs = retryAfter > 0 ? Math.min(retryAfter * 1000, 5000) : waitMs;
-                logger.warn('Cloudflare direct_upload retry', { status: response.status, attempt, sleepMs });
+        while (attempt < maxAttempts) {
+            attempt += 1;
+            try {
                 // eslint-disable-next-line no-await-in-loop
-                await new Promise(r => setTimeout(r, sleepMs));
-                waitMs = Math.min(waitMs * 2, 3000);
-                continue;
-            }
+                const { response, data, text } = await tryOnce();
 
-            logger.error('Erro da API Cloudflare', { status: response.status, errors: data?.errors, body: text?.slice(0, 300) });
-            return res.status(response.status || 502).json({
-                success: false,
-                message: cfMsg
-            });
-        } catch (error) {
-            logger.error('Erro ao autenticar com Cloudflare', error);
-            if (attempt < maxAttempts) {
-                // eslint-disable-next-line no-await-in-loop
-                await new Promise(r => setTimeout(r, waitMs));
-                waitMs = Math.min(waitMs * 2, 3000);
-                continue;
+                if (response.ok && data && data.success && data.result) {
+                    _cfLastAuthAt = Date.now();
+                    const accountHash =
+                        (config.cloudflare && config.cloudflare.accountHash) ||
+                        process.env.CLOUDFLARE_ACCOUNT_HASH ||
+                        process.env.CF_IMAGES_ACCOUNT_HASH ||
+                        null;
+
+                    logger.debug('URL de upload do Cloudflare gerada', {
+                        userId: req.user.userId,
+                        imageId: data.result.id
+                    });
+
+                    return {
+                        ok: true,
+                        payload: {
+                            success: true,
+                            uploadURL: data.result.uploadURL,
+                            imageId: data.result.id,
+                            accountHash
+                        }
+                    };
+                }
+
+                const cfMsg =
+                    (data && data.errors && data.errors[0] && data.errors[0].message) ||
+                    (data && data.message) ||
+                    text ||
+                    'Falha ao obter URL de upload.';
+
+                // Rate-limit / instabilidade: retry
+                if ((response.status === 429 || response.status >= 500) && attempt < maxAttempts) {
+                    const retryAfter = parseInt(response.headers.get('retry-after') || '0', 10);
+                    const sleepMs = retryAfter > 0 ? Math.min(retryAfter * 1000, 8000) : waitMs;
+                    logger.warn('Cloudflare direct_upload retry', { status: response.status, attempt, sleepMs });
+                    // eslint-disable-next-line no-await-in-loop
+                    await sleep(sleepMs + Math.round(Math.random() * 250));
+                    waitMs = Math.min(waitMs * 2, 8000);
+                    continue;
+                }
+
+                logger.error('Erro da API Cloudflare', { status: response.status, errors: data?.errors, body: text?.slice(0, 300) });
+                return { ok: false, status: response.status || 502, message: cfMsg };
+            } catch (error) {
+                logger.error('Erro ao autenticar com Cloudflare', error);
+                if (attempt < maxAttempts) {
+                    // eslint-disable-next-line no-await-in-loop
+                    await sleep(waitMs + Math.round(Math.random() * 250));
+                    waitMs = Math.min(waitMs * 2, 8000);
+                    continue;
+                }
+                return { ok: false, status: 502, message: `Falha ao falar com Cloudflare: ${error.message || 'erro'}` };
             }
-            return res.status(502).json({
-                success: false,
-                message: `Falha ao falar com Cloudflare: ${error.message || 'erro'}`
-            });
         }
+
+        return { ok: false, status: 502, message: 'Falha ao obter URL de upload.' };
     }
+
+    // Fila global (por instância do Render)
+    const p = _cfAuthQueue.then(runThrottled, runThrottled);
+    _cfAuthQueue = p.then(() => undefined, () => undefined);
+    const out = await p;
+    if (out.ok) return res.json(out.payload);
+    return res.status(out.status || 502).json({ success: false, message: out.message || 'Falha ao obter URL de upload.' });
 }));
 
 /**
