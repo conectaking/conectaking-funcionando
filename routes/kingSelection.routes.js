@@ -885,7 +885,7 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     let clients = [];
     if (await hasTable(client, 'king_gallery_clients')) {
       const cRes = await client.query(
-        `SELECT id, nome, email, telefone, enabled, created_at
+        `SELECT id, nome, email, telefone, enabled, note, created_at
          FROM king_gallery_clients
          WHERE gallery_id=$1
          ORDER BY created_at ASC, id ASC`,
@@ -952,7 +952,7 @@ router.get('/galleries/:id/clients', protectUser, asyncHandler(async (req, res) 
     }
 
     const cRes = await client.query(
-      `SELECT id, nome, email, telefone, enabled, created_at
+      `SELECT id, nome, email, telefone, enabled, note, created_at
        FROM king_gallery_clients
        WHERE gallery_id=$1
        ORDER BY created_at ASC, id ASC`,
