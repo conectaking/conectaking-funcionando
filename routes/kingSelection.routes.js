@@ -1047,7 +1047,17 @@ router.get('/galleries/:id/export', protectUser, asyncHandler(async (req, res) =
        ORDER BY p."order" ASC, p.id ASC`,
       [galleryId]
     );
-    const names = sRes.rows.map(r => r.original_name).filter(Boolean);
+    const normalizeExportName = (n) => {
+      let s = String(n || '').trim();
+      // remove qualquer caminho (caso venha "pasta/arquivo.ext")
+      s = s.replace(/^.*[\\/]/, '');
+      // remove extensão (".JPG", ".ARW", ".PNG", etc) — mantém o código base
+      const dot = s.lastIndexOf('.');
+      if (dot > 0) s = s.slice(0, dot);
+      return s.trim();
+    };
+
+    const names = sRes.rows.map(r => normalizeExportName(r.original_name)).filter(Boolean);
     const feedback = (sRes.rows.find(r => r.feedback_cliente)?.feedback_cliente) || null;
 
     const lightroom = names.join(', ');
@@ -1635,7 +1645,14 @@ router.get('/client/export', requireClient, asyncHandler(async (req, res) => {
        ORDER BY p."order" ASC, p.id ASC`,
       [gallery.id]
     );
-    const names = sRes.rows.map(r => r.original_name).filter(Boolean);
+    const normalizeExportName = (n) => {
+      let s = String(n || '').trim();
+      s = s.replace(/^.*[\\/]/, '');
+      const dot = s.lastIndexOf('.');
+      if (dot > 0) s = s.slice(0, dot);
+      return s.trim();
+    };
+    const names = sRes.rows.map(r => normalizeExportName(r.original_name)).filter(Boolean);
 
     const lightroom = names.join(', ');
     const windows = names.map(n => `"${String(n).replace(/\"/g, '')}"`).join(' OR ');
