@@ -1505,7 +1505,13 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
 
   const client = await db.pool.connect();
   try {
-    const gRes = await client.query('SELECT id, nome_projeto, slug, status, total_fotos_contratadas FROM king_galleries WHERE id=$1', [req.ksClient.galleryId]);
+    const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
+    const gRes = await client.query(
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}
+       FROM king_galleries
+       WHERE id=$1`,
+      [req.ksClient.galleryId]
+    );
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const gallery = gRes.rows[0];
 
@@ -1519,9 +1525,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     );
     const selectedPhotoIds = sRes.rows.map(r => r.photo_id);
 
+    const locked = ['revisao', 'finalizado'].includes(String(gallery.status || '').toLowerCase());
     res.json({
       success: true,
-      gallery: { ...gallery, photos: pRes.rows },
+      gallery: { ...gallery, photos: pRes.rows, locked },
       selectedPhotoIds
     });
   } finally {
@@ -1539,6 +1546,12 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
 
   const client = await db.pool.connect();
   try {
+    const gRes = await client.query('SELECT status FROM king_galleries WHERE id=$1', [req.ksClient.galleryId]);
+    const st = String(gRes.rows?.[0]?.status || '').toLowerCase();
+    if (['revisao', 'finalizado'].includes(st)) {
+      return res.status(409).json({ message: 'Sua seleção já foi enviada e está em revisão. Aguarde ou peça reativação ao fotógrafo.' });
+    }
+
     // validar que a foto pertence à galeria
     const p = await client.query('SELECT id FROM king_photos WHERE id=$1 AND gallery_id=$2', [photoId, req.ksClient.galleryId]);
     if (p.rows.length === 0) return res.status(404).json({ message: 'Foto não encontrada.' });
@@ -1568,6 +1581,12 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
   const ids = Array.isArray(photo_ids) ? photo_ids.map(x => parseInt(x, 10)).filter(Boolean) : [];
   const client = await db.pool.connect();
   try {
+    const gRes = await client.query('SELECT status FROM king_galleries WHERE id=$1', [req.ksClient.galleryId]);
+    const st = String(gRes.rows?.[0]?.status || '').toLowerCase();
+    if (['revisao', 'finalizado'].includes(st)) {
+      return res.status(409).json({ message: 'Sua seleção já foi enviada e está em revisão. Aguarde ou peça reativação ao fotógrafo.' });
+    }
+
     if (String(mode) === 'unselect') {
       if (ids.length) {
         await client.query('DELETE FROM king_selections WHERE gallery_id=$1 AND photo_id = ANY($2::int[])', [req.ksClient.galleryId, ids]);
@@ -1634,6 +1653,12 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
 
   const client = await db.pool.connect();
   try {
+    const gRes = await client.query('SELECT status FROM king_galleries WHERE id=$1', [req.ksClient.galleryId]);
+    const st = String(gRes.rows?.[0]?.status || '').toLowerCase();
+    if (['revisao', 'finalizado'].includes(st)) {
+      return res.status(409).json({ message: 'Sua seleção já foi enviada. Aguarde a revisão ou solicite reativação ao fotógrafo.' });
+    }
+
     if (feedback && String(feedback).trim()) {
       await client.query(
         'UPDATE king_selections SET feedback_cliente=$1 WHERE gallery_id=$2',
