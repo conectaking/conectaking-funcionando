@@ -579,8 +579,18 @@ router.get('/galleries', protectUser, asyncHandler(async (req, res) => {
     const ids = galleries.map(g => g.id);
     let photosByGallery = {};
     if (ids.length) {
+      const hasFav = await hasColumn(client, 'king_photos', 'is_favorite');
+      const hasCover = await hasColumn(client, 'king_photos', 'is_cover');
+      const cols = [
+        'id',
+        'gallery_id',
+        'original_name',
+        '"order"',
+        hasFav ? 'is_favorite' : 'FALSE AS is_favorite',
+        hasCover ? 'is_cover' : 'FALSE AS is_cover'
+      ];
       const pRes = await client.query(
-        `SELECT id, gallery_id, original_name, "order" FROM king_photos WHERE gallery_id = ANY($1::int[]) ORDER BY gallery_id, "order" ASC, id ASC`,
+        `SELECT ${cols.join(', ')} FROM king_photos WHERE gallery_id = ANY($1::int[]) ORDER BY gallery_id, "order" ASC, id ASC`,
         [ids]
       );
       pRes.rows.forEach(p => {
@@ -855,8 +865,19 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const g = gRes.rows[0];
 
+    const hasFav = await hasColumn(client, 'king_photos', 'is_favorite');
+    const hasCover = await hasColumn(client, 'king_photos', 'is_cover');
+    const cols = [
+      'id',
+      'gallery_id',
+      'original_name',
+      '"order"',
+      'created_at',
+      hasFav ? 'is_favorite' : 'FALSE AS is_favorite',
+      hasCover ? 'is_cover' : 'FALSE AS is_cover'
+    ];
     const pRes = await client.query(
-      `SELECT id, gallery_id, original_name, "order", created_at
+      `SELECT ${cols.join(', ')}
        FROM king_photos
        WHERE gallery_id=$1
        ORDER BY "order" ASC, id ASC`,
