@@ -143,6 +143,27 @@ function getDefaultWatermarkAssetAbsPath() {
 }
 
 async function fetchDefaultWatermarkAssetBuffer() {
+  // Suporta também:
+  // - KINGSELECTION_DEFAULT_WATERMARK_FILE=cfimage:<id>  (Cloudflare Images)
+  // - KINGSELECTION_DEFAULT_WATERMARK_FILE=https://...png (URL pública)
+  const raw = (process.env.KINGSELECTION_DEFAULT_WATERMARK_FILE || '').toString().trim();
+  if (raw) {
+    const low = raw.toLowerCase();
+    if (low.startsWith('cfimage:')) {
+      const id = raw.slice('cfimage:'.length).trim();
+      if (id) {
+        const b = await fetchCloudflareImageBuffer(id);
+        if (b) return b;
+      }
+    }
+    if (low.startsWith('http://') || low.startsWith('https://')) {
+      try {
+        const r = await fetch(raw);
+        if (r.ok) return r.buffer();
+      } catch (_) {}
+    }
+  }
+
   // Tentar caminhos conhecidos (o arquivo tem um espaço no nome; alguns deploys podem remover)
   const baseDir = path.resolve(__dirname, '..', 'public_html');
   const candidates = [
@@ -188,16 +209,7 @@ async function deleteCloudflareImage(imageId) {
 }
 
 async function fetchCloudflareImageBuffer(imageId) {
-  // 1) Preferir API blob (mais confiável para "logo" e não depende de variant)
-  const accountId = getCfAccountId();
-  const headers = getCfAuthHeaders('image/*');
-  if (accountId && headers) {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}/blob`;
-    const imgRes = await fetch(url, { headers });
-    if (imgRes.ok) return imgRes.buffer();
-  }
-
-  // 2) Fallback: delivery (quando não há credenciais de API disponíveis)
+  // 1) Preferir delivery (menos rate-limit e costuma estar em cache)
   const deliveryUrl = buildCfUrl(imageId);
   if (deliveryUrl) {
     // tentar variants comuns
@@ -206,6 +218,32 @@ async function fetchCloudflareImageBuffer(imageId) {
       // eslint-disable-next-line no-await-in-loop
       const r = await fetch(`https://imagedelivery.net/${getAccountHash()}/${imageId}/${v}`);
       if (r.ok) return r.buffer();
+    }
+  }
+
+  // 2) Fallback: API blob (quando o delivery não está disponível)
+  const accountId = getCfAccountId();
+  const headers = getCfAuthHeaders('image/*');
+  if (accountId && headers) {
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}/blob`;
+    let attempt = 0;
+    let waitMs = 450;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      // eslint-disable-next-line no-await-in-loop
+      const imgRes = await fetch(url, { headers });
+      if (imgRes.ok) return imgRes.buffer();
+      // Retry em 429/5xx (Cloudflare pode rate-limitar)
+      if ((imgRes.status === 429 || imgRes.status >= 500) && attempt < 4) {
+        const ra = parseInt(imgRes.headers.get('retry-after') || '0', 10);
+        const sleepMs = ra > 0 ? Math.min(ra * 1000, 5000) : waitMs;
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(r => setTimeout(r, sleepMs));
+        waitMs = Math.min(waitMs * 2, 3000);
+        attempt += 1;
+        continue;
+      }
+      break;
     }
   }
 
@@ -381,6 +419,10 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     const err = new Error('Falha ao carregar marca d’água personalizada no Cloudflare (verifique CF_IMAGES_ACCOUNT_ID + token/key).');
     err.statusCode = 424;
     throw err;
+  }
+  // Se existe watermark_path mas o Cloudflare falhou (rate-limit/token), tenta a marca d’água oficial como fallback (não-estrito)
+  if (!strict && fpRaw && !wmCloudBuf && !localDefaultBuf) {
+    localDefaultBuf = await fetchDefaultWatermarkAssetBuffer();
   }
   const wmBufRaw = wmCloudBuf || localDefaultBuf;
   if (!wmBufRaw) {
