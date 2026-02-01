@@ -463,13 +463,14 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   wmPng = await applyOpacityPng(wmPng, opacity);
 
   // aplica no centro com opacidade usando SVG mask simples
-  if (watermark?.mode === 'tile' || watermark?.mode === 'tile_dense') {
+  if (watermark?.mode === 'tile' || watermark?.mode === 'tile_dense' || watermark?.mode === 'tile_sparse') {
     // Mosaico (tipo álbum): repete a marca d'água na foto inteira
     // Para o mosaico, o espaçamento usa o maior lado (mais estável)
     const b64 = wmPng.toString('base64');
     const dense = watermark?.mode === 'tile_dense';
-    const stepFactor = dense ? 0.75 : 1.35; // dense = mais “cheio”
-    const stepMin = dense ? 120 : 180;
+    const sparse = watermark?.mode === 'tile_sparse';
+    const stepFactor = dense ? 0.75 : (sparse ? 2.20 : 1.35); // dense = mais “cheio”, sparse = mais discreto
+    const stepMin = dense ? 120 : (sparse ? 240 : 180);
     const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.15, scale) * stepFactor)));
     const w = outW;
     const h = outH;
@@ -999,7 +1000,7 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const wm = await loadWatermarkForGallery(client, photo.gallery_id);
     // Overrides (preview em tempo real no admin)
     const qMode = (req.query.wm_mode || '').toString();
-    if (['x', 'logo', 'full', 'tile', 'tile_dense', 'none'].includes(qMode)) wm.mode = qMode;
+    if (['x', 'logo', 'full', 'tile', 'tile_dense', 'tile_sparse', 'none'].includes(qMode)) wm.mode = qMode;
     const qOp = parseFloat(req.query.wm_opacity);
     if (Number.isFinite(qOp)) wm.opacity = qOp;
     const qScale = parseFloat(req.query.wm_scale);
