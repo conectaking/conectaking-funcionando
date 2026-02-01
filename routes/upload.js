@@ -55,39 +55,80 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
 
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2/direct_upload`;
 
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers
-        });
+    async function tryOnce() {
+        const response = await fetch(url, { method: 'POST', headers });
+        const text = await response.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch (_) {}
+        return { response, data, text };
+    }
 
-        const data = await response.json();
-        
-        if (data.success && data.result) {
-            logger.debug('URL de upload do Cloudflare gerada', { 
-                userId: req.user.userId,
-                imageId: data.result.id,
-                uploadURL: data.result.uploadURL
-            });
-            const accountHash =
-                (config.cloudflare && config.cloudflare.accountHash) ||
-                process.env.CLOUDFLARE_ACCOUNT_HASH ||
-                process.env.CF_IMAGES_ACCOUNT_HASH ||
-                null;
+    // Backoff simples para rate-limit (429) e instabilidades (5xx)
+    const maxAttempts = 5;
+    let attempt = 0;
+    let waitMs = 400;
 
-            res.json({
-                success: true,
-                uploadURL: data.result.uploadURL,
-                imageId: data.result.id,
-                accountHash: accountHash // Incluir hash real (para delivery URL), se disponível
+    while (attempt < maxAttempts) {
+        attempt += 1;
+        try {
+            // eslint-disable-next-line no-await-in-loop
+            const { response, data, text } = await tryOnce();
+
+            if (response.ok && data && data.success && data.result) {
+                logger.debug('URL de upload do Cloudflare gerada', {
+                    userId: req.user.userId,
+                    imageId: data.result.id,
+                    uploadURL: data.result.uploadURL
+                });
+                const accountHash =
+                    (config.cloudflare && config.cloudflare.accountHash) ||
+                    process.env.CLOUDFLARE_ACCOUNT_HASH ||
+                    process.env.CF_IMAGES_ACCOUNT_HASH ||
+                    null;
+
+                return res.json({
+                    success: true,
+                    uploadURL: data.result.uploadURL,
+                    imageId: data.result.id,
+                    accountHash
+                });
+            }
+
+            const cfMsg =
+                (data && data.errors && data.errors[0] && data.errors[0].message) ||
+                (data && data.message) ||
+                text ||
+                'Falha ao obter URL de upload.';
+
+            // Rate-limit / instabilidade: retry
+            if ((response.status === 429 || response.status >= 500) && attempt < maxAttempts) {
+                const retryAfter = parseInt(response.headers.get('retry-after') || '0', 10);
+                const sleepMs = retryAfter > 0 ? Math.min(retryAfter * 1000, 5000) : waitMs;
+                logger.warn('Cloudflare direct_upload retry', { status: response.status, attempt, sleepMs });
+                // eslint-disable-next-line no-await-in-loop
+                await new Promise(r => setTimeout(r, sleepMs));
+                waitMs = Math.min(waitMs * 2, 3000);
+                continue;
+            }
+
+            logger.error('Erro da API Cloudflare', { status: response.status, errors: data?.errors, body: text?.slice(0, 300) });
+            return res.status(response.status || 502).json({
+                success: false,
+                message: cfMsg
             });
-        } else {
-            logger.error('Erro da API Cloudflare', { errors: data.errors });
-            throw new Error(data.errors[0]?.message || 'Falha ao obter URL de upload.');
+        } catch (error) {
+            logger.error('Erro ao autenticar com Cloudflare', error);
+            if (attempt < maxAttempts) {
+                // eslint-disable-next-line no-await-in-loop
+                await new Promise(r => setTimeout(r, waitMs));
+                waitMs = Math.min(waitMs * 2, 3000);
+                continue;
+            }
+            return res.status(502).json({
+                success: false,
+                message: `Falha ao falar com Cloudflare: ${error.message || 'erro'}`
+            });
         }
-    } catch (error) {
-        logger.error('Erro ao autenticar com Cloudflare', error);
-        throw error;
     }
 }));
 
