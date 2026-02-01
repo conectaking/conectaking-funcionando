@@ -166,8 +166,13 @@ async function fetchDefaultWatermarkAssetBuffer() {
 
   // Tentar caminhos conhecidos (o arquivo tem um espaço no nome; alguns deploys podem remover)
   const baseDir = path.resolve(__dirname, '..', 'public_html');
+  const repoRoot = path.resolve(__dirname, '..');
   const candidates = [
     getDefaultWatermarkAssetAbsPath(),
+    // Alguns deploys/versionamentos colocam o arquivo na raiz do repo
+    path.resolve(repoRoot, 'marca dagua KingSelection .png'),
+    path.resolve(repoRoot, 'marca dagua KingSelection.png'),
+    path.resolve(repoRoot, 'marca_dagua_kingselection.png'),
     path.resolve(baseDir, 'marca dagua KingSelection.png'),
     path.resolve(baseDir, 'marca_dagua_kingselection.png'),
     path.resolve(baseDir, 'marca_dagua_kingselection_.png')
@@ -178,7 +183,7 @@ async function fetchDefaultWatermarkAssetBuffer() {
       return await fs.promises.readFile(abs);
     } catch (_) {}
   }
-  // Fallback: procurar por nome parecido
+  // Fallback: procurar por nome parecido (public_html e raiz)
   try {
     const names = await fs.promises.readdir(baseDir);
     const pick = names.find(n => {
@@ -188,7 +193,18 @@ async function fetchDefaultWatermarkAssetBuffer() {
     if (!pick) return null;
     return await fs.promises.readFile(path.resolve(baseDir, pick));
   } catch (e) {
-    return null;
+    // tenta também na raiz
+    try {
+      const names2 = await fs.promises.readdir(repoRoot);
+      const pick2 = names2.find(n => {
+        const norm = String(n).toLowerCase().replace(/\s+/g, ' ').trim();
+        return norm.includes('marca') && norm.includes('dagua') && norm.includes('kingselection') && norm.endsWith('.png');
+      });
+      if (!pick2) return null;
+      return await fs.promises.readFile(path.resolve(repoRoot, pick2));
+    } catch (_) {
+      return null;
+    }
   }
 }
 
