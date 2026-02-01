@@ -1664,12 +1664,49 @@ router.post('/photos/:photoId/replace', protectUser, asyncHandler(async (req, re
       [photoId, userId]
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    // pegar file_path antigo para tentar limpar do Cloudflare (best-effort)
+    const cur = await client.query('SELECT gallery_id, file_path FROM king_photos WHERE id=$1', [photoId]);
+    const galleryId = cur.rows?.[0]?.gallery_id || null;
+    const oldFilePath = String(cur.rows?.[0]?.file_path || '');
+    const oldImageId = oldFilePath.startsWith('cfimage:') ? oldFilePath.replace('cfimage:', '').trim() : null;
+
     const file_path = `cfimage:${imageId}`;
     await client.query(
       'UPDATE king_photos SET file_path=$1, original_name=$2 WHERE id=$3',
       [file_path, String(original_name || 'foto').slice(0, 500), photoId]
     );
-    res.json({ success: true });
+
+    // Tentar deletar imagem antiga se não houver outras referências (evita órfãs)
+    let cfAttempted = false;
+    let cfDeleted = false;
+    let cfSkipped = false;
+    if (oldImageId && galleryId) {
+      try {
+        cfAttempted = true;
+        const stillUsedPhotos = await client.query(
+          'SELECT 1 FROM king_photos WHERE file_path=$1 AND id<>$2 LIMIT 1',
+          [`cfimage:${oldImageId}`, photoId]
+        );
+        let stillUsedWatermark = { rows: [] };
+        const hasWm = await hasColumn(client, 'king_galleries', 'watermark_path');
+        if (hasWm) {
+          stillUsedWatermark = await client.query(
+            'SELECT 1 FROM king_galleries WHERE watermark_path=$1 LIMIT 1',
+            [`cfimage:${oldImageId}`]
+          );
+        }
+        const stillUsed = stillUsedPhotos.rows.length > 0 || stillUsedWatermark.rows.length > 0;
+        if (!stillUsed) {
+          cfDeleted = await deleteCloudflareImage(oldImageId);
+        } else {
+          cfSkipped = true;
+        }
+      } catch (_) {
+        // best-effort
+      }
+    }
+
+    res.json({ success: true, cloudflare: { attempted: cfAttempted, deleted: cfDeleted, skipped: cfSkipped } });
   } finally {
     client.release();
   }
