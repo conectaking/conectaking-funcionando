@@ -275,6 +275,12 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   if (mode === 'tile_dense' && !fpRaw) {
     const buf = await fetchDefaultWatermarkAssetBuffer();
     if (!buf) {
+      // No preview do admin (wm_strict=1), precisamos mostrar o erro real (arquivo não chegou no deploy).
+      if (watermark?.strict) {
+        const err = new Error('Marca d’água padrão não encontrada no servidor. Faça deploy do arquivo (public_html/marca dagua KingSelection .png) ou defina KINGSELECTION_DEFAULT_WATERMARK_FILE.');
+        err.statusCode = 500;
+        throw err;
+      }
       // fallback seguro para X
       const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
       const svg = Buffer.from(
