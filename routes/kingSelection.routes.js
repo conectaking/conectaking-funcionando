@@ -270,6 +270,8 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   // 2) Marca d’água por arquivo (Cloudflare) ou padrão do sistema
   const fpRaw = String(watermark.path || '').trim();
   const mode = String(watermark.mode || 'x');
+  const strict = !!watermark?.strict;
+  let localDefaultBuf = null;
 
   // Padrão oficial: se o modo for "tile_dense" e não houver arquivo enviado, usa o PNG local do projeto
   if (mode === 'tile_dense' && !fpRaw) {
@@ -340,23 +342,25 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
 
-  // Se o usuário escolheu modos que precisam de arquivo e não enviou nenhum, cai em X (ou erro no modo estrito)
+  // Se não há marca d’água personalizada, usar a marca d’água oficial do sistema
   if (!fpRaw) {
-    const strict = !!watermark?.strict;
-    if (strict) {
-      const err = new Error('Envie uma marca d’água para usar este modo.');
-      err.statusCode = 422;
-      throw err;
+    localDefaultBuf = await fetchDefaultWatermarkAssetBuffer();
+    if (!localDefaultBuf) {
+      if (strict) {
+        const err = new Error('Marca d’água padrão não encontrada no servidor. Faça deploy do arquivo (public_html/marca dagua KingSelection .png) ou defina KINGSELECTION_DEFAULT_WATERMARK_FILE.');
+        err.statusCode = 500;
+        throw err;
+      }
+      const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
+      const svg = Buffer.from(
+        `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+           <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+           <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         </svg>`
+      );
+      pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+      return pipeline.jpeg({ quality: 82 }).toBuffer();
     }
-    const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
-    const svg = Buffer.from(
-      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
-         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-       </svg>`
-    );
-    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
-    return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
 
   // aceitar também URL imagedelivery.net (caso alguém salve assim)
@@ -368,28 +372,19 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     if (m && m[1]) logoImageId = m[1];
   }
 
-  if (!logoImageId) {
-    // fallback seguro
-    const svg = Buffer.from(
-      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
-         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="0.30" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-       </svg>`
-    );
-    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
-    return pipeline.jpeg({ quality: 82 }).toBuffer();
+  let wmCloudBuf = null;
+  if (logoImageId) {
+    wmCloudBuf = await fetchCloudflareImageBuffer(logoImageId);
   }
-
-  const wmBufRaw = await fetchCloudflareImageBuffer(logoImageId);
+  // Se falhou carregar personalizada e temos a oficial, usa a oficial (exceto no modo estrito: mostra erro)
+  if (strict && fpRaw && !wmCloudBuf && fpRaw.toLowerCase().startsWith('cfimage:')) {
+    const err = new Error('Falha ao carregar marca d’água personalizada no Cloudflare (verifique CF_IMAGES_ACCOUNT_ID + token/key).');
+    err.statusCode = 424;
+    throw err;
+  }
+  const wmBufRaw = wmCloudBuf || localDefaultBuf;
   if (!wmBufRaw) {
-    const strict = !!watermark?.strict;
-    if (strict) {
-      // No preview de marca d'água (admin), preferimos mostrar o erro real.
-      const err = new Error('Falha ao carregar logomarca no Cloudflare (verifique CF_IMAGES_ACCOUNT_ID + token/key).');
-      err.statusCode = 424;
-      throw err;
-    }
-    // No preview geral de fotos (admin/client), degrada de forma segura para X.
+    // fallback seguro
     const xOpacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0) || 0.30;
     const svg = Buffer.from(
       `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
