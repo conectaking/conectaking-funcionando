@@ -1,70 +1,15 @@
 {
-  "generated_at": "2026-02-01T00:57:15.778Z",
-  "cloudflare_images_total": 137,
-  "referenced_db": 126,
+  "generated_at": "2026-02-01T02:49:40.687Z",
+  "cloudflare_images_total": 117,
+  "referenced_db": 117,
   "referenced_files": 4,
-  "orphan_candidates": 12,
+  "orphan_candidates": 1,
   "min_age_days": 0,
   "candidates": [
     {
-      "id": "cd585e30-f2d1-484a-2243-a7fc58582b00",
-      "filename": "_ADR1956.JPG",
-      "uploaded": "2026-02-01T00:43:49.718Z"
-    },
-    {
-      "id": "263f601f-f14a-4a1c-806f-a0a4512b3d00",
-      "filename": "_ADR1957.JPG",
-      "uploaded": "2026-02-01T00:43:48.564Z"
-    },
-    {
-      "id": "9e3e746f-bb97-41fa-368d-d930ccd75900",
-      "filename": "_ADR1958.JPG",
-      "uploaded": "2026-02-01T00:43:48.154Z"
-    },
-    {
-      "id": "8addf054-6781-4a35-629c-091f42475700",
-      "filename": "_ADR1951.JPG",
-      "uploaded": "2026-02-01T00:17:05.571Z"
-    },
-    {
-      "id": "f1635d2c-3f0d-46e5-ee30-749992391900",
-      "filename": "_ADR1950.JPG",
-      "uploaded": "2026-02-01T00:17:05.399Z"
-    },
-    {
-      "id": "3ced4533-b712-4f40-3641-0fbada374e00",
-      "filename": "_ADR1958.JPG",
-      "uploaded": "2026-02-01T00:11:43.250Z"
-    },
-    {
-      "id": "8e95f671-ea19-4860-4bf6-3952f6f6e600",
-      "filename": "_ADR1957.JPG",
-      "uploaded": "2026-02-01T00:11:39.884Z"
-    },
-    {
-      "id": "3b8d85a3-bf84-4036-76c7-0ec374bb5500",
-      "filename": "_ADR1951.JPG",
-      "uploaded": "2026-02-01T00:09:59.185Z"
-    },
-    {
-      "id": "5885ef9b-0bb5-4f7e-de83-0ce46e6e6a00",
-      "filename": "_ADR1950.JPG",
-      "uploaded": "2026-02-01T00:09:55.450Z"
-    },
-    {
-      "id": "b1074f0d-9f68-43b6-1998-b8f97ef6a800",
-      "filename": "modelo marca dagua+.png",
-      "uploaded": "2026-01-31T08:57:55.287Z"
-    },
-    {
-      "id": "d9ebea65-8cba-43a3-800e-4d1ca7aada00",
-      "filename": "modelo marca dagua+.png",
-      "uploaded": "2026-01-31T08:41:51.032Z"
-    },
-    {
-      "id": "eb217a27-0668-4675-5653-542bea63d900",
-      "filename": "modelo marca dagua+.png",
-      "uploaded": "2026-01-31T08:03:44.771Z"
+      "id": "b4c1a777-f802-4c9a-66ee-5318db052a00",
+      "filename": "watermark.png",
+      "uploaded": "2026-02-01T02:23:49.575Z"
     }
   ]
 }
