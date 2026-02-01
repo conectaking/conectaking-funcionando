@@ -553,13 +553,22 @@ router.post('/galleries/:id/photos', protectUser, asyncHandler(async (req, res) 
     );
     if (g.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
 
-    const ins = await client.query(
-      `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
-       VALUES ($1,$2,$3,$4)
-       RETURNING id, gallery_id, original_name, "order"`,
-      [galleryId, file_path, original_name || 'foto', parseInt(order || 0, 10) || 0]
-    );
-    res.status(201).json({ success: true, photo: ins.rows[0] });
+    try {
+      const ins = await client.query(
+        `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
+         VALUES ($1,$2,$3,$4)
+         RETURNING id, gallery_id, original_name, "order"`,
+        [galleryId, file_path, original_name || 'foto', parseInt(order || 0, 10) || 0]
+      );
+      res.status(201).json({ success: true, photo: ins.rows[0] });
+    } catch (e) {
+      // Se o upload já ocorreu no Cloudflare mas o DB falhou, tentar limpar a imagem pra não ficar órfã.
+      try { await deleteCloudflareImage(String(imageId)); } catch (_) {}
+      return res.status(500).json({
+        success: false,
+        message: 'Falha ao registrar a foto na galeria (DB). A imagem foi limpa do Cloudflare quando possível.'
+      });
+    }
   } finally {
     client.release();
   }
@@ -1022,8 +1031,12 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
     await client.query('COMMIT');
 
     // Depois tenta apagar no Cloudflare (sem quebrar o fluxo se falhar)
+    let cfAttempted = false;
+    let cfDeleted = false;
+    let cfSkipped = false;
     if (imageId) {
       try {
+        cfAttempted = true;
         // Segurança: só apaga do Cloudflare se não houver outras referências
         const stillUsedPhotos = await client.query(
           'SELECT 1 FROM king_photos WHERE file_path=$1 LIMIT 1',
@@ -1041,14 +1054,19 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
 
         const stillUsed = stillUsedPhotos.rows.length > 0 || stillUsedWatermark.rows.length > 0;
         if (!stillUsed) {
-          await deleteCloudflareImage(imageId);
+          cfDeleted = await deleteCloudflareImage(imageId);
+          if (!cfDeleted) {
+            // sem permissão/token ou falha de API
+          }
+        } else {
+          cfSkipped = true;
         }
       } catch (e) {
         // Ignorar: exclusão no Cloudflare é best-effort
       }
     }
 
-    res.json({ success: true });
+    res.json({ success: true, cloudflare: { attempted: cfAttempted, deleted: cfDeleted, skipped: cfSkipped } });
   } finally {
     client.release();
   }
