@@ -215,13 +215,28 @@ async function deleteCloudflareImage(imageId) {
   if (!accountId || !headers) return false;
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${imageId}`;
-  const resp = await fetch(url, {
-    method: 'DELETE',
-    headers
-  });
-  // Se já não existir (404), tratamos como "ok"
-  if (resp.status === 404) return true;
-  return resp.ok;
+  let attempt = 0;
+  let waitMs = 600;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    // eslint-disable-next-line no-await-in-loop
+    const resp = await fetch(url, { method: 'DELETE', headers });
+    // Se já não existir (404), tratamos como "ok"
+    if (resp.status === 404) return true;
+    if (resp.ok) return true;
+
+    // Retry em 429/5xx (Cloudflare pode rate-limitar)
+    if ((resp.status === 429 || resp.status >= 500) && attempt < 4) {
+      const ra = parseInt(resp.headers.get('retry-after') || '0', 10);
+      const sleepMs = ra > 0 ? Math.min(ra * 1000, 8000) : waitMs;
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(r => setTimeout(r, sleepMs + Math.round(Math.random() * 250)));
+      waitMs = Math.min(waitMs * 2, 12000);
+      attempt += 1;
+      continue;
+    }
+    return false;
+  }
 }
 
 async function fetchCloudflareImageBuffer(imageId) {
@@ -958,11 +973,17 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
 
     // Pós-update: se o watermark_path antigo era cfimage e foi removido/trocado, deletar no Cloudflare.
     const cloudflare = { attempted: false, deleted: false, skipped: false };
-    if (willTouchWmPath && oldWmPath && oldWmPath.toLowerCase().startsWith('cfimage:')) {
-      const oldId = oldWmPath.slice('cfimage:'.length).trim();
+    if (willTouchWmPath && oldWmPath) {
+      let oldId = null;
+      const low = oldWmPath.toLowerCase();
+      if (low.startsWith('cfimage:')) oldId = oldWmPath.slice('cfimage:'.length).trim();
+      else {
+        const m = oldWmPath.match(/^https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\//i);
+        if (m && m[1]) oldId = m[1];
+      }
       const next = (newWmPath == null) ? '' : String(newWmPath).trim();
       // Deleta se removeu ou se trocou para outro id
-      if (!next || next !== oldWmPath) {
+      if (oldId && (!next || next !== oldWmPath)) {
         cloudflare.attempted = true;
         try {
           cloudflare.deleted = await deleteCloudflareImage(oldId);

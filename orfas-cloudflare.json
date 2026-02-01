@@ -1,15 +1,35 @@
 {
-  "generated_at": "2026-02-01T02:49:40.687Z",
-  "cloudflare_images_total": 117,
-  "referenced_db": 117,
+  "generated_at": "2026-02-01T04:21:26.055Z",
+  "cloudflare_images_total": 120,
+  "referenced_db": 116,
   "referenced_files": 4,
-  "orphan_candidates": 1,
+  "orphan_candidates": 5,
   "min_age_days": 0,
   "candidates": [
     {
-      "id": "b4c1a777-f802-4c9a-66ee-5318db052a00",
+      "id": "d3e33ae4-5fa0-475b-0490-a0695a7be900",
       "filename": "watermark.png",
-      "uploaded": "2026-02-01T02:23:49.575Z"
+      "uploaded": "2026-02-01T04:12:13.183Z"
+    },
+    {
+      "id": "59291f91-6f7c-4d5d-564b-b39bb229c400",
+      "filename": "_ADR1965.JPG",
+      "uploaded": "2026-02-01T02:53:49.102Z"
+    },
+    {
+      "id": "510e36ce-0bf7-4fa7-fd4e-1ce757392f00",
+      "filename": "_ADR1955.JPG",
+      "uploaded": "2026-02-01T02:53:43.004Z"
+    },
+    {
+      "id": "92a50cc6-394d-4e8e-4919-cbf6362b8400",
+      "filename": "_ADR1954.JPG",
+      "uploaded": "2026-02-01T02:53:24.402Z"
+    },
+    {
+      "id": "380e76d9-f111-40b3-359e-a243a8b1e900",
+      "filename": "watermark.png",
+      "uploaded": "2026-02-01T02:33:54.262Z"
     }
   ]
 }
