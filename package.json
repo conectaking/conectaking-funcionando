@@ -12,6 +12,8 @@
     "migrate-093-094-095": "node scripts/run-migrations-093-094-095.js",
     "migrate-enum": "node scripts/add-embed-types-to-enum.js",
     "start": "node server.js",
+    "cleanup:cloudflare:dry": "DRY_RUN=1 node scripts/cleanup-cloudflare-images.js",
+    "cleanup:cloudflare": "node scripts/cleanup-cloudflare-images.js",
     "push": "powershell -ExecutionPolicy Bypass -File ./push-auto.ps1",
     "config-auth": "powershell -ExecutionPolicy Bypass -File ./configurar-autenticacao.ps1"
   },

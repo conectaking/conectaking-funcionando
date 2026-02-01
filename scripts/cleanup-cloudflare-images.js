@@ -343,8 +343,27 @@ async function main() {
     throw new Error('Para deletar de verdade, use CONFIRM_DELETE=SIM junto com DRY_RUN=0.');
   }
 
+  // ======================================================
+  // Lock global (Postgres) para evitar rodar em duplicidade
+  // Ex.: múltiplas instâncias do Render / execução manual
+  // ======================================================
+  const lockKey = parseInt(process.env.CF_ORPHAN_CLEANUP_LOCK_KEY || '20260201', 10) || 20260201;
+
   const client = await db.pool.connect();
   try {
+    // Tenta adquirir lock; se não conseguir, sai sem erro
+    try {
+      const lr = await client.query('SELECT pg_try_advisory_lock($1) AS locked', [lockKey]);
+      const locked = !!(lr && lr.rows && lr.rows[0] && lr.rows[0].locked);
+      if (!locked) {
+        console.log(`[SKIP] cleanup-cloudflare-images já está rodando (lock=${lockKey}).`);
+        return;
+      }
+    } catch (e) {
+      // Se não for possível obter lock, preferimos NÃO deletar nada automaticamente
+      throw new Error(`Falha ao adquirir lock do Postgres para limpeza (lock=${lockKey}): ${e.message}`);
+    }
+
     const referencedDb = await collectReferencedImageIds(client);
     const referencedFiles = collectReferencedImageIdsFromFiles({ rootDir: repoRoot });
     const referenced = new Set([...referencedDb, ...referencedFiles]);
@@ -429,6 +448,8 @@ async function main() {
       console.log(`Final: processadas=${processed} deletadas=${ok} falhas=${fail}`);
     }
   } finally {
+    // libera lock explicitamente (ao encerrar a conexão ele já seria liberado)
+    try { await client.query('SELECT pg_advisory_unlock($1)', [lockKey]); } catch (_) {}
     client.release();
   }
 }

@@ -15,6 +15,7 @@ const helmet = require('helmet');
 const config = require('./config');
 const logger = require('./utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
+const { spawn } = require('child_process');
 
 const authRoutes = require('./routes/auth');
 const inquiryRoutes = require('./routes/inquiry');
@@ -865,6 +866,83 @@ cron.schedule('0 2 * * *', async () => {
         logger.error('Erro na limpeza de dados expirados', error);
     }
 });
+
+// ============================================================
+// Limpeza diária de imagens órfãs no Cloudflare Images (opcional)
+//
+// Por segurança, isso fica DESLIGADO por padrão.
+//
+// Para ligar em produção, configure env:
+// - CF_ORPHAN_CLEANUP_ENABLED=1
+// - CLOUDFLARE_ACCOUNT_ID (ou CF_IMAGES_ACCOUNT_ID)
+// - (recomendado) CLOUDFLARE_API_TOKEN com permissão Cloudflare Images (Read + Edit)
+//   ou CLOUDFLARE_EMAIL + CLOUDFLARE_API_KEY
+// - DRY_RUN=0 e CONFIRM_DELETE=SIM (ou use variáveis CF_ORPHAN_* abaixo)
+//
+// Observação: o script em si tem um lock Postgres para evitar duplicidade.
+// ============================================================
+function isTruthy(v) {
+    return ['1', 'true', 'yes', 'sim', 'on'].includes(String(v || '').trim().toLowerCase());
+}
+
+function scheduleCloudflareOrphanCleanup() {
+    const enabled = isTruthy(process.env.CF_ORPHAN_CLEANUP_ENABLED);
+    if (!enabled) return;
+
+    const cronExpr = (process.env.CF_ORPHAN_CLEANUP_CRON || '30 5 * * *').toString().trim();
+    // Render costuma rodar em UTC; 05:30 UTC ≈ 02:30 (Brasil) dependendo de horário de verão.
+
+    if (!cron.validate(cronExpr)) {
+        logger.error('CF_ORPHAN_CLEANUP_CRON inválido; desativando agendamento', { cronExpr });
+        return;
+    }
+
+    cron.schedule(cronExpr, async () => {
+        try {
+            logger.info('🧹 Iniciando limpeza diária de imagens órfãs (Cloudflare)...');
+
+            // Defaults seguros (você pode sobrescrever no env do servidor)
+            const env = {
+                ...process.env,
+                // Evita rodar em DRY por engano quando você quer limpar automaticamente:
+                DRY_RUN: (process.env.CF_ORPHAN_CLEANUP_DRY_RUN ?? process.env.DRY_RUN ?? '1').toString(),
+                CONFIRM_DELETE: (process.env.CF_ORPHAN_CLEANUP_CONFIRM ?? process.env.CONFIRM_DELETE ?? '').toString(),
+                MAX_DELETE: (process.env.CF_ORPHAN_CLEANUP_MAX_DELETE ?? process.env.MAX_DELETE ?? '50').toString(),
+                SLEEP_MS: (process.env.CF_ORPHAN_CLEANUP_SLEEP_MS ?? process.env.SLEEP_MS ?? '200').toString(),
+                OUT_FILE: (process.env.CF_ORPHAN_CLEANUP_OUT_FILE ?? process.env.OUT_FILE ?? '').toString(),
+                MIN_AGE_DAYS: (process.env.CF_ORPHAN_CLEANUP_MIN_AGE_DAYS ?? process.env.MIN_AGE_DAYS ?? '0').toString(),
+                // lock customizável (opcional)
+                CF_ORPHAN_CLEANUP_LOCK_KEY: (process.env.CF_ORPHAN_CLEANUP_LOCK_KEY ?? '20260201').toString()
+            };
+
+            // Executa em processo separado para não travar o servidor
+            const scriptPath = path.join(__dirname, 'scripts', 'cleanup-cloudflare-images.js');
+            const child = spawn(process.execPath, [scriptPath], {
+                env,
+                stdio: 'inherit'
+            });
+
+            await new Promise((resolve, reject) => {
+                child.on('error', reject);
+                child.on('exit', (code) => {
+                    if (code === 0) return resolve();
+                    reject(new Error(`cleanup-cloudflare-images.js exit code=${code}`));
+                });
+            });
+
+            logger.info('✅ Limpeza diária de órfãs (Cloudflare) finalizada.');
+        } catch (error) {
+            logger.error('❌ Erro na limpeza diária de órfãs (Cloudflare)', {
+                message: error?.message || String(error),
+                stack: error?.stack
+            });
+        }
+    });
+
+    logger.info('✅ Agendamento de limpeza de órfãs (Cloudflare) ativado', { cronExpr });
+}
+
+scheduleCloudflareOrphanCleanup();
 
 // Middleware de tratamento de erros (deve ser o último)
 app.use(notFoundHandler);
