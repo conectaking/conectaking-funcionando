@@ -734,10 +734,9 @@ router.get('/galleries/:id/watermark-file', protectUser, asyncHandler(async (req
     if (fp.startsWith('cfimage:')) {
       const imageId = fp.replace('cfimage:', '').trim();
       buf = await fetchCloudflareImageBuffer(imageId);
-    } else {
-      // sem arquivo enviado: devolve a marca d'água padrão do sistema
-      buf = await fetchDefaultWatermarkAssetBuffer();
     }
+    // fallback para a marca d'água padrão do sistema
+    if (!buf) buf = await fetchDefaultWatermarkAssetBuffer();
     if (!buf) return res.status(500).send('Não foi possível carregar a marca d’água (Cloudflare/token ou arquivo padrão).');
     const out = await sharp(buf).rotate().resize(560, 560, { fit: 'inside' }).png().toBuffer();
     res.set('Content-Type', 'image/png');
