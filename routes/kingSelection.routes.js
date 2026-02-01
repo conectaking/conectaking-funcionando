@@ -143,9 +143,29 @@ function getDefaultWatermarkAssetAbsPath() {
 }
 
 async function fetchDefaultWatermarkAssetBuffer() {
-  const abs = getDefaultWatermarkAssetAbsPath();
+  // Tentar caminhos conhecidos (o arquivo tem um espaço no nome; alguns deploys podem remover)
+  const baseDir = path.resolve(__dirname, '..', 'public_html');
+  const candidates = [
+    getDefaultWatermarkAssetAbsPath(),
+    path.resolve(baseDir, 'marca dagua KingSelection.png'),
+    path.resolve(baseDir, 'marca_dagua_kingselection.png'),
+    path.resolve(baseDir, 'marca_dagua_kingselection_.png')
+  ];
+  for (const abs of candidates) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      return await fs.promises.readFile(abs);
+    } catch (_) {}
+  }
+  // Fallback: procurar por nome parecido
   try {
-    return await fs.promises.readFile(abs);
+    const names = await fs.promises.readdir(baseDir);
+    const pick = names.find(n => {
+      const norm = String(n).toLowerCase().replace(/\s+/g, ' ').trim();
+      return norm.includes('marca') && norm.includes('dagua') && norm.includes('kingselection') && norm.endsWith('.png');
+    });
+    if (!pick) return null;
+    return await fs.promises.readFile(path.resolve(baseDir, pick));
   } catch (e) {
     return null;
   }
