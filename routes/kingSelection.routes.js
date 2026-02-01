@@ -1083,12 +1083,20 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     if ([0, 90, 180, 270].includes(qRot)) wm.rotate = qRot;
     const qStrict = String(req.query.wm_strict || '') === '1';
     if (qStrict) wm.strict = true;
-    const out = await buildWatermarkedJpeg({
-      imgBuffer: buf,
-      outW,
-      outH,
-      watermark: wm
-    });
+    let out = null;
+    try {
+      out = await buildWatermarkedJpeg({
+        imgBuffer: buf,
+        outW,
+        outH,
+        watermark: wm
+      });
+    } catch (e) {
+      const code = e?.statusCode || 500;
+      const msg = e?.message || 'Erro ao gerar preview.';
+      // Para o painel, sempre devolve JSON com message (evita "Erro interno do servidor" genérico).
+      return res.status(code).json({ message: msg });
+    }
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
