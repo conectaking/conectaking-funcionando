@@ -255,11 +255,23 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
 
   const wmBufRaw = await fetchCloudflareImageBuffer(logoImageId);
   if (!wmBufRaw) {
-    // Se o usuário escolheu logomarca/mosaico e a logo não pode ser carregada,
-    // é melhor falhar (admin verá erro) do que “trocar” por X e confundir.
-    const err = new Error('Falha ao carregar logomarca no Cloudflare (verifique CF_IMAGES_ACCOUNT_ID + token/key).');
-    err.statusCode = 424;
-    throw err;
+    const strict = !!watermark?.strict;
+    if (strict) {
+      // No preview de marca d'água (admin), preferimos mostrar o erro real.
+      const err = new Error('Falha ao carregar logomarca no Cloudflare (verifique CF_IMAGES_ACCOUNT_ID + token/key).');
+      err.statusCode = 424;
+      throw err;
+    }
+    // No preview geral de fotos (admin/client), degrada de forma segura para X.
+    const xOpacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0) || 0.30;
+    const svg = Buffer.from(
+      `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
+         <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+         <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
+       </svg>`
+    );
+    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+    return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
   const wmBuf = wmBufRaw;
   const opacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
@@ -810,6 +822,8 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     if (Number.isFinite(qScale)) wm.scale = qScale;
     const qRot = parseInt(req.query.wm_rotate || 0, 10);
     if ([0, 90, 180, 270].includes(qRot)) wm.rotate = qRot;
+    const qStrict = String(req.query.wm_strict || '') === '1';
+    if (qStrict) wm.strict = true;
     const out = await buildWatermarkedJpeg({
       imgBuffer: buf,
       outW,
