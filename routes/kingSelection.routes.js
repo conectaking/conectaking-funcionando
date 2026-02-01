@@ -904,6 +904,16 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     );
     if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
 
+    // Se o watermark_path for alterado/removido, deletar o antigo no Cloudflare (evita órfãos).
+    const hasWmPathCol = await hasColumn(client, 'king_galleries', 'watermark_path');
+    const willTouchWmPath = hasWmPathCol && Object.prototype.hasOwnProperty.call(body, 'watermark_path');
+    let oldWmPath = null;
+    if (willTouchWmPath) {
+      const cur = await client.query('SELECT watermark_path FROM king_galleries WHERE id=$1', [galleryId]);
+      oldWmPath = String(cur.rows?.[0]?.watermark_path || '').trim();
+    }
+    let newWmPath = undefined;
+
     // montar update apenas com colunas existentes
     const sets = [];
     const values = [];
@@ -931,6 +941,11 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         const n = parseInt(val || 0, 10) || 0;
         val = [0, 90, 180, 270].includes(n) ? n : 0;
       }
+      if (key === 'watermark_path') {
+        // normalizar string vazia como NULL
+        if (val === '' || val === 'null') val = null;
+        newWmPath = val;
+      }
       sets.push(`${key}=$${idx++}`);
       values.push(val);
     }
@@ -938,7 +953,25 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     if (!sets.length) return res.json({ success: true });
     values.push(galleryId);
     await client.query(`UPDATE king_galleries SET ${sets.join(', ')}, updated_at=NOW() WHERE id=$${idx}`, values);
-    res.json({ success: true });
+
+    // Pós-update: se o watermark_path antigo era cfimage e foi removido/trocado, deletar no Cloudflare.
+    const cloudflare = { attempted: false, deleted: false, skipped: false };
+    if (willTouchWmPath && oldWmPath && oldWmPath.toLowerCase().startsWith('cfimage:')) {
+      const oldId = oldWmPath.slice('cfimage:'.length).trim();
+      const next = (newWmPath == null) ? '' : String(newWmPath).trim();
+      // Deleta se removeu ou se trocou para outro id
+      if (!next || next !== oldWmPath) {
+        cloudflare.attempted = true;
+        try {
+          cloudflare.deleted = await deleteCloudflareImage(oldId);
+          if (!cloudflare.deleted) cloudflare.skipped = true;
+        } catch (_) {
+          cloudflare.skipped = true;
+        }
+      }
+    }
+
+    res.json({ success: true, cloudflare_watermark: cloudflare });
   } finally {
     client.release();
   }
