@@ -311,75 +311,6 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   const strict = !!watermark?.strict;
   let localDefaultBuf = null;
 
-  // Padrão oficial: se o modo for "tile_dense" e não houver arquivo enviado, usa o PNG local do projeto
-  if (mode === 'tile_dense' && !fpRaw) {
-    const buf = await fetchDefaultWatermarkAssetBuffer();
-    if (!buf) {
-      // No preview do admin (wm_strict=1), precisamos mostrar o erro real (arquivo não chegou no deploy).
-      if (watermark?.strict) {
-        const err = new Error('Marca d’água padrão não encontrada no servidor. Faça deploy do arquivo (public_html/marca dagua KingSelection .png) ou defina KINGSELECTION_DEFAULT_WATERMARK_FILE.');
-        err.statusCode = 500;
-        throw err;
-      }
-      // fallback seguro para X
-      const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
-      const svg = Buffer.from(
-        `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
-           <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-           <line x1="${outW}" y1="0" x2="0" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
-         </svg>`
-      );
-      pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
-      return pipeline.jpeg({ quality: 82 }).toBuffer();
-    }
-
-    const opacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
-    const scale = clamp(parseFloat(watermark?.scale), 0.10, 5.0);
-    const zoom = Math.max(0.50, scale); // evita "sumir" quando slider estiver baixo
-    const rot = parseInt(watermark?.rotate || 0, 10) || 0;
-    const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
-
-    // Opacidade confiável (multiplicando o alfa)
-    async function applyOpacityPng(pngBuf, op) {
-      const o = clamp(parseFloat(op), 0.0, 1.0);
-      if (o >= 0.999) return pngBuf;
-      const meta = await sharp(pngBuf).metadata();
-      const w = meta.width || 1;
-      const h = meta.height || 1;
-      const svgMask = Buffer.from(
-        `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="white" fill-opacity="${o}"/>
-        </svg>`
-      );
-      return sharp(pngBuf)
-        .ensureAlpha()
-        .composite([{ input: svgMask, top: 0, left: 0, blend: 'dest-in' }])
-        .png()
-        .toBuffer();
-    }
-
-    const w = Math.max(1, Math.round(outW * zoom));
-    const h = Math.max(1, Math.round(outH * zoom));
-    let wmFull = await sharp(buf)
-      .rotate()
-      .rotate(rotate)
-      .resize({ width: w, height: h, fit: 'cover', withoutEnlargement: false })
-      .png()
-      .toBuffer();
-    wmFull = await applyOpacityPng(wmFull, opacity);
-    const left = Math.max(0, Math.floor((w - outW) / 2));
-    const top = Math.max(0, Math.floor((h - outH) / 2));
-    if (w !== outW || h !== outH) {
-      wmFull = await sharp(wmFull)
-        .extract({ left, top, width: Math.min(outW, w), height: Math.min(outH, h) })
-        .resize(outW, outH, { fit: 'fill' })
-        .png()
-        .toBuffer();
-    }
-    pipeline = pipeline.composite([{ input: wmFull, top: 0, left: 0, blend: 'over' }]);
-    return pipeline.jpeg({ quality: 82 }).toBuffer();
-  }
-
   // Se não há marca d’água personalizada, usar a marca d’água oficial do sistema
   if (!fpRaw) {
     localDefaultBuf = await fetchDefaultWatermarkAssetBuffer();
@@ -467,13 +398,13 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   // - vertical: logo tende a crescer na altura
   const boxW = Math.max(140, Math.round(outW * scale));
   const boxH = Math.max(140, Math.round(outH * scale));
-  const wmBase = sharp(wmBuf)
-    .rotate() // EXIF
-    .rotate(rotate); // correção manual
+  // IMPORTANTE: não auto-rotacionar marca d’água por EXIF (alguns PNGs ficam “de lado”).
+  // Só aplica a rotação escolhida no painel.
+  const wmBase = sharp(wmBuf).rotate(rotate);
 
-  // Normal (cobrir a foto inteira): expande a logomarca para preencher a imagem (sem mosaico)
-  if (watermark?.mode === 'full') {
-    const zoom = Math.max(1.0, scale); // em "cobrir", tamanho vira zoom (>= 1)
+  // Padrão (completa): cobre a foto inteira com a marca d’água (sem mosaico)
+  if (watermark?.mode === 'tile_dense') {
+    const zoom = Math.max(1.0, scale); // tamanho vira zoom (>= 1)
     const w = Math.max(1, Math.round(outW * zoom));
     const h = Math.max(1, Math.round(outH * zoom));
     let wmFull = await wmBase
@@ -505,14 +436,12 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   wmPng = await applyOpacityPng(wmPng, opacity);
 
   // aplica no centro com opacidade usando SVG mask simples
-  if (watermark?.mode === 'tile' || watermark?.mode === 'tile_dense' || watermark?.mode === 'tile_sparse') {
+  if (watermark?.mode === 'tile') {
     // Mosaico (tipo álbum): repete a marca d'água na foto inteira
     // Para o mosaico, o espaçamento usa o maior lado (mais estável)
     const b64 = wmPng.toString('base64');
-    const dense = watermark?.mode === 'tile_dense';
-    const sparse = watermark?.mode === 'tile_sparse';
-    const stepFactor = dense ? 0.75 : (sparse ? 2.20 : 1.35); // dense = mais “cheio”, sparse = mais discreto
-    const stepMin = dense ? 120 : (sparse ? 240 : 180);
+    const stepFactor = 1.35;
+    const stepMin = 180;
     const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.15, scale) * stepFactor)));
     const w = outW;
     const h = outH;
@@ -530,12 +459,26 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     );
     pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
   } else {
-    // Central
-    pipeline = pipeline.composite([{
-      input: wmPng,
-      gravity: 'center',
-      blend: 'over'
-    }]);
+    // Central (modo "logo"/automático). Se ficar maior que a foto, recorta no centro para evitar erro/preview preto.
+    let wmFinal = wmPng;
+    try {
+      const m = await sharp(wmFinal).metadata();
+      const w = m.width || 0;
+      const h = m.height || 0;
+      if (w > outW || h > outH) {
+        const left = Math.max(0, Math.floor((w - outW) / 2));
+        const top = Math.max(0, Math.floor((h - outH) / 2));
+        wmFinal = await sharp(wmFinal)
+          .extract({ left, top, width: Math.min(outW, w), height: Math.min(outH, h) })
+          .png()
+          .toBuffer();
+        pipeline = pipeline.composite([{ input: wmFinal, top: 0, left: 0, blend: 'over' }]);
+      } else {
+        pipeline = pipeline.composite([{ input: wmFinal, gravity: 'center', blend: 'over' }]);
+      }
+    } catch (_) {
+      pipeline = pipeline.composite([{ input: wmFinal, gravity: 'center', blend: 'over' }]);
+    }
   }
   return pipeline.jpeg({ quality: 82 }).toBuffer();
 }
@@ -1041,7 +984,7 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const wm = await loadWatermarkForGallery(client, photo.gallery_id);
     // Overrides (preview em tempo real no admin)
     const qMode = (req.query.wm_mode || '').toString();
-    if (['x', 'logo', 'full', 'tile', 'tile_dense', 'tile_sparse', 'none'].includes(qMode)) wm.mode = qMode;
+    if (['x', 'logo', 'full', 'tile', 'tile_dense', 'none'].includes(qMode)) wm.mode = qMode;
     const qOp = parseFloat(req.query.wm_opacity);
     if (Number.isFinite(qOp)) wm.opacity = qOp;
     const qScale = parseFloat(req.query.wm_scale);
