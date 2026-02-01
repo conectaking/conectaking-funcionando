@@ -15,6 +15,7 @@ const router = express.Router();
 // Aqui nós SERIALIZAMOS as chamadas ao Cloudflare e colocamos um intervalo mínimo entre elas.
 let _cfAuthQueue = Promise.resolve();
 let _cfLastAuthAt = 0;
+let _cfCooldownUntil = 0;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // Configurar multer para upload de imagens em memória
@@ -71,6 +72,12 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
     }
 
     async function runThrottled() {
+        // Se entramos em cooldown por 429, devolve rápido para não travar a UI e não martelar a Cloudflare.
+        if (_cfCooldownUntil && Date.now() < _cfCooldownUntil) {
+            const secs = Math.max(1, Math.ceil((_cfCooldownUntil - Date.now()) / 1000));
+            return { ok: false, status: 429, message: `Cloudflare está limitando uploads. Aguarde ${secs}s e tente novamente.`, retry_after_seconds: secs };
+        }
+
         // Espaçamento entre chamadas ao Cloudflare (ajuda muito no 429 code 971)
         const minGapMs = 5500;
         const since = Date.now() - _cfLastAuthAt;
@@ -120,22 +127,28 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
                 // Rate-limit / instabilidade: retry
                 if ((response.status === 429 || response.status >= 500) && attempt < maxAttempts) {
                     const retryAfter = parseInt(response.headers.get('retry-after') || '0', 10);
-                    const sleepMs = retryAfter > 0 ? Math.min(retryAfter * 1000, 8000) : waitMs;
+                    // Se Cloudflare não manda retry-after, assumimos um cooldown maior (esse endpoint é bem agressivo no limite)
+                    const sleepMs = retryAfter > 0 ? Math.min(retryAfter * 1000, 15000) : Math.min(Math.max(waitMs, 8000), 15000);
                     logger.warn('Cloudflare direct_upload retry', { status: response.status, attempt, sleepMs });
                     // eslint-disable-next-line no-await-in-loop
                     await sleep(sleepMs + Math.round(Math.random() * 250));
-                    waitMs = Math.min(waitMs * 2, 8000);
+                    waitMs = Math.min(waitMs * 2, 15000);
                     continue;
                 }
 
                 logger.error('Erro da API Cloudflare', { status: response.status, errors: data?.errors, body: text?.slice(0, 300) });
+                if (response.status === 429) {
+                    // cooldown global por instância (evita sequência de 429 por vários cliques)
+                    _cfCooldownUntil = Date.now() + 60000;
+                    return { ok: false, status: 429, message: 'Cloudflare está limitando uploads. Aguarde 60s e tente novamente.', retry_after_seconds: 60 };
+                }
                 return { ok: false, status: response.status || 502, message: cfMsg };
             } catch (error) {
                 logger.error('Erro ao autenticar com Cloudflare', error);
                 if (attempt < maxAttempts) {
                     // eslint-disable-next-line no-await-in-loop
                     await sleep(waitMs + Math.round(Math.random() * 250));
-                    waitMs = Math.min(waitMs * 2, 8000);
+                    waitMs = Math.min(waitMs * 2, 15000);
                     continue;
                 }
                 return { ok: false, status: 502, message: `Falha ao falar com Cloudflare: ${error.message || 'erro'}` };
@@ -150,7 +163,11 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
     _cfAuthQueue = p.then(() => undefined, () => undefined);
     const out = await p;
     if (out.ok) return res.json(out.payload);
-    return res.status(out.status || 502).json({ success: false, message: out.message || 'Falha ao obter URL de upload.' });
+    return res.status(out.status || 502).json({
+        success: false,
+        message: out.message || 'Falha ao obter URL de upload.',
+        retry_after_seconds: out.retry_after_seconds || undefined
+    });
 }));
 
 /**
