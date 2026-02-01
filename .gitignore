@@ -41,7 +41,14 @@ public/uploads/
 .cache/
 
 # Frontend - não commitado (deploy manual na Hostinger)
-public_html/
+# Observação: o backend do Render precisa da marca d'água oficial, então liberamos APENAS
+# o arquivo padrão da marca d'água dentro de public_html/.
+public_html/*
+!public_html/marca dagua KingSelection .png
+# (opcional) variações aceitas pelo backend, caso você renomeie para remover espaços:
+!public_html/marca dagua KingSelection.png
+!public_html/marca_dagua_kingselection.png
+!public_html/marca_dagua_kingselection_.png
 
 # Backend - DEVE ser commitado
 # conectaking-funcionando/ está permitido (não ignorado)

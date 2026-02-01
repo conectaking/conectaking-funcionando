@@ -271,8 +271,12 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const sc = parseFloat(row.watermark_scale);
   const rot = parseInt(row.watermark_rotate || 0, 10) || 0;
   const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
+  // Normalização: antigas galerias podem estar com "x"/vazio. Como o padrão do sistema
+  // é a marca d'água completa, forçamos "tile_dense" nesses casos.
+  let mode = row.watermark_mode || 'x';
+  if (!mode || mode === 'x' || mode === 'tile_sparse' || mode === 'tile') mode = 'tile_dense';
   return {
-    mode: row.watermark_mode || 'x',
+    mode,
     path: row.watermark_path || null,
     opacity: Number.isFinite(op) ? op : 0.30,
     scale: Number.isFinite(sc) ? sc : 0.28,
