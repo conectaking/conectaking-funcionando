@@ -5,14 +5,25 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const config = require('../config');
 const fetch = require('node-fetch');
 const sharp = require('sharp');
+const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { getR2Config, r2GetObjectBuffer, r2PresignPut } = require('../utils/r2');
+const { getR2Config, r2GetObjectBuffer, r2PresignPut, r2PutObjectBuffer } = require('../utils/r2');
 
 const router = express.Router();
+
+const uploadMem = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 30 * 1024 * 1024 }, // 30MB
+  fileFilter: (req, file, cb) => {
+    const mt = String(file?.mimetype || '').toLowerCase();
+    if (mt.startsWith('image/')) return cb(null, true);
+    return cb(new Error('Apenas imagens são permitidas'), false);
+  }
+});
 
 function normDigits(str) {
   return String(str || '').replace(/[^\d]/g, '');

@@ -68,10 +68,26 @@ async function r2PresignPut({ key, contentType, cacheControl, expiresInSeconds =
   return { uploadUrl, publicUrl };
 }
 
+async function r2PutObjectBuffer({ key, body, contentType, cacheControl }) {
+  const cfg = getR2Config();
+  const client = getR2Client();
+  if (!cfg.enabled || !client) throw new Error('R2 não configurado');
+  await client.send(new PutObjectCommand({
+    Bucket: cfg.bucket,
+    Key: key,
+    Body: body,
+    ContentType: contentType || 'application/octet-stream',
+    CacheControl: cacheControl || 'public, max-age=31536000, immutable'
+  }));
+  const publicUrl = cfg.publicBaseUrl ? `${cfg.publicBaseUrl}/${encodeURI(key)}` : null;
+  return { key, publicUrl };
+}
+
 module.exports = {
   getR2Config,
   getR2Client,
   r2GetObjectBuffer,
-  r2PresignPut
+  r2PresignPut,
+  r2PutObjectBuffer
 };
 
