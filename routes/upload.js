@@ -16,6 +16,10 @@ const router = express.Router();
 let _cfAuthQueue = Promise.resolve();
 let _cfLastAuthAt = 0;
 let _cfCooldownUntil = 0;
+// Gap dinâmico (em vez de fixo 5.5s). Começa agressivo e ajusta quando vier 429.
+let _cfMinGapMs = 450;
+const _cfMinGapFloorMs = 150;
+const _cfMinGapCeilMs = 6000;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // Configurar multer para upload de imagens em memória
@@ -79,7 +83,8 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
         }
 
         // Espaçamento entre chamadas ao Cloudflare (ajuda muito no 429 code 971)
-        const minGapMs = 5500;
+        // Dinâmico: mais rápido quando está estável; desacelera quando começa 429.
+        const minGapMs = Math.max(_cfMinGapFloorMs, Math.min(_cfMinGapCeilMs, _cfMinGapMs || 0));
         const since = Date.now() - _cfLastAuthAt;
         if (since < minGapMs) await sleep(minGapMs - since);
 
@@ -96,6 +101,8 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
 
                 if (response.ok && data && data.success && data.result) {
                     _cfLastAuthAt = Date.now();
+                    // Se está estável, vai ficando mais agressivo aos poucos
+                    _cfMinGapMs = Math.max(_cfMinGapFloorMs, Math.round((_cfMinGapMs || minGapMs) * 0.92));
                     const accountHash =
                         (config.cloudflare && config.cloudflare.accountHash) ||
                         process.env.CLOUDFLARE_ACCOUNT_HASH ||
@@ -127,8 +134,16 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
                 // Rate-limit / instabilidade: retry
                 if ((response.status === 429 || response.status >= 500) && attempt < maxAttempts) {
                     const retryAfter = parseInt(response.headers.get('retry-after') || '0', 10);
-                    // Se Cloudflare não manda retry-after, assumimos um cooldown maior (esse endpoint é bem agressivo no limite)
-                    const sleepMs = retryAfter > 0 ? Math.min(retryAfter * 1000, 15000) : Math.min(Math.max(waitMs, 8000), 15000);
+                    // Ajuste automático: 429 => aumenta gap para não martelar o endpoint.
+                    if (response.status === 429) {
+                        _cfMinGapMs = Math.min(_cfMinGapCeilMs, Math.round((_cfMinGapMs || minGapMs) * 1.6 + 120));
+                        // cooldown curto (só para “segurar a onda”), bem menor que 60s
+                        _cfCooldownUntil = Date.now() + Math.min(15000, Math.max(2500, _cfMinGapMs * 2));
+                    }
+                    // Se Cloudflare não manda retry-after, usa backoff moderado (não 8s fixo)
+                    const sleepMs = retryAfter > 0
+                        ? Math.min(retryAfter * 1000, 15000)
+                        : Math.min(Math.max(waitMs, 2000), 15000);
                     logger.warn('Cloudflare direct_upload retry', { status: response.status, attempt, sleepMs });
                     // eslint-disable-next-line no-await-in-loop
                     await sleep(sleepMs + Math.round(Math.random() * 250));
@@ -138,9 +153,11 @@ router.post('/auth', protectUser, asyncHandler(async (req, res) => {
 
                 logger.error('Erro da API Cloudflare', { status: response.status, errors: data?.errors, body: text?.slice(0, 300) });
                 if (response.status === 429) {
-                    // cooldown global por instância (evita sequência de 429 por vários cliques)
-                    _cfCooldownUntil = Date.now() + 60000;
-                    return { ok: false, status: 429, message: 'Cloudflare está limitando uploads. Aguarde 60s e tente novamente.', retry_after_seconds: 60 };
+                    // cooldown curto e dinâmico por instância (evita sequência de 429 por vários cliques)
+                    _cfMinGapMs = Math.min(_cfMinGapCeilMs, Math.round((_cfMinGapMs || minGapMs) * 1.8 + 200));
+                    const secs = Math.max(3, Math.min(20, Math.ceil((_cfMinGapMs * 2) / 1000)));
+                    _cfCooldownUntil = Date.now() + secs * 1000;
+                    return { ok: false, status: 429, message: `Cloudflare está limitando uploads. Aguarde ${secs}s e tente novamente.`, retry_after_seconds: secs };
                 }
                 return { ok: false, status: response.status || 502, message: cfMsg };
             } catch (error) {
