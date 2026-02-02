@@ -10,6 +10,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { getR2Config, r2GetObjectBuffer, r2PresignPut } = require('../utils/r2');
 
 const router = express.Router();
 
