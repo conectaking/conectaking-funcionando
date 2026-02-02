@@ -46,7 +46,10 @@ const uploadAuthLimiter = rateLimit({
     legacyHeaders: false,
     validate: { trustProxy: false },
     skip: skipOptions,
-    keyGenerator: (req) => (req.user && req.user.userId) ? `u:${req.user.userId}` : req.ip,
+    // express-rate-limit v8 exige ipKeyGenerator para IPv6 (evita bypass de rate limit)
+    keyGenerator: (req, res) => (req.user && req.user.userId)
+        ? `u:${req.user.userId}`
+        : (typeof rateLimit.ipKeyGenerator === 'function' ? rateLimit.ipKeyGenerator(req, res) : 'ip'),
     handler: (req, res) => {
         logger.warn('Rate limit /api/upload/auth excedido', {
             ip: req.ip,
