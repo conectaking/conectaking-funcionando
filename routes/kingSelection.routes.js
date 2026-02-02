@@ -1651,7 +1651,7 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
 }));
 
 // Imagem OG (WhatsApp/Instagram): usar a foto de CAPA do projeto, sem logo do site.
-// Retorna JPEG 1200x630 (fit cover) para cartões de compartilhamento.
+// Retorna JPEG 1200x630 (SEM cortar a foto): usa "contain" com fundo desfocado.
 router.get('/public/og-image', asyncHandler(async (req, res) => {
   const slug = (req.query.slug || '').toString().trim();
   if (!slug) return res.status(400).send('slug é obrigatório');
@@ -1674,9 +1674,23 @@ router.get('/public/og-image', asyncHandler(async (req, res) => {
     const buf = await fetchCloudflareImageBuffer(imageId);
     if (!buf) return res.status(500).send('Cloudflare não configurado (hash ou API token)');
 
-    const out = await sharp(buf)
+    // Fundo desfocado (preenche 1200x630) + foto inteira por cima (contain)
+    const bg = await sharp(buf)
       .rotate()
       .resize(1200, 630, { fit: 'cover', position: 'entropy' })
+      .blur(18)
+      .modulate({ brightness: 0.78, saturation: 0.95 })
+      .jpeg({ quality: 78 })
+      .toBuffer();
+
+    const fg = await sharp(buf)
+      .rotate()
+      .resize(1200, 630, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .jpeg({ quality: 88 })
+      .toBuffer();
+
+    const out = await sharp(bg)
+      .composite([{ input: fg, top: 0, left: 0 }])
       .jpeg({ quality: 84 })
       .toBuffer();
 
