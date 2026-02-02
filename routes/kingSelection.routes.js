@@ -425,6 +425,23 @@ async function fetchCloudflareImageBuffer(imageId) {
   return null;
 }
 
+async function fetchPhotoFileBufferFromFilePath(filePath) {
+  const fp = String(filePath || '').trim();
+  if (!fp) return null;
+  const low = fp.toLowerCase();
+  if (low.startsWith('cfimage:')) {
+    const imageId = fp.slice('cfimage:'.length).trim();
+    if (!imageId) return null;
+    return await fetchCloudflareImageBuffer(imageId);
+  }
+  if (low.startsWith('r2:')) {
+    const key = fp.slice('r2:'.length).trim().replace(/^\/+/, '');
+    if (!key) return null;
+    return await r2GetObjectBuffer(key);
+  }
+  return null;
+}
+
 async function loadWatermarkForGallery(pgClient, galleryId) {
   const hasMode = await hasColumn(pgClient, 'king_galleries', 'watermark_mode');
   const hasPath = await hasColumn(pgClient, 'king_galleries', 'watermark_path');
@@ -922,6 +939,113 @@ router.post('/galleries/:id/photos', protectUser, asyncHandler(async (req, res) 
         message: 'Falha ao registrar a foto na galeria (DB). A imagem foi limpa do Cloudflare quando possível.'
       });
     }
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== R2: presign em lote (upload direto, sem passar pelo Render) =====
+router.post('/galleries/:id/uploads/presign-batch', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const { files, prefix } = req.body || {};
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  const list = Array.isArray(files) ? files : [];
+  if (!list.length) return res.status(400).json({ message: 'files é obrigatório' });
+  if (list.length > 100) return res.status(400).json({ message: 'Máximo de 100 arquivos por chamada.' });
+
+  const cfg = getR2Config();
+  if (!cfg.enabled) return res.status(501).json({ message: 'R2 não configurado (R2_ACCOUNT_ID/R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY/R2_BUCKET).' });
+
+  const userId = req.user.userId;
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2
+       LIMIT 1`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const safePrefix = (prefix || `kingselection/galleries/${galleryId}`).toString().replace(/^\/*/, '').replace(/\.\./g, '');
+    const items = [];
+
+    for (const f of list) {
+      const clientId = (f && f.id) ? String(f.id).slice(0, 80) : crypto.randomUUID();
+      const name = (f && f.name) ? String(f.name) : 'foto';
+      const type = (f && f.type) ? String(f.type) : 'application/octet-stream';
+      const ext = (() => {
+        const m = name.match(/\.([a-zA-Z0-9]{1,8})$/);
+        return m ? m[1].toLowerCase() : 'jpg';
+      })();
+      const key = `${safePrefix}/${crypto.randomUUID()}.${ext}`;
+      // eslint-disable-next-line no-await-in-loop
+      const signed = await r2PresignPut({
+        key,
+        contentType: type,
+        cacheControl: 'public, max-age=31536000, immutable',
+        expiresInSeconds: 900
+      });
+      items.push({
+        id: clientId,
+        key,
+        uploadUrl: signed.uploadUrl,
+        publicUrl: signed.publicUrl
+      });
+    }
+
+    res.json({ success: true, items });
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== R2: registrar fotos em lote no banco =====
+router.post('/galleries/:id/photos/batch', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const { images } = req.body || {};
+  const list = Array.isArray(images) ? images : [];
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  if (!list.length) return res.status(400).json({ message: 'images é obrigatório' });
+  if (list.length > 200) return res.status(400).json({ message: 'Máximo de 200 imagens por chamada.' });
+
+  const userId = req.user.userId;
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2
+       LIMIT 1`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    // Inserir em batch (file_path=r2:<key>)
+    const values = [];
+    const rows = [];
+    let i = 1;
+    for (const img of list) {
+      const key = String(img.key || '').replace(/^\/+/, '').trim();
+      if (!key) continue;
+      const originalName = String(img.name || '').slice(0, 500) || 'foto';
+      const order = parseInt(img.order || 0, 10) || 0;
+      rows.push(`($${i++}, $${i++}, $${i++}, $${i++})`);
+      values.push(galleryId, `r2:${key}`, originalName, order);
+    }
+    if (!rows.length) return res.status(400).json({ message: 'Nenhuma imagem válida.' });
+
+    const ins = await client.query(
+      `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
+       VALUES ${rows.join(',')}
+       RETURNING id, gallery_id, original_name, "order", file_path`,
+      values
+    );
+
+    res.status(201).json({ success: true, photos: ins.rows });
   } finally {
     client.release();
   }
@@ -1613,11 +1737,8 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
       : await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [galleryId]);
     if (pRes.rows.length === 0) return res.status(404).send('Sem fotos');
     const photo = pRes.rows[0];
-    const fp = String(photo.file_path || '');
-    if (!fp.startsWith('cfimage:')) return res.status(500).send('Formato de arquivo inválido');
-    const imageId = fp.replace('cfimage:', '');
-    const buf = await fetchCloudflareImageBuffer(imageId);
-    if (!buf) return res.status(500).send('Cloudflare não configurado (hash ou API token)');
+    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+    if (!buf) return res.status(500).send('Não foi possível carregar a capa (Cloudflare/R2 não configurado).');
 
     // Capa: preview watermarked + blur leve, 1400px
     const img = sharp(buf).rotate();
@@ -1669,11 +1790,8 @@ router.get('/public/og-image', asyncHandler(async (req, res) => {
       : await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [galleryId]);
     if (pRes.rows.length === 0) return res.status(404).send('Sem fotos');
     const photo = pRes.rows[0];
-    const fp = String(photo.file_path || '');
-    if (!fp.startsWith('cfimage:')) return res.status(500).send('Formato de arquivo inválido');
-    const imageId = fp.replace('cfimage:', '');
-    const buf = await fetchCloudflareImageBuffer(imageId);
-    if (!buf) return res.status(500).send('Cloudflare não configurado (hash ou API token)');
+    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+    if (!buf) return res.status(500).send('Não foi possível carregar a capa (Cloudflare/R2 não configurado).');
 
     // Fundo desfocado (preenche 1200x630) + foto inteira por cima (contain)
     const bg = await sharp(buf)
