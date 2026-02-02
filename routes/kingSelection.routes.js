@@ -25,6 +25,53 @@ const uploadMem = multer({
   }
 });
 
+// ============================================================
+// ===== Worker upload token (HMAC) ============================
+// ============================================================
+const KS_WORKER_SECRET = (process.env.KINGSELECTION_WORKER_SECRET || '').toString().trim();
+
+function ksB64UrlJson(obj) {
+  return Buffer.from(JSON.stringify(obj || {}), 'utf8').toString('base64url');
+}
+
+function ksParseB64UrlJson(str) {
+  return JSON.parse(Buffer.from(String(str || ''), 'base64url').toString('utf8'));
+}
+
+function ksSignToken(payload) {
+  if (!KS_WORKER_SECRET) throw new Error('KINGSELECTION_WORKER_SECRET não configurado');
+  const header = { alg: 'HS256', typ: 'KS' };
+  const h = ksB64UrlJson(header);
+  const p = ksB64UrlJson(payload);
+  const sig = crypto.createHmac('sha256', KS_WORKER_SECRET).update(`${h}.${p}`).digest('base64url');
+  return `${h}.${p}.${sig}`;
+}
+
+function ksVerifyToken(token) {
+  if (!KS_WORKER_SECRET) return null;
+  const t = String(token || '').trim();
+  const parts = t.split('.');
+  if (parts.length !== 3) return null;
+  const [h, p, sig] = parts;
+  const expected = crypto.createHmac('sha256', KS_WORKER_SECRET).update(`${h}.${p}`).digest('base64url');
+  try {
+    const a = Buffer.from(sig);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) return null;
+    if (!crypto.timingSafeEqual(a, b)) return null;
+  } catch (_) {
+    return null;
+  }
+  try {
+    const payload = ksParseB64UrlJson(p);
+    const now = Math.floor(Date.now() / 1000);
+    if (payload && payload.exp && now >= payload.exp) return null;
+    return payload || null;
+  } catch (_) {
+    return null;
+  }
+}
+
 function normDigits(str) {
   return String(str || '').replace(/[^\d]/g, '');
 }
@@ -1015,6 +1062,45 @@ router.post('/galleries/:id/uploads/presign-batch', protectUser, asyncHandler(as
   }
 }));
 
+// ===== Worker: token de upload (browser -> Worker -> R2 binding) =====
+router.post('/galleries/:id/uploads/worker-token', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ success: false, message: 'galleryId inválido' });
+  if (!KS_WORKER_SECRET) return res.status(501).json({ success: false, message: 'Worker não configurado (KINGSELECTION_WORKER_SECRET).' });
+
+  const userId = req.user.userId;
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2
+       LIMIT 1`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ success: false, message: 'Sem permissão' });
+
+    const now = Math.floor(Date.now() / 1000);
+    const exp = now + 10 * 60; // 10min
+    const token = ksSignToken({
+      typ: 'ks_upload',
+      userId,
+      galleryId,
+      iat: now,
+      exp
+    });
+    res.json({
+      success: true,
+      token,
+      expiresInSeconds: exp - now,
+      workerUrl: (process.env.KINGSELECTION_WORKER_URL || '').toString().trim() || null
+    });
+  } finally {
+    client.release();
+  }
+}));
+
 // ===== R2: upload via backend (contorna bloqueio SSL/CORS no navegador) =====
 router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
   // Capturar erros do multer e devolver msg clara (Render produção escondia em 500 genérico)
@@ -1090,6 +1176,65 @@ router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
     }
 
     return res.status(201).json({ success: true, photo: ins.rows[0] });
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== Worker: registrar fotos no banco (com recibo assinado pelo Worker) =====
+router.post('/galleries/:id/photos/worker-commit', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ success: false, message: 'galleryId inválido' });
+  if (!KS_WORKER_SECRET) return res.status(501).json({ success: false, message: 'Worker não configurado (KINGSELECTION_WORKER_SECRET).' });
+
+  const items = Array.isArray(req.body?.items) ? req.body.items : [];
+  if (!items.length) return res.status(400).json({ success: false, message: 'items é obrigatório' });
+  if (items.length > 200) return res.status(400).json({ success: false, message: 'Máximo de 200 itens por chamada.' });
+
+  const userId = req.user.userId;
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2
+       LIMIT 1`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ success: false, message: 'Sem permissão' });
+
+    const values = [];
+    const rows = [];
+    let i = 1;
+
+    for (const it of items) {
+      const key = String(it?.key || '').replace(/^\/+/, '').trim();
+      const receipt = String(it?.receipt || '').trim();
+      const name = String(it?.name || '').slice(0, 500) || 'foto';
+      const order = parseInt(it?.order || 0, 10) || 0;
+
+      if (!key || !receipt) continue;
+      if (!key.startsWith(`galleries/${galleryId}/`)) continue;
+
+      const payload = ksVerifyToken(receipt);
+      if (!payload || payload.typ !== 'ks_receipt') continue;
+      if (parseInt(payload.galleryId || 0, 10) !== galleryId) continue;
+      if (String(payload.key || '') !== key) continue;
+
+      rows.push(`($${i++}, $${i++}, $${i++}, $${i++})`);
+      values.push(galleryId, `r2:${key}`, name, order);
+    }
+
+    if (!rows.length) return res.status(400).json({ success: false, message: 'Nenhum item válido (recibo/key inválidos).' });
+
+    const ins = await client.query(
+      `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
+       VALUES ${rows.join(',')}
+       RETURNING id, gallery_id, original_name, "order", file_path`,
+      values
+    );
+    res.status(201).json({ success: true, photos: ins.rows });
   } finally {
     client.release();
   }
