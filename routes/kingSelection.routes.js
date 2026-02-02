@@ -1016,7 +1016,19 @@ router.post('/galleries/:id/uploads/presign-batch', protectUser, asyncHandler(as
 }));
 
 // ===== R2: upload via backend (contorna bloqueio SSL/CORS no navegador) =====
-router.post('/galleries/:id/uploads/proxy', protectUser, uploadMem.single('file'), asyncHandler(async (req, res) => {
+router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
+  // Capturar erros do multer e devolver msg clara (Render produção escondia em 500 genérico)
+  uploadMem.single('file')(req, res, (err) => {
+    if (!err) return next();
+    // MulterError (tamanho, etc)
+    const name = String(err.name || '');
+    const code = String(err.code || '');
+    if (name === 'MulterError' && code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ success: false, message: 'Arquivo muito grande (limite 30MB). Envie uma foto menor.' });
+    }
+    return res.status(400).json({ success: false, message: err.message || 'Falha ao processar upload.' });
+  });
+}, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
   if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'Arquivo é obrigatório' });
@@ -1051,19 +1063,31 @@ router.post('/galleries/:id/uploads/proxy', protectUser, uploadMem.single('file'
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
 
-    await r2PutObjectBuffer({
-      key,
-      body: req.file.buffer,
-      contentType: req.file.mimetype || 'application/octet-stream',
-      cacheControl: 'public, max-age=31536000, immutable'
-    });
+    try {
+      await r2PutObjectBuffer({
+        key,
+        body: req.file.buffer,
+        contentType: req.file.mimetype || 'application/octet-stream',
+        cacheControl: 'public, max-age=31536000, immutable'
+      });
+    } catch (e) {
+      // Mensagem clara para debug (sem expor segredos)
+      const msg = (e && e.message) ? String(e.message).slice(0, 250) : 'Falha ao enviar para o R2';
+      return res.status(502).json({ success: false, message: `Falha ao enviar para o R2: ${msg}` });
+    }
 
-    const ins = await client.query(
-      `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
-       VALUES ($1,$2,$3,$4)
-       RETURNING id, gallery_id, original_name, "order", file_path`,
-      [galleryId, `r2:${key}`, originalName, order]
-    );
+    let ins = null;
+    try {
+      ins = await client.query(
+        `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
+         VALUES ($1,$2,$3,$4)
+         RETURNING id, gallery_id, original_name, "order", file_path`,
+        [galleryId, `r2:${key}`, originalName, order]
+      );
+    } catch (e) {
+      const msg = (e && e.message) ? String(e.message).slice(0, 250) : 'Falha ao salvar no banco';
+      return res.status(500).json({ success: false, message: `Falha ao registrar no banco: ${msg}` });
+    }
 
     return res.status(201).json({ success: true, photo: ins.rows[0] });
   } finally {
