@@ -292,6 +292,32 @@ const apiLimiter = rateLimit({
     }
 });
 
+// KingSelection: upload em massa gera muitas chamadas (auth + salvar fotos).
+// Usamos um rate limit mais alto aqui para não travar o fluxo de upload do fotógrafo.
+const kingSelectionLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 5000, // suficiente para 1000+ uploads + operações auxiliares
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { trustProxy: false },
+    skip: skipOptions,
+    message: 'Muitas requisições de galeria. Aguarde um momento.',
+    handler: (req, res) => {
+        logger.warn('Rate limit KingSelection excedido', {
+            ip: req.ip,
+            path: req.path,
+            method: req.method
+        });
+        const retryAfter = 60;
+        res.set('Retry-After', retryAfter);
+        res.status(429).json({
+            success: false,
+            message: 'Muitas requisições de galeria. Aguarde 1 minuto e tente novamente.',
+            retryAfter: retryAfter
+        });
+    }
+});
+
 cron.schedule('0 8 * * *', async () => {
     logger.info('Executando verificação diária de assinaturas...');
     const client = await db.pool.connect();
@@ -716,8 +742,15 @@ app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/admin', adminLimiter, ogImageRoutes); // Rotas de personalização de link (apenas ADM)
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/upload/pdf', uploadLimiter, pdfUploadRoutes);
-app.use('/api/upload', uploadLimiter, uploadRoutes);
-app.use('/api/king-selection', apiLimiter, kingSelectionRoutes);
+// Upload: libera /auth (muitas chamadas durante upload em massa).
+app.use('/api/upload', (req, res, next) => {
+    // req.path aqui já é relativo ao mount (/api/upload)
+    if (req.path === '/auth') return next();
+    return uploadLimiter(req, res, next);
+}, uploadRoutes);
+
+// KingSelection: rate limit mais alto para upload em massa
+app.use('/api/king-selection', kingSelectionLimiter, kingSelectionRoutes);
 app.use('/download', downloadRoutes);
 app.use('/api/pix', apiLimiter, pixRoutes);
 app.use('/api/business', apiLimiter, businessRoutes);

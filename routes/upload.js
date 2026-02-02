@@ -2,6 +2,7 @@ const express = require('express');
 const fetch = require('node-fetch');
 const multer = require('multer');
 const FormData = require('form-data');
+const rateLimit = require('express-rate-limit');
 const { protectUser } = require('../middleware/protectUser');
 const config = require('../config');
 const logger = require('../utils/logger');
@@ -35,7 +36,35 @@ const upload = multer({
     }
 });
 
-router.post('/auth', protectUser, asyncHandler(async (req, res) => {
+// /api/upload/auth é chamado muitas vezes no upload em massa.
+// Limitamos por USUÁRIO autenticado (não por IP) e com teto alto.
+const skipOptions = (req) => req.method === 'OPTIONS';
+const uploadAuthLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 5000, // 1000+ fotos sem travar
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { trustProxy: false },
+    skip: skipOptions,
+    keyGenerator: (req) => (req.user && req.user.userId) ? `u:${req.user.userId}` : req.ip,
+    handler: (req, res) => {
+        logger.warn('Rate limit /api/upload/auth excedido', {
+            ip: req.ip,
+            userId: req.user?.userId,
+            path: req.path,
+            method: req.method
+        });
+        const retryAfter = 60;
+        res.set('Retry-After', retryAfter);
+        res.status(429).json({
+            success: false,
+            message: 'Muitas autorizações de upload. Aguarde 1 minuto e tente novamente.',
+            retry_after_seconds: retryAfter
+        });
+    }
+});
+
+router.post('/auth', protectUser, uploadAuthLimiter, asyncHandler(async (req, res) => {
     const accountId =
         process.env.CF_IMAGES_ACCOUNT_ID ||
         process.env.CLOUDFLARE_ACCOUNT_ID ||
