@@ -1015,6 +1015,62 @@ router.post('/galleries/:id/uploads/presign-batch', protectUser, asyncHandler(as
   }
 }));
 
+// ===== R2: upload via backend (contorna bloqueio SSL/CORS no navegador) =====
+router.post('/galleries/:id/uploads/proxy', protectUser, uploadMem.single('file'), asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'Arquivo é obrigatório' });
+
+  const cfg = getR2Config();
+  if (!cfg.enabled) return res.status(501).json({ message: 'R2 não configurado (R2_ACCOUNT_ID/R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY/R2_BUCKET).' });
+
+  const userId = req.user.userId;
+  const originalName = ((req.body && (req.body.original_name || req.body.originalName)) || req.file.originalname || 'foto').toString().slice(0, 500);
+  const order = parseInt((req.body && (req.body.order || 0)) || 0, 10) || 0;
+
+  const ext = (() => {
+    const n = String(req.file.originalname || '').trim();
+    const m = n.match(/\.([a-zA-Z0-9]{1,8})$/);
+    if (m) return m[1].toLowerCase();
+    const mt = String(req.file.mimetype || '').toLowerCase();
+    if (mt.includes('png')) return 'png';
+    if (mt.includes('webp')) return 'webp';
+    return 'jpg';
+  })();
+  const key = `galleries/${galleryId}/${crypto.randomUUID()}.${ext}`;
+
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2
+       LIMIT 1`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    await r2PutObjectBuffer({
+      key,
+      body: req.file.buffer,
+      contentType: req.file.mimetype || 'application/octet-stream',
+      cacheControl: 'public, max-age=31536000, immutable'
+    });
+
+    const ins = await client.query(
+      `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
+       VALUES ($1,$2,$3,$4)
+       RETURNING id, gallery_id, original_name, "order", file_path`,
+      [galleryId, `r2:${key}`, originalName, order]
+    );
+
+    return res.status(201).json({ success: true, photo: ins.rows[0] });
+  } finally {
+    client.release();
+  }
+}));
+
 // ===== R2: registrar fotos em lote no banco =====
 router.post('/galleries/:id/photos/batch', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
