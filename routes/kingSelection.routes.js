@@ -1650,6 +1650,44 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
   }
 }));
 
+// Imagem OG (WhatsApp/Instagram): usar a foto de CAPA do projeto, sem logo do site.
+// Retorna JPEG 1200x630 (fit cover) para cartões de compartilhamento.
+router.get('/public/og-image', asyncHandler(async (req, res) => {
+  const slug = (req.query.slug || '').toString().trim();
+  if (!slug) return res.status(400).send('slug é obrigatório');
+
+  const client = await db.pool.connect();
+  try {
+    const gRes = await client.query('SELECT id FROM king_galleries WHERE slug=$1', [slug]);
+    if (gRes.rows.length === 0) return res.status(404).send('Galeria não encontrada');
+    const galleryId = gRes.rows[0].id;
+
+    const hasCover = await hasColumn(client, 'king_photos', 'is_cover');
+    const pRes = hasCover
+      ? await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY is_cover DESC, "order" ASC, id ASC LIMIT 1', [galleryId])
+      : await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [galleryId]);
+    if (pRes.rows.length === 0) return res.status(404).send('Sem fotos');
+    const photo = pRes.rows[0];
+    const fp = String(photo.file_path || '');
+    if (!fp.startsWith('cfimage:')) return res.status(500).send('Formato de arquivo inválido');
+    const imageId = fp.replace('cfimage:', '');
+    const buf = await fetchCloudflareImageBuffer(imageId);
+    if (!buf) return res.status(500).send('Cloudflare não configurado (hash ou API token)');
+
+    const out = await sharp(buf)
+      .rotate()
+      .resize(1200, 630, { fit: 'cover', position: 'entropy' })
+      .jpeg({ quality: 84 })
+      .toBuffer();
+
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=900'); // 15min
+    res.send(out);
+  } finally {
+    client.release();
+  }
+}));
+
 // ===== Admin: ações de fotos (favorito/capa/substituir/excluir/download) =====
 router.patch('/photos/:photoId', protectUser, asyncHandler(async (req, res) => {
   const photoId = parseInt(req.params.photoId, 10);
