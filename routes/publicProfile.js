@@ -18,10 +18,12 @@ function hexToRgb(hex) {
 }
 
 router.get('/:identifier', asyncHandler(async (req, res) => {
-    const { identifier } = req.params;
+    const rawIdentifier = req.params.identifier;
+    const identifier = String(rawIdentifier || '').trim();
+    const identifierLower = identifier.toLowerCase();
     
     const reserved = ['privacidade', 'termos', 'recuperar-senha', 'resetar-senha', 'esqueci-senha', 'forgot'];
-    if (reserved.includes(identifier)) {
+    if (!identifier || reserved.includes(identifierLower)) {
         return res.status(404).send('404 - Página não encontrada');
     }
     
@@ -36,13 +38,29 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
     
     try {
         logger.debug('🔍 Buscando perfil público', { identifier });
-        const userRes = await client.query('SELECT id, account_type FROM users WHERE profile_slug = $1 OR id = $1', [identifier]);
+        // Buscar de forma case-insensitive por slug (links podem vir com caixa diferente),
+        // e permitir acesso por id sem estourar erro de type cast.
+        const userRes = await client.query(
+            `SELECT id, account_type, profile_slug
+             FROM users
+             WHERE LOWER(profile_slug) = LOWER($1) OR id::text = $1
+             LIMIT 1`,
+            [identifier]
+        );
         
         if (userRes.rows.length === 0) {
             return res.status(404).send('<h1>404 - Perfil não encontrado</h1>');
         }
 
         const user = userRes.rows[0];
+
+        // Se o acesso foi via slug com caixa diferente, redirecionar 301 para o slug canônico (mantendo querystring)
+        // Isso evita conteúdo duplicado e garante consistência para preview/analytics.
+        if (user.profile_slug && identifierLower === String(user.profile_slug).toLowerCase() && identifier !== user.profile_slug) {
+            const qsIndex = req.originalUrl ? req.originalUrl.indexOf('?') : -1;
+            const qs = qsIndex >= 0 ? req.originalUrl.substring(qsIndex) : '';
+            return res.redirect(301, `/${user.profile_slug}${qs}`);
+        }
 
         if (user.account_type === 'free') {
             return res.render('inactive_profile');
