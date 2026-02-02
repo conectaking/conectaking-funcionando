@@ -1621,11 +1621,8 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     );
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
-    const fp = String(photo.file_path || '');
-    if (!fp.startsWith('cfimage:')) return res.status(500).send('Formato de arquivo inválido');
-    const imageId = fp.replace('cfimage:', '');
-    const buf = await fetchCloudflareImageBuffer(imageId);
-    if (!buf) return res.status(500).send('Cloudflare não configurado (hash ou API token)');
+    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+    if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
 
     // Watermark X (30%) e resize 1200
     const img = sharp(buf).rotate();
@@ -2028,11 +2025,8 @@ router.get('/photos/:photoId/download', protectUser, asyncHandler(async (req, re
     if (!pRes.rows.length) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
 
-    const fp = String(photo.file_path || '');
-    if (!fp.startsWith('cfimage:')) return res.status(500).send('Formato de arquivo inválido');
-    const imageId = fp.replace('cfimage:', '');
-    const buf = await fetchCloudflareImageBuffer(imageId);
-    if (!buf) return res.status(500).send('Cloudflare não configurado (hash ou API token)');
+    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+    if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
 
     // download como preview com marca (mais seguro). Se quiser original no futuro, adiciona mode=original.
     const img = sharp(buf).rotate();
@@ -2567,11 +2561,8 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     const pRes = await client.query('SELECT * FROM king_photos WHERE id=$1 AND gallery_id=$2', [photoId, payload.galleryId]);
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
-    const fp = String(photo.file_path || '');
-    if (!fp.startsWith('cfimage:')) return res.status(500).send('Formato de arquivo inválido');
-    const imageId = fp.replace('cfimage:', '');
-    const buf = await fetchCloudflareImageBuffer(imageId);
-    if (!buf) return res.status(500).send('Cloudflare não configurado (hash ou API token)');
+    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+    if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
 
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
