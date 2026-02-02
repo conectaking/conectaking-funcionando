@@ -969,7 +969,9 @@ router.post('/galleries/:id/uploads/presign-batch', protectUser, asyncHandler(as
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
 
-    const safePrefix = (prefix || `kingselection/galleries/${galleryId}`).toString().replace(/^\/*/, '').replace(/\.\./g, '');
+    // IMPORTANTE: o Bucket já é "kingselection". NÃO colocar "kingselection/" dentro do Key,
+    // senão vira "bucket/bucket/..." em alguns estilos de URL e só confunde.
+    const safePrefix = (prefix || `galleries/${galleryId}`).toString().replace(/^\/*/, '').replace(/\.\./g, '');
     const items = [];
 
     for (const f of list) {

@@ -30,7 +30,10 @@ function getR2Client() {
       accessKeyId: cfg.accessKeyId,
       secretAccessKey: cfg.secretAccessKey
     },
-    forcePathStyle: true
+    // Cloudflare docs (presigned URLs) usam virtual-host style:
+    // https://<bucket>.<accountId>.r2.cloudflarestorage.com/<key>?X-Amz-...
+    // Então NÃO forçar path-style aqui.
+    forcePathStyle: false
   });
   return _client;
 }
