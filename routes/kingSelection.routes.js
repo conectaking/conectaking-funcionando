@@ -11,7 +11,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { getR2Config, r2GetObjectBuffer, r2PresignPut, r2PutObjectBuffer } = require('../utils/r2');
+const { getR2Config, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer } = require('../utils/r2');
 
 const router = express.Router();
 
@@ -495,6 +495,11 @@ async function fetchPhotoFileBufferFromFilePath(filePath) {
   if (low.startsWith('r2:')) {
     const key = fp.slice('r2:'.length).trim().replace(/^\/+/, '');
     if (!key) return null;
+    const cfg = getR2Config();
+    if (cfg.publicBaseUrl) {
+      const buf = await r2GetObjectViaPublicUrl(key);
+      if (buf) return buf;
+    }
     return await r2GetObjectBuffer(key);
   }
   return null;

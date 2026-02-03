@@ -10,7 +10,7 @@ function corsHeadersFor(request, env) {
   const h = new Headers();
   if (ok) h.set('Access-Control-Allow-Origin', origin);
   h.set('Vary', 'Origin');
-  h.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  h.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   h.set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
   h.set('Access-Control-Max-Age', '3600');
   return h;
@@ -90,6 +90,27 @@ export default {
 
     if (request.method === 'OPTIONS') {
       return new Response('', { status: 204, headers: cors });
+    }
+
+    if (url.pathname.startsWith('/ks/file/') && request.method === 'GET') {
+      const key = decodeURIComponent(url.pathname.slice('/ks/file/'.length));
+      if (!key) return new Response('Key inválido', { status: 400, headers: cors });
+      try {
+        const obj = await env.KS_BUCKET.get(key);
+        if (!obj) return new Response('Não encontrado', { status: 404, headers: cors });
+        const ct = obj.httpMetadata?.contentType || 'image/jpeg';
+        return new Response(obj.body, {
+          status: 200,
+          headers: {
+            ...Object.fromEntries(cors),
+            'Content-Type': ct,
+            'Cache-Control': 'public, max-age=31536000, immutable'
+          }
+        });
+      } catch (e) {
+        const msg = (e && e.message) ? String(e.message).slice(0, 200) : 'Falha ao ler do R2';
+        return new Response(JSON.stringify({ success: false, message: msg }), { status: 502, headers: cors });
+      }
     }
 
     if (url.pathname === '/ks/upload' && request.method === 'POST') {

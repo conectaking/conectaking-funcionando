@@ -1,5 +1,6 @@
 const { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const fetch = require('node-fetch');
 
 function getR2Config() {
   const accountId = (process.env.R2_ACCOUNT_ID || '').toString().trim();
@@ -51,6 +52,24 @@ async function r2GetObjectBuffer(key) {
   const out = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
   if (!out || !out.Body) return null;
   return await streamToBuffer(out.Body);
+}
+
+/**
+ * Obtém o objeto do R2 via URL pública (evita SSL handshake do Render com r2.cloudflarestorage.com).
+ * Requer R2_PUBLIC_BASE_URL configurado (ex.: https://pub-xxx.r2.dev ou https://fotos.seusite.com.br).
+ */
+async function r2GetObjectViaPublicUrl(key) {
+  const cfg = getR2Config();
+  if (!cfg.publicBaseUrl) return null;
+  const url = `${cfg.publicBaseUrl.replace(/\/$/, '')}/${encodeURI(key).replace(/^%2F/, '')}`;
+  try {
+    const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'image/*' } });
+    if (!res.ok) return null;
+    const buf = await res.buffer();
+    return buf && buf.length ? buf : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 async function r2PresignPut({ key, contentType, cacheControl, expiresInSeconds = 600 }) {
@@ -121,6 +140,7 @@ module.exports = {
   getR2Config,
   getR2Client,
   r2GetObjectBuffer,
+  r2GetObjectViaPublicUrl,
   r2PresignPut,
   r2PutObjectBuffer,
   r2Diagnostic
