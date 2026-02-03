@@ -2785,8 +2785,12 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
 }));
 
 router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
-  // Token via query string (necessário para <img>)
-  const token = (req.query.token || '').toString();
+  // Token: query string (para <img src>) OU Authorization Bearer (para fetch)
+  let token = (req.query.token || '').toString();
+  if (!token) {
+    const m = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i);
+    if (m) token = m[1].trim();
+  }
   const payload = verifyClientToken(token);
   if (!payload) return res.status(401).send('Não autorizado');
 
