@@ -702,28 +702,34 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   // Só aplica a rotação escolhida no painel.
   const wmBase = sharp(wmBuf).rotate(rotate);
 
-  // Padrão (completa): cobre a foto inteira com a marca d’água (sem mosaico)
+  // Padrão (completa): repete a marca d'água em mosaico denso para cobrir a foto inteira
   if (watermark?.mode === 'tile_dense') {
-    const zoom = Math.max(1.0, scale); // tamanho vira zoom (>= 1)
-    const w = Math.max(1, Math.round(outW * zoom));
-    const h = Math.max(1, Math.round(outH * zoom));
-    let wmFull = await wmBase
-      .resize({ width: w, height: h, fit: 'cover', withoutEnlargement: false })
+    const boxW = Math.max(120, Math.round(outW * Math.max(0.20, scale)));
+    const boxH = Math.max(120, Math.round(outH * Math.max(0.20, scale)));
+    let wmPng = await wmBase
+      .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: false })
       .png()
       .toBuffer();
-    // aplica opacidade de forma compatível (não depende do composite.opacity)
-    wmFull = await applyOpacityPng(wmFull, opacity);
-    // centraliza/corta para o tamanho final
-    const left = Math.max(0, Math.floor((w - outW) / 2));
-    const top = Math.max(0, Math.floor((h - outH) / 2));
-    if (w !== outW || h !== outH) {
-      wmFull = await sharp(wmFull)
-        .extract({ left, top, width: Math.min(outW, w), height: Math.min(outH, h) })
-        .resize(outW, outH, { fit: 'fill' })
-        .png()
-        .toBuffer();
-    }
-    pipeline = pipeline.composite([{ input: wmFull, top: 0, left: 0, blend: 'over' }]);
+    wmPng = await applyOpacityPng(wmPng, opacity);
+    const b64 = wmPng.toString('base64');
+    const stepFactor = 0.72;
+    const stepMin = 100;
+    const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.12, scale) * stepFactor)));
+    const w = outW;
+    const h = outH;
+    const svg = Buffer.from(
+      `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <defs>
+          <pattern id="pd" patternUnits="userSpaceOnUse" width="${step}" height="${step}">
+            <image href="data:image/png;base64,${b64}" x="0" y="0" width="${boxW}" height="${boxH}"/>
+          </pattern>
+        </defs>
+        <g transform="rotate(-25 ${Math.round(w / 2)} ${Math.round(h / 2)})">
+          <rect x="-${w}" y="-${h}" width="${w * 3}" height="${h * 3}" fill="url(#pd)"/>
+        </g>
+      </svg>`
+    );
+    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
     return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
 
