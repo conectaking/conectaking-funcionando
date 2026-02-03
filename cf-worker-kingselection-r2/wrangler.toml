@@ -3,9 +3,10 @@ main = "src/index.js"
 compatibility_date = "2026-02-02"
 
 # Rota para r2.conectaking.com.br (obrigatório para upload funcionar)
-[[routes]]
-pattern = "r2.conectaking.com.br/*"
-zone_name = "conectaking.com.br"
+# Formato explícito: array de objetos só com pattern e zone_name
+routes = [
+  { pattern = "r2.conectaking.com.br/*", zone_name = "conectaking.com.br" }
+]
 
 # Bind do bucket R2 (Workers -> R2, sem S3 API)
 # R2_BUCKET = conforme prompt; KS_BUCKET = compatibilidade com código antigo

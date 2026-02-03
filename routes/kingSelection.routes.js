@@ -555,8 +555,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
 
 async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   const img = sharp(imgBuffer).rotate();
-  // base: sempre resize inside
-  let pipeline = img.resize(outW, outH, { fit: 'inside' });
+  // base: resize cover para garantir outW x outH exatos (evita erro Sharp "composite must have same dimensions or smaller")
+  let pipeline = img.resize(outW, outH, { fit: 'cover', position: 'center' });
 
   // 0) Sem marca d'água
   if (watermark && watermark.mode === 'none') {
