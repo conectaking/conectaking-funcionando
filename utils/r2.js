@@ -1,4 +1,4 @@
-const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 function getR2Config() {
@@ -83,11 +83,46 @@ async function r2PutObjectBuffer({ key, body, contentType, cacheControl }) {
   return { key, publicUrl };
 }
 
+/** Testa a conexão com o R2 (diagnóstico de 502). */
+async function r2Diagnostic() {
+  const cfg = getR2Config();
+  const result = {
+    ok: false,
+    enabled: cfg.enabled,
+    hasAccountId: !!cfg.accountId,
+    hasBucket: !!cfg.bucket,
+    hasCredentials: !!(cfg.accessKeyId && cfg.secretAccessKey),
+    endpoint: cfg.enabled ? `https://${cfg.accountId}.r2.cloudflarestorage.com` : null,
+    error: null,
+    objectCount: null,
+    durationMs: null
+  };
+  if (!cfg.enabled) {
+    result.error = 'R2 não configurado (variáveis de ambiente faltando)';
+    return result;
+  }
+  const start = Date.now();
+  try {
+    const client = getR2Client();
+    const cmd = new ListObjectsV2Command({ Bucket: cfg.bucket, MaxKeys: 10 });
+    const response = await client.send(cmd);
+    result.ok = true;
+    result.objectCount = response.Contents?.length ?? 0;
+    result.durationMs = Date.now() - start;
+  } catch (err) {
+    result.error = err?.name ? `${err.name}: ${err.message}` : String(err?.message || err);
+    result.durationMs = Date.now() - start;
+    if (err?.code) result.code = err.code;
+  }
+  return result;
+}
+
 module.exports = {
   getR2Config,
   getR2Client,
   r2GetObjectBuffer,
   r2PresignPut,
-  r2PutObjectBuffer
+  r2PutObjectBuffer,
+  r2Diagnostic
 };
 
