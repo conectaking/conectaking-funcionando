@@ -977,6 +977,44 @@ function scheduleCloudflareOrphanCleanup() {
 
 scheduleCloudflareOrphanCleanup();
 
+function scheduleR2OrphanCleanup() {
+  const enabled = isTruthy(process.env.R2_ORPHAN_CLEANUP_ENABLED);
+  if (!enabled) return;
+
+  const cronExpr = (process.env.R2_ORPHAN_CLEANUP_CRON || '45 5 * * *').toString().trim();
+  if (!cron.validate(cronExpr)) {
+    logger.error('R2_ORPHAN_CLEANUP_CRON inválido; desativando', { cronExpr });
+    return;
+  }
+
+  cron.schedule(cronExpr, async () => {
+    try {
+      logger.info('🧹 Iniciando limpeza diária de órfãos R2 (KingSelection)...');
+      const env = {
+        ...process.env,
+        DRY_RUN: (process.env.R2_ORPHAN_CLEANUP_DRY_RUN ?? process.env.DRY_RUN ?? '1').toString(),
+        CONFIRM_DELETE: (process.env.R2_ORPHAN_CLEANUP_CONFIRM ?? process.env.CONFIRM_DELETE ?? 'SIM').toString(),
+        MAX_DELETE: (process.env.R2_ORPHAN_CLEANUP_MAX_DELETE ?? process.env.MAX_DELETE ?? '100').toString(),
+        SLEEP_MS: (process.env.R2_ORPHAN_CLEANUP_SLEEP_MS ?? process.env.SLEEP_MS ?? '200').toString(),
+        R2_ORPHAN_CLEANUP_LOCK_KEY: (process.env.R2_ORPHAN_CLEANUP_LOCK_KEY ?? '20260202').toString()
+      };
+      const scriptPath = path.join(__dirname, 'scripts', 'cleanup-r2-orphans.js');
+      const child = spawn(process.execPath, [scriptPath], { env, stdio: 'inherit' });
+      await new Promise((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`cleanup-r2-orphans.js exit=${code}`))));
+      });
+      logger.info('✅ Limpeza diária R2 finalizada.');
+    } catch (error) {
+      logger.error('❌ Erro na limpeza de órfãos R2', { message: error?.message || String(error) });
+    }
+  });
+
+  logger.info('✅ Agendamento limpeza órfãos R2 ativado', { cronExpr });
+}
+
+scheduleR2OrphanCleanup();
+
 // Middleware de tratamento de erros (deve ser o último)
 app.use(notFoundHandler);
 app.use(errorHandler);

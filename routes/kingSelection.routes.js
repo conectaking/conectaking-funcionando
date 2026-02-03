@@ -1159,6 +1159,35 @@ async function uploadBufferToWorker({ buffer, filename, mimetype, galleryId, use
   }
 }
 
+async function deleteR2ObjectViaWorker(key) {
+  if (!KS_WORKER_SECRET) throw new Error('Worker não configurado');
+  const keyStr = String(key || '').trim().replace(/^\/+/, '');
+  if (!keyStr || !keyStr.startsWith('galleries/')) return false;
+  const workerUrl = (process.env.KINGSELECTION_WORKER_URL || process.env.R2_PUBLIC_BASE_URL || 'https://r2.conectaking.com.br').toString().trim().replace(/\/$/, '');
+  const token = ksSignToken({
+    typ: 'ks_delete',
+    key: keyStr,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 60
+  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(`${workerUrl}/ks/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ key: keyStr }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    const data = (() => { try { return JSON.parse((await res.text()) || '{}'); } catch (_) { return {}; } })();
+    return res.ok && data.success === true;
+  } catch (_) {
+    clearTimeout(timeoutId);
+    return false;
+  }
+}
+
 // ===== R2: upload via backend — usa Worker (evita SSL S3 no Render) =====
 router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
   // Capturar erros do multer e devolver msg clara (Render produção escondia em 500 genérico)
@@ -1895,30 +1924,46 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     values.push(galleryId);
     await client.query(`UPDATE king_galleries SET ${sets.join(', ')}, updated_at=NOW() WHERE id=$${idx}`, values);
 
-    // Pós-update: se o watermark_path antigo era cfimage e foi removido/trocado, deletar no Cloudflare.
+    // Pós-update: deletar arquivo antigo (Cloudflare Images ou R2) se foi removido/trocado
     const cloudflare = { attempted: false, deleted: false, skipped: false };
+    const r2Wm = { attempted: false, deleted: false };
     if (willTouchWmPath && oldWmPath) {
-      let oldId = null;
-      const low = oldWmPath.toLowerCase();
-      if (low.startsWith('cfimage:')) oldId = oldWmPath.slice('cfimage:'.length).trim();
-      else {
-        const m = oldWmPath.match(/^https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\//i);
-        if (m && m[1]) oldId = m[1];
-      }
       const next = (newWmPath == null) ? '' : String(newWmPath).trim();
-      // Deleta se removeu ou se trocou para outro id
-      if (oldId && (!next || next !== oldWmPath)) {
-        cloudflare.attempted = true;
+      const changed = !next || next !== oldWmPath;
+
+      const r2Key = extractR2Key(oldWmPath);
+      if (r2Key && changed) {
+        r2Wm.attempted = true;
         try {
-          cloudflare.deleted = await deleteCloudflareImage(oldId);
-          if (!cloudflare.deleted) cloudflare.skipped = true;
-        } catch (_) {
-          cloudflare.skipped = true;
+          const stillUsed = await client.query(
+            'SELECT 1 FROM king_galleries WHERE watermark_path=$1 AND id<>$2 LIMIT 1',
+            [oldWmPath, galleryId]
+          );
+          if (!stillUsed.rows.length) r2Wm.deleted = await deleteR2ObjectViaWorker(r2Key);
+        } catch (_) {}
+      }
+
+      if (!r2Key) {
+        let oldId = null;
+        const low = oldWmPath.toLowerCase();
+        if (low.startsWith('cfimage:')) oldId = oldWmPath.slice('cfimage:'.length).trim();
+        else {
+          const m = oldWmPath.match(/^https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\//i);
+          if (m && m[1]) oldId = m[1];
+        }
+        if (oldId && changed) {
+          cloudflare.attempted = true;
+          try {
+            cloudflare.deleted = await deleteCloudflareImage(oldId);
+            if (!cloudflare.deleted) cloudflare.skipped = true;
+          } catch (_) {
+            cloudflare.skipped = true;
+          }
         }
       }
     }
 
-    res.json({ success: true, cloudflare_watermark: cloudflare });
+    res.json({ success: true, cloudflare_watermark: cloudflare, r2_watermark: r2Wm });
   } finally {
     client.release();
   }
@@ -2285,6 +2330,7 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
     const filePath = String(own.rows[0].file_path || '');
     const imageId = filePath.startsWith('cfimage:') ? filePath.replace('cfimage:', '') : null;
+    const r2Key = extractR2Key(filePath);
 
     // Apagar do banco primeiro
     await client.query('BEGIN');
@@ -2292,19 +2338,41 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
     await client.query('DELETE FROM king_photos WHERE id=$1', [photoId]);
     await client.query('COMMIT');
 
-    // Depois tenta apagar no Cloudflare (sem quebrar o fluxo se falhar)
     let cfAttempted = false;
     let cfDeleted = false;
     let cfSkipped = false;
+    let r2Attempted = false;
+    let r2Deleted = false;
+
+    // R2: apagar objeto do bucket (best-effort)
+    if (r2Key) {
+      try {
+        r2Attempted = true;
+        const stillUsedPhotos = await client.query(
+          'SELECT 1 FROM king_photos WHERE file_path=$1 LIMIT 1',
+          [`r2:${r2Key}`]
+        );
+        let stillUsedWatermark = { rows: [] };
+        const hasWm = await hasColumn(client, 'king_galleries', 'watermark_path');
+        if (hasWm) {
+          stillUsedWatermark = await client.query(
+            'SELECT 1 FROM king_galleries WHERE watermark_path=$1 LIMIT 1',
+            [`r2:${r2Key}`]
+          );
+        }
+        const stillUsed = stillUsedPhotos.rows.length > 0 || stillUsedWatermark.rows.length > 0;
+        if (!stillUsed) r2Deleted = await deleteR2ObjectViaWorker(r2Key);
+      } catch (_) {}
+    }
+
+    // Cloudflare Images: apagar (best-effort)
     if (imageId) {
       try {
         cfAttempted = true;
-        // Segurança: só apaga do Cloudflare se não houver outras referências
         const stillUsedPhotos = await client.query(
           'SELECT 1 FROM king_photos WHERE file_path=$1 LIMIT 1',
           [`cfimage:${imageId}`]
         );
-
         let stillUsedWatermark = { rows: [] };
         const hasWm = await hasColumn(client, 'king_galleries', 'watermark_path');
         if (hasWm) {
@@ -2313,22 +2381,20 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
             [`cfimage:${imageId}`]
           );
         }
-
         const stillUsed = stillUsedPhotos.rows.length > 0 || stillUsedWatermark.rows.length > 0;
         if (!stillUsed) {
           cfDeleted = await deleteCloudflareImage(imageId);
-          if (!cfDeleted) {
-            // sem permissão/token ou falha de API
-          }
         } else {
           cfSkipped = true;
         }
-      } catch (e) {
-        // Ignorar: exclusão no Cloudflare é best-effort
-      }
+      } catch (_) {}
     }
 
-    res.json({ success: true, cloudflare: { attempted: cfAttempted, deleted: cfDeleted, skipped: cfSkipped } });
+    res.json({
+      success: true,
+      cloudflare: { attempted: cfAttempted, deleted: cfDeleted, skipped: cfSkipped },
+      r2: { attempted: r2Attempted, deleted: r2Deleted }
+    });
   } finally {
     client.release();
   }

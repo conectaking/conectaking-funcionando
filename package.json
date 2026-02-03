@@ -14,6 +14,8 @@
     "start": "node server.js",
     "cleanup:cloudflare:dry": "DRY_RUN=1 node scripts/cleanup-cloudflare-images.js",
     "cleanup:cloudflare": "node scripts/cleanup-cloudflare-images.js",
+    "cleanup:r2:dry": "DRY_RUN=1 node scripts/cleanup-r2-orphans.js",
+    "cleanup:r2": "node scripts/cleanup-r2-orphans.js",
     "push": "powershell -ExecutionPolicy Bypass -File ./push-auto.ps1",
     "config-auth": "powershell -ExecutionPolicy Bypass -File ./configurar-autenticacao.ps1"
   },

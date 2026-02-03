@@ -170,6 +170,98 @@ export default {
       return new Response(JSON.stringify({ success: true, key: objectKey, receipt }), { status: 200, headers: cors });
     }
 
+    // ========== DELETE (autenticado) — exclusão de objeto no R2 ==========
+    if (url.pathname === '/ks/delete' && request.method === 'POST') {
+      const secret = (env.KS_WORKER_SECRET || '').toString().trim();
+      if (!secret) return new Response(JSON.stringify({ success: false, message: 'Worker não configurado.' }), { status: 501, headers: cors });
+
+      const auth = request.headers.get('Authorization') || '';
+      const m = auth.match(/^Bearer\s+(.+)$/i);
+      const token = m ? m[1].trim() : '';
+      const payload = await verifyKsToken(token, secret);
+      if (!payload || (payload.typ !== 'ks_delete' && payload.typ !== 'ks_cleanup')) {
+        return new Response(JSON.stringify({ success: false, message: 'Não autorizado.' }), { status: 401, headers: cors });
+      }
+
+      let body;
+      try {
+        body = await request.json();
+      } catch (_) {
+        return new Response(JSON.stringify({ success: false, message: 'JSON inválido.' }), { status: 400, headers: cors });
+      }
+      const key = String(body?.key || '').trim().replace(/^\/+/, '');
+      if (!key || !key.startsWith('galleries/')) {
+        return new Response(JSON.stringify({ success: false, message: 'Key inválida.' }), { status: 400, headers: cors });
+      }
+
+      try {
+        await bucket.delete(key);
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: cors });
+      } catch (e) {
+        const msg = (e && e.message) ? String(e.message).slice(0, 200) : 'Falha ao deletar';
+        return new Response(JSON.stringify({ success: false, message: msg }), { status: 502, headers: cors });
+      }
+    }
+
+    // ========== LIST + DELETE-BATCH (limpeza de órfãos) ==========
+    if (url.pathname === '/ks/list' && request.method === 'GET') {
+      const secret = (env.KS_WORKER_SECRET || '').toString().trim();
+      if (!secret) return new Response(JSON.stringify({ success: false, message: 'Worker não configurado.' }), { status: 501, headers: cors });
+
+      const auth = request.headers.get('Authorization') || '';
+      const m = auth.match(/^Bearer\s+(.+)$/i);
+      const token = m ? m[1].trim() : '';
+      const payload = await verifyKsToken(token, secret);
+      if (!payload || payload.typ !== 'ks_cleanup') {
+        return new Response(JSON.stringify({ success: false, message: 'Não autorizado.' }), { status: 401, headers: cors });
+      }
+
+      const prefix = (url.searchParams.get('prefix') || 'galleries/').toString().trim();
+      const cursor = url.searchParams.get('cursor') || undefined;
+      const limit = Math.min(1000, parseInt(url.searchParams.get('limit') || '1000', 10) || 1000);
+
+      try {
+        const listed = await bucket.list({ prefix, limit, cursor });
+        const keys = (listed.objects || []).map(o => o.key);
+        return new Response(JSON.stringify({ keys, truncated: !!listed.truncated, cursor: listed.cursor || null }), { status: 200, headers: cors });
+      } catch (e) {
+        const msg = (e && e.message) ? String(e.message).slice(0, 200) : 'Falha ao listar';
+        return new Response(JSON.stringify({ success: false, message: msg }), { status: 502, headers: cors });
+      }
+    }
+
+    if (url.pathname === '/ks/delete-batch' && request.method === 'POST') {
+      const secret = (env.KS_WORKER_SECRET || '').toString().trim();
+      if (!secret) return new Response(JSON.stringify({ success: false, message: 'Worker não configurado.' }), { status: 501, headers: cors });
+
+      const auth = request.headers.get('Authorization') || '';
+      const m = auth.match(/^Bearer\s+(.+)$/i);
+      const token = m ? m[1].trim() : '';
+      const payload = await verifyKsToken(token, secret);
+      if (!payload || payload.typ !== 'ks_cleanup') {
+        return new Response(JSON.stringify({ success: false, message: 'Não autorizado.' }), { status: 401, headers: cors });
+      }
+
+      let body;
+      try {
+        body = await request.json();
+      } catch (_) {
+        return new Response(JSON.stringify({ success: false, message: 'JSON inválido.' }), { status: 400, headers: cors });
+      }
+      const keys = Array.isArray(body?.keys) ? body.keys.map(k => String(k).trim().replace(/^\/+/, '')).filter(k => k && k.startsWith('galleries/')) : [];
+      if (keys.length > 1000) {
+        return new Response(JSON.stringify({ success: false, message: 'Máximo 1000 keys por chamada.' }), { status: 400, headers: cors });
+      }
+
+      try {
+        if (keys.length) await bucket.delete(keys);
+        return new Response(JSON.stringify({ success: true, deleted: keys.length }), { status: 200, headers: cors });
+      } catch (e) {
+        const msg = (e && e.message) ? String(e.message).slice(0, 200) : 'Falha ao deletar';
+        return new Response(JSON.stringify({ success: false, message: msg }), { status: 502, headers: cors });
+      }
+    }
+
     return new Response('Not found', { status: 404, headers: cors });
   }
 };
