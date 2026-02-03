@@ -2429,8 +2429,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
   const client = await db.pool.connect();
   try {
     const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
+    const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -2477,7 +2478,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
 
     res.json({
       success: true,
-      gallery: { ...gallery, photos: pRes.rows, locked },
+      gallery: { ...gallery, photos: pRes.rows, locked, allow_download: hasAllowDownload ? !!gallery.allow_download : false },
       selectedPhotoIds
     });
   } finally {
@@ -2827,6 +2828,15 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
+    if (String(req.query.download || '') === '1') {
+      const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
+      const gRes = await client.query('SELECT allow_download FROM king_galleries WHERE id=$1', [payload.galleryId]);
+      const allowDownload = hasAllowDownload && gRes.rows[0] && gRes.rows[0].allow_download === true;
+      if (allowDownload) {
+        const fn = (photo.original_name || `foto-${photoId}.jpg`).toString().replace(/[\/\\:*?"<>|]+/g, '-');
+        res.set('Content-Disposition', `attachment; filename="${fn.endsWith('.jpg') || fn.endsWith('.jpeg') ? fn : fn + '.jpg'}"`);
+      }
+    }
     res.send(out);
   } finally {
     client.release();
