@@ -3296,10 +3296,14 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     });
 
     res.set('Content-Type', 'image/jpeg');
-    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-    if (String(req.query.download || '') === '1') {
+    const isDownload = String(req.query.download || '') === '1';
+    if (isDownload) {
+      res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+      res.set('Pragma', 'no-cache');
+    } else {
+      res.set('Cache-Control', 'private, max-age=600');
+    }
+    if (isDownload) {
       const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
       const gRes = await client.query('SELECT allow_download FROM king_galleries WHERE id=$1', [payload.galleryId]);
       const allowDownload = hasAllowDownload && gRes.rows[0] && gRes.rows[0].allow_download === true;
