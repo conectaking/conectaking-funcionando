@@ -484,16 +484,23 @@ async function fetchCloudflareImageBuffer(imageId) {
   return null;
 }
 
+function normalizeR2Key(key) {
+  if (!key || typeof key !== 'string') return null;
+  const k = key.trim().replace(/^\/+/, '').replace(/\/+/g, '/');
+  return k && k.startsWith('galleries/') ? k : null;
+}
+
 function extractR2Key(filePath) {
   const fp = String(filePath || '').trim();
   if (!fp) return null;
   const low = fp.toLowerCase();
   if (low.startsWith('r2:')) {
     const key = fp.slice('r2:'.length).trim().replace(/^\/+/, '');
-    return key || null;
+    return normalizeR2Key(key) || null;
   }
-  // Fallback: path sem prefixo (ex: galleries/4/uuid.jpg)
-  if (fp.startsWith('galleries/')) return fp;
+  if (fp.startsWith('galleries/')) return normalizeR2Key(fp);
+  const m = fp.match(/galleries\/[^\s"']+/i);
+  if (m) return normalizeR2Key(m[0]);
   return null;
 }
 
@@ -3283,7 +3290,10 @@ router.post('/cleanup-r2', protectUser, asyncHandler(async (req, res) => {
       }
     }
     const allKeys = await listR2KeysViaWorker('galleries/');
-    const orphans = allKeys.filter(k => !refSet.has(k));
+    const orphans = allKeys.filter(k => {
+      const n = normalizeR2Key(k);
+      return n && !refSet.has(n);
+    });
     let deleted = 0;
     if (!dryRun && orphans.length > 0) {
       const batchSize = 1000;

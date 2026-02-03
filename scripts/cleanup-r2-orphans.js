@@ -86,15 +86,23 @@ async function deleteR2Batch(keys) {
   return { deleted: data.deleted || keys.length };
 }
 
+function normalizeR2Key(key) {
+  if (!key || typeof key !== 'string') return null;
+  const k = key.trim().replace(/^\/+/, '').replace(/\/+/g, '/');
+  return k && k.startsWith('galleries/') ? k : null;
+}
+
 function extractR2Key(filePath) {
   const fp = String(filePath || '').trim();
   if (!fp) return null;
   const low = fp.toLowerCase();
   if (low.startsWith('r2:')) {
     const key = fp.slice(3).trim().replace(/^\/+/, '');
-    return key || null;
+    return normalizeR2Key(key) || null;
   }
-  if (fp.startsWith('galleries/')) return fp;
+  if (fp.startsWith('galleries/')) return normalizeR2Key(fp);
+  const m = fp.match(/galleries\/[^\s"']+/i);
+  if (m) return normalizeR2Key(m[0]);
   return null;
 }
 
@@ -155,7 +163,10 @@ async function main() {
 
     const referenced = await collectReferencedR2Keys(client);
     const allKeys = await listAllR2Keys('galleries/');
-    const orphans = allKeys.filter(k => !referenced.has(k));
+    const orphans = allKeys.filter(k => {
+      const n = normalizeR2Key(k);
+      return n && !referenced.has(n) && !referenced.has(k);
+    });
 
     console.log(`R2 objetos (galleries/): ${allKeys.length}`);
     console.log(`Referenciados no banco: ${referenced.size}`);
