@@ -3310,7 +3310,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
       res.set('Pragma', 'no-cache');
     } else {
-      res.set('Cache-Control', 'private, max-age=600');
+      res.set('Cache-Control', 'private, max-age=' + (useThumb ? '3600' : '600'));
     }
     if (isDownload) {
       const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
