@@ -2500,7 +2500,7 @@ router.post('/galleries/:galleryId/photos/delete-batch', protectUser, asyncHandl
         if (hasWm) {
           const wmRes = await client.query(`SELECT watermark_path FROM king_galleries WHERE watermark_path IS NOT NULL AND watermark_path != ''`);
           const wmSet = new Set(wmRes.rows.map(r => normalizeR2Key(extractR2Key(r.watermark_path))).filter(Boolean));
-          safeKeys = r2Keys.filter(k => !wmSet.has(normalizeR2Key(k) || k));
+          safeKeys = r2Keys.filter(k => { const n = normalizeR2Key(k); return !n || !wmSet.has(n); });
         }
         if (safeKeys.length) {
           const chunks = [];
