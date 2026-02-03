@@ -1133,16 +1133,30 @@ async function uploadBufferToWorker({ buffer, filename, mimetype, galleryId, use
   });
   const form = new FormData();
   form.append('file', buffer, { filename: filename || 'foto.jpg', contentType: mimetype || 'image/jpeg' });
-  const res = await fetch(`${workerUrl}/ks/upload`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}`, ...form.getHeaders() },
-    body: form
-  });
-  const text = await res.text().catch(() => '');
-  const data = (() => { try { return JSON.parse(text); } catch (_) { return {}; } })();
-  if (!res.ok) throw new Error(data.message || text || `Worker ${res.status}`);
-  if (!data.key || !data.receipt) throw new Error('Resposta inválida do Worker');
-  return { key: data.key, receipt: data.receipt };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s
+  try {
+    const res = await fetch(`${workerUrl}/ks/upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, ...form.getHeaders() },
+      body: form,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    const text = await res.text().catch(() => '');
+    const data = (() => { try { return JSON.parse(text); } catch (_) { return {}; } })();
+    if (!res.ok) throw new Error(data.message || text || `Worker ${res.status}`);
+    if (!data.key || !data.receipt) throw new Error('Resposta inválida do Worker');
+    return { key: data.key, receipt: data.receipt };
+  } catch (e) {
+    clearTimeout(timeoutId);
+    const msg = e?.message || String(e);
+    if (e?.name === 'AbortError') throw new Error('Tempo esgotado ao enviar para o R2. Tente novamente.');
+    if (msg.includes('fetch') || msg.includes('ECONNREFUSED') || msg.includes('ENOTFOUND') || msg.includes('ETIMEDOUT')) {
+      throw new Error(`Falha de conexão com o R2: ${msg.slice(0, 120)}`);
+    }
+    throw e;
+  }
 }
 
 // ===== R2: upload via backend — usa Worker (evita SSL S3 no Render) =====
@@ -1289,14 +1303,20 @@ router.post('/galleries/:id/watermark', protectUser, (req, res, next) => {
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
 
-    const out = await uploadBufferToWorker({
-      buffer: req.file.buffer,
-      filename: req.file.originalname || 'watermark.png',
-      mimetype: req.file.mimetype || 'application/octet-stream',
-      galleryId,
-      userId
-    });
-    const key = out.key;
+    let key;
+    try {
+      const out = await uploadBufferToWorker({
+        buffer: req.file.buffer,
+        filename: req.file.originalname || 'watermark.png',
+        mimetype: req.file.mimetype || 'application/octet-stream',
+        galleryId,
+        userId
+      });
+      key = out.key;
+    } catch (e) {
+      const msg = (e?.message || 'Falha ao enviar marca d\'água para o R2').toString().slice(0, 250);
+      return res.status(502).json({ success: false, message: msg });
+    }
 
     const sets = ['watermark_path=$1'];
     const vals = [`r2:${key}`, galleryId];
