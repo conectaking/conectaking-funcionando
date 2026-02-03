@@ -16,6 +16,7 @@ DROP CONSTRAINT IF EXISTS profile_items_item_type_check;
 -- PARTE 2: Criar nova constraint com TODOS os tipos (incluindo digital_form)
 -- ===========================================
 -- Execute esta parte DEPOIS de executar a PARTE 1
+-- Inclui também king_selection e agenda para não violar linhas já existentes (enum/add anteriores)
 ALTER TABLE profile_items 
 ADD CONSTRAINT profile_items_item_type_check 
 CHECK (item_type IN (
@@ -48,6 +49,8 @@ CHECK (item_type IN (
     'pinterest_embed',
     'product_catalog',
     'sales_page',
-    'digital_form'  -- ← NOVO: Formulário King
+    'digital_form',
+    'king_selection',
+    'agenda'
 ));
 

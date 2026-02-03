@@ -13,6 +13,7 @@ DROP CONSTRAINT IF EXISTS profile_items_item_type_check;
 -- ===========================================
 -- PARTE 2: Criar nova constraint com TODOS os tipos (incluindo guest_list e contract)
 -- ===========================================
+-- Inclui também king_selection e agenda para não violar linhas já existentes
 ALTER TABLE profile_items 
 ADD CONSTRAINT profile_items_item_type_check 
 CHECK (item_type IN (
@@ -46,8 +47,10 @@ CHECK (item_type IN (
     'product_catalog',
     'sales_page',
     'digital_form',
-    'guest_list',  -- ← NOVO: Lista de Convidados
-    'contract'     -- ← NOVO: Contrato Digital
+    'guest_list',
+    'contract',
+    'king_selection',
+    'agenda'
 ));
 
 -- Verificação
