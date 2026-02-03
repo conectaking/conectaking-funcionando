@@ -12,7 +12,9 @@ R2_ACCOUNT_ID=...
 R2_BUCKET=kingselection
 ```
 
-**R2_PUBLIC_BASE_URL** – Sem barra no final.
+**R2_PUBLIC_BASE_URL** – Obrigatório para o backend carregar as imagens (preview no admin). Sem barra no final.
+
+> ⚠️ Se as miniaturas não aparecerem no painel admin, verifique se `R2_PUBLIC_BASE_URL` está definido no Render.
 
 ## Formato da URL
 

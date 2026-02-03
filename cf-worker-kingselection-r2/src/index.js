@@ -115,6 +115,8 @@ export default {
         object.writeHttpMetadata(headers);
         headers.set('etag', object.httpEtag);
         headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+        // Incluir CORS para imagens carregadas cross-origin (admin, cliente)
+        cors.forEach((v, k) => headers.set(k, v));
         return new Response(object.body, { headers });
       } catch (e) {
         const msg = (e && e.message) ? String(e.message).slice(0, 200) : 'Falha ao ler do R2';

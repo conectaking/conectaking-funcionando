@@ -484,6 +484,19 @@ async function fetchCloudflareImageBuffer(imageId) {
   return null;
 }
 
+function extractR2Key(filePath) {
+  const fp = String(filePath || '').trim();
+  if (!fp) return null;
+  const low = fp.toLowerCase();
+  if (low.startsWith('r2:')) {
+    const key = fp.slice('r2:'.length).trim().replace(/^\/+/, '');
+    return key || null;
+  }
+  // Fallback: path sem prefixo (ex: galleries/4/uuid.jpg)
+  if (fp.startsWith('galleries/')) return fp;
+  return null;
+}
+
 async function fetchPhotoFileBufferFromFilePath(filePath) {
   const fp = String(filePath || '').trim();
   if (!fp) return null;
@@ -493,10 +506,10 @@ async function fetchPhotoFileBufferFromFilePath(filePath) {
     if (!imageId) return null;
     return await fetchCloudflareImageBuffer(imageId);
   }
-  if (low.startsWith('r2:')) {
-    const key = fp.slice('r2:'.length).trim().replace(/^\/+/, '');
-    if (!key) return null;
+  const key = extractR2Key(filePath);
+  if (key) {
     const cfg = getR2Config();
+    // Priorizar URL pública (evita SSL do Render -> R2)
     if (cfg.publicBaseUrl) {
       const buf = await r2GetObjectViaPublicUrl(key);
       if (buf) return buf;
