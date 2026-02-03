@@ -18,6 +18,7 @@ const requiredEnvVars = [
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingVars.length > 0) {
     console.error('❌ Variáveis de ambiente obrigatórias faltando:', missingVars.join(', '));
+    console.error('   No Render: Environment → verifique se todas estão definidas. Logs: aba Logs do serviço.');
     process.exit(1);
 }
 

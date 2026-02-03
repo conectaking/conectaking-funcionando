@@ -1,4 +1,16 @@
 require('dotenv').config();
+
+// Logar erros não tratados para aparecer nos logs do Render (evita "Exited with status 1" sem causa visível)
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err?.message || err);
+  if (err?.stack) console.error(err.stack);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[unhandledRejection]', reason);
+  process.exit(1);
+});
+
 const express = require('express');
 const compression = require('compression');
 const cors = require('cors');
