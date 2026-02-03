@@ -44,7 +44,7 @@ Script que remove objetos no R2 que não estão mais referenciados no banco (fot
 npm run cleanup:r2:dry
 
 # Deletar de verdade (PowerShell — use ; em vez de &&)
-$env:DRY_RUN="0"; $env:CONFIRM_DELETE="SIM"; node scripts/cleanup-r2-orphans.js
+image.png
 ```
 
 No **CMD** (Prompt de Comando):

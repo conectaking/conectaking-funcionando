@@ -2457,6 +2457,65 @@ router.patch('/photos/:photoId', protectUser, asyncHandler(async (req, res) => {
   }
 }));
 
+router.post('/galleries/:galleryId/photos/delete-batch', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.galleryId, 10);
+  const { photo_ids } = req.body || {};
+  const ids = Array.isArray(photo_ids) ? photo_ids.map(x => parseInt(x, 10)).filter(Boolean) : [];
+  if (!galleryId || !ids.length) return res.status(400).json({ message: 'galleryId e photo_ids são obrigatórios' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const gRes = await client.query(
+      `SELECT id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (!gRes.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const own = await client.query(
+      `SELECT p.id, p.file_path FROM king_photos p
+       WHERE p.gallery_id=$1 AND p.id = ANY($2::int[])`,
+      [galleryId, ids]
+    );
+    const toDelete = own.rows.map(r => r.id);
+    if (!toDelete.length) return res.json({ success: true, deleted: 0 });
+
+    const r2Keys = [];
+    for (const r of own.rows) {
+      const k = extractR2Key(r.file_path);
+      if (k) r2Keys.push(k);
+    }
+
+    await client.query('BEGIN');
+    await client.query('DELETE FROM king_selections WHERE photo_id = ANY($1::int[])', [toDelete]);
+    await client.query('DELETE FROM king_photos WHERE id = ANY($1::int[])', [toDelete]);
+    await client.query('COMMIT');
+
+    if (r2Keys.length) {
+      try {
+        const hasWm = await hasColumn(client, 'king_galleries', 'watermark_path');
+        let safeKeys = r2Keys;
+        if (hasWm) {
+          const wmRes = await client.query(`SELECT watermark_path FROM king_galleries WHERE watermark_path IS NOT NULL AND watermark_path != ''`);
+          const wmSet = new Set(wmRes.rows.map(r => normalizeR2Key(extractR2Key(r.watermark_path))).filter(Boolean));
+          safeKeys = r2Keys.filter(k => !wmSet.has(normalizeR2Key(k) || k));
+        }
+        if (safeKeys.length) {
+          const chunks = [];
+          for (let i = 0; i < safeKeys.length; i += 100) chunks.push(safeKeys.slice(i, i + 100));
+          for (const chunk of chunks) await deleteR2BatchViaWorker(chunk);
+        }
+      } catch (_) {}
+    }
+
+    return res.json({ success: true, deleted: toDelete.length });
+  } finally {
+    client.release();
+  }
+}));
+
 router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => {
   const photoId = parseInt(req.params.photoId, 10);
   if (!photoId) return res.status(400).json({ message: 'photoId inválido' });
