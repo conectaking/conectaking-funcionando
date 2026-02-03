@@ -1241,6 +1241,61 @@ router.post('/photos/:photoId/replace-proxy', protectUser, (req, res, next) => {
   }
 }));
 
+// ===== Marca d'água: upload para R2 (substitui Cloudflare Images)
+router.post('/galleries/:id/watermark', protectUser, (req, res, next) => {
+  uploadMem.single('file')(req, res, (err) => {
+    if (!err) return next();
+    if (err.name === 'MulterError' && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ success: false, message: 'Arquivo muito grande (limite 30MB).' });
+    }
+    return res.status(400).json({ success: false, message: err.message || 'Falha ao processar upload.' });
+  });
+}, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'Arquivo é obrigatório' });
+
+  const cfg = getR2Config();
+  if (!cfg.enabled) return res.status(501).json({ message: 'R2 não configurado' });
+
+  const userId = req.user.userId;
+  const mt = String(req.file.mimetype || '').toLowerCase();
+  const ext = mt.includes('png') ? 'png' : (mt.includes('webp') ? 'webp' : 'jpg');
+  const key = `galleries/${galleryId}/watermark/logo.${ext}`;
+
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    await r2PutObjectBuffer({
+      key,
+      body: req.file.buffer,
+      contentType: req.file.mimetype || 'application/octet-stream',
+      cacheControl: 'public, max-age=31536000, immutable'
+    });
+
+    const sets = ['watermark_path=$1'];
+    const vals = [`r2:${key}`, galleryId];
+    if (await hasColumn(client, 'king_galleries', 'watermark_mode')) {
+      sets.push('watermark_mode=$3');
+      vals.push('logo');
+    }
+    await client.query(
+      `UPDATE king_galleries SET ${sets.join(', ')} WHERE id=$2`,
+      vals
+    );
+    res.json({ success: true, watermark_path: `r2:${key}` });
+  } finally {
+    client.release();
+  }
+}));
+
 // ===== Worker: registrar fotos no banco (com recibo assinado pelo Worker) =====
 router.post('/galleries/:id/photos/worker-commit', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
