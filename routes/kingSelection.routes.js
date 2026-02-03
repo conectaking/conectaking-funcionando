@@ -77,6 +77,17 @@ function normDigits(str) {
   return String(str || '').replace(/[^\d]/g, '');
 }
 
+/** Retorna width/height corretos considerando EXIF orientation (fotos verticais com rotação) */
+function getDisplayDimensions(meta, fallbackW = 1200, fallbackH = 1200) {
+  let w = meta.width || fallbackW;
+  let h = meta.height || fallbackH;
+  const ori = meta.orientation;
+  if (ori >= 5 && ori <= 8) {
+    [w, h] = [h, w];
+  }
+  return { width: w, height: h };
+}
+
 async function notifyWhatsAppSelectionFinalized({
   pgClient,
   galleryId,
@@ -562,8 +573,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
 
 async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   const img = sharp(imgBuffer).rotate();
-  // base: resize cover para garantir outW x outH exatos (evita erro Sharp "composite must have same dimensions or smaller")
-  let pipeline = img.resize(outW, outH, { fit: 'cover', position: 'center' });
+  // fit: 'inside' preserva proporção e NUNCA corta - vertical fica vertical, horizontal fica horizontal
+  let pipeline = img.resize(outW, outH, { fit: 'inside', withoutEnlargement: true });
 
   // 0) Sem marca d'água
   if (watermark && watermark.mode === 'none') {
