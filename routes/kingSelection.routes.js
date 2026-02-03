@@ -982,6 +982,69 @@ router.post('/galleries/:id/status', protectUser, asyncHandler(async (req, res) 
   }
 }));
 
+// DELETE /galleries/:id — exclui o projeto inteiro + todas as fotos do R2 em tempo real
+router.delete('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'ID inválido' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2 LIMIT 1`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(404).json({ message: 'Galeria não encontrada ou sem permissão.' });
+
+    const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
+    const hasWmPath = await hasColumn(client, 'king_galleries', 'watermark_path');
+
+    const r2Keys = new Set();
+    if (hasFilePath) {
+      const pRes = await client.query(
+        `SELECT file_path FROM king_photos WHERE gallery_id=$1 AND file_path IS NOT NULL AND file_path != ''`,
+        [galleryId]
+      );
+      for (const row of pRes.rows) {
+        const k = extractR2Key(row.file_path);
+        if (k) r2Keys.add(k);
+      }
+    }
+    if (hasWmPath) {
+      const gRes = await client.query(
+        `SELECT watermark_path FROM king_galleries WHERE id=$1 AND watermark_path IS NOT NULL AND watermark_path != ''`,
+        [galleryId]
+      );
+      if (gRes.rows.length) {
+        const k = extractR2Key(gRes.rows[0].watermark_path);
+        if (k) r2Keys.add(k);
+      }
+    }
+
+    let r2Deleted = 0;
+    if (r2Keys.size > 0 && KS_WORKER_SECRET) {
+      const keys = Array.from(r2Keys);
+      const batchSize = 1000;
+      for (let i = 0; i < keys.length; i += batchSize) {
+        const chunk = keys.slice(i, i + batchSize);
+        const out = await deleteR2BatchViaWorker(chunk);
+        r2Deleted += out.deleted || 0;
+      }
+    }
+
+    await client.query('DELETE FROM king_galleries WHERE id=$1', [galleryId]);
+    res.json({
+      success: true,
+      message: 'Projeto excluído.',
+      r2: { keysFound: r2Keys.size, deleted: r2Deleted }
+    });
+  } finally {
+    client.release();
+  }
+}));
+
 router.post('/galleries/:id/photos', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   const { imageId, original_name, order } = req.body || {};
@@ -1155,6 +1218,45 @@ async function uploadBufferToWorker({ buffer, filename, mimetype, galleryId, use
     if (msg.includes('fetch') || msg.includes('ECONNREFUSED') || msg.includes('ENOTFOUND') || msg.includes('ETIMEDOUT')) {
       throw new Error(`Falha de conexão com o R2: ${msg.slice(0, 120)}`);
     }
+    throw e;
+  }
+}
+
+/** Token para ks_cleanup (list/delete-batch) - valido 5min */
+function getKsCleanupToken() {
+  return ksSignToken({
+    typ: 'ks_cleanup',
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 300
+  });
+}
+
+/** Deleta múltiplos objetos no R2 via Worker (batch de até 1000) */
+async function deleteR2BatchViaWorker(keys) {
+  if (!keys || keys.length === 0) return { deleted: 0 };
+  if (!KS_WORKER_SECRET) throw new Error('Worker não configurado');
+  const workerUrl = (process.env.KINGSELECTION_WORKER_URL || process.env.R2_PUBLIC_BASE_URL || 'https://r2.conectaking.com.br').toString().trim().replace(/\/$/, '');
+  const validKeys = keys
+    .map(k => String(k || '').trim().replace(/^\/+/, ''))
+    .filter(k => k && k.startsWith('galleries/'));
+  if (validKeys.length === 0) return { deleted: 0 };
+  const token = await getKsCleanupToken();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+  try {
+    const res = await fetch(`${workerUrl}/ks/delete-batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ keys: validKeys }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    let data = {};
+    try { data = JSON.parse((await res.text()) || '{}'); } catch (_) {}
+    if (!res.ok) throw new Error(data.message || `Worker ${res.status}`);
+    return { deleted: data.deleted ?? validKeys.length };
+  } catch (e) {
+    clearTimeout(timeoutId);
     throw e;
   }
 }
