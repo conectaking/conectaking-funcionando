@@ -3303,6 +3303,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     });
 
     res.set('Content-Type', 'image/jpeg');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     const isDownload = String(req.query.download || '') === '1';
     if (isDownload) {
       res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
