@@ -571,14 +571,16 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   };
 }
 
-async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
+async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts }) {
+  const jq = jpegOpts?.quality ?? 82;
+  const jp = jpegOpts?.progressive !== false;
   const img = sharp(imgBuffer).rotate();
   // fit: 'inside' preserva proporção e NUNCA corta - vertical fica vertical, horizontal fica horizontal
   let pipeline = img.resize(outW, outH, { fit: 'inside', withoutEnlargement: true });
 
   // 0) Sem marca d'água
   if (watermark && watermark.mode === 'none') {
-    return pipeline.jpeg({ quality: 82 }).toBuffer();
+    return pipeline.jpeg({ quality: jq, progressive: jp }).toBuffer();
   }
 
   // 1) X (default)
@@ -593,7 +595,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
        </svg>`
     );
     pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
-    return pipeline.jpeg({ quality: 82 }).toBuffer();
+    return pipeline.jpeg({ quality: jq, progressive: jp }).toBuffer();
   }
 
   // 2) Marca d’água por arquivo (Cloudflare) ou padrão do sistema
@@ -621,7 +623,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
          </svg>`
       );
       pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
-      return pipeline.jpeg({ quality: 82 }).toBuffer();
+      return pipeline.jpeg({ quality: jq, progressive: jp }).toBuffer();
     }
   }
 
@@ -642,7 +644,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
          </svg>`
       );
       pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
-      return pipeline.jpeg({ quality: 82 }).toBuffer();
+      return pipeline.jpeg({ quality: jq, progressive: jp }).toBuffer();
     }
   }
 
@@ -688,7 +690,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
        </svg>`
     );
     pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
-    return pipeline.jpeg({ quality: 82 }).toBuffer();
+    return pipeline.jpeg({ quality: jq, progressive: jp }).toBuffer();
   }
   const wmBuf = wmBufRaw;
   const opacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
@@ -750,7 +752,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
     } catch (_) {
       pipeline = pipeline.composite([{ input: wmFinal, gravity: 'center', blend: 'over' }]);
     }
-    return pipeline.jpeg({ quality: 82 }).toBuffer();
+    return pipeline.jpeg({ quality: jq, progressive: jp }).toBuffer();
   }
 
   // Modo "logo" = marca d'água personalizada (se não existir, no preview do admin mostramos erro claro)
@@ -818,7 +820,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
       pipeline = pipeline.composite([{ input: wmFinal, gravity: 'center', blend: 'over' }]);
     }
   }
-  return pipeline.jpeg({ quality: 82 }).toBuffer();
+  return pipeline.jpeg({ quality: jq, progressive: jp }).toBuffer();
 }
 
 // ===== Admin =====
@@ -3286,24 +3288,27 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     const pRes = await client.query('SELECT * FROM king_photos WHERE id=$1 AND gallery_id=$2', [photoId, payload.galleryId]);
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
-    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+    const useThumb = ['1', 'true', 'thumb', 's'].includes(String(req.query.thumb || req.query.size || '').toLowerCase());
+    const [buf, wm] = await Promise.all([
+      fetchPhotoFileBufferFromFilePath(photo.file_path),
+      loadWatermarkForGallery(client, payload.galleryId)
+    ]);
     if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
 
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
     const { width, height } = getDisplayDimensions(meta, 1200, 1200);
-    const useThumb = ['1', 'true', 'thumb', 's'].includes(String(req.query.thumb || req.query.size || '').toLowerCase());
     const max = useThumb ? 400 : 1200;
     const scale = Math.min(max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
 
-    const wm = await loadWatermarkForGallery(client, payload.galleryId);
     const out = await buildWatermarkedJpeg({
       imgBuffer: buf,
       outW,
       outH,
-      watermark: wm
+      watermark: wm,
+      jpegOpts: { quality: useThumb ? 76 : 80, progressive: true }
     });
 
     res.set('Content-Type', 'image/jpeg');
@@ -3313,7 +3318,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
       res.set('Pragma', 'no-cache');
     } else {
-      res.set('Cache-Control', 'private, max-age=' + (useThumb ? '3600' : '600'));
+      res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
     }
     if (isDownload) {
       const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
