@@ -36,6 +36,14 @@ Salvar apenas o objectKey (com prefixo `r2:`):
 - **Upload:** POST `/ks/upload` (com token Bearer)
 - **Binding:** `R2_BUCKET` → bucket `kingselection`
 
+## CORS no bucket R2 (para upload direto via presign)
+
+No Cloudflare → R2 → kingselection → Settings → CORS:
+
+- **Allowed origins:** `https://conectaking.com.br`, `https://www.conectaking.com.br`
+- **Methods:** PUT, GET, HEAD
+- **Allowed headers:** content-type, cache-control
+
 ## Checklist de validação
 
 - [ ] `https://r2.conectaking.com.br/galleries/ADR7542.jpg` abre no navegador
@@ -43,6 +51,7 @@ Salvar apenas o objectKey (com prefixo `r2:`):
 - [ ] Backend salva só `r2:galleries/...` no banco
 - [ ] Backend monta URL com `R2_PUBLIC_BASE_URL`
 - [ ] Galeria King Selection carrega imagens
+- [ ] CORS no bucket R2 (para upload direto)
 
 ## Deploy do Worker
 
@@ -50,3 +59,11 @@ Salvar apenas o objectKey (com prefixo `r2:`):
 cd cf-worker-kingselection-r2
 npx wrangler deploy
 ```
+
+## IMPORTANTE: r2.conectaking.com.br deve apontar para o WORKER
+
+O domínio `r2.conectaking.com.br` precisa receber as requisições no **Worker** (não no bucket R2 diretamente).
+
+1. **Remova** o domínio do R2 bucket (Custom Domains) se estiver lá — o bucket não sabe tratar POST /ks/upload.
+2. **Adicione** a rota no Worker (já está no wrangler.toml) e faça deploy.
+3. No **Cloudflare Dashboard** → **Workers & Pages** → **kingselection-r2** → **Triggers** → confira se a rota `r2.conectaking.com.br/*` aparece. Se não aparecer após o deploy, cadastre manualmente.
