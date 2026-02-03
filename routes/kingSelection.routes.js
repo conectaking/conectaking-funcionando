@@ -1622,7 +1622,10 @@ router.get('/galleries/:id/watermark-file', protectUser, asyncHandler(async (req
     if (!gRes.rows.length) return res.status(404).send('Galeria não encontrada');
     const fp = String(gRes.rows[0].watermark_path || '');
     let buf = null;
-    if (fp.startsWith('cfimage:')) {
+    if (fp.toLowerCase().startsWith('r2:')) {
+      buf = await fetchPhotoFileBufferFromFilePath(fp);
+    }
+    if (!buf && fp.startsWith('cfimage:')) {
       const imageId = fp.replace('cfimage:', '').trim();
       buf = await fetchCloudflareImageBuffer(imageId);
     }
@@ -3248,7 +3251,8 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
 // Limpeza de órfãos no R2 (imagens/vídeos não referenciados no banco)
 router.post('/cleanup-r2', protectUser, asyncHandler(async (req, res) => {
   if (!KS_WORKER_SECRET) return res.status(501).json({ message: 'Worker não configurado (KINGSELECTION_WORKER_SECRET)' });
-  const dryRun = String(req.body?.dryRun ?? req.query?.dryRun ?? '1') !== '0';
+  const rawDry = req.body?.dryRun ?? req.query?.dryRun ?? '1';
+  const dryRun = rawDry === false || rawDry === 0 || String(rawDry).toLowerCase() === '0' || String(rawDry).toLowerCase() === 'false' ? false : true;
   const confirm = String(req.body?.confirm ?? req.query?.confirm ?? '').trim().toUpperCase();
 
   if (!dryRun && confirm !== 'SIM') {
