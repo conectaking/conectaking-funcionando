@@ -1,6 +1,8 @@
 # Limpeza de órfãos R2 (KingSelection)
 
-Sistema de exclusão automática e limpeza diária para imagens no R2, equivalente ao que existe para Cloudflare Images.
+Sistema de exclusão automática e limpeza diária para imagens, logomarcas e vídeos no R2, equivalente ao que existe para Cloudflare Images.
+
+**Sobre "pastas":** No R2 não existem pastas reais — são apenas prefixos nas keys. Quando todos os objetos de um prefixo são deletados, a pasta some automaticamente. A limpeza remove objetos órfãos (incluindo logomarcas antigas trocadas e placeholders de pasta, se existirem).
 
 ## Marca d'água / Logo não envia?
 
