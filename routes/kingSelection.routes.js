@@ -638,6 +638,10 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   }
 
   let wmCloudBuf = null;
+  let wmR2Buf = null;
+  if (fpRaw.toLowerCase().startsWith('r2:')) {
+    wmR2Buf = await fetchPhotoFileBufferFromFilePath(fpRaw);
+  }
   // Só tentamos usar a marca personalizada quando não for tile_dense.
   if (logoImageId && mode !== 'tile_dense') {
     wmCloudBuf = await fetchCloudflareImageBuffer(logoImageId);
@@ -654,8 +658,8 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   if (!strict && fpRaw && !wmCloudBuf && !localDefaultBuf) {
     localDefaultBuf = await fetchDefaultWatermarkAssetBuffer();
   }
-  // Se for tile_dense, força o padrão (ignora custom).
-  const wmBufRaw = (mode === 'tile_dense') ? localDefaultBuf : (wmCloudBuf || localDefaultBuf);
+  // Se for tile_dense, força o padrão (ignora custom). Senão, prioriza R2 > Cloudflare > padrão.
+  const wmBufRaw = (mode === 'tile_dense') ? localDefaultBuf : (wmR2Buf || wmCloudBuf || localDefaultBuf);
   if (!wmBufRaw) {
     // fallback seguro
     const xOpacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0) || 0.30;
@@ -702,34 +706,32 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark }) {
   // Só aplica a rotação escolhida no painel.
   const wmBase = sharp(wmBuf).rotate(rotate);
 
-  // Padrão (completa): repete a marca d'água em mosaico denso para cobrir a foto inteira
+  // Padrão (Conecta King): um único logo centralizado (não em mosaico)
   if (watermark?.mode === 'tile_dense') {
-    const boxW = Math.max(120, Math.round(outW * Math.max(0.20, scale)));
-    const boxH = Math.max(120, Math.round(outH * Math.max(0.20, scale)));
     let wmPng = await wmBase
       .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: false })
       .png()
       .toBuffer();
     wmPng = await applyOpacityPng(wmPng, opacity);
-    const b64 = wmPng.toString('base64');
-    const stepFactor = 0.72;
-    const stepMin = 100;
-    const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.12, scale) * stepFactor)));
-    const w = outW;
-    const h = outH;
-    const svg = Buffer.from(
-      `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-        <defs>
-          <pattern id="pd" patternUnits="userSpaceOnUse" width="${step}" height="${step}">
-            <image href="data:image/png;base64,${b64}" x="0" y="0" width="${boxW}" height="${boxH}"/>
-          </pattern>
-        </defs>
-        <g transform="rotate(-25 ${Math.round(w / 2)} ${Math.round(h / 2)})">
-          <rect x="-${w}" y="-${h}" width="${w * 3}" height="${h * 3}" fill="url(#pd)"/>
-        </g>
-      </svg>`
-    );
-    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
+    let wmFinal = wmPng;
+    try {
+      const m = await sharp(wmFinal).metadata();
+      const w = m.width || 0;
+      const h = m.height || 0;
+      if (w > outW || h > outH) {
+        const left = Math.max(0, Math.floor((w - outW) / 2));
+        const top = Math.max(0, Math.floor((h - outH) / 2));
+        wmFinal = await sharp(wmFinal)
+          .extract({ left, top, width: Math.min(outW, w), height: Math.min(outH, h) })
+          .png()
+          .toBuffer();
+        pipeline = pipeline.composite([{ input: wmFinal, top: 0, left: 0, blend: 'over' }]);
+      } else {
+        pipeline = pipeline.composite([{ input: wmFinal, gravity: 'center', blend: 'over' }]);
+      }
+    } catch (_) {
+      pipeline = pipeline.composite([{ input: wmFinal, gravity: 'center', blend: 'over' }]);
+    }
     return pipeline.jpeg({ quality: 82 }).toBuffer();
   }
 
@@ -1235,6 +1237,29 @@ function getKsCleanupToken() {
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 300
   });
+}
+
+/** Lista todas as keys no R2 sob prefixo (via Worker) */
+async function listR2KeysViaWorker(prefix = 'galleries/') {
+  if (!KS_WORKER_SECRET) throw new Error('Worker não configurado');
+  const workerUrl = (process.env.KINGSELECTION_WORKER_URL || process.env.R2_PUBLIC_BASE_URL || 'https://r2.conectaking.com.br').toString().trim().replace(/\/$/, '');
+  const keys = [];
+  let cursor = null;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const url = new URL(`${workerUrl}/ks/list`);
+    url.searchParams.set('prefix', prefix);
+    url.searchParams.set('limit', '1000');
+    if (cursor) url.searchParams.set('cursor', cursor);
+    const token = await getKsCleanupToken();
+    const res = await fetch(url.toString(), { method: 'GET', headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || `Worker ${res.status}`);
+    if (Array.isArray(data.keys)) keys.push(...data.keys);
+    if (!data.truncated || !data.cursor) break;
+    cursor = data.cursor;
+  }
+  return keys;
 }
 
 /** Deleta múltiplos objetos no R2 via Worker (batch de até 1000) */
