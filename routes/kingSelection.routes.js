@@ -3245,5 +3245,64 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
   }
 }));
 
+// Limpeza de órfãos no R2 (imagens/vídeos não referenciados no banco)
+router.post('/cleanup-r2', protectUser, asyncHandler(async (req, res) => {
+  if (!KS_WORKER_SECRET) return res.status(501).json({ message: 'Worker não configurado (KINGSELECTION_WORKER_SECRET)' });
+  const dryRun = String(req.body?.dryRun ?? req.query?.dryRun ?? '1') !== '0';
+  const confirm = String(req.body?.confirm ?? req.query?.confirm ?? '').trim().toUpperCase();
+
+  if (!dryRun && confirm !== 'SIM') {
+    return res.status(400).json({
+      message: 'Para deletar de verdade, envie dryRun=false e confirm="SIM"',
+      dryRun: true
+    });
+  }
+
+  const client = await db.pool.connect();
+  const lockKey = 20260202;
+  try {
+    const lr = await client.query('SELECT pg_try_advisory_lock($1) AS locked', [lockKey]);
+    if (!(lr?.rows?.[0]?.locked)) {
+      return res.status(409).json({ message: 'Limpeza R2 já está em execução.', dryRun });
+    }
+    const refSet = new Set();
+    const tables = [
+      { table: 'king_photos', col: 'file_path' },
+      { table: 'king_galleries', col: 'watermark_path' }
+    ];
+    for (const t of tables) {
+      if (!(await hasColumn(client, t.table, t.col))) continue;
+      const r = await client.query(`SELECT ${t.col} AS v FROM ${t.table} WHERE ${t.col} IS NOT NULL AND ${t.col} != ''`);
+      for (const row of r.rows) {
+        const k = extractR2Key(row.v);
+        if (k) refSet.add(k);
+      }
+    }
+    const allKeys = await listR2KeysViaWorker('galleries/');
+    const orphans = allKeys.filter(k => !refSet.has(k));
+    let deleted = 0;
+    if (!dryRun && orphans.length > 0) {
+      const batchSize = 1000;
+      for (let i = 0; i < orphans.length; i += batchSize) {
+        const batch = orphans.slice(i, i + batchSize);
+        const out = await deleteR2BatchViaWorker(batch);
+        deleted += out.deleted || 0;
+      }
+    }
+    try { await client.query('SELECT pg_advisory_unlock($1)', [lockKey]); } catch (_) {}
+    res.json({
+      success: true,
+      total: allKeys.length,
+      referenced: refSet.size,
+      orphans: orphans.length,
+      deleted: dryRun ? 0 : deleted,
+      dryRun
+    });
+  } finally {
+    try { await client.query('SELECT pg_advisory_unlock($1)', [lockKey]); } catch (_) {}
+    client.release();
+  }
+}));
+
 module.exports = router;
 
