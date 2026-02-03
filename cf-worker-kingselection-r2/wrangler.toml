@@ -3,7 +3,9 @@ main = "src/index.js"
 compatibility_date = "2026-02-02"
 
 # Bind do bucket R2 (Workers -> R2, sem S3 API)
+# R2_BUCKET = conforme prompt; KS_BUCKET = compatibilidade com código antigo
 r2_buckets = [
+  { binding = "R2_BUCKET", bucket_name = "kingselection" },
   { binding = "KS_BUCKET", bucket_name = "kingselection" }
 ]
 

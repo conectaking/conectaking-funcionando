@@ -1,72 +1,52 @@
-# Configurar URL Pública do R2 (resolver erro 502/SSL)
+# R2 via Subdomínio (r2.conectaking.com.br)
 
-O Render não consegue conectar diretamente ao endpoint S3 do Cloudflare R2 (falha de handshake SSL). A solução é usar **URL pública** para leitura de imagens: o backend busca as imagens via HTTP simples em vez do SDK S3.
+Configuração alinhada ao prompt: URL pública na raiz, sem `/ks/file/`.
 
-## Opção 1: Usar o Worker (r2.conectaking.com.br) — **recomendado**
-
-O Worker já faz upload no R2. Foi adicionado um endpoint para leitura:
-
-- **URL base:** `https://r2.conectaking.com.br/ks/file`
-- **Exemplo de URL:** `https://r2.conectaking.com.br/ks/file/galleries/123/abc.jpg`
-
-### Passos
-
-1. **Fazer deploy do Worker atualizado** (com o novo endpoint GET `/ks/file/`).
-
-2. **Definir variável de ambiente no Render:**
-   ```
-   R2_PUBLIC_BASE_URL=https://r2.conectaking.com.br/ks/file
-   ```
-
-3. **Fazer deploy do backend** no Render.
-
-O backend passa a buscar imagens do R2 pelo Worker, em vez de usar o SDK S3.
-
----
-
-## Opção 2: Acesso público nativo do R2
-
-Se preferir usar o acesso público direto do bucket R2:
-
-### 1. Habilitar acesso público no Cloudflare
-
-1. Acesse o [painel Cloudflare](https://dash.cloudflare.com) → **R2** → seu bucket.
-2. Vá em **Settings**.
-3. Em **Public access**, clique em **Allow Access**.
-4. Escolha:
-   - **R2.dev subdomain** (ex.: `https://pub-xxxx.r2.dev`), ou
-   - **Custom domain** (ex.: `https://fotos.conectaking.com.br`).
-
-### 2. Variável no Render
+## Variáveis no Render
 
 ```
-R2_PUBLIC_BASE_URL=https://pub-XXXX.r2.dev
+R2_PUBLIC_BASE_URL=https://r2.conectaking.com.br
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_ACCOUNT_ID=...
+R2_BUCKET=kingselection
 ```
 
-Ou, se usou domínio customizado:
+**R2_PUBLIC_BASE_URL** – Sem barra no final.
+
+## Formato da URL
 
 ```
-R2_PUBLIC_BASE_URL=https://fotos.conectaking.com.br
+https://r2.conectaking.com.br/<objectKey>
 ```
 
-### 3. Formato das URLs
+Exemplo: `https://r2.conectaking.com.br/galleries/123/abc.jpg`
 
-- Base: `R2_PUBLIC_BASE_URL` (sem barra no final)
-- Imagem: `{base}/{key}` → ex.: `https://pub-xxx.r2.dev/galleries/123/abc.jpg`
+## Banco de Dados
 
----
+Salvar apenas o objectKey (com prefixo `r2:`):
 
-## Resumo
+- ✅ `r2:galleries/123/uuid.jpg`
+- ❌ `https://r2.conectaking.com.br/...`
+- ❌ `https://pub-xxx.r2.dev/...`
 
-| Opção              | R2_PUBLIC_BASE_URL                               | Requer              |
-|--------------------|--------------------------------------------------|---------------------|
-| Worker (recomendado) | `https://r2.conectaking.com.br/ks/file`         | Deploy do Worker    |
-| R2.dev             | `https://pub-XXXX.r2.dev`                        | Acesso público no bucket |
-| Custom domain      | `https://fotos.seusite.com.br`                   | Domínio configurado no R2 |
+## Worker (Cloudflare)
 
----
+- **Leitura:** GET `/*` → serve do R2 (objectKey = pathname sem `/`)
+- **Upload:** POST `/ks/upload` (com token Bearer)
+- **Binding:** `R2_BUCKET` → bucket `kingselection`
 
-## Verificação
+## Checklist de validação
 
-Depois de configurar, teste o preview das fotos no King Selection.  
-Se as imagens carregarem (com marca d’água), a configuração está correta.
+- [ ] `https://r2.conectaking.com.br/galleries/ADR7542.jpg` abre no navegador
+- [ ] Worker com binding `R2_BUCKET` em `kingselection`
+- [ ] Backend salva só `r2:galleries/...` no banco
+- [ ] Backend monta URL com `R2_PUBLIC_BASE_URL`
+- [ ] Galeria King Selection carrega imagens
+
+## Deploy do Worker
+
+```bash
+cd cf-worker-kingselection-r2
+npx wrangler deploy
+```

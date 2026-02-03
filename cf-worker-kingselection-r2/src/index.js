@@ -1,3 +1,12 @@
+/**
+ * Worker R2 - Leitura pública + Upload (KingSelection)
+ * 
+ * LEITURA: https://r2.conectaking.com.br/<objectKey>
+ *   Ex: https://r2.conectaking.com.br/galleries/ADR7542.jpg
+ * 
+ * UPLOAD: POST /ks/upload (com token Bearer)
+ */
+
 function parseAllowedOrigins(env) {
   const raw = (env.ALLOWED_ORIGINS || '').toString();
   return raw.split(',').map(s => s.trim()).filter(Boolean);
@@ -35,13 +44,7 @@ function bytesFromB64Url(str) {
 
 async function hmacSha256Base64Url(secret, data) {
   const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
   return b64UrlFromBytes(new Uint8Array(sig));
 }
@@ -87,32 +90,39 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const cors = corsHeadersFor(request, env);
+    const bucket = env.R2_BUCKET || env.KS_BUCKET;
 
     if (request.method === 'OPTIONS') {
       return new Response('', { status: 204, headers: cors });
     }
 
-    if (url.pathname.startsWith('/ks/file/') && request.method === 'GET') {
-      const key = decodeURIComponent(url.pathname.slice('/ks/file/'.length));
-      if (!key) return new Response('Key inválido', { status: 400, headers: cors });
+    // ========== LEITURA PÚBLICA (raiz) ==========
+    // GET /galleries/ADR7542.jpg → objectKey = galleries/ADR7542.jpg
+    if (request.method === 'GET' && !url.pathname.startsWith('/ks/')) {
+      const objectKey = url.pathname.replace(/^\/+/, '');
+      if (!objectKey) {
+        return new Response('Arquivo não informado', { status: 400, headers: cors });
+      }
+      if (!bucket) {
+        return new Response('Bucket não configurado', { status: 500, headers: cors });
+      }
       try {
-        const obj = await env.KS_BUCKET.get(key);
-        if (!obj) return new Response('Não encontrado', { status: 404, headers: cors });
-        const ct = obj.httpMetadata?.contentType || 'image/jpeg';
-        return new Response(obj.body, {
-          status: 200,
-          headers: {
-            ...Object.fromEntries(cors),
-            'Content-Type': ct,
-            'Cache-Control': 'public, max-age=31536000, immutable'
-          }
-        });
+        const object = await bucket.get(objectKey);
+        if (!object) {
+          return new Response('Arquivo não encontrado', { status: 404, headers: cors });
+        }
+        const headers = new Headers();
+        object.writeHttpMetadata(headers);
+        headers.set('etag', object.httpEtag);
+        headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+        return new Response(object.body, { headers });
       } catch (e) {
         const msg = (e && e.message) ? String(e.message).slice(0, 200) : 'Falha ao ler do R2';
         return new Response(JSON.stringify({ success: false, message: msg }), { status: 502, headers: cors });
       }
     }
 
+    // ========== UPLOAD (autenticado) ==========
     if (url.pathname === '/ks/upload' && request.method === 'POST') {
       const secret = (env.KS_WORKER_SECRET || '').toString().trim();
       if (!secret) return new Response(JSON.stringify({ success: false, message: 'Worker não configurado (KS_WORKER_SECRET).' }), { status: 501, headers: cors });
@@ -140,10 +150,12 @@ export default {
       }
 
       const ext = extFromFilenameOrType(file.name, file.type);
-      const key = `galleries/${galleryId}/${crypto.randomUUID()}.${ext}`;
+      const objectKey = `galleries/${galleryId}/${crypto.randomUUID()}.${ext}`;
+
+      if (!bucket) return new Response(JSON.stringify({ success: false, message: 'Bucket R2 não configurado.' }), { status: 500, headers: cors });
 
       try {
-        await env.KS_BUCKET.put(key, file.stream(), {
+        await bucket.put(objectKey, file.stream(), {
           httpMetadata: { contentType: file.type || 'application/octet-stream' },
           customMetadata: { originalName: file.name || 'foto' }
         });
@@ -152,11 +164,10 @@ export default {
         return new Response(JSON.stringify({ success: false, message: `Falha ao gravar no R2: ${msg}` }), { status: 502, headers: cors });
       }
 
-      const receipt = await signReceipt({ secret, galleryId, key });
-      return new Response(JSON.stringify({ success: true, key, receipt }), { status: 200, headers: cors });
+      const receipt = await signReceipt({ secret, galleryId, key: objectKey });
+      return new Response(JSON.stringify({ success: true, key: objectKey, receipt }), { status: 200, headers: cors });
     }
 
     return new Response('Not found', { status: 404, headers: cors });
   }
 };
-

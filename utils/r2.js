@@ -55,13 +55,26 @@ async function r2GetObjectBuffer(key) {
 }
 
 /**
- * Obtém o objeto do R2 via URL pública (evita SSL handshake do Render com r2.cloudflarestorage.com).
- * Requer R2_PUBLIC_BASE_URL configurado (ex.: https://pub-xxx.r2.dev ou https://fotos.seusite.com.br).
+ * Gera URL pública: R2_PUBLIC_BASE_URL + / + objectKey
+ * Base sem / final, key sem / inicial, encoding por segmento (espaço, acento).
  */
-async function r2GetObjectViaPublicUrl(key) {
+function r2PublicUrl(objectKey) {
   const cfg = getR2Config();
   if (!cfg.publicBaseUrl) return null;
-  const url = `${cfg.publicBaseUrl.replace(/\/$/, '')}/${encodeURI(key).replace(/^%2F/, '')}`;
+  const base = cfg.publicBaseUrl.replace(/\/+$/, '');
+  const k = String(objectKey || '').replace(/^\/+/, '').trim();
+  if (!k) return null;
+  const segments = k.split('/').filter(Boolean).map(s => encodeURIComponent(s));
+  return `${base}/${segments.join('/')}`;
+}
+
+/**
+ * Obtém o objeto do R2 via URL pública (evita SSL handshake do Render).
+ * Requer R2_PUBLIC_BASE_URL = https://r2.conectaking.com.br
+ */
+async function r2GetObjectViaPublicUrl(key) {
+  const url = r2PublicUrl(key);
+  if (!url) return null;
   try {
     const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'image/*' } });
     if (!res.ok) return null;
@@ -83,8 +96,8 @@ async function r2PresignPut({ key, contentType, cacheControl, expiresInSeconds =
     CacheControl: cacheControl || 'public, max-age=31536000, immutable'
   });
   const uploadUrl = await getSignedUrl(client, cmd, { expiresIn: Math.max(60, Math.min(3600, expiresInSeconds)) });
-  const publicUrl = cfg.publicBaseUrl ? `${cfg.publicBaseUrl}/${encodeURI(key)}` : null;
-  return { uploadUrl, publicUrl };
+  const publicUrl = r2PublicUrl(key);
+  return { uploadUrl, publicUrl: publicUrl || undefined };
 }
 
 async function r2PutObjectBuffer({ key, body, contentType, cacheControl }) {
@@ -98,8 +111,8 @@ async function r2PutObjectBuffer({ key, body, contentType, cacheControl }) {
     ContentType: contentType || 'application/octet-stream',
     CacheControl: cacheControl || 'public, max-age=31536000, immutable'
   }));
-  const publicUrl = cfg.publicBaseUrl ? `${cfg.publicBaseUrl}/${encodeURI(key)}` : null;
-  return { key, publicUrl };
+  const publicUrl = r2PublicUrl(key);
+  return { key, publicUrl: publicUrl || undefined };
 }
 
 /** Testa a conexão com o R2 (diagnóstico de 502). */
@@ -139,6 +152,7 @@ async function r2Diagnostic() {
 module.exports = {
   getR2Config,
   getR2Client,
+  r2PublicUrl,
   r2GetObjectBuffer,
   r2GetObjectViaPublicUrl,
   r2PresignPut,

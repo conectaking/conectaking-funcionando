@@ -11,7 +11,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { getR2Config, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer } = require('../utils/r2');
+const { getR2Config, r2PublicUrl, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer } = require('../utils/r2');
 
 const router = express.Router();
 
@@ -2444,8 +2444,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const gallery = gRes.rows[0];
 
+    const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
     const pRes = await client.query(
-      'SELECT id, original_name, "order" FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC',
+      `SELECT id, original_name, "order"${hasFilePath ? ', file_path' : ''} FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC`,
       [gallery.id]
     );
 
@@ -2481,9 +2482,17 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       if (st) locked = ['revisao', 'finalizado'].includes(st);
     }
 
+    const photos = (pRes.rows || []).map(p => {
+      const out = { id: p.id, original_name: p.original_name, order: p.order };
+      if (hasFilePath && p.file_path && String(p.file_path).toLowerCase().startsWith('r2:')) {
+        const objectKey = String(p.file_path).slice(3).trim().replace(/^\/+/, '');
+        if (objectKey) out.url = r2PublicUrl(objectKey) || undefined;
+      }
+      return out;
+    });
     res.json({
       success: true,
-      gallery: { ...gallery, photos: pRes.rows, locked, allow_download: hasAllowDownload ? !!gallery.allow_download : false },
+      gallery: { ...gallery, photos, locked, allow_download: hasAllowDownload ? !!gallery.allow_download : false },
       selectedPhotoIds
     });
   } finally {
