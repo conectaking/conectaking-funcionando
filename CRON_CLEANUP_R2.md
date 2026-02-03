@@ -2,6 +2,12 @@
 
 Sistema de exclusão automática e limpeza diária para imagens no R2, equivalente ao que existe para Cloudflare Images.
 
+## Marca d'água / Logo não envia?
+
+Se a marca d'água não for enviada, confira no **Render → Environment**:
+
+- **`KINGSELECTION_WORKER_SECRET`** — deve existir e ser **igual** ao `KS_WORKER_SECRET` no Cloudflare Worker. Sem isso, o upload da logo retorna erro 501.
+
 ## O que foi implementado
 
 ### 1. Exclusão ao deletar foto
@@ -27,15 +33,17 @@ Script que remove objetos no R2 que não estão mais referenciados no banco (fot
 
 ## Execução manual
 
+**Importante:** Execute sempre na pasta raiz do projeto (`conectaking-funcionando-1`), não dentro de `cf-worker-kingselection-r2`.
+
 ```bash
-# Simular (não deleta nada)
+# Simular (não deleta nada) — funciona no Windows
 npm run cleanup:r2:dry
 
-# Deletar de verdade
-DRY_RUN=0 CONFIRM_DELETE=SIM node scripts/cleanup-r2-orphans.js
+# Deletar de verdade (PowerShell)
+$env:DRY_RUN="0"; $env:CONFIRM_DELETE="SIM"; node scripts/cleanup-r2-orphans.js
 
-# Limitar quantidade e pausa entre batches
-DRY_RUN=0 CONFIRM_DELETE=SIM MAX_DELETE=50 SLEEP_MS=200 node scripts/cleanup-r2-orphans.js
+# Deletar (CMD)
+set DRY_RUN=0 && set CONFIRM_DELETE=SIM && node scripts/cleanup-r2-orphans.js
 ```
 
 ## Deploy do Worker
