@@ -4,6 +4,7 @@ const { protectUser } = require('../middleware/protectUser');
 const { asyncHandler } = require('../middleware/errorHandler');
 const config = require('../config');
 const fetch = require('node-fetch');
+const FormData = require('form-data');
 const sharp = require('sharp');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
@@ -1106,7 +1107,32 @@ router.post('/galleries/:id/uploads/worker-token', protectUser, asyncHandler(asy
   }
 }));
 
-// ===== R2: upload via backend (contorna bloqueio SSL/CORS no navegador) =====
+// Backend envia arquivo para o Worker (evita SSL do S3 no Render)
+async function uploadBufferToWorker({ buffer, filename, mimetype, galleryId, userId }) {
+  if (!KS_WORKER_SECRET) throw new Error('Worker não configurado');
+  const workerUrl = (process.env.KINGSELECTION_WORKER_URL || process.env.R2_PUBLIC_BASE_URL || 'https://r2.conectaking.com.br').toString().trim().replace(/\/$/, '');
+  const token = ksSignToken({
+    typ: 'ks_upload',
+    userId,
+    galleryId,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 600
+  });
+  const form = new FormData();
+  form.append('file', buffer, { filename: filename || 'foto.jpg', contentType: mimetype || 'image/jpeg' });
+  const res = await fetch(`${workerUrl}/ks/upload`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, ...form.getHeaders() },
+    body: form
+  });
+  const text = await res.text().catch(() => '');
+  const data = (() => { try { return JSON.parse(text); } catch (_) { return {}; } })();
+  if (!res.ok) throw new Error(data.message || text || `Worker ${res.status}`);
+  if (!data.key || !data.receipt) throw new Error('Resposta inválida do Worker');
+  return { key: data.key, receipt: data.receipt };
+}
+
+// ===== R2: upload via backend — usa Worker (evita SSL S3 no Render) =====
 router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
   // Capturar erros do multer e devolver msg clara (Render produção escondia em 500 genérico)
   uploadMem.single('file')(req, res, (err) => {
@@ -1124,23 +1150,11 @@ router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
   if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'Arquivo é obrigatório' });
 
-  const cfg = getR2Config();
-  if (!cfg.enabled) return res.status(501).json({ message: 'R2 não configurado (R2_ACCOUNT_ID/R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY/R2_BUCKET).' });
+  if (!KS_WORKER_SECRET) return res.status(501).json({ message: 'Worker não configurado (KINGSELECTION_WORKER_SECRET).' });
 
   const userId = req.user.userId;
   const originalName = ((req.body && (req.body.original_name || req.body.originalName)) || req.file.originalname || 'foto').toString().slice(0, 500);
   const order = parseInt((req.body && (req.body.order || 0)) || 0, 10) || 0;
-
-  const ext = (() => {
-    const n = String(req.file.originalname || '').trim();
-    const m = n.match(/\.([a-zA-Z0-9]{1,8})$/);
-    if (m) return m[1].toLowerCase();
-    const mt = String(req.file.mimetype || '').toLowerCase();
-    if (mt.includes('png')) return 'png';
-    if (mt.includes('webp')) return 'webp';
-    return 'jpg';
-  })();
-  const key = `galleries/${galleryId}/${crypto.randomUUID()}.${ext}`;
 
   const client = await db.pool.connect();
   try {
@@ -1154,17 +1168,19 @@ router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
 
+    let key;
     try {
-      await r2PutObjectBuffer({
-        key,
-        body: req.file.buffer,
-        contentType: req.file.mimetype || 'application/octet-stream',
-        cacheControl: 'public, max-age=31536000, immutable'
+      const out = await uploadBufferToWorker({
+        buffer: req.file.buffer,
+        filename: req.file.originalname || 'foto.jpg',
+        mimetype: req.file.mimetype || 'application/octet-stream',
+        galleryId,
+        userId
       });
+      key = out.key;
     } catch (e) {
-      // Mensagem clara para debug (sem expor segredos)
       const msg = (e && e.message) ? String(e.message).slice(0, 250) : 'Falha ao enviar para o R2';
-      return res.status(502).json({ success: false, message: `Falha ao enviar para o R2: ${msg}` });
+      return res.status(502).json({ success: false, message: msg });
     }
 
     let ins = null;
@@ -1177,7 +1193,7 @@ router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
       );
     } catch (e) {
       const msg = (e && e.message) ? String(e.message).slice(0, 250) : 'Falha ao salvar no banco';
-      return res.status(500).json({ success: false, message: `Falha ao registrar no banco: ${msg}` });
+      return res.status(500).json({ success: false, message: msg });
     }
 
     return res.status(201).json({ success: true, photo: ins.rows[0] });
@@ -1199,17 +1215,10 @@ router.post('/photos/:photoId/replace-proxy', protectUser, (req, res, next) => {
   const photoId = parseInt(req.params.photoId, 10);
   if (!photoId) return res.status(400).json({ message: 'photoId inválido' });
   if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'Arquivo é obrigatório' });
-
-  const cfg = getR2Config();
-  if (!cfg.enabled) return res.status(501).json({ message: 'R2 não configurado' });
+  if (!KS_WORKER_SECRET) return res.status(501).json({ message: 'Worker não configurado' });
 
   const userId = req.user.userId;
   const originalName = ((req.body && req.body.original_name) || req.file.originalname || 'foto').toString().slice(0, 500);
-  const ext = (() => {
-    const m = (req.file.originalname || '').match(/\.([a-zA-Z0-9]{1,8})$/);
-    if (m) return m[1].toLowerCase();
-    return 'jpg';
-  })();
 
   const client = await db.pool.connect();
   try {
@@ -1222,18 +1231,18 @@ router.post('/photos/:photoId/replace-proxy', protectUser, (req, res, next) => {
     );
     if (!cur.rows.length) return res.status(403).json({ message: 'Sem permissão' });
     const galleryId = cur.rows[0].gallery_id;
-    const key = `galleries/${galleryId}/${crypto.randomUUID()}.${ext}`;
 
-    await r2PutObjectBuffer({
-      key,
-      body: req.file.buffer,
-      contentType: req.file.mimetype || 'application/octet-stream',
-      cacheControl: 'public, max-age=31536000, immutable'
+    const out = await uploadBufferToWorker({
+      buffer: req.file.buffer,
+      filename: req.file.originalname || 'foto.jpg',
+      mimetype: req.file.mimetype || 'application/octet-stream',
+      galleryId,
+      userId
     });
 
     await client.query(
       'UPDATE king_photos SET file_path=$1, original_name=$2 WHERE id=$3',
-      [`r2:${key}`, originalName, photoId]
+      [`r2:${out.key}`, originalName, photoId]
     );
     res.json({ success: true });
   } finally {
@@ -1254,15 +1263,9 @@ router.post('/galleries/:id/watermark', protectUser, (req, res, next) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
   if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'Arquivo é obrigatório' });
-
-  const cfg = getR2Config();
-  if (!cfg.enabled) return res.status(501).json({ message: 'R2 não configurado' });
+  if (!KS_WORKER_SECRET) return res.status(501).json({ message: 'Worker não configurado' });
 
   const userId = req.user.userId;
-  const mt = String(req.file.mimetype || '').toLowerCase();
-  const ext = mt.includes('png') ? 'png' : (mt.includes('webp') ? 'webp' : 'jpg');
-  const key = `galleries/${galleryId}/watermark/logo.${ext}`;
-
   const client = await db.pool.connect();
   try {
     const own = await client.query(
@@ -1273,12 +1276,14 @@ router.post('/galleries/:id/watermark', protectUser, (req, res, next) => {
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
 
-    await r2PutObjectBuffer({
-      key,
-      body: req.file.buffer,
-      contentType: req.file.mimetype || 'application/octet-stream',
-      cacheControl: 'public, max-age=31536000, immutable'
+    const out = await uploadBufferToWorker({
+      buffer: req.file.buffer,
+      filename: req.file.originalname || 'watermark.png',
+      mimetype: req.file.mimetype || 'application/octet-stream',
+      galleryId,
+      userId
     });
+    const key = out.key;
 
     const sets = ['watermark_path=$1'];
     const vals = [`r2:${key}`, galleryId];
