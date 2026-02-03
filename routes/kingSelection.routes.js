@@ -1180,7 +1180,8 @@ async function deleteR2ObjectViaWorker(key) {
       signal: controller.signal
     });
     clearTimeout(timeoutId);
-    const data = (() => { try { return JSON.parse((await res.text()) || '{}'); } catch (_) { return {}; } })();
+    let data = {};
+    try { data = JSON.parse((await res.text()) || '{}'); } catch (_) {}
     return res.ok && data.success === true;
   } catch (_) {
     clearTimeout(timeoutId);
