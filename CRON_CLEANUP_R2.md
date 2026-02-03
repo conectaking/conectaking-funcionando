@@ -35,16 +35,20 @@ Script que remove objetos no R2 que não estão mais referenciados no banco (fot
 
 ## Execução manual
 
-**Importante:** Execute sempre na pasta raiz do projeto (`conectaking-funcionando-1`), não dentro de `cf-worker-kingselection-r2`.
+**Requisito:** O arquivo `.env` na raiz do projeto deve ter `KINGSELECTION_WORKER_SECRET` (mesmo valor do `KS_WORKER_SECRET` no Cloudflare Worker). Sem isso, o script falha com "não configurado".
 
-```bash
-# Simular (não deleta nada) — funciona no Windows
+**Importante:** Execute sempre na pasta raiz do projeto (`conectaking-funcionando-1`), não dentro de `cf-worker-kingselection-r2`. Se estiver em `cf-worker-kingselection-r2`, use `cd ..` primeiro.
+
+```powershell
+# Simular (não deleta nada)
 npm run cleanup:r2:dry
 
-# Deletar de verdade (PowerShell)
+# Deletar de verdade (PowerShell — use ; em vez de &&)
 $env:DRY_RUN="0"; $env:CONFIRM_DELETE="SIM"; node scripts/cleanup-r2-orphans.js
+```
 
-# Deletar (CMD)
+No **CMD** (Prompt de Comando):
+```cmd
 set DRY_RUN=0 && set CONFIRM_DELETE=SIM && node scripts/cleanup-r2-orphans.js
 ```
 

@@ -1,45 +1,220 @@
 {
-  "generated_at": "2026-02-01T20:36:23.864Z",
-  "cloudflare_images_total": 122,
-  "referenced_db": 116,
+  "generated_at": "2026-02-03T09:33:28.299Z",
+  "cloudflare_images_total": 206,
+  "referenced_db": 167,
   "referenced_files": 4,
-  "orphan_candidates": 7,
+  "orphan_candidates": 42,
   "min_age_days": 0,
   "candidates": [
     {
-      "id": "bd1c89f0-052a-4e93-5a59-5640a8fddf00",
-      "filename": "EVENTO.png",
-      "uploaded": "2026-02-01T20:22:46.422Z"
+      "id": "f619d693-1a7b-420b-0625-0efbecd82600",
+      "filename": "Cópia de Cópia de Imersão Líderes Posicionados.png",
+      "uploaded": "2026-02-02T18:44:53.095Z"
     },
     {
-      "id": "f7f9852c-2cd9-4f69-3e9f-8180b5ad4700",
-      "filename": "_ADR2186.JPG",
-      "uploaded": "2026-02-01T05:45:27.429Z"
+      "id": "ec8d6e94-931e-4c65-3dfd-2acf59526a00",
+      "filename": "Cópia de Cópia de Imersão Líderes Posicionados.png",
+      "uploaded": "2026-02-02T18:44:47.387Z"
     },
     {
-      "id": "c3c7fcc8-6d09-4ec9-7ecb-d79d052e8c00",
-      "filename": "_ADR2054.JPG",
-      "uploaded": "2026-02-01T05:45:21.501Z"
+      "id": "2f661de0-e97e-4391-08cc-9f8a4a627500",
+      "filename": "background.jpg",
+      "uploaded": "2026-02-02T17:35:20.669Z"
     },
     {
-      "id": "711cd97e-020b-4cb2-cc07-d937cd576b00",
-      "filename": "_ADR2001.JPG",
-      "uploaded": "2026-02-01T05:45:15.759Z"
+      "id": "26b97471-4f8c-40ea-8b56-6a3a6c806800",
+      "filename": "background.jpg",
+      "uploaded": "2026-02-02T17:27:41.081Z"
     },
     {
-      "id": "68ce9187-1815-4703-6e8f-a4d1da8a8300",
-      "filename": "_ADR1999.JPG",
-      "uploaded": "2026-02-01T05:45:10.057Z"
+      "id": "45e8fc35-edde-4aab-e7d4-330fb7b6cc00",
+      "filename": "background.jpg",
+      "uploaded": "2026-02-02T17:27:15.925Z"
     },
     {
-      "id": "21bc733a-571e-46a5-cc8a-1ca6a8afb900",
-      "filename": "_ADR1987.JPG",
-      "uploaded": "2026-02-01T05:45:04.350Z"
+      "id": "7ebb9c54-9e84-4982-788e-4d5c210f6d00",
+      "filename": "profile-picture.jpg",
+      "uploaded": "2026-02-02T17:24:06.844Z"
     },
     {
-      "id": "ebba87fb-4d16-4cc0-bfdf-aaf927afa400",
-      "filename": "_ADR1951.JPG",
-      "uploaded": "2026-02-01T05:44:55.809Z"
+      "id": "b4774314-7e0f-43be-ffd2-06225c32e500",
+      "filename": "CONECTA KING  CLÉCIO 2.png",
+      "uploaded": "2026-02-02T17:16:40.118Z"
+    },
+    {
+      "id": "4385ebed-645e-486c-8c71-42b1f805b600",
+      "filename": "profile-picture.jpg",
+      "uploaded": "2026-02-02T16:59:33.791Z"
+    },
+    {
+      "id": "78a424a5-ebc0-437b-7624-886cca6a9a00",
+      "filename": "CONECTA KING  CLÉCIO 2.png",
+      "uploaded": "2026-02-02T16:58:51.420Z"
+    },
+    {
+      "id": "48fe4c8e-62f9-420e-6e89-fa185f353600",
+      "filename": "FLAYER TELÃO.jpg",
+      "uploaded": "2026-02-02T16:27:12.771Z"
+    },
+    {
+      "id": "396c44a4-332a-48cc-0d3f-9c618ff40b00",
+      "filename": "_ADR0464.JPG",
+      "uploaded": "2026-02-02T07:24:40.047Z"
+    },
+    {
+      "id": "655cd7d9-5de5-4008-883f-69a076f83b00",
+      "filename": "_ADR0454.JPG",
+      "uploaded": "2026-02-02T07:24:39.248Z"
+    },
+    {
+      "id": "19ed46c1-54bb-429d-38fc-8115730a4f00",
+      "filename": "_ADR0459.JPG",
+      "uploaded": "2026-02-02T07:16:33.956Z"
+    },
+    {
+      "id": "433a0bee-0ac8-45be-a445-8e81b0c8ed00",
+      "filename": "_ADR0456.JPG",
+      "uploaded": "2026-02-02T07:16:31.294Z"
+    },
+    {
+      "id": "774ffc60-d344-4049-d22e-090b24bd3e00",
+      "filename": "_ADR0455.JPG",
+      "uploaded": "2026-02-02T07:16:30.729Z"
+    },
+    {
+      "id": "694fd2b2-b985-4d57-c500-99bf509e2e00",
+      "filename": "_ADR0454.JPG",
+      "uploaded": "2026-02-02T07:16:29.913Z"
+    },
+    {
+      "id": "9443bf90-262e-4f24-6832-436a511e3d00",
+      "filename": "_ADR0430.JPG",
+      "uploaded": "2026-02-02T07:15:56.948Z"
+    },
+    {
+      "id": "ba21a413-c5a2-4760-2581-d44d05fa7000",
+      "filename": "_ADR0429.JPG",
+      "uploaded": "2026-02-02T07:15:56.309Z"
+    },
+    {
+      "id": "9afd7b58-f80e-4cd0-8c79-491ef915d700",
+      "filename": "_ADR0053.JPG",
+      "uploaded": "2026-02-02T06:53:28.796Z"
+    },
+    {
+      "id": "d82542fe-9158-455c-2736-1037d9238200",
+      "filename": "_ADR0052.JPG",
+      "uploaded": "2026-02-02T06:53:26.844Z"
+    },
+    {
+      "id": "5ef88954-5249-4b3f-3d92-348695ba6a00",
+      "filename": "_ADR0045.JPG",
+      "uploaded": "2026-02-02T06:53:15.745Z"
+    },
+    {
+      "id": "8a96e8d7-5ac5-4341-6fc2-d5a011f8cc00",
+      "filename": "_ADR2305.JPG",
+      "uploaded": "2026-02-02T03:18:31.986Z"
+    },
+    {
+      "id": "7971cf90-30cc-4550-7c5f-e255c4ecdf00",
+      "filename": "_ADR2259.JPG",
+      "uploaded": "2026-02-02T03:08:30.310Z"
+    },
+    {
+      "id": "7ece34ab-10f0-45a9-5e7b-e1a44b4e6100",
+      "filename": "_ADR2258.JPG",
+      "uploaded": "2026-02-02T03:08:29.825Z"
+    },
+    {
+      "id": "38302478-5454-45b1-fece-5ab532e7fc00",
+      "filename": "_ADR2257.JPG",
+      "uploaded": "2026-02-02T03:08:29.264Z"
+    },
+    {
+      "id": "93168ee1-ff4f-4f47-dbf3-58e59f3a0d00",
+      "filename": "_ADR2256.JPG",
+      "uploaded": "2026-02-02T03:08:28.690Z"
+    },
+    {
+      "id": "9f13976c-3fa0-48e2-f885-e04acefa6100",
+      "filename": "_ADR2251.JPG",
+      "uploaded": "2026-02-02T03:08:05.053Z"
+    },
+    {
+      "id": "acb578b0-9721-4f0d-03b9-8d191f3dd800",
+      "filename": "_ADR2250.JPG",
+      "uploaded": "2026-02-02T03:08:04.604Z"
+    },
+    {
+      "id": "dcbc913f-da25-4773-81f0-5ce37795ed00",
+      "filename": "_ADR2249.JPG",
+      "uploaded": "2026-02-02T03:08:04.130Z"
+    },
+    {
+      "id": "98533e86-cc52-48e5-f525-aa84a3a9bd00",
+      "filename": "_ADR2247.JPG",
+      "uploaded": "2026-02-02T03:08:02.980Z"
+    },
+    {
+      "id": "a4f8a96d-f8fb-47a7-5bfb-1ee0334d0300",
+      "filename": "_ADR1963.JPG",
+      "uploaded": "2026-02-01T21:40:51.472Z"
+    },
+    {
+      "id": "c1058db1-558f-45d0-eb1b-731ad2ff1d00",
+      "filename": "WhatsApp Image 2026-01-29 at 14.18.45.jpg",
+      "uploaded": "2026-01-30T06:42:56.419Z"
+    },
+    {
+      "id": "c4aa2e24-20bd-4432-0d25-96d2a4de4e00",
+      "filename": "WhatsApp Image 2026-01-27 at 21.47.25.jpeg",
+      "uploaded": "2026-01-28T23:17:05.030Z"
+    },
+    {
+      "id": "f8371324-5e21-461e-a37a-a28bde835a00",
+      "filename": "WhatsApp Image 2026-01-27 at 21.47.25 (2).jpeg",
+      "uploaded": "2026-01-28T02:39:03.239Z"
+    },
+    {
+      "id": "29a9fc6a-ab3c-441e-86d9-658fba98d700",
+      "filename": "WhatsApp Image 2026-01-27 at 21.47.25.jpeg",
+      "uploaded": "2026-01-28T02:38:51.034Z"
+    },
+    {
+      "id": "dedfc4bf-c3b2-45ec-ef23-ef7a8c020f00",
+      "filename": "WhatsApp Image 2026-01-27 at 21.47.25 (2).jpeg",
+      "uploaded": "2026-01-28T02:37:51.672Z"
+    },
+    {
+      "id": "9cadf84f-af0d-4644-3fbb-4f01e1b01000",
+      "filename": "profile-picture.png",
+      "uploaded": "2026-01-26T20:48:52.383Z"
+    },
+    {
+      "id": "2ca69980-db6d-48fd-db28-f5646ada5300",
+      "filename": "FEED.png",
+      "uploaded": "2026-01-26T20:38:21.638Z"
+    },
+    {
+      "id": "6463a155-5422-42f9-eea4-c40f22ae8a00",
+      "filename": "Conecta King  Fernando Takashi 2.png",
+      "uploaded": "2026-01-26T13:19:18.504Z"
+    },
+    {
+      "id": "befe3fd1-d0f9-4c12-24fc-91bde23cf100",
+      "filename": "meta-image.jpg",
+      "uploaded": "2026-01-26T01:27:42.843Z"
+    },
+    {
+      "id": "ddfbc56c-8235-4507-7157-099dbbf31000",
+      "filename": "logo.png",
+      "uploaded": "2026-01-26T01:27:13.894Z"
+    },
+    {
+      "id": "7eac13f4-b7b4-4958-4758-1bcefebdd900",
+      "filename": "profile-picture.jpg",
+      "uploaded": "2026-01-25T23:39:22.431Z"
     }
   ]
 }
