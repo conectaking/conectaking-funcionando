@@ -2218,8 +2218,7 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     // Watermark X (30%) e resize 1200
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
-    const width = meta.width || 1200;
-    const height = meta.height || 1200;
+    const { width, height } = getDisplayDimensions(meta, 1200, 1200);
     const max = 1200;
     const scale = Math.min(max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
@@ -2331,8 +2330,7 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
     // Capa: preview watermarked + blur leve, 1400px
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
-    const width = meta.width || 1400;
-    const height = meta.height || 900;
+    const { width, height } = getDisplayDimensions(meta, 1400, 900);
     const max = 1400;
     const scale = Math.min(max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
@@ -2742,8 +2740,7 @@ router.get('/photos/:photoId/download', protectUser, asyncHandler(async (req, re
     // download como preview com marca (mais seguro). Se quiser original no futuro, adiciona mode=original.
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
-    const width = meta.width || 2400;
-    const height = meta.height || 2400;
+    const { width, height } = getDisplayDimensions(meta, 2400, 2400);
     const max = 2400;
     const scale = Math.min(max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
@@ -3291,8 +3288,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
 
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
-    const width = meta.width || 1200;
-    const height = meta.height || 1200;
+    const { width, height } = getDisplayDimensions(meta, 1200, 1200);
     const max = 1200;
     const scale = Math.min(max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
