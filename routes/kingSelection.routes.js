@@ -1186,6 +1186,61 @@ router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
   }
 }));
 
+// ===== Substituir foto via proxy (backend envia para R2) — fallback quando Worker falha
+router.post('/photos/:photoId/replace-proxy', protectUser, (req, res, next) => {
+  uploadMem.single('file')(req, res, (err) => {
+    if (!err) return next();
+    if (err.name === 'MulterError' && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ success: false, message: 'Arquivo muito grande (limite 30MB).' });
+    }
+    return res.status(400).json({ success: false, message: err.message || 'Falha ao processar upload.' });
+  });
+}, asyncHandler(async (req, res) => {
+  const photoId = parseInt(req.params.photoId, 10);
+  if (!photoId) return res.status(400).json({ message: 'photoId inválido' });
+  if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'Arquivo é obrigatório' });
+
+  const cfg = getR2Config();
+  if (!cfg.enabled) return res.status(501).json({ message: 'R2 não configurado' });
+
+  const userId = req.user.userId;
+  const originalName = ((req.body && req.body.original_name) || req.file.originalname || 'foto').toString().slice(0, 500);
+  const ext = (() => {
+    const m = (req.file.originalname || '').match(/\.([a-zA-Z0-9]{1,8})$/);
+    if (m) return m[1].toLowerCase();
+    return 'jpg';
+  })();
+
+  const client = await db.pool.connect();
+  try {
+    const cur = await client.query(
+      `SELECT p.id, p.gallery_id FROM king_photos p
+       JOIN king_galleries g ON g.id = p.gallery_id
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE p.id=$1 AND pi.user_id=$2`,
+      [photoId, userId]
+    );
+    if (!cur.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    const galleryId = cur.rows[0].gallery_id;
+    const key = `galleries/${galleryId}/${crypto.randomUUID()}.${ext}`;
+
+    await r2PutObjectBuffer({
+      key,
+      body: req.file.buffer,
+      contentType: req.file.mimetype || 'application/octet-stream',
+      cacheControl: 'public, max-age=31536000, immutable'
+    });
+
+    await client.query(
+      'UPDATE king_photos SET file_path=$1, original_name=$2 WHERE id=$3',
+      [`r2:${key}`, originalName, photoId]
+    );
+    res.json({ success: true });
+  } finally {
+    client.release();
+  }
+}));
+
 // ===== Worker: registrar fotos no banco (com recibo assinado pelo Worker) =====
 router.post('/galleries/:id/photos/worker-commit', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
@@ -2181,6 +2236,46 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
     }
 
     res.json({ success: true, cloudflare: { attempted: cfAttempted, deleted: cfDeleted, skipped: cfSkipped } });
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== Substituir foto via R2 (Worker ou proxy) — SOMENTE R2, sem Cloudflare Images
+router.post('/photos/:photoId/replace-r2', protectUser, asyncHandler(async (req, res) => {
+  const photoId = parseInt(req.params.photoId, 10);
+  const { key, receipt, original_name } = req.body || {};
+  if (!photoId || !key || !receipt) return res.status(400).json({ message: 'photoId, key e receipt são obrigatórios' });
+  if (!KS_WORKER_SECRET) return res.status(501).json({ success: false, message: 'Worker não configurado (KINGSELECTION_WORKER_SECRET).' });
+
+  const keyStr = String(key || '').replace(/^\/+/, '').trim();
+  const receiptStr = String(receipt || '').trim();
+  const payload = ksVerifyToken(receiptStr);
+  if (!payload || payload.typ !== 'ks_receipt') return res.status(400).json({ message: 'Recibo inválido' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const cur = await client.query(
+      `SELECT p.id, p.gallery_id
+       FROM king_photos p
+       JOIN king_galleries g ON g.id = p.gallery_id
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE p.id=$1 AND pi.user_id=$2`,
+      [photoId, userId]
+    );
+    if (!cur.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    const galleryId = cur.rows[0].gallery_id;
+    if (parseInt(payload.galleryId || 0, 10) !== galleryId || String(payload.key || '') !== keyStr) {
+      return res.status(400).json({ message: 'Key ou recibo não corresponde à galeria' });
+    }
+    if (!keyStr.startsWith(`galleries/${galleryId}/`)) return res.status(400).json({ message: 'Key inválida' });
+
+    await client.query(
+      'UPDATE king_photos SET file_path=$1, original_name=$2 WHERE id=$3',
+      [`r2:${keyStr}`, String(original_name || 'foto').slice(0, 500), photoId]
+    );
+    res.json({ success: true });
   } finally {
     client.release();
   }
