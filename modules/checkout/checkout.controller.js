@@ -55,12 +55,14 @@ async function createCharge(req, res) {
     success: true,
     chargeId: result.chargeId,
     orderId: result.orderId,
-    qrCode: result.qrCode
+    qrCode: result.qrCode,
+    qrCodeText: result.qrCodeText
   });
 }
 
 /**
  * POST /api/checkout/test-connection - Admin testar conexão PagBank
+ * Body opcional: pagbank_seller_id, pagbank_access_token (para testar antes de salvar)
  */
 async function testConnection(req, res) {
   const userId = req.user.userId;
@@ -68,7 +70,12 @@ async function testConnection(req, res) {
   if (!profileItemId || isNaN(profileItemId)) {
     return res.status(400).json({ success: false, message: 'profile_item_id inválido' });
   }
-  const result = await checkoutService.testConnection(userId, profileItemId);
+  const tokenFromBody = (req.body.pagbank_access_token || '').trim();
+  const sellerIdFromBody = (req.body.pagbank_seller_id || '').trim();
+  const result = await checkoutService.testConnection(userId, profileItemId, {
+    pagbank_access_token: tokenFromBody || undefined,
+    pagbank_seller_id: sellerIdFromBody || undefined
+  });
   res.json({ ok: result.ok, message: result.message });
 }
 

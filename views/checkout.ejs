@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento - <%= formTitle %> | KingForms</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root { --primary: #22c55e; --primary-dark: #16a34a; --bg: #f8fafc; --card: #fff; --text: #1e293b; --text-muted: #64748b; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+        .top-bar { background: var(--card); padding: 16px 24px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+        .top-bar .logo { font-weight: 700; font-size: 1.25rem; color: var(--primary); }
+        .main { flex: 1; padding: 32px 24px; max-width: 900px; margin: 0 auto; width: 100%; }
+        .card { background: var(--card); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.06); overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+        @media (max-width: 700px) { .card { grid-template-columns: 1fr; } }
+        .col { padding: 28px; }
+        .col-left { border-right: 1px solid #e2e8f0; }
+        @media (max-width: 700px) { .col-left { border-right: none; border-bottom: 1px solid #e2e8f0; } }
+        .col h2 { font-size: 1.125rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
+        .col .form-title { font-size: 1.25rem; color: var(--text); margin-bottom: 16px; }
+        .price { font-size: 1.75rem; font-weight: 700; color: var(--primary); }
+        .status-badge { display: inline-block; padding: 6px 12px; border-radius: 8px; font-size: 0.875rem; font-weight: 600; margin-top: 12px; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-paid { background: #d1fae5; color: #065f46; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 24px; border-radius: 10px; font-weight: 600; font-size: 1rem; border: none; cursor: pointer; transition: background .2s; text-decoration: none; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #e2e8f0; color: var(--text); }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .method-card { border: 2px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 16px; cursor: pointer; transition: border-color .2s; }
+        .method-card:hover, .method-card.selected { border-color: var(--primary); background: #f0fdf4; }
+        .method-card h3 { font-size: 1rem; margin-bottom: 4px; }
+        .method-card p { font-size: 0.875rem; color: var(--text-muted); }
+        .qrcode-wrap { text-align: center; padding: 20px; background: #f8fafc; border-radius: 10px; margin: 16px 0; }
+        .qrcode-wrap img { max-width: 220px; height: auto; }
+        .copy-pix { margin-top: 12px; font-size: 0.75rem; color: var(--text-muted); word-break: break-all; }
+        .footer { padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
+        .footer a { color: var(--primary); text-decoration: none; }
+        .loading { text-align: center; padding: 40px; color: var(--text-muted); }
+        .err-msg { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.875rem; }
+        .link-pagbank { font-size: 0.875rem; margin-top: 16px; }
+        .link-pagbank a { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="logo">KingForms</div>
+    </header>
+    <main class="main">
+        <div class="card">
+            <div class="col col-left">
+                <h2>Resumo</h2>
+                <p class="form-title"><%= formTitle %></p>
+                <p class="price" id="price-display">R$ <%= (priceCents / 100).toFixed(2).replace('.', ',') %></p>
+                <% if (responderName) { %><p style="margin-top:12px;color:var(--text-muted);"><%= responderName %></p><% } %>
+                <span class="status-badge status-<%= paymentStatus === 'PAID' ? 'paid' : 'pending' %>" id="status-badge">
+                    <%= paymentStatus === 'PAID' ? 'Pagamento confirmado' : 'Pagamento pendente' %>
+                </span>
+            </div>
+            <div class="col">
+                <h2>Método de pagamento</h2>
+                <div id="state-loading" class="loading" style="display:none;">Carregando...</div>
+                <div id="state-error" class="err-msg" style="display:none;"></div>
+                <div id="state-pending">
+                    <div class="method-card selected" data-method="pix">
+                        <h3><i class="fas fa-qrcode"></i> Pague com Pix (instantâneo)</h3>
+                        <p>Escaneie o QR Code ou copie o código</p>
+                    </div>
+                    <div class="method-card" data-method="card">
+                        <h3><i class="fas fa-credit-card"></i> Pague com cartão</h3>
+                        <p>Em breve</p>
+                    </div>
+                    <div id="qrcode-container" style="display:none;">
+                        <div class="qrcode-wrap">
+                            <img id="qrcode-img" alt="Pix QR Code" />
+                            <p class="copy-pix" id="pix-copy-text"></p>
+                            <button type="button" class="btn btn-secondary" id="btn-copy-pix" style="margin-top:8px;">Copiar código Pix</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="btn-generate-pix" style="margin-top:16px;width:100%;">
+                        Gerar QR Code Pix
+                    </button>
+                </div>
+                <div id="state-paid" style="display:none;">
+                    <p style="margin-bottom:16px;">Pagamento confirmado. Obrigado!</p>
+                    <a href="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>/success?response_id=<%= submissionId %>&show_success_page=true" class="btn btn-primary">Continuar</a>
+                </div>
+                <p class="link-pagbank">Não tem conta no PagBank? <a href="https://www.pagbank.com.br" target="_blank" rel="noopener">Crie gratuitamente</a></p>
+            </div>
+        </div>
+    </main>
+    <footer class="footer">
+        KingForms by ConectaKing
+    </footer>
+    <script>
+        (function() {
+            const submissionId = '<%= submissionId %>';
+            const baseUrl = '<%= baseUrl %>';
+            const slug = '<%= slug %>';
+            const itemId = '<%= itemId %>';
+            const paymentStatus = '<%= paymentStatus %>';
+
+            if (paymentStatus === 'PAID') {
+                document.getElementById('state-pending').style.display = 'none';
+                document.getElementById('state-paid').style.display = 'block';
+                return;
+            }
+
+            const btnGenerate = document.getElementById('btn-generate-pix');
+            const qrcodeContainer = document.getElementById('qrcode-container');
+            const qrcodeImg = document.getElementById('qrcode-img');
+            const pixCopyText = document.getElementById('pix-copy-text');
+            const btnCopyPix = document.getElementById('btn-copy-pix');
+            const stateLoading = document.getElementById('state-loading');
+            const stateError = document.getElementById('state-error');
+
+            let pixCodeText = '';
+
+            btnGenerate.addEventListener('click', async function() {
+                stateError.style.display = 'none';
+                stateLoading.style.display = 'block';
+                btnGenerate.disabled = true;
+                try {
+                    const res = await fetch(baseUrl + '/api/checkout/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ submissionId: submissionId, method: 'pix' })
+                    });
+                    const data = await res.json();
+                    stateLoading.style.display = 'none';
+                    if (!res.ok) {
+                        stateError.textContent = data.error || 'Erro ao gerar cobrança.';
+                        stateError.style.display = 'block';
+                        btnGenerate.disabled = false;
+                        return;
+                    }
+                    if (data.qrCode) {
+                        qrcodeImg.src = data.qrCode.startsWith('data:') ? data.qrCode : 'data:image/png;base64,' + data.qrCode;
+                        qrcodeImg.style.display = 'block';
+                    }
+                    if (data.qrCodeText) {
+                        pixCodeText = data.qrCodeText;
+                        pixCopyText.textContent = pixCodeText.substring(0, 60) + '...';
+                    }
+                    qrcodeContainer.style.display = 'block';
+                    btnGenerate.style.display = 'none';
+                } catch (e) {
+                    stateLoading.style.display = 'none';
+                    stateError.textContent = 'Erro de conexão. Tente novamente.';
+                    stateError.style.display = 'block';
+                    btnGenerate.disabled = false;
+                }
+            });
+
+            btnCopyPix.addEventListener('click', function() {
+                if (!pixCodeText) return;
+                navigator.clipboard.writeText(pixCodeText).then(function() {
+                    const t = btnCopyPix.textContent;
+                    btnCopyPix.textContent = 'Copiado!';
+                    setTimeout(function() { btnCopyPix.textContent = t; }, 2000);
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

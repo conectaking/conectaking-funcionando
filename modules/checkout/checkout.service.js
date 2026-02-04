@@ -85,20 +85,27 @@ async function saveCheckoutConfig(userId, profileItemId, data) {
 
 /**
  * Testar conexão PagBank (admin)
+ * @param {object} [overrides] - opcional: { pagbank_access_token, pagbank_seller_id } para testar antes de salvar
  */
-async function testConnection(userId, profileItemId) {
+async function testConnection(userId, profileItemId, overrides) {
   const config = await getCheckoutConfig(profileItemId);
   if (!config) throw new Error('Formulário não encontrado');
-  const tokenRow = await db.query(
-    'SELECT pagbank_access_token_encrypted FROM form_checkout_configs WHERE profile_item_id = $1',
-    [profileItemId]
-  );
-  const encrypted = tokenRow.rows[0]?.pagbank_access_token_encrypted;
-  if (!encrypted || !config.pagbank_seller_id) {
-    return { ok: false, message: 'Configure seller ID e token antes de testar' };
+  let sellerId = overrides?.pagbank_seller_id || config.pagbank_seller_id;
+  let token = null;
+  if (overrides?.pagbank_access_token) {
+    token = overrides.pagbank_access_token;
+  } else {
+    const tokenRow = await db.query(
+      'SELECT pagbank_access_token_encrypted FROM form_checkout_configs WHERE profile_item_id = $1',
+      [profileItemId]
+    );
+    const encrypted = tokenRow.rows[0]?.pagbank_access_token_encrypted;
+    if (encrypted) token = decrypt(encrypted, ENCRYPTION_KEY);
   }
-  const token = decrypt(encrypted, ENCRYPTION_KEY);
-  return pagbank.testConnection(config.pagbank_seller_id, token);
+  if (!sellerId || !token) {
+    return { ok: false, message: 'Configure Seller ID e Token antes de testar (ou preencha os campos e clique em Testar)' };
+  }
+  return pagbank.testConnection(sellerId, token);
 }
 
 /**

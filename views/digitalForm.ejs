@@ -793,26 +793,24 @@
 
                         <!-- Botões de Envio (Dinâmicos baseado nas opções) -->
                         <% 
-                            // IMPORTANTE: Garantir que enable_guest_list_submit seja sempre booleano
+                            const checkoutEnabled = !!(formData.checkout_enabled === true || formData.checkout_enabled === 'true' || formData.checkout_enabled === 1);
+                            const payButtonLabel = (formData.pay_button_label && String(formData.pay_button_label).trim()) ? String(formData.pay_button_label).trim() : 'Pagamento';
                             const enableGuestListSubmitRaw = formData.enable_guest_list_submit;
                             const enableGuestListSubmitValue = enableGuestListSubmitRaw === true || enableGuestListSubmitRaw === 'true' || enableGuestListSubmitRaw === 1 || enableGuestListSubmitRaw === '1';
-                            
-                            // LOG para debug
-                            console.log('🔘 [EJS] Botões - enable_guest_list_submit:', {
-                                raw: enableGuestListSubmitRaw,
-                                tipo: typeof enableGuestListSubmitRaw,
-                                value: enableGuestListSubmitValue,
-                                enable_whatsapp_raw: formData.enable_whatsapp
-                            });
-                            
-                            // IMPORTANTE: Se "Salvar na Lista" está ativo, WhatsApp deve ser false
-                            // Porque "Salvar na Lista" significa enviar só para o sistema (sem WhatsApp)
                             const enableWhatsappValue = enableGuestListSubmitValue ? false : (formData.enable_whatsapp === true || formData.enable_whatsapp === 'true' || formData.enable_whatsapp === 1 || formData.enable_whatsapp === '1');
                         %>
                         
+                        <!-- Botão Pagamento (checkout ativo) - VERDE - KingForms -->
+                        <% if (checkoutEnabled) { %>
+                        <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="checkout" style="background: linear-gradient(135deg, #22c55e, #16a34a) !important; color: #fff !important; box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35) !important;">
+                            <i class="fas fa-credit-card" style="font-size: 22px;"></i>
+                            <span><%= payButtonLabel %></span>
+                            <i class="fas fa-arrow-right" style="font-size: 16px; margin-left: auto;"></i>
+                        </button>
+                        <% } %>
+                        
                         <!-- Botão para enviar apenas para o sistema (sem WhatsApp) - AMARELO -->
-                        <!-- Este botão aparece quando "Salvar na Lista" está ativo (enableGuestListSubmitValue = true) -->
-                        <% if (enableGuestListSubmitValue) { %>
+                        <% if (!checkoutEnabled && enableGuestListSubmitValue) { %>
                         <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="system-only" style="background: linear-gradient(135deg, #FFC700, #FFA500) !important; color: #000 !important; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.4) !important;">
                             <i class="fas fa-user-plus" style="font-size: 22px;"></i>
                             <span>Inscrever-se</span>
@@ -820,8 +818,8 @@
                         </button>
                         <% } %>
                         
-                        <!-- Botão genérico de envio (fallback) - AMARELO quando WhatsApp desativado e "Salvar na Lista" também desativado -->
-                        <% if (!enableWhatsappValue && !enableGuestListSubmitValue) { %>
+                        <!-- Botão genérico de envio (fallback) - AMARELO -->
+                        <% if (!checkoutEnabled && !enableWhatsappValue && !enableGuestListSubmitValue) { %>
                         <button type="submit" class="submit-btn" id="form-submit-btn" data-submit-type="generic" style="background: linear-gradient(135deg, #FFC700, #FFA500) !important; color: #000 !important; box-shadow: 0 4px 20px rgba(255, 199, 0, 0.4) !important;">
                             <i class="fas fa-paper-plane" style="font-size: 22px;"></i>
                             <span>Enviar</span>
@@ -830,8 +828,7 @@
                         <% } %>
                         
                         <!-- Botão para enviar via WhatsApp (verde) -->
-                        <!-- IMPORTANTE: Este botão só aparece se WhatsApp está ativo E "Salvar na Lista" está inativo -->
-                        <% if (enableWhatsappValue && !enableGuestListSubmitValue) { %>
+                        <% if (!checkoutEnabled && enableWhatsappValue && !enableGuestListSubmitValue) { %>
                         <button type="button" class="submit-btn" id="whatsapp-submit-btn" style="background: linear-gradient(135deg, #25D366, #20BA5A) !important; color: #fff !important; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3) !important;">
                             <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
                             <span>Enviar via WhatsApp</span>
