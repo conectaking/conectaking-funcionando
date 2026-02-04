@@ -1053,9 +1053,10 @@ router.post('/:slug/form/:itemId/submit',
         const item = itemRes.rows[0];
         const isGuestList = item.item_type === 'guest_list';
         
-        // Buscar configurações do formulário (enable_whatsapp e enable_guest_list_submit)
+        // Buscar configurações do formulário (enable_whatsapp, enable_guest_list_submit, checkout_enabled)
         const formConfigRes = await client.query(
-            `SELECT enable_whatsapp, enable_guest_list_submit 
+            `SELECT enable_whatsapp, enable_guest_list_submit, 
+                    COALESCE(checkout_enabled, false) AS checkout_enabled
              FROM digital_form_items 
              WHERE profile_item_id = $1`,
             [itemIdInt]
@@ -1063,6 +1064,7 @@ router.post('/:slug/form/:itemId/submit',
         
         let enableWhatsapp = true; // Default
         let enableGuestListSubmit = false; // Default
+        let checkoutEnabled = false;
         
         // NOVO: Determinar modo de envio baseado nas opções
         // Se enable_guest_list_submit = true → Só Sistema (salva no sistema, sem WhatsApp)
@@ -1076,6 +1078,7 @@ router.post('/:slug/form/:itemId/submit',
         if (formConfigRes.rows.length > 0) {
             enableGuestListSubmit = formConfigRes.rows[0].enable_guest_list_submit === true || formConfigRes.rows[0].enable_guest_list_submit === 'true' || formConfigRes.rows[0].enable_guest_list_submit === 1 || formConfigRes.rows[0].enable_guest_list_submit === '1';
             enableWhatsapp = formConfigRes.rows[0].enable_whatsapp !== false && formConfigRes.rows[0].enable_whatsapp !== 'false' && formConfigRes.rows[0].enable_whatsapp !== 0 && formConfigRes.rows[0].enable_whatsapp !== '0';
+            checkoutEnabled = !!formConfigRes.rows[0].checkout_enabled;
             
             // Determinar modo baseado nas configurações
             if (enableGuestListSubmit && !enableWhatsapp) {
@@ -1244,12 +1247,12 @@ router.post('/:slug/form/:itemId/submit',
         // IMPORTANTE: Se sendMode for 'whatsapp-only', não salvar no sistema
         let result = null;
         if (shouldSaveToSystem && sendMode !== 'whatsapp-only') {
-            // Salvar resposta incluindo guest_id se disponível
+            const paymentStatus = checkoutEnabled ? 'PENDING_PAYMENT' : null;
             if (response_guest_id) {
                 result = await client.query(`
                     INSERT INTO digital_form_responses (
-                        profile_item_id, response_data, responder_name, responder_email, responder_phone, guest_id
-                    ) VALUES ($1, $2::jsonb, $3, $4, $5, $6)
+                        profile_item_id, response_data, responder_name, responder_email, responder_phone, guest_id, payment_status
+                    ) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7::payment_status_enum)
                     RETURNING id, submitted_at, guest_id
                 `, [
                     itemIdInt,
@@ -1257,23 +1260,25 @@ router.post('/:slug/form/:itemId/submit',
                     responder_name || null,
                     responder_email || null,
                     responder_phone || null,
-                    response_guest_id
+                    response_guest_id,
+                    paymentStatus
                 ]);
-                logger.info('✅ [SUBMIT] Resposta salva no sistema com guest_id:', response_guest_id);
+                logger.info('✅ [SUBMIT] Resposta salva no sistema com guest_id' + (checkoutEnabled ? ' (checkout pendente)' : ''), response_guest_id);
             } else {
                 result = await client.query(`
                     INSERT INTO digital_form_responses (
-                        profile_item_id, response_data, responder_name, responder_email, responder_phone
-                    ) VALUES ($1, $2::jsonb, $3, $4, $5)
+                        profile_item_id, response_data, responder_name, responder_email, responder_phone, payment_status
+                    ) VALUES ($1, $2::jsonb, $3, $4, $5, $6::payment_status_enum)
                     RETURNING id, submitted_at
                 `, [
                     itemIdInt,
                     JSON.stringify(response_data),
                     responder_name || null,
                     responder_email || null,
-                    responder_phone || null
+                    responder_phone || null,
+                    paymentStatus
                 ]);
-                logger.info('✅ [SUBMIT] Resposta salva no sistema (digital_form_responses)');
+                logger.info('✅ [SUBMIT] Resposta salva no sistema (digital_form_responses)' + (checkoutEnabled ? ' (checkout pendente)' : ''));
             }
         } else {
             logger.info('ℹ️ [SUBMIT] Resposta NÃO salva no sistema (modo: whatsapp-only)');
@@ -1564,12 +1569,18 @@ router.post('/:slug/form/:itemId/submit',
         // Mesmo quando envia por WhatsApp, deve aparecer a página de sucesso
         // Se for "whatsapp-only", não retornar success_page_url (não redirecionar)
         
+        const successPageUrl = sendMode === 'whatsapp-only'
+            ? null
+            : checkoutEnabled
+                ? `/${slug}/form/${itemId}/checkout?submissionId=${responseId || ''}`
+                : `/${slug}/form/${itemId}/success?response_id=${responseId || ''}&show_success_page=true`;
+
         res.json({
             success: true,
-            message: sendMode === 'whatsapp-only' ? 'Enviado via WhatsApp' : 'Resposta salva com sucesso',
+            message: sendMode === 'whatsapp-only' ? 'Enviado via WhatsApp' : (checkoutEnabled ? 'Seus dados foram registrados. Conclua o pagamento para confirmar.' : 'Resposta salva com sucesso'),
             response_id: responseId,
-            success_page_url: sendMode === 'whatsapp-only' ? null : `/${slug}/form/${itemId}/success?response_id=${responseId || ''}&show_success_page=true`,
-            // Incluir dados para página de sucesso
+            success_page_url: successPageUrl,
+            checkout_enabled: checkoutEnabled,
             guest_id: response_guest_id || null,
             qr_token: response_qr_token || null,
             should_show_guest_list_info: shouldSaveToGuestList || false,

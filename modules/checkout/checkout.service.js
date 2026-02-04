@@ -143,12 +143,22 @@ async function createCharge(submissionId, method) {
   )).rows[0]?.pagbank_seller_id;
   if (!sellerId) return { success: false, error: 'Seller ID não configurado' };
 
+  const notificationUrl = process.env.PAGBANK_WEBHOOK_BASE_URL
+    ? `${process.env.PAGBANK_WEBHOOK_BASE_URL.replace(/\/$/, '')}/api/webhooks/pagbank`
+    : null;
+  const platformAccountId = process.env.PAGBANK_PLATFORM_ACCOUNT_ID || null;
+
   const result = await pagbank.createCharge({
     amountCents,
     sellerId,
     accessToken,
     referenceId: String(submissionId),
-    method
+    method,
+    notificationUrl,
+    platformAccountId,
+    customerName: submission.responder_name,
+    customerEmail: submission.responder_email,
+    customerTaxId: (submission.response_data && submission.response_data.cpf) ? submission.response_data.cpf : null
   });
 
   if (!result.success) return result;
@@ -164,22 +174,80 @@ async function createCharge(submissionId, method) {
     success: true,
     chargeId: result.chargeId,
     orderId: result.orderId,
-    qrCode: result.qrCode
+    qrCode: result.qrCode,
+    qrCodeText: result.qrCodeText
   };
 }
 
 /**
  * Processar webhook PagBank (idempotente: mesmo evento 2x não duplica)
+ * @param {object} payload - payload já parseado (para lógica)
+ * @param {string} rawBody - body bruto para assinatura (token-{rawBody})
+ * @param {string} signature - header x-authenticity-token
  */
-async function processWebhook(payload, signature) {
+async function processWebhook(payload, rawBody, signature) {
   const secret = process.env.PAGBANK_WEBHOOK_SECRET;
-  if (!secret || !pagbank.verifyWebhookSignature(JSON.stringify(payload), signature, secret)) {
+  if (!secret) {
+    return { processed: false, error: 'PAGBANK_WEBHOOK_SECRET não configurado' };
+  }
+  if (!rawBody || !pagbank.verifyWebhookSignature(rawBody, signature, secret)) {
     return { processed: false, error: 'Assinatura inválida' };
   }
-  // TODO: mapear evento PagBank -> submissionId, status (PAID/FAILED/CANCELED)
-  // e atualizar digital_form_responses (payment_status, paid_at) com idempotência por charge_id/order_id
-  logger.info('[Checkout] Webhook recebido (stub)', { payload: Object.keys(payload || {}) });
+
+  const refId = payload.reference_id;
+  const orderId = payload.id || payload.order_id;
+  const chargeId = payload.id || payload.charge_id;
+  const status = (payload.status || '').toUpperCase();
+
+  const submissionId = refId ? parseInt(String(refId).replace(/^sub-/, ''), 10) : null;
+  if (!submissionId || isNaN(submissionId)) {
+    const byOrder = orderId ? await db.query(
+      'SELECT id FROM digital_form_responses WHERE payment_order_id = $1 LIMIT 1',
+      [orderId]
+    ) : { rows: [] };
+    const byCharge = chargeId && !byOrder.rows.length ? await db.query(
+      'SELECT id FROM digital_form_responses WHERE payment_charge_id = $1 LIMIT 1',
+      [chargeId]
+    ) : { rows: [] };
+    const row = byOrder.rows[0] || byCharge.rows[0];
+    if (!row) {
+      logger.warn('[Checkout] Webhook sem reference_id e sem order/charge conhecido', { orderId, chargeId });
+      return { processed: true };
+    }
+    const sid = row.id;
+    await updateSubmissionStatus(sid, status);
+    return { processed: true };
+  }
+
+  const existing = await db.query(
+    'SELECT id, payment_status FROM digital_form_responses WHERE id = $1',
+    [submissionId]
+  );
+  if (!existing.rows.length) {
+    logger.warn('[Checkout] Webhook reference_id não encontrado', { submissionId });
+    return { processed: true };
+  }
+  if (existing.rows[0].payment_status === 'PAID' && status === 'PAID') {
+    return { processed: true };
+  }
+  await updateSubmissionStatus(submissionId, status);
   return { processed: true };
+}
+
+function updateSubmissionStatus(submissionId, status) {
+  if (status === 'PAID') {
+    return db.query(
+      `UPDATE digital_form_responses SET payment_status = $2, paid_at = NOW() WHERE id = $1`,
+      [submissionId, PAYMENT_STATUS.PAID]
+    );
+  }
+  if (['DECLINED', 'CANCELED', 'CANCELLED', 'EXPIRED', 'REFUNDED'].includes(status)) {
+    return db.query(
+      `UPDATE digital_form_responses SET payment_status = $2 WHERE id = $1`,
+      [submissionId, status === 'CANCELED' || status === 'CANCELLED' ? PAYMENT_STATUS.CANCELED : PAYMENT_STATUS.FAILED]
+    );
+  }
+  return Promise.resolve();
 }
 
 module.exports = {

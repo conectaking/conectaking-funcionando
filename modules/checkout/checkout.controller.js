@@ -107,10 +107,18 @@ async function saveConfig(req, res) {
 
 /**
  * POST /api/webhooks/pagbank - Webhook PagBank (sem protectUser)
+ * req.body é Buffer (raw); assinatura: x-authenticity-token
  */
 async function webhookPagbank(req, res) {
-  const signature = req.headers['x-pagbank-signature'] || req.headers['x-webhook-signature'] || '';
-  const result = await checkoutService.processWebhook(req.body, signature);
+  const signature = (req.headers['x-authenticity-token'] || req.headers['x-pagbank-signature'] || '').trim();
+  const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : (typeof req.body === 'string' ? req.body : '');
+  let payload = {};
+  try {
+    payload = rawBody ? JSON.parse(rawBody) : {};
+  } catch (_) {
+    return res.status(400).json({ error: 'Payload JSON inválido' });
+  }
+  const result = await checkoutService.processWebhook(payload, rawBody, signature);
   if (!result.processed && result.error) {
     return res.status(400).json({ error: result.error });
   }

@@ -1,7 +1,6 @@
 /**
  * Rotas de webhook do módulo Checkout (PagBank)
- * Montar em server.js: app.use('/api/webhooks', webhooksRoutes) - e incluir POST /api/webhooks/pagbank
- * Ou montar este router em /api/webhooks e definir POST /pagbank aqui.
+ * Body bruto é necessário para validar assinatura (SHA256 token-payload).
  */
 
 const express = require('express');
@@ -9,7 +8,7 @@ const router = express.Router();
 const controller = require('./checkout.controller');
 const { asyncHandler } = require('../../middleware/errorHandler');
 
-// PagBank envia POST para esta URL (sem autenticação; validar por assinatura)
-router.post('/pagbank', express.json(), asyncHandler(controller.webhookPagbank));
+// PagBank: validar assinatura com body bruto (express.raw)
+router.post('/pagbank', express.raw({ type: 'application/json' }), asyncHandler(controller.webhookPagbank));
 
 module.exports = router;
