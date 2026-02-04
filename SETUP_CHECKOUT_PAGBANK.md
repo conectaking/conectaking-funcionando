@@ -117,6 +117,8 @@ Toda a estrutura do checkout está na **migration 155**. Não foi criada migrati
 
 **Implementado:** Personalização da página de checkout (logo, cor, título, rodapé) e exportação CSV no Dashboard.
 
+**Como ver a página de checkout (visualização):** Na tela de configuração do Checkout (Checkout Config), aba **Configuração**, use o botão **"Abrir página de checkout"** na seção "Ver página de checkout". É preciso ter pelo menos uma resposta do formulário (envie o formulário uma vez como visitante); o botão abrirá em nova aba a página real que o cliente vê ao clicar em pagamento.
+
 **Melhorias opcionais (futuras):**
 - **Tokenização de cartão (PCI):** hoje os dados do cartão passam pelo nosso servidor; para maior segurança, usar tokenização no front (SDK/JS do PagBank) e enviar só o token no create charge.
 

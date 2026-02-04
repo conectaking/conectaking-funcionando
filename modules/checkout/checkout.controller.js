@@ -83,6 +83,47 @@ async function testConnection(req, res) {
 }
 
 /**
+ * GET /api/checkout/preview-link?itemId=123 - Admin obter link para visualizar a página de checkout (protegido)
+ * Retorna { url, slug, itemId, submissionId } ou { url: null, message } se não houver nenhuma resposta ainda.
+ */
+async function getPreviewLink(req, res) {
+  const userId = req.user.userId;
+  const itemId = parseInt(req.query.itemId, 10);
+  if (!itemId || isNaN(itemId)) {
+    return res.status(400).json({ success: false, message: 'itemId inválido' });
+  }
+  const check = await db.query(
+    'SELECT pi.id, u.profile_slug FROM profile_items pi JOIN users u ON u.id = pi.user_id WHERE pi.id = $1 AND pi.user_id = $2 AND pi.item_type = $3',
+    [itemId, userId, 'digital_form']
+  );
+  if (!check.rows.length) {
+    return res.status(404).json({ success: false, message: 'Formulário não encontrado' });
+  }
+  const slug = check.rows[0].profile_slug || '';
+  if (!slug) {
+    return res.json({ url: null, message: 'Configure o slug do seu perfil para gerar o link.' });
+  }
+  const resp = await db.query(
+    'SELECT id FROM digital_form_responses WHERE profile_item_id = $1 ORDER BY submitted_at DESC LIMIT 1',
+    [itemId]
+  );
+  if (!resp.rows.length) {
+    return res.json({
+      url: null,
+      slug,
+      itemId,
+      message: 'Nenhuma resposta ainda. Envie o formulário uma vez (como visitante) para gerar o link. Depois use o botão abaixo para abrir a página de checkout.'
+    });
+  }
+  const submissionId = resp.rows[0].id;
+  const baseUrl = process.env.PUBLIC_APP_URL || process.env.APP_URL || '';
+  const url = baseUrl
+    ? `${baseUrl.replace(/\/$/, '')}/${encodeURIComponent(slug)}/form/${itemId}/checkout?submissionId=${submissionId}`
+    : null;
+  return res.json({ url, slug, itemId, submissionId });
+}
+
+/**
  * GET /api/checkout/config/:itemId - Admin obter config (protegido)
  */
 async function getConfig(req, res) {
@@ -139,6 +180,7 @@ module.exports = {
   getCheckoutPage,
   createCharge,
   testConnection,
+  getPreviewLink,
   getConfig,
   saveConfig,
   webhookPagbank

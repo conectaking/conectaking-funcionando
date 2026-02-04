@@ -19,6 +19,9 @@ router.post('/create', asyncHandler(controller.createCharge));
 // —— Admin (protegido) ——
 router.use(protectUser);
 
+// GET /api/checkout/preview-link?itemId=123 (antes de /config/:itemId)
+router.get('/preview-link', asyncHandler(controller.getPreviewLink));
+
 // GET /api/checkout/config/:itemId
 router.get('/config/:itemId', asyncHandler(controller.getConfig));
 // PUT /api/checkout/config/:itemId
