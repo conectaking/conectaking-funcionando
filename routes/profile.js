@@ -4036,12 +4036,16 @@ router.get('/items/digital_form/:id/responses', protectUser, asyncHandler(async 
             return res.status(404).json({ message: 'Formulário não encontrado ou você não tem permissão.' });
         }
 
-        // Buscar respostas (inclui payment_status e paid_at para abas Pago/Pendente)
+        // checkout_only=1: só respostas que passaram pelo fluxo de checkout (payment_status preenchido)
+        const checkoutOnly = req.query.checkout_only === '1' || req.query.checkout_only === 'true';
+        const whereClause = checkoutOnly
+            ? 'WHERE profile_item_id = $1 AND payment_status IS NOT NULL'
+            : 'WHERE profile_item_id = $1';
         const responsesRes = await client.query(
             `SELECT id, response_data, responder_name, responder_email, responder_phone, submitted_at,
                     payment_status, paid_at
              FROM digital_form_responses
-             WHERE profile_item_id = $1
+             ${whereClause}
              ORDER BY submitted_at DESC`,
             [itemId]
         );
@@ -4070,6 +4074,57 @@ router.get('/items/digital_form/:id/responses', protectUser, asyncHandler(async 
     } finally {
         client.release();
     }
+}));
+
+// POST /api/profile/items/digital_form/:id/responses/delete-bulk - Excluir várias respostas (antes de :responseId)
+router.post('/items/digital_form/:id/responses/delete-bulk', protectUser, asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const itemId = parseInt(req.params.id, 10);
+    const responseIds = Array.isArray(req.body.responseIds) ? req.body.responseIds.map(id => parseInt(String(id), 10)).filter(id => !isNaN(id)) : [];
+    if (!itemId || isNaN(itemId)) {
+        return res.status(400).json({ message: 'ID do formulário inválido.' });
+    }
+    if (responseIds.length === 0) {
+        return res.status(400).json({ message: 'Informe ao menos um ID de resposta.' });
+    }
+    const check = await db.query(
+        'SELECT id FROM profile_items WHERE id = $1 AND user_id = $2 AND item_type = $3',
+        [itemId, userId, 'digital_form']
+    );
+    if (!check.rows.length) {
+        return res.status(404).json({ message: 'Formulário não encontrado.' });
+    }
+    const placeholders = responseIds.map((_, i) => '$' + (i + 2)).join(',');
+    const result = await db.query(
+        'DELETE FROM digital_form_responses WHERE profile_item_id = $1 AND id IN (' + placeholders + ') RETURNING id',
+        [itemId, ...responseIds]
+    );
+    res.json({ success: true, deleted: result.rowCount });
+}));
+
+// DELETE /api/profile/items/digital_form/:id/responses/:responseId - Excluir uma resposta
+router.delete('/items/digital_form/:id/responses/:responseId', protectUser, asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const itemId = parseInt(req.params.id, 10);
+    const responseId = parseInt(req.params.responseId, 10);
+    if (!itemId || isNaN(itemId) || !responseId || isNaN(responseId)) {
+        return res.status(400).json({ message: 'ID inválido.' });
+    }
+    const check = await db.query(
+        'SELECT id FROM profile_items WHERE id = $1 AND user_id = $2 AND item_type = $3',
+        [itemId, userId, 'digital_form']
+    );
+    if (!check.rows.length) {
+        return res.status(404).json({ message: 'Formulário não encontrado.' });
+    }
+    const del = await db.query(
+        'DELETE FROM digital_form_responses WHERE id = $1 AND profile_item_id = $2 RETURNING id',
+        [responseId, itemId]
+    );
+    if (!del.rows.length) {
+        return res.status(404).json({ message: 'Resposta não encontrada.' });
+    }
+    res.json({ success: true });
 }));
 
 // GET /api/profile/items/digital_form/:id/dashboard - Buscar estatísticas do formulário

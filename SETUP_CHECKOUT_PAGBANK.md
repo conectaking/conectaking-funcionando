@@ -115,10 +115,9 @@ Toda a estrutura do checkout está na **migration 155**. Não foi criada migrati
 | **Precisa instalar algum pacote (npm)?** | **Não.** O módulo de checkout usa apenas o que já está no projeto (express, db, crypto, fetch, etc.). |
 | **O que falta configurar?** | (1) Rodar a migration 155 no banco; (2) Variáveis de ambiente (webhook secret, opcionalmente base URL e platform account ID); (3) No PagBank: webhook URL e secret; (4) Em cada formulário: ativar checkout e preencher Seller ID + Token na página Checkout. |
 
-**Melhorias opcionais (não obrigatórias para funcionar):**
-- **Personalizar a página de checkout:** hoje a página pública de pagamento (Pix/cartão) tem layout fixo; dá para adicionar configurações (logo, cor primária, título) na aba Configuração do Checkout e usar na view `checkout.ejs`.
-- **Exportar CSV no dashboard do Checkout:** botão “Exportar CSV” na aba Dashboard da página de Checkout (quem pagou / pendente).
-- **Cartão débito e 3DS:** PagBank pode exigir 3DS para débito; se começarem a recusar, implementar fluxo de autenticação 3DS (redirect ou iframe conforme a documentação deles).
+**Implementado:** Personalização da página de checkout (logo, cor, título, rodapé) e exportação CSV no Dashboard.
+
+**Melhorias opcionais (futuras):**
 - **Tokenização de cartão (PCI):** hoje os dados do cartão passam pelo nosso servidor; para maior segurança, usar tokenização no front (SDK/JS do PagBank) e enviar só o token no create charge.
 
 Para detalhes da API PagBank (payload do webhook, nomes dos eventos, split), use sempre a **documentação oficial** mais recente.
