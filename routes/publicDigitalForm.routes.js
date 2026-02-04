@@ -1636,7 +1636,8 @@ router.get('/:slug/form/:itemId/checkout', asyncHandler(async (req, res) => {
         const subRes = await client.query(
             `SELECT dfr.id, dfr.profile_item_id, dfr.responder_name, dfr.responder_email, dfr.responder_phone,
                     dfr.submitted_at, dfr.payment_status, dfr.paid_at, dfr.payment_order_id,
-                    dfi.form_title, dfi.checkout_enabled, dfi.price_cents, dfi.pay_button_label
+                    dfi.form_title, dfi.checkout_enabled, dfi.price_cents, dfi.pay_button_label,
+                    dfi.banner_image_url, dfi.header_image_url
              FROM digital_form_responses dfr
              JOIN digital_form_items dfi ON dfi.profile_item_id = dfr.profile_item_id
              JOIN profile_items pi ON pi.id = dfr.profile_item_id AND pi.user_id = $2
@@ -1669,7 +1670,8 @@ router.get('/:slug/form/:itemId/checkout', asyncHandler(async (req, res) => {
             checkoutPageLogoUrl: checkoutConfig.checkout_page_logo_url || '',
             checkoutPagePrimaryColor: checkoutConfig.checkout_page_primary_color || '#22c55e',
             checkoutPageTitle: checkoutConfig.checkout_page_title || '',
-            checkoutPageFooter: checkoutConfig.checkout_page_footer || ''
+            checkoutPageFooter: checkoutConfig.checkout_page_footer || '',
+            formCoverImageUrl: row.banner_image_url || row.header_image_url || checkoutConfig.checkout_page_logo_url || ''
         });
     } finally {
         client.release();

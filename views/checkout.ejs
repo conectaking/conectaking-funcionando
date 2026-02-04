@@ -1,333 +1,406 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html class="dark" lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title><%= checkoutPageTitle ? checkoutPageTitle + ' - ' : '' %>Pagamento - <%= formTitle %><%= checkoutPageTitle ? '' : ' | KingForms' %></title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "<%= checkoutPagePrimaryColor || '#22c55e' %>",
+                        "accent-gold": "#c5a059",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#0a0a0a",
+                        "card-dark": "#161616",
+                    },
+                    fontFamily: { "display": ["Manrope", "sans-serif"] },
+                },
+            },
+        }
+    </script>
     <style>
-        :root { --primary: <%= checkoutPagePrimaryColor || '#22c55e' %>; --primary-dark: #16a34a; --bg: #f8fafc; --card: #fff; --text: #1e293b; --text-muted: #64748b; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
-        .top-bar { background: var(--card); padding: 16px 24px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-        .top-bar .logo { font-weight: 700; font-size: 1.25rem; color: var(--primary); display: flex; align-items: center; }
-        .top-bar .logo-img { max-height: 40px; width: auto; object-fit: contain; }
-        .main { flex: 1; padding: 32px 24px; max-width: 900px; margin: 0 auto; width: 100%; }
-        .card { background: var(--card); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.06); overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
-        @media (max-width: 700px) { .card { grid-template-columns: 1fr; } }
-        .col { padding: 28px; }
-        .col-left { border-right: 1px solid #e2e8f0; }
-        @media (max-width: 700px) { .col-left { border-right: none; border-bottom: 1px solid #e2e8f0; } }
-        .col h2 { font-size: 1.125rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
-        .col .form-title { font-size: 1.25rem; color: var(--text); margin-bottom: 16px; }
-        .price { font-size: 1.75rem; font-weight: 700; color: var(--primary); }
-        .status-badge { display: inline-block; padding: 6px 12px; border-radius: 8px; font-size: 0.875rem; font-weight: 600; margin-top: 12px; }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .status-paid { background: #d1fae5; color: #065f46; }
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 24px; border-radius: 10px; font-weight: 600; font-size: 1rem; border: none; cursor: pointer; transition: background .2s; text-decoration: none; }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:hover { background: var(--primary-dark); }
-        .btn-secondary { background: #e2e8f0; color: var(--text); }
-        .btn-secondary:hover { background: #cbd5e1; }
-        .method-card { border: 2px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 16px; cursor: pointer; transition: border-color .2s; }
-        .method-card:hover, .method-card.selected { border-color: var(--primary); background: #f0fdf4; }
-        .method-card h3 { font-size: 1rem; margin-bottom: 4px; }
-        .method-card p { font-size: 0.875rem; color: var(--text-muted); }
-        .qrcode-wrap { text-align: center; padding: 20px; background: #f8fafc; border-radius: 10px; margin: 16px 0; }
-        .qrcode-wrap img { max-width: 220px; height: auto; }
-        .copy-pix { margin-top: 12px; font-size: 0.75rem; color: var(--text-muted); word-break: break-all; }
-        .footer { padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
-        .footer a { color: var(--primary); text-decoration: none; }
-        .loading { text-align: center; padding: 40px; color: var(--text-muted); }
-        .err-msg { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.875rem; }
-        .link-pagbank { font-size: 0.875rem; margin-top: 16px; }
-        .link-pagbank a { color: var(--primary); }
-        .card-form { display: none; margin-top: 16px; }
-        .card-form.visible { display: block; }
-        .card-form label { display: block; margin-bottom: 4px; font-size: 0.875rem; font-weight: 600; color: var(--text); }
-        .card-form input, .card-form select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px; font-size: 1rem; }
-        .card-form .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-        .card-form .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .card-form .btn-block { width: 100%; margin-top: 8px; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        body { font-family: 'Manrope', sans-serif; -webkit-font-smoothing: antialiased; }
+        body { min-height: max(884px, 100dvh); }
+        /* Primary as hex for borders/focus */
+        .focus-primary:focus { border-color: <%= checkoutPagePrimaryColor || '#22c55e' %>; box-shadow: 0 0 0 1px <%= checkoutPagePrimaryColor || '#22c55e' %>; }
+        .ring-primary { --tw-ring-color: <%= checkoutPagePrimaryColor || '#22c55e' %>; }
+        .bg-primary-custom { background-color: <%= checkoutPagePrimaryColor || '#22c55e' %>; }
+        .method-card.selected { border-color: <%= checkoutPagePrimaryColor || '#22c55e' %>; }
     </style>
 </head>
-<body>
-    <header class="top-bar">
-        <div class="logo">
-            <% if (checkoutPageLogoUrl) { %><img src="<%= checkoutPageLogoUrl %>" alt="<%= checkoutPageTitle || formTitle %>" class="logo-img" /><% } else { %><%= checkoutPageTitle || 'KingForms' %><% } %>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white min-h-screen">
+<!-- Top Navigation -->
+<div class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+    <div class="flex items-center p-4 pb-2 justify-between max-w-md mx-auto">
+        <a href="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>" class="text-slate-900 dark:text-white flex size-10 items-center justify-center cursor-pointer">
+            <span class="material-symbols-outlined">arrow_back_ios</span>
+        </a>
+        <h2 class="text-slate-900 dark:text-white text-lg font-light tracking-[0.2em] uppercase flex-1 text-center pr-10">Checkout</h2>
+    </div>
+    <!-- Progress Stepper -->
+    <div class="flex w-full max-w-xs mx-auto flex-row items-center justify-between py-6 relative">
+        <div class="absolute top-1/2 left-0 w-full h-[1px] bg-slate-200 dark:bg-slate-800 -z-10 translate-y-[-50%]"></div>
+        <div class="flex flex-col items-center gap-2">
+            <div class="h-2 w-2 rounded-full bg-slate-400 dark:bg-slate-600"></div>
+            <span class="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-600 font-medium">Resumo</span>
         </div>
-    </header>
-    <main class="main">
-        <div class="card">
-            <div class="col col-left">
-                <h2>Resumo</h2>
-                <p class="form-title"><%= formTitle %></p>
-                <p class="price" id="price-display">R$ <%= (priceCents / 100).toFixed(2).replace('.', ',') %></p>
-                <% if (responderName) { %><p style="margin-top:12px;color:var(--text-muted);"><%= responderName %></p><% } %>
-                <span class="status-badge status-<%= paymentStatus === 'PAID' ? 'paid' : 'pending' %>" id="status-badge">
-                    <%= paymentStatus === 'PAID' ? 'Pagamento confirmado' : 'Pagamento pendente' %>
-                </span>
-            </div>
-            <div class="col">
-                <h2>Método de pagamento</h2>
-                <div id="state-loading" class="loading" style="display:none;">Carregando...</div>
-                <div id="state-error" class="err-msg" style="display:none;"></div>
-                <div id="state-pending">
-                    <div class="method-card selected" data-method="pix">
-                        <h3><i class="fas fa-qrcode"></i> Pix (instantâneo)</h3>
-                        <p>QR Code ou código copia e cola</p>
-                    </div>
-                    <div class="method-card" data-method="card">
-                        <h3><i class="fas fa-credit-card"></i> Cartão de crédito ou débito</h3>
-                        <p>Crédito em até 12x ou débito à vista</p>
-                    </div>
-                    <div id="pix-section">
-                        <div id="qrcode-container" style="display:none;">
-                            <div class="qrcode-wrap">
-                                <img id="qrcode-img" alt="Pix QR Code" />
-                                <p class="copy-pix" id="pix-copy-text"></p>
-                                <button type="button" class="btn btn-secondary" id="btn-copy-pix" style="margin-top:8px;">Copiar código Pix</button>
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-primary" id="btn-generate-pix" style="margin-top:16px;width:100%;">
-                            Gerar QR Code Pix
-                        </button>
-                    </div>
-                    <div id="card-section" class="card-form">
-                        <label>Número do cartão</label>
-                        <input type="text" id="card-number" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" />
-                        <div class="row">
-                            <div>
-                                <label>Validade (mês)</label>
-                                <input type="text" id="card-exp-month" placeholder="MM" maxlength="2" autocomplete="cc-exp-month" />
-                            </div>
-                            <div>
-                                <label>Ano</label>
-                                <input type="text" id="card-exp-year" placeholder="AA" maxlength="4" autocomplete="cc-exp-year" />
-                            </div>
-                            <div>
-                                <label>CVV</label>
-                                <input type="text" id="card-cvv" placeholder="123" maxlength="4" autocomplete="cc-csc" />
-                            </div>
-                        </div>
-                        <label>Nome no cartão</label>
-                        <input type="text" id="card-holder" placeholder="Como está no cartão" autocomplete="cc-name" />
-                        <label>CPF do titular</label>
-                        <input type="text" id="card-holder-cpf" placeholder="Apenas números" maxlength="14" />
-                        <label id="installments-label">Parcelas (crédito)</label>
-                        <select id="card-installments">
-                            <option value="1">1x sem juros</option>
-                            <option value="2">2x sem juros</option>
-                            <option value="3">3x sem juros</option>
-                            <option value="4">4x sem juros</option>
-                            <option value="5">5x sem juros</option>
-                            <option value="6">6x sem juros</option>
-                            <option value="7">7x sem juros</option>
-                            <option value="8">8x sem juros</option>
-                            <option value="9">9x sem juros</option>
-                            <option value="10">10x sem juros</option>
-                            <option value="11">11x sem juros</option>
-                            <option value="12">12x sem juros</option>
-                        </select>
-                        <button type="button" class="btn btn-primary btn-block" id="btn-pay-credit"><i class="fas fa-credit-card"></i> Pagar com crédito</button>
-                        <button type="button" class="btn btn-secondary btn-block" id="btn-pay-debit"><i class="fas fa-university"></i> Pagar com débito</button>
-                    </div>
-                </div>
-                <div id="state-paid" style="display:none;">
-                    <p style="margin-bottom:16px;">Pagamento confirmado. Obrigado!</p>
-                    <a href="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>/success?response_id=<%= submissionId %>&show_success_page=true" class="btn btn-primary">Continuar</a>
-                </div>
-                <p class="link-pagbank">Não tem conta no PagBank? <a href="https://www.pagbank.com.br" target="_blank" rel="noopener">Crie gratuitamente</a></p>
-            </div>
+        <div class="flex flex-col items-center gap-2">
+            <div class="h-3 w-3 rounded-full bg-primary ring-4 ring-primary/20"></div>
+            <span class="text-[10px] uppercase tracking-widest text-primary font-bold">Pagamento</span>
         </div>
-    </main>
-    <footer class="footer">
-        <%= checkoutPageFooter || 'KingForms by ConectaKing' %>
-    </footer>
-    <script>
-        (function() {
-            const submissionId = '<%= submissionId %>';
-            const baseUrl = '<%= baseUrl %>';
-            const slug = '<%= slug %>';
-            const itemId = '<%= itemId %>';
-            const paymentStatus = '<%= paymentStatus %>';
+        <div class="flex flex-col items-center gap-2">
+            <div class="h-2 w-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+            <span class="text-[10px] uppercase tracking-widest text-slate-200 dark:text-slate-800 font-medium">Concluído</span>
+        </div>
+    </div>
+</div>
 
-            if (paymentStatus === 'PAID') {
-                document.getElementById('state-pending').style.display = 'none';
-                document.getElementById('state-paid').style.display = 'block';
+<main class="max-w-md mx-auto pb-36">
+    <!-- Order Summary Card (capa + preço) -->
+    <div class="px-6 py-4">
+        <div class="bg-white dark:bg-card-dark rounded-xl p-5 shadow-sm border border-slate-100 dark:border-white/5">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex flex-col gap-1 flex-1 min-w-0">
+                    <p class="text-accent-gold text-[10px] uppercase tracking-[0.15em] font-semibold">Inscrição</p>
+                    <p class="text-slate-900 dark:text-white text-base font-medium leading-tight tracking-tight truncate"><%= formTitle %></p>
+                    <% if (responderName) { %><p class="text-slate-400 dark:text-slate-500 text-xs font-normal"><%= responderName %></p><% } %>
+                    <div class="mt-4">
+                        <span class="text-slate-900 dark:text-white text-lg font-bold tracking-tight" id="price-display">R$ <%= (priceCents / 100).toFixed(2).replace('.', ',') %></span>
+                    </div>
+                    <% if (paymentStatus === 'PAID') { %>
+                    <span class="inline-flex items-center mt-2 text-xs font-semibold text-emerald-500">Pagamento confirmado</span>
+                    <% } else { %>
+                    <span class="inline-flex items-center mt-2 text-xs font-semibold text-amber-500">Pagamento pendente</span>
+                    <% } %>
+                </div>
+                <div class="w-24 h-24 flex-shrink-0 bg-center bg-no-repeat bg-cover rounded-lg shadow-inner bg-slate-100 dark:bg-slate-800 overflow-hidden"<% if (formCoverImageUrl) { %> style="background-image: url('<%= formCoverImageUrl.replace(/'/g, '&#39;') %>');"<% } %>>
+                    <% if (!formCoverImageUrl) { %><span class="material-symbols-outlined text-4xl text-slate-400 dark:text-slate-600 w-full h-full flex items-center justify-center">image</span><% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <% if (paymentStatus === 'PAID') { %>
+    <div class="px-6 py-8 text-center">
+        <p class="text-slate-500 dark:text-slate-400 mb-6">Obrigado! Seu pagamento foi confirmado.</p>
+        <a href="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>/success?response_id=<%= submissionId %>&show_success_page=true" class="inline-flex items-center justify-center gap-2 w-full max-w-md mx-auto bg-slate-900 dark:bg-white text-white dark:text-black h-14 rounded-xl font-semibold tracking-wide uppercase text-sm">Continuar</a>
+    </div>
+    <% } else { %>
+    <!-- Payment Method -->
+    <div class="px-6 pt-6 pb-2">
+        <h3 class="text-slate-900 dark:text-white tracking-[0.05em] text-xl font-light">Método de pagamento</h3>
+        <p class="text-slate-500 text-xs mt-1">Transações criptografadas e seguras.</p>
+    </div>
+
+    <!-- Pix vs Cartão -->
+    <div class="px-6 flex gap-3 mb-4">
+        <div class="method-card flex-1 rounded-xl p-4 border-2 border-slate-200 dark:border-slate-800 cursor-pointer transition-all selected border-primary bg-primary/5 dark:bg-primary/10" data-method="pix">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-xl">qr_code_2</span>
+                <span class="font-semibold text-sm">Pix</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Instantâneo</p>
+        </div>
+        <div class="method-card flex-1 rounded-xl p-4 border-2 border-slate-200 dark:border-slate-800 cursor-pointer transition-all" data-method="card">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-xl">credit_card</span>
+                <span class="font-semibold text-sm">Cartão</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Crédito ou débito</p>
+        </div>
+    </div>
+
+    <div id="state-loading" class="px-6 py-8 text-center text-slate-500" style="display:none;">Carregando...</div>
+    <div id="state-error" class="mx-6 mb-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 px-4 py-3 text-sm" style="display:none;"></div>
+
+    <!-- Pix Section -->
+    <div id="pix-section" class="px-6">
+        <div id="qrcode-container" style="display:none;" class="rounded-xl bg-slate-100 dark:bg-slate-800/50 p-6 text-center">
+            <img id="qrcode-img" alt="QR Code Pix" class="mx-auto max-w-[220px] h-auto"/>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 break-all" id="pix-copy-text"></p>
+            <button type="button" id="btn-copy-pix" class="mt-3 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-card-dark text-slate-900 dark:text-white h-12 font-medium text-sm">Copiar código Pix</button>
+        </div>
+        <button type="button" id="btn-generate-pix" class="w-full rounded-xl border-2 border-primary bg-primary/10 dark:bg-primary/20 text-primary h-14 font-semibold text-sm flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined">qr_code_2</span>
+            Gerar QR Code Pix
+        </button>
+    </div>
+
+    <!-- Card Form (hidden by default) -->
+    <div id="card-section" class="px-6 space-y-4" style="display:none;">
+        <div class="flex flex-col gap-2">
+            <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">Nome no cartão</label>
+            <input id="card-holder" type="text" placeholder="Como está no cartão" autocomplete="cc-name" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 text-base font-light placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
+        </div>
+        <div class="flex flex-col gap-2">
+            <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">Número do cartão</label>
+            <div class="relative">
+                <input id="card-number" type="text" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 pr-12 text-base font-light tracking-[0.2em] placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
+                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">credit_card</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+            <div class="flex flex-col gap-2">
+                <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">Mês</label>
+                <input id="card-exp-month" type="text" placeholder="MM" maxlength="2" autocomplete="cc-exp-month" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 text-base font-light placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
+            </div>
+            <div class="flex flex-col gap-2">
+                <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">Ano</label>
+                <input id="card-exp-year" type="text" placeholder="AA" maxlength="4" autocomplete="cc-exp-year" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 text-base font-light placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
+            </div>
+            <div class="flex flex-col gap-2">
+                <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">CVV</label>
+                <input id="card-cvv" type="password" placeholder="***" maxlength="4" autocomplete="cc-csc" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 text-base font-light placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
+            </div>
+        </div>
+        <div class="flex flex-col gap-2">
+            <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">CPF do titular</label>
+            <input id="card-holder-cpf" type="text" placeholder="Apenas números" maxlength="14" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 text-base font-light placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
+        </div>
+        <div class="flex flex-col gap-2" id="installments-wrap">
+            <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">Parcelas (crédito)</label>
+            <select id="card-installments" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 text-base font-light">
+                <% for (var i = 1; i <= 12; i++) { %><option value="<%= i %>"><%= i %>x sem juros</option><% } %>
+            </select>
+        </div>
+        <div class="flex gap-3 pt-2">
+            <button type="button" id="btn-pay-credit" class="flex-1 rounded-xl bg-primary/20 dark:bg-primary/30 text-primary border-2 border-primary h-14 font-semibold text-sm flex items-center justify-center gap-2"><span class="material-symbols-outlined text-lg">credit_card</span> Crédito</button>
+            <button type="button" id="btn-pay-debit" class="flex-1 rounded-xl border-2 border-slate-200 dark:border-slate-700 h-14 font-semibold text-sm flex items-center justify-center gap-2"><span class="material-symbols-outlined text-lg">account_balance</span> Débito</button>
+        </div>
+    </div>
+
+    <!-- Order Totals -->
+    <div class="px-6 mt-10 space-y-3">
+        <div class="flex justify-between items-center text-sm">
+            <span class="text-slate-500 font-light">Subtotal</span>
+            <span class="text-slate-900 dark:text-white font-medium">R$ <%= (priceCents / 100).toFixed(2).replace('.', ',') %></span>
+        </div>
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-900 flex justify-between items-center">
+            <span class="text-slate-900 dark:text-white text-base font-light tracking-wide">Total</span>
+            <span class="text-slate-900 dark:text-white text-xl font-bold">R$ <%= (priceCents / 100).toFixed(2).replace('.', ',') %></span>
+        </div>
+    </div>
+
+    <!-- Trust Badges -->
+    <div class="px-6 mt-8 flex justify-center items-center gap-6 opacity-40 grayscale">
+        <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm">lock</span>
+            <span class="text-[10px] uppercase tracking-widest font-bold">256-bit SSL</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm">verified_user</span>
+            <span class="text-[10px] uppercase tracking-widest font-bold">Pagamento seguro</span>
+        </div>
+    </div>
+    <% } %>
+</main>
+
+<% if (paymentStatus !== 'PAID') { %>
+<!-- Fixed Bottom CTA -->
+<div id="cta-pix" class="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light dark:via-background-dark to-transparent pt-10">
+    <div class="max-w-md mx-auto">
+        <button type="button" id="cta-btn-pix" class="w-full bg-slate-900 dark:bg-white text-white dark:text-black h-16 rounded-xl font-semibold tracking-[0.2em] uppercase text-sm flex items-center justify-center gap-3 active:scale-[0.98] transition-all hover:ring-2 hover:ring-accent-gold shadow-2xl">
+            <span>Gerar Pix</span>
+            <span class="material-symbols-outlined !text-base">qr_code_2</span>
+        </button>
+        <p class="text-center text-[10px] text-slate-400 dark:text-slate-600 mt-4 font-light tracking-wide uppercase">Pagamento via PagBank</p>
+    </div>
+</div>
+<div id="cta-card" style="display:none;" class="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light dark:via-background-dark to-transparent pt-10">
+    <div class="max-w-md mx-auto">
+        <button type="button" id="cta-btn-card" class="w-full bg-slate-900 dark:bg-white text-white dark:text-black h-16 rounded-xl font-semibold tracking-[0.2em] uppercase text-sm flex items-center justify-center gap-3 active:scale-[0.98] transition-all hover:ring-2 hover:ring-accent-gold shadow-2xl">
+            <span>Pagar agora</span>
+            <span class="material-symbols-outlined !text-base">arrow_forward</span>
+        </button>
+        <p class="text-center text-[10px] text-slate-400 dark:text-slate-600 mt-4 font-light tracking-wide uppercase">Pagamento via PagBank</p>
+    </div>
+</div>
+<% } %>
+
+<% if (paymentStatus !== 'PAID') { %>
+<script>
+(function() {
+    const submissionId = '<%= submissionId %>';
+    const baseUrl = '<%= baseUrl %>';
+    const slug = '<%= slug %>';
+    const itemId = '<%= itemId %>';
+
+    const btnGenerate = document.getElementById('btn-generate-pix');
+    const qrcodeContainer = document.getElementById('qrcode-container');
+    const qrcodeImg = document.getElementById('qrcode-img');
+    const pixCopyText = document.getElementById('pix-copy-text');
+    const btnCopyPix = document.getElementById('btn-copy-pix');
+    const stateLoading = document.getElementById('state-loading');
+    const stateError = document.getElementById('state-error');
+    const methodCards = document.querySelectorAll('.method-card');
+    const pixSection = document.getElementById('pix-section');
+    const cardSection = document.getElementById('card-section');
+    const ctaPix = document.getElementById('cta-pix');
+    const ctaCard = document.getElementById('cta-card');
+    const ctaBtnPix = document.getElementById('cta-btn-pix');
+    const ctaBtnCard = document.getElementById('cta-btn-card');
+
+    let pixCodeText = '';
+
+    function showError(msg) {
+        stateError.textContent = msg;
+        stateError.style.display = 'block';
+    }
+    function hideError() {
+        stateError.style.display = 'none';
+    }
+
+    function selectMethod(method) {
+        methodCards.forEach(function(el) {
+            el.classList.toggle('selected', el.getAttribute('data-method') === method);
+        });
+        pixSection.style.display = method === 'pix' ? 'block' : 'none';
+        cardSection.style.display = method === 'card' ? 'block' : 'none';
+        if (ctaPix) ctaPix.style.display = method === 'pix' ? 'block' : 'none';
+        if (ctaCard) ctaCard.style.display = method === 'card' ? 'block' : 'none';
+    }
+    methodCards.forEach(function(el) {
+        el.addEventListener('click', function() {
+            selectMethod(el.getAttribute('data-method'));
+        });
+    });
+
+    function doGeneratePix() {
+        hideError();
+        stateLoading.style.display = 'block';
+        btnGenerate.disabled = true;
+        fetch(baseUrl + '/api/checkout/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ submissionId: submissionId, method: 'pix' })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            stateLoading.style.display = 'none';
+            btnGenerate.disabled = false;
+            if (data.error) {
+                showError(data.error);
                 return;
             }
-
-            const btnGenerate = document.getElementById('btn-generate-pix');
-            const qrcodeContainer = document.getElementById('qrcode-container');
-            const qrcodeImg = document.getElementById('qrcode-img');
-            const pixCopyText = document.getElementById('pix-copy-text');
-            const btnCopyPix = document.getElementById('btn-copy-pix');
-            const stateLoading = document.getElementById('state-loading');
-            const stateError = document.getElementById('state-error');
-
-            let pixCodeText = '';
-
-            btnGenerate.addEventListener('click', async function() {
-                stateError.style.display = 'none';
-                stateLoading.style.display = 'block';
-                btnGenerate.disabled = true;
-                try {
-                    const res = await fetch(baseUrl + '/api/checkout/create', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ submissionId: submissionId, method: 'pix' })
-                    });
-                    const data = await res.json();
-                    stateLoading.style.display = 'none';
-                    if (!res.ok) {
-                        stateError.textContent = data.error || 'Erro ao gerar cobrança.';
-                        stateError.style.display = 'block';
-                        btnGenerate.disabled = false;
-                        return;
-                    }
-                    if (data.qrCode) {
-                        qrcodeImg.src = data.qrCode.startsWith('data:') ? data.qrCode : 'data:image/png;base64,' + data.qrCode;
-                        qrcodeImg.style.display = 'block';
-                    }
-                    if (data.qrCodeText) {
-                        pixCodeText = data.qrCodeText;
-                        pixCopyText.textContent = pixCodeText.substring(0, 60) + '...';
-                    }
-                    qrcodeContainer.style.display = 'block';
-                    btnGenerate.style.display = 'none';
-                } catch (e) {
-                    stateLoading.style.display = 'none';
-                    stateError.textContent = 'Erro de conexão. Tente novamente.';
-                    stateError.style.display = 'block';
-                    btnGenerate.disabled = false;
-                }
-            });
-
-            btnCopyPix.addEventListener('click', function() {
-                if (!pixCodeText) return;
-                navigator.clipboard.writeText(pixCodeText).then(function() {
-                    const t = btnCopyPix.textContent;
-                    btnCopyPix.textContent = 'Copiado!';
-                    setTimeout(function() { btnCopyPix.textContent = t; }, 2000);
-                });
-            });
-
-            // Alternar entre Pix e Cartão
-            const methodCards = document.querySelectorAll('.method-card');
-            const pixSection = document.getElementById('pix-section');
-            const cardSection = document.getElementById('card-section');
-            function selectMethod(method) {
-                methodCards.forEach(function(el) {
-                    el.classList.toggle('selected', el.getAttribute('data-method') === method);
-                });
-                pixSection.style.display = method === 'pix' ? 'block' : 'none';
-                cardSection.classList.toggle('visible', method === 'card');
+            if (data.qrCode) {
+                qrcodeImg.src = data.qrCode.startsWith('data:') ? data.qrCode : 'data:image/png;base64,' + data.qrCode;
+                qrcodeImg.style.display = 'block';
             }
-            methodCards.forEach(function(el) {
-                el.addEventListener('click', function() {
-                    selectMethod(el.getAttribute('data-method'));
-                });
-            });
-
-            // Máscara número do cartão (espaços)
-            document.getElementById('card-number').addEventListener('input', function() {
-                let v = this.value.replace(/\D/g, '');
-                this.value = v.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-            });
-            document.getElementById('card-holder-cpf').addEventListener('input', function() {
-                this.value = this.value.replace(/\D/g, '').slice(0, 11);
-            });
-
-            function getCardPayload() {
-                const number = (document.getElementById('card-number').value || '').replace(/\D/g, '');
-                const expMonth = (document.getElementById('card-exp-month').value || '').replace(/\D/g, '').slice(0, 2);
-                const yearRaw = (document.getElementById('card-exp-year').value || '').replace(/\D/g, '');
-                const expYearShort = yearRaw.length >= 4 ? yearRaw.slice(-2) : yearRaw.slice(-2);
-                return {
-                    number: number,
-                    exp_month: expMonth,
-                    exp_year: expYearShort,
-                    security_code: (document.getElementById('card-cvv').value || '').replace(/\D/g, '').slice(0, 4),
-                    holder_name: (document.getElementById('card-holder').value || '').trim(),
-                    holder_tax_id: (document.getElementById('card-holder-cpf').value || '').replace(/\D/g, '').slice(0, 11),
-                    installments: parseInt(document.getElementById('card-installments').value, 10) || 1
-                };
+            if (data.qrCodeText) {
+                pixCodeText = data.qrCodeText;
+                pixCopyText.textContent = pixCodeText.substring(0, 60) + '...';
             }
+            qrcodeContainer.style.display = 'block';
+            btnGenerate.style.display = 'none';
+        })
+        .catch(function() {
+            stateLoading.style.display = 'none';
+            btnGenerate.disabled = false;
+            showError('Erro de conexão. Tente novamente.');
+        });
+    }
+    btnGenerate.addEventListener('click', doGeneratePix);
+    if (ctaBtnPix) ctaBtnPix.addEventListener('click', doGeneratePix);
 
-            function payWithCard(method) {
-                const card = getCardPayload();
-                if (!card.number || card.number.length < 13) {
-                    stateError.textContent = 'Informe o número do cartão.';
-                    stateError.style.display = 'block';
-                    return;
-                }
-                if (!card.exp_month || !card.exp_year) {
-                    stateError.textContent = 'Informe validade (mês e ano).';
-                    stateError.style.display = 'block';
-                    return;
-                }
-                if (!card.security_code || card.security_code.length < 3) {
-                    stateError.textContent = 'Informe o CVV.';
-                    stateError.style.display = 'block';
-                    return;
-                }
-                if (!card.holder_name) {
-                    stateError.textContent = 'Informe o nome do titular.';
-                    stateError.style.display = 'block';
-                    return;
-                }
-                stateError.style.display = 'none';
-                stateLoading.style.display = 'block';
-                document.getElementById('btn-pay-credit').disabled = true;
-                document.getElementById('btn-pay-debit').disabled = true;
-                fetch(baseUrl + '/api/checkout/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        submissionId: submissionId,
-                        method: method,
-                        card_number: card.number,
-                        exp_month: card.exp_month,
-                        exp_year: card.exp_year,
-                        security_code: card.security_code,
-                        holder_name: card.holder_name,
-                        holder_tax_id: card.holder_tax_id || undefined,
-                        installments: method === 'credit_card' ? card.installments : 1
-                    })
-                })
-                .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
-                .then(function(result) {
-                    stateLoading.style.display = 'none';
-                    document.getElementById('btn-pay-credit').disabled = false;
-                    document.getElementById('btn-pay-debit').disabled = false;
-                    if (!result.ok) {
-                        stateError.textContent = result.data.error || 'Erro ao processar pagamento.';
-                        stateError.style.display = 'block';
-                        return;
-                    }
-                    if (result.data.paid) {
-                        document.getElementById('state-pending').style.display = 'none';
-                        document.getElementById('state-paid').style.display = 'block';
-                    } else {
-                        stateError.textContent = 'Pagamento em análise ou não aprovado. Tente outro cartão ou use Pix.';
-                        stateError.style.display = 'block';
-                    }
-                })
-                .catch(function(e) {
-                    stateLoading.style.display = 'none';
-                    document.getElementById('btn-pay-credit').disabled = false;
-                    document.getElementById('btn-pay-debit').disabled = false;
-                    stateError.textContent = 'Erro de conexão. Tente novamente.';
-                    stateError.style.display = 'block';
-                });
+    btnCopyPix.addEventListener('click', function() {
+        if (!pixCodeText) return;
+        navigator.clipboard.writeText(pixCodeText).then(function() {
+            var t = btnCopyPix.textContent;
+            btnCopyPix.textContent = 'Copiado!';
+            setTimeout(function() { btnCopyPix.textContent = t; }, 2000);
+        });
+    });
+
+    document.getElementById('card-number').addEventListener('input', function() {
+        var v = this.value.replace(/\D/g, '');
+        this.value = v.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+    });
+    document.getElementById('card-holder-cpf').addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').slice(0, 11);
+    });
+
+    function getCardPayload() {
+        var number = (document.getElementById('card-number').value || '').replace(/\D/g, '');
+        var expMonth = (document.getElementById('card-exp-month').value || '').replace(/\D/g, '').slice(0, 2);
+        var yearRaw = (document.getElementById('card-exp-year').value || '').replace(/\D/g, '');
+        var expYearShort = yearRaw.length >= 4 ? yearRaw.slice(-2) : yearRaw;
+        return {
+            number: number,
+            exp_month: expMonth,
+            exp_year: expYearShort,
+            security_code: (document.getElementById('card-cvv').value || '').replace(/\D/g, '').slice(0, 4),
+            holder_name: (document.getElementById('card-holder').value || '').trim(),
+            holder_tax_id: (document.getElementById('card-holder-cpf').value || '').replace(/\D/g, '').slice(0, 11),
+            installments: parseInt(document.getElementById('card-installments').value, 10) || 1
+        };
+    }
+
+    function payWithCard(method) {
+        var card = getCardPayload();
+        if (!card.number || card.number.length < 13) { showError('Informe o número do cartão.'); return; }
+        if (!card.exp_month || !card.exp_year) { showError('Informe validade (mês e ano).'); return; }
+        if (!card.security_code || card.security_code.length < 3) { showError('Informe o CVV.'); return; }
+        if (!card.holder_name) { showError('Informe o nome do titular.'); return; }
+        hideError();
+        stateLoading.style.display = 'block';
+        document.getElementById('btn-pay-credit').disabled = true;
+        document.getElementById('btn-pay-debit').disabled = true;
+        if (ctaBtnCard) ctaBtnCard.disabled = true;
+        fetch(baseUrl + '/api/checkout/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                submissionId: submissionId,
+                method: method,
+                card_number: card.number,
+                exp_month: card.exp_month,
+                exp_year: card.exp_year,
+                security_code: card.security_code,
+                holder_name: card.holder_name,
+                holder_tax_id: card.holder_tax_id || undefined,
+                installments: method === 'credit_card' ? card.installments : 1
+            })
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(result) {
+            stateLoading.style.display = 'none';
+            document.getElementById('btn-pay-credit').disabled = false;
+            document.getElementById('btn-pay-debit').disabled = false;
+            if (ctaBtnCard) ctaBtnCard.disabled = false;
+            if (!result.ok) {
+                showError(result.data.error || 'Erro ao processar pagamento.');
+                return;
             }
-            document.getElementById('btn-pay-credit').addEventListener('click', function() { payWithCard('credit_card'); });
-            document.getElementById('btn-pay-debit').addEventListener('click', function() { payWithCard('debit_card'); });
-        })();
-    </script>
+            if (result.data.paid) {
+                window.location.reload();
+            } else {
+                showError('Pagamento em análise ou não aprovado. Tente outro cartão ou use Pix.');
+            }
+        })
+        .catch(function() {
+            stateLoading.style.display = 'none';
+            document.getElementById('btn-pay-credit').disabled = false;
+            document.getElementById('btn-pay-debit').disabled = false;
+            if (ctaBtnCard) ctaBtnCard.disabled = false;
+            showError('Erro de conexão. Tente novamente.');
+        });
+    }
+    document.getElementById('btn-pay-credit').addEventListener('click', function() { payWithCard('credit_card'); });
+    document.getElementById('btn-pay-debit').addEventListener('click', function() { payWithCard('debit_card'); });
+    if (ctaBtnCard) ctaBtnCard.addEventListener('click', function() { payWithCard('credit_card'); });
+})();
+</script>
+<% } %>
+
+<footer class="py-6 text-center text-slate-500 dark:text-slate-600 text-xs">
+    <%= checkoutPageFooter || 'KingForms by ConectaKing' %>
+</footer>
 </body>
 </html>
