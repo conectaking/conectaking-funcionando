@@ -1610,6 +1610,67 @@ router.post('/:slug/form/:itemId/submit',
 }));
 
 /**
+ * GET /:slug/form/:itemId/checkout - Página de checkout (Pagamento Pix/Cartão)
+ */
+router.get('/:slug/form/:itemId/checkout', asyncHandler(async (req, res) => {
+    const { slug, itemId } = req.params;
+    const { submissionId } = req.query;
+    if (!submissionId) {
+        return res.status(400).send('<h1>Link inválido</h1><p>Falta o parâmetro submissionId.</p>');
+    }
+    const itemIdInt = parseInt(itemId, 10);
+    if (isNaN(itemIdInt)) return res.status(400).send('<h1>ID do formulário inválido</h1>');
+
+    const client = await db.pool.connect();
+    try {
+        const userRes = await client.query(
+            'SELECT id FROM users WHERE profile_slug = $1 OR id = $1',
+            [slug]
+        );
+        if (userRes.rows.length === 0) {
+            return res.status(404).send('<h1>Perfil não encontrado</h1>');
+        }
+        const userId = userRes.rows[0].id;
+
+        const subRes = await client.query(
+            `SELECT dfr.id, dfr.profile_item_id, dfr.responder_name, dfr.responder_email, dfr.responder_phone,
+                    dfr.submitted_at, dfr.payment_status, dfr.paid_at, dfr.payment_order_id,
+                    dfi.form_title, dfi.checkout_enabled, dfi.price_cents, dfi.pay_button_label
+             FROM digital_form_responses dfr
+             JOIN digital_form_items dfi ON dfi.profile_item_id = dfr.profile_item_id
+             JOIN profile_items pi ON pi.id = dfr.profile_item_id AND pi.user_id = $2
+             WHERE dfr.id = $1 AND dfr.profile_item_id = $3`,
+            [submissionId, userId, itemIdInt]
+        );
+        if (subRes.rows.length === 0) {
+            return res.status(404).send('<h1>Submissão não encontrada</h1>');
+        }
+        const row = subRes.rows[0];
+        if (!row.checkout_enabled) {
+            return res.redirect(302, `/${slug}/form/${itemId}/success?response_id=${submissionId}&show_success_page=true`);
+        }
+        const baseUrl = `${req.protocol}://${req.get('host') || 'tag.conectaking.com.br'}`;
+        return res.render('checkout', {
+            submissionId: row.id,
+            formTitle: row.form_title || 'Formulário',
+            priceCents: row.price_cents || 0,
+            payButtonLabel: row.pay_button_label || 'Pagamento',
+            responderName: row.responder_name,
+            responderEmail: row.responder_email,
+            responderPhone: row.responder_phone,
+            submittedAt: row.submitted_at,
+            paymentStatus: row.payment_status || 'PENDING_PAYMENT',
+            paidAt: row.paid_at,
+            slug,
+            itemId: itemIdInt,
+            baseUrl
+        });
+    } finally {
+        client.release();
+    }
+}));
+
+/**
  * GET /:slug/form/:itemId/success - Página de sucesso após envio
  */
 router.get('/:slug/form/:itemId/success', asyncHandler(async (req, res) => {
