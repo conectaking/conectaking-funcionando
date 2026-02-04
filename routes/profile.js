@@ -4036,9 +4036,10 @@ router.get('/items/digital_form/:id/responses', protectUser, asyncHandler(async 
             return res.status(404).json({ message: 'Formulário não encontrado ou você não tem permissão.' });
         }
 
-        // Buscar respostas
+        // Buscar respostas (inclui payment_status e paid_at para abas Pago/Pendente)
         const responsesRes = await client.query(
-            `SELECT id, response_data, responder_name, responder_email, responder_phone, submitted_at
+            `SELECT id, response_data, responder_name, responder_email, responder_phone, submitted_at,
+                    payment_status, paid_at
              FROM digital_form_responses
              WHERE profile_item_id = $1
              ORDER BY submitted_at DESC`,
