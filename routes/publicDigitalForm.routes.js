@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const db = require('../db');
 const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
+const checkoutService = require('../modules/checkout/checkout.service');
 const { validateFormSubmission, handleValidationErrors, sanitizeResponseData, escapeHtml, sanitizeHtml } = require('../utils/formValidators');
 
 /**
@@ -1650,6 +1651,7 @@ router.get('/:slug/form/:itemId/checkout', asyncHandler(async (req, res) => {
             return res.redirect(302, `/${slug}/form/${itemId}/success?response_id=${submissionId}&show_success_page=true`);
         }
         const baseUrl = `${req.protocol}://${req.get('host') || 'tag.conectaking.com.br'}`;
+        const checkoutConfig = await checkoutService.getCheckoutConfig(row.profile_item_id) || {};
         return res.render('checkout', {
             submissionId: row.id,
             formTitle: row.form_title || 'Formulário',
@@ -1663,7 +1665,11 @@ router.get('/:slug/form/:itemId/checkout', asyncHandler(async (req, res) => {
             paidAt: row.paid_at,
             slug,
             itemId: itemIdInt,
-            baseUrl
+            baseUrl,
+            checkoutPageLogoUrl: checkoutConfig.checkout_page_logo_url || '',
+            checkoutPagePrimaryColor: checkoutConfig.checkout_page_primary_color || '#22c55e',
+            checkoutPageTitle: checkoutConfig.checkout_page_title || '',
+            checkoutPageFooter: checkoutConfig.checkout_page_footer || ''
         });
     } finally {
         client.release();

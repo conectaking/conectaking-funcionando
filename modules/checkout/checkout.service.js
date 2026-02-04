@@ -16,7 +16,9 @@ const ENCRYPTION_KEY = process.env.CHECKOUT_ENCRYPTION_KEY || process.env.JWT_SE
  */
 async function getCheckoutConfig(profileItemId) {
   const r = await db.query(
-    `SELECT fcc.id, fcc.profile_item_id, fcc.pagbank_seller_id, fcc.pagbank_access_token_encrypted, fcc.created_at, fcc.updated_at,
+    `SELECT fcc.id, fcc.profile_item_id, fcc.pagbank_seller_id, fcc.pagbank_access_token_encrypted,
+            fcc.checkout_page_logo_url, fcc.checkout_page_primary_color, fcc.checkout_page_title, fcc.checkout_page_footer,
+            fcc.created_at, fcc.updated_at,
             dfi.checkout_enabled, dfi.price_cents, dfi.pay_button_label
      FROM profile_items pi
      LEFT JOIN form_checkout_configs fcc ON fcc.profile_item_id = pi.id
@@ -31,7 +33,11 @@ async function getCheckoutConfig(profileItemId) {
     checkout_enabled: !!row.checkout_enabled,
     price_cents: row.price_cents,
     pay_button_label: row.pay_button_label || PAY_BUTTON_LABEL_DEFAULT,
-    pagbank_seller_id: row.pagbank_seller_id || null
+    pagbank_seller_id: row.pagbank_seller_id || null,
+    checkout_page_logo_url: row.checkout_page_logo_url || null,
+    checkout_page_primary_color: row.checkout_page_primary_color || '#22c55e',
+    checkout_page_title: row.checkout_page_title || null,
+    checkout_page_footer: row.checkout_page_footer || null
     // token nunca exposto; só usado internamente
   };
 }
@@ -48,7 +54,17 @@ async function saveCheckoutConfig(userId, profileItemId, data) {
     );
     if (!check.rows.length) throw new Error('Formulário não encontrado ou sem permissão');
 
-    const { checkout_enabled, price_cents, pay_button_label, pagbank_seller_id, pagbank_access_token } = data || {};
+    const {
+      checkout_enabled,
+      price_cents,
+      pay_button_label,
+      pagbank_seller_id,
+      pagbank_access_token,
+      checkout_page_logo_url,
+      checkout_page_primary_color,
+      checkout_page_title,
+      checkout_page_footer
+    } = data || {};
 
     await client.query('BEGIN');
 
@@ -64,13 +80,28 @@ async function saveCheckoutConfig(userId, profileItemId, data) {
 
     const encryptedToken = pagbank_access_token ? encrypt(pagbank_access_token, ENCRYPTION_KEY) : null;
     await client.query(
-      `INSERT INTO form_checkout_configs (profile_item_id, pagbank_seller_id, pagbank_access_token_encrypted, updated_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO form_checkout_configs (
+         profile_item_id, pagbank_seller_id, pagbank_access_token_encrypted,
+         checkout_page_logo_url, checkout_page_primary_color, checkout_page_title, checkout_page_footer,
+         updated_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        ON CONFLICT (profile_item_id) DO UPDATE SET
          pagbank_seller_id = COALESCE($2, form_checkout_configs.pagbank_seller_id),
          pagbank_access_token_encrypted = COALESCE($3, form_checkout_configs.pagbank_access_token_encrypted),
+         checkout_page_logo_url = COALESCE($4, form_checkout_configs.checkout_page_logo_url),
+         checkout_page_primary_color = COALESCE($5, form_checkout_configs.checkout_page_primary_color),
+         checkout_page_title = COALESCE($6, form_checkout_configs.checkout_page_title),
+         checkout_page_footer = COALESCE($7, form_checkout_configs.checkout_page_footer),
          updated_at = NOW()`,
-      [profileItemId, pagbank_seller_id || null, encryptedToken]
+      [
+        profileItemId,
+        pagbank_seller_id || null,
+        encryptedToken,
+        checkout_page_logo_url || null,
+        checkout_page_primary_color || null,
+        checkout_page_title || null,
+        checkout_page_footer || null
+      ]
     );
 
     await client.query('COMMIT');

@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamento - <%= formTitle %> | KingForms</title>
+    <title><%= checkoutPageTitle ? checkoutPageTitle + ' - ' : '' %>Pagamento - <%= formTitle %><%= checkoutPageTitle ? '' : ' | KingForms' %></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        :root { --primary: #22c55e; --primary-dark: #16a34a; --bg: #f8fafc; --card: #fff; --text: #1e293b; --text-muted: #64748b; }
+        :root { --primary: <%= checkoutPagePrimaryColor || '#22c55e' %>; --primary-dark: #16a34a; --bg: #f8fafc; --card: #fff; --text: #1e293b; --text-muted: #64748b; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
         .top-bar { background: var(--card); padding: 16px 24px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-        .top-bar .logo { font-weight: 700; font-size: 1.25rem; color: var(--primary); }
+        .top-bar .logo { font-weight: 700; font-size: 1.25rem; color: var(--primary); display: flex; align-items: center; }
+        .top-bar .logo-img { max-height: 40px; width: auto; object-fit: contain; }
         .main { flex: 1; padding: 32px 24px; max-width: 900px; margin: 0 auto; width: 100%; }
         .card { background: var(--card); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.06); overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
         @media (max-width: 700px) { .card { grid-template-columns: 1fr; } }
@@ -55,7 +56,9 @@
 </head>
 <body>
     <header class="top-bar">
-        <div class="logo">KingForms</div>
+        <div class="logo">
+            <% if (checkoutPageLogoUrl) { %><img src="<%= checkoutPageLogoUrl %>" alt="<%= checkoutPageTitle || formTitle %>" class="logo-img" /><% } else { %><%= checkoutPageTitle || 'KingForms' %><% } %>
+        </div>
     </header>
     <main class="main">
         <div class="card">
@@ -142,7 +145,7 @@
         </div>
     </main>
     <footer class="footer">
-        KingForms by ConectaKing
+        <%= checkoutPageFooter || 'KingForms by ConectaKing' %>
     </footer>
     <script>
         (function() {

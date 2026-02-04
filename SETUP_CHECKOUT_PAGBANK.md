@@ -35,26 +35,40 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 
 ---
 
-## 4) Variáveis de ambiente no servidor (Render / VPS / Docker)
+## 4) Migration (só uma vez)
+
+Toda a estrutura do checkout está na **migration 155**. Não foi criada migration nova nas últimas alterações (abas Pago/Pendente, página de Checkout, cartão, etc.).
+
+- **Rodar a migration 155 uma vez** no banco (Render ou local):
+  - Se você usa auto-migrate: ao subir o servidor, a migration 155 deve rodar automaticamente (conforme seu fluxo de migrations).
+  - Ou execute manualmente o SQL em `migrations/155_add_checkout_module_tables.sql`.
+- Depois disso, **não é necessário rodar nenhuma migration nova** para as funcionalidades atuais de checkout.
+
+## 5) Variáveis de ambiente no servidor (Render / VPS / Docker)
 
 | Variável | Obrigatória | Descrição |
 |----------|-------------|-----------|
 | `PAGBANK_WEBHOOK_SECRET` | Sim (para webhook) | Secret configurado no painel PagBank para validar a assinatura do webhook. |
+| `PAGBANK_WEBHOOK_BASE_URL` | Recomendado | URL base do seu backend (ex.: `https://conectaking-api.onrender.com`) para o PagBank chamar o webhook. |
+| `PAGBANK_PLATFORM_ACCOUNT_ID` | Para split 10% | ID da sua conta PagBank (plataforma) para receber os 10%. Se não definir, o split vai 100% para o vendedor. |
+| `PAGBANK_API_BASE_URL` | Opcional | Para sandbox use `https://sandbox.api.pagseguro.com`; produção usa o padrão da API PagBank. |
 | `CHECKOUT_ENCRYPTION_KEY` | Recomendado | Chave para criptografar o token PagBank no banco. Se não definir, o código usa `JWT_SECRET`. |
 
 - No **Render:** Environment → Add Variable.  
 - Em **VPS/Docker:** defina no `.env` ou no processo que inicia a aplicação.
 
+**Nenhum `npm install` novo** é necessário: o módulo de checkout usa apenas dependências já do projeto (express, db, crypto, fetch nativo, etc.).
+
 ---
 
-## 5) Testar em sandbox / homologação (se aplicável)
+## 6) Testar em sandbox / homologação (se aplicável)
 
 - Use as credenciais de **homologação** do PagBank no formulário (Seller ID e Token de teste).
 - Crie uma submissão com checkout ativo, gere uma cobrança Pix ou cartão de teste e confira se o webhook é chamado e se o status da submissão muda para “Pago” no painel.
 
 ---
 
-## 6) Fluxo de teste completo
+## 7) Fluxo de teste completo
 
 1. **Criar submissão pendente:** ative o checkout em um formulário, preencha e envie; a submissão deve ficar com status “Pagamento pendente” e redirecionar para a página de checkout.
 2. **Gerar cobrança Pix:** na página de checkout, escolha “Pague com Pix”; deve aparecer QR Code (ou link) e o status “Pagamento pendente”.
@@ -63,7 +77,7 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 
 ---
 
-## 7) Checklist de troubleshooting
+## 8) Checklist de troubleshooting
 
 | Problema | O que verificar |
 |----------|------------------|
@@ -76,7 +90,7 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 
 ---
 
-## 8) O que é manual vs automatizado
+## 9) O que é manual vs automatizado
 
 | Ação | Manual / Automático |
 |------|----------------------|
@@ -92,5 +106,19 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 | Exibir abas Pagos / Pendentes no Check-in | **Automático** (código) |
 
 ---
+
+## 10) Resumo: migration, instalação e melhorias
+
+| Pergunta | Resposta |
+|----------|----------|
+| **Precisa rodar alguma migration?** | Sim, **só a 155** (uma vez). Ela cria enum, colunas em `digital_form_items` e `digital_form_responses`, tabelas `form_checkout_configs` e `checkout_webhook_logs`. Nada do que foi implementado depois (cartão, abas Pago/Pendente, página Checkout, etc.) exige migration nova. |
+| **Precisa instalar algum pacote (npm)?** | **Não.** O módulo de checkout usa apenas o que já está no projeto (express, db, crypto, fetch, etc.). |
+| **O que falta configurar?** | (1) Rodar a migration 155 no banco; (2) Variáveis de ambiente (webhook secret, opcionalmente base URL e platform account ID); (3) No PagBank: webhook URL e secret; (4) Em cada formulário: ativar checkout e preencher Seller ID + Token na página Checkout. |
+
+**Melhorias opcionais (não obrigatórias para funcionar):**
+- **Personalizar a página de checkout:** hoje a página pública de pagamento (Pix/cartão) tem layout fixo; dá para adicionar configurações (logo, cor primária, título) na aba Configuração do Checkout e usar na view `checkout.ejs`.
+- **Exportar CSV no dashboard do Checkout:** botão “Exportar CSV” na aba Dashboard da página de Checkout (quem pagou / pendente).
+- **Cartão débito e 3DS:** PagBank pode exigir 3DS para débito; se começarem a recusar, implementar fluxo de autenticação 3DS (redirect ou iframe conforme a documentação deles).
+- **Tokenização de cartão (PCI):** hoje os dados do cartão passam pelo nosso servidor; para maior segurança, usar tokenização no front (SDK/JS do PagBank) e enviar só o token no create charge.
 
 Para detalhes da API PagBank (payload do webhook, nomes dos eventos, split), use sempre a **documentação oficial** mais recente.
