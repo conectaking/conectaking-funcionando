@@ -4,51 +4,117 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title><%= checkoutPageTitle ? checkoutPageTitle + ' - ' : '' %>Pagamento - <%= formTitle %><%= checkoutPageTitle ? '' : ' | KingForms' %></title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <script id="tailwind-config">
-        (function() {
-            var config = {
-                darkMode: "class",
-                theme: {
-                    extend: {
-                        colors: {
-                            "primary": "<%= checkoutPagePrimaryColor || '#1152d4' %>",
-                            "accent-gold": "#c5a059",
-                            "background-light": "#f6f6f8",
-                            "background-dark": "#0a0a0a",
-                            "card-dark": "#161616",
-                        },
-                        fontFamily: { "display": ["Manrope", "sans-serif"] },
-                        borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+    <style id="checkout-critical-css">
+        /* CSS crítico: layout luxury mesmo sem Tailwind (CDN bloqueado/falha) */
+        :root {
+            --checkout-primary: <%= checkoutPagePrimaryColor || '#1152d4' %>;
+            --checkout-bg-dark: #0a0a0a;
+            --checkout-bg-light: #f6f6f8;
+            --checkout-card: #161616;
+            --checkout-gold: #c5a059;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Manrope', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            margin: 0;
+            min-height: max(884px, 100dvh);
+            background: var(--checkout-bg-dark);
+            color: #fff;
+        }
+        body.dark { background: var(--checkout-bg-dark); color: #fff; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .checkout-header {
+            position: sticky; top: 0; z-index: 50;
+            background: rgba(10,10,10,0.8); backdrop-filter: blur(12px);
+            padding: 1rem 1rem 0.5rem;
+        }
+        .checkout-header-inner { display: flex; align-items: center; justify-content: space-between; max-width: 28rem; margin: 0 auto; }
+        .checkout-stepper {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 20rem; margin: 0 auto; padding: 1.5rem 0; position: relative;
+        }
+        .checkout-stepper::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #334155; transform: translateY(-50%); z-index: -1; }
+        .checkout-step { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+        .checkout-step-dot { width: 8px; height: 8px; border-radius: 9999px; background: #475569; }
+        .checkout-step-dot.current { width: 12px; height: 12px; background: var(--checkout-primary); box-shadow: 0 0 0 4px rgba(17,82,212,0.2); }
+        .checkout-step span { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; color: #94a3b8; }
+        .checkout-step.current span { color: var(--checkout-primary); font-weight: 700; }
+        .checkout-main { max-width: 28rem; margin: 0 auto; padding: 0 1.5rem 8rem; }
+        .checkout-card {
+            background: var(--checkout-card);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 1rem;
+        }
+        .checkout-card-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .checkout-card-text { flex: 1; min-width: 0; }
+        .checkout-card-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 600; color: var(--checkout-gold); margin-bottom: 0.25rem; }
+        .checkout-card-title { font-size: 1rem; font-weight: 500; color: #fff; margin: 0 0 0.25rem; }
+        .checkout-card-sub { font-size: 12px; color: #94a3b8; margin: 0; }
+        .checkout-card-price { font-size: 1.125rem; font-weight: 700; color: #fff; margin-top: 1rem; }
+        .checkout-card-img { width: 96px; height: 96px; flex-shrink: 0; border-radius: 0.5rem; background: #1e293b; background-size: cover; background-position: center; }
+        .checkout-section-title { font-size: 1.25rem; font-weight: 300; letter-spacing: 0.05em; color: #fff; margin: 1.5rem 0 0.25rem; }
+        .checkout-section-sub { font-size: 12px; color: #64748b; margin: 0 0 1rem; }
+        .checkout-methods { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+        .checkout-method { flex: 1; padding: 1rem; border-radius: 0.75rem; border: 2px solid #1e293b; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+        .checkout-method.selected { border-color: var(--checkout-primary); background: rgba(17,82,212,0.1); }
+        .checkout-totals { margin-top: 2.5rem; }
+        .checkout-totals div { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 0.75rem; }
+        .checkout-totals .total-row { padding-top: 1rem; border-top: 1px solid #1e293b; margin-top: 0.5rem; font-size: 1rem; }
+        .checkout-totals .total-row span:last-child { font-size: 1.25rem; font-weight: 700; }
+        .checkout-shipping { color: var(--checkout-gold) !important; font-size: 10px !important; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+        .checkout-trust { display: flex; justify-content: center; align-items: center; gap: 1.5rem; margin-top: 2rem; opacity: 0.4; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; color: #94a3b8; }
+        .checkout-cta {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            padding: 1.5rem; background: linear-gradient(to top, var(--checkout-bg-dark), transparent); padding-top: 2.5rem;
+        }
+        .checkout-cta button, .checkout-cta .checkout-cta-btn {
+            display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+            width: 100%; max-width: 28rem; margin: 0 auto;
+            height: 4rem; background: #fff; color: #000;
+            border: none; border-radius: 0.75rem; font-family: inherit;
+            font-size: 12px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+            cursor: pointer; transition: transform 0.05s, box-shadow 0.2s;
+        }
+        .checkout-cta button:hover, .checkout-cta .checkout-cta-btn:hover { box-shadow: 0 0 0 2px var(--checkout-gold); }
+        .checkout-cta p { text-align: center; font-size: 10px; color: #64748b; margin: 1rem 0 0; letter-spacing: 0.05em; }
+        .checkout-input { width: 100%; height: 3.5rem; padding: 0 1rem; border-radius: 0.5rem; border: 1px solid #1e293b; background: transparent; color: #fff; font-size: 1rem; font-family: inherit; margin-top: 0.25rem; }
+        .checkout-input::placeholder { color: #64748b; }
+        .checkout-input:focus { outline: none; border-color: var(--checkout-primary); box-shadow: 0 0 0 1px var(--checkout-primary); }
+        .checkout-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; color: #94a3b8; margin-left: 4px; display: block; margin-bottom: 0.25rem; }
+        .checkout-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .checkout-btn-primary { background: var(--checkout-primary) !important; color: #fff !important; border: 2px solid var(--checkout-primary) !important; }
+    </style>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script type="text/tailwind-config">
+        ({
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '<%= checkoutPagePrimaryColor || "#1152d4" %>',
+                        'accent-gold': '#c5a059',
+                        'background-light': '#f6f6f8',
+                        'background-dark': '#0a0a0a',
+                        'card-dark': '#161616',
                     },
+                    fontFamily: { display: ['Manrope', 'sans-serif'] },
+                    borderRadius: { DEFAULT: '0.25rem', lg: '0.5rem', xl: '0.75rem', full: '9999px' },
                 },
-            };
-            function apply() {
-                if (typeof window.tailwind !== "undefined") {
-                    window.tailwind.config = config;
-                    return;
-                }
-                setTimeout(apply, 20);
-            }
-            if (document.readyState === "loading") {
-                document.addEventListener("DOMContentLoaded", apply);
-            } else {
-                apply();
-            }
-        })();
+            },
+        })
     </script>
     <style>
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
-        body { font-family: 'Manrope', sans-serif; -webkit-font-smoothing: antialiased; }
-        body { min-height: max(884px, 100dvh); }
         .focus-primary:focus { border-color: <%= checkoutPagePrimaryColor || '#1152d4' %>; box-shadow: 0 0 0 1px <%= checkoutPagePrimaryColor || '#1152d4' %>; }
-        .ring-primary { --tw-ring-color: <%= checkoutPagePrimaryColor || '#1152d4' %>; }
         .method-card.selected { border-color: <%= checkoutPagePrimaryColor || '#1152d4' %>; }
     </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white min-h-screen">
+<body class="dark bg-background-light dark:bg-background-dark text-slate-900 dark:text-white min-h-screen">
 <!-- Top Navigation Bar -->
 <div class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
     <div class="flex items-center p-4 pb-2 justify-between max-w-md mx-auto">
