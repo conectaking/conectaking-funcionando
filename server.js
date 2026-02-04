@@ -562,6 +562,10 @@ app.get('/', (req, res) => {
 // Isso evita que requisições de bots sejam processadas ou logadas
 app.use((req, res, next) => {
     const path = req.path.toLowerCase();
+    // Nunca bloquear raiz nem path correto de API chamado sem prefixo (evita 403 em GET / e GET /plan-availability)
+    if (path === '' || path === '/' || path === '/plan-availability') {
+        return next();
+    }
     const userAgent = (req.get('user-agent') || '').toLowerCase();
     
     // Lista expandida de padrões de bots/scanners
@@ -625,6 +629,11 @@ app.use((req, res, next) => {
     }
     
     next();
+});
+
+// Redirecionar GET /plan-availability para a rota correta (evita 403 quando o front chama sem /api/modules)
+app.get('/plan-availability', (req, res) => {
+    res.redirect(302, '/api/modules/plan-availability');
 });
 
 // Health check (sem rate limit)
