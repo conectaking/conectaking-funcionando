@@ -91,10 +91,29 @@
     </div>
 
     <% if (paymentStatus === 'PAID') { %>
-    <div class="px-0 lg:flex-1 py-8 text-center">
-        <p class="text-slate-500 dark:text-slate-400 mb-6">Obrigado! Seu pagamento foi confirmado.</p>
-        <a href="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>/success?response_id=<%= submissionId %>&show_success_page=true" class="inline-flex items-center justify-center gap-2 w-full max-w-md mx-auto bg-slate-900 dark:bg-white text-white dark:text-black h-14 rounded-xl font-semibold tracking-wide uppercase text-sm">Continuar</a>
+    <div class="px-0 lg:flex-1 py-8 text-center" id="paid-success-block" data-success-url="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>/success?response_id=<%= submissionId %>&show_success_page=true">
+        <p class="text-slate-500 dark:text-slate-400 mb-2">Obrigado! Seu pagamento foi confirmado.</p>
+        <p class="text-slate-400 dark:text-slate-500 text-sm mb-6" id="redirect-countdown">Redirecionando para sua confirmação em <span id="countdown-n">3</span> segundos...</p>
+        <a href="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>/success?response_id=<%= submissionId %>&show_success_page=true" id="btn-continue-now" class="inline-flex items-center justify-center gap-2 w-full max-w-md mx-auto bg-slate-900 dark:bg-white text-white dark:text-black h-14 rounded-xl font-semibold tracking-wide uppercase text-sm">Continuar agora</a>
     </div>
+    <script>
+    (function() {
+        var block = document.getElementById('paid-success-block');
+        var successUrl = block && block.getAttribute('data-success-url') ? block.getAttribute('data-success-url') : (document.getElementById('btn-continue-now') && document.getElementById('btn-continue-now').href) || '';
+        var n = 3;
+        var el = document.getElementById('countdown-n');
+        var countdownEl = document.getElementById('redirect-countdown');
+        var interval = setInterval(function() {
+            n--;
+            if (el) el.textContent = n;
+            if (n <= 0) {
+                clearInterval(interval);
+                if (countdownEl) countdownEl.style.display = 'none';
+                if (successUrl) window.location.href = successUrl;
+            }
+        }, 1000);
+    })();
+    </script>
     <% } else { %>
     <!-- Coluna direita no desktop: método de pagamento + formulário -->
     <div class="lg:flex-1 lg:min-w-0 lg:max-w-xl px-6 lg:px-0">
