@@ -51,7 +51,7 @@ Se **cnking.bio** já funciona, o serviço está no ar; falta só o DNS de **tag
 
 # Configurar cnking.bio e www.cnking.bio (corrigir "We weren't able to verify www.cnking.bio")
 
-Quando o Render mostra **"We weren't able to verify www.cnking.bio"**, é porque o DNS ainda não está correto ou não propagou. Configure assim no provedor do domínio **cnking.bio** (ex.: get.bio, Hostinger, etc.):
+Quando o Render mostra **"We weren't able to verify www.cnking.bio"**, é porque o DNS ainda não está correto ou não propagou. O domínio **cnking.bio** está registrado na **Porkbun** — configure os registros no painel da Porkbun (Domain Management → cnking.bio → Details → DNS / Edit DNS):
 
 ## Registros a criar
 

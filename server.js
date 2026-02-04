@@ -69,6 +69,8 @@ const webhooksRoutes = require('./routes/webhooks.routes');
 const pushNotificationsRoutes = require('./routes/pushNotifications.routes');
 const checkinRoutes = require('./routes/checkin.routes');
 const linkLimitsRoutes = require('./modules/linkLimits/linkLimits.routes');
+const checkoutRoutes = require('./modules/checkout/checkout.routes');
+const checkoutWebhookRoutes = require('./modules/checkout/webhook.routes');
 const kingSelectionRoutes = require('./routes/kingSelection.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize, botLimiter } = require('./middleware/security');
@@ -789,7 +791,9 @@ app.use('/api/guest-lists', apiLimiter, guestListCustomizeRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListRoutes);
 app.use('/guest-list', publicGuestListRoutes);
 app.use('/portaria', publicGuestListRoutes.portaria);
+app.use('/api/webhooks', checkoutWebhookRoutes); // POST /pagbank (módulo checkout)
 app.use('/api/webhooks', apiLimiter, webhooksRoutes);
+app.use('/api/checkout', apiLimiter, checkoutRoutes);
 app.use('/api/push', apiLimiter, pushNotificationsRoutes);
 
 // Histórico de confirmações (Melhoria 7)
