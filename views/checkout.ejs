@@ -13,13 +13,14 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary": "<%= checkoutPagePrimaryColor || '#22c55e' %>",
+                        "primary": "<%= checkoutPagePrimaryColor || '#1152d4' %>",
                         "accent-gold": "#c5a059",
                         "background-light": "#f6f6f8",
                         "background-dark": "#0a0a0a",
                         "card-dark": "#161616",
                     },
                     fontFamily: { "display": ["Manrope", "sans-serif"] },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
                 },
             },
         }
@@ -28,17 +29,15 @@
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
         body { font-family: 'Manrope', sans-serif; -webkit-font-smoothing: antialiased; }
         body { min-height: max(884px, 100dvh); }
-        /* Primary as hex for borders/focus */
-        .focus-primary:focus { border-color: <%= checkoutPagePrimaryColor || '#22c55e' %>; box-shadow: 0 0 0 1px <%= checkoutPagePrimaryColor || '#22c55e' %>; }
-        .ring-primary { --tw-ring-color: <%= checkoutPagePrimaryColor || '#22c55e' %>; }
-        .bg-primary-custom { background-color: <%= checkoutPagePrimaryColor || '#22c55e' %>; }
-        .method-card.selected { border-color: <%= checkoutPagePrimaryColor || '#22c55e' %>; }
+        .focus-primary:focus { border-color: <%= checkoutPagePrimaryColor || '#1152d4' %>; box-shadow: 0 0 0 1px <%= checkoutPagePrimaryColor || '#1152d4' %>; }
+        .ring-primary { --tw-ring-color: <%= checkoutPagePrimaryColor || '#1152d4' %>; }
+        .method-card.selected { border-color: <%= checkoutPagePrimaryColor || '#1152d4' %>; }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white min-h-screen">
-<!-- Top Navigation: mobile max-w-md, desktop max-w-6xl -->
+<!-- Top Navigation Bar -->
 <div class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
-    <div class="flex items-center p-4 pb-2 justify-between max-w-md lg:max-w-6xl mx-auto px-4 lg:px-6">
+    <div class="flex items-center p-4 pb-2 justify-between max-w-md mx-auto">
         <a href="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>" class="text-slate-900 dark:text-white flex size-10 items-center justify-center cursor-pointer">
             <span class="material-symbols-outlined">arrow_back_ios</span>
         </a>
@@ -62,36 +61,33 @@
     </div>
 </div>
 
-<!-- Main: mobile single column, desktop two columns (resumo | pagamento) -->
-<main class="max-w-md lg:max-w-6xl mx-auto pb-36 px-4 lg:px-6 lg:flex lg:gap-10 lg:items-start">
-    <!-- Order Summary Card: no desktop fica coluna esquerda, capa maior -->
-    <div class="lg:w-[380px] lg:flex-shrink-0 lg:sticky lg:top-[180px]">
-        <div class="px-0 py-4 lg:py-6">
-            <div class="bg-white dark:bg-card-dark rounded-xl p-5 shadow-sm border border-slate-100 dark:border-white/5">
-                <div class="flex items-center justify-between gap-4 lg:flex-col lg:items-stretch lg:gap-5">
-                    <div class="flex flex-col gap-1 flex-1 min-w-0 lg:order-2">
-                        <p class="text-accent-gold text-[10px] uppercase tracking-[0.15em] font-semibold">Inscrição</p>
-                        <p class="text-slate-900 dark:text-white text-base lg:text-lg font-medium leading-tight tracking-tight truncate"><%= formTitle %></p>
-                        <% if (responderName) { %><p class="text-slate-400 dark:text-slate-500 text-xs font-normal"><%= responderName %></p><% } %>
-                        <div class="mt-4">
-                            <span class="text-slate-900 dark:text-white text-lg lg:text-xl font-bold tracking-tight" id="price-display">R$ <%= (priceCents / 100).toFixed(2).replace('.', ',') %></span>
-                        </div>
-                        <% if (paymentStatus === 'PAID') { %>
-                        <span class="inline-flex items-center mt-2 text-xs font-semibold text-emerald-500">Pagamento confirmado</span>
-                        <% } else { %>
-                        <span class="inline-flex items-center mt-2 text-xs font-semibold text-amber-500">Pagamento pendente</span>
-                        <% } %>
+<main class="max-w-md mx-auto pb-32">
+    <!-- Order Summary Card (igual ao luxury reference) -->
+    <div class="px-6 py-4">
+        <div class="bg-white dark:bg-card-dark rounded-xl p-5 shadow-sm border border-slate-100 dark:border-white/5">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex flex-col gap-1 flex-1 min-w-0">
+                    <p class="text-accent-gold text-[10px] uppercase tracking-[0.15em] font-semibold">Inscrição</p>
+                    <p class="text-slate-900 dark:text-white text-base font-medium leading-tight tracking-tight truncate"><%= formTitle %></p>
+                    <% if (responderName) { %><p class="text-slate-400 dark:text-slate-500 text-xs font-normal"><%= responderName %></p><% } %>
+                    <div class="mt-4">
+                        <span class="text-slate-900 dark:text-white text-lg font-bold tracking-tight" id="price-display">R$ <%= (priceCents / 100).toFixed(2).replace('.', ',') %></span>
                     </div>
-                    <div class="w-24 h-24 lg:w-full lg:max-w-[320px] lg:h-48 lg:mx-auto lg:rounded-xl flex-shrink-0 bg-center bg-no-repeat bg-cover rounded-lg shadow-inner bg-slate-100 dark:bg-slate-800 overflow-hidden lg:order-1"<% if (formCoverImageUrl) { %> style="background-image: url('<%= formCoverImageUrl.replace(/'/g, '&#39;') %>');"<% } %>>
-                        <% if (!formCoverImageUrl) { %><span class="material-symbols-outlined text-4xl lg:text-6xl text-slate-400 dark:text-slate-600 w-full h-full flex items-center justify-center">image</span><% } %>
-                    </div>
+                    <% if (paymentStatus === 'PAID') { %>
+                    <span class="inline-flex items-center mt-2 text-xs font-semibold text-emerald-500">Pagamento confirmado</span>
+                    <% } else { %>
+                    <span class="inline-flex items-center mt-2 text-xs font-semibold text-amber-500">Pagamento pendente</span>
+                    <% } %>
+                </div>
+                <div class="w-24 h-24 flex-shrink-0 bg-center bg-no-repeat bg-cover rounded-lg shadow-inner bg-slate-100 dark:bg-slate-800 overflow-hidden"<% if (formCoverImageUrl) { %> style="background-image: url('<%= formCoverImageUrl.replace(/'/g, '&#39;') %>');"<% } %>>
+                    <% if (!formCoverImageUrl) { %><span class="material-symbols-outlined text-4xl text-slate-400 dark:text-slate-600 w-full h-full flex items-center justify-center">image</span><% } %>
                 </div>
             </div>
         </div>
     </div>
 
     <% if (paymentStatus === 'PAID') { %>
-    <div class="px-0 lg:flex-1 py-8 text-center" id="paid-success-block" data-success-url="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>/success?response_id=<%= submissionId %>&show_success_page=true">
+    <div class="px-6 py-8 text-center" id="paid-success-block" data-success-url="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>/success?response_id=<%= submissionId %>&show_success_page=true">
         <p class="text-slate-500 dark:text-slate-400 mb-2">Obrigado! Seu pagamento foi confirmado.</p>
         <p class="text-slate-400 dark:text-slate-500 text-sm mb-6" id="redirect-countdown">Redirecionando para sua confirmação em <span id="countdown-n">3</span> segundos...</p>
         <a href="<%= baseUrl %>/<%= slug %>/form/<%= itemId %>/success?response_id=<%= submissionId %>&show_success_page=true" id="btn-continue-now" class="inline-flex items-center justify-center gap-2 w-full max-w-md mx-auto bg-slate-900 dark:bg-white text-white dark:text-black h-14 rounded-xl font-semibold tracking-wide uppercase text-sm">Continuar agora</a>
@@ -100,32 +96,23 @@
     (function() {
         var block = document.getElementById('paid-success-block');
         var successUrl = block && block.getAttribute('data-success-url') ? block.getAttribute('data-success-url') : (document.getElementById('btn-continue-now') && document.getElementById('btn-continue-now').href) || '';
-        var n = 3;
-        var el = document.getElementById('countdown-n');
-        var countdownEl = document.getElementById('redirect-countdown');
+        var n = 3, el = document.getElementById('countdown-n'), countdownEl = document.getElementById('redirect-countdown');
         var interval = setInterval(function() {
-            n--;
-            if (el) el.textContent = n;
-            if (n <= 0) {
-                clearInterval(interval);
-                if (countdownEl) countdownEl.style.display = 'none';
-                if (successUrl) window.location.href = successUrl;
-            }
+            n--; if (el) el.textContent = n;
+            if (n <= 0) { clearInterval(interval); if (countdownEl) countdownEl.style.display = 'none'; if (successUrl) window.location.href = successUrl; }
         }, 1000);
     })();
     </script>
     <% } else { %>
-    <!-- Coluna direita no desktop: método de pagamento + formulário -->
-    <div class="lg:flex-1 lg:min-w-0 lg:max-w-xl px-6 lg:px-0">
-    <!-- Payment Method -->
-    <div class="pt-6 pb-2 lg:pt-0">
+    <!-- Section Title: Payment Method -->
+    <div class="px-6 pt-6 pb-2">
         <h3 class="text-slate-900 dark:text-white tracking-[0.05em] text-xl font-light">Método de pagamento</h3>
         <p class="text-slate-500 text-xs mt-1">Transações criptografadas e seguras.</p>
     </div>
 
-    <!-- Pix vs Cartão -->
-    <div class="flex gap-3 mb-4">
-        <div class="method-card flex-1 rounded-xl p-4 border-2 border-slate-200 dark:border-slate-800 cursor-pointer transition-all selected border-primary bg-primary/5 dark:bg-primary/10" data-method="pix">
+    <!-- Pix vs Cartão (tabs estilo luxury) -->
+    <div class="px-6 flex gap-3 mb-4">
+        <div class="method-card flex-1 rounded-xl p-4 border-2 border-slate-200 dark:border-slate-800 cursor-pointer transition-all selected" data-method="pix">
             <div class="flex items-center gap-2">
                 <span class="material-symbols-outlined text-xl">qr_code_2</span>
                 <span class="font-semibold text-sm">Pix</span>
@@ -141,11 +128,11 @@
         </div>
     </div>
 
-    <div id="state-loading" class="py-8 text-center text-slate-500" style="display:none;">Carregando...</div>
-    <div id="state-error" class="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 px-4 py-3 text-sm" style="display:none;"></div>
+    <div id="state-loading" class="px-6 py-8 text-center text-slate-500" style="display:none;">Carregando...</div>
+    <div id="state-error" class="mx-6 mb-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 px-4 py-3 text-sm" style="display:none;"></div>
 
     <!-- Pix Section -->
-    <div id="pix-section">
+    <div id="pix-section" class="px-6">
         <div id="qrcode-container" style="display:none;" class="rounded-xl bg-slate-100 dark:bg-slate-800/50 p-6 text-center">
             <img id="qrcode-img" alt="QR Code Pix" class="mx-auto max-w-[220px] h-auto"/>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 break-all" id="pix-copy-text"></p>
@@ -157,8 +144,8 @@
         </button>
     </div>
 
-    <!-- Card Form (hidden by default) -->
-    <div id="card-section" class="space-y-4" style="display:none;">
+    <!-- Payment Form (cartão - layout igual ao luxury: Cardholder, Number, Expiry+CVV 2 cols) -->
+    <div id="card-section" class="px-6 space-y-4" style="display:none;">
         <div class="flex flex-col gap-2">
             <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">Nome no cartão</label>
             <input id="card-holder" type="text" placeholder="Como está no cartão" autocomplete="cc-name" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 text-base font-light placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
@@ -166,18 +153,14 @@
         <div class="flex flex-col gap-2">
             <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">Número do cartão</label>
             <div class="relative">
-                <input id="card-number" type="text" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 pr-12 text-base font-light tracking-[0.2em] placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
+                <input id="card-number" type="text" placeholder="**** **** **** 4421" maxlength="19" autocomplete="cc-number" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 pr-12 text-base font-light tracking-[0.2em] placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
                 <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">credit_card</span>
             </div>
         </div>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-2">
-                <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">Mês</label>
-                <input id="card-exp-month" type="text" placeholder="MM" maxlength="2" autocomplete="cc-exp-month" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 text-base font-light placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
-            </div>
-            <div class="flex flex-col gap-2">
-                <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">Ano</label>
-                <input id="card-exp-year" type="text" placeholder="AA" maxlength="4" autocomplete="cc-exp-year" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 text-base font-light placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
+                <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">Validade</label>
+                <input id="card-expiry" type="text" placeholder="MM / AA" maxlength="7" autocomplete="cc-exp" class="w-full rounded-lg text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent focus:border-primary focus:ring-1 focus:ring-primary h-14 px-4 text-base font-light placeholder:text-slate-300 dark:placeholder:text-slate-700"/>
             </div>
             <div class="flex flex-col gap-2">
                 <label class="text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-semibold ml-1">CVV</label>
@@ -200,11 +183,15 @@
         </div>
     </div>
 
-    <!-- Order Totals -->
-    <div class="mt-10 space-y-3">
+    <!-- Order Totals (igual ao luxury: Subtotal, Insured Shipping Complimentary, Total Amount) -->
+    <div class="px-6 mt-10 space-y-3">
         <div class="flex justify-between items-center text-sm">
             <span class="text-slate-500 font-light">Subtotal</span>
             <span class="text-slate-900 dark:text-white font-medium">R$ <%= (priceCents / 100).toFixed(2).replace('.', ',') %></span>
+        </div>
+        <div class="flex justify-between items-center text-sm">
+            <span class="text-slate-500 font-light">Envio</span>
+            <span class="text-accent-gold font-medium uppercase text-[10px] tracking-widest">Cortesia</span>
         </div>
         <div class="pt-4 border-t border-slate-100 dark:border-slate-900 flex justify-between items-center">
             <span class="text-slate-900 dark:text-white text-base font-light tracking-wide">Total</span>
@@ -212,8 +199,8 @@
         </div>
     </div>
 
-    <!-- Trust Badges -->
-    <div class="mt-8 flex justify-center items-center gap-6 opacity-40 grayscale">
+    <!-- Trust Badges (3 itens como no luxury: 256-bit SSL, Secure Pay, Insured) -->
+    <div class="px-6 mt-8 flex justify-center items-center gap-6 opacity-40 grayscale">
         <div class="flex items-center gap-1.5">
             <span class="material-symbols-outlined text-sm">lock</span>
             <span class="text-[10px] uppercase tracking-widest font-bold">256-bit SSL</span>
@@ -222,29 +209,32 @@
             <span class="material-symbols-outlined text-sm">verified_user</span>
             <span class="text-[10px] uppercase tracking-widest font-bold">Pagamento seguro</span>
         </div>
-    </div>
+        <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm">local_shipping</span>
+            <span class="text-[10px] uppercase tracking-widest font-bold">Segurado</span>
+        </div>
     </div>
     <% } %>
 </main>
 
 <% if (paymentStatus !== 'PAID') { %>
-<!-- Fixed Bottom CTA: mobile centralizado, desktop alinhado à coluna de pagamento -->
+<!-- Fixed Bottom CTA (igual ao luxury: Pay Now + support text) -->
 <div id="cta-pix" class="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light dark:via-background-dark to-transparent pt-10">
-    <div class="max-w-md lg:max-w-xl mx-auto">
+    <div class="max-w-md mx-auto">
         <button type="button" id="cta-btn-pix" class="w-full bg-slate-900 dark:bg-white text-white dark:text-black h-16 rounded-xl font-semibold tracking-[0.2em] uppercase text-sm flex items-center justify-center gap-3 active:scale-[0.98] transition-all hover:ring-2 hover:ring-accent-gold shadow-2xl">
             <span>Gerar Pix</span>
             <span class="material-symbols-outlined !text-base">qr_code_2</span>
         </button>
-        <p class="text-center text-[10px] text-slate-400 dark:text-slate-600 mt-4 font-light tracking-wide uppercase">Pagamento via PagBank</p>
+        <p class="text-center text-[10px] text-slate-400 dark:text-slate-600 mt-4 font-light tracking-wide uppercase">Devolução em 30 dias e suporte incluídos</p>
     </div>
 </div>
 <div id="cta-card" style="display:none;" class="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light dark:via-background-dark to-transparent pt-10">
-    <div class="max-w-md lg:max-w-xl mx-auto">
+    <div class="max-w-md mx-auto">
         <button type="button" id="cta-btn-card" class="w-full bg-slate-900 dark:bg-white text-white dark:text-black h-16 rounded-xl font-semibold tracking-[0.2em] uppercase text-sm flex items-center justify-center gap-3 active:scale-[0.98] transition-all hover:ring-2 hover:ring-accent-gold shadow-2xl">
             <span>Pagar agora</span>
             <span class="material-symbols-outlined !text-base">arrow_forward</span>
         </button>
-        <p class="text-center text-[10px] text-slate-400 dark:text-slate-600 mt-4 font-light tracking-wide uppercase">Pagamento via PagBank</p>
+        <p class="text-center text-[10px] text-slate-400 dark:text-slate-600 mt-4 font-light tracking-wide uppercase">Devolução em 30 dias e suporte incluídos</p>
     </div>
 </div>
 <% } %>
@@ -300,7 +290,7 @@
     function doGeneratePix() {
         hideError();
         stateLoading.style.display = 'block';
-        btnGenerate.disabled = true;
+        if (btnGenerate) btnGenerate.disabled = true;
         fetch(baseUrl + '/api/checkout/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -309,7 +299,7 @@
         .then(function(r) { return r.json(); })
         .then(function(data) {
             stateLoading.style.display = 'none';
-            btnGenerate.disabled = false;
+            if (btnGenerate) btnGenerate.disabled = false;
             if (data.error) {
                 showError(data.error);
                 return;
@@ -323,12 +313,12 @@
                 pixCopyText.textContent = pixCodeText.substring(0, 60) + '...';
             }
             qrcodeContainer.style.display = 'block';
-            btnGenerate.style.display = 'none';
+            if (btnGenerate) btnGenerate.style.display = 'none';
             startPaymentStatusPolling();
         })
         .catch(function() {
             stateLoading.style.display = 'none';
-            btnGenerate.disabled = false;
+            if (btnGenerate) btnGenerate.disabled = false;
             showError('Erro de conexão. Tente novamente.');
         });
     }
@@ -349,10 +339,10 @@
         }, 3000);
     }
 
-    btnGenerate.addEventListener('click', doGeneratePix);
+    if (btnGenerate) btnGenerate.addEventListener('click', doGeneratePix);
     if (ctaBtnPix) ctaBtnPix.addEventListener('click', doGeneratePix);
 
-    btnCopyPix.addEventListener('click', function() {
+    if (btnCopyPix) btnCopyPix.addEventListener('click', function() {
         if (!pixCodeText) return;
         navigator.clipboard.writeText(pixCodeText).then(function() {
             var t = btnCopyPix.textContent;
@@ -361,19 +351,29 @@
         });
     });
 
-    document.getElementById('card-number').addEventListener('input', function() {
+    var cardNumber = document.getElementById('card-number');
+    if (cardNumber) cardNumber.addEventListener('input', function() {
         var v = this.value.replace(/\D/g, '');
         this.value = v.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
     });
-    document.getElementById('card-holder-cpf').addEventListener('input', function() {
+
+    var expiryEl = document.getElementById('card-expiry');
+    if (expiryEl) expiryEl.addEventListener('input', function() {
+        var v = this.value.replace(/\D/g, '');
+        if (v.length >= 2) this.value = v.slice(0, 2) + ' / ' + v.slice(2, 6);
+        else this.value = v;
+    });
+
+    var cpfEl = document.getElementById('card-holder-cpf');
+    if (cpfEl) cpfEl.addEventListener('input', function() {
         this.value = this.value.replace(/\D/g, '').slice(0, 11);
     });
 
     function getCardPayload() {
         var number = (document.getElementById('card-number').value || '').replace(/\D/g, '');
-        var expMonth = (document.getElementById('card-exp-month').value || '').replace(/\D/g, '').slice(0, 2);
-        var yearRaw = (document.getElementById('card-exp-year').value || '').replace(/\D/g, '');
-        var expYearShort = yearRaw.length >= 4 ? yearRaw.slice(-2) : yearRaw;
+        var expiry = (document.getElementById('card-expiry').value || '').replace(/\D/g, '');
+        var expMonth = expiry.slice(0, 2);
+        var expYearShort = expiry.length >= 4 ? expiry.slice(2, 4) : (expiry.length >= 2 ? expiry.slice(2) : '');
         return {
             number: number,
             exp_month: expMonth,
@@ -388,7 +388,7 @@
     function payWithCard(method) {
         var card = getCardPayload();
         if (!card.number || card.number.length < 13) { showError('Informe o número do cartão.'); return; }
-        if (!card.exp_month || !card.exp_year) { showError('Informe validade (mês e ano).'); return; }
+        if (!card.exp_month || card.exp_month.length < 2) { showError('Informe a validade (MM / AA).'); return; }
         if (!card.security_code || card.security_code.length < 3) { showError('Informe o CVV.'); return; }
         if (!card.holder_name) { showError('Informe o nome do titular.'); return; }
         hideError();
