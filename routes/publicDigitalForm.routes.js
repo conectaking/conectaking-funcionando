@@ -1668,7 +1668,7 @@ router.get('/:slug/form/:itemId/checkout', asyncHandler(async (req, res) => {
             itemId: itemIdInt,
             baseUrl,
             checkoutPageLogoUrl: checkoutConfig.checkout_page_logo_url || '',
-            checkoutPagePrimaryColor: checkoutConfig.checkout_page_primary_color || '#22c55e',
+            checkoutPagePrimaryColor: checkoutConfig.checkout_page_primary_color || '#1152d4',
             checkoutPageTitle: checkoutConfig.checkout_page_title || '',
             checkoutPageFooter: checkoutConfig.checkout_page_footer || '',
             formCoverImageUrl: row.banner_image_url || row.header_image_url || checkoutConfig.checkout_page_logo_url || ''
