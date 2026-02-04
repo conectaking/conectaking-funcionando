@@ -74,23 +74,64 @@
                 <div id="state-error" class="err-msg" style="display:none;"></div>
                 <div id="state-pending">
                     <div class="method-card selected" data-method="pix">
-                        <h3><i class="fas fa-qrcode"></i> Pague com Pix (instantâneo)</h3>
-                        <p>Escaneie o QR Code ou copie o código</p>
+                        <h3><i class="fas fa-qrcode"></i> Pix (instantâneo)</h3>
+                        <p>QR Code ou código copia e cola</p>
                     </div>
                     <div class="method-card" data-method="card">
-                        <h3><i class="fas fa-credit-card"></i> Pague com cartão</h3>
-                        <p>Em breve</p>
+                        <h3><i class="fas fa-credit-card"></i> Cartão de crédito ou débito</h3>
+                        <p>Crédito em até 12x ou débito à vista</p>
                     </div>
-                    <div id="qrcode-container" style="display:none;">
-                        <div class="qrcode-wrap">
-                            <img id="qrcode-img" alt="Pix QR Code" />
-                            <p class="copy-pix" id="pix-copy-text"></p>
-                            <button type="button" class="btn btn-secondary" id="btn-copy-pix" style="margin-top:8px;">Copiar código Pix</button>
+                    <div id="pix-section">
+                        <div id="qrcode-container" style="display:none;">
+                            <div class="qrcode-wrap">
+                                <img id="qrcode-img" alt="Pix QR Code" />
+                                <p class="copy-pix" id="pix-copy-text"></p>
+                                <button type="button" class="btn btn-secondary" id="btn-copy-pix" style="margin-top:8px;">Copiar código Pix</button>
+                            </div>
                         </div>
+                        <button type="button" class="btn btn-primary" id="btn-generate-pix" style="margin-top:16px;width:100%;">
+                            Gerar QR Code Pix
+                        </button>
                     </div>
-                    <button type="button" class="btn btn-primary" id="btn-generate-pix" style="margin-top:16px;width:100%;">
-                        Gerar QR Code Pix
-                    </button>
+                    <div id="card-section" class="card-form">
+                        <label>Número do cartão</label>
+                        <input type="text" id="card-number" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" />
+                        <div class="row">
+                            <div>
+                                <label>Validade (mês)</label>
+                                <input type="text" id="card-exp-month" placeholder="MM" maxlength="2" autocomplete="cc-exp-month" />
+                            </div>
+                            <div>
+                                <label>Ano</label>
+                                <input type="text" id="card-exp-year" placeholder="AA" maxlength="4" autocomplete="cc-exp-year" />
+                            </div>
+                            <div>
+                                <label>CVV</label>
+                                <input type="text" id="card-cvv" placeholder="123" maxlength="4" autocomplete="cc-csc" />
+                            </div>
+                        </div>
+                        <label>Nome no cartão</label>
+                        <input type="text" id="card-holder" placeholder="Como está no cartão" autocomplete="cc-name" />
+                        <label>CPF do titular</label>
+                        <input type="text" id="card-holder-cpf" placeholder="Apenas números" maxlength="14" />
+                        <label id="installments-label">Parcelas (crédito)</label>
+                        <select id="card-installments">
+                            <option value="1">1x sem juros</option>
+                            <option value="2">2x sem juros</option>
+                            <option value="3">3x sem juros</option>
+                            <option value="4">4x sem juros</option>
+                            <option value="5">5x sem juros</option>
+                            <option value="6">6x sem juros</option>
+                            <option value="7">7x sem juros</option>
+                            <option value="8">8x sem juros</option>
+                            <option value="9">9x sem juros</option>
+                            <option value="10">10x sem juros</option>
+                            <option value="11">11x sem juros</option>
+                            <option value="12">12x sem juros</option>
+                        </select>
+                        <button type="button" class="btn btn-primary btn-block" id="btn-pay-credit"><i class="fas fa-credit-card"></i> Pagar com crédito</button>
+                        <button type="button" class="btn btn-secondary btn-block" id="btn-pay-debit"><i class="fas fa-university"></i> Pagar com débito</button>
+                    </div>
                 </div>
                 <div id="state-paid" style="display:none;">
                     <p style="margin-bottom:16px;">Pagamento confirmado. Obrigado!</p>
@@ -171,6 +212,118 @@
                     setTimeout(function() { btnCopyPix.textContent = t; }, 2000);
                 });
             });
+
+            // Alternar entre Pix e Cartão
+            const methodCards = document.querySelectorAll('.method-card');
+            const pixSection = document.getElementById('pix-section');
+            const cardSection = document.getElementById('card-section');
+            function selectMethod(method) {
+                methodCards.forEach(function(el) {
+                    el.classList.toggle('selected', el.getAttribute('data-method') === method);
+                });
+                pixSection.style.display = method === 'pix' ? 'block' : 'none';
+                cardSection.classList.toggle('visible', method === 'card');
+            }
+            methodCards.forEach(function(el) {
+                el.addEventListener('click', function() {
+                    selectMethod(el.getAttribute('data-method'));
+                });
+            });
+
+            // Máscara número do cartão (espaços)
+            document.getElementById('card-number').addEventListener('input', function() {
+                let v = this.value.replace(/\D/g, '');
+                this.value = v.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+            });
+            document.getElementById('card-holder-cpf').addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '').slice(0, 11);
+            });
+
+            function getCardPayload() {
+                const number = (document.getElementById('card-number').value || '').replace(/\D/g, '');
+                const expMonth = (document.getElementById('card-exp-month').value || '').replace(/\D/g, '').slice(0, 2);
+                const yearRaw = (document.getElementById('card-exp-year').value || '').replace(/\D/g, '');
+                const expYearShort = yearRaw.length >= 4 ? yearRaw.slice(-2) : yearRaw.slice(-2);
+                return {
+                    number: number,
+                    exp_month: expMonth,
+                    exp_year: expYearShort,
+                    security_code: (document.getElementById('card-cvv').value || '').replace(/\D/g, '').slice(0, 4),
+                    holder_name: (document.getElementById('card-holder').value || '').trim(),
+                    holder_tax_id: (document.getElementById('card-holder-cpf').value || '').replace(/\D/g, '').slice(0, 11),
+                    installments: parseInt(document.getElementById('card-installments').value, 10) || 1
+                };
+            }
+
+            function payWithCard(method) {
+                const card = getCardPayload();
+                if (!card.number || card.number.length < 13) {
+                    stateError.textContent = 'Informe o número do cartão.';
+                    stateError.style.display = 'block';
+                    return;
+                }
+                if (!card.exp_month || !card.exp_year) {
+                    stateError.textContent = 'Informe validade (mês e ano).';
+                    stateError.style.display = 'block';
+                    return;
+                }
+                if (!card.security_code || card.security_code.length < 3) {
+                    stateError.textContent = 'Informe o CVV.';
+                    stateError.style.display = 'block';
+                    return;
+                }
+                if (!card.holder_name) {
+                    stateError.textContent = 'Informe o nome do titular.';
+                    stateError.style.display = 'block';
+                    return;
+                }
+                stateError.style.display = 'none';
+                stateLoading.style.display = 'block';
+                document.getElementById('btn-pay-credit').disabled = true;
+                document.getElementById('btn-pay-debit').disabled = true;
+                fetch(baseUrl + '/api/checkout/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        submissionId: submissionId,
+                        method: method,
+                        card_number: card.number,
+                        exp_month: card.exp_month,
+                        exp_year: card.exp_year,
+                        security_code: card.security_code,
+                        holder_name: card.holder_name,
+                        holder_tax_id: card.holder_tax_id || undefined,
+                        installments: method === 'credit_card' ? card.installments : 1
+                    })
+                })
+                .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+                .then(function(result) {
+                    stateLoading.style.display = 'none';
+                    document.getElementById('btn-pay-credit').disabled = false;
+                    document.getElementById('btn-pay-debit').disabled = false;
+                    if (!result.ok) {
+                        stateError.textContent = result.data.error || 'Erro ao processar pagamento.';
+                        stateError.style.display = 'block';
+                        return;
+                    }
+                    if (result.data.paid) {
+                        document.getElementById('state-pending').style.display = 'none';
+                        document.getElementById('state-paid').style.display = 'block';
+                    } else {
+                        stateError.textContent = 'Pagamento em análise ou não aprovado. Tente outro cartão ou use Pix.';
+                        stateError.style.display = 'block';
+                    }
+                })
+                .catch(function(e) {
+                    stateLoading.style.display = 'none';
+                    document.getElementById('btn-pay-credit').disabled = false;
+                    document.getElementById('btn-pay-debit').disabled = false;
+                    stateError.textContent = 'Erro de conexão. Tente novamente.';
+                    stateError.style.display = 'block';
+                });
+            }
+            document.getElementById('btn-pay-credit').addEventListener('click', function() { payWithCard('credit_card'); });
+            document.getElementById('btn-pay-debit').addEventListener('click', function() { payWithCard('debit_card'); });
         })();
     </script>
 </body>
