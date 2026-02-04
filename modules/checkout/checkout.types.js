@@ -25,7 +25,14 @@ const LABELS = {
   FOOTER: 'KingForms by ConectaKing'
 };
 
-/** Split: 10% plataforma, 90% vendedor */
+/**
+ * Split do pagamento (PIX e cartão):
+ * - 10% PLATAFORMA: valor líquido que vai direto para a conta da plataforma (ConectaKing).
+ *   Não sofre dedução das taxas do PagBank — os 10% são seus.
+ * - 90% VENDEDOR: valor que vai para a conta do dono do formulário (quem usa a plataforma).
+ *   As taxas e comissões do PagBank são descontadas conforme o contrato deles (normalmente
+ *   sobre o total ou sobre a parte do vendedor). O vendedor recebe os 90% já descontadas as taxas.
+ */
 const SPLIT_PLATFORM_PERCENT = 10;
 const SPLIT_SELLER_PERCENT = 90;
 

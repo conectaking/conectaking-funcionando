@@ -72,6 +72,8 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 | Assinatura inválida | `PAGBANK_WEBHOOK_SECRET` igual ao do painel; body do webhook recebido sem alteração (usar raw body para validação, se a doc pedir). |
 | Split não aplicando | Conferir na documentação PagBank como enviar split (recebedor principal + recebedor secundário); no código, 10% plataforma e 90% vendedor. |
 
+**Regra do split:** Os **10% são da plataforma (sua conta)** — valor líquido, sem dedução das taxas do PagBank. Os **90% vão para o vendedor** (conta de quem configurou o formulário); as taxas e comissões do PagBank são descontadas conforme o contrato deles (sobre o total ou sobre a parte do vendedor). Ou seja: seu 10% é livre; o vendedor recebe os 90% já descontadas as taxas do PagBank.
+
 ---
 
 ## 8) O que é manual vs automatizado
