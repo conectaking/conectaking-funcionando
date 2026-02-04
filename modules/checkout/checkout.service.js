@@ -127,9 +127,9 @@ async function getSubmission(submissionId) {
 
 /**
  * Criar cobrança (Pix ou cartão) - chamado pela página de checkout
- * Retorna { success, chargeId, orderId, qrCode? } ou { success: false, error }
+ * Retorna { success, chargeId, orderId, qrCode?, qrCodeText?, paid? } ou { success: false, error }
  */
-async function createCharge(submissionId, method) {
+async function createCharge(submissionId, method, options = {}) {
   const submission = await getSubmission(submissionId);
   if (!submission) return { success: false, error: 'Submissão não encontrada' };
   if (!submission.checkout_enabled) return { success: false, error: 'Checkout não está ativo para este formulário' };
@@ -155,7 +155,7 @@ async function createCharge(submissionId, method) {
     : null;
   const platformAccountId = process.env.PAGBANK_PLATFORM_ACCOUNT_ID || null;
 
-  const result = await pagbank.createCharge({
+  const payload = {
     amountCents,
     sellerId,
     accessToken,
@@ -166,15 +166,27 @@ async function createCharge(submissionId, method) {
     customerName: submission.responder_name,
     customerEmail: submission.responder_email,
     customerTaxId: (submission.response_data && submission.response_data.cpf) ? submission.response_data.cpf : null
-  });
+  };
+  if (options.card) {
+    payload.card_number = options.card.number;
+    payload.exp_month = options.card.exp_month;
+    payload.exp_year = options.card.exp_year;
+    payload.security_code = options.card.security_code;
+    payload.holder_name = options.card.holder_name;
+    payload.holder_tax_id = options.card.holder_tax_id;
+    payload.installments = Math.min(Math.max(parseInt(options.installments, 10) || 1, 1), 12);
+  }
+
+  const result = await pagbank.createCharge(payload);
 
   if (!result.success) return result;
 
+  const paymentStatus = result.paid === true ? PAYMENT_STATUS.PAID : PAYMENT_STATUS.PENDING_PAYMENT;
   await db.query(
     `UPDATE digital_form_responses SET
-      payment_reference_id = $2, payment_order_id = $3, payment_charge_id = $4, payment_status = $5
+      payment_reference_id = $2, payment_order_id = $3, payment_charge_id = $4, payment_status = $5${result.paid ? ', paid_at = NOW()' : ''}
      WHERE id = $1`,
-    [submissionId, String(submissionId), result.orderId || null, result.chargeId || null, PAYMENT_STATUS.PENDING_PAYMENT]
+    [submissionId, String(submissionId), result.orderId || null, result.chargeId || null, paymentStatus]
   );
 
   return {
@@ -182,7 +194,8 @@ async function createCharge(submissionId, method) {
     chargeId: result.chargeId,
     orderId: result.orderId,
     qrCode: result.qrCode,
-    qrCodeText: result.qrCodeText
+    qrCodeText: result.qrCodeText,
+    paid: result.paid
   };
 }
 

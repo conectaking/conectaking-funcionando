@@ -47,7 +47,9 @@ async function createCharge(req, res) {
   if (!v.valid) {
     return res.status(400).json({ success: false, errors: v.errors });
   }
-  const result = await checkoutService.createCharge(v.submissionId, v.method);
+  const cardData = v.card || null;
+  const installments = v.installments || 1;
+  const result = await checkoutService.createCharge(v.submissionId, v.method, { card: cardData, installments });
   if (!result.success) {
     return res.status(400).json({ success: false, error: result.error });
   }
@@ -56,7 +58,8 @@ async function createCharge(req, res) {
     chargeId: result.chargeId,
     orderId: result.orderId,
     qrCode: result.qrCode,
-    qrCodeText: result.qrCodeText
+    qrCodeText: result.qrCodeText,
+    paid: result.paid
   });
 }
 

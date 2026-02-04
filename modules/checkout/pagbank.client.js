@@ -128,8 +128,114 @@ async function createOrderPix(accessToken, params) {
 }
 
 /**
- * Criar cobrança (Pix ou cartão)
- * Cartão: por ora retorna erro "use Pix" ou podemos implementar POST /orders/{id}/pay com payment_method depois
+ * Endereço mínimo para pedido com cartão (exigido pela API em alguns fluxos)
+ */
+function defaultShipping() {
+  return {
+    address: {
+      street: 'Avenida Brigadeiro Faria Lima',
+      number: '1384',
+      complement: 'Sala 1',
+      locality: 'Pinheiros',
+      city: 'São Paulo',
+      region_code: 'SP',
+      country: 'BRA',
+      postal_code: '01452002'
+    }
+  };
+}
+
+/**
+ * Criar pedido com cartão (crédito ou débito) e split 10% plataforma / 90% vendedor
+ * Documentação: Crie e pague um pedido com divisão do pagamento (cartão)
+ */
+async function createOrderCard(accessToken, params) {
+  const {
+    amountCents,
+    referenceId,
+    customerName,
+    customerEmail,
+    customerTaxId,
+    notificationUrl,
+    platformAccountId,
+    sellerAccountId,
+    cardNumber,
+    expMonth,
+    expYear,
+    securityCode,
+    holderName,
+    holderTaxId,
+    cardType,
+    installments
+  } = params || {};
+
+  const onlyNumbers = (v) => String(v || '').replace(/\D/g, '');
+  const taxId = onlyNumbers(customerTaxId || holderTaxId || '').slice(0, 11) || '00000000000';
+  const holderTaxIdClean = onlyNumbers(holderTaxId || customerTaxId || '').slice(0, 11) || taxId;
+
+  const body = {
+    reference_id: String(referenceId),
+    customer: {
+      name: customerName || 'Cliente',
+      email: customerEmail || 'cliente@email.com',
+      tax_id: taxId,
+      phones: [{ country: '55', area: '11', number: '999999999', type: 'MOBILE' }]
+    },
+    items: [
+      { reference_id: `sub-${referenceId}`, name: 'Formulário KingForms', quantity: 1, unit_amount: amountCents }
+    ],
+    shipping: defaultShipping(),
+    notification_urls: notificationUrl ? [notificationUrl] : [],
+    charges: [
+      {
+        reference_id: `sub-${referenceId}`,
+        description: 'Pagamento KingForms',
+        amount: { value: amountCents, currency: 'BRL' },
+        payment_method: {
+          type: cardType === 'debit' ? 'DEBIT_CARD' : 'CREDIT_CARD',
+          installments: Math.min(Math.max(parseInt(installments, 10) || 1, 1), 12),
+          capture: true,
+          card: {
+            number: onlyNumbers(cardNumber),
+            exp_month: String(expMonth || '').padStart(2, '0').slice(-2),
+            exp_year: String(expYear || '').slice(-2),
+            security_code: String(securityCode || '').replace(/\D/g, '').slice(0, 4),
+            holder: {
+              name: (holderName || customerName || 'Titular').trim().slice(0, 64),
+              tax_id: holderTaxIdClean
+            },
+            store: false
+          }
+        },
+        splits: {
+          method: 'PERCENTAGE',
+          receivers: [
+            ...(platformAccountId && SPLIT_PLATFORM_PERCENT > 0
+              ? [{ account: { id: platformAccountId }, amount: { value: SPLIT_PLATFORM_PERCENT } }]
+              : []),
+            { account: { id: sellerAccountId }, amount: { value: SPLIT_SELLER_PERCENT } }
+          ]
+        }
+      }
+    ]
+  };
+
+  const order = await apiRequest(accessToken, 'POST', '/orders', body);
+  const charge = order.charges && order.charges[0];
+  const chargeId = charge?.id;
+  const status = charge?.status || order.status;
+
+  return {
+    success: true,
+    orderId: order.id,
+    chargeId: chargeId || order.id,
+    status,
+    paid: status === 'PAID'
+  };
+}
+
+/**
+ * Criar cobrança (Pix ou cartão com split 10% plataforma / 90% vendedor)
  */
 async function createCharge(params) {
   const {
@@ -171,11 +277,42 @@ async function createCharge(params) {
     }
   }
 
-  if (method === 'card') {
-    return { success: false, error: 'Pagamento com cartão: em breve. Use Pix por enquanto.' };
+  if (method === 'card' || method === 'credit_card' || method === 'debit_card') {
+    const cardType = method === 'debit_card' ? 'debit' : 'credit';
+    const cardNumber = params.card_number || params.card?.number;
+    const expMonth = params.exp_month || params.card?.exp_month;
+    const expYear = params.exp_year || params.card?.exp_year;
+    const securityCode = params.security_code || params.card?.security_code;
+    const holderName = params.holder_name || params.card?.holder_name;
+    const holderTaxId = params.holder_tax_id || params.card?.holder_tax_id;
+    if (!cardNumber || !expMonth || !expYear || !securityCode || !holderName) {
+      return { success: false, error: 'Dados do cartão incompletos (número, validade, CVV e nome do titular)' };
+    }
+    try {
+      return await createOrderCard(accessToken, {
+        amountCents,
+        referenceId,
+        customerName: params.customerName || customerName,
+        customerEmail: params.customerEmail || customerEmail,
+        customerTaxId: params.customerTaxId || customerTaxId,
+        notificationUrl,
+        platformAccountId,
+        sellerAccountId,
+        cardNumber,
+        expMonth,
+        expYear,
+        securityCode,
+        holderName,
+        holderTaxId,
+        cardType,
+        installments: params.installments || 1
+      });
+    } catch (e) {
+      return { success: false, error: e.message || 'Falha ao processar cartão' };
+    }
   }
 
-  return { success: false, error: 'Método inválido. Use pix ou card.' };
+  return { success: false, error: 'Método inválido. Use pix, card, credit_card ou debit_card.' };
 }
 
 /**
