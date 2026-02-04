@@ -90,23 +90,25 @@
         .checkout-btn-primary { background: var(--checkout-primary) !important; color: #fff !important; border: 2px solid var(--checkout-primary) !important; }
     </style>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script type="text/tailwind-config">
-        ({
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '<%= checkoutPagePrimaryColor || "#1152d4" %>',
-                        'accent-gold': '#c5a059',
-                        'background-light': '#f6f6f8',
-                        'background-dark': '#0a0a0a',
-                        'card-dark': '#161616',
-                    },
-                    fontFamily: { display: ['Manrope', 'sans-serif'] },
-                    borderRadius: { DEFAULT: '0.25rem', lg: '0.5rem', xl: '0.75rem', full: '9999px' },
+    <script>
+        (function() {
+            var c = { darkMode: 'class', theme: { extend: {
+                colors: {
+                    primary: '<%= checkoutPagePrimaryColor || "#1152d4" %>',
+                    'accent-gold': '#c5a059',
+                    'background-light': '#f6f6f8',
+                    'background-dark': '#0a0a0a',
+                    'card-dark': '#161616',
                 },
-            },
-        })
+                fontFamily: { display: ['Manrope', 'sans-serif'] },
+                borderRadius: { DEFAULT: '0.25rem', lg: '0.5rem', xl: '0.75rem', full: '9999px' },
+            } } };
+            function apply() {
+                if (typeof window.tailwind !== 'undefined') { window.tailwind.config = c; return; }
+                setTimeout(apply, 30);
+            }
+            apply();
+        })();
     </script>
     <style>
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
