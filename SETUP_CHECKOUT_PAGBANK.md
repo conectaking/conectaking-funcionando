@@ -37,12 +37,12 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 
 ## 4) Migration (só uma vez)
 
-Toda a estrutura do checkout está na **migration 155**. Não foi criada migration nova nas últimas alterações (abas Pago/Pendente, página de Checkout, cartão, etc.).
-
-- **Rodar a migration 155 uma vez** no banco (Render ou local):
-  - Se você usa auto-migrate: ao subir o servidor, a migration 155 deve rodar automaticamente (conforme seu fluxo de migrations).
-  - Ou execute manualmente o SQL em `migrations/155_add_checkout_module_tables.sql`.
-- Depois disso, **não é necessário rodar nenhuma migration nova** para as funcionalidades atuais de checkout.
+- **Migration 155** – estrutura principal do checkout (tabelas, colunas, enum):
+  - Rodar uma vez no banco. Se usar auto-migrate, ao subir o servidor a 155 roda automaticamente.
+  - Ou executar manualmente o SQL em `migrations/155_add_checkout_module_tables.sql`.
+- **Migration 156** – personalização da página de checkout (logo, cor, título, rodapé):
+  - Rodar uma vez. Arquivo: `migrations/156_add_checkout_page_personalization.sql`.
+- Depois disso, não é necessário rodar nenhuma migration nova para as funcionalidades atuais de checkout.
 
 ## 5) Variáveis de ambiente no servidor (Render / VPS / Docker)
 
@@ -111,7 +111,7 @@ Toda a estrutura do checkout está na **migration 155**. Não foi criada migrati
 
 | Pergunta | Resposta |
 |----------|----------|
-| **Precisa rodar alguma migration?** | Sim, **só a 155** (uma vez). Ela cria enum, colunas em `digital_form_items` e `digital_form_responses`, tabelas `form_checkout_configs` e `checkout_webhook_logs`. Nada do que foi implementado depois (cartão, abas Pago/Pendente, página Checkout, etc.) exige migration nova. |
+| **Precisa rodar alguma migration?** | Sim: **155** (estrutura do checkout) e **156** (personalização da página: logo, cor, título, rodapé). Rodar cada uma uma vez. |
 | **Precisa instalar algum pacote (npm)?** | **Não.** O módulo de checkout usa apenas o que já está no projeto (express, db, crypto, fetch, etc.). |
 | **O que falta configurar?** | (1) Rodar a migration 155 no banco; (2) Variáveis de ambiente (webhook secret, opcionalmente base URL e platform account ID); (3) No PagBank: webhook URL e secret; (4) Em cada formulário: ativar checkout e preencher Seller ID + Token na página Checkout. |
 

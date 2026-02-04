@@ -324,6 +324,7 @@
             }
             qrcodeContainer.style.display = 'block';
             btnGenerate.style.display = 'none';
+            startPaymentStatusPolling();
         })
         .catch(function() {
             stateLoading.style.display = 'none';
@@ -331,6 +332,23 @@
             showError('Erro de conexão. Tente novamente.');
         });
     }
+
+    var paymentPollInterval = null;
+    function startPaymentStatusPolling() {
+        if (paymentPollInterval) return;
+        paymentPollInterval = setInterval(function() {
+            fetch(baseUrl + '/api/checkout/page?submissionId=' + encodeURIComponent(submissionId))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && data.submission && data.submission.payment_status === 'PAID') {
+                        if (paymentPollInterval) { clearInterval(paymentPollInterval); paymentPollInterval = null; }
+                        window.location.reload();
+                    }
+                })
+                .catch(function() {});
+        }, 3000);
+    }
+
     btnGenerate.addEventListener('click', doGeneratePix);
     if (ctaBtnPix) ctaBtnPix.addEventListener('click', doGeneratePix);
 
