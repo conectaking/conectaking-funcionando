@@ -83,7 +83,7 @@ function parseDetalhesDividaText(ocrText) {
     const contractMatch = ocrText.match(/N[uú]mero\s+do\s+contrato\s*[\s:]*(\d+)/i) || ocrText.match(/(\d{6,20})/);
     if (contractMatch) numeroContrato = (contractMatch[1] || contractMatch[0] || '').toString().replace(/\D/g, '');
     else if (numeroContrato && typeof numeroContrato === 'string') numeroContrato = numeroContrato.replace(/\D/g, '');
-    const produtoServico = textAfterLabel(ocrText, 'Produto\\s*\\/\\s*Serviço|Produto / Serviço|Produto\\s+ou\\s+serviço|Produto ou Serviço', 2);
+    const produtoServico = textAfterLabel(ocrText, 'Produto\\s*\\/\\s*Serviço|Produto / Serviço|Produto\\s+ou\\s+serviço|Produto ou Serviço', 3);
     let dataDivida = textAfterLabel(ocrText, 'Data da dívida');
     if (!dataDivida) dataDivida = textAfterLabel(ocrText, 'Data de origem', 1);
     const dataMatch = ocrText.match(/Data da d[ií]vida\s*[\s:]*(\d{2}\/\d{2}\/\d{4})/i) ||
@@ -121,7 +121,7 @@ function parseDetalhesDividaText(ocrText) {
         valorOriginal: valorOriginal != null ? valorOriginal : undefined,
         valorAtual: valorAtual != null ? valorAtual : undefined,
         numeroContrato: hasContract ? contractNum.slice(0, 40) : (numeroContrato || undefined),
-        produtoServico: (produtoServico || '').trim().slice(0, 200) || undefined,
+        produtoServico: (produtoServico || '').trim().slice(0, 300) || undefined,
         dataDivida: (dataDivida || '').trim().match(/^\d{2}\/\d{2}\/\d{4}$/) ? dataDivida.trim() : undefined,
         empresaOrigem: empresaOrigemClean,
         tipo: tipo || undefined
