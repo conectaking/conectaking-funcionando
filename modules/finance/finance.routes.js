@@ -25,6 +25,19 @@ const upload = multer({
     }
 });
 
+// Upload em memória apenas para importação Serasa (não grava PDF no disco)
+const uploadMemory = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'application/pdf') {
+            cb(null, true);
+        } else {
+            cb(new Error('Apenas PDF é permitido para importação Serasa.'), false);
+        }
+    }
+});
+
 // Todas as rotas requerem autenticação
 router.use(protectFinance);
 
@@ -85,6 +98,9 @@ router.post('/zerar-mes', controller.postZerarMes);
 
 // Admin: ver senhas de zerar de todos os clientes (Gestão Financeira)
 router.get('/admin/clientes-senhas', controller.getAdminClientesSenhas);
+
+// Importação Serasa: upload de PDF e prévia das ofertas (não salva no backend; frontend salva em localStorage)
+router.post('/serasa/import-preview', uploadMemory.single('file'), controller.importSerasaPreview);
 
 // Configuração de WhatsApp (apenas ADM)
 router.get('/whatsapp-config', controller.getWhatsAppConfig);

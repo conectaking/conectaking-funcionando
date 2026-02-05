@@ -655,6 +655,27 @@ class FinanceController {
             return responseFormatter.error(res, error.message, 500);
         }
     }
+
+    /**
+     * Importação Serasa: extrai texto do PDF e retorna prévia das ofertas (sem salvar).
+     * Upload feito pelo usuário; não acessa Serasa nem serviços externos.
+     */
+    async importSerasaPreview(req, res) {
+        try {
+            if (!req.file || !req.file.buffer) {
+                return responseFormatter.error(res, 'Envie um arquivo PDF.', 400);
+            }
+            const pdfParse = require('pdf-parse');
+            const data = await pdfParse(req.file.buffer);
+            const text = (data && data.text) ? data.text : '';
+            const { parseSerasaOfertas } = require('../../utils/serasa-pdf-parser');
+            const offers = parseSerasaOfertas(text);
+            return responseFormatter.success(res, { offers });
+        } catch (error) {
+            logger.error('Erro ao processar PDF Serasa:', error);
+            return responseFormatter.error(res, error.message || 'Não foi possível ler o PDF. Verifique se o arquivo é um relatório do Serasa.', 500);
+        }
+    }
 }
 
 module.exports = new FinanceController();
