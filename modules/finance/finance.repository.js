@@ -817,6 +817,90 @@ class FinanceRepository {
             client.release();
         }
     }
+
+    /**
+     * Obter senha de zerar mês do usuário (null = usar padrão 1212)
+     */
+    async getZerarSenha(userId) {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                'SELECT senha FROM finance_zerar_senha WHERE user_id = $1',
+                [userId]
+            );
+            return result.rows[0] ? result.rows[0].senha : null;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Definir ou atualizar senha de zerar mês
+     */
+    async setZerarSenha(userId, senha) {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                `INSERT INTO finance_zerar_senha (user_id, senha, updated_at)
+                 VALUES ($1, $2, NOW())
+                 ON CONFLICT (user_id) DO UPDATE SET senha = $2, updated_at = NOW()
+                 RETURNING *`,
+                [userId, senha]
+            );
+            return result.rows[0];
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Deletar todas as transações do usuário em um mês/ano (e opcionalmente perfil)
+     */
+    async deleteTransactionsByMonth(userId, year, month, profileId = null) {
+        const client = await db.pool.connect();
+        try {
+            const dateFrom = `${year}-${String(month).padStart(2, '0')}-01`;
+            const lastDay = new Date(year, month, 0).getDate();
+            const dateTo = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+            let query = `DELETE FROM finance_transactions
+                         WHERE user_id = $1 AND transaction_date >= $2::date AND transaction_date <= $3::date`;
+            const params = [userId, dateFrom, dateTo];
+            if (profileId != null) {
+                query += ' AND profile_id = $4';
+                params.push(profileId);
+            }
+            query += ' RETURNING id';
+            const result = await client.query(query, params);
+            return result.rowCount || 0;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Listar clientes com Gestão Financeira e suas senhas de zerar (para admin)
+     */
+    async listClientesZerarSenhas() {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(`
+                SELECT u.id AS user_id, u.email, u.full_name,
+                       COALESCE(fz.senha, '1212') AS senha
+                FROM users u
+                INNER JOIN (
+                    SELECT user_id FROM finance_transactions
+                    UNION
+                    SELECT user_id FROM finance_profiles WHERE is_active = true
+                ) f ON f.user_id = u.id
+                LEFT JOIN finance_zerar_senha fz ON fz.user_id = u.id
+                GROUP BY u.id, u.email, u.full_name, fz.senha
+                ORDER BY u.full_name, u.email
+            `);
+            return result.rows;
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = new FinanceRepository();

@@ -545,6 +545,42 @@ class FinanceService {
         }
         return await repository.deleteProfile(id, userId);
     }
+
+    /** Senha efetiva para zerar mês (padrão 1212 se não definida) */
+    async getZerarSenhaEffective(userId) {
+        const senha = await repository.getZerarSenha(userId);
+        return senha || '1212';
+    }
+
+    /** Verificar se a senha informada confere com a do usuário */
+    async verifyZerarSenha(userId, senha) {
+        const effective = await this.getZerarSenhaEffective(userId);
+        return effective === String(senha);
+    }
+
+    /** Alterar senha de zerar mês */
+    async setZerarSenha(userId, newSenha) {
+        if (!newSenha || String(newSenha).length < 4) {
+            throw new Error('Senha deve ter no mínimo 4 caracteres.');
+        }
+        return await repository.setZerarSenha(userId, String(newSenha));
+    }
+
+    /** Zerar todas as transações do mês (exige senha) */
+    async zerarMes(userId, year, month, profileId, senha) {
+        const ok = await this.verifyZerarSenha(userId, senha);
+        if (!ok) {
+            throw new Error('Senha incorreta. Não foi possível zerar o mês.');
+        }
+        const deleted = await repository.deleteTransactionsByMonth(userId, year, month, profileId || null);
+        logger.info(`Zerar mês: usuário ${userId}, ${year}-${month}, perfil ${profileId || 'todos'}, ${deleted} transações removidas.`);
+        return { deleted };
+    }
+
+    /** Listar clientes da Gestão Financeira e suas senhas de zerar (apenas admin) */
+    async listClientesZerarSenhas() {
+        return await repository.listClientesZerarSenhas();
+    }
 }
 
 module.exports = new FinanceService();

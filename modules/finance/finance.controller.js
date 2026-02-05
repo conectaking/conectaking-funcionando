@@ -554,6 +554,86 @@ class FinanceController {
             return responseFormatter.error(res, error.message, 500);
         }
     }
+
+    /**
+     * Status da senha de zerar (se tem senha customizada; não retorna a senha)
+     */
+    async getZerarSenhaStatus(req, res) {
+        try {
+            const userId = req.user.userId;
+            const senha = await service.getZerarSenhaEffective(userId);
+            const hasCustom = senha !== '1212';
+            return responseFormatter.success(res, { hasCustomPassword: hasCustom });
+        } catch (error) {
+            logger.error('Erro ao obter status da senha de zerar:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * Alterar senha de zerar mês
+     */
+    async putZerarSenha(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { currentPassword, newPassword } = req.body;
+            if (!currentPassword || !newPassword) {
+                return responseFormatter.error(res, 'Informe a senha atual e a nova senha.', 400);
+            }
+            const ok = await service.verifyZerarSenha(userId, currentPassword);
+            if (!ok) {
+                return responseFormatter.error(res, 'Senha atual incorreta.', 403);
+            }
+            await service.setZerarSenha(userId, newPassword);
+            return responseFormatter.success(res, null, 'Senha de zerar mês alterada com sucesso.');
+        } catch (error) {
+            logger.error('Erro ao alterar senha de zerar:', error);
+            return responseFormatter.error(res, error.message, 400);
+        }
+    }
+
+    /**
+     * Zerar todas as transações do mês (exige senha)
+     */
+    async postZerarMes(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { password, month, year, profile_id } = req.body;
+            if (!password) {
+                return responseFormatter.error(res, 'Informe a senha para confirmar.', 400);
+            }
+            const monthNum = month ? parseInt(month, 10) : new Date().getMonth() + 1;
+            const yearNum = year ? parseInt(year, 10) : new Date().getFullYear();
+            if (monthNum < 1 || monthNum > 12) {
+                return responseFormatter.error(res, 'Mês inválido.', 400);
+            }
+            const result = await service.zerarMes(userId, yearNum, monthNum, profile_id || null, password);
+            return responseFormatter.success(res, result, `Mês zerado. ${result.deleted} transação(ões) removida(s).`);
+        } catch (error) {
+            logger.error('Erro ao zerar mês:', error);
+            const statusCode = error.message.includes('Senha incorreta') ? 403 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
+     * Admin: listar todos os clientes da Gestão Financeira com suas senhas de zerar
+     */
+    async getAdminClientesSenhas(req, res) {
+        try {
+            const userId = req.user.userId;
+            const db = require('../../db');
+            const userResult = await db.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+            if (!userResult.rows[0]?.is_admin) {
+                return responseFormatter.error(res, 'Acesso negado. Apenas administradores.', 403);
+            }
+            const list = await service.listClientesZerarSenhas();
+            return responseFormatter.success(res, list);
+        } catch (error) {
+            logger.error('Erro ao listar senhas dos clientes:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
 }
 
 module.exports = new FinanceController();

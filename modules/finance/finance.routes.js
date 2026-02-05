@@ -77,6 +77,14 @@ router.delete('/profiles/:id', controller.deleteProfile);
 // Limites e Upgrade
 router.get('/upgrade-plans', controller.getUpgradePlans);
 
+// Zerar mês (com senha) e senha de zerar
+router.get('/zerar-senha-status', controller.getZerarSenhaStatus);
+router.put('/zerar-senha', controller.putZerarSenha);
+router.post('/zerar-mes', controller.postZerarMes);
+
+// Admin: ver senhas de zerar de todos os clientes (Gestão Financeira)
+router.get('/admin/clientes-senhas', controller.getAdminClientesSenhas);
+
 // Configuração de WhatsApp (apenas ADM)
 router.get('/whatsapp-config', controller.getWhatsAppConfig);
 router.put('/whatsapp-config', controller.updateWhatsAppConfig);
