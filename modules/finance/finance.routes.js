@@ -79,6 +79,7 @@ router.get('/upgrade-plans', controller.getUpgradePlans);
 
 // Zerar mês (com senha) e senha de zerar
 router.get('/zerar-senha-status', controller.getZerarSenhaStatus);
+router.post('/zerar-senha/verify', controller.postZerarSenhaVerify);
 router.put('/zerar-senha', controller.putZerarSenha);
 router.post('/zerar-mes', controller.postZerarMes);
 

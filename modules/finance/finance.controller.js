@@ -571,6 +571,27 @@ class FinanceController {
     }
 
     /**
+     * Apenas verificar senha de zerar (para liberar acesso à página Gestão do mês)
+     */
+    async postZerarSenhaVerify(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { password } = req.body;
+            if (!password) {
+                return responseFormatter.error(res, 'Informe a senha.', 400);
+            }
+            const ok = await service.verifyZerarSenha(userId, password);
+            if (!ok) {
+                return responseFormatter.error(res, 'Senha incorreta.', 403);
+            }
+            return responseFormatter.success(res, { verified: true });
+        } catch (error) {
+            logger.error('Erro ao verificar senha de zerar:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
      * Alterar senha de zerar mês
      */
     async putZerarSenha(req, res) {
