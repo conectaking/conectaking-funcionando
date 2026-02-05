@@ -23,11 +23,11 @@ const CREDORES_CONHECIDOS = [
     'Santander', 'Nubank', 'Itaú', 'Itau', 'Bradesco', 'Recovery', 'Ipanema', 'Inter',
     'Creditas', 'Original', 'C6 Bank', 'C6', 'BTG', 'XP', 'Safra', 'IPK', 'Dandel',
     'Cetam', 'Cétam', 'Magazine Luiza', 'Magalu', 'Casas Bahia', 'Americanas',
-    'Serasa', 'Bemol', 'Riachuelo', 'Renner', 'C&A', 'Via', 'Lebes', 'Marisa',
-    'Digio', 'Neon', 'Next', 'PicPay', 'Mercado Pago', 'Banco Pan', 'Pan',
+    'Serasa', 'Bemol', 'Riachuelo', 'Renner', 'C&A', 'C&A pay', 'Via', 'Lebes', 'Marisa',
+    'Digio', 'digio', 'Neon', 'Next', 'PicPay', 'Mercado Pago', 'Banco Pan', 'Pan',
     'Porto Seguro', 'SulAmérica', 'Bradesco Saúde', 'Unimed', 'Notre Dame',
     'Credicard', 'Hipercard', 'Elo', 'Visa', 'Mastercard', 'Alelo', 'Ticket',
-    'Cooperativa', 'Sicoob', 'Sicredi', 'Banrisul', 'Caixa', 'BB', 'CEF'
+    'Cooperativa', 'Sicoob', 'Sicredi', 'Banrisul', 'banrisul', 'SEM PARAR', 'Caixa', 'BB', 'CEF'
 ].filter(Boolean);
 
 /** Regex que casa qualquer um dos credores no texto (case insensitive, palavra inteira quando possível) */
@@ -105,10 +105,13 @@ function parseSerasaOfertas(text) {
     while (i < lines.length) {
         const line = lines[i];
 
-        const matchDe = line.match(/De\s+R\$\s*([\d.,\s]+)\s+por/i);
+        // "De R$ 1.020,31 por R$ 388,96" — valor da negociação é o "por R$" (o grande). Pode estar na mesma linha ou "por" numa linha e "R$ 388,96" na seguinte.
+        const matchDePorMesmaLinha = line.match(/De\s+R\$\s*([\d.,\s]+)\s+por\s+R\$\s*([\d.,\s]+)/i);
+        const matchDeSó = line.match(/De\s+R\$\s*([\d.,\s]+)\s+por/i);
+        const matchDe = matchDePorMesmaLinha || matchDeSó;
         if (matchDe) {
             const valorOriginal = parseValor(matchDe[1]);
-            let valorNegociado = null;
+            let valorNegociado = matchDePorMesmaLinha && matchDe[2] ? parseValor(matchDe[2]) : null;
             let percentualDesconto = null;
             let tipo = null;
             let parcelas = null;
@@ -128,7 +131,7 @@ function parseSerasaOfertas(text) {
                 if (matchPct) percentualDesconto = parseInt(matchPct[1] || matchPct[2], 10);
                 const matchParcelas = next.match(/At[eé]\s+(\d+)\s+vezes/i);
                 if (matchParcelas) parcelas = parseInt(matchParcelas[1], 10);
-                if (next.match(/Conta\s+atrasada|D[ií]vida\s+negativada/i)) tipo = next;
+                if (next.match(/Conta\s+atrasada|D[ií]vida\s+negativada|Grupo\s+de\s+d[ií]vidas/i)) tipo = next;
                 if (next.match(/^Origem\s+/i)) origem = next.replace(/^Origem\s+/i, '').trim();
                 j++;
             }
@@ -142,12 +145,14 @@ function parseSerasaOfertas(text) {
                 nome = findLastCredorBefore(textBeforeBlock) || null;
             }
 
+            // Valor da negociação = "por R$ X" (o que o usuário paga). Se não achar, usa o original.
             const valorTotal = valorNegociado != null ? valorNegociado : valorOriginal;
             if (nome || valorTotal != null) {
                 offers.push({
                     nome: nome || 'Credor',
                     valorTotal: valorTotal != null ? valorTotal : 0,
                     valorOriginal: valorOriginal != null ? valorOriginal : undefined,
+                    valorAtual: valorNegociado != null ? valorNegociado : valorOriginal,
                     percentualDesconto: percentualDesconto != null ? percentualDesconto : undefined,
                     tipo: tipo || undefined,
                     parcelas: parcelas != null ? parcelas : undefined
