@@ -498,13 +498,24 @@ class FinanceRepository {
                 params
             );
 
-            // Total de despesas pendentes (o que falta pagar)
+            // Total de despesas pendentes (o que falta pagar) - período atual
             const expensePendingResult = await client.query(
                 `SELECT COALESCE(SUM(t.amount), 0) as total
                  FROM finance_transactions t
                  WHERE t.user_id = $1 AND t.type = 'EXPENSE' AND t.status = 'PENDING'
                  AND t.transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
                 params
+            );
+
+            // Despesas pendentes de meses anteriores (antes do período)
+            const profileFilterPrev = profileId != null ? 'AND t.profile_id = $3' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const paramsPrev = profileId != null ? [userId, dateFrom, profileId] : [userId, dateFrom];
+            const expensePendingPreviousResult = await client.query(
+                `SELECT COALESCE(SUM(t.amount), 0) as total
+                 FROM finance_transactions t
+                 WHERE t.user_id = $1 AND t.type = 'EXPENSE' AND t.status = 'PENDING'
+                 AND t.transaction_date < $2::date ${profileFilterPrev}`,
+                paramsPrev
             );
 
             // Saldo disponível (soma dos saldos das contas ativas do perfil)
@@ -544,6 +555,7 @@ class FinanceRepository {
             const totalIncomePending = parseFloat(incomePendingResult.rows[0]?.total || 0);
             const totalExpensePaid = parseFloat(expensePaidResult.rows[0]?.total || 0);
             const totalExpensePending = parseFloat(expensePendingResult.rows[0]?.total || 0);
+            const totalExpensePendingPreviousMonths = parseFloat(expensePendingPreviousResult.rows[0]?.total || 0);
             
             // Calcular saldo disponível ACUMULADO (todas as transações pagas, sem filtro de data)
             const accumulatedProfileFilter = profileId != null ? 'AND t.profile_id = $2' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
@@ -620,6 +632,7 @@ class FinanceRepository {
                 totalIncome: totalIncomePaid,
                 totalExpense: totalExpensePaid,
                 pendingExpense: totalExpensePending,
+                pendingExpensePreviousMonths: totalExpensePendingPreviousMonths,
                 pendingIncome: totalIncomePending,
                 accountBalance: accountBalanceAccumulated, // Saldo disponível acumulado (permanente)
                 monthlyBalance: totalIncomePaid - totalExpensePaid, // Saldo total do mês
