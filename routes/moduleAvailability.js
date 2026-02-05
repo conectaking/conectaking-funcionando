@@ -636,11 +636,33 @@ router.get('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
                 is_active: isActive  // efetivo: marcado = usuário tem acesso
             };
         });
+
+        // Quantidade de perfis de Gestão Financeira (override por usuário - Separação de pacotes)
+        let maxFinanceProfiles = null;
+        const financeProfilesRow = await client.query(
+            'SELECT max_finance_profiles FROM individual_user_finance_profiles WHERE user_id = $1',
+            [targetUserId]
+        );
+        if (financeProfilesRow.rows.length > 0) {
+            maxFinanceProfiles = parseInt(financeProfilesRow.rows[0].max_finance_profiles, 10) || 1;
+        }
+        if (maxFinanceProfiles === null) {
+            const planRow = await client.query(
+                'SELECT features FROM subscription_plans WHERE plan_code = $1 AND is_active = true LIMIT 1',
+                [planCode]
+            );
+            if (planRow.rows.length > 0 && planRow.rows[0].features?.max_finance_profiles != null) {
+                maxFinanceProfiles = parseInt(planRow.rows[0].features.max_finance_profiles, 10) || 1;
+            } else {
+                maxFinanceProfiles = 1;
+            }
+        }
         
         res.json({
             user: user,
             plan_code: planCode,
             modules: allModules,
+            max_finance_profiles: Math.min(20, Math.max(1, maxFinanceProfiles)),
             can_edit_base_modules: true  // frontend pode habilitar checkbox em "Já no plano" para tirar do plano
         });
     } catch (error) {
@@ -659,7 +681,7 @@ router.put('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
     try {
         const adminUserId = req.user.userId;
         const targetUserId = req.params.userId;
-        const { modules } = req.body; // Array de module_type que devem estar ATIVOS (lista completa)
+        const { modules, max_finance_profiles } = req.body; // modules = array de module_type ativos; max_finance_profiles = opcional (1-20)
         
         // Verificar se é admin
         const adminCheck = await client.query('SELECT is_admin FROM users WHERE id = $1', [adminUserId]);
@@ -725,6 +747,16 @@ router.put('/individual-plans/:userId', protectUser, asyncHandler(async (req, re
                         ON CONFLICT (user_id, module_type) DO UPDATE SET updated_at = NOW()
                     `, [targetUserId, moduleType, planCode]);
                 }
+            }
+
+            // Override de quantidade de perfis de Gestão Financeira (Separação de pacotes)
+            if (typeof max_finance_profiles === 'number' || (typeof max_finance_profiles === 'string' && max_finance_profiles !== '')) {
+                const num = Math.min(20, Math.max(1, parseInt(max_finance_profiles, 10) || 1));
+                await client.query(`
+                    INSERT INTO individual_user_finance_profiles (user_id, max_finance_profiles, updated_at)
+                    VALUES ($1, $2, NOW())
+                    ON CONFLICT (user_id) DO UPDATE SET max_finance_profiles = $2, updated_at = NOW()
+                `, [targetUserId, num]);
             }
             
             await client.query('COMMIT');

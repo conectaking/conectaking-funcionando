@@ -76,21 +76,27 @@ async function getUserPlan(userId) {
 
 /**
  * Obter limite de perfis financeiros do usuário
+ * Prioridade: individual_user_finance_profiles (Separação de pacotes) > plano (features.max_finance_profiles)
  */
 async function getUserFinanceProfilesLimit(userId) {
     try {
-        const plan = await getUserPlan(userId);
-        
-        if (!plan || !plan.features) {
-            // Padrão: 1 perfil (apenas principal)
-            return 1;
+        // Override por usuário (Separação de pacotes - planos individuais)
+        const overrideResult = await db.query(
+            'SELECT max_finance_profiles FROM individual_user_finance_profiles WHERE user_id = $1',
+            [userId]
+        );
+        if (overrideResult.rows.length > 0) {
+            const n = parseInt(overrideResult.rows[0].max_finance_profiles, 10);
+            if (n >= 1 && n <= 20) return n;
         }
 
+        const plan = await getUserPlan(userId);
+        if (!plan || !plan.features) return 1;
         const maxProfiles = plan.features.max_finance_profiles;
         return maxProfiles ? parseInt(maxProfiles) : 1;
     } catch (error) {
         logger.error('Erro ao obter limite de perfis financeiros:', error);
-        return 1; // Padrão seguro
+        return 1;
     }
 }
 
