@@ -43,7 +43,7 @@ function textAfterLabel(text, labelRegex, maxLines = 2) {
             if (afterLabel) return afterLabel.slice(0, 200);
             for (let j = 1; j <= maxLines && i + j < lines.length; j++) {
                 const next = lines[i + j];
-                if (/^(Razão|Número|Produto|Data|Valor|Total|Perguntas|O que)/i.test(next)) break;
+                if (/^(Razão|Número|Produto|Data|Valor|Total|Perguntas|O que|Empresa responsável|Entenda)/i.test(next)) break;
                 if (next && next.length > 0) return next.slice(0, 200);
             }
         }
