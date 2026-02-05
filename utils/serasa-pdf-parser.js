@@ -105,9 +105,9 @@ function parseSerasaOfertas(text) {
     while (i < lines.length) {
         const line = lines[i];
 
-        // "De R$ 1.020,31 por R$ 388,96" — valor da negociação é o "por R$" (o grande). Pode estar na mesma linha ou "por" numa linha e "R$ 388,96" na seguinte.
-        const matchDePorMesmaLinha = line.match(/De\s+R\$\s*([\d.,\s]+)\s+por\s+R\$\s*([\d.,\s]+)/i);
-        const matchDeSó = line.match(/De\s+R\$\s*([\d.,\s]+)\s+por/i);
+        // "De R$ 1.020,31 por R$ 388,96" ou "DeR$ 1.020,31 por R$ 388,96" — valor da negociação = "por R$" (o grande)
+        const matchDePorMesmaLinha = line.match(/De\s*R\$\s*([\d.,\s]+)\s+por\s+R\$\s*([\d.,\s]+)/i);
+        const matchDeSó = line.match(/De\s*R\$\s*([\d.,\s]+)\s+por/i);
         const matchDe = matchDePorMesmaLinha || matchDeSó;
         if (matchDe) {
             const valorOriginal = parseValor(matchDe[1]);
@@ -121,11 +121,15 @@ function parseSerasaOfertas(text) {
             let j = i + 1;
             while (j < lines.length && j < i + 25) {
                 const next = lines[j];
-                if (j > i && next.match(/^De\s+R\$/i)) break;
+                if (j > i && next.match(/^De\s*R\$/i)) break;
                 blockLines.push(next);
 
                 if (!valorNegociado && next.match(/^R\$\s*[\d.,\s]+$/)) {
                     valorNegociado = parseValor(next);
+                }
+                if (!valorNegociado && next.match(/^[\d.,\s]+$/)) {
+                    const v = parseValor(next);
+                    if (v != null && v > 0) valorNegociado = v;
                 }
                 const matchPct = next.match(/↓\s*(\d+)\s*%|(\d+)\s*%\s*de\s+desconto/i);
                 if (matchPct) percentualDesconto = parseInt(matchPct[1] || matchPct[2], 10);
@@ -164,7 +168,29 @@ function parseSerasaOfertas(text) {
         i++;
     }
 
-    // Fallback: PDF com layout diferente — procurar cada "R$ X.XXX,XX" e associar ao último credor que aparece ANTES no texto
+    // Fallback 1: texto em bloco único "De R$ X por R$ Y" (várias ofertas no mesmo parágrafo)
+    if (offers.length === 0) {
+        const reDePor = /De\s*R\$\s*([\d.,\s]+)\s+por\s+R\$\s*([\d.,\s]+)/gi;
+        let m;
+        while ((m = reDePor.exec(text)) !== null) {
+            const valorOriginal = parseValor(m[1]);
+            const valorNegociado = parseValor(m[2]);
+            const valorTotal = valorNegociado != null ? valorNegociado : valorOriginal;
+            if (valorTotal != null && valorTotal > 0) {
+                offers.push({
+                    nome: 'Credor',
+                    valorTotal,
+                    valorOriginal: valorOriginal != null ? valorOriginal : undefined,
+                    valorAtual: valorNegociado != null ? valorNegociado : valorOriginal,
+                    percentualDesconto: undefined,
+                    tipo: undefined,
+                    parcelas: undefined
+                });
+            }
+        }
+    }
+
+    // Fallback 2: procurar cada "R$ X.XXX,XX" e associar ao último credor que aparece ANTES no texto
     if (offers.length === 0) {
         const reValor = /R\$\s*[\d.]{1,3}(?:\.\d{3})*,\d{2}/g;
         let m;
@@ -181,6 +207,7 @@ function parseSerasaOfertas(text) {
                 nome: p.nome || `Credor ${idx + 1}`,
                 valorTotal: p.valor,
                 valorOriginal: undefined,
+                valorAtual: p.valor,
                 percentualDesconto: undefined,
                 tipo: undefined,
                 parcelas: undefined
