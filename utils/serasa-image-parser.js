@@ -40,21 +40,72 @@ function valueAfterLabel(text, labelRegex, valueRegex) {
 
 /**
  * Extrai texto (não necessariamente R$) que vem após uma label.
+ * Tenta: valor na mesma linha (após o label); depois nas próximas linhas.
  */
 function textAfterLabel(text, labelRegex, maxLines = 2) {
     const label = new RegExp(labelRegex, 'i');
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     for (let i = 0; i < lines.length; i++) {
         if (label.test(lines[i])) {
-            const parts = lines[i].split(/\s{2,}|\t/);
+            const line = lines[i];
+            const afterLabelSameLine = line.replace(label, '').trim();
+            if (afterLabelSameLine && !isSerasaLinkOrInvalid(afterLabelSameLine) && !/^R\$\s*[\d.,\s]+$/.test(afterLabelSameLine))
+                return afterLabelSameLine.slice(0, 300);
+            const parts = line.split(/\s{2,}|\t/);
             const afterLabel = parts.slice(1).join(' ').trim();
-            if (afterLabel && !isSerasaLinkOrInvalid(afterLabel)) return afterLabel.slice(0, 200);
+            if (afterLabel && !isSerasaLinkOrInvalid(afterLabel) && !/^R\$\s*[\d.,\s]+$/.test(afterLabel))
+                return afterLabel.slice(0, 300);
             for (let j = 1; j <= maxLines && i + j < lines.length; j++) {
                 const next = lines[i + j];
                 if (/n[aã]o\s+reconhece|reconhece\s+a\s+empresa\s*\??/i.test(next)) continue;
                 if (/^(Razão|Número|Produto|Data|Valor|Total|Conta atrasada|Perguntas|O que|Empresa responsável|Entenda)/i.test(next)) break;
-                if (next && next.length > 0 && !isSerasaLinkOrInvalid(next)) return next.slice(0, 200);
+                if (next && next.length > 0 && !isSerasaLinkOrInvalid(next) && !/^R\$\s*[\d.,\s]+$/.test(next)) return next.slice(0, 300);
             }
+        }
+    }
+    return null;
+}
+
+/**
+ * Fallback: extrai "Empresa origem" e "Produto / Serviço" com regex no texto inteiro
+ * (útil quando o OCR quebra linhas de forma inesperada).
+ */
+function fallbackEmpresaOrigem(ocrText) {
+    if (!/Empresa\s+origem/i.test(ocrText)) return null;
+    const m = ocrText.match(/Empresa\s+origem\s*[\s:\n]*([A-Za-z][A-Za-z0-9\s\-]+?)(?=\s*\n\s*(?:N[uú]mero|Data|Produto|Valor|Total|Perguntas|O que)|$)/im);
+    if (m && m[1]) {
+        const v = m[1].trim().replace(/\s+/g, ' ').slice(0, 80);
+        if (!isSerasaLinkOrInvalid(v) && v.length >= 2) return v;
+    }
+    const m2 = ocrText.match(/Empresa\s+origem\s+([^\n]+)/i);
+    if (m2 && m2[1]) {
+        const v = m2[1].trim().replace(/\s+/g, ' ').slice(0, 80);
+        if (!isSerasaLinkOrInvalid(v)) return v;
+    }
+    const bancos = ['Banco Inter', 'Banco Inter S.A.', 'FORT BRASIL', 'Fort Brasil', 'Santander', 'Itau', 'Nubank', 'C6 Bank', 'Bradesco', 'Caixa', 'Recovery'];
+    for (const b of bancos) {
+        const re = new RegExp('\\b' + b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+        if (re.test(ocrText)) return b;
+    }
+    return null;
+}
+
+function fallbackProdutoServico(ocrText) {
+    const m = ocrText.match(/Produto\s*\/?\s*Servi[cç]o\s*[\s:\n]*([^\n]+?)(?=\s*\n\s*(?:Valor\s+original|Valor\s+atual|Total a negociar|Perguntas|O que)|$)/im);
+    if (m && m[1]) {
+        const v = m[1].trim().replace(/\s+/g, ' ').slice(0, 300);
+        if (!isSerasaLinkOrInvalid(v) && !/^R\$\s*[\d.,\s]+$/.test(v)) return v;
+    }
+    const m2 = ocrText.match(/Produto\s*\/?\s*Servi[cç]o\s+([^\n]+)/i);
+    if (m2 && m2[1]) {
+        const v = m2[1].trim().replace(/\s+/g, ' ').slice(0, 300);
+        if (!isSerasaLinkOrInvalid(v)) return v;
+    }
+    if (/Cart[aã]o\s+de\s+Cr[eé]dito|CART[AÃ]O\s+GOLD|MASTERCARD/i.test(ocrText)) {
+        const cartao = ocrText.match(/(Cart[aã]o\s+de\s+Cr[eé]dito\s*[^\n]*?)(?=\n\s*(?:Valor|Total|Perguntas|O que)|$)/im);
+        if (cartao && cartao[1]) {
+            const v = cartao[1].trim().replace(/\s+/g, ' ').slice(0, 300);
+            if (v.length > 10) return v;
         }
     }
     return null;
@@ -78,12 +129,14 @@ function parseDetalhesDividaText(ocrText) {
         (ocrText.match(/FIDC\s+[A-Z0-9\s]+/i) || [])[0]?.trim() ||
         (ocrText.match(/^(FIDC\s+[\w\s]+|BANCO\s+[\w\s]+)$/m) || [])[0]?.trim();
     if (isSerasaLinkOrInvalid(nome)) nome = null;
-    const empresaOrigem = textAfterLabel(ocrText, 'Empresa origem', 2);
+    let empresaOrigem = textAfterLabel(ocrText, 'Empresa\\s+origem|Empresa origem', 3);
+    if (!empresaOrigem || isSerasaLinkOrInvalid(empresaOrigem)) empresaOrigem = fallbackEmpresaOrigem(ocrText);
     let numeroContrato = textAfterLabel(ocrText, 'Número do contrato|Número do contrato');
     const contractMatch = ocrText.match(/N[uú]mero\s+do\s+contrato\s*[\s:]*(\d+)/i) || ocrText.match(/(\d{6,20})/);
     if (contractMatch) numeroContrato = (contractMatch[1] || contractMatch[0] || '').toString().replace(/\D/g, '');
     else if (numeroContrato && typeof numeroContrato === 'string') numeroContrato = numeroContrato.replace(/\D/g, '');
-    const produtoServico = textAfterLabel(ocrText, 'Produto\\s*\\/\\s*Serviço|Produto / Serviço|Produto\\s+ou\\s+serviço|Produto ou Serviço', 3);
+    let produtoServico = textAfterLabel(ocrText, 'Produto\\s*\\/\\s*Serviço|Produto / Serviço|Produto\\s+ou\\s+serviço|Produto ou Serviço', 3);
+    if (!produtoServico || isSerasaLinkOrInvalid(produtoServico)) produtoServico = fallbackProdutoServico(ocrText);
     let dataDivida = textAfterLabel(ocrText, 'Data da dívida');
     if (!dataDivida) dataDivida = textAfterLabel(ocrText, 'Data de origem', 1);
     const dataMatch = ocrText.match(/Data da d[ií]vida\s*[\s:]*(\d{2}\/\d{2}\/\d{4})/i) ||
