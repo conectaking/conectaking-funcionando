@@ -85,6 +85,12 @@ BEGIN
             VALUES (user_record.id, 'Salário', 'INCOME', 'fa-briefcase', '#22c55e');
         END IF;
         
+        -- Trabalho (receita)
+        IF NOT EXISTS (SELECT 1 FROM finance_categories WHERE user_id = user_record.id AND name = 'Trabalho' AND type = 'INCOME') THEN
+            INSERT INTO finance_categories (user_id, name, type, icon, color) 
+            VALUES (user_record.id, 'Trabalho', 'INCOME', 'fa-briefcase', '#22c55e');
+        END IF;
+        
         -- Freelance
         IF NOT EXISTS (SELECT 1 FROM finance_categories WHERE user_id = user_record.id AND name = 'Freelance' AND type = 'INCOME') THEN
             INSERT INTO finance_categories (user_id, name, type, icon, color) 
