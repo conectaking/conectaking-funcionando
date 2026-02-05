@@ -52,26 +52,32 @@ function textAfterLabel(text, labelRegex, maxLines = 2) {
 }
 
 /**
- * Parse do texto OCR de UMA tela "Detalhes da dívida".
- * Retorna um objeto com: nome, valorTotal (total a negociar), valorOriginal, valorAtual,
- * numeroContrato, produtoServico, dataDivida, tipo.
+ * Parse do texto OCR de UMA tela do Serasa (tanto "Detalhes da dívida" / Conta atrasada
+ * quanto "Dívida negativada em seu CPF" / Limpa Nome).
+ * Retorna: nome, valorTotal, valorOriginal, valorAtual, numeroContrato, produtoServico,
+ * dataDivida, empresaOrigem, tipo.
  */
 function parseDetalhesDividaText(ocrText) {
     if (!ocrText || typeof ocrText !== 'string') return null;
 
     const nome = textAfterLabel(ocrText, 'Razão social|Empresa responsável|BANCO|NOME DA EMPRESA') ||
         textAfterLabel(ocrText, 'Razão social');
+    const empresaOrigem = textAfterLabel(ocrText, 'Empresa origem', 1);
     let numeroContrato = textAfterLabel(ocrText, 'Número do contrato|Número do contrato');
-    const contractMatch = ocrText.match(/N[uú]mero\s+do\s+contrato\s*[\s:]*(\d+)/i) || ocrText.match(/(\d{10,14})/);
+    const contractMatch = ocrText.match(/N[uú]mero\s+do\s+contrato\s*[\s:]*(\d+)/i) || ocrText.match(/(\d{6,14})/);
     if (contractMatch) numeroContrato = (contractMatch[1] || contractMatch[0] || '').toString().replace(/\D/g, '');
     else if (numeroContrato && typeof numeroContrato === 'string') numeroContrato = numeroContrato.replace(/\D/g, '');
     const produtoServico = textAfterLabel(ocrText, 'Produto\\s*\\/\\s*Serviço|Produto / Serviço', 2);
     let dataDivida = textAfterLabel(ocrText, 'Data da dívida');
-    const dataMatch = ocrText.match(/Data da d[ií]vida\s*[\s:]*(\d{2}\/\d{2}\/\d{4})/i) || ocrText.match(/(\d{2}\/\d{2}\/\d{4})/g);
+    if (!dataDivida) dataDivida = textAfterLabel(ocrText, 'Data de origem', 1);
+    const dataMatch = ocrText.match(/Data da d[ií]vida\s*[\s:]*(\d{2}\/\d{2}\/\d{4})/i) ||
+        ocrText.match(/Data de origem\s*[\s:]*(\d{2}\/\d{2}\/\d{4})/i) ||
+        ocrText.match(/(\d{2}\/\d{2}\/\d{4})/g);
     if (dataMatch) dataDivida = (dataMatch[1] || dataMatch[0] || '').toString().trim();
 
     const valorOriginalStr = valueAfterLabel(ocrText, 'Valor original');
-    const valorAtualStr = valueAfterLabel(ocrText, 'Valor atual');
+    let valorAtualStr = valueAfterLabel(ocrText, 'Valor atual');
+    if (!valorAtualStr) valorAtualStr = valueAfterLabel(ocrText, 'D[ií]vida\\s+[Nn]egativada|Dívida Negativada');
     const totalNegociarStr = valueAfterLabel(ocrText, 'Total a negociar|Total a negociar');
 
     const valorOriginal = valorOriginalStr ? parseValor(valorOriginalStr) : null;
@@ -79,12 +85,12 @@ function parseDetalhesDividaText(ocrText) {
     const valorTotal = totalNegociarStr ? parseValor(totalNegociarStr) : (valorAtual || valorOriginal);
 
     const tipo = /Conta atrasada|D[ií]vida negativada|Dívida negativada/i.test(ocrText)
-        ? (ocrText.match(/Conta atrasada[^.\n]*|D[ií]vida negativada[^.\n]*/i) || [])[0] || 'Conta atrasada'
+        ? (ocrText.match(/Conta atrasada[^.\n]*|D[ií]vida negativada[^.\n]*/i) || [])[0] || 'Dívida negativada'
         : null;
 
     const razaoFinal = nome || textAfterLabel(ocrText, 'Razão social');
     const contractNum = typeof numeroContrato === 'string' ? numeroContrato : String(numeroContrato || '');
-    const hasContract = contractNum.length >= 8;
+    const hasContract = contractNum.length >= 6;
 
     if (!razaoFinal && !valorTotal && !valorAtual && !valorOriginal) return null;
 
@@ -96,6 +102,7 @@ function parseDetalhesDividaText(ocrText) {
         numeroContrato: hasContract ? contractNum.slice(0, 30) : (numeroContrato || undefined),
         produtoServico: (produtoServico || '').trim().slice(0, 200) || undefined,
         dataDivida: (dataDivida || '').trim().match(/^\d{2}\/\d{2}\/\d{4}$/) ? dataDivida.trim() : undefined,
+        empresaOrigem: (empresaOrigem || '').trim().slice(0, 80) || undefined,
         tipo: tipo ? tipo.slice(0, 100) : undefined
     };
 }
