@@ -568,13 +568,18 @@ class FinanceService {
         return await repository.setZerarSenha(userId, String(newSenha));
     }
 
-    /** Zerar todas as transações do mês (exige senha) */
+    /** Zerar todas as transações do mês (exige senha) e recalcular saldos das contas */
     async zerarMes(userId, year, month, profileId, senha) {
         const ok = await this.verifyZerarSenha(userId, senha);
         if (!ok) {
             throw new Error('Senha incorreta. Não foi possível zerar o mês.');
         }
         const deleted = await repository.deleteTransactionsByMonth(userId, year, month, profileId || null);
+        // Recalcular saldo de todas as contas (senão o dashboard continua mostrando valores antigos)
+        const accounts = await repository.findAccountsByUserId(userId);
+        for (const account of accounts) {
+            await this.updateAccountBalance(account.id, userId);
+        }
         logger.info(`Zerar mês: usuário ${userId}, ${year}-${month}, perfil ${profileId || 'todos'}, ${deleted} transações removidas.`);
         return { deleted };
     }
