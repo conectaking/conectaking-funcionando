@@ -22,7 +22,7 @@ function valueAfterLabel(text, labelRegex, valueRegex) {
             if (lines[i + 1]) {
                 const nextLine = lines[i + 1].match(value);
                 if (nextLine) return nextLine[0].trim();
-                if (!/^(Razão|Número|Produto|Data|Valor|Total)/i.test(lines[i + 1]))
+                if (!/^(Razão|Número|Produto|Data|Valor|Total|Conta atrasada)/i.test(lines[i + 1]))
                     return lines[i + 1].trim();
             }
         }
@@ -43,7 +43,7 @@ function textAfterLabel(text, labelRegex, maxLines = 2) {
             if (afterLabel) return afterLabel.slice(0, 200);
             for (let j = 1; j <= maxLines && i + j < lines.length; j++) {
                 const next = lines[i + j];
-                if (/^(Razão|Número|Produto|Data|Valor|Total|Perguntas|O que|Empresa responsável|Entenda)/i.test(next)) break;
+                if (/^(Razão|Número|Produto|Data|Valor|Total|Conta atrasada|Perguntas|O que|Empresa responsável|Entenda)/i.test(next)) break;
                 if (next && next.length > 0) return next.slice(0, 200);
             }
         }
@@ -52,8 +52,12 @@ function textAfterLabel(text, labelRegex, maxLines = 2) {
 }
 
 /**
- * Parse do texto OCR de UMA tela do Serasa (tanto "Detalhes da dívida" / Conta atrasada
- * quanto "Dívida negativada em seu CPF" / Limpa Nome).
+ * Parse do texto OCR de UMA tela do Serasa.
+ * Dois modelos suportados:
+ * - Inter/Recovery: Conta atrasada, Empresa origem, Número contrato, Data de origem,
+ *   Produto ou serviço, Valor original, Valor atual, Total a negociar.
+ * - Santander/outros: Data da dívida, Valor original, Valor atual, Produto/serviço,
+ *   Número do contrato, Razão social (banco), Valor da negociação.
  * Retorna: nome, valorTotal, valorOriginal, valorAtual, numeroContrato, produtoServico,
  * dataDivida, empresaOrigem, tipo.
  */
@@ -61,13 +65,14 @@ function parseDetalhesDividaText(ocrText) {
     if (!ocrText || typeof ocrText !== 'string') return null;
 
     const nome = textAfterLabel(ocrText, 'Razão social|Empresa responsável|BANCO|NOME DA EMPRESA') ||
-        textAfterLabel(ocrText, 'Razão social');
+        textAfterLabel(ocrText, 'Razão social') ||
+        (ocrText.match(/^(FIDC\s+[\w\s]+|BANCO\s+[\w\s]+)$/m) || [])[0]?.trim();
     const empresaOrigem = textAfterLabel(ocrText, 'Empresa origem', 1);
     let numeroContrato = textAfterLabel(ocrText, 'Número do contrato|Número do contrato');
-    const contractMatch = ocrText.match(/N[uú]mero\s+do\s+contrato\s*[\s:]*(\d+)/i) || ocrText.match(/(\d{6,14})/);
+    const contractMatch = ocrText.match(/N[uú]mero\s+do\s+contrato\s*[\s:]*(\d+)/i) || ocrText.match(/(\d{6,20})/);
     if (contractMatch) numeroContrato = (contractMatch[1] || contractMatch[0] || '').toString().replace(/\D/g, '');
     else if (numeroContrato && typeof numeroContrato === 'string') numeroContrato = numeroContrato.replace(/\D/g, '');
-    const produtoServico = textAfterLabel(ocrText, 'Produto\\s*\\/\\s*Serviço|Produto / Serviço', 2);
+    const produtoServico = textAfterLabel(ocrText, 'Produto\\s*\\/\\s*Serviço|Produto / Serviço|Produto\\s+ou\\s+serviço|Produto ou Serviço', 2);
     let dataDivida = textAfterLabel(ocrText, 'Data da dívida');
     if (!dataDivida) dataDivida = textAfterLabel(ocrText, 'Data de origem', 1);
     const dataMatch = ocrText.match(/Data da d[ií]vida\s*[\s:]*(\d{2}\/\d{2}\/\d{4})/i) ||
@@ -78,7 +83,9 @@ function parseDetalhesDividaText(ocrText) {
     const valorOriginalStr = valueAfterLabel(ocrText, 'Valor original');
     let valorAtualStr = valueAfterLabel(ocrText, 'Valor atual');
     if (!valorAtualStr) valorAtualStr = valueAfterLabel(ocrText, 'D[ií]vida\\s+[Nn]egativada|Dívida Negativada');
-    const totalNegociarStr = valueAfterLabel(ocrText, 'Total a negociar|Total a negociar');
+    if (!valorAtualStr) valorAtualStr = valueAfterLabel(ocrText, 'Conta atrasada');
+    const totalNegociarStr = valueAfterLabel(ocrText, 'Total a negociar|Total a negociar') ||
+        valueAfterLabel(ocrText, 'Valor da negocia[cç]ão|Valor da negocia[cç]ao');
 
     const valorOriginal = valorOriginalStr ? parseValor(valorOriginalStr) : null;
     const valorAtual = valorAtualStr ? parseValor(valorAtualStr) : null;
@@ -99,7 +106,7 @@ function parseDetalhesDividaText(ocrText) {
         valorTotal: valorTotal != null ? valorTotal : (valorAtual != null ? valorAtual : valorOriginal || 0),
         valorOriginal: valorOriginal != null ? valorOriginal : undefined,
         valorAtual: valorAtual != null ? valorAtual : undefined,
-        numeroContrato: hasContract ? contractNum.slice(0, 30) : (numeroContrato || undefined),
+        numeroContrato: hasContract ? contractNum.slice(0, 40) : (numeroContrato || undefined),
         produtoServico: (produtoServico || '').trim().slice(0, 200) || undefined,
         dataDivida: (dataDivida || '').trim().match(/^\d{2}\/\d{2}\/\d{4}$/) ? dataDivida.trim() : undefined,
         empresaOrigem: (empresaOrigem || '').trim().slice(0, 80) || undefined,
