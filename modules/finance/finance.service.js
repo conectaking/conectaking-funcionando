@@ -419,11 +419,13 @@ class FinanceService {
         // Calcular gastos por categoria com orçamento
         const budgetsWithSpent = await Promise.all(
             filteredBudgets.map(async (budget) => {
+                const lastDay = new Date(budget.year, budget.month, 0).getDate();
+                const dateTo = `${budget.year}-${String(budget.month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
                 const categoryTransactions = await repository.findTransactionsByUserId(userId, {
                     category_id: budget.category_id,
                     type: 'EXPENSE',
                     dateFrom: `${budget.year}-${String(budget.month).padStart(2, '0')}-01`,
-                    dateTo: `${budget.year}-${String(budget.month).padStart(2, '0')}-31`,
+                    dateTo,
                     profile_id: profileId,
                     limit: 10000
                 });
