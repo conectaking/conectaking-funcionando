@@ -455,9 +455,21 @@ class FinanceRepository {
     async getDashboardStats(userId, dateFrom, dateTo, profileId = null) {
         const client = await db.pool.connect();
         try {
+            // Se um profile_id foi passado, garantir que o perfil existe e está ativo (não foi excluído)
+            if (profileId != null) {
+                const profileCheck = await client.query(
+                    'SELECT id FROM finance_profiles WHERE id = $1 AND user_id = $2 AND is_active = TRUE',
+                    [profileId, userId]
+                );
+                if (profileCheck.rows.length === 0) {
+                    // Perfil excluído ou inválido: usar ID impossível para retornar zeros (não mostrar dados de perfil apagado)
+                    profileId = -1;
+                }
+            }
+
             // Construir filtro de perfil (especificar tabela para evitar ambiguidade)
-            const profileFilter = profileId ? 'AND t.profile_id = $4' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
-            const params = profileId ? [userId, dateFrom, dateTo, profileId] : [userId, dateFrom, dateTo];
+            const profileFilter = profileId != null ? 'AND t.profile_id = $4' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const params = profileId != null ? [userId, dateFrom, dateTo, profileId] : [userId, dateFrom, dateTo];
             
             // Total de receitas pagas
             const incomePaidResult = await client.query(
@@ -496,8 +508,8 @@ class FinanceRepository {
             );
 
             // Saldo disponível (soma dos saldos das contas ativas do perfil)
-            const accountProfileFilter = profileId ? 'AND a.profile_id = $2' : 'AND (a.profile_id IS NULL OR a.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
-            const accountParams = profileId ? [userId, profileId] : [userId];
+            const accountProfileFilter = profileId != null ? 'AND a.profile_id = $2' : 'AND (a.profile_id IS NULL OR a.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const accountParams = profileId != null ? [userId, profileId] : [userId];
             
             const accountBalanceResult = await client.query(
                 `SELECT COALESCE(SUM(a.current_balance), 0) as total
@@ -534,8 +546,8 @@ class FinanceRepository {
             const totalExpensePending = parseFloat(expensePendingResult.rows[0]?.total || 0);
             
             // Calcular saldo disponível ACUMULADO (todas as transações pagas, sem filtro de data)
-            const accumulatedProfileFilter = profileId ? 'AND t.profile_id = $2' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
-            const accumulatedParams = profileId ? [userId, profileId] : [userId];
+            const accumulatedProfileFilter = profileId != null ? 'AND t.profile_id = $2' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const accumulatedParams = profileId != null ? [userId, profileId] : [userId];
             
             const accountBalanceAccumulatedResult = await client.query(
                 `SELECT 
@@ -578,8 +590,8 @@ class FinanceRepository {
             const previousMonthFrom = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, '0')}-01`;
             const previousMonthTo = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, '0')}-${previousMonthLastDay}`;
             
-            const previousMonthParams = profileId ? [userId, profileId, previousMonthFrom, previousMonthTo] : [userId, previousMonthFrom, previousMonthTo];
-            const previousMonthFilter = profileId ? 'AND t.profile_id = $2' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const previousMonthParams = profileId != null ? [userId, profileId, previousMonthFrom, previousMonthTo] : [userId, previousMonthFrom, previousMonthTo];
+            const previousMonthFilter = profileId != null ? 'AND t.profile_id = $2' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
             
             const previousMonthBalanceResult = await client.query(
                 `SELECT 
