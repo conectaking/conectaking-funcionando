@@ -159,7 +159,10 @@ function parseDetalhesDividaText(ocrText) {
     if (/Conta atrasada/i.test(ocrText)) tipo = 'Conta atrasada';
     else if (/D[ií]vida\s+negativada/i.test(ocrText)) tipo = 'Dívida negativada';
 
-    let razaoFinal = nome || textAfterLabel(ocrText, 'Razão social');
+    let razaoSocialVal = textAfterLabel(ocrText, 'Razão social', 2) || textAfterLabel(ocrText, 'Empresa responsável', 2);
+    if (isSerasaLinkOrInvalid(razaoSocialVal)) razaoSocialVal = null;
+    else razaoSocialVal = razaoSocialVal.trim().slice(0, 120);
+    let razaoFinal = nome || razaoSocialVal || textAfterLabel(ocrText, 'Razão social');
     if (isSerasaLinkOrInvalid(razaoFinal)) razaoFinal = null;
     const nomeClean = razaoFinal && !isSerasaLinkOrInvalid(razaoFinal) ? razaoFinal.trim().slice(0, 120) : null;
     const empresaOrigemClean = empresaOrigem && !isSerasaLinkOrInvalid(empresaOrigem) ? empresaOrigem.trim().slice(0, 80) : undefined;
@@ -170,6 +173,7 @@ function parseDetalhesDividaText(ocrText) {
 
     return {
         nome: (nomeClean || razaoFinal || 'Credor').trim().slice(0, 120),
+        razaoSocial: razaoSocialVal || undefined,
         valorTotal: valorTotal != null ? valorTotal : (valorAtual != null ? valorAtual : valorOriginal || 0),
         valorOriginal: valorOriginal != null ? valorOriginal : undefined,
         valorAtual: valorAtual != null ? valorAtual : undefined,
