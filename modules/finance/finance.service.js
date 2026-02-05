@@ -210,9 +210,10 @@ class FinanceService {
 
         await repository.deleteTransaction(id, userId);
 
-        // Atualizar saldo da conta se necessário
-        if (transaction.account_id) {
-            await this.updateAccountBalance(transaction.account_id, userId);
+        // Recalcular saldo de TODAS as contas para o dashboard não mostrar valores antigos
+        const accounts = await repository.findAccountsByUserId(userId);
+        for (const account of accounts) {
+            await this.updateAccountBalance(account.id, userId);
         }
 
         logger.info(`Transação deletada: ${id} para usuário ${userId}`);
