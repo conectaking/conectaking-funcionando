@@ -7,6 +7,13 @@
 
 const { parseValor } = require('./serasa-pdf-parser');
 
+/** Texto do link do Serasa "Não reconhece a empresa?" - nunca usar como dado. */
+function isSerasaLinkOrInvalid(s) {
+    if (!s || typeof s !== 'string') return true;
+    const t = s.trim();
+    return /n[aã]o\s+reconhece|reconhece\s+a\s+empresa\s*\??/i.test(t) || t.length < 2;
+}
+
 /**
  * Extrai um valor que vem após uma label (na mesma linha ou na próxima).
  * Ex: "Valor original" seguido de "R$ 13.032,04" ou "Valor original R$ 13.032,04"
@@ -22,6 +29,7 @@ function valueAfterLabel(text, labelRegex, valueRegex) {
             if (lines[i + 1]) {
                 const nextLine = lines[i + 1].match(value);
                 if (nextLine) return nextLine[0].trim();
+                if (/n[aã]o\s+reconhece|reconhece\s+a\s+empresa/i.test(lines[i + 1])) return null;
                 if (!/^(Razão|Número|Produto|Data|Valor|Total|Conta atrasada)/i.test(lines[i + 1]))
                     return lines[i + 1].trim();
             }
@@ -40,11 +48,12 @@ function textAfterLabel(text, labelRegex, maxLines = 2) {
         if (label.test(lines[i])) {
             const parts = lines[i].split(/\s{2,}|\t/);
             const afterLabel = parts.slice(1).join(' ').trim();
-            if (afterLabel) return afterLabel.slice(0, 200);
+            if (afterLabel && !isSerasaLinkOrInvalid(afterLabel)) return afterLabel.slice(0, 200);
             for (let j = 1; j <= maxLines && i + j < lines.length; j++) {
                 const next = lines[i + j];
+                if (/n[aã]o\s+reconhece|reconhece\s+a\s+empresa\s*\??/i.test(next)) continue;
                 if (/^(Razão|Número|Produto|Data|Valor|Total|Conta atrasada|Perguntas|O que|Empresa responsável|Entenda)/i.test(next)) break;
-                if (next && next.length > 0) return next.slice(0, 200);
+                if (next && next.length > 0 && !isSerasaLinkOrInvalid(next)) return next.slice(0, 200);
             }
         }
     }
@@ -64,10 +73,12 @@ function textAfterLabel(text, labelRegex, maxLines = 2) {
 function parseDetalhesDividaText(ocrText) {
     if (!ocrText || typeof ocrText !== 'string') return null;
 
-    const nome = textAfterLabel(ocrText, 'Razão social|Empresa responsável|BANCO|NOME DA EMPRESA') ||
+    let nome = textAfterLabel(ocrText, 'Razão social|Empresa responsável|BANCO|NOME DA EMPRESA') ||
         textAfterLabel(ocrText, 'Razão social') ||
+        (ocrText.match(/FIDC\s+[A-Z0-9\s]+/i) || [])[0]?.trim() ||
         (ocrText.match(/^(FIDC\s+[\w\s]+|BANCO\s+[\w\s]+)$/m) || [])[0]?.trim();
-    const empresaOrigem = textAfterLabel(ocrText, 'Empresa origem', 1);
+    if (isSerasaLinkOrInvalid(nome)) nome = null;
+    const empresaOrigem = textAfterLabel(ocrText, 'Empresa origem', 2);
     let numeroContrato = textAfterLabel(ocrText, 'Número do contrato|Número do contrato');
     const contractMatch = ocrText.match(/N[uú]mero\s+do\s+contrato\s*[\s:]*(\d+)/i) || ocrText.match(/(\d{6,20})/);
     if (contractMatch) numeroContrato = (contractMatch[1] || contractMatch[0] || '').toString().replace(/\D/g, '');
@@ -91,26 +102,29 @@ function parseDetalhesDividaText(ocrText) {
     const valorAtual = valorAtualStr ? parseValor(valorAtualStr) : null;
     const valorTotal = totalNegociarStr ? parseValor(totalNegociarStr) : (valorAtual || valorOriginal);
 
-    const tipo = /Conta atrasada|D[ií]vida negativada|Dívida negativada/i.test(ocrText)
-        ? (ocrText.match(/Conta atrasada[^.\n]*|D[ií]vida negativada[^.\n]*/i) || [])[0] || 'Dívida negativada'
-        : null;
+    let tipo = null;
+    if (/Conta atrasada/i.test(ocrText)) tipo = 'Conta atrasada';
+    else if (/D[ií]vida\s+negativada/i.test(ocrText)) tipo = 'Dívida negativada';
 
-    const razaoFinal = nome || textAfterLabel(ocrText, 'Razão social');
+    let razaoFinal = nome || textAfterLabel(ocrText, 'Razão social');
+    if (isSerasaLinkOrInvalid(razaoFinal)) razaoFinal = null;
+    const nomeClean = razaoFinal && !isSerasaLinkOrInvalid(razaoFinal) ? razaoFinal.trim().slice(0, 120) : null;
+    const empresaOrigemClean = empresaOrigem && !isSerasaLinkOrInvalid(empresaOrigem) ? empresaOrigem.trim().slice(0, 80) : undefined;
     const contractNum = typeof numeroContrato === 'string' ? numeroContrato : String(numeroContrato || '');
     const hasContract = contractNum.length >= 6;
 
-    if (!razaoFinal && !valorTotal && !valorAtual && !valorOriginal) return null;
+    if (!nomeClean && !razaoFinal && !valorTotal && !valorAtual && !valorOriginal) return null;
 
     return {
-        nome: (razaoFinal || 'Credor').trim().slice(0, 120),
+        nome: (nomeClean || razaoFinal || 'Credor').trim().slice(0, 120),
         valorTotal: valorTotal != null ? valorTotal : (valorAtual != null ? valorAtual : valorOriginal || 0),
         valorOriginal: valorOriginal != null ? valorOriginal : undefined,
         valorAtual: valorAtual != null ? valorAtual : undefined,
         numeroContrato: hasContract ? contractNum.slice(0, 40) : (numeroContrato || undefined),
         produtoServico: (produtoServico || '').trim().slice(0, 200) || undefined,
         dataDivida: (dataDivida || '').trim().match(/^\d{2}\/\d{2}\/\d{4}$/) ? dataDivida.trim() : undefined,
-        empresaOrigem: (empresaOrigem || '').trim().slice(0, 80) || undefined,
-        tipo: tipo ? tipo.slice(0, 100) : undefined
+        empresaOrigem: empresaOrigemClean,
+        tipo: tipo || undefined
     };
 }
 
