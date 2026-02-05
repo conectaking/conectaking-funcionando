@@ -61,17 +61,14 @@ function parseDetalhesDividaText(ocrText) {
 
     const nome = textAfterLabel(ocrText, 'Razão social|Empresa responsável|BANCO|NOME DA EMPRESA') ||
         textAfterLabel(ocrText, 'Razão social');
-    const numeroContrato = textAfterLabel(ocrText, 'Número do contrato|Número do contrato');
-    if (numeroContrato && !/^\d+$/.test(numeroContrato.replace(/\s/g, ''))) {
-        const m = ocrText.match(/N[uú]mero\s+do\s+contrato\s*[\s:]*(\d+)/i) || ocrText.match(/(\d{10,14})/);
-        if (m) numeroContrato = m[1];
-    }
+    let numeroContrato = textAfterLabel(ocrText, 'Número do contrato|Número do contrato');
+    const contractMatch = ocrText.match(/N[uú]mero\s+do\s+contrato\s*[\s:]*(\d+)/i) || ocrText.match(/(\d{10,14})/);
+    if (contractMatch) numeroContrato = (contractMatch[1] || contractMatch[0] || '').toString().replace(/\D/g, '');
+    else if (numeroContrato && typeof numeroContrato === 'string') numeroContrato = numeroContrato.replace(/\D/g, '');
     const produtoServico = textAfterLabel(ocrText, 'Produto\\s*\\/\\s*Serviço|Produto / Serviço', 2);
-    const dataDivida = textAfterLabel(ocrText, 'Data da dívida');
-    if (dataDivida && !/^\d{2}\/\d{2}\/\d{4}$/.test(dataDivida.trim())) {
-        const m = ocrText.match(/Data da d[ií]vida\s*[\s:]*(\d{2}\/\d{2}\/\d{4})/i) || ocrText.match(/(\d{2}\/\d{2}\/\d{4})/g);
-        if (m) dataDivida = Array.isArray(m) ? m[0] : m[1];
-    }
+    let dataDivida = textAfterLabel(ocrText, 'Data da dívida');
+    const dataMatch = ocrText.match(/Data da d[ií]vida\s*[\s:]*(\d{2}\/\d{2}\/\d{4})/i) || ocrText.match(/(\d{2}\/\d{2}\/\d{4})/g);
+    if (dataMatch) dataDivida = (dataMatch[1] || dataMatch[0] || '').toString().trim();
 
     const valorOriginalStr = valueAfterLabel(ocrText, 'Valor original');
     const valorAtualStr = valueAfterLabel(ocrText, 'Valor atual');
@@ -86,7 +83,7 @@ function parseDetalhesDividaText(ocrText) {
         : null;
 
     const razaoFinal = nome || textAfterLabel(ocrText, 'Razão social');
-    const contractNum = (numeroContrato || '').trim().replace(/\D/g, '');
+    const contractNum = typeof numeroContrato === 'string' ? numeroContrato : String(numeroContrato || '');
     const hasContract = contractNum.length >= 8;
 
     if (!razaoFinal && !valorTotal && !valorAtual && !valorOriginal) return null;
@@ -96,7 +93,7 @@ function parseDetalhesDividaText(ocrText) {
         valorTotal: valorTotal != null ? valorTotal : (valorAtual != null ? valorAtual : valorOriginal || 0),
         valorOriginal: valorOriginal != null ? valorOriginal : undefined,
         valorAtual: valorAtual != null ? valorAtual : undefined,
-        numeroContrato: hasContract ? contractNum.slice(0, 30) : undefined,
+        numeroContrato: hasContract ? contractNum.slice(0, 30) : (numeroContrato || undefined),
         produtoServico: (produtoServico || '').trim().slice(0, 200) || undefined,
         dataDivida: (dataDivida || '').trim().match(/^\d{2}\/\d{2}\/\d{4}$/) ? dataDivida.trim() : undefined,
         tipo: tipo ? tipo.slice(0, 100) : undefined

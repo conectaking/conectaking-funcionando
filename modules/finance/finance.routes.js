@@ -25,7 +25,7 @@ const upload = multer({
     }
 });
 
-// Upload em memória apenas para importação Serasa (não grava PDF no disco)
+// Upload em memória apenas para importação Serasa PDF (não grava no disco)
 const uploadMemory = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
@@ -34,6 +34,20 @@ const uploadMemory = multer({
             cb(null, true);
         } else {
             cb(new Error('Apenas PDF é permitido para importação Serasa.'), false);
+        }
+    }
+});
+
+// Upload de imagens (JPEG/PNG) para importação Serasa via OCR — "Detalhes da dívida"
+const uploadImagesMemory = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 8 * 1024 * 1024 }, // 8MB por arquivo
+    fileFilter: (req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (allowed.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Para imagens use JPEG ou PNG.'), false);
         }
     }
 });
@@ -101,6 +115,9 @@ router.get('/admin/clientes-senhas', controller.getAdminClientesSenhas);
 
 // Importação Serasa: upload de PDF e prévia das ofertas (não salva no backend; frontend salva em localStorage)
 router.post('/serasa/import-preview', uploadMemory.single('file'), controller.importSerasaPreview);
+
+// Importação Serasa via imagens (prints "Detalhes da dívida"): OCR + extração de todos os campos
+router.post('/serasa/import-image-preview', uploadImagesMemory.array('files', 20), controller.importSerasaImagePreview);
 
 // Configuração de WhatsApp (apenas ADM)
 router.get('/whatsapp-config', controller.getWhatsAppConfig);

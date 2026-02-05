@@ -676,6 +676,57 @@ class FinanceController {
             return responseFormatter.error(res, error.message || 'Não foi possível ler o PDF. Verifique se o arquivo é um relatório do Serasa.', 500);
         }
     }
+
+    /**
+     * Importação Serasa via imagens (prints da tela "Detalhes da dívida"): OCR + extração de campos.
+     * Aceita um ou mais JPEG/PNG; retorna prévia com nome, contrato, produto, data, valores.
+     */
+    async importSerasaImagePreview(req, res) {
+        const fs = require('fs');
+        const path = require('path');
+        const os = require('os');
+        let tempFiles = [];
+        try {
+            const files = req.files || (req.file ? [req.file] : []);
+            if (!files.length || !files[0].buffer) {
+                return responseFormatter.error(res, 'Envie uma ou mais imagens (JPEG/PNG) da tela Detalhes da dívida.', 400);
+            }
+            const { createWorker } = require('tesseract.js');
+            const { parseDetalhesDividaFromMultipleTexts } = require('../../utils/serasa-image-parser');
+            const ocrTexts = [];
+            for (const file of files) {
+                if (!file.buffer) continue;
+                const ext = (file.mimetype === 'image/png') ? '.png' : '.jpg';
+                const tmpPath = path.join(os.tmpdir(), `serasa-ocr-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+                fs.writeFileSync(tmpPath, file.buffer);
+                tempFiles.push(tmpPath);
+            }
+            const worker = await createWorker('por', 1, { logger: () => {} });
+            try {
+                for (const tmpPath of tempFiles) {
+                    try {
+                        const { data: { text } } = await worker.recognize(tmpPath);
+                        if (text && text.trim()) ocrTexts.push(text);
+                    } catch (e) {
+                        logger.error('OCR falhou para um arquivo:', e.message);
+                    }
+                }
+            } finally {
+                await worker.terminate();
+            }
+            for (const p of tempFiles) {
+                try { fs.unlinkSync(p); } catch (_) {}
+            }
+            const offers = parseDetalhesDividaFromMultipleTexts(ocrTexts);
+            return responseFormatter.success(res, { offers, source: 'image' });
+        } catch (error) {
+            for (const p of tempFiles || []) {
+                try { require('fs').unlinkSync(p); } catch (_) {}
+            }
+            logger.error('Erro ao processar imagens Serasa (OCR):', error);
+            return responseFormatter.error(res, error.message || 'Não foi possível ler as imagens. Envie prints da tela "Detalhes da dívida".', 500);
+        }
+    }
 }
 
 module.exports = new FinanceController();
