@@ -1,11 +1,11 @@
-# Sincronização Serasa + Quem eu devo (site / localhost / mobile)
+# Sincronização Serasa + Quem eu devo + Trabalhos + Bens (site / localhost / mobile)
 
 ## O que foi implementado
 
-Os dados de **Serasa (acordos)** e **Quem eu devo (terceiros)** passam a ser salvos no **servidor** e carregados de lá. Assim, o que você configura em um lugar (site, localhost ou mobile) aparece nos outros.
+Os dados de **Serasa (acordos)**, **Quem eu devo (terceiros)**, **Trabalhos** e **Bens** passam a ser salvos no **servidor** e carregados de lá. Assim, o que você configura em um lugar (site, localhost ou mobile) aparece nos outros.
 
-- **Ao abrir** a Gestão Financeira: o frontend chama `GET /api/finance/king-data` e usa os dados do servidor (dividas + terceiros).
-- **Ao salvar** (novo acordo, pagamento, nova conta, etc.): o frontend chama `PUT /api/finance/king-data` com os dados atuais.
+- **Ao abrir** a Gestão Financeira: o frontend chama `GET /api/finance/king-data` e usa os dados do servidor (dividas, terceiros, trabalhos, bens).
+- **Ao salvar** (novo acordo, pagamento, nova conta, trabalho, bem, etc.): o frontend chama `PUT /api/finance/king-data` com os dados atuais.
 
 ## Por que no localhost/mobile aparece R$ 0,00?
 
@@ -38,7 +38,16 @@ O backend precisa ter:
 
 Faça **deploy** da API (ex.: push no repositório que o Render usa) para que essas alterações estejam no servidor.
 
-### 3. Conferir no navegador (opcional)
+### 3. Localhost e site devem usar a MESMA API
+
+Para os dados sincronizarem entre localhost e conectaking.com.br, ambos precisam chamar a **mesma API** (produção):
+
+- **Site conectaking.com.br**: já usa a API de produção ✅
+- **Localhost**: por padrão, se você usa `?api=local` na URL ou `localStorage.useLocalApi = 'true'`, o localhost usa a API local (porta 5000) e salva no **banco local** — os dados **não** aparecem no site oficial.
+
+**Solução:** Quando quiser testar sincronização, acesse o dashboard no localhost **sem** `?api=local` na URL e remova `localStorage.setItem('useLocalApi', 'true')` se estiver definido. Assim, o localhost usará a API de produção e os dados sincronizarão.
+
+### 4. Conferir no navegador (opcional)
 
 - Abra o **site**, vá em Gestão Financeira, abra o **Console** (F12 → Console).
 - Faça uma alteração (ex.: adicionar um acordo ou um pagamento).

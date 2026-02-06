@@ -952,9 +952,11 @@ class FinanceRepository {
         const client = await db.pool.connect();
         try {
             const profileKey = (profileId == null || profileId === '') ? '' : String(profileId);
-            const safeData = typeof data === 'object' ? data : { dividas: [], terceiros: [] };
+            const safeData = typeof data === 'object' ? data : { dividas: [], terceiros: [], trabalhos: [], bens: [] };
             if (!Array.isArray(safeData.dividas)) safeData.dividas = [];
             if (!Array.isArray(safeData.terceiros)) safeData.terceiros = [];
+            if (!Array.isArray(safeData.trabalhos)) safeData.trabalhos = [];
+            if (!Array.isArray(safeData.bens)) safeData.bens = [];
             await client.query(
                 `INSERT INTO finance_king_sync (user_id, profile_id, data, updated_at)
                  VALUES ($1, $2, $3::jsonb, NOW())
