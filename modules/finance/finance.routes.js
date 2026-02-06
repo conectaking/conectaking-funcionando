@@ -117,7 +117,7 @@ router.get('/admin/clientes-senhas', controller.getAdminClientesSenhas);
 router.post('/serasa/import-preview', uploadMemory.single('file'), controller.importSerasaPreview);
 
 // Importação Serasa via imagens (prints "Detalhes da dívida"): OCR + extração de todos os campos
-router.post('/serasa/import-image-preview', uploadImagesMemory.array('files', 20), controller.importSerasaImagePreview);
+router.post('/serasa/import-image-preview', uploadImagesMemory.array('files', 50), controller.importSerasaImagePreview);
 
 // Configuração de WhatsApp (apenas ADM)
 router.get('/whatsapp-config', controller.getWhatsAppConfig);
