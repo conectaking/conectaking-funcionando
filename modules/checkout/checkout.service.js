@@ -127,7 +127,7 @@ async function testConnection(userId, profileItemId, overrides) {
   if (overrides?.pagbank_access_token) {
     token = (overrides.pagbank_access_token || '').trim();
   } else {
-    const platformToken = (process.env.PAGBANK_PLATFORM_ACCESS_TOKEN || '').trim();
+    const platformToken = (process.env.PAGBANK_PLATFORM_ACCESS_TOKEN || process.env.PAGBANK_TOKEN || '').trim();
     if (platformToken) {
       token = platformToken;
     } else {
@@ -190,7 +190,7 @@ async function createCharge(submissionId, method, options = {}) {
   if (!sellerId) return { success: false, error: 'Identificador para marketplace não configurado. Configure na aba Checkout (PagBank → Vendas → Plataformas e Checkout).' };
 
   // Checkout transparente: token da plataforma (seu PagBank). O vendedor só informa o ID; 10% vem pra você, 90% vai pra conta dele.
-  const platformToken = (process.env.PAGBANK_PLATFORM_ACCESS_TOKEN || '').trim();
+  const platformToken = (process.env.PAGBANK_PLATFORM_ACCESS_TOKEN || process.env.PAGBANK_TOKEN || '').trim();
   let accessToken;
   if (platformToken) {
     accessToken = platformToken;

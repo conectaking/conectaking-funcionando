@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const logger = require('../../utils/logger');
 const { SPLIT_PLATFORM_PERCENT, SPLIT_SELLER_PERCENT } = require('./checkout.types');
 
-const BASE_URL = process.env.PAGBANK_API_BASE_URL || 'https://sandbox.api.pagseguro.com';
+const BASE_URL = process.env.PAGBANK_API_BASE_URL || process.env.PAGBANK_API_URL || 'https://sandbox.api.pagseguro.com';
 // API legada para consultar notificação (Notificação de transação - painel comercial)
 const LEGACY_BASE_URL = process.env.PAGBANK_LEGACY_API_URL || 'https://ws.sandbox.pagseguro.uol.com.br';
 
