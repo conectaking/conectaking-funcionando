@@ -727,6 +727,37 @@ class FinanceController {
             return responseFormatter.error(res, error.message || 'Não foi possível ler as imagens. Envie prints da tela "Detalhes da dívida".', 500);
         }
     }
+
+    /**
+     * GET /api/finance/king-data — Carregar dados Serasa (dividas) + Quem eu devo (terceiros) para sync localhost/site/mobile
+     */
+    async getKingData(req, res) {
+        try {
+            const userId = req.user.userId;
+            const profileId = req.query.profile_id == null ? null : String(req.query.profile_id).trim() || null;
+            const data = await service.getKingData(userId, profileId);
+            return responseFormatter.success(res, data || { dividas: [], terceiros: [] });
+        } catch (error) {
+            logger.error('Erro ao obter king-data:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
+     * PUT /api/finance/king-data — Salvar dados Serasa + Quem eu devo (sincronização)
+     */
+    async saveKingData(req, res) {
+        try {
+            const userId = req.user.userId;
+            const profileId = req.body.profile_id == null ? null : String(req.body.profile_id).trim() || null;
+            const data = req.body.data;
+            const saved = await service.saveKingData(userId, profileId, data);
+            return responseFormatter.success(res, saved, 'Dados sincronizados.');
+        } catch (error) {
+            logger.error('Erro ao salvar king-data:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
 }
 
 module.exports = new FinanceController();

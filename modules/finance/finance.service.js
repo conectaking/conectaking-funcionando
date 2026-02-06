@@ -589,6 +589,16 @@ class FinanceService {
     async listClientesZerarSenhas() {
         return await repository.listClientesZerarSenhas();
     }
+
+    /** Obter dados King sync (dividas Serasa + terceiros Quem eu devo) para sincronização entre dispositivos */
+    async getKingData(userId, profileId = null) {
+        return await repository.getKingSync(userId, profileId);
+    }
+
+    /** Salvar dados King sync (dividas + terceiros) */
+    async saveKingData(userId, profileId, data) {
+        return await repository.saveKingSync(userId, profileId, data);
+    }
 }
 
 module.exports = new FinanceService();

@@ -123,4 +123,8 @@ router.post('/serasa/import-image-preview', uploadImagesMemory.array('files', 50
 router.get('/whatsapp-config', controller.getWhatsAppConfig);
 router.put('/whatsapp-config', controller.updateWhatsAppConfig);
 
+// Sincronização Serasa + Quem eu devo (localhost / site / mobile)
+router.get('/king-data', controller.getKingData);
+router.put('/king-data', controller.saveKingData);
+
 module.exports = router;
