@@ -116,25 +116,34 @@ async function saveCheckoutConfig(userId, profileItemId, data) {
 
 /**
  * Testar conexão PagBank (admin)
+ * No checkout transparente (PAGBANK_PLATFORM_ACCESS_TOKEN definido), basta o ID do vendedor; o token é da plataforma.
  * @param {object} [overrides] - opcional: { pagbank_access_token, pagbank_seller_id } para testar antes de salvar
  */
 async function testConnection(userId, profileItemId, overrides) {
   const config = await getCheckoutConfig(profileItemId);
   if (!config) throw new Error('Formulário não encontrado');
-  let sellerId = overrides?.pagbank_seller_id || config.pagbank_seller_id;
+  let sellerId = (overrides?.pagbank_seller_id || config.pagbank_seller_id || '').trim();
   let token = null;
   if (overrides?.pagbank_access_token) {
-    token = overrides.pagbank_access_token;
+    token = (overrides.pagbank_access_token || '').trim();
   } else {
-    const tokenRow = await db.query(
-      'SELECT pagbank_access_token_encrypted FROM form_checkout_configs WHERE profile_item_id = $1',
-      [profileItemId]
-    );
-    const encrypted = tokenRow.rows[0]?.pagbank_access_token_encrypted;
-    if (encrypted) token = decrypt(encrypted, ENCRYPTION_KEY);
+    const platformToken = (process.env.PAGBANK_PLATFORM_ACCESS_TOKEN || '').trim();
+    if (platformToken) {
+      token = platformToken;
+    } else {
+      const tokenRow = await db.query(
+        'SELECT pagbank_access_token_encrypted FROM form_checkout_configs WHERE profile_item_id = $1',
+        [profileItemId]
+      );
+      const encrypted = tokenRow.rows[0]?.pagbank_access_token_encrypted;
+      if (encrypted) token = decrypt(encrypted, ENCRYPTION_KEY);
+    }
   }
-  if (!sellerId || !token) {
-    return { ok: false, message: 'Configure Seller ID e Token antes de testar (ou preencha os campos e clique em Testar)' };
+  if (!sellerId) {
+    return { ok: false, message: 'Configure o Identificador para marketplace antes de testar (PagBank → Vendas → Plataformas e Checkout).' };
+  }
+  if (!token) {
+    return { ok: false, message: 'Configure o token (plataforma no servidor ou token do vendedor no formulário) antes de testar.' };
   }
   return pagbank.testConnection(sellerId, token);
 }
@@ -158,6 +167,8 @@ async function getSubmission(submissionId) {
 
 /**
  * Criar cobrança (Pix ou cartão) - chamado pela página de checkout
+ * Checkout transparente: usa token da PLATAFORMA (seu PagBank) e só o ID do vendedor no formulário.
+ * Split: 10% plataforma, 90% para o vendedor (conta indicada pelo ID).
  * Retorna { success, chargeId, orderId, qrCode?, qrCodeText?, paid? } ou { success: false, error }
  */
 async function createCharge(submissionId, method, options = {}) {
@@ -168,18 +179,26 @@ async function createCharge(submissionId, method, options = {}) {
   const amountCents = submission.price_cents;
   if (!amountCents || amountCents < 1) return { success: false, error: 'Valor não configurado' };
 
-  const tokenRow = await db.query(
-    'SELECT pagbank_access_token_encrypted FROM form_checkout_configs WHERE profile_item_id = $1',
+  const configRow = await db.query(
+    'SELECT pagbank_seller_id, pagbank_access_token_encrypted FROM form_checkout_configs WHERE profile_item_id = $1',
     [submission.profile_item_id]
   );
-  const encrypted = tokenRow.rows[0]?.pagbank_access_token_encrypted;
-  if (!encrypted) return { success: false, error: 'Configuração PagBank não encontrada' };
-  const accessToken = decrypt(encrypted, ENCRYPTION_KEY);
-  const sellerId = (await db.query(
-    'SELECT pagbank_seller_id FROM form_checkout_configs WHERE profile_item_id = $1',
-    [submission.profile_item_id]
-  )).rows[0]?.pagbank_seller_id;
-  if (!sellerId) return { success: false, error: 'Seller ID não configurado' };
+  const row = configRow.rows[0];
+  if (!row) return { success: false, error: 'Configuração PagBank não encontrada' };
+
+  const sellerId = (row.pagbank_seller_id || '').trim();
+  if (!sellerId) return { success: false, error: 'Identificador para marketplace não configurado. Configure na aba Checkout (PagBank → Vendas → Plataformas e Checkout).' };
+
+  // Checkout transparente: token da plataforma (seu PagBank). O vendedor só informa o ID; 10% vem pra você, 90% vai pra conta dele.
+  const platformToken = (process.env.PAGBANK_PLATFORM_ACCESS_TOKEN || '').trim();
+  let accessToken;
+  if (platformToken) {
+    accessToken = platformToken;
+  } else {
+    const encrypted = row.pagbank_access_token_encrypted;
+    if (!encrypted) return { success: false, error: 'Configure o token da plataforma (PAGBANK_PLATFORM_ACCESS_TOKEN) no servidor ou o token do vendedor no formulário.' };
+    accessToken = decrypt(encrypted, ENCRYPTION_KEY);
+  }
 
   const notificationUrl = process.env.PAGBANK_WEBHOOK_BASE_URL
     ? `${process.env.PAGBANK_WEBHOOK_BASE_URL.replace(/\/$/, '')}/api/webhooks/pagbank`

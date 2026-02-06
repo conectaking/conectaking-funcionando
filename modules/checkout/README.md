@@ -21,7 +21,7 @@ Módulo **isolado** de checkout para formulários King Forms. Toda a lógica de 
 | GET | /api/checkout/config/:itemId | Admin | Obter config do formulário |
 | PUT | /api/checkout/config/:itemId | Admin | Salvar config (toggle, preço, PagBank) |
 | POST | /api/checkout/test-connection | Admin | Testar credenciais PagBank |
-| POST | /api/webhooks/pagbank | PagBank | Webhook de notificação de pagamento |
+| POST | /api/webhooks/pagbank | PagBank | Notificação de pagamento (aceita JSON com assinatura ou urlencoded legacy com notificationCode) |
 
 ## Integração com o core
 
@@ -33,6 +33,11 @@ Módulo **isolado** de checkout para formulários King Forms. Toda a lógica de 
 ## Migrations
 
 - `155_add_checkout_module_tables.sql` – tabelas e campos do checkout (form_checkout_configs, campos em digital_form_responses e digital_form_items).
+
+## Notificação de pagamento (dois fluxos)
+
+- **Notificação de transação** (Vendas → Integrações): POST `application/x-www-form-urlencoded` com `notificationCode` e `notificationType=transaction`. Não tem secret; o código consulta a API do PagBank (GET .../v3/transactions/notifications/{code}) com `PAGBANK_EMAIL` e `PAGBANK_TOKEN` e confirma status/referência antes de atualizar.
+- **Webhook moderno** (dev.pagbank.com.br): POST JSON com assinatura; exige `PAGBANK_WEBHOOK_SECRET`.
 
 ## Setup manual
 

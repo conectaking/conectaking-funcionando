@@ -12,18 +12,34 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 
 ---
 
-## 2) Onde pegar token e credenciais no PagBank
+## 2) Modelo Marketplace / Split (KingForms como intermediador)
 
-- Faça login no **Painel do vendedor** (PagBank Empresas / API).
-- **Seller ID (ou Client ID):** em geral em “Minha conta” / “Integrações” / “API” – é o identificador da sua conta como recebedor.
-- **Access Token (ou Client Secret):** gerado na mesma área (ex.: “Chaves de API” ou “Credenciais OAuth”). Use o token que permite **criar cobranças** e **receber webhooks**.
-- **Passo a passo por menus:** como os menus mudam, consulte a documentação oficial atual:
-  - [PagBank Desenvolvedores](https://dev.pagbank.com.br) ou equivalente.
-  - Procure por “OAuth”, “Chaves de API”, “Credenciais” ou “Integração”.
+O KingForms funciona como **vendedor primário (plataforma)**. Cada cliente (seller) que usa o checkout **não precisa passar token** — só o **Identificador para marketplace**.
+
+- **Você (plataforma):** usa **seu** token e **seu** Account ID no servidor (`.env`). A cobrança é criada na sua integração e o PagBank aplica o **split**: 10% para sua conta, 90% para o recebedor (seller).
+- **Cada vendedor (seu cliente):** no formulário, preenche apenas o **Identificador para marketplace** (Account ID). Ele pega em: **PagBank → Vendas → Plataformas e Checkout → Identificador para marketplace**.
+
+Assim o dinheiro é dividido na hora: 10% para você, 90% para a conta do vendedor, sem repasse manual.
 
 ---
 
-## 3) Registrar webhook no PagBank
+## 3) Onde pegar token e credenciais no PagBank
+
+**Para a plataforma (sua conta):**
+
+- Faça login no **Painel PagBank** (conta da plataforma).
+- **Token:** em “Configurações” / “Integrações” / “Token de Segurança” (ou equivalente). Esse token vai em `PAGBANK_PLATFORM_ACCESS_TOKEN`.
+- **Account ID (para receber os 10%):** em “Plataformas e Checkout” ou “Integrações”. Esse ID vai em `PAGBANK_PLATFORM_ACCOUNT_ID`.
+
+**Para cada vendedor (seu cliente):**
+
+- O vendedor acessa o **painel dele** no PagBank.
+- Vai em **Vendas → Plataformas e Checkout → Identificador para marketplace**.
+- Copia o **Identificador para marketplace** (Account ID) e coloca no Checkout do formulário no KingForms. **Não precisa passar token.**
+
+---
+
+## 4) Registrar webhook no PagBank
 
 - No painel PagBank, abra a seção de **Webhooks** ou **Notificações**.
 - **URL do webhook:**  
@@ -35,7 +51,7 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 
 ---
 
-## 4) Migration (só uma vez)
+## 5) Migration (só uma vez)
 
 - **Migration 155** – estrutura principal do checkout (tabelas, colunas, enum):
   - Rodar uma vez no banco. Se usar auto-migrate, ao subir o servidor a 155 roda automaticamente.
@@ -44,15 +60,46 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
   - Rodar uma vez. Arquivo: `migrations/156_add_checkout_page_personalization.sql`.
 - Depois disso, não é necessário rodar nenhuma migration nova para as funcionalidades atuais de checkout.
 
-## 5) Variáveis de ambiente no servidor (Render / VPS / Docker)
+## 6) Variáveis de ambiente no servidor (Render / VPS / Docker)
+
+Há **dois tipos** de notificação PagBank; use as variáveis do fluxo que você configurou.
+
+### A) Notificação de transação (Vendas → Integrações → Notificação de transação)
+
+Esse recurso **não gera webhook secret** e envia um POST simples (`notificationCode` + `notificationType`). O código valida consultando a API do PagBank.
 
 | Variável | Obrigatória | Descrição |
 |----------|-------------|-----------|
-| `PAGBANK_WEBHOOK_SECRET` | Sim (para webhook) | Secret configurado no painel PagBank para validar a assinatura do webhook. |
-| `PAGBANK_WEBHOOK_BASE_URL` | Recomendado | URL base do seu backend (ex.: `https://conectaking-api.onrender.com`) para o PagBank chamar o webhook. |
-| `PAGBANK_PLATFORM_ACCOUNT_ID` | Para split 10% | ID da sua conta PagBank (plataforma) para receber os 10%. Se não definir, o split vai 100% para o vendedor. |
-| `PAGBANK_API_BASE_URL` | Opcional | Para sandbox use `https://sandbox.api.pagseguro.com`; produção usa o padrão da API PagBank. |
-| `CHECKOUT_ENCRYPTION_KEY` | Recomendado | Chave para criptografar o token PagBank no banco. Se não definir, o código usa `JWT_SECRET`. |
+| `PAGBANK_EMAIL` | Sim | E-mail da conta PagBank (credencial para consultar a notificação). |
+| `PAGBANK_TOKEN` | Sim | Token da conta (painel PagBank → Configurações → Token de Segurança). |
+| `PAGBANK_WEBHOOK_BASE_URL` | Recomendado | URL base do backend para o PagBank chamar a URL de notificação. |
+| `PAGBANK_LEGACY_API_URL` | Opcional | Para consulta da notificação. Sandbox: `https://ws.sandbox.pagseguro.uol.com.br`; produção: `https://ws.pagseguro.uol.com.br`. |
+| `PAGBANK_WEBHOOK_SECRET` | **Não usar** | Não existe nesse fluxo; não defina. |
+
+### B) Webhook moderno (dev.pagbank.com.br — App com assinatura HMAC)
+
+Só use se você criou um App em **dev.pagbank.com.br** e registrou um webhook com secret.
+
+| Variável | Obrigatória | Descrição |
+|----------|-------------|-----------|
+| `PAGBANK_WEBHOOK_SECRET` | Sim | Secret do webhook gerado no painel de desenvolvedor. |
+| `PAGBANK_WEBHOOK_BASE_URL` | Recomendado | URL base do backend. |
+
+### C) Checkout transparente / Marketplace (split 10% / 90%)
+
+Com essas variáveis, **seus clientes** só configuram o **Identificador para marketplace** no formulário (pegam em **Vendas → Plataformas e Checkout → Identificador para marketplace**). O token é da **sua** conta (plataforma). Split: 10% para você, 90% para o recebedor (Account ID do vendedor).
+
+| Variável | Obrigatória | Descrição |
+|----------|-------------|-----------|
+| `PAGBANK_PLATFORM_ACCESS_TOKEN` | Sim (para esse modo) | Token da **sua** conta PagBank (plataforma). Usado para criar a cobrança. |
+| `PAGBANK_PLATFORM_ACCOUNT_ID` | Sim (para receber 10%) | ID da conta que recebe os 10% do split (geralmente a mesma do token). |
+
+### Comuns a todos
+
+| Variável | Descrição |
+|----------|-----------|
+| `PAGBANK_API_BASE_URL` | Opcional. Sandbox: `https://sandbox.api.pagseguro.com`. |
+| `CHECKOUT_ENCRYPTION_KEY` | Opcional. Criptografia do token no banco; senão usa `JWT_SECRET`. |
 
 - No **Render:** Environment → Add Variable.  
 - Em **VPS/Docker:** defina no `.env` ou no processo que inicia a aplicação.
@@ -61,14 +108,14 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 
 ---
 
-## 6) Testar em sandbox / homologação (se aplicável)
+## 7) Testar em sandbox / homologação (se aplicável)
 
 - Use as credenciais de **homologação** do PagBank no formulário (Seller ID e Token de teste).
 - Crie uma submissão com checkout ativo, gere uma cobrança Pix ou cartão de teste e confira se o webhook é chamado e se o status da submissão muda para “Pago” no painel.
 
 ---
 
-## 7) Fluxo de teste completo
+## 8) Fluxo de teste completo
 
 1. **Criar submissão pendente:** ative o checkout em um formulário, preencha e envie; a submissão deve ficar com status “Pagamento pendente” e redirecionar para a página de checkout.
 2. **Gerar cobrança Pix:** na página de checkout, escolha “Pague com Pix”; deve aparecer QR Code (ou link) e o status “Pagamento pendente”.
@@ -77,27 +124,28 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 
 ---
 
-## 8) Checklist de troubleshooting
+## 9) Checklist de troubleshooting
 
 | Problema | O que verificar |
 |----------|------------------|
 | Webhook não chega | URL correta no painel PagBank; servidor acessível pela internet; firewall não bloqueia POST. |
 | CORS / redirect | CORS é para o front; webhook é chamado pelo servidor PagBank. Se o redirect após pagamento falhar, confira a URL de retorno configurada no checkout. |
-| Assinatura inválida | `PAGBANK_WEBHOOK_SECRET` igual ao do painel; body do webhook recebido sem alteração (usar raw body para validação, se a doc pedir). |
+| Assinatura inválida | Só no webhook de dev.pagbank.com.br: `PAGBANK_WEBHOOK_SECRET` igual ao do painel. No fluxo "Notificação de transação" não há secret. |
+| Notificação legada não atualiza status | Conferir `PAGBANK_EMAIL` e `PAGBANK_TOKEN`; a consulta à API legada usa essas credenciais. Conferir se o `<reference>` na resposta da API corresponde ao ID da submissão. |
 | Split não aplicando | Conferir na documentação PagBank como enviar split (recebedor principal + recebedor secundário); no código, 10% plataforma e 90% vendedor. |
 
 **Regra do split:** Os **10% são da plataforma (sua conta)** — valor líquido, sem dedução das taxas do PagBank. Os **90% vão para o vendedor** (conta de quem configurou o formulário); as taxas e comissões do PagBank são descontadas conforme o contrato deles (sobre o total ou sobre a parte do vendedor). Ou seja: seu 10% é livre; o vendedor recebe os 90% já descontadas as taxas do PagBank.
 
 ---
 
-## 9) O que é manual vs automatizado
+## 10) O que é manual vs automatizado
 
 | Ação | Manual / Automático |
 |------|----------------------|
 | Criar conta PagBank | **Manual** |
 | Copiar Seller ID e Token no painel | **Manual** |
 | Cadastrar URL e secret do webhook no PagBank | **Manual** |
-| Definir `PAGBANK_WEBHOOK_SECRET` e `CHECKOUT_ENCRYPTION_KEY` no servidor | **Manual** |
+| Definir `PAGBANK_EMAIL` e `PAGBANK_TOKEN` (Notificação de transação) ou `PAGBANK_WEBHOOK_SECRET` (webhook dev.pagbank.com.br) | **Manual** |
 | Preencher “Seller ID” e “Token” na aba Checkout do formulário (admin) | **Manual** (pelo usuário no painel) |
 | Criptografar e salvar o token no banco | **Automático** (código) |
 | Testar conexão (botão “Testar conexão”) | **Automático** (chama API PagBank) |
@@ -107,7 +155,7 @@ Este guia descreve **o que é manual** (conta PagBank, webhook, ENV) e **o que o
 
 ---
 
-## 10) Resumo: migration, instalação e melhorias
+## 11) Resumo: migration, instalação e melhorias
 
 | Pergunta | Resposta |
 |----------|----------|
