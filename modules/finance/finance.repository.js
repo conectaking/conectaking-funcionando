@@ -926,6 +926,44 @@ class FinanceRepository {
             client.release();
         }
     }
+
+    /**
+     * Obter dados King sync (dividas + terceiros) para usuário/perfil
+     */
+    async getKingSync(userId, profileId = null) {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                'SELECT data FROM finance_king_sync WHERE user_id = $1 AND (($2::text IS NULL AND profile_id IS NULL) OR profile_id = $2) LIMIT 1',
+                [userId, profileId || null]
+            );
+            if (result.rows.length === 0) return null;
+            return result.rows[0].data;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Salvar dados King sync (dividas + terceiros)
+     */
+    async saveKingSync(userId, profileId, data) {
+        const client = await db.pool.connect();
+        try {
+            const safeData = typeof data === 'object' ? data : { dividas: [], terceiros: [] };
+            if (!Array.isArray(safeData.dividas)) safeData.dividas = [];
+            if (!Array.isArray(safeData.terceiros)) safeData.terceiros = [];
+            await client.query(
+                `INSERT INTO finance_king_sync (user_id, profile_id, data, updated_at)
+                 VALUES ($1, $2, $3::jsonb, NOW())
+                 ON CONFLICT (user_id, profile_id) DO UPDATE SET data = $3::jsonb, updated_at = NOW()`,
+                [userId, profileId || null, JSON.stringify(safeData)]
+            );
+            return safeData;
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = new FinanceRepository();
