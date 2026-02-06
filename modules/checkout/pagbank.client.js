@@ -9,6 +9,8 @@ const logger = require('../../utils/logger');
 const { SPLIT_PLATFORM_PERCENT, SPLIT_SELLER_PERCENT } = require('./checkout.types');
 
 const BASE_URL = process.env.PAGBANK_API_BASE_URL || 'https://sandbox.api.pagseguro.com';
+// API legada para consultar notificação (Notificação de transação - painel comercial)
+const LEGACY_BASE_URL = process.env.PAGBANK_LEGACY_API_URL || 'https://ws.sandbox.pagseguro.uol.com.br';
 
 /**
  * Chamada HTTP à API PagBank (Bearer token)
@@ -316,7 +318,7 @@ async function createCharge(params) {
 }
 
 /**
- * Verificar assinatura do webhook PagBank
+ * Verificar assinatura do webhook PagBank (só existe no webhook moderno de dev.pagbank.com.br)
  * Header: x-authenticity-token = SHA256(secret + '-' + payload)
  */
 function verifyWebhookSignature(payload, signature, secret) {
@@ -327,9 +329,52 @@ function verifyWebhookSignature(payload, signature, secret) {
   return crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(hash, 'hex'));
 }
 
+/**
+ * Consultar transação pela notificação legada (Notificação de transação - painel comercial)
+ * GET .../v3/transactions/notifications/{notificationCode}?email=...&token=...
+ * Resposta XML: <reference>, <status> (1=aguardando, 2=em análise, 3=paga, 7=cancelada, etc.)
+ * Não usa Bearer; usa email + token na query (credenciais da conta).
+ */
+async function getTransactionByNotificationCode(notificationCode) {
+  const email = process.env.PAGBANK_EMAIL || '';
+  const token = process.env.PAGBANK_TOKEN || '';
+  if (!notificationCode || !email || !token) {
+    return { success: false, error: 'notificationCode, PAGBANK_EMAIL e PAGBANK_TOKEN são obrigatórios para consulta legada' };
+  }
+  const url = `${LEGACY_BASE_URL}/v3/transactions/notifications/${encodeURIComponent(notificationCode)}?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`;
+  try {
+    const res = await fetch(url, { method: 'GET', headers: { Accept: 'application/xml' } });
+    const text = await res.text();
+    if (!res.ok) {
+      logger.warn('[Checkout] PagBank legacy notification consult error', { status: res.status, notificationCode });
+      return { success: false, error: `PagBank API ${res.status}` };
+    }
+    const reference = (text.match(/<reference>([^<]*)<\/reference>/i) || [])[1];
+    const statusStr = (text.match(/<status>([^<]*)<\/status>/i) || [])[1];
+    const status = statusStr ? parseInt(statusStr, 10) : null;
+    return { success: true, reference: (reference || '').trim(), status };
+  } catch (e) {
+    logger.warn('[Checkout] PagBank legacy consult exception', { message: e.message });
+    return { success: false, error: e.message || 'Falha ao consultar notificação' };
+  }
+}
+
+/**
+ * Mapear status numérico da API legada para nosso status
+ * 1=aguardando, 2=em análise, 3=paga, 4=disponível, 5=em disputa, 6=devolvida, 7=cancelada, 8=debitado, 9=retenção
+ */
+function legacyStatusToPaymentStatus(legacyStatus) {
+  if (legacyStatus === 3 || legacyStatus === 4) return 'PAID';
+  if (legacyStatus === 7 || legacyStatus === 8) return 'CANCELED';
+  if (legacyStatus === 5 || legacyStatus === 6 || legacyStatus === 9) return 'FAILED';
+  return null;
+}
+
 module.exports = {
   testConnection,
   createCharge,
   verifyWebhookSignature,
-  apiRequest
+  apiRequest,
+  getTransactionByNotificationCode,
+  legacyStatusToPaymentStatus
 };

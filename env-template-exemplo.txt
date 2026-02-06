@@ -98,6 +98,16 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 # GOOGLE_REDIRECT_URI_CLIENT=https://conectaking-api.onrender.com/api/oauth/agenda/google/client/callback
 
 # ============================================
+# CHECKOUT KINGFORMS (PagBank) - opcional
+# ============================================
+# PAGBANK_API_BASE_URL=https://sandbox.api.pagseguro.com
+# PAGBANK_WEBHOOK_BASE_URL=https://seu-backend.com
+# PUBLIC_APP_URL=https://seu-backend.com
+# PAGBANK_WEBHOOK_SECRET=secret_do_painel_pagbank
+# PAGBANK_PLATFORM_ACCOUNT_ID=
+# CHECKOUT_ENCRYPTION_KEY=
+
+# ============================================
 # CONFIGURAÇÕES AVANÇADAS (opcional)
 # ============================================
 # DB_POOL_MAX=20

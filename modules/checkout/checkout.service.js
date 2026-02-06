@@ -232,14 +232,58 @@ async function createCharge(submissionId, method, options = {}) {
 
 /**
  * Processar webhook PagBank (idempotente: mesmo evento 2x não duplica)
- * @param {object} payload - payload já parseado (para lógica)
- * @param {string} rawBody - body bruto para assinatura (token-{rawBody})
- * @param {string} signature - header x-authenticity-token
+ * Suporta dois fluxos:
+ * 1) Notificação de transação (painel comercial): POST urlencoded com notificationCode + notificationType.
+ *    Não tem secret; validamos consultando a API do PagBank e confirmando status/valor/referência.
+ * 2) Webhook moderno (dev.pagbank.com.br): POST JSON com assinatura; PAGBANK_WEBHOOK_SECRET obrigatório.
+ *
+ * @param {object} payload - payload já parseado (JSON ou { notificationCode, notificationType })
+ * @param {string} rawBody - body bruto (para assinatura no fluxo moderno)
+ * @param {string} signature - header x-authenticity-token (fluxo moderno)
  */
 async function processWebhook(payload, rawBody, signature) {
+  const notificationCode = (payload.notificationCode || payload.notification_code || '').trim();
+  const notificationType = (payload.notificationType || payload.notification_type || '').toLowerCase();
+
+  // —— Fluxo legado: Notificação de transação (sem secret) ——
+  if (notificationCode && notificationType === 'transaction') {
+    const consult = await pagbank.getTransactionByNotificationCode(notificationCode);
+    if (!consult.success) {
+      logger.warn('[Checkout] Legacy notification consult failed', { notificationCode, error: consult.error });
+      return { processed: false, error: consult.error };
+    }
+    const reference = (consult.reference || '').trim();
+    const statusMapped = pagbank.legacyStatusToPaymentStatus(consult.status);
+    if (!reference) {
+      logger.warn('[Checkout] Legacy notification sem reference na resposta', { notificationCode });
+      return { processed: true };
+    }
+    const submissionId = parseInt(String(reference).replace(/^sub-/, ''), 10);
+    if (!submissionId || isNaN(submissionId)) {
+      logger.warn('[Checkout] Legacy notification reference inválido', { reference });
+      return { processed: true };
+    }
+    const existing = await db.query(
+      'SELECT id, payment_status FROM digital_form_responses WHERE id = $1',
+      [submissionId]
+    );
+    if (!existing.rows.length) {
+      logger.warn('[Checkout] Legacy notification reference não encontrado', { submissionId });
+      return { processed: true };
+    }
+    if (statusMapped) {
+      if (existing.rows[0].payment_status === 'PAID' && statusMapped === 'PAID') {
+        return { processed: true };
+      }
+      await updateSubmissionStatus(submissionId, statusMapped);
+    }
+    return { processed: true };
+  }
+
+  // —— Fluxo moderno: webhook com assinatura (dev.pagbank.com.br) ——
   const secret = process.env.PAGBANK_WEBHOOK_SECRET;
   if (!secret) {
-    return { processed: false, error: 'PAGBANK_WEBHOOK_SECRET não configurado' };
+    return { processed: false, error: 'PAGBANK_WEBHOOK_SECRET não configurado (necessário para webhook com assinatura)' };
   }
   if (!rawBody || !pagbank.verifyWebhookSignature(rawBody, signature, secret)) {
     return { processed: false, error: 'Assinatura inválida' };

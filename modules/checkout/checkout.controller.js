@@ -158,16 +158,25 @@ async function saveConfig(req, res) {
 
 /**
  * POST /api/webhooks/pagbank - Webhook PagBank (sem protectUser)
- * req.body é Buffer (raw); assinatura: x-authenticity-token
+ * Aceita: application/json (webhook moderno) ou application/x-www-form-urlencoded (Notificação de transação)
+ * req.body é Buffer (raw); assinatura: x-authenticity-token (só no fluxo moderno)
  */
 async function webhookPagbank(req, res) {
   const signature = (req.headers['x-authenticity-token'] || req.headers['x-pagbank-signature'] || '').trim();
   const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : (typeof req.body === 'string' ? req.body : '');
+  const contentType = (req.headers['content-type'] || '').toLowerCase();
   let payload = {};
-  try {
-    payload = rawBody ? JSON.parse(rawBody) : {};
-  } catch (_) {
-    return res.status(400).json({ error: 'Payload JSON inválido' });
+  if (rawBody) {
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const qs = require('querystring');
+      payload = qs.parse(rawBody);
+    } else {
+      try {
+        payload = JSON.parse(rawBody);
+      } catch (_) {
+        return res.status(400).json({ error: 'Payload JSON inválido' });
+      }
+    }
   }
   const result = await checkoutService.processWebhook(payload, rawBody, signature);
   if (!result.processed && result.error) {

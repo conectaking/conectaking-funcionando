@@ -1,6 +1,9 @@
 /**
  * Rotas de webhook do módulo Checkout (PagBank)
- * Body bruto é necessário para validar assinatura (SHA256 token-payload).
+ * Aceita:
+ * - application/json (webhook moderno com assinatura)
+ * - application/x-www-form-urlencoded (Notificação de transação - painel comercial, sem secret)
+ * Body bruto é capturado para assinatura quando for JSON.
  */
 
 const express = require('express');
@@ -8,7 +11,7 @@ const router = express.Router();
 const controller = require('./checkout.controller');
 const { asyncHandler } = require('../../middleware/errorHandler');
 
-// PagBank: validar assinatura com body bruto (express.raw)
-router.post('/pagbank', express.raw({ type: 'application/json' }), asyncHandler(controller.webhookPagbank));
+// Capturar body bruto para qualquer content-type (JSON ou urlencoded)
+router.post('/pagbank', express.raw({ type: () => true }), asyncHandler(controller.webhookPagbank));
 
 module.exports = router;
