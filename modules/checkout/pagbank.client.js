@@ -52,7 +52,12 @@ async function testConnection(sellerId, accessToken) {
     await apiRequest(accessToken, 'GET', '/orders?limit=1');
     return { ok: true, message: 'Conexão OK' };
   } catch (e) {
-    return { ok: false, message: e.message || 'Falha ao conectar na API PagBank' };
+    const rawMsg = (e && e.message) || 'Falha ao conectar na API PagBank';
+    logger.warn('[Checkout] testConnection failed', { error: rawMsg, sellerId, baseUrl: BASE_URL });
+    const friendlyMsg = /fetch failed|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|network/i.test(rawMsg)
+      ? 'Não foi possível conectar à API PagBank. Verifique: (1) URL da API no servidor (sandbox vs produção), (2) token válido, (3) se o servidor consegue acessar a internet.'
+      : rawMsg;
+    return { ok: false, message: friendlyMsg };
   }
 }
 
