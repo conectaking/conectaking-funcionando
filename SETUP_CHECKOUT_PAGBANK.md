@@ -98,7 +98,7 @@ Com essas variáveis, **seus clientes** só configuram o **Identificador para ma
 
 | Variável | Descrição |
 |----------|-----------|
-| `PAGBANK_API_BASE_URL` | Opcional. Sandbox: `https://sandbox.api.pagseguro.com`. |
+| `PAGBANK_API_BASE_URL` ou `PAGBANK_API_URL` | **Produção:** `https://api.pagseguro.com`. **Sandbox:** `https://sandbox.api.pagseguro.com`. Não use `api.pagbank.com.br` como base — a API de pedidos usa o domínio pagseguro. |
 | `CHECKOUT_ENCRYPTION_KEY` | Opcional. Criptografia do token no banco; senão usa `JWT_SECRET`. |
 
 - No **Render:** Environment → Add Variable.  
@@ -128,6 +128,7 @@ Com essas variáveis, **seus clientes** só configuram o **Identificador para ma
 
 | Problema | O que verificar |
 |----------|------------------|
+| "Não foi possível conectar à API PagBank" / fetch failed | Use **produção:** `PAGBANK_API_URL=https://api.pagseguro.com` ou **sandbox:** `https://sandbox.api.pagseguro.com`. Não use `api.pagbank.com.br` como base. Token deve ser do mesmo ambiente (produção ou sandbox). |
 | Webhook não chega | URL correta no painel PagBank; servidor acessível pela internet; firewall não bloqueia POST. |
 | CORS / redirect | CORS é para o front; webhook é chamado pelo servidor PagBank. Se o redirect após pagamento falhar, confira a URL de retorno configurada no checkout. |
 | Assinatura inválida | Só no webhook de dev.pagbank.com.br: `PAGBANK_WEBHOOK_SECRET` igual ao do painel. No fluxo "Notificação de transação" não há secret. |

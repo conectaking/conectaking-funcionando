@@ -53,10 +53,17 @@ async function testConnection(sellerId, accessToken) {
     return { ok: true, message: 'Conexão OK' };
   } catch (e) {
     const rawMsg = (e && e.message) || 'Falha ao conectar na API PagBank';
-    logger.warn('[Checkout] testConnection failed', { error: rawMsg, sellerId, baseUrl: BASE_URL });
-    const friendlyMsg = /fetch failed|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|network/i.test(rawMsg)
-      ? 'Não foi possível conectar à API PagBank. Verifique: (1) URL da API no servidor (sandbox vs produção), (2) token válido, (3) se o servidor consegue acessar a internet.'
-      : rawMsg;
+    const errCode = e && (e.code || (e.cause && e.cause.code));
+    logger.warn('[Checkout] testConnection failed', {
+      error: rawMsg,
+      code: errCode,
+      sellerId,
+      baseUrl: BASE_URL
+    });
+    let friendlyMsg = rawMsg;
+    if (/fetch failed|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|network/i.test(rawMsg) || errCode) {
+      friendlyMsg = 'Não foi possível conectar à API PagBank. Use no servidor: produção = https://api.pagseguro.com, sandbox = https://sandbox.api.pagseguro.com (não use api.pagbank.com.br como base). Verifique também o token.';
+    }
     return { ok: false, message: friendlyMsg };
   }
 }
