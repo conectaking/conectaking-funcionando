@@ -202,6 +202,21 @@ class FinanceController {
     }
 
     /**
+     * Excluir cartão
+     */
+    async deleteCard(req, res) {
+        try {
+            const userId = req.user.userId;
+            const cardId = req.params.id;
+            await service.deleteCard(userId, cardId);
+            return responseFormatter.success(res, null, 'Cartão excluído com sucesso');
+        } catch (error) {
+            logger.error('Erro ao excluir cartão:', error);
+            return responseFormatter.error(res, error.message, error.message === 'Cartão não encontrado ou já excluído.' ? 404 : 500);
+        }
+    }
+
+    /**
      * Listar orçamentos
      */
     async getBudgets(req, res) {

@@ -76,6 +76,7 @@ router.post('/accounts', controller.createAccount);
 // Cartões
 router.get('/cards', controller.getCards);
 router.post('/cards', controller.createCard);
+router.delete('/cards/:id', controller.deleteCard);
 
 // Orçamentos
 router.get('/budgets', controller.getBudgets);

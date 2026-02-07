@@ -319,6 +319,17 @@ class FinanceService {
     }
 
     /**
+     * Excluir cartão
+     */
+    async deleteCard(userId, id) {
+        const card = await repository.deleteCard(id, userId);
+        if (!card) {
+            throw new Error('Cartão não encontrado ou já excluído.');
+        }
+        return card;
+    }
+
+    /**
      * Criar orçamento
      */
     async createBudget(userId, data) {

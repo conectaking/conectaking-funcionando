@@ -401,6 +401,22 @@ class FinanceRepository {
     }
 
     /**
+     * Excluir cartão (soft delete: is_active = false)
+     */
+    async deleteCard(id, userId) {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                'UPDATE finance_cards SET is_active = false, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *',
+                [id, userId]
+            );
+            return result.rows[0] || null;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
      * Criar orçamento
      */
     async createBudget(data) {
