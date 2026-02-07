@@ -41,16 +41,25 @@ async function apiRequest(accessToken, method, path, body = null) {
   return data;
 }
 
+/** Formato esperado do Identificador para marketplace: ACCO_ + UUID (ex.: ACCO_1767887E-EDDE-4E90-8C97-E6096E4A60B3) */
+const MARKETPLACE_ID_REGEX = /^ACCO_[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
+
 /**
- * Testar conexão: valida se credenciais estão preenchidas.
- * A API PagBank não expõe um endpoint de listagem de pedidos que funcione como "ping"
- * (GET /orders retorna 400 por parâmetros inválidos). A validação real ocorre ao criar a primeira cobrança.
+ * Testar conexão: valida formato do identificador e se as credenciais estão preenchidas.
+ * A API PagBank não expõe um endpoint para validar o ID; a validação real ocorre ao criar a primeira cobrança.
  */
 async function testConnection(sellerId, accessToken) {
   if (!sellerId || !accessToken) {
     return { ok: false, message: 'Credenciais incompletas. Preencha o Identificador para marketplace e use o token da plataforma (servidor) ou informe um token.' };
   }
-  return { ok: true, message: 'Credenciais configuradas. A conexão com a API será validada ao gerar a primeira cobrança (Pix ou cartão).' };
+  const trimmed = String(sellerId).trim();
+  if (!MARKETPLACE_ID_REGEX.test(trimmed)) {
+    return {
+      ok: false,
+      message: 'Identificador para marketplace inválido. Copie no PagBank (Vendas → Plataformas e Checkout). Formato: ACCO_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+    };
+  }
+  return { ok: true, message: 'Identificador no formato correto. A conexão com a API será validada ao gerar a primeira cobrança (Pix ou cartão).' };
 }
 
 /**
