@@ -42,30 +42,15 @@ async function apiRequest(accessToken, method, path, body = null) {
 }
 
 /**
- * Testar conexão: valida token com GET /orders (sem query; a API não aceita limit/charge_id).
+ * Testar conexão: valida se credenciais estão preenchidas.
+ * A API PagBank não expõe um endpoint de listagem de pedidos que funcione como "ping"
+ * (GET /orders retorna 400 por parâmetros inválidos). A validação real ocorre ao criar a primeira cobrança.
  */
 async function testConnection(sellerId, accessToken) {
   if (!sellerId || !accessToken) {
-    return { ok: false, message: 'Credenciais incompletas' };
+    return { ok: false, message: 'Credenciais incompletas. Preencha o Identificador para marketplace e use o token da plataforma (servidor) ou informe um token.' };
   }
-  try {
-    await apiRequest(accessToken, 'GET', '/orders');
-    return { ok: true, message: 'Conexão OK' };
-  } catch (e) {
-    const rawMsg = (e && e.message) || 'Falha ao conectar na API PagBank';
-    const errCode = e && (e.code || (e.cause && e.cause.code));
-    logger.warn('[Checkout] testConnection failed', {
-      error: rawMsg,
-      code: errCode,
-      sellerId,
-      baseUrl: BASE_URL
-    });
-    let friendlyMsg = rawMsg;
-    if (/fetch failed|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|network/i.test(rawMsg) || errCode) {
-      friendlyMsg = 'Não foi possível conectar à API PagBank. Use no servidor: produção = https://api.pagseguro.com, sandbox = https://sandbox.api.pagseguro.com (não use api.pagbank.com.br como base). Verifique também o token.';
-    }
-    return { ok: false, message: friendlyMsg };
-  }
+  return { ok: true, message: 'Credenciais configuradas. A conexão com a API será validada ao gerar a primeira cobrança (Pix ou cartão).' };
 }
 
 /**
