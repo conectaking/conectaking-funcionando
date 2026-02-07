@@ -42,14 +42,14 @@ async function apiRequest(accessToken, method, path, body = null) {
 }
 
 /**
- * Testar conexão (GET orders com limit 1)
+ * Testar conexão: valida token com GET /orders (sem query; a API não aceita limit/charge_id).
  */
 async function testConnection(sellerId, accessToken) {
   if (!sellerId || !accessToken) {
     return { ok: false, message: 'Credenciais incompletas' };
   }
   try {
-    await apiRequest(accessToken, 'GET', '/orders?limit=1');
+    await apiRequest(accessToken, 'GET', '/orders');
     return { ok: true, message: 'Conexão OK' };
   } catch (e) {
     const rawMsg = (e && e.message) || 'Falha ao conectar na API PagBank';
