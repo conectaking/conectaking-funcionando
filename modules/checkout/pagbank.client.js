@@ -35,8 +35,16 @@ async function apiRequest(accessToken, method, path, body = null) {
     data = null;
   }
   if (!res.ok) {
-    logger.warn('[Checkout] PagBank API error', { status: res.status, path, message: data?.error_description || data?.message || text });
-    throw new Error(data?.error_description || data?.message || `PagBank API ${res.status}: ${text.substring(0, 200)}`);
+    const rawMsg = data?.error_description || data?.message || text;
+    logger.warn('[Checkout] PagBank API error', { status: res.status, path, message: rawMsg });
+    if (res.status === 403) {
+      const errMessages = data?.error_messages || [];
+      const hasWhitelist = /whitelist|ACCESS_DENIED/i.test(text) || errMessages.some(m => /whitelist|ACCESS_DENIED/i.test(m.description || m.code || ''));
+      if (hasWhitelist) {
+        throw new Error('Sua conta PagBank ainda não está liberada para usar a API de pedidos com split. Entre em contato com o PagBank/PagSeguro e solicite a liberação (whitelist) da API de pedidos para sua aplicação.');
+      }
+    }
+    throw new Error(rawMsg || `PagBank API ${res.status}: ${text.substring(0, 200)}`);
   }
   return data;
 }
@@ -45,8 +53,8 @@ async function apiRequest(accessToken, method, path, body = null) {
 const MARKETPLACE_ID_REGEX = /^ACCO_[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
 
 /**
- * Testar conexão: valida formato do identificador e se as credenciais estão preenchidas.
- * A API PagBank não expõe um endpoint para validar o ID; a validação real ocorre ao criar a primeira cobrança.
+ * Testar conexão: valida formato do ID e testa de fato a API (cria um pedido PIX de 1 centavo).
+ * Se a conta não estiver liberada (whitelist), retorna erro claro; se der certo, conexão OK.
  */
 async function testConnection(sellerId, accessToken) {
   if (!sellerId || !accessToken) {
@@ -59,7 +67,27 @@ async function testConnection(sellerId, accessToken) {
       message: 'Identificador para marketplace inválido. Copie no PagBank (Vendas → Plataformas e Checkout). Formato: ACCO_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
     };
   }
-  return { ok: true, message: 'Identificador no formato correto. A conexão com a API será validada ao gerar a primeira cobrança (Pix ou cartão).' };
+  try {
+    await createOrderPix(accessToken, {
+      amountCents: 1,
+      referenceId: 'test-connection-' + Date.now(),
+      customerName: 'Teste Conexão',
+      customerEmail: 'teste@conectaking.com.br',
+      platformAccountId: process.env.PAGBANK_PLATFORM_ACCOUNT_ID || null,
+      sellerAccountId: trimmed,
+      notificationUrl: null
+    });
+    return { ok: true, message: 'Conexão com a API PagBank OK. Conta liberada para criar cobranças (Pix e cartão).' };
+  } catch (e) {
+    const msg = (e && e.message) || '';
+    if (/whitelist|liberada para usar a API|403/i.test(msg)) {
+      return { ok: false, message: 'Sua conta PagBank ainda não está liberada para a API de pedidos com split. Entre em contato com o PagBank/PagSeguro e solicite a liberação (whitelist) da API de pedidos para sua aplicação.' };
+    }
+    if (/401|unauthorized|token inválido|expirado/i.test(msg)) {
+      return { ok: false, message: 'Token inválido ou expirado. Verifique o token da plataforma no servidor (PAGBANK_TOKEN / PAGBANK_PLATFORM_ACCESS_TOKEN).' };
+    }
+    return { ok: false, message: msg || 'Falha ao testar conexão com a API PagBank.' };
+  }
 }
 
 /**

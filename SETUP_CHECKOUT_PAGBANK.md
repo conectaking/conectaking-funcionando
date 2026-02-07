@@ -129,6 +129,7 @@ Com essas variáveis, **seus clientes** só configuram o **Identificador para ma
 | Problema | O que verificar |
 |----------|------------------|
 | "Não foi possível conectar à API PagBank" / fetch failed | Use **produção:** `PAGBANK_API_URL=https://api.pagseguro.com` ou **sandbox:** `https://sandbox.api.pagseguro.com`. Não use `api.pagbank.com.br` como base. Token deve ser do mesmo ambiente (produção ou sandbox). |
+| **403 ACCESS_DENIED / whitelist** ao gerar Pix ou cartão | A conta PagBank ainda não está liberada para a API de pedidos com split. É necessário solicitar ao **PagBank/PagSeguro** a liberação (whitelist) da API de pedidos para sua aplicação/conta. Entre em contato com o suporte PagBank. |
 | Webhook não chega | URL correta no painel PagBank; servidor acessível pela internet; firewall não bloqueia POST. |
 | CORS / redirect | CORS é para o front; webhook é chamado pelo servidor PagBank. Se o redirect após pagamento falhar, confira a URL de retorno configurada no checkout. |
 | Assinatura inválida | Só no webhook de dev.pagbank.com.br: `PAGBANK_WEBHOOK_SECRET` igual ao do painel. No fluxo "Notificação de transação" não há secret. |
