@@ -644,14 +644,18 @@ class FinanceRepository {
                 balanceVariation = currentMonthBalance > 0 ? 100 : -100;
             }
 
+            // Receitas e despesas mensais = TODAS do mês (pagas + pendentes), conforme solicitado pelo usuário
+            const totalIncomeAll = totalIncomePaid + totalIncomePending;
+            const totalExpenseAll = totalExpensePaid + totalExpensePending;
+
             return {
-                totalIncome: totalIncomePaid,
-                totalExpense: totalExpensePaid,
+                totalIncome: totalIncomeAll,
+                totalExpense: totalExpenseAll,
                 pendingExpense: totalExpensePending,
                 pendingExpensePreviousMonths: totalExpensePendingPreviousMonths,
                 pendingIncome: totalIncomePending,
                 accountBalance: accountBalanceAccumulated, // Saldo disponível acumulado (permanente)
-                monthlyBalance: totalIncomePaid - totalExpensePaid, // Saldo total do mês
+                monthlyBalance: totalIncomeAll - totalExpenseAll, // Saldo total do mês (todas as receitas - todas as despesas)
                 netProfit: totalIncomePaid - totalExpensePaid,
                 balanceVariation: balanceVariation, // Variação percentual em relação ao mês anterior
                 topCategories: topCategoriesResult.rows
