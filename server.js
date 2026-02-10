@@ -794,6 +794,8 @@ const financeRoutes = require('./routes/finance.routes');
 app.use('/api/finance', apiLimiter, financeRoutes);
 const agendaRoutes = require('./routes/agenda.routes');
 app.use('/api/agenda', apiLimiter, agendaRoutes);
+const conviteRoutes = require('./modules/convite/convite.routes');
+app.use('/api/convite', apiLimiter, conviteRoutes);
 // IMPORTANTE: cadastroLinksRoutes deve vir ANTES de guestListRoutes para que rotas específicas como /:id/cadastro-links sejam processadas antes da rota genérica /:id
 app.use('/api/guest-lists', apiLimiter, cadastroLinksRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListCustomizeRoutes);
@@ -879,6 +881,10 @@ app.use('/', publicSalesPageRoutes);
 // Rota pública de produto individual (deve vir antes de publicProfileRoutes)
 const publicProductRoutes = require('./routes/publicProduct');
 app.use('/', publicProductRoutes);
+
+// Convite digital público (/:slug/convite) — antes do perfil para capturar o path
+const publicConviteRoutes = require('./routes/publicConvite.routes');
+app.use('/', publicConviteRoutes);
 
 // Perfis públicos (sem rate limiting)
 app.use('/', publicProfileRoutes);

@@ -1008,6 +1008,9 @@ router.post('/galleries/:id/status', protectUser, asyncHandler(async (req, res) 
     if (g.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
 
     await client.query('UPDATE king_galleries SET status=$1, updated_at=NOW() WHERE id=$2', [status, galleryId]);
+    if (status === 'andamento' && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
+      await client.query('UPDATE king_gallery_clients SET status=$1, updated_at=NOW() WHERE gallery_id=$2', ['andamento', galleryId]);
+    }
     res.json({ success: true });
   } finally {
     client.release();
@@ -2096,6 +2099,11 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         });
       }
       throw err;
+    }
+
+    // Reativação: ao colocar galeria em "andamento", desbloquear todos os clientes (status por cliente)
+    if (body.status === 'andamento' && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
+      await client.query('UPDATE king_gallery_clients SET status=$1, updated_at=NOW() WHERE gallery_id=$2', ['andamento', galleryId]);
     }
 
     // Pós-update: deletar arquivo antigo (Cloudflare Images ou R2) se foi removido/trocado

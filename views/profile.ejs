@@ -2168,6 +2168,19 @@ if (typeof details === 'undefined' || !details) {
                         </a>
 
                     <%# ========================================================== %>
+                    <%# TIPO: CONVITE DIGITAL %>
+                    <%# ========================================================== %>
+                    <% } else if (item.item_type === 'convite') { %>
+                        <%
+                            const conviteSlug = item.slug || profile_slug || details.profile_slug || identifier;
+                            const conviteUrl = '/' + conviteSlug + '/convite';
+                        %>
+                        <a href="<%= conviteUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="fas fa-envelope-open-text"></i>
+                            <span><%= item.title || (item.convite_data && item.convite_data.subtitulo) || 'Convite' %></span>
+                        </a>
+
+                    <%# ========================================================== %>
                     <%# FALLBACK: Tipo de item não reconhecido %>
                     <%# ========================================================== %>
                     <% } else { %>

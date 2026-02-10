@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title><%= convite.subtitulo || 'Convite' %> — ConectaKing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Georgia', 'Times New Roman', serif; background: #1a1a1a; color: #f5f5f5; min-height: 100vh; overflow-x: hidden; }
+        .convite-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .convite-envelope { position: relative; width: 100%; max-width: 360px; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .convite-envelope-inner { background: linear-gradient(145deg, #2c2419 0%, #1a1510 100%); border: 3px solid <%= convite.cor_secundaria || '#D2691E' %>; border-radius: 12px; padding: 48px 28px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08); }
+        .convite-envelope-inner img.selo { max-width: 80px; height: auto; margin-bottom: 16px; }
+        .convite-envelope-inner .texto-abrir { font-size: 1rem; letter-spacing: .12em; color: rgba(255,255,255,.85); margin-top: 8px; }
+        .convite-envelope-inner .texto-abrir small { display: block; margin-top: 6px; font-size: .85rem; opacity: .8; }
+        .convite-open { display: none; width: 100%; max-width: 480px; }
+        .convite-open.visible { display: block; animation: fadeIn 0.6s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        .convite-card { background: linear-gradient(180deg, #252019 0%, #1a1612 100%); border: 2px solid <%= convite.cor_secundaria || '#D2691E' %>; border-radius: 16px; padding: 32px 24px; margin-bottom: 20px; }
+        .convite-card h1 { font-size: clamp(0.9rem, 4vw, 1.1rem); letter-spacing: .25em; color: <%= convite.cor_primaria || '#8B4513' %>; margin-bottom: 8px; font-weight: 400; }
+        .convite-card .subtitulo { font-size: clamp(1.6rem, 8vw, 2.4rem); font-family: 'Georgia', serif; margin: 16px 0; line-height: 1.2; color: #f5f5f5; }
+        .convite-card .subtitulo-extra { font-size: .95rem; color: rgba(255,255,255,.8); margin: 12px 0; line-height: 1.5; }
+        .convite-card .data-hora { margin-top: 24px; font-size: 1rem; letter-spacing: .1em; color: rgba(255,255,255,.9); }
+        .convite-card .data-hora .dia { display: block; margin-bottom: 4px; }
+        .convite-card .data-hora .mes-ano { display: block; margin-bottom: 4px; }
+        .convite-card .data-hora .hora { display: block; margin-top: 8px; font-weight: 600; }
+        .convite-countdown { text-align: center; padding: 16px; margin: 16px 0; background: rgba(0,0,0,.25); border-radius: 12px; font-size: .9rem; color: rgba(255,255,255,.9); }
+        .convite-countdown strong { color: <%= convite.cor_primaria || '#8B4513' %>; }
+        .convite-local { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.1); font-size: .95rem; color: rgba(255,255,255,.85); }
+        .convite-local a { color: <%= convite.cor_primaria || '#8B4513' %>; text-decoration: none; }
+        .convite-local a:hover { text-decoration: underline; }
+        .convite-dress { margin-top: 12px; font-size: .9rem; color: rgba(255,255,255,.75); }
+        .convite-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 24px; }
+        .convite-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px; font-size: .9rem; font-weight: 600; text-decoration: none; color: #fff; background: <%= convite.cor_primaria || '#8B4513' %>; border: none; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+        .convite-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,69,19,.4); }
+        .convite-btn.secondary { background: rgba(255,255,255,.12); color: #f5f5f5; }
+        .convite-galeria { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 24px; }
+        .convite-galeria img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
+        .convite-pagina2 { margin-top: 24px; padding: 20px; background: rgba(0,0,0,.2); border-radius: 12px; font-size: .95rem; line-height: 1.6; color: rgba(255,255,255,.9); white-space: pre-wrap; }
+        .convite-toolbar { position: fixed; top: 12px; right: 12px; z-index: 100; display: flex; gap: 8px; }
+        .convite-toolbar button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.5); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+        .convite-toolbar button:hover { background: rgba(255,255,255,.15); }
+        .convite-som { position: fixed; bottom: 20px; right: 20px; z-index: 99; width: 48px; height: 48px; border-radius: 50%; border: none; background: <%= convite.cor_primaria || '#8B4513' %>; color: #fff; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+        .convite-som.playing { animation: pulse 1.5s ease infinite; }
+        @keyframes pulse { 50% { transform: scale(1.05); } }
+        body.fullscreen .convite-toolbar { top: env(safe-area-inset-top, 12px); }
+    </style>
+</head>
+<body>
+    <div class="convite-toolbar">
+        <% if (convite.share_habilitado) { %>
+        <button type="button" id="btn-share" title="Compartilhar"><i class="fas fa-share-alt"></i></button>
+        <% } %>
+        <button type="button" id="btn-fullscreen" title="Tela cheia"><i class="fas fa-expand"></i></button>
+    </div>
+
+    <div class="convite-wrap" id="convite-wrap">
+        <div class="convite-envelope" id="envelope">
+            <div class="convite-envelope-inner">
+                <% if (convite.imagem_selo_url) { %><img class="selo" src="<%= convite.imagem_selo_url %>" alt=""><% } %>
+                <p class="texto-abrir"><%= convite.texto_abrir || 'Toque para abrir' %><small>Clique aqui</small></p>
+            </div>
+        </div>
+
+        <div class="convite-open" id="convite-open">
+            <div class="convite-card">
+                <h1><%= convite.titulo || 'CASAMENTO DE' %></h1>
+                <p class="subtitulo"><%= convite.subtitulo || 'Nomes' %></p>
+                <% if (convite.subtitulo_extra) { %><p class="subtitulo-extra"><%= convite.subtitulo_extra %></p><% } %>
+                <div class="data-hora">
+                    <% if (convite.dia_semana) { %><span class="dia"><%= convite.dia_semana %></span><% } %>
+                    <% if (convite.data_mes || convite.data_dia || convite.data_ano) { %>
+                    <span class="mes-ano"><%= convite.data_mes %> <%= convite.data_dia %> <%= convite.data_ano %></span>
+                    <% } %>
+                    <% if (convite.hora) { %><span class="hora">ÀS <%= convite.hora %></span><% } %>
+                </div>
+                <% if (convite.mostrar_contagem_regressiva && convite.data_ano && convite.data_mes && convite.data_dia) { %>
+                <div class="convite-countdown" id="countdown">Faltam <strong id="countdown-days">—</strong> dias</div>
+                <% } %>
+                <% if (convite.local_nome || convite.local_endereco || convite.local_maps_url) { %>
+                <div class="convite-local">
+                    <% if (convite.local_nome) { %><p><strong><%= convite.local_nome %></strong></p><% } %>
+                    <% if (convite.local_endereco) { %><p><%= convite.local_endereco %></p><% } %>
+                    <% if (convite.local_maps_url) { %><p><a href="<%= convite.local_maps_url %>" target="_blank" rel="noopener">Ver no mapa</a></p><% } %>
+                </div>
+                <% } %>
+                <% if (convite.dress_code) { %><p class="convite-dress">Traje: <%= convite.dress_code %></p><% } %>
+                <div class="convite-actions">
+                    <% if (convite.calendar_habilitado && (convite.data_ano && convite.data_dia)) { %>
+                    <a href="#" class="convite-btn" id="btn-calendar"><i class="fas fa-calendar-plus"></i> Adicionar ao calendário</a>
+                    <% } %>
+                    <% if (convite.rsvp_url) { %>
+                    <a href="<%= convite.rsvp_url %>" class="convite-btn" target="_blank" rel="noopener"><i class="fas fa-check"></i> <%= convite.rsvp_label || 'Confirmar presença' %></a>
+                    <% } %>
+                </div>
+            </div>
+            <% if (convite.texto_pagina_2) { %>
+            <div class="convite-pagina2"><%= convite.texto_pagina_2 %></div>
+            <% } %>
+            <% if (convite.galeria_fotos && convite.galeria_fotos.length) { %>
+            <div class="convite-galeria">
+                <% convite.galeria_fotos.forEach(function(f) { %>
+                <img src="<%= f.url %>" alt="<%= f.caption || '' %>" loading="lazy">
+                <% }); %>
+            </div>
+            <% } %>
+        </div>
+    </div>
+
+    <% if (convite.som_habilitado && convite.audio_url) { %>
+    <button type="button" class="convite-som" id="btn-som" title="Som" aria-label="Ligar ou desligar som"><i class="fas fa-volume-mute"></i></button>
+    <audio id="audio-convite" preload="none"><source src="<%= convite.audio_url %>" type="audio/mpeg"></audio>
+    <% } %>
+
+    <script>
+(function() {
+    const envelope = document.getElementById('envelope');
+    const openEl = document.getElementById('convite-open');
+    if (envelope && openEl) {
+        envelope.addEventListener('click', function() {
+            envelope.style.display = 'none';
+            openEl.classList.add('visible');
+        });
+    }
+    var countdownEl = document.getElementById('countdown-days');
+    if (countdownEl) {
+        var y = <%= convite.data_ano || 0 %>;
+        var m = (typeof '<%= convite.data_mes %>' === 'string' && { JANEIRO:0, FEVEREIRO:1, MARCO:2, MARÇO:2, ABRIL:3, MAIO:4, JUNHO:5, JULHO:6, AGOSTO:7, SETEMBRO:8, OUTUBRO:9, NOVEMBRO:10, DEZEMBRO:11 }['<%= convite.data_mes %>'.toUpperCase().replace('Ç','C')]) || 0;
+        var d = <%= convite.data_dia || 0 %>;
+        if (y && d) {
+            var end = new Date(y, m, d, 0, 0, 0);
+            function update() {
+                var now = new Date();
+                var diff = Math.max(0, Math.ceil((end - now) / (24*60*60*1000)));
+                countdownEl.textContent = diff;
+            }
+            update();
+            setInterval(update, 60000);
+        }
+    }
+    var btnShare = document.getElementById('btn-share');
+    if (btnShare) {
+        btnShare.addEventListener('click', function() {
+            var url = window.location.href;
+            var text = 'Convite: <%= (convite.subtitulo || "").replace(/'/g, "\\'") %>';
+            if (navigator.share) {
+                navigator.share({ title: document.title, text: text, url: url }).catch(function() {
+                    navigator.clipboard.writeText(url).then(function() { alert('Link copiado!'); });
+                });
+            } else {
+                navigator.clipboard.writeText(url).then(function() { alert('Link copiado!'); });
+            }
+        });
+    }
+    var btnCal = document.getElementById('btn-calendar');
+    if (btnCal) {
+        btnCal.addEventListener('click', function(e) {
+            e.preventDefault();
+            var y = <%= convite.data_ano || 0 %>;
+            var m = (<%= convite.data_mes ? JSON.stringify(convite.data_mes) : '""' %>).toUpperCase();
+            var monthMap = { JANEIRO:0, FEVEREIRO:1, MARCO:2, MARÇO:2, ABRIL:3, MAIO:4, JUNHO:5, JULHO:6, AGOSTO:7, SETEMBRO:8, OUTUBRO:9, NOVEMBRO:10, DEZEMBRO:11 };
+            var mon = monthMap[m] != null ? monthMap[m] : 0;
+            var d = <%= convite.data_dia || 12 %>;
+            var date = new Date(y, mon, d);
+            var iso = date.toISOString().slice(0,10).replace(/-/g,'');
+            var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent('<%= (convite.subtitulo || "Evento").replace(/'/g, "\\'") %>') + '&dates=' + iso + '/' + iso;
+            window.open(url, '_blank');
+        });
+    }
+    var btnFs = document.getElementById('btn-fullscreen');
+    if (btnFs) {
+        btnFs.addEventListener('click', function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(function() { document.body.classList.add('fullscreen'); });
+            } else {
+                document.exitFullscreen().then(function() { document.body.classList.remove('fullscreen'); });
+            }
+        });
+    }
+    var audio = document.getElementById('audio-convite');
+    var btnSom = document.getElementById('btn-som');
+    if (audio && btnSom) {
+        var icon = btnSom.querySelector('i');
+        btnSom.addEventListener('click', function() {
+            if (audio.paused) {
+                audio.play().then(function() { icon.className = 'fas fa-volume-up'; btnSom.classList.add('playing'); }).catch(function() {});
+            } else {
+                audio.pause();
+                audio.currentTime = 0;
+                icon.className = 'fas fa-volume-mute';
+                btnSom.classList.remove('playing');
+            }
+        });
+        audio.addEventListener('ended', function() { icon.className = 'fas fa-volume-mute'; btnSom.classList.remove('playing'); });
+    }
+})();
+    </script>
+</body>
+</html>

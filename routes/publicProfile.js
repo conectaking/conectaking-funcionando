@@ -601,6 +601,20 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     });
                 }
             }
+
+            if (item.item_type === 'convite') {
+                try {
+                    const conviteRes = await client.query(
+                        'SELECT * FROM convite_items WHERE profile_item_id = $1',
+                        [item.id]
+                    );
+                    if (conviteRes.rows.length > 0) {
+                        item.convite_data = conviteRes.rows[0];
+                    }
+                } catch (conviteError) {
+                    logger.error('Erro ao carregar convite', { itemId: item.id, error: conviteError.message });
+                }
+            }
             
             return item;
         }));
