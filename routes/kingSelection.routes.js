@@ -888,7 +888,8 @@ router.get('/galleries', protectUser, asyncHandler(async (req, res) => {
       feedback_cliente: selectionStats[g.id]?.feedback_cliente || null,
       photos_count: (g.photos || []).length
     }));
-    res.json({ success: true, galleries: payloadWithStats });
+    const shareBaseUrl = (config.urls && config.urls.shareBase) ? config.urls.shareBase.toString().trim().replace(/\/$/, '') : null;
+    res.json({ success: true, share_base_url: shareBaseUrl || undefined, galleries: payloadWithStats });
   } finally {
     client.release();
   }
@@ -1753,8 +1754,10 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     );
     const selectedPhotoIds = sRes.rows.map(r => r.photo_id);
     const feedback = sRes.rows.find(r => r.feedback_cliente)?.feedback_cliente || null;
+    const shareBaseUrl = (config.urls && config.urls.shareBase) ? config.urls.shareBase.toString().trim().replace(/\/$/, '') : null;
     res.json({
       success: true,
+      share_base_url: shareBaseUrl || undefined,
       gallery: { ...g, photos: pRes.rows, selectedPhotoIds, feedback_cliente: feedback, clients }
     });
   } finally {
@@ -2089,7 +2092,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     } catch (err) {
       if (err.code === '23514') {
         return res.status(400).json({
-          message: 'Valor de marca d\'água fora do permitido pelo banco. Use opacidade entre 0 e 100% e tamanho entre 10 e 500%. Se os valores já estiverem nesse intervalo, o banco pode precisar de atualização (migrations).'
+          message: 'Valor de marca d\'água fora do permitido pelo banco. Use opacidade entre 0 e 100% e tamanho entre 10 e 500%. Se já estiver nesse intervalo, execute a migration 151 no Postgres: npm run migrate ou node scripts/run-migration-151.js'
         });
       }
       throw err;

@@ -99,7 +99,9 @@ const config = {
     urls: {
         api: process.env.API_URL || 'https://conectaking-api.onrender.com',
         frontend: process.env.FRONTEND_URL || 'https://conectaking.com.br',
-        publicProfile: process.env.PUBLIC_PROFILE_URL || 'https://tag.conectaking.com.br'
+        publicProfile: process.env.PUBLIC_PROFILE_URL || 'https://tag.conectaking.com.br',
+        // Link de compartilhamento KingSelection (ex.: https://www.conectaking.com.br)
+        shareBase: process.env.KING_SELECTION_SHARE_BASE_URL || process.env.FRONTEND_URL || 'https://www.conectaking.com.br'
     },
     
     // Cache
