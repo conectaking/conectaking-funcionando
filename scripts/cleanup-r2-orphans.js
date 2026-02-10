@@ -12,6 +12,8 @@
  *   DRY_RUN=1 node scripts/cleanup-r2-orphans.js
  *   DRY_RUN=0 CONFIRM_DELETE=SIM node scripts/cleanup-r2-orphans.js
  *
+ * Opcionais: MAX_DELETE, SLEEP_MS, OUT_FILE (JSON com órfãos), R2_ORPHAN_CLEANUP_LOCK_KEY
+ *
  * Requisitos (env):
  * - KINGSELECTION_WORKER_SECRET (mesmo do Worker)
  * - R2_PUBLIC_BASE_URL ou KINGSELECTION_WORKER_URL = https://r2.conectaking.com.br
@@ -22,6 +24,7 @@ require('dotenv').config();
 
 const fetch = require('node-fetch');
 const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
 const db = require('../db');
 
@@ -168,10 +171,31 @@ async function main() {
       return n && !referenced.has(n) && !referenced.has(k);
     });
 
+    const outFile = (process.env.OUT_FILE || '').toString().trim();
+
     console.log(`R2 objetos (galleries/): ${allKeys.length}`);
     console.log(`Referenciados no banco: ${referenced.size}`);
     console.log(`Órfãos: ${orphans.length}`);
     console.log(`Modo: ${dryRun ? 'DRY_RUN (não deleta)' : 'DELETE'}`);
+    if (!dryRun) {
+      console.log(`MAX_DELETE: ${maxDelete > 0 ? maxDelete : 'sem limite'}`);
+      console.log(`SLEEP_MS: ${sleepMs}`);
+    }
+
+    if (outFile) {
+      try {
+        fs.writeFileSync(outFile, JSON.stringify({
+          generated_at: new Date().toISOString(),
+          r2_total: allKeys.length,
+          referenced: referenced.size,
+          orphan_candidates: orphans.length,
+          candidates: orphans
+        }, null, 2), 'utf8');
+        console.log(`Lista salva em: ${outFile}`);
+      } catch (e) {
+        console.log(`Falha ao salvar OUT_FILE (${outFile}): ${e.message}`);
+      }
+    }
 
     if (orphans.length === 0) {
       console.log('Nada a deletar.');
@@ -183,16 +207,19 @@ async function main() {
     let processed = 0;
     const batchSize = 1000;
 
-    for (let i = 0; i < orphans.length; i += batchSize) {
-      const batch = orphans.slice(i, i + batchSize);
+    for (let i = 0; i < orphans.length; ) {
+      const remaining = maxDelete > 0 ? Math.max(0, maxDelete - processed) : orphans.length - i;
+      const take = Math.min(batchSize, remaining);
+      if (take <= 0) {
+        console.log(`Parando por MAX_DELETE=${maxDelete}`);
+        break;
+      }
+      const batch = orphans.slice(i, i + take);
+      i += batch.length;
       if (dryRun) {
         batch.forEach(k => console.log(`[DRY] deletaria ${k}`));
         processed += batch.length;
         continue;
-      }
-      if (maxDelete > 0 && processed >= maxDelete) {
-        console.log(`Parando por MAX_DELETE=${maxDelete}`);
-        break;
       }
       try {
         const { deleted } = await deleteR2Batch(batch);
