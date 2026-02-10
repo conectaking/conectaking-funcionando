@@ -975,11 +975,11 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
       const updates = [];
       if (hasWmMode) updates.push(`watermark_mode=COALESCE(NULLIF(watermark_mode,''),'tile_dense')`);
       if (hasWmOpacity) updates.push('watermark_opacity=COALESCE(watermark_opacity,0.12)');
-      if (hasWmScale) updates.push('watermark_scale=COALESCE(watermark_scale,1.29)');
+      if (hasWmScale) updates.push('watermark_scale=COALESCE(watermark_scale,1.20)');
       if (updates.length) {
         await client.query(`UPDATE king_galleries SET ${updates.join(', ')}, updated_at=NOW() WHERE id=$1`, [gid]);
         if (hasWmOpacity) ins.rows[0].watermark_opacity = 0.12;
-        if (hasWmScale) ins.rows[0].watermark_scale = 1.29;
+        if (hasWmScale) ins.rows[0].watermark_scale = 1.20;
       }
     } catch (_) {}
 
@@ -2062,10 +2062,12 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'watermark_opacity') {
         const n = parseFloat(val);
         val = Number.isFinite(n) ? Math.max(0.0, Math.min(1.0, n)) : 0.12;
+        val = Math.round(val * 100) / 100;
       }
       if (key === 'watermark_scale') {
         const n = parseFloat(val);
-        val = Number.isFinite(n) ? Math.max(0.10, Math.min(5.0, n)) : 1.29;
+        val = Number.isFinite(n) ? Math.max(0.10, Math.min(5.0, n)) : 1.20;
+        val = Math.round(val * 100) / 100;
       }
       if (key === 'watermark_rotate') {
         const n = parseInt(val || 0, 10) || 0;
@@ -2082,7 +2084,16 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
 
     if (!sets.length) return res.json({ success: true });
     values.push(galleryId);
-    await client.query(`UPDATE king_galleries SET ${sets.join(', ')}, updated_at=NOW() WHERE id=$${idx}`, values);
+    try {
+      await client.query(`UPDATE king_galleries SET ${sets.join(', ')}, updated_at=NOW() WHERE id=$${idx}`, values);
+    } catch (err) {
+      if (err.code === '23514') {
+        return res.status(400).json({
+          message: 'Valor de marca d\'água fora do permitido pelo banco. Use opacidade entre 0 e 100% e tamanho entre 10 e 500%. Se os valores já estiverem nesse intervalo, o banco pode precisar de atualização (migrations).'
+        });
+      }
+      throw err;
+    }
 
     // Pós-update: deletar arquivo antigo (Cloudflare Images ou R2) se foi removido/trocado
     const cloudflare = { attempted: false, deleted: false, skipped: false };

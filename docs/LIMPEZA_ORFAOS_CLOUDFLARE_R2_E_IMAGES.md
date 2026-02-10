@@ -32,35 +32,33 @@ Opcionais:
 
 ### Comandos (Cloudflare Images)
 
-```bash
-# Na raiz do projeto (conectaking-funcionando-1)
-
-# Simular: só listar o que seria deletado (não deleta)
-DRY_RUN=1 node scripts/cleanup-cloudflare-images.js
-# ou
-npm run cleanup:cloudflare:dry
-
-# Deletar de verdade (exige CONFIRM_DELETE=SIM)
-DRY_RUN=0 CONFIRM_DELETE=SIM node scripts/cleanup-cloudflare-images.js
-# ou
-DRY_RUN=0 CONFIRM_DELETE=SIM npm run cleanup:cloudflare
-
-# Só órfãs com mais de 3 dias
-DRY_RUN=0 CONFIRM_DELETE=SIM MIN_AGE_DAYS=3 node scripts/cleanup-cloudflare-images.js
-
-# Salvar lista de candidatas em arquivo (sem deletar)
-DRY_RUN=1 OUT_FILE=orphans-cf-images.json node scripts/cleanup-cloudflare-images.js
-```
-
-**PowerShell (Windows):**
+**No Windows (PowerShell)** — use esta sintaxe (no PowerShell `VAR=valor` não funciona):
 
 ```powershell
+# Simular: só listar o que seria deletado (não deleta)
+$env:DRY_RUN="1"; node scripts/cleanup-cloudflare-images.js
+
+# Deletar órfãs de verdade
 $env:DRY_RUN="0"; $env:CONFIRM_DELETE="SIM"; node scripts/cleanup-cloudflare-images.js
+
+# Só órfãs com mais de 3 dias
+$env:DRY_RUN="0"; $env:CONFIRM_DELETE="SIM"; $env:MIN_AGE_DAYS="3"; node scripts/cleanup-cloudflare-images.js
 ```
 
-**CMD (Windows):**
+**No Linux / Mac / Git Bash:**
+
+```bash
+# Simular (não deleta)
+DRY_RUN=1 node scripts/cleanup-cloudflare-images.js
+
+# Deletar de verdade
+DRY_RUN=0 CONFIRM_DELETE=SIM node scripts/cleanup-cloudflare-images.js
+```
+
+**CMD (Prompt de Comando):**
 
 ```cmd
+set DRY_RUN=1 && node scripts/cleanup-cloudflare-images.js
 set DRY_RUN=0 && set CONFIRM_DELETE=SIM && node scripts/cleanup-cloudflare-images.js
 ```
 
@@ -91,29 +89,30 @@ Opcionais:
 
 ### Comandos (R2)
 
-```bash
-# Na raiz do projeto (não dentro de cf-worker-kingselection-r2)
-
-# Simular: só listar o que seria deletado (não deleta)
-DRY_RUN=1 node scripts/cleanup-r2-orphans.js
-# ou
-npm run cleanup:r2:dry
-
-# Deletar de verdade (exige CONFIRM_DELETE=SIM)
-DRY_RUN=0 CONFIRM_DELETE=SIM node scripts/cleanup-r2-orphans.js
-# ou
-DRY_RUN=0 CONFIRM_DELETE=SIM npm run cleanup:r2
-```
-
-**PowerShell (Windows):**
+**No Windows (PowerShell):**
 
 ```powershell
+# Simular (não deleta)
+$env:DRY_RUN="1"; node scripts/cleanup-r2-orphans.js
+
+# Deletar órfãos de verdade
 $env:DRY_RUN="0"; $env:CONFIRM_DELETE="SIM"; node scripts/cleanup-r2-orphans.js
+```
+
+**No Linux / Mac / Git Bash:**
+
+```bash
+# Simular
+DRY_RUN=1 node scripts/cleanup-r2-orphans.js
+
+# Deletar de verdade
+DRY_RUN=0 CONFIRM_DELETE=SIM node scripts/cleanup-r2-orphans.js
 ```
 
 **CMD (Windows):**
 
 ```cmd
+set DRY_RUN=1 && node scripts/cleanup-r2-orphans.js
 set DRY_RUN=0 && set CONFIRM_DELETE=SIM && node scripts/cleanup-r2-orphans.js
 ```
 
