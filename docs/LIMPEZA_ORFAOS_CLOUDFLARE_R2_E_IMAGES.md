@@ -81,6 +81,12 @@ set DRY_RUN=0 && set CONFIRM_DELETE=SIM && node scripts/cleanup-cloudflare-image
 | `R2_PUBLIC_BASE_URL` ou `KINGSELECTION_WORKER_URL` | Ex.: `https://r2.conectaking.com.br` |
 | `DB_*` | Mesmas do backend (Postgres) |
 
+**Como obter o `KINGSELECTION_WORKER_SECRET`:**
+
+1. **Se a API já está no Render:** no [Render Dashboard](https://dashboard.render.com) → seu serviço (API) → **Environment** → procure `KINGSELECTION_WORKER_SECRET` e copie o valor (ícone de copiar).
+2. **Se você usa `.env` na raiz do projeto:** abra o arquivo `.env`, procure a linha `KINGSELECTION_WORKER_SECRET=...` e copie o valor (tudo depois do `=`).
+3. **Esse valor é o mesmo** que está no Cloudflare Worker: foi definido com `wrangler secret put KS_WORKER_SECRET` na pasta `cf-worker-kingselection-r2`. O Cloudflare não mostra o valor depois de salvo; se você perdeu, defina um novo no Worker e atualize o Render e o `.env` com o mesmo valor.
+
 Opcionais:
 
 - `MAX_DELETE` — limite de keys a deletar por execução (0 = sem limite).
