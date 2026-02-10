@@ -1717,11 +1717,13 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const g = gRes.rows[0];
 
-    // Clientes (multi-client)
+    // Clientes (multi-client) — incluir status por cliente para o painel habilitar Reativar quando o cliente está em revisão
     let clients = [];
     if (await hasTable(client, 'king_gallery_clients')) {
+      const hasClientStatus = await hasColumn(client, 'king_gallery_clients', 'status');
+      const clientCols = ['id', 'nome', 'email', 'telefone', 'enabled', 'note', 'created_at'].concat(hasClientStatus ? ['status'] : []);
       const cRes = await client.query(
-        `SELECT id, nome, email, telefone, enabled, note, created_at
+        `SELECT ${clientCols.join(', ')}
          FROM king_gallery_clients
          WHERE gallery_id=$1
          ORDER BY created_at ASC, id ASC`,
