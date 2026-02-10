@@ -942,11 +942,26 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             }
             
             // Deletar apenas itens que existem no banco mas não foram enviados no save-all
-            // IMPORTANTE: não deletar sales_page
-            const itemsToDelete = Array.from(existingItemIds).filter(id => !savedItemIds.has(id));
+            // ========== PROTEÇÃO CRÍTICA: NÃO REMOVER ==========
+            // Estes tipos NUNCA podem ser deletados pelo save-all (ficam de fora do payload por plano/ocultação/erro e têm dados críticos: galerias, links, vendas).
+            const PROTECTED_ITEM_TYPES_SAVE_ALL = ['sales_page', 'king_selection'];
+            const candidateIds = Array.from(existingItemIds).filter(id => !savedItemIds.has(id));
+            let itemsToDelete = candidateIds;
+            if (candidateIds.length > 0) {
+                const placeholders = PROTECTED_ITEM_TYPES_SAVE_ALL.map((_, i) => `$${i + 3}`).join(', ');
+                const protectedRes = await client.query(
+                    `SELECT id, item_type FROM profile_items WHERE id = ANY($1::int[]) AND user_id = $2 AND item_type IN (${placeholders})`,
+                    [candidateIds, userId, ...PROTECTED_ITEM_TYPES_SAVE_ALL]
+                );
+                const protectedIds = new Set((protectedRes.rows || []).map(r => r.id));
+                if (protectedIds.size > 0) {
+                    itemsToDelete = candidateIds.filter(id => !protectedIds.has(id));
+                    console.log(`⚠️ [SAVE-ALL] ${protectedIds.size} módulo(s) protegido(s) (${PROTECTED_ITEM_TYPES_SAVE_ALL.join('/')}) NÃO serão deletados.`);
+                }
+            }
             if (itemsToDelete.length > 0) {
                 console.log(`🗑️ [SAVE-ALL] Deletando ${itemsToDelete.length} itens que não foram incluídos no save-all...`);
-                        await client.query(`
+                await client.query(`
                     DELETE FROM profile_items 
                     WHERE id = ANY($1::int[]) AND user_id = $2
                 `, [itemsToDelete, userId]);
@@ -2580,6 +2595,11 @@ router.delete('/items/:id', protectUser, asyncHandler(async (req, res) => {
         if (checkRes.rows[0].item_type === 'digital_form') {
             await client.query('DELETE FROM digital_form_items WHERE profile_item_id = $1', [itemId]);
             console.log(`🗑️ Formulário King ${itemId} deletado`);
+        }
+
+        // Aviso: king_selection em DELETE profile_items apaga TODAS as galerias/links por CASCADE (apenas exclusão manual chega aqui)
+        if (checkRes.rows[0].item_type === 'king_selection') {
+            console.warn(`⚠️ [EXCLUSÃO MANUAL] Módulo KingSelection ${itemId} está sendo excluído pelo usuário. Todas as galerias e links serão removidos.`);
         }
 
         // Deletar o item
