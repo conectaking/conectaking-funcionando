@@ -50,10 +50,11 @@ async function getPreviewLink(profileItemId, userId) {
     const token = await repository.generatePreviewToken(profileItemId, userId);
     if (!token) return null;
     const baseUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://conectaking.com.br';
-    const slug = (await require('../../db').pool.query(
-        'SELECT slug FROM profile_items WHERE id = $1',
+    const slugRes = await require('../../db').pool.query(
+        'SELECT pi.slug, u.profile_slug FROM profile_items pi JOIN users u ON u.id = pi.user_id WHERE pi.id = $1',
         [profileItemId]
-    )).rows[0]?.slug;
+    );
+    const slug = slugRes.rows[0]?.slug || slugRes.rows[0]?.profile_slug;
     if (!slug) return null;
     return `${baseUrl}/${slug}/convite?preview=${token}`;
 }
