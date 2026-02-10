@@ -14,10 +14,10 @@
 # URL do Worker (opcional; padrão: https://r2.conectaking.com.br)
 # $env:KINGSELECTION_WORKER_URL = "https://r2.conectaking.com.br"
 
-# Deleção em lote com confirmação obrigatória
+# Deleção: 0 = sem limite (apaga TODAS as órfãs); use um número (ex: 50) para limitar por execução
 $env:DRY_RUN = "0"
 $env:CONFIRM_DELETE = "SIM"
-$env:MAX_DELETE = "50"
+$env:MAX_DELETE = "0"
 $env:SLEEP_MS = "200"
 $env:OUT_FILE = "orfas-r2.json"
 
