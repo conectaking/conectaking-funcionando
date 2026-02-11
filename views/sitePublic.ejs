@@ -120,15 +120,17 @@
         }
         .text-glow { text-shadow: 0 0 20px rgba(244,175,37,.5); }
 
+        #site-main { width: 100%; max-width: 100%; overflow-x: hidden; }
         .site-page {
             display: none;
             min-height: 100vh;
             padding-top: 5rem;
             animation: tabFadeIn .35s ease;
+            width: 100%;
         }
         .site-page.active { display: block; }
         @keyframes tabFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .site-page .page-inner { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+        .site-page .page-inner { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; width: 100%; }
         .site-page.page-inicio { padding-top: 0; }
         .site-page.page-inicio .page-inner { max-width: none; padding: 0; }
 
@@ -147,35 +149,10 @@
             inset: 0;
             z-index: 0;
         }
-        .hero-bg img { width: 100%; height: 100%; object-fit: cover; opacity: .6; filter: grayscale(40%); transition: filter .8s; }
-        .hero:hover .hero-bg img { filter: grayscale(0%); }
-        .hero-bg .overlay { position: absolute; inset: 0; background: linear-gradient(to top, var(--bg) 0%, transparent 35%, transparent 65%, var(--bg) 100%); }
+        .hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: .85; transition: opacity .5s; }
+        .hero:hover .hero-bg img { opacity: .95; }
+        .hero-bg .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,10,10,.92) 0%, transparent 40%, transparent 60%, rgba(10,10,10,.7) 100%); }
         .hero .hero-content { position: relative; z-index: 2; }
-        .hero-hud {
-            position: absolute;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 5.5rem 1.5rem 1.5rem;
-        }
-        .hero-hud-top { display: flex; justify-content: space-between; align-items: flex-start; opacity: .85; }
-        .hero-hud-bottom { display: flex; justify-content: space-between; align-items: flex-end; opacity: .85; }
-        .hero-hud-meta { font-family: monospace; font-size: 0.7rem; color: var(--accent); }
-        .hero-hud-meta .label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.25rem; }
-        .hero-hud-meta .values { display: flex; gap: 0.75rem; }
-        .hero-hud-status { text-align: right; }
-        .hero-hud-status .label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
-        .hero-hud-status .ready { font-size: 0.7rem; display: flex; align-items: center; justify-content: flex-end; gap: 0.35rem; color: var(--accent); }
-        .hero-hud-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse-dot 1.5s infinite; }
-        @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
-        .hero-hud-focus { max-width: 200px; }
-        .hero-hud-focus .bar { height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; margin-bottom: 0.35rem; }
-        .hero-hud-focus .bar-fill { height: 100%; width: 66%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-        .hero-hud-focus .label { font-size: 0.6rem; letter-spacing: 0.1em; color: var(--accent); font-family: monospace; }
-        .hero-hud-session { text-align: right; font-size: 0.6rem; letter-spacing: 0.15em; color: var(--accent); }
         .hero h1 {
             font-size: clamp(2.5rem, 10vw, 5.5rem);
             font-weight: 700;
@@ -201,10 +178,6 @@
             margin: 0.75rem auto;
         }
         .hero .hero-tagline { font-size: 0.6rem; letter-spacing: 0.25em; color: rgba(255,255,255,.6); font-style: italic; text-transform: uppercase; }
-        @media (max-width: 768px) {
-            .hero-hud { padding: 5rem 1rem 1rem; }
-            .hero-hud-meta .values { flex-wrap: wrap; gap: 0.35rem; }
-        }
         .hero .ctas {
             display: flex;
             flex-wrap: wrap;
@@ -334,19 +307,23 @@
         }
         @media (max-width: 480px) {
             .glass-nav { padding: 0.6rem 1rem; border-radius: 12px; }
+            .site-nav { gap: 0.5rem; }
             .site-nav a { font-size: 0.6rem; letter-spacing: 0.08em; }
-            .hero-hud-top, .hero-hud-bottom { flex-wrap: wrap; gap: 0.5rem; }
             .section-title { font-size: 1.35rem; }
+            .hero { padding: 5rem 1rem 4rem; }
         }
         .hero-content h1 { transition: font-size .2s; }
-        .portfolio-grid img { transition: transform .25s; }
+        .portfolio-grid { width: 100%; }
+        .portfolio-grid img { max-width: 100%; height: auto; display: block; transition: transform .25s; }
         .portfolio-item:hover img { transform: scale(1.03); }
+        .portfolio-item { min-width: 0; }
+        .sobre-grid img, .portfolio-grid img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
     <header class="site-header">
         <div class="glass-nav header-inner">
-            <a href="#" data-goto="inicio" class="site-logo">
+            <a href="#inicio" data-goto="inicio" class="site-logo">
                 <span class="text-glow"><%= (site.meta_titulo || 'Site').toString().substring(0,2).toUpperCase() %></span>
                 <span class="logo-divider"></span>
                 <span class="logo-text"><%= site.meta_titulo || 'Meu site' %></span>
@@ -357,7 +334,7 @@
                 <a href="#portfolio" data-goto="portfolio" class="nav-link-tab">Portfólio</a>
                 <a href="#contato" data-goto="contato" class="nav-link-tab">Contato</a>
                 <a href="#orcamento" data-goto="orcamento" class="nav-link-tab nav-cta">Orçamento</a>
-                <a href="#sobre" data-goto="sobre" class="nav-link-tab" style="opacity:.8;">Sobre</a>
+                <a href="#sobre" data-goto="sobre" class="nav-link-tab">Sobre</a>
                 <% if (site.contato_whatsapp) { %>
                 <a class="nav-whatsapp" href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
                 <% } %>
@@ -374,26 +351,6 @@
                         <img src="<%= site.hero_imagem_url || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80' %>" alt="">
                         <div class="overlay"></div>
                     </div>
-                    <div class="hero-hud">
-                        <div class="hero-hud-top">
-                            <div class="hud-border hero-hud-meta" style="padding: 0.5rem 0.75rem;">
-                                <div class="label">Metadata Capture</div>
-                                <div class="values"><span>ISO 100</span><span>85mm</span><span>f/1.2</span><span>1/200s</span></div>
-                            </div>
-                            <div class="hero-hud-status">
-                                <div class="label">System Status</div>
-                                <div class="ready">READY <span class="dot"></span></div>
-                            </div>
-                        </div>
-                        <div></div>
-                        <div class="hero-hud-bottom">
-                            <div class="hero-hud-focus">
-                                <div class="bar"><div class="bar-fill"></div></div>
-                                <div class="label">Focus Lock: Face Detected</div>
-                            </div>
-                            <div class="hero-hud-session">Session ID: #<%= (site.meta_titulo || 'AK').toString().replace(/\s+/g,'').substring(0,4).toUpperCase() %>-<%= new Date().getFullYear() %></div>
-                        </div>
-                    </div>
                     <div class="hero-content">
                         <% var titulo = (site.meta_titulo || site.hero_pergunta || 'Meu site').toString().trim(); var parts = titulo.split(/\s+/).filter(Boolean); var p1 = parts[0] || ''; var p2 = parts.length > 1 ? parts.slice(1).join(' ') : ''; %>
                         <h1><% if (p2) { %><span class="hero-title-1"><%= p1.toUpperCase() %></span> <span class="hero-title-2 text-glow"><%= p2.toUpperCase() %></span><% } else { %><span class="hero-title-2 text-glow"><%= p1.toUpperCase() %></span><% } %></h1>
@@ -402,13 +359,13 @@
                         <p class="hero-tagline">Cyber-Luxe Excellence</p>
                         <div class="ctas">
                             <% if (site.arquetipo_ativo) { %>
-                            <a href="#" data-goto="arquetipo" class="cta-btn primary"><%= site.hero_cta_arquetipo_texto || 'Descubra seu arquétipo' %></a>
+                            <a href="#arquetipo" data-goto="arquetipo" class="cta-btn primary"><%= site.hero_cta_arquetipo_texto || 'Descubra seu arquétipo' %></a>
                             <% } %>
-                            <a href="#" data-goto="orcamento" class="cta-btn secondary"><%= site.hero_cta_orcamento_texto || 'Solicitar orçamento' %></a>
+                            <a href="#orcamento" data-goto="orcamento" class="cta-btn secondary"><%= site.hero_cta_orcamento_texto || 'Solicitar orçamento' %></a>
                             <% if (site.contato_whatsapp) { %>
                             <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" class="cta-btn secondary" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> <%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
                             <% } else { %>
-                            <a href="#" data-goto="contato" class="cta-btn secondary"><%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
+                            <a href="#contato" data-goto="contato" class="cta-btn secondary"><%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
                             <% } %>
                         </div>
                     </div>
