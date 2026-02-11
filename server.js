@@ -796,6 +796,10 @@ const agendaRoutes = require('./routes/agenda.routes');
 app.use('/api/agenda', apiLimiter, agendaRoutes);
 const conviteRoutes = require('./modules/convite/convite.routes');
 app.use('/api/convite', apiLimiter, conviteRoutes);
+const sitesRoutes = require('./modules/sites/sites.routes');
+app.use('/api/sites', apiLimiter, sitesRoutes);
+const orcamentosRoutes = require('./modules/orcamentos/orcamentos.routes');
+app.use('/api/orcamentos', apiLimiter, orcamentosRoutes);
 // IMPORTANTE: cadastroLinksRoutes deve vir ANTES de guestListRoutes para que rotas específicas como /:id/cadastro-links sejam processadas antes da rota genérica /:id
 app.use('/api/guest-lists', apiLimiter, cadastroLinksRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListCustomizeRoutes);
@@ -885,6 +889,9 @@ app.use('/', publicProductRoutes);
 // Convite digital público (/:slug/convite) — antes do perfil para capturar o path
 const publicConviteRoutes = require('./routes/publicConvite.routes');
 app.use('/', publicConviteRoutes);
+// Meu site público (/:slug/site)
+const publicSiteRoutes = require('./routes/publicSite.routes');
+app.use('/', publicSiteRoutes);
 
 // Perfis públicos (sem rate limiting)
 app.use('/', publicProfileRoutes);

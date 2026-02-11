@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= site.meta_titulo || 'Meu site' %> — ConectaKing</title>
+    <% if (site.meta_description) { %><meta name="description" content="<%= site.meta_description %>"><% } %>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: <%= site.tema_primaria || '#1a1a1a' %>; color: #f5f5f5; min-height: 100vh; line-height: 1.5; }
+        .site-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; position: sticky; top: 0; background: rgba(0,0,0,.6); z-index: 100; }
+        .site-logo { font-weight: 700; font-size: 1.1rem; color: #fff; text-decoration: none; }
+        .site-nav { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+        .site-nav a { color: rgba(255,255,255,.9); text-decoration: none; font-size: .95rem; }
+        .site-nav a:hover { color: <%= site.tema_secundaria || '#c9a227' %>; }
+        .hero { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem 1.5rem; }
+        .hero h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); margin-bottom: 1rem; font-weight: 700; max-width: 720px; }
+        .hero .slogan { font-size: clamp(1.1rem, 2.5vw, 1.4rem); color: <%= site.tema_secundaria || '#c9a227' %>; margin-bottom: 1.5rem; max-width: 640px; }
+        .hero .ctas { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 2rem; }
+        .hero .cta-btn { display: inline-block; padding: 14px 28px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: transform .2s, box-shadow .2s; }
+        .hero .cta-btn.primary { background: <%= site.tema_secundaria || '#c9a227' %>; color: #1a1a1a; }
+        .hero .cta-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,162,39,.4); }
+        .hero .cta-btn.secondary { background: rgba(255,255,255,.12); color: #fff; border: 2px solid rgba(255,255,255,.3); }
+        .hero .cta-btn.secondary:hover { background: rgba(255,255,255,.18); }
+        .section { padding: 3rem 1.5rem; max-width: 900px; margin: 0 auto; }
+        .section h2 { font-size: 1.5rem; margin-bottom: 1rem; color: <%= site.tema_secundaria || '#c9a227' %>; }
+        .section p { color: rgba(255,255,255,.88); margin-bottom: 1rem; }
+        .site-footer { padding: 2rem 1.5rem; text-align: center; border-top: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.7); font-size: .9rem; }
+        .site-footer a { color: <%= site.tema_secundaria || '#c9a227' %>; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <a href="#hero" class="site-logo">Meu site</a>
+        <nav class="site-nav">
+            <a href="#hero">Início</a>
+            <a href="#sobre">Sobre</a>
+            <% if (site.arquetipo_ativo) { %><a href="#arquetipo">Teste de Arquétipo</a><% } %>
+            <a href="#orcamento">Orçamento</a>
+            <a href="#contato">Contato</a>
+            <% if (site.contato_whatsapp) { %>
+            <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+            <% } %>
+        </nav>
+    </header>
+
+    <section class="hero" id="hero">
+        <h1><%= site.hero_pergunta || 'Sabe qual é a diferença do fotógrafo pro retratista?' %></h1>
+        <p class="slogan"><%= site.hero_slogan || 'O fotógrafo registra momentos. O retratista extrai a essência.' %></p>
+        <% if (site.hero_subtitulo) { %><p><%= site.hero_subtitulo %></p><% } %>
+        <div class="ctas">
+            <% if (site.arquetipo_ativo) { %>
+            <a href="#arquetipo" class="cta-btn primary"><%= site.hero_cta_arquetipo_texto || 'Descubra seu arquétipo' %></a>
+            <% } %>
+            <a href="#orcamento" class="cta-btn secondary"><%= site.hero_cta_orcamento_texto || 'Solicitar orçamento' %></a>
+            <% if (site.contato_whatsapp) { %>
+            <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" class="cta-btn secondary" target="_blank" rel="noopener"><%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
+            <% } else { %>
+            <a href="#contato" class="cta-btn secondary"><%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
+            <% } %>
+        </div>
+    </section>
+
+    <% if (site.sobre_texto) { %>
+    <section class="section" id="sobre">
+        <h2>Sobre</h2>
+        <p><%= site.sobre_texto %></p>
+    </section>
+    <% } %>
+
+    <% if (site.arquetipo_ativo) { %>
+    <section class="section" id="arquetipo">
+        <h2><%= site.arquetipo_landing_titulo || 'Descubra seu arquétipo e transforme sua imagem profissional' %></h2>
+        <% if (site.arquetipo_landing_texto) { %><p><%= site.arquetipo_landing_texto %></p><% } %>
+        <div id="arquetipo-landing">
+            <p><a href="#" id="arquetipo-start-btn" class="cta-btn primary" style="display:inline-block;margin-top:1rem;"><%= site.arquetipo_landing_cta || 'Faça o teste de arquétipo agora mesmo' %></a></p>
+        </div>
+        <div id="arquetipo-quiz" style="display:none;margin-top:2rem;max-width:520px;">
+            <div class="quiz-progress" style="height:6px;background:rgba(255,255,255,.15);border-radius:3px;margin-bottom:1.5rem;"><div id="arquetipo-progress-bar" style="height:100%;width:0%;background:<%= site.tema_secundaria || '#c9a227' %>;border-radius:3px;transition:width .3s"></div></div>
+            <p id="arquetipo-step-label" style="font-size:.9rem;color:rgba(255,255,255,.7);margin-bottom:1rem;">Pergunta 1 de 48</p>
+            <p id="arquetipo-statement" style="font-size:1.15rem;margin-bottom:1.5rem;line-height:1.5;"></p>
+            <div class="quiz-scale" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.5rem;">
+                <button type="button" class="quiz-option" data-value="1" style="padding:12px 20px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.2);color:#fff;cursor:pointer;">1</button>
+                <button type="button" class="quiz-option" data-value="2" style="padding:12px 20px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.2);color:#fff;cursor:pointer;">2</button>
+                <button type="button" class="quiz-option" data-value="3" style="padding:12px 20px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.2);color:#fff;cursor:pointer;">3</button>
+                <button type="button" class="quiz-option" data-value="4" style="padding:12px 20px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.2);color:#fff;cursor:pointer;">4</button>
+                <button type="button" class="quiz-option" data-value="5" style="padding:12px 20px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.2);color:#fff;cursor:pointer;">5</button>
+            </div>
+            <p style="font-size:.85rem;color:rgba(255,255,255,.6);margin-bottom:1rem;">1 = discordo totalmente · 5 = concordo totalmente</p>
+            <div style="display:flex;gap:10px;">
+                <button type="button" id="arquetipo-prev" style="padding:10px 18px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;cursor:pointer;display:none;">Anterior</button>
+                <button type="button" id="arquetipo-next" style="padding:10px 18px;border-radius:8px;border:none;background:<%= site.tema_secundaria || '#c9a227' %>;color:#1a1a1a;font-weight:600;cursor:pointer;">Próxima</button>
+            </div>
+        </div>
+        <div id="arquetipo-result" style="display:none;margin-top:2rem;padding:1.5rem;background:rgba(255,255,255,.06);border-radius:12px;max-width:480px;">
+            <h3 id="arquetipo-result-title" style="color:<%= site.tema_secundaria || '#c9a227' %>;margin-bottom:0.5rem;"></h3>
+            <p id="arquetipo-result-desc" style="color:rgba(255,255,255,.9);margin-bottom:1.5rem;"></p>
+            <p style="margin-bottom:1rem;">Receba seu resultado por e-mail e um resumo dos 12 arquétipos:</p>
+            <form id="form-arquetipo">
+                <input type="text" name="nome" placeholder="Nome" required style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <input type="email" name="email" placeholder="E-mail" required style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <input type="text" name="whatsapp" placeholder="WhatsApp" style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <input type="text" name="instagram" placeholder="Instagram (@)" style="width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <button type="submit" class="cta-btn primary" style="width:100%;border:none;cursor:pointer;">Enviar e receber resultado</button>
+            </form>
+            <p id="arquetipo-msg" style="margin-top:12px;font-size:.9rem;display:none;"></p>
+        </div>
+    </section>
+    <% } %>
+
+    <section class="section" id="orcamento">
+        <h2>Solicitar orçamento</h2>
+        <p>Preencha o formulário e em breve entraremos em contato com uma proposta.</p>
+        <div style="max-width:480px;padding:1.5rem;background:rgba(255,255,255,.06);border-radius:12px;">
+            <form id="form-orcamento">
+                <input type="text" name="nome" placeholder="Nome *" required style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <input type="email" name="email" placeholder="E-mail *" required style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <input type="text" name="whatsapp" placeholder="WhatsApp (com DDD)" style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <input type="text" name="profissao" placeholder="Profissão / área" style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <label style="display:block;color:rgba(255,255,255,.8);font-size:.9rem;margin-bottom:6px;">Qual sua faixa de investimento prevista?</label>
+                <select name="faixa_investimento" style="width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                    <option value="">Selecione</option>
+                    <option value="baixo">Até R$ 500</option>
+                    <option value="medio">R$ 500 a R$ 2.000</option>
+                    <option value="alto">Acima de R$ 2.000</option>
+                </select>
+                <label style="display:block;color:rgba(255,255,255,.8);font-size:.9rem;margin-bottom:6px;">Objetivo das fotos</label>
+                <select name="objetivo_fotos" style="width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                    <option value="">Selecione</option>
+                    <option value="linkedin">LinkedIn / rede profissional</option>
+                    <option value="marca_pessoal">Marca pessoal</option>
+                    <option value="corporativo">Uso corporativo</option>
+                    <option value="posicionamento">Posicionamento / autoridade</option>
+                    <option value="pessoal">Uso pessoal</option>
+                </select>
+                <label style="display:block;color:rgba(255,255,255,.8);font-size:.9rem;margin-bottom:6px;">Quando precisa das fotos?</label>
+                <select name="quando_precisa" style="width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                    <option value="">Selecione</option>
+                    <option value="urgente">O mais rápido possível</option>
+                    <option value="1mes">Em até 1 mês</option>
+                    <option value="3meses">Em até 3 meses</option>
+                    <option value="sem_pressa">Sem pressa, só planejando</option>
+                </select>
+                <label style="display:block;color:rgba(255,255,255,.8);font-size:.9rem;margin-bottom:6px;">A decisão de contratar é só sua?</label>
+                <select name="decisao_sozinho" style="width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                    <option value="">Selecione</option>
+                    <option value="sim">Sim</option>
+                    <option value="nao">Não (empresa/parceiro)</option>
+                </select>
+                <button type="submit" class="cta-btn primary" style="width:100%;border:none;cursor:pointer;">Enviar pedido de orçamento</button>
+            </form>
+            <p id="orcamento-msg" style="margin-top:12px;font-size:.9rem;display:none;"></p>
+        </div>
+    </section>
+
+    <section class="section" id="contato">
+        <h2>Contato</h2>
+        <% if (site.contato_email) { %><p>E-mail: <a href="mailto:<%= site.contato_email %>"><%= site.contato_email %></a></p><% } %>
+        <% if (site.contato_whatsapp) { %><p>WhatsApp: <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %>"><%= site.contato_whatsapp %></a></p><% } %>
+        <% if (site.contato_horario) { %><p><%= site.contato_horario %></p><% } %>
+    </section>
+
+    <footer class="site-footer">
+        <% if (site.rede_instagram) { %><a href="<%= site.rede_instagram %>" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a><% } %>
+        <% if (site.rede_facebook) { %><a href="<%= site.rede_facebook %>" target="_blank" rel="noopener"><i class="fab fa-facebook"></i></a><% } %>
+        <p style="margin-top:1rem;">© ConectaKing</p>
+    </footer>
+
+    <script>
+        (function() {
+            var slug = '<%= slug %>';
+            var ARQUETIPOS = { inocente:'O Inocente', sabio:'O Sábio', explorador:'O Explorador', criador:'O Criador', governante:'O Governante', mago:'O Mago', amante:'O Amante', heroi:'O Herói', bufao:'O Bufão', cidadao:'O Cidadão', cuidador:'O Cuidador', revolucionario:'O Revolucionário' };
+            var PERGUNTAS = [
+                { arquetipo:'inocente', texto:'Acredito que as coisas podem ser simples e boas.' },
+                { arquetipo:'inocente', texto:'Prefiro ver o lado positivo das pessoas e das situações.' },
+                { arquetipo:'inocente', texto:'Confio que, no fundo, as pessoas querem o bem.' },
+                { arquetipo:'inocente', texto:'Gosto de manter um ambiente leve e sem conflitos.' },
+                { arquetipo:'sabio', texto:'Busco entender as coisas a fundo antes de decidir.' },
+                { arquetipo:'sabio', texto:'Valorizo conhecimento e reflexão.' },
+                { arquetipo:'sabio', texto:'Gosto de compartilhar o que aprendi com os outros.' },
+                { arquetipo:'sabio', texto:'A verdade e a clareza são muito importantes para mim.' },
+                { arquetipo:'explorador', texto:'Gosto de experimentar coisas novas e sair da rotina.' },
+                { arquetipo:'explorador', texto:'A liberdade e a autonomia são essenciais para mim.' },
+                { arquetipo:'explorador', texto:'Curiosidade me move a descobrir novos caminhos.' },
+                { arquetipo:'explorador', texto:'Prefiro criar meu próprio caminho a seguir regras prontas.' },
+                { arquetipo:'criador', texto:'Tenho necessidade de expressar minha visão de forma única.' },
+                { arquetipo:'criador', texto:'Qualidade e estética fazem muita diferença no que faço.' },
+                { arquetipo:'criador', texto:'Gosto de transformar ideias em algo concreto e belo.' },
+                { arquetipo:'criador', texto:'A criatividade é central na minha vida e no meu trabalho.' },
+                { arquetipo:'governante', texto:'Gosto de tomar as rédeas e garantir que tudo funcione.' },
+                { arquetipo:'governante', texto:'Responsabilidade e liderança me motivam.' },
+                { arquetipo:'governante', texto:'Quero construir algo que perdure e tenha impacto.' },
+                { arquetipo:'governante', texto:'A ordem e a estrutura me ajudam a performar melhor.' },
+                { arquetipo:'mago', texto:'Acredito que é possível transformar situações com a atitude certa.' },
+                { arquetipo:'mago', texto:'Busco entender o que está por trás das aparências.' },
+                { arquetipo:'mago', texto:'Gosto de inspirar mudança nas pessoas.' },
+                { arquetipo:'mago', texto:'Vejo possibilidades onde outros veem limites.' },
+                { arquetipo:'amante', texto:'Valorizo muito conexão, beleza e experiência sensorial.' },
+                { arquetipo:'amante', texto:'Quero que meu trabalho transmita emoção e autenticidade.' },
+                { arquetipo:'amante', texto:'Relacionamentos profundos são fundamentais para mim.' },
+                { arquetipo:'amante', texto:'Busco o que é genuíno e significativo.' },
+                { arquetipo:'heroi', texto:'Gosto de superar desafios e provar minha capacidade.' },
+                { arquetipo:'heroi', texto:'Competência e coragem são valores que me guiam.' },
+                { arquetipo:'heroi', texto:'Quero ser reconhecido pelo que conquisto.' },
+                { arquetipo:'heroi', texto:'Persisto até alcançar o resultado que desejo.' },
+                { arquetipo:'bufao', texto:'Humor e leveza ajudam a conectar com as pessoas.' },
+                { arquetipo:'bufao', texto:'Gosto de quebrar o gelo e deixar o ambiente mais solto.' },
+                { arquetipo:'bufao', texto:'Ver o lado engraçado das coisas me ajuda no dia a dia.' },
+                { arquetipo:'bufao', texto:'Prefiro abordagens descontraídas sem perder o foco.' },
+                { arquetipo:'cidadao', texto:'Valorizo pertencer a um grupo e fazer parte de algo maior.' },
+                { arquetipo:'cidadao', texto:'Ser real e acessível é importante para mim.' },
+                { arquetipo:'cidadao', texto:'Trabalho bem em equipe e valorizo a colaboração.' },
+                { arquetipo:'cidadao', texto:'Busco equilíbrio entre ser eu mesmo e me adaptar.' },
+                { arquetipo:'cuidador', texto:'Gosto de apoiar e cuidar das pessoas ao meu redor.' },
+                { arquetipo:'cuidador', texto:'Generosidade e proteção são naturais para mim.' },
+                { arquetipo:'cuidador', texto:'Me realizo quando posso ajudar os outros.' },
+                { arquetipo:'cuidador', texto:'Empatia guia minhas decisões e ações.' },
+                { arquetipo:'revolucionario', texto:'Questiono o que está estabelecido quando não faz sentido.' },
+                { arquetipo:'revolucionario', texto:'Busco mudar o que não funciona.' },
+                { arquetipo:'revolucionario', texto:'Autenticidade e ruptura me motivam.' },
+                { arquetipo:'revolucionario', texto:'Prefiro inovar a repetir o mesmo.' }
+            ];
+            var landing = document.getElementById('arquetipo-landing');
+            var quiz = document.getElementById('arquetipo-quiz');
+            var result = document.getElementById('arquetipo-result');
+            var startBtn = document.getElementById('arquetipo-start-btn');
+            if (startBtn) startBtn.addEventListener('click', function(e) { e.preventDefault(); if (landing) landing.style.display = 'none'; if (quiz) quiz.style.display = 'block'; arquetipoGoTo(1); });
+            var answers = [];
+            var currentStep = 1;
+            var progressBar = document.getElementById('arquetipo-progress-bar');
+            var stepLabel = document.getElementById('arquetipo-step-label');
+            var statementEl = document.getElementById('arquetipo-statement');
+            var prevBtn = document.getElementById('arquetipo-prev');
+            var nextBtn = document.getElementById('arquetipo-next');
+            function arquetipoGoTo(step) {
+                currentStep = step;
+                if (progressBar) progressBar.style.width = ((step - 1) / 48 * 100) + '%';
+                if (stepLabel) stepLabel.textContent = 'Pergunta ' + step + ' de 48';
+                var p = PERGUNTAS[step - 1];
+                if (statementEl && p) statementEl.textContent = p.texto;
+                if (prevBtn) prevBtn.style.display = step > 1 ? 'block' : 'none';
+                if (nextBtn) nextBtn.textContent = step === 48 ? 'Ver resultado' : 'Próxima';
+                document.querySelectorAll('.quiz-option').forEach(function(btn) {
+                    btn.style.background = answers[step - 1] ? 'rgba(201,162,39,.3)' : 'rgba(0,0,0,.2)';
+                    btn.style.borderColor = answers[step - 1] ? '#c9a227' : 'rgba(255,255,255,.3)';
+                });
+            }
+            document.querySelectorAll('.quiz-option').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var v = parseInt(btn.getAttribute('data-value'), 10);
+                    answers[currentStep - 1] = v;
+                    arquetipoGoTo(currentStep);
+                });
+            });
+            if (prevBtn) prevBtn.addEventListener('click', function() { if (currentStep > 1) arquetipoGoTo(currentStep - 1); });
+            if (nextBtn) nextBtn.addEventListener('click', function() {
+                if (currentStep < 48) arquetipoGoTo(currentStep + 1);
+                else {
+                    var scores = {};
+                    Object.keys(ARQUETIPOS).forEach(function(k) { scores[k] = 0; });
+                    PERGUNTAS.forEach(function(p, i) { scores[p.arquetipo] = (scores[p.arquetipo] || 0) + (answers[i] || 0); });
+                    var dominant = Object.keys(scores).sort(function(a, b) { return scores[b] - scores[a]; })[0];
+                    if (quiz) quiz.style.display = 'none';
+                    if (result) {
+                        result.style.display = 'block';
+                        var titleEl = document.getElementById('arquetipo-result-title');
+                        var descEl = document.getElementById('arquetipo-result-desc');
+                        if (titleEl) titleEl.textContent = 'Seu arquétipo predominante: ' + (ARQUETIPOS[dominant] || dominant);
+                        if (descEl) descEl.textContent = 'Este arquétipo reflete traços fortes da sua forma de ver o mundo e se posicionar. Preencha abaixo para receber um resumo completo por e-mail.';
+                    }
+                    window.__arquetipoResultado = dominant;
+                    window.__arquetipoScores = scores;
+                }
+            });
+            var form = document.getElementById('form-arquetipo');
+            if (form) {
+                var msg = document.getElementById('arquetipo-msg');
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    var fd = new FormData(form);
+                    var payload = {
+                        nome: fd.get('nome'),
+                        email: fd.get('email'),
+                        whatsapp: fd.get('whatsapp') || '',
+                        instagram: fd.get('instagram') || '',
+                        arquetipo_resultado: window.__arquetipoResultado || '',
+                        arquetipo_scores: window.__arquetipoScores || {}
+                    };
+                    fetch('/' + slug + '/site/arquetipo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }).then(function(r) { return r.json(); }).then(function(data) {
+                        if (msg) { msg.style.display = 'block'; msg.textContent = data.message || (data.success ? 'Recebemos seus dados. Em breve você receberá seu resultado.' : 'Erro ao enviar.'); msg.style.color = data.success ? '#8f8' : '#f88'; }
+                        if (data.success && form) form.reset();
+                    }).catch(function() {
+                        if (msg) { msg.style.display = 'block'; msg.textContent = 'Erro ao enviar. Tente novamente.'; msg.style.color = '#f88'; }
+                    });
+                });
+            }
+        })();
+        (function() {
+            var form = document.getElementById('form-orcamento');
+            if (!form) return;
+            var msg = document.getElementById('orcamento-msg');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var fd = new FormData(form);
+                var slug = '<%= slug %>';
+                var payload = {
+                    nome: fd.get('nome'),
+                    email: fd.get('email'),
+                    whatsapp: fd.get('whatsapp') || '',
+                    profissao: fd.get('profissao') || '',
+                    respostas: {
+                        faixa_investimento: fd.get('faixa_investimento') || '',
+                        objetivo_fotos: fd.get('objetivo_fotos') || '',
+                        quando_precisa: fd.get('quando_precisa') || '',
+                        decisao_sozinho: fd.get('decisao_sozinho') || ''
+                    }
+                };
+                fetch('/' + slug + '/site/orcamento', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(function(r) { return r.json(); }).then(function(data) {
+                    msg.style.display = 'block';
+                    msg.textContent = data.message || (data.success ? 'Recebemos seu pedido. Em breve entraremos em contato.' : 'Erro ao enviar.');
+                    msg.style.color = data.success ? '#8f8' : '#f88';
+                    if (data.success) form.reset();
+                }).catch(function() {
+                    msg.style.display = 'block';
+                    msg.textContent = 'Erro ao enviar. Tente novamente.';
+                    msg.style.color = '#f88';
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
