@@ -17,16 +17,8 @@ async function findByProfileItemId(profileItemId) {
 async function findBySlug(slug) {
     const client = await db.pool.connect();
     try {
-        let r = await client.query(
-            `SELECT s.*, pi.slug, pi.is_active, pi.user_id
-             FROM site_items s
-             JOIN profile_items pi ON pi.id = s.profile_item_id
-             WHERE pi.slug = $1 AND pi.item_type = 'photographer_site'`,
-            [slug]
-        );
-        if (r.rows[0]) return r.rows[0];
-        r = await client.query(
-            `SELECT s.*, pi.slug, pi.is_active, pi.user_id
+        const r = await client.query(
+            `SELECT s.*, pi.is_active, pi.user_id
              FROM site_items s
              JOIN profile_items pi ON pi.id = s.profile_item_id
              JOIN users u ON u.id = pi.user_id
@@ -99,10 +91,12 @@ async function getSlugForProfileItem(profileItemId) {
     const client = await db.pool.connect();
     try {
         const r = await client.query(
-            'SELECT pi.slug, u.profile_slug FROM profile_items pi JOIN users u ON u.id = pi.user_id WHERE pi.id = $1',
+            'SELECT u.profile_slug FROM profile_items pi JOIN users u ON u.id = pi.user_id WHERE pi.id = $1',
             [profileItemId]
         );
-        return r.rows[0] || null;
+        const row = r.rows[0];
+        if (!row) return null;
+        return { profile_slug: row.profile_slug, slug: row.profile_slug };
     } finally {
         client.release();
     }
