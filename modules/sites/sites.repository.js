@@ -57,7 +57,8 @@ const ALLOWED_KEYS = [
     'contato_email', 'contato_telefone', 'contato_whatsapp', 'contato_whatsapp_mensagem', 'contato_form_ativo', 'contato_horario',
     'rede_instagram', 'rede_facebook', 'rede_linkedin',
     'meta_titulo', 'meta_description',
-    'tema_primaria', 'tema_secundaria', 'tema_fonte', 'favicon_url', 'site_em_manutencao'
+    'tema_primaria', 'tema_secundaria', 'tema_fonte', 'favicon_url', 'site_em_manutencao',
+    'custom_domain'
 ];
 
 async function update(profileItemId, data) {
@@ -72,6 +73,7 @@ async function update(profileItemId, data) {
             if (['servicos', 'portfolio', 'depoimentos', 'faq', 'arquetipo_por_que_fazer', 'arquetipo_campos_form'].includes(key))
                 val = JSON.stringify(Array.isArray(val) ? val : (typeof val === 'object' && val !== null ? val : []));
             if (['arquetipo_ativo', 'contato_form_ativo', 'site_em_manutencao'].includes(key)) val = !!val;
+            if (key === 'custom_domain') val = val ? String(val).trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase() : null;
             sets.push(key + ' = $' + i++);
             values.push(val);
         }
@@ -80,6 +82,27 @@ async function update(profileItemId, data) {
         const r = await client.query(
             'UPDATE site_items SET ' + sets.join(', ') + ', updated_at = NOW() WHERE profile_item_id = $' + i + ' RETURNING *',
             values
+        );
+        return r.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
+async function findByCustomDomain(host) {
+    if (!host || typeof host !== 'string') return null;
+    const normalized = host.replace(/^www\./, '').trim().toLowerCase().split(':')[0];
+    if (!normalized) return null;
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            `SELECT s.*, pi.is_active, pi.user_id
+             FROM site_items s
+             JOIN profile_items pi ON pi.id = s.profile_item_id
+             WHERE LOWER(TRIM(s.custom_domain)) = $1
+               AND pi.item_type = 'photographer_site' AND pi.is_active = true
+               AND s.custom_domain IS NOT NULL AND TRIM(s.custom_domain) <> ''`,
+            [normalized]
         );
         return r.rows[0] || null;
     } finally {
@@ -153,6 +176,7 @@ async function getArquetipoLeads(siteItemId) {
 module.exports = {
     findByProfileItemId,
     findBySlug,
+    findByCustomDomain,
     create,
     update,
     ensureOwnership,

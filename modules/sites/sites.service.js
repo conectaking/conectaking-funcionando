@@ -51,8 +51,22 @@ async function getPublicBySlug(slug) {
     return parseJsonFields(item);
 }
 
+async function getPublicByCustomDomain(host) {
+    const item = await repository.findByCustomDomain(host);
+    if (!item) return null;
+    if (item.site_em_manutencao) return { ...parseJsonFields(item), em_manutencao: true };
+    return parseJsonFields(item);
+}
+
 async function submitArquetipoLead(slug, data) {
     const site = await repository.findBySlug(slug);
+    if (!site) throw new Error('Site não encontrado.');
+    if (site.site_em_manutencao) throw new Error('Site em manutenção.');
+    return repository.insertArquetipoLead(site.id, data);
+}
+
+async function submitArquetipoLeadByHost(host, data) {
+    const site = await repository.findByCustomDomain(host);
     if (!site) throw new Error('Site não encontrado.');
     if (site.site_em_manutencao) throw new Error('Site em manutenção.');
     return repository.insertArquetipoLead(site.id, data);
@@ -70,6 +84,8 @@ module.exports = {
     getConfig,
     saveConfig,
     getPublicBySlug,
+    getPublicByCustomDomain,
     submitArquetipoLead,
+    submitArquetipoLeadByHost,
     getArquetipoLeads
 };

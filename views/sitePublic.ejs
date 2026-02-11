@@ -169,7 +169,7 @@
 
     <script>
         (function() {
-            var slug = '<%= slug %>';
+            var formBasePath = '<%= typeof formBasePath !== "undefined" ? formBasePath : ("/" + (slug || "")) %>';
             var ARQUETIPOS = { inocente:'O Inocente', sabio:'O Sábio', explorador:'O Explorador', criador:'O Criador', governante:'O Governante', mago:'O Mago', amante:'O Amante', heroi:'O Herói', bufao:'O Bufão', cidadao:'O Cidadão', cuidador:'O Cuidador', revolucionario:'O Revolucionário' };
             var PERGUNTAS = [
                 { arquetipo:'inocente', texto:'Acredito que as coisas podem ser simples e boas.' },
@@ -287,7 +287,7 @@
                         arquetipo_resultado: window.__arquetipoResultado || '',
                         arquetipo_scores: window.__arquetipoScores || {}
                     };
-                    fetch('/' + slug + '/site/arquetipo', {
+                    fetch(formBasePath + '/site/arquetipo', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -307,7 +307,7 @@
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 var fd = new FormData(form);
-                var slug = '<%= slug %>';
+                var formBasePath = '<%= typeof formBasePath !== "undefined" ? formBasePath : ("/" + (slug || "")) %>';
                 var payload = {
                     nome: fd.get('nome'),
                     email: fd.get('email'),
@@ -320,7 +320,7 @@
                         decisao_sozinho: fd.get('decisao_sozinho') || ''
                     }
                 };
-                fetch('/' + slug + '/site/orcamento', {
+                fetch(formBasePath + '/site/orcamento', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

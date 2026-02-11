@@ -38,6 +38,17 @@ async function submitBySlug(slug, data) {
     const site = await sitesRepository.findBySlug(slug);
     if (!site) throw new Error('Site não encontrado.');
     if (site.site_em_manutencao) throw new Error('Site em manutenção.');
+    return _insertLead(site.user_id, data);
+}
+
+async function submitByHost(host, data) {
+    const site = await sitesRepository.findByCustomDomain(host);
+    if (!site) throw new Error('Site não encontrado.');
+    if (site.site_em_manutencao) throw new Error('Site em manutenção.');
+    return _insertLead(site.user_id, data);
+}
+
+function _insertLead(userId, data) {
     const respostas = data.respostas || {
         nome: data.nome,
         email: data.email,
@@ -46,7 +57,7 @@ async function submitBySlug(slug, data) {
         ...data
     };
     const { ticket, ticket_reason, recommendation } = computeTicket(respostas);
-    return orcamentosRepository.insert(site.user_id, {
+    return orcamentosRepository.insert(userId, {
         nome: data.nome,
         email: data.email,
         whatsapp: data.whatsapp,
@@ -73,6 +84,7 @@ async function updateStatus(id, userId, status) {
 
 module.exports = {
     submitBySlug,
+    submitByHost,
     list,
     getOne,
     updateStatus,
