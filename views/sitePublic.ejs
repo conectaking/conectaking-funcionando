@@ -5,29 +5,211 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= site.meta_titulo || 'Meu site' %> — ConectaKing</title>
     <% if (site.meta_description) { %><meta name="description" content="<%= site.meta_description %>"><% } %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
+        :root {
+            --bg: <%= site.tema_primaria || '#0a0a0a' %>;
+            --accent: <%= site.tema_secundaria || '#c9a227' %>;
+            --text: #f2f2f2;
+            --text-muted: rgba(255,255,255,.65);
+            --border: rgba(255,255,255,.08);
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: <%= site.tema_primaria || '#1a1a1a' %>; color: #f5f5f5; min-height: 100vh; line-height: 1.5; }
-        .site-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; position: sticky; top: 0; background: rgba(0,0,0,.6); z-index: 100; }
-        .site-logo { font-weight: 700; font-size: 1.1rem; color: #fff; text-decoration: none; }
-        .site-nav { display: flex; gap: 1.5rem; flex-wrap: wrap; }
-        .site-nav a { color: rgba(255,255,255,.9); text-decoration: none; font-size: .95rem; }
-        .site-nav a:hover { color: <%= site.tema_secundaria || '#c9a227' %>; }
-        .hero { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem 1.5rem; }
-        .hero h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); margin-bottom: 1rem; font-weight: 700; max-width: 720px; }
-        .hero .slogan { font-size: clamp(1.1rem, 2.5vw, 1.4rem); color: <%= site.tema_secundaria || '#c9a227' %>; margin-bottom: 1.5rem; max-width: 640px; }
-        .hero .ctas { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 2rem; }
-        .hero .cta-btn { display: inline-block; padding: 14px 28px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: transform .2s, box-shadow .2s; }
-        .hero .cta-btn.primary { background: <%= site.tema_secundaria || '#c9a227' %>; color: #1a1a1a; }
-        .hero .cta-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,162,39,.4); }
-        .hero .cta-btn.secondary { background: rgba(255,255,255,.12); color: #fff; border: 2px solid rgba(255,255,255,.3); }
-        .hero .cta-btn.secondary:hover { background: rgba(255,255,255,.18); }
-        .section { padding: 3rem 1.5rem; max-width: 900px; margin: 0 auto; }
-        .section h2 { font-size: 1.5rem; margin-bottom: 1rem; color: <%= site.tema_secundaria || '#c9a227' %>; }
-        .section p { color: rgba(255,255,255,.88); margin-bottom: 1rem; }
-        .site-footer { padding: 2rem 1.5rem; text-align: center; border-top: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.7); font-size: .9rem; }
-        .site-footer a { color: <%= site.tema_secundaria || '#c9a227' %>; text-decoration: none; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.65;
+            font-weight: 400;
+        }
+        .site-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 2rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to bottom, rgba(10,10,10,.95) 0%, rgba(10,10,10,.6) 80%, transparent 100%);
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+        .site-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600;
+            font-size: 1.35rem;
+            letter-spacing: 0.02em;
+            color: #fff;
+            text-decoration: none;
+        }
+        .site-nav {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .site-nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: color .2s;
+        }
+        .site-nav a:hover { color: var(--accent); }
+        .site-nav .nav-whatsapp { color: #25d366; }
+        .site-nav .nav-whatsapp:hover { color: #2ee66d; }
+
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 6rem 1.5rem 4rem;
+        }
+        .hero h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1.85rem, 5vw, 3rem);
+            font-weight: 600;
+            line-height: 1.25;
+            max-width: 680px;
+            margin-bottom: 1.25rem;
+            letter-spacing: -0.02em;
+        }
+        .hero .slogan {
+            font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+            color: var(--accent);
+            font-weight: 400;
+            max-width: 560px;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.01em;
+        }
+        .hero .hero-line {
+            width: 60px;
+            height: 1px;
+            background: var(--accent);
+            opacity: .6;
+            margin: 1.5rem auto 2rem;
+        }
+        .hero .ctas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem 1.75rem;
+            border-radius: 999px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: transform .2s, box-shadow .2s, background .2s;
+            letter-spacing: 0.02em;
+        }
+        .cta-btn.primary {
+            background: var(--accent);
+            color: #0a0a0a;
+            border: none;
+        }
+        .cta-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(201,162,39,.25);
+        }
+        .cta-btn.secondary {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .cta-btn.secondary:hover {
+            background: rgba(255,255,255,.06);
+            border-color: rgba(255,255,255,.15);
+        }
+
+        .section {
+            padding: 4.5rem 1.5rem;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 1.25rem;
+            letter-spacing: 0.02em;
+        }
+        .section p { color: var(--text-muted); margin-bottom: 1rem; font-size: 1rem; }
+        .section .card {
+            background: rgba(255,255,255,.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 1.5rem;
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 1rem 1.1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(0,0,0,.25);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .form-input::placeholder { color: rgba(255,255,255,.4); }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(201,162,39,.12);
+        }
+        .form-select { cursor: pointer; }
+        .form-label { display: block; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .btn-submit {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border-radius: 999px;
+            border: none;
+            background: var(--accent);
+            color: #0a0a0a;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform .2s, box-shadow .2s;
+        }
+        .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,162,39,.3); }
+
+        .site-footer {
+            padding: 3rem 1.5rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .site-footer a { color: var(--accent); text-decoration: none; margin: 0 0.5rem; }
+        .site-footer a:hover { text-decoration: underline; }
+        .quiz-option:hover { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.06); }
+        .quiz-option.selected { border-color: var(--accent); background: rgba(201,162,39,.15); }
+        @media (max-width: 640px) {
+            .site-nav { gap: 1.25rem; }
+            .hero { padding-top: 5rem; }
+        }
     </style>
 </head>
 <body>
@@ -36,11 +218,11 @@
         <nav class="site-nav">
             <a href="#hero">Início</a>
             <a href="#sobre">Sobre</a>
-            <% if (site.arquetipo_ativo) { %><a href="#arquetipo">Teste de Arquétipo</a><% } %>
+            <a href="#arquetipo">Teste de Arquétipo</a>
             <a href="#orcamento">Orçamento</a>
             <a href="#contato">Contato</a>
             <% if (site.contato_whatsapp) { %>
-            <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+            <a class="nav-whatsapp" href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
             <% } %>
         </nav>
     </header>
@@ -48,14 +230,15 @@
     <section class="hero" id="hero">
         <h1><%= site.hero_pergunta || 'Sabe qual é a diferença do fotógrafo pro retratista?' %></h1>
         <p class="slogan"><%= site.hero_slogan || 'O fotógrafo registra momentos. O retratista extrai a essência.' %></p>
-        <% if (site.hero_subtitulo) { %><p><%= site.hero_subtitulo %></p><% } %>
+        <div class="hero-line"></div>
+        <% if (site.hero_subtitulo) { %><p style="color:var(--text-muted);font-size:1rem;"><%= site.hero_subtitulo %></p><% } %>
         <div class="ctas">
             <% if (site.arquetipo_ativo) { %>
             <a href="#arquetipo" class="cta-btn primary"><%= site.hero_cta_arquetipo_texto || 'Descubra seu arquétipo' %></a>
             <% } %>
             <a href="#orcamento" class="cta-btn secondary"><%= site.hero_cta_orcamento_texto || 'Solicitar orçamento' %></a>
             <% if (site.contato_whatsapp) { %>
-            <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" class="cta-btn secondary" target="_blank" rel="noopener"><%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
+            <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" class="cta-btn secondary" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> <%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
             <% } else { %>
             <a href="#contato" class="cta-btn secondary"><%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
             <% } %>
@@ -64,69 +247,72 @@
 
     <% if (site.sobre_texto) { %>
     <section class="section" id="sobre">
-        <h2>Sobre</h2>
+        <h2 class="section-title">Sobre</h2>
         <p><%= site.sobre_texto %></p>
     </section>
     <% } %>
 
-    <% if (site.arquetipo_ativo) { %>
     <section class="section" id="arquetipo">
-        <h2><%= site.arquetipo_landing_titulo || 'Descubra seu arquétipo e transforme sua imagem profissional' %></h2>
+    <% if (site.arquetipo_ativo) { %>
+        <h2 class="section-title"><%= site.arquetipo_landing_titulo || 'Descubra seu arquétipo e transforme sua imagem profissional' %></h2>
         <% if (site.arquetipo_landing_texto) { %><p><%= site.arquetipo_landing_texto %></p><% } %>
         <div id="arquetipo-landing">
-            <p><a href="#" id="arquetipo-start-btn" class="cta-btn primary" style="display:inline-block;margin-top:1rem;"><%= site.arquetipo_landing_cta || 'Faça o teste de arquétipo agora mesmo' %></a></p>
+            <p><a href="#" id="arquetipo-start-btn" class="cta-btn primary" style="display:inline-block;margin-top:1.25rem;"><%= site.arquetipo_landing_cta || 'Faça o teste de arquétipo agora mesmo' %></a></p>
         </div>
         <div id="arquetipo-quiz" style="display:none;margin-top:2rem;max-width:520px;">
-            <div class="quiz-progress" style="height:6px;background:rgba(255,255,255,.15);border-radius:3px;margin-bottom:1.5rem;"><div id="arquetipo-progress-bar" style="height:100%;width:0%;background:<%= site.tema_secundaria || '#c9a227' %>;border-radius:3px;transition:width .3s"></div></div>
-            <p id="arquetipo-step-label" style="font-size:.9rem;color:rgba(255,255,255,.7);margin-bottom:1rem;">Pergunta 1 de 48</p>
-            <p id="arquetipo-statement" style="font-size:1.15rem;margin-bottom:1.5rem;line-height:1.5;"></p>
+            <div class="quiz-progress" style="height:6px;background:rgba(255,255,255,.12);border-radius:3px;margin-bottom:1.5rem;"><div id="arquetipo-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:3px;transition:width .3s"></div></div>
+            <p id="arquetipo-step-label" style="font-size:.9rem;color:var(--text-muted);margin-bottom:1rem;">Pergunta 1 de 48</p>
+            <p id="arquetipo-statement" style="font-size:1.2rem;margin-bottom:1.5rem;line-height:1.5;color:var(--text);"></p>
             <div class="quiz-scale" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.5rem;">
-                <button type="button" class="quiz-option" data-value="1" style="padding:12px 20px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.2);color:#fff;cursor:pointer;">1</button>
-                <button type="button" class="quiz-option" data-value="2" style="padding:12px 20px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.2);color:#fff;cursor:pointer;">2</button>
-                <button type="button" class="quiz-option" data-value="3" style="padding:12px 20px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.2);color:#fff;cursor:pointer;">3</button>
-                <button type="button" class="quiz-option" data-value="4" style="padding:12px 20px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.2);color:#fff;cursor:pointer;">4</button>
-                <button type="button" class="quiz-option" data-value="5" style="padding:12px 20px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.2);color:#fff;cursor:pointer;">5</button>
+                <button type="button" class="quiz-option" data-value="1" style="padding:12px 20px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.2);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .2s, background .2s;">1</button>
+                <button type="button" class="quiz-option" data-value="2" style="padding:12px 20px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.2);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .2s, background .2s;">2</button>
+                <button type="button" class="quiz-option" data-value="3" style="padding:12px 20px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.2);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .2s, background .2s;">3</button>
+                <button type="button" class="quiz-option" data-value="4" style="padding:12px 20px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.2);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .2s, background .2s;">4</button>
+                <button type="button" class="quiz-option" data-value="5" style="padding:12px 20px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.2);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .2s, background .2s;">5</button>
             </div>
-            <p style="font-size:.85rem;color:rgba(255,255,255,.6);margin-bottom:1rem;">1 = discordo totalmente · 5 = concordo totalmente</p>
+            <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">1 = discordo totalmente · 5 = concordo totalmente</p>
             <div style="display:flex;gap:10px;">
-                <button type="button" id="arquetipo-prev" style="padding:10px 18px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;cursor:pointer;display:none;">Anterior</button>
-                <button type="button" id="arquetipo-next" style="padding:10px 18px;border-radius:8px;border:none;background:<%= site.tema_secundaria || '#c9a227' %>;color:#1a1a1a;font-weight:600;cursor:pointer;">Próxima</button>
+                <button type="button" id="arquetipo-prev" style="padding:10px 20px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;font-family:inherit;display:none;">Anterior</button>
+                <button type="button" id="arquetipo-next" style="padding:10px 24px;border-radius:999px;border:none;background:var(--accent);color:#0a0a0a;font-weight:600;cursor:pointer;font-family:inherit;">Próxima</button>
             </div>
         </div>
-        <div id="arquetipo-result" style="display:none;margin-top:2rem;padding:1.5rem;background:rgba(255,255,255,.06);border-radius:12px;max-width:480px;">
-            <h3 id="arquetipo-result-title" style="color:<%= site.tema_secundaria || '#c9a227' %>;margin-bottom:0.5rem;"></h3>
-            <p id="arquetipo-result-desc" style="color:rgba(255,255,255,.9);margin-bottom:1.5rem;"></p>
-            <p style="margin-bottom:1rem;">Receba seu resultado por e-mail e um resumo dos 12 arquétipos:</p>
+        <div id="arquetipo-result" style="display:none;margin-top:2rem;" class="card">
+            <h3 id="arquetipo-result-title" class="section-title" style="font-size:1.35rem;margin-bottom:0.5rem;"></h3>
+            <p id="arquetipo-result-desc" style="color:var(--text-muted);margin-bottom:1.5rem;"></p>
+            <p style="margin-bottom:1rem;color:var(--text-muted);">Receba seu resultado por e-mail e um resumo dos 12 arquétipos:</p>
             <form id="form-arquetipo">
-                <input type="text" name="nome" placeholder="Nome" required style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
-                <input type="email" name="email" placeholder="E-mail" required style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
-                <input type="text" name="whatsapp" placeholder="WhatsApp" style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
-                <input type="text" name="instagram" placeholder="Instagram (@)" style="width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
-                <button type="submit" class="cta-btn primary" style="width:100%;border:none;cursor:pointer;">Enviar e receber resultado</button>
+                <input type="text" name="nome" placeholder="Nome" required class="form-input">
+                <input type="email" name="email" placeholder="E-mail" required class="form-input">
+                <input type="text" name="whatsapp" placeholder="WhatsApp" class="form-input">
+                <input type="text" name="instagram" placeholder="Instagram (@)" class="form-input">
+                <button type="submit" class="btn-submit">Enviar e receber resultado</button>
             </form>
             <p id="arquetipo-msg" style="margin-top:12px;font-size:.9rem;display:none;"></p>
         </div>
-    </section>
+    <% } else { %>
+        <h2 class="section-title">Teste de Arquétipo</h2>
+        <p>Um teste exclusivo para identificar seu arquétipo e direcionar sua imagem profissional. Ative esta seção em <strong>Meu site</strong> → aba <strong>Arquétipo</strong> no painel ConectaKing para disponibilizar o teste aqui.</p>
     <% } %>
+    </section>
 
     <section class="section" id="orcamento">
-        <h2>Solicitar orçamento</h2>
+        <h2 class="section-title">Solicitar orçamento</h2>
         <p>Preencha o formulário e em breve entraremos em contato com uma proposta.</p>
-        <div style="max-width:480px;padding:1.5rem;background:rgba(255,255,255,.06);border-radius:12px;">
+        <div class="card" style="max-width:480px;">
             <form id="form-orcamento">
-                <input type="text" name="nome" placeholder="Nome *" required style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
-                <input type="email" name="email" placeholder="E-mail *" required style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
-                <input type="text" name="whatsapp" placeholder="WhatsApp (com DDD)" style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
-                <input type="text" name="profissao" placeholder="Profissão / área" style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
-                <label style="display:block;color:rgba(255,255,255,.8);font-size:.9rem;margin-bottom:6px;">Qual sua faixa de investimento prevista?</label>
-                <select name="faixa_investimento" style="width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <input type="text" name="nome" placeholder="Nome *" required class="form-input">
+                <input type="email" name="email" placeholder="E-mail *" required class="form-input">
+                <input type="text" name="whatsapp" placeholder="WhatsApp (com DDD)" class="form-input">
+                <input type="text" name="profissao" placeholder="Profissão / área" class="form-input">
+                <label class="form-label">Qual sua faixa de investimento prevista?</label>
+                <select name="faixa_investimento" class="form-select">
                     <option value="">Selecione</option>
                     <option value="baixo">Até R$ 500</option>
                     <option value="medio">R$ 500 a R$ 2.000</option>
                     <option value="alto">Acima de R$ 2.000</option>
                 </select>
-                <label style="display:block;color:rgba(255,255,255,.8);font-size:.9rem;margin-bottom:6px;">Objetivo das fotos</label>
-                <select name="objetivo_fotos" style="width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <label class="form-label">Objetivo das fotos</label>
+                <select name="objetivo_fotos" class="form-select">
                     <option value="">Selecione</option>
                     <option value="linkedin">LinkedIn / rede profissional</option>
                     <option value="marca_pessoal">Marca pessoal</option>
@@ -134,37 +320,37 @@
                     <option value="posicionamento">Posicionamento / autoridade</option>
                     <option value="pessoal">Uso pessoal</option>
                 </select>
-                <label style="display:block;color:rgba(255,255,255,.8);font-size:.9rem;margin-bottom:6px;">Quando precisa das fotos?</label>
-                <select name="quando_precisa" style="width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <label class="form-label">Quando precisa das fotos?</label>
+                <select name="quando_precisa" class="form-select">
                     <option value="">Selecione</option>
                     <option value="urgente">O mais rápido possível</option>
                     <option value="1mes">Em até 1 mês</option>
                     <option value="3meses">Em até 3 meses</option>
                     <option value="sem_pressa">Sem pressa, só planejando</option>
                 </select>
-                <label style="display:block;color:rgba(255,255,255,.8);font-size:.9rem;margin-bottom:6px;">A decisão de contratar é só sua?</label>
-                <select name="decisao_sozinho" style="width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fff;">
+                <label class="form-label">A decisão de contratar é só sua?</label>
+                <select name="decisao_sozinho" class="form-select">
                     <option value="">Selecione</option>
                     <option value="sim">Sim</option>
                     <option value="nao">Não (empresa/parceiro)</option>
                 </select>
-                <button type="submit" class="cta-btn primary" style="width:100%;border:none;cursor:pointer;">Enviar pedido de orçamento</button>
+                <button type="submit" class="btn-submit">Enviar pedido de orçamento</button>
             </form>
             <p id="orcamento-msg" style="margin-top:12px;font-size:.9rem;display:none;"></p>
         </div>
     </section>
 
     <section class="section" id="contato">
-        <h2>Contato</h2>
-        <% if (site.contato_email) { %><p>E-mail: <a href="mailto:<%= site.contato_email %>"><%= site.contato_email %></a></p><% } %>
-        <% if (site.contato_whatsapp) { %><p>WhatsApp: <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %>"><%= site.contato_whatsapp %></a></p><% } %>
+        <h2 class="section-title">Contato</h2>
+        <% if (site.contato_email) { %><p>E-mail: <a href="mailto:<%= site.contato_email %>" style="color:var(--accent);"><%= site.contato_email %></a></p><% } %>
+        <% if (site.contato_whatsapp) { %><p>WhatsApp: <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %>" style="color:#25d366;"><%= site.contato_whatsapp %></a></p><% } %>
         <% if (site.contato_horario) { %><p><%= site.contato_horario %></p><% } %>
     </section>
 
     <footer class="site-footer">
         <% if (site.rede_instagram) { %><a href="<%= site.rede_instagram %>" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a><% } %>
         <% if (site.rede_facebook) { %><a href="<%= site.rede_facebook %>" target="_blank" rel="noopener"><i class="fab fa-facebook"></i></a><% } %>
-        <p style="margin-top:1rem;">© ConectaKing</p>
+        <p style="margin-top:1.25rem;color:var(--text-muted);">© ConectaKing</p>
     </footer>
 
     <script>
@@ -241,9 +427,11 @@
                 if (statementEl && p) statementEl.textContent = p.texto;
                 if (prevBtn) prevBtn.style.display = step > 1 ? 'block' : 'none';
                 if (nextBtn) nextBtn.textContent = step === 48 ? 'Ver resultado' : 'Próxima';
+                var chosen = answers[step - 1];
                 document.querySelectorAll('.quiz-option').forEach(function(btn) {
-                    btn.style.background = answers[step - 1] ? 'rgba(201,162,39,.3)' : 'rgba(0,0,0,.2)';
-                    btn.style.borderColor = answers[step - 1] ? '#c9a227' : 'rgba(255,255,255,.3)';
+                    var isChosen = chosen && parseInt(btn.getAttribute('data-value'), 10) === chosen;
+                    btn.style.background = isChosen ? 'rgba(201,162,39,.25)' : 'rgba(0,0,0,.2)';
+                    btn.style.borderColor = isChosen ? 'var(--accent)' : 'var(--border)';
                 });
             }
             document.querySelectorAll('.quiz-option').forEach(function(btn) {
