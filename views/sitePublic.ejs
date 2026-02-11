@@ -232,45 +232,55 @@
 </head>
 <body>
     <header class="site-header">
-        <a href="#hero" class="site-logo">Meu site</a>
+        <a href="#" data-goto="inicio" class="site-logo">Meu site</a>
         <nav class="site-nav">
-            <a href="#hero">Início</a>
-            <a href="#sobre">Sobre</a>
-            <a href="#arquetipo">Teste de Arquétipo</a>
-            <a href="#orcamento">Orçamento</a>
-            <a href="#contato">Contato</a>
+            <a href="#inicio" data-goto="inicio" class="nav-link-tab nav-active">Início</a>
+            <a href="#sobre" data-goto="sobre" class="nav-link-tab">Sobre</a>
+            <a href="#arquetipo" data-goto="arquetipo" class="nav-link-tab">Teste de Arquétipo</a>
+            <a href="#orcamento" data-goto="orcamento" class="nav-link-tab">Orçamento</a>
+            <a href="#contato" data-goto="contato" class="nav-link-tab">Contato</a>
             <% if (site.contato_whatsapp) { %>
             <a class="nav-whatsapp" href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
             <% } %>
         </nav>
     </header>
 
-    <section class="hero" id="hero">
-        <h1><%= site.hero_pergunta || 'Sabe qual é a diferença do fotógrafo pro retratista?' %></h1>
-        <p class="slogan"><%= site.hero_slogan || 'O fotógrafo registra momentos. O retratista extrai a essência.' %></p>
-        <div class="hero-line"></div>
-        <% if (site.hero_subtitulo) { %><p style="color:var(--text-muted);font-size:1rem;"><%= site.hero_subtitulo %></p><% } %>
-        <div class="ctas">
-            <% if (site.arquetipo_ativo) { %>
-            <a href="#arquetipo" class="cta-btn primary"><%= site.hero_cta_arquetipo_texto || 'Descubra seu arquétipo' %></a>
-            <% } %>
-            <a href="#orcamento" class="cta-btn secondary"><%= site.hero_cta_orcamento_texto || 'Solicitar orçamento' %></a>
-            <% if (site.contato_whatsapp) { %>
-            <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" class="cta-btn secondary" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> <%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
-            <% } else { %>
-            <a href="#contato" class="cta-btn secondary"><%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
-            <% } %>
+    <main id="site-main">
+        <!-- Aba 1: Início -->
+        <div class="site-page active" id="page-inicio" data-page="inicio">
+            <div class="page-inner">
+                <section class="hero" id="hero">
+                    <h1><%= site.hero_pergunta || 'Sabe qual é a diferença do fotógrafo pro retratista?' %></h1>
+                    <p class="slogan"><%= site.hero_slogan || 'O fotógrafo registra momentos. O retratista extrai a essência.' %></p>
+                    <div class="hero-line"></div>
+                    <% if (site.hero_subtitulo) { %><p style="color:var(--text-muted);font-size:1rem;"><%= site.hero_subtitulo %></p><% } %>
+                    <div class="ctas">
+                        <% if (site.arquetipo_ativo) { %>
+                        <a href="#" data-goto="arquetipo" class="cta-btn primary"><%= site.hero_cta_arquetipo_texto || 'Descubra seu arquétipo' %></a>
+                        <% } %>
+                        <a href="#" data-goto="orcamento" class="cta-btn secondary"><%= site.hero_cta_orcamento_texto || 'Solicitar orçamento' %></a>
+                        <% if (site.contato_whatsapp) { %>
+                        <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" class="cta-btn secondary" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> <%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
+                        <% } else { %>
+                        <a href="#" data-goto="contato" class="cta-btn secondary"><%= site.hero_cta_contato_texto || 'Agendar / Falar comigo' %></a>
+                        <% } %>
+                    </div>
+                </section>
+            </div>
         </div>
-    </section>
 
-    <% if (site.sobre_texto) { %>
-    <section class="section" id="sobre">
-        <h2 class="section-title">Sobre</h2>
-        <p><%= site.sobre_texto %></p>
-    </section>
-    <% } %>
+        <!-- Aba 2: Sobre -->
+        <div class="site-page" id="page-sobre" data-page="sobre">
+            <div class="page-inner">
+                <h2 class="section-title">Sobre</h2>
+                <% if (site.sobre_texto) { %><p><%= site.sobre_texto %></p><% } %>
+                <% if (!site.sobre_texto) { %><p style="color:var(--text-muted);">Conte sua história aqui. Edite em <strong>Meu site</strong> → aba <strong>Sobre</strong>.</p><% } %>
+            </div>
+        </div>
 
-    <section class="section" id="arquetipo">
+        <!-- Aba 3: Teste de Arquétipo -->
+        <div class="site-page" id="page-arquetipo" data-page="arquetipo">
+            <div class="page-inner page-arquetipo-inner">
     <% if (site.arquetipo_ativo) { %>
         <h2 class="section-title"><%= site.arquetipo_landing_titulo || 'Descubra seu arquétipo e transforme sua imagem profissional' %></h2>
         <% if (site.arquetipo_landing_texto) { %><p><%= site.arquetipo_landing_texto %></p><% } %>
@@ -311,10 +321,13 @@
         <h2 class="section-title">Teste de Arquétipo</h2>
         <p>Um teste exclusivo para identificar seu arquétipo e direcionar sua imagem profissional. Ative esta seção em <strong>Meu site</strong> → aba <strong>Arquétipo</strong> no painel ConectaKing para disponibilizar o teste aqui.</p>
     <% } %>
-    </section>
+            </div>
+        </div>
 
-    <section class="section" id="orcamento">
-        <h2 class="section-title">Solicitar orçamento</h2>
+        <!-- Aba 4: Orçamento -->
+        <div class="site-page" id="page-orcamento" data-page="orcamento">
+            <div class="page-inner">
+                <h2 class="section-title">Solicitar orçamento</h2>
         <p>Preencha o formulário e em breve entraremos em contato com uma proposta.</p>
         <div class="card" style="max-width:480px;">
             <form id="form-orcamento">
@@ -355,15 +368,20 @@
                 <button type="submit" class="btn-submit">Enviar pedido de orçamento</button>
             </form>
             <p id="orcamento-msg" style="margin-top:12px;font-size:.9rem;display:none;"></p>
+            </div>
         </div>
-    </section>
 
-    <section class="section" id="contato">
-        <h2 class="section-title">Contato</h2>
-        <% if (site.contato_email) { %><p>E-mail: <a href="mailto:<%= site.contato_email %>" style="color:var(--accent);"><%= site.contato_email %></a></p><% } %>
-        <% if (site.contato_whatsapp) { %><p>WhatsApp: <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %>" style="color:#25d366;"><%= site.contato_whatsapp %></a></p><% } %>
-        <% if (site.contato_horario) { %><p><%= site.contato_horario %></p><% } %>
-    </section>
+        <!-- Aba 5: Contato -->
+        <div class="site-page" id="page-contato" data-page="contato">
+            <div class="page-inner">
+                <h2 class="section-title">Contato</h2>
+                <% if (site.contato_email) { %><p>E-mail: <a href="mailto:<%= site.contato_email %>" style="color:var(--accent);"><%= site.contato_email %></a></p><% } %>
+                <% if (site.contato_whatsapp) { %><p>WhatsApp: <a href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %>" style="color:#25d366;"><%= site.contato_whatsapp %></a></p><% } %>
+                <% if (site.contato_horario) { %><p><%= site.contato_horario %></p><% } %>
+                <% if (!site.contato_email && !site.contato_whatsapp) { %><p style="color:var(--text-muted);">Preencha e-mail e WhatsApp em <strong>Meu site</strong> → aba <strong>Contato</strong>.</p><% } %>
+            </div>
+        </div>
+    </main>
 
     <footer class="site-footer">
         <% if (site.rede_instagram) { %><a href="<%= site.rede_instagram %>" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a><% } %>
@@ -372,6 +390,37 @@
     </footer>
 
     <script>
+        (function() {
+            var formBasePath = '<%= typeof formBasePath !== "undefined" ? formBasePath : ("/" + (slug || "")) %>';
+
+            function showPage(pageId) {
+                var pages = document.querySelectorAll('.site-page');
+                var navLinks = document.querySelectorAll('.nav-link-tab');
+                pageId = pageId || 'inicio';
+                pages.forEach(function(p) {
+                    p.classList.toggle('active', p.getAttribute('data-page') === pageId);
+                });
+                navLinks.forEach(function(a) {
+                    a.classList.toggle('nav-active', a.getAttribute('data-goto') === pageId);
+                });
+                if (history.replaceState) history.replaceState(null, '', '#' + pageId);
+            }
+            function onHashChange() {
+                var hash = (location.hash || '#inicio').replace('#', '');
+                if (['inicio','sobre','arquetipo','orcamento','contato'].indexOf(hash) >= 0) showPage(hash);
+                else showPage('inicio');
+            }
+            document.querySelectorAll('[data-goto]').forEach(function(a) {
+                if (a.classList && a.classList.contains('nav-whatsapp')) return;
+                if (a.href && a.href.indexOf('wa.me') >= 0) return;
+                a.addEventListener('click', function(e) {
+                    var go = a.getAttribute('data-goto');
+                    if (go) { e.preventDefault(); showPage(go); }
+                });
+            });
+            window.addEventListener('hashchange', onHashChange);
+            onHashChange();
+        })();
         (function() {
             var formBasePath = '<%= typeof formBasePath !== "undefined" ? formBasePath : ("/" + (slug || "")) %>';
             var ARQUETIPOS = { inocente:'O Inocente', sabio:'O Sábio', explorador:'O Explorador', criador:'O Criador', governante:'O Governante', mago:'O Mago', amante:'O Amante', heroi:'O Herói', bufao:'O Bufão', cidadao:'O Cidadão', cuidador:'O Cuidador', revolucionario:'O Revolucionário' };
