@@ -5,7 +5,7 @@
 
 CREATE TABLE IF NOT EXISTS orcamento_leads (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
     nome VARCHAR(255),
     email VARCHAR(255),
     whatsapp VARCHAR(50),
