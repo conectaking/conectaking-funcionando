@@ -63,8 +63,26 @@
             transition: color .2s;
         }
         .site-nav a:hover { color: var(--accent); }
+        .site-nav a.nav-active { color: var(--accent); }
         .site-nav .nav-whatsapp { color: #25d366; }
         .site-nav .nav-whatsapp:hover { color: #2ee66d; }
+
+        /* Abas: uma página por vez */
+        .site-page {
+            display: none;
+            min-height: 100vh;
+            padding-top: 5rem;
+            animation: tabFadeIn .35s ease;
+        }
+        .site-page.active { display: block; }
+        @keyframes tabFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .site-page .page-inner {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+        .site-page.page-inicio { padding-top: 0; }
+        .site-page.page-inicio .page-inner { max-width: none; padding: 0; }
 
         .hero {
             min-height: 100vh;
