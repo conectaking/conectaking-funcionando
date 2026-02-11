@@ -139,7 +139,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 6rem 1.5rem 4rem;
+            padding: 6rem 1.5rem 5rem;
             position: relative;
         }
         .hero-bg {
@@ -147,29 +147,63 @@
             inset: 0;
             z-index: 0;
         }
-        .hero-bg img { width: 100%; height: 100%; object-fit: cover; opacity: .5; }
-        .hero-bg .overlay { position: absolute; inset: 0; background: linear-gradient(to top, var(--bg), transparent 40%, transparent 60%, var(--bg)); }
-        .hero .hero-content { position: relative; z-index: 1; }
-        .hero h1 {
-            font-size: clamp(2rem, 8vw, 4.5rem);
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-            margin-bottom: 0.5rem;
+        .hero-bg img { width: 100%; height: 100%; object-fit: cover; opacity: .6; filter: grayscale(40%); transition: filter .8s; }
+        .hero:hover .hero-bg img { filter: grayscale(0%); }
+        .hero-bg .overlay { position: absolute; inset: 0; background: linear-gradient(to top, var(--bg) 0%, transparent 35%, transparent 65%, var(--bg) 100%); }
+        .hero .hero-content { position: relative; z-index: 2; }
+        .hero-hud {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5.5rem 1.5rem 1.5rem;
         }
-        .hero .slogan {
-            font-size: clamp(0.85rem, 2vw, 1.1rem);
-            color: var(--accent);
-            font-weight: 400;
-            letter-spacing: 0.3em;
+        .hero-hud-top { display: flex; justify-content: space-between; align-items: flex-start; opacity: .85; }
+        .hero-hud-bottom { display: flex; justify-content: space-between; align-items: flex-end; opacity: .85; }
+        .hero-hud-meta { font-family: monospace; font-size: 0.7rem; color: var(--accent); }
+        .hero-hud-meta .label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.25rem; }
+        .hero-hud-meta .values { display: flex; gap: 0.75rem; }
+        .hero-hud-status { text-align: right; }
+        .hero-hud-status .label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+        .hero-hud-status .ready { font-size: 0.7rem; display: flex; align-items: center; justify-content: flex-end; gap: 0.35rem; color: var(--accent); }
+        .hero-hud-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse-dot 1.5s infinite; }
+        @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+        .hero-hud-focus { max-width: 200px; }
+        .hero-hud-focus .bar { height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; margin-bottom: 0.35rem; }
+        .hero-hud-focus .bar-fill { height: 100%; width: 66%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+        .hero-hud-focus .label { font-size: 0.6rem; letter-spacing: 0.1em; color: var(--accent); font-family: monospace; }
+        .hero-hud-session { text-align: right; font-size: 0.6rem; letter-spacing: 0.15em; color: var(--accent); }
+        .hero h1 {
+            font-size: clamp(2.5rem, 10vw, 5.5rem);
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            margin-bottom: 0.5rem;
             text-transform: uppercase;
-            margin-bottom: 1.5rem;
+        }
+        .hero h1 .hero-title-1 { color: rgba(255,255,255,.95); }
+        .hero h1 .hero-title-2 { color: var(--accent); }
+        .hero .slogan {
+            font-size: clamp(0.75rem, 1.8vw, 1rem);
+            color: rgba(255,255,255,.9);
+            font-weight: 400;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
         }
         .hero .hero-line {
-            width: 60px;
+            width: 80px;
             height: 1px;
             background: rgba(244,175,37,.5);
-            margin: 1rem auto 1.5rem;
+            margin: 0.75rem auto;
+        }
+        .hero .hero-tagline { font-size: 0.6rem; letter-spacing: 0.25em; color: rgba(255,255,255,.6); font-style: italic; text-transform: uppercase; }
+        @media (max-width: 768px) {
+            .hero-hud { padding: 5rem 1rem 1rem; }
+            .hero-hud-meta .values { flex-wrap: wrap; gap: 0.35rem; }
         }
         .hero .ctas {
             display: flex;
@@ -300,10 +334,11 @@
             </a>
             <nav class="site-nav">
                 <a href="#inicio" data-goto="inicio" class="nav-link-tab nav-active">Início</a>
-                <a href="#sobre" data-goto="sobre" class="nav-link-tab">Sobre</a>
-                <a href="#arquetipo" data-goto="arquetipo" class="nav-link-tab">Teste de Arquétipo</a>
-                <a href="#orcamento" data-goto="orcamento" class="nav-link-tab nav-cta">Orçamento</a>
+                <a href="#arquetipo" data-goto="arquetipo" class="nav-link-tab">Arquétipo</a>
+                <a href="#inicio" data-goto="inicio" class="nav-link-tab">Processo</a>
                 <a href="#contato" data-goto="contato" class="nav-link-tab">Contato</a>
+                <a href="#orcamento" data-goto="orcamento" class="nav-link-tab nav-cta">Orçamento</a>
+                <a href="#sobre" data-goto="sobre" class="nav-link-tab" style="opacity:.8;">Sobre</a>
                 <% if (site.contato_whatsapp) { %>
                 <a class="nav-whatsapp" href="https://wa.me/<%= site.contato_whatsapp.replace(/\D/g,'') %><%= site.contato_whatsapp_mensagem ? '?text=' + encodeURIComponent(site.contato_whatsapp_mensagem) : '' %>" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
                 <% } %>
@@ -316,17 +351,36 @@
         <div class="site-page active" id="page-inicio" data-page="inicio">
             <div class="page-inner">
                 <section class="hero" id="hero">
-                    <% if (site.hero_imagem_url) { %>
                     <div class="hero-bg">
-                        <img src="<%= site.hero_imagem_url %>" alt="">
+                        <img src="<%= site.hero_imagem_url || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80' %>" alt="">
                         <div class="overlay"></div>
                     </div>
-                    <% } %>
+                    <div class="hero-hud">
+                        <div class="hero-hud-top">
+                            <div class="hud-border hero-hud-meta" style="padding: 0.5rem 0.75rem;">
+                                <div class="label">Metadata Capture</div>
+                                <div class="values"><span>ISO 100</span><span>85mm</span><span>f/1.2</span><span>1/200s</span></div>
+                            </div>
+                            <div class="hero-hud-status">
+                                <div class="label">System Status</div>
+                                <div class="ready">READY <span class="dot"></span></div>
+                            </div>
+                        </div>
+                        <div></div>
+                        <div class="hero-hud-bottom">
+                            <div class="hero-hud-focus">
+                                <div class="bar"><div class="bar-fill"></div></div>
+                                <div class="label">Focus Lock: Face Detected</div>
+                            </div>
+                            <div class="hero-hud-session">Session ID: #<%= (site.meta_titulo || 'AK').toString().replace(/\s+/g,'').substring(0,4).toUpperCase() %>-<%= new Date().getFullYear() %></div>
+                        </div>
+                    </div>
                     <div class="hero-content">
-                        <h1><%= site.hero_pergunta || 'Sabe qual é a diferença do fotógrafo pro retratista?' %></h1>
-                        <p class="slogan"><%= site.hero_slogan || 'O fotógrafo registra momentos. O retratista extrai a essência.' %></p>
+                        <% var titulo = (site.meta_titulo || site.hero_pergunta || 'Meu site').toString().trim(); var parts = titulo.split(/\s+/).filter(Boolean); var p1 = parts[0] || ''; var p2 = parts.length > 1 ? parts.slice(1).join(' ') : ''; %>
+                        <h1><% if (p2) { %><span class="hero-title-1"><%= p1.toUpperCase() %></span> <span class="hero-title-2 text-glow"><%= p2.toUpperCase() %></span><% } else { %><span class="hero-title-2 text-glow"><%= p1.toUpperCase() %></span><% } %></h1>
+                        <p class="slogan"><%= site.hero_slogan || 'Retratista de Autoridade' %></p>
                         <div class="hero-line"></div>
-                        <% if (site.hero_subtitulo) { %><p style="color:var(--text-muted);font-size:1rem;"><%= site.hero_subtitulo %></p><% } %>
+                        <p class="hero-tagline">Cyber-Luxe Excellence</p>
                         <div class="ctas">
                             <% if (site.arquetipo_ativo) { %>
                             <a href="#" data-goto="arquetipo" class="cta-btn primary"><%= site.hero_cta_arquetipo_texto || 'Descubra seu arquétipo' %></a>
