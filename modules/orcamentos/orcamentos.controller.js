@@ -42,8 +42,22 @@ async function updateStatus(req, res) {
     }
 }
 
+async function remove(req, res) {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (!id) return responseFormatter.error(res, 'ID inválido', 400);
+        const deleted = await orcamentosService.remove(id, req.user.userId);
+        if (!deleted) return responseFormatter.error(res, 'Orçamento não encontrado', 404);
+        return responseFormatter.success(res, { id: deleted.id }, 'Orçamento excluído.');
+    } catch (e) {
+        logger.error('orcamentos remove:', e);
+        return responseFormatter.error(res, e.message || 'Erro', 500);
+    }
+}
+
 module.exports = {
     list,
     getOne,
-    updateStatus
+    updateStatus,
+    remove
 };

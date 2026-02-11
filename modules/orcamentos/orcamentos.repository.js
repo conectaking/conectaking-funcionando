@@ -73,9 +73,23 @@ async function updateStatus(id, userId, status) {
     }
 }
 
+async function remove(id, userId) {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            'DELETE FROM orcamento_leads WHERE id = $1 AND user_id = $2 RETURNING id',
+            [id, userId]
+        );
+        return r.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
 module.exports = {
     insert,
     listByUserId,
     getById,
-    updateStatus
+    updateStatus,
+    remove
 };

@@ -82,11 +82,16 @@ async function updateStatus(id, userId, status) {
     return orcamentosRepository.updateStatus(id, userId, status);
 }
 
+async function remove(id, userId) {
+    return orcamentosRepository.remove(id, userId);
+}
+
 module.exports = {
     submitBySlug,
     submitByHost,
     list,
     getOne,
     updateStatus,
+    remove,
     computeTicket
 };

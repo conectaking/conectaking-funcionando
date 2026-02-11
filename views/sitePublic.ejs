@@ -320,8 +320,27 @@
         @media (max-width: 600px) { .form-grid-2 { grid-template-columns: 1fr; } }
         @media (max-width: 768px) {
             .site-header { left: 0.5rem; right: 0.5rem; top: 0.5rem; }
+            .site-nav { gap: 0.75rem; }
             .site-nav a:not(.nav-cta):not(.nav-whatsapp) { font-size: 0.65rem; }
+            .hero-content h1 { font-size: clamp(1.5rem, 5vw, 2.25rem); line-height: 1.25; }
+            .hero-content .slogan { font-size: 0.95rem; }
+            .hero-content .ctas { flex-direction: column; align-items: stretch; }
+            .hero-content .cta-btn { justify-content: center; }
+            .page-inner { padding-left: 1rem; padding-right: 1rem; }
         }
+        .sobre-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: start; }
+        @media (min-width: 640px) {
+            .sobre-grid { grid-template-columns: 1fr 1.2fr; }
+        }
+        @media (max-width: 480px) {
+            .glass-nav { padding: 0.6rem 1rem; border-radius: 12px; }
+            .site-nav a { font-size: 0.6rem; letter-spacing: 0.08em; }
+            .hero-hud-top, .hero-hud-bottom { flex-wrap: wrap; gap: 0.5rem; }
+            .section-title { font-size: 1.35rem; }
+        }
+        .hero-content h1 { transition: font-size .2s; }
+        .portfolio-grid img { transition: transform .25s; }
+        .portfolio-item:hover img { transform: scale(1.03); }
     </style>
 </head>
 <body>
@@ -335,7 +354,7 @@
             <nav class="site-nav">
                 <a href="#inicio" data-goto="inicio" class="nav-link-tab nav-active">Início</a>
                 <a href="#arquetipo" data-goto="arquetipo" class="nav-link-tab">Arquétipo</a>
-                <a href="#inicio" data-goto="inicio" class="nav-link-tab">Processo</a>
+                <a href="#portfolio" data-goto="portfolio" class="nav-link-tab">Portfólio</a>
                 <a href="#contato" data-goto="contato" class="nav-link-tab">Contato</a>
                 <a href="#orcamento" data-goto="orcamento" class="nav-link-tab nav-cta">Orçamento</a>
                 <a href="#sobre" data-goto="sobre" class="nav-link-tab" style="opacity:.8;">Sobre</a>
@@ -426,8 +445,15 @@
         <div class="site-page" id="page-sobre" data-page="sobre">
             <div class="page-inner">
                 <h2 class="section-title">Sobre</h2>
-                <% if (site.sobre_texto) { %><p><%= site.sobre_texto %></p><% } %>
-                <% if (!site.sobre_texto) { %><p style="color:var(--text-muted);">Conte sua história aqui. Edite em <strong>Meu site</strong> → aba <strong>Sobre</strong>.</p><% } %>
+                <div class="sobre-grid" style="display:grid;grid-template-columns:1fr;gap:2rem;align-items:start;max-width:900px;">
+                    <% if (site.sobre_imagem_url) { %>
+                    <div><img src="<%= site.sobre_imagem_url %>" alt="Sobre" style="width:100%;max-width:400px;border-radius:12px;border:1px solid var(--border);"></div>
+                    <% } %>
+                    <div>
+                        <% if (site.sobre_texto) { %><p style="white-space:pre-line;line-height:1.8;"><%= site.sobre_texto %></p><% } %>
+                        <% if (!site.sobre_texto) { %><p style="color:var(--text-muted);">Conte sua história aqui. Edite em <strong>Meu site</strong> → <strong>Editar meu site</strong> no painel.</p><% } %>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -438,7 +464,21 @@
         <h2 class="section-title"><%= site.arquetipo_landing_titulo || 'Descubra seu arquétipo e transforme sua imagem profissional' %></h2>
         <% if (site.arquetipo_landing_texto) { %><p><%= site.arquetipo_landing_texto %></p><% } %>
         <div id="arquetipo-landing">
-            <p><a href="#" id="arquetipo-start-btn" class="cta-btn primary" style="display:inline-block;margin-top:1.25rem;"><%= site.arquetipo_landing_cta || 'Faça o teste de arquétipo agora mesmo' %></a></p>
+            <h3 style="font-size:1.15rem;margin-bottom:0.5rem;color:var(--text);">Cadastre-se para fazer o teste</h3>
+            <p style="margin-bottom:1.25rem;color:var(--text-muted);">Preencha todos os seus dados abaixo. Assim conseguimos enviar seu resultado por e-mail e entrar em contato.</p>
+            <div class="hud-card hud-border" style="max-width:440px;margin-top:1rem;">
+                <form id="arquetipo-form-inicio">
+                    <label class="form-label">Nome completo *</label>
+                    <input type="text" name="nome" placeholder="Seu nome" required class="form-input">
+                    <label class="form-label">E-mail *</label>
+                    <input type="email" name="email" placeholder="seu@email.com" required class="form-input">
+                    <label class="form-label">WhatsApp (com DDD) *</label>
+                    <input type="text" name="whatsapp" placeholder="(11) 99999-9999" class="form-input" required>
+                    <label class="form-label">Instagram</label>
+                    <input type="text" name="instagram" placeholder="@seuusuario" class="form-input">
+                    <button type="submit" id="arquetipo-start-btn" class="cta-btn primary" style="margin-top:1.25rem;width:100%;"><%= site.arquetipo_landing_cta || 'Começar teste de arquétipo' %></button>
+                </form>
+            </div>
         </div>
         <div id="arquetipo-quiz" style="display:none;margin-top:2rem;max-width:520px;">
             <div class="quiz-progress" style="height:6px;background:rgba(255,255,255,.12);border-radius:3px;margin-bottom:1.5rem;"><div id="arquetipo-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:3px;transition:width .3s"></div></div>
@@ -477,6 +517,28 @@
             </div>
         </div>
 
+        <!-- Aba Portfólio -->
+        <div class="site-page" id="page-portfolio" data-page="portfolio">
+            <div class="page-inner">
+                <h2 class="section-title">Portfólio</h2>
+                <p style="color:var(--text-muted);margin-bottom:2rem;"><%= (site.portfolio_titulo || 'Alguns dos meus trabalhos').toString() %></p>
+                <% var portfolio = Array.isArray(site.portfolio) ? site.portfolio : []; var fotos = []; portfolio.forEach(function(cat) { if (cat && cat.fotos && Array.isArray(cat.fotos)) cat.fotos.forEach(function(f) { fotos.push(f); }); else if (cat && (cat.url || cat.imagem_url)) fotos.push({ url: cat.url || cat.imagem_url, caption: cat.titulo || cat.caption || '' }); }); if (fotos.length === 0) { %>
+                <p style="color:var(--text-muted);">Em breve, meus melhores trabalhos estarão aqui. Você pode adicionar fotos em <strong>Meu site</strong> → <strong>Editar meu site</strong> no painel.</p>
+                <% } else { %>
+                <div class="portfolio-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;">
+                    <% fotos.slice(0, 24).forEach(function(f) { var u = f.url || f.imagem_url; if (!u) return; %>
+                    <div class="portfolio-item hud-card hud-border" style="overflow:hidden;border-radius:12px;">
+                        <a href="<%= u %>" target="_blank" rel="noopener" style="display:block;aspect-ratio:4/3;background:var(--bg-card);">
+                            <img src="<%= u %>" alt="<%= (f.caption || f.titulo || 'Foto').toString().substring(0,80) %>" style="width:100%;height:100%;object-fit:cover;">
+                        </a>
+                        <% if (f.caption || f.titulo) { %><p style="padding:12px;font-size:0.9rem;color:var(--text-muted);margin:0;"><%= (f.caption || f.titulo).toString().substring(0, 60) %><%= (f.caption || f.titulo).length > 60 ? '…' : '' %></p><% } %>
+                    </div>
+                    <% }); %>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
         <!-- Aba 4: Orçamento -->
         <div class="site-page" id="page-orcamento" data-page="orcamento">
             <div class="page-inner">
@@ -498,6 +560,25 @@
                 <input type="text" name="whatsapp" placeholder="(11) 99999-9999" class="form-input">
                 <label class="form-label">Profissão / área</label>
                 <input type="text" name="profissao" placeholder="Sua área de atuação" class="form-input">
+                <div class="form-grid-2">
+                    <div>
+                        <label class="form-label">Cidade</label>
+                        <input type="text" name="cidade" placeholder="Sua cidade" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Estado (UF)</label>
+                        <input type="text" name="estado" placeholder="SP" class="form-input" maxlength="2">
+                    </div>
+                </div>
+                <label class="form-label">Como nos conheceu?</label>
+                <select name="como_conheceu" class="form-select">
+                    <option value="">Selecione</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="indicacao">Indicação</option>
+                    <option value="google">Google / busca</option>
+                    <option value="site">Site</option>
+                    <option value="outro">Outro</option>
+                </select>
                 <label class="form-label">Qual sua faixa de investimento prevista?</label>
                 <select name="faixa_investimento" class="form-select">
                     <option value="">Selecione</option>
@@ -591,7 +672,7 @@
             }
             function onHashChange() {
                 var hash = (location.hash || '#inicio').replace('#', '');
-                if (['inicio','sobre','arquetipo','orcamento','contato'].indexOf(hash) >= 0) showPage(hash);
+                if (['inicio','sobre','arquetipo','orcamento','contato','portfolio'].indexOf(hash) >= 0) showPage(hash);
                 else showPage('inicio');
             }
             document.querySelectorAll('[data-goto]').forEach(function(a) {
@@ -661,8 +742,15 @@
             var landing = document.getElementById('arquetipo-landing');
             var quiz = document.getElementById('arquetipo-quiz');
             var result = document.getElementById('arquetipo-result');
-            var startBtn = document.getElementById('arquetipo-start-btn');
-            if (startBtn) startBtn.addEventListener('click', function(e) { e.preventDefault(); if (landing) landing.style.display = 'none'; if (quiz) quiz.style.display = 'block'; arquetipoGoTo(1); });
+            var formInicio = document.getElementById('arquetipo-form-inicio');
+            if (formInicio) formInicio.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var fd = new FormData(formInicio);
+                window.__arquetipoLead = { nome: fd.get('nome'), email: fd.get('email'), whatsapp: fd.get('whatsapp') || '', instagram: fd.get('instagram') || '' };
+                if (landing) landing.style.display = 'none';
+                if (quiz) quiz.style.display = 'block';
+                arquetipoGoTo(1);
+            });
             var answers = [];
             var currentStep = 1;
             var progressBar = document.getElementById('arquetipo-progress-bar');
@@ -706,7 +794,15 @@
                         var titleEl = document.getElementById('arquetipo-result-title');
                         var descEl = document.getElementById('arquetipo-result-desc');
                         if (titleEl) titleEl.textContent = 'Seu arquétipo predominante: ' + (ARQUETIPOS[dominant] || dominant);
-                        if (descEl) descEl.textContent = 'Este arquétipo reflete traços fortes da sua forma de ver o mundo e se posicionar. Preencha abaixo para receber um resumo completo por e-mail.';
+                        if (descEl) descEl.textContent = 'Este arquétipo reflete traços fortes da sua forma de ver o mundo e se posicionar. Confirme seus dados abaixo para receber um resumo completo por e-mail.';
+                        var lead = window.__arquetipoLead || {};
+                        var f = document.getElementById('form-arquetipo');
+                        if (f) {
+                            if (f.nome) f.nome.value = lead.nome || '';
+                            if (f.email) f.email.value = lead.email || '';
+                            if (f.whatsapp) f.whatsapp.value = lead.whatsapp || '';
+                            if (f.instagram) f.instagram.value = lead.instagram || '';
+                        }
                     }
                     window.__arquetipoResultado = dominant;
                     window.__arquetipoScores = scores;
@@ -753,6 +849,9 @@
                     whatsapp: fd.get('whatsapp') || '',
                     profissao: fd.get('profissao') || '',
                     respostas: {
+                        cidade: fd.get('cidade') || '',
+                        estado: fd.get('estado') || '',
+                        como_conheceu: fd.get('como_conheceu') || '',
                         faixa_investimento: fd.get('faixa_investimento') || '',
                         objetivo_fotos: fd.get('objetivo_fotos') || '',
                         quando_precisa: fd.get('quando_precisa') || '',

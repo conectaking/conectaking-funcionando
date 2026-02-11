@@ -9,5 +9,6 @@ router.use(protectUser);
 router.get('/', asyncHandler(controller.list));
 router.get('/:id', asyncHandler(controller.getOne));
 router.patch('/:id/status', asyncHandler(controller.updateStatus));
+router.delete('/:id', asyncHandler(controller.remove));
 
 module.exports = router;
