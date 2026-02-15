@@ -264,6 +264,124 @@ router.get('/users', protectAdmin, async (req, res) => {
     }
 });
 
+/**
+ * Dashboard detalhado do usuário (apenas admin) — logins, acessos ao cartão, cliques, IPs, links
+ */
+router.get('/users/:id/dashboard', protectAdmin, async (req, res) => {
+    const userId = req.params.id;
+    const client = await db.pool.connect();
+    try {
+        const userRes = await client.query(
+            `SELECT u.id, u.email, u.profile_slug, u.created_at,
+             p.display_name
+             FROM users u
+             LEFT JOIN user_profiles p ON u.id = p.user_id
+             WHERE u.id = $1`,
+            [userId]
+        );
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+        const user = userRes.rows[0];
+
+        const loginCountRes = await client.query(
+            `SELECT COUNT(*) as total, MAX(created_at) as last_at
+             FROM user_activities
+             WHERE user_id = $1 AND activity_type = 'login'`,
+            [userId]
+        );
+        const viewCountRes = await client.query(
+            `SELECT COUNT(*) as total, MAX(created_at) as last_at
+             FROM analytics_events
+             WHERE user_id = $1 AND event_type = 'view'`,
+            [userId]
+        );
+        const clickCountRes = await client.query(
+            `SELECT COUNT(*) as total, MAX(created_at) as last_at
+             FROM analytics_events
+             WHERE user_id = $1 AND event_type = 'click'`,
+            [userId]
+        );
+
+        const byIpRes = await client.query(
+            `SELECT ip_address, user_agent,
+              COUNT(*) FILTER (WHERE event_type = 'view') as views,
+              COUNT(*) FILTER (WHERE event_type = 'click') as clicks,
+              MAX(created_at) as last_at
+             FROM analytics_events
+             WHERE user_id = $1 AND (ip_address IS NOT NULL OR user_agent IS NOT NULL)
+             GROUP BY ip_address, user_agent
+             ORDER BY last_at DESC NULLS LAST
+             LIMIT 100`,
+            [userId]
+        );
+
+        const byLinkRes = await client.query(
+            `SELECT ae.item_id, pi.title, pi.item_type, pi.destination_url,
+              COUNT(*) as clicks, MAX(ae.created_at) as last_at
+             FROM analytics_events ae
+             LEFT JOIN profile_items pi ON ae.item_id = pi.id
+             WHERE ae.user_id = $1 AND ae.event_type = 'click'
+             GROUP BY ae.item_id, pi.title, pi.item_type, pi.destination_url
+             ORDER BY clicks DESC, last_at DESC NULLS LAST
+             LIMIT 50`,
+            [userId]
+        );
+
+        const lastLoginRes = await client.query(
+            `SELECT created_at, ip_address, user_agent
+             FROM user_activities
+             WHERE user_id = $1 AND activity_type = 'login'
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [userId]
+        );
+
+        res.json({
+            user: {
+                id: user.id,
+                email: user.email,
+                display_name: user.display_name || user.email,
+                profile_slug: user.profile_slug,
+                created_at: user.created_at
+            },
+            logins: {
+                total: parseInt(loginCountRes.rows[0]?.total || 0, 10),
+                last_at: loginCountRes.rows[0]?.last_at || null,
+                last_detail: lastLoginRes.rows[0] || null
+            },
+            card_views: {
+                total: parseInt(viewCountRes.rows[0]?.total || 0, 10),
+                last_at: viewCountRes.rows[0]?.last_at || null
+            },
+            link_clicks: {
+                total: parseInt(clickCountRes.rows[0]?.total || 0, 10),
+                last_at: clickCountRes.rows[0]?.last_at || null
+            },
+            by_ip: (byIpRes.rows || []).map(r => ({
+                ip_address: r.ip_address,
+                user_agent: r.user_agent,
+                views: parseInt(r.views || 0, 10),
+                clicks: parseInt(r.clicks || 0, 10),
+                last_at: r.last_at
+            })),
+            by_link: (byLinkRes.rows || []).map(r => ({
+                item_id: r.item_id,
+                title: r.title,
+                item_type: r.item_type,
+                destination_url: r.destination_url,
+                clicks: parseInt(r.clicks || 0, 10),
+                last_at: r.last_at
+            }))
+        });
+    } catch (err) {
+        console.error('Erro ao buscar dashboard do usuário:', err);
+        res.status(500).json({ message: 'Erro ao carregar dashboard do usuário.' });
+    } finally {
+        client.release();
+    }
+});
+
 /** Formato básico de e-mail; pontos na parte local são preservados. */
 function isValidEmail(s) {
     if (typeof s !== 'string') return false;
