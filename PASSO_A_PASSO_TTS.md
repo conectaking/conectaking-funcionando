@@ -136,6 +136,7 @@ Assim, cada trecho só gera custo de TTS **uma vez**; depois todo mundo reutiliz
 ## Problemas comuns
 
 - **Script tts.js com MIME type text/html:** abra a página com URL que inclua o diretório (ex.: `.../public_html/bibleEdit.html`); o script está como `./js/tts.js`.
-- **Erro SSL (handshake failure) ao "Ouvir":** o backend falha ao conectar ao GCP ou R2; em produção confira variáveis; em local pode ser proxy/Node; a API devolve mensagem genérica.
+- **Erro SSL (handshake failure) ao "Ouvir":** o backend falha ao conectar ao GCP ou R2; em produção confira variáveis; em local pode ser proxy/Node. O front e o backend passaram a exibir mensagem genérica em vez do texto técnico.
+- **500 ao clicar em "Ouvir (áudio)" em produção (Render):** abra no Render **Logs** e **Environment**. Confira: `GCP_PROJECT_ID`, `GCP_SERVICE_ACCOUNT_JSON_BASE64` (TTS); `TTS_R2_BUCKET` = `conectaking-pdfs`; `R2_PUBLIC_URL` = `https://tts.conectaking.com.br`; e que `R2_BUCKET` continua `kingselection` para o King Selection. O log do deploy mostrará a exceção exata (ex.: "R2 não configurado para TTS", falha GCP ou SSL).
 
 Se quiser, na próxima mensagem você pode dizer em que passo parou (ex.: “criei a Service Account mas não sei onde colocar a variável no Render”) que eu te guio só naquela parte.
