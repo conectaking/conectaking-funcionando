@@ -157,6 +157,10 @@
             setTimeout(loadVoices, 500);
             setTimeout(loadVoices, 1500);
             setTimeout(loadVoices, 3000);
+            if (selVoice) {
+                selVoice.addEventListener('focus', loadVoices);
+                selVoice.addEventListener('click', loadVoices);
+            }
         })();
     </script>
 </body>
