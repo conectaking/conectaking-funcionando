@@ -89,3 +89,114 @@ SELECT id, 'contexto-e-cultura', 'Contexto Histórico e Cultural na Interpretaç
 '2 Tm 2:15; 2 Pe 1:20-21; At 17:11',
 1
 FROM bible_study_themes WHERE slug = 'hermeneutica' LIMIT 1;
+
+-- ===========================================
+-- DEVOCIONAIS 16-30 (mais 15 dias)
+-- ===========================================
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(16, 'Refúgio na Angústia', 'Salmos 46:1', 'Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia.',
+'O Salmo 46 foi escrito em contexto de grande turbulência. A imagem de montes abalando e águas rugindo (v. 2-3) evoca crises existenciais. Mesmo assim, o salmista declara: Deus é refúgio e fortaleza.',
+'Em momentos de angústia, busque o refúgio em Deus através da oração e da Palavra. Compartilhe sua carga com alguém de confiança.',
+'Deus, és meu refúgio. Acolhe-me hoje. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(17, 'Buscai Primeiro o Reino', 'Mateus 6:33', 'Buscai primeiro o reino de Deus, e a sua justiça, e todas estas coisas vos serão acrescentadas.',
+'Jesus contrasta a ansiedade dos gentils com a prioridade do reino. Quando colocamos Deus em primeiro lugar, Ele cuida do restante.',
+'Reorganize suas prioridades hoje. Ore pedindo que o reino de Deus seja sua maior busca.',
+'Senhor, quero colocar-Te em primeiro lugar hoje. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(18, 'Amados por Deus', 'Romanos 5:8', 'Mas Deus prova o seu amor para conosco em que Cristo morreu por nós, sendo nós ainda pecadores.',
+'O amor de Deus não é condicional. Ele nos amou quando ainda éramos pecadores. A cruz é a prova definitiva desse amor.',
+'Reflita em como você pode demonstrar amor incondicional a alguém hoje.',
+'Obrigado por me amar mesmo quando não mereço. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(19, 'Deus é Amor', '1 João 4:8', 'Aquele que não ama não conhece a Deus; porque Deus é amor.',
+'João afirma que Deus é amor. Conhecer a Deus implica aprender a amar.',
+'Pratique o amor hoje: um gesto de bondade, uma palavra de encorajamento, um ato de perdão.',
+'Deus, ajuda-me a conhecer-Te e a amar como Tu amas. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(20, 'Não Andeis Ansiosos', 'Filipenses 4:6', 'Não andeis ansiosos de coisa alguma; em tudo, porém, sejam conhecidas diante de Deus as vossas petições.',
+'Paulo oferece uma alternativa à ansiedade: oração. Apresentar as necessidades a Deus com ação de graças transforma a perspectiva.',
+'Identifique uma preocupação e apresente-a a Deus em oração, terminando com gratidão.',
+'Pai, entrego minhas necessidades a Ti. Obrigado por me ouvir. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(21, 'A Paz que Excede', 'Filipenses 4:7', 'E a paz de Deus, que excede todo o entendimento, guardará os vossos corações e os vossos pensamentos.',
+'A paz de Deus não é ausência de problemas; é presença de Deus no meio deles. Ela excede todo o entendimento humano.',
+'Quando a ansiedade surgir, pare e ore. Peça a paz que guarda coração e mente.',
+'Senhor, dá-me a Tua paz que excede todo entendimento. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(22, 'O Bom Pastor', 'João 10:11', 'Eu sou o bom pastor. O bom pastor dá a sua vida pelas ovelhas.',
+'Jesus se identifica como o bom pastor. A cruz é o ápice desse amor pastoral.',
+'Reconheça que você é cuidado por Cristo. Agradeça por Seu pastoreio fiel.',
+'Bom Pastor, obrigado por dares a Tua vida por mim. Cuida de mim hoje. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(23, 'Rocha Eterna', 'Isaías 26:4', 'Confiai no Senhor perpetuamente; porque o Senhor Jeová é a rocha eterna.',
+'Em tempos de instabilidade, Deus é a rocha eterna. A confiança nEle não é temporária; é para toda a vida.',
+'Em que área você precisa confiar mais em Deus? Ore entregando essa área ao Senhor.',
+'Senhor, Tu és a rocha eterna. Confio em Ti perpetuamente. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(24, 'Vinde a Mim', 'Mateus 11:28-29', 'Vinde a mim, todos os que estais cansados e sobrecarregados, e eu vos aliviarei.',
+'Jesus convida os cansados. O jugo dEle é suave e o fardo é leve. Aquele que caminha conosco torna o peso suportável.',
+'Se você está sobrecarregado, aceite o convite hoje. Em oração, deposite suas cargas aos pés de Jesus.',
+'Jesus, venho a Ti. Alivia o meu fardo. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(25, 'Lâmpada para os Pés', 'Salmos 119:105', 'Lâmpada para os meus pés é a tua palavra e luz para o meu caminho.',
+'A Palavra de Deus ilumina o caminho. Não revela tudo de uma vez; ilumina o passo seguinte.',
+'Leia um versículo ou capítulo da Bíblia hoje. Peça a Deus que ilumine seu caminho.',
+'Senhor, Tua Palavra é lâmpada para meus pés. Guia-me hoje. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(26, 'O Fruto do Espírito', 'Gálatas 5:22-23', 'Mas o fruto do Espírito é: amor, alegria, paz, longanimidade, benignidade, bondade, fidelidade, mansidão, domínio próprio.',
+'Paulo contrasta as obras da carne com o fruto do Espírito. O fruto é singular — um conjunto de características que o Espírito produz.',
+'Escolha uma característica do fruto e peça ao Espírito que a manifeste em você hoje.',
+'Espírito Santo, produz Teu fruto em mim. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(27, 'Servir com Amor', 'Gálatas 5:13', 'Servi-vos uns aos outros pelo amor.',
+'A liberdade em Cristo é oportunidade para servir. O amor nos motiva a colocar o outro em primeiro lugar.',
+'Identifique uma forma prática de servir alguém hoje.',
+'Senhor, usa-me para servir com amor. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(28, 'Esperança Viva', '1 Pedro 1:3', 'Bendito seja o Deus e Pai de nosso Senhor Jesus Cristo! Conforme a sua grande misericórdia, nos regenerou para uma esperança viva.',
+'A esperança cristã não é ilusão; é viva, fundamentada na ressurreição de Cristo.',
+'Agradeça a Deus pela esperança viva que você tem em Cristo.',
+'Pai, bendito sejas! Obrigado pela esperança viva. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(29, 'Mais que Vencedores', 'Romanos 8:37', 'Mas em todas estas coisas somos mais que vencedores, por meio daquele que nos amou.',
+'Paulo enumera tribulações e declara: somos mais que vencedores. A vitória vem por meio daquele que nos amou.',
+'Qual tribulação você enfrenta? Declare em oração que em Cristo você é mais que vencedor.',
+'Senhor, em Ti sou mais que vencedor. Obrigado por Teu amor. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao) VALUES
+(30, 'Nada nos Separará', 'Romanos 8:38-39', 'Porque estou certo de que nem a morte, nem a vida... poderá separar-nos do amor de Deus.',
+'Paulo conclui com certeza: nada pode nos separar do amor de Deus em Cristo. Nem a morte, nem a vida, nem poderes espirituais.',
+'Medite nesta verdade. Nada pode separá-lo do amor de Deus.',
+'Pai, obrigado que nada pode me separar do Teu amor. Amém.')
+ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
+
+SELECT 'Migration 177: 5 estudos bíblicos e 15 devocionais (dias 16-30) inseridos.' AS status;
