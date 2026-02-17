@@ -81,24 +81,10 @@ router.post('/generate', protectUser, async (req, res) => {
 });
 
 /**
- * Função para análise profunda de vendas (importada do iaKing.js)
- * Reutiliza a lógica de análise profunda
+ * Função para análise profunda de vendas (lógica local, sem IA)
  */
 async function analisarVendasProfundo(conteudo, tipo, userId, client) {
     try {
-        // Buscar conhecimento sobre análise de vendas
-        const analysisKnowledge = await client.query(`
-            SELECT content, keywords
-            FROM ia_knowledge_base
-            WHERE is_active = true
-            AND (
-                LOWER(title) LIKE ANY(ARRAY['%análise%', '%análise de vendas%', '%copywriting%', '%otimização%', '%conversão%'])
-                OR keywords && ARRAY['análise', 'copywriting', 'otimização', 'conversão', 'vendas', 'marketing']
-            )
-            ORDER BY priority DESC
-            LIMIT 5
-        `);
-        
         // Analisar o conteúdo
         const analise = {
             pontosFortes: [],

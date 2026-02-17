@@ -56,9 +56,6 @@ const salesPageRoutes = require('./modules/salesPage/salesPage.routes');
 const productRoutes = require('./modules/salesPage/products/product.routes');
 const analyticsRoutesSalesPage = require('./modules/salesPage/analytics/analytics.routes');
 const suggestionsRoutes = require('./routes/suggestions');
-const iaKingRoutes = require('./routes/iaKing');
-const iaKingTrainingRoutes = require('./routes/iaKingTraining');
-const aiCoreRoutes = require('./routes/aiCore');
 const contractsRoutes = require('./modules/contracts/contract.routes');
 const guestListRoutes = require('./routes/guestList.routes');
 const publicGuestListRoutes = require('./routes/publicGuestList.routes');
@@ -691,7 +688,6 @@ app.use((req, res, next) => {
         path.startsWith('/api/guest-list') ||
         path.startsWith('/api/sales-page') ||
         path.startsWith('/api/products') ||
-        path.startsWith('/api/ia-king') ||
         path.startsWith('/api/suggestions') ||
         path.startsWith('/api/log') ||
         path.startsWith('/api/vcard') ||
@@ -810,15 +806,6 @@ app.use('/api/pix', apiLimiter, pixRoutes);
 app.use('/api/business', apiLimiter, businessRoutes);
 app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/api/suggestions', apiLimiter, suggestionsRoutes);
-// Rota pública do chat (sem rate limit para página inicial)
-app.post('/api/ia-king/chat-public', (req, res, next) => {
-    // Passar para o router sem rate limit
-    iaKingRoutes(req, res, next);
-});
-// Rotas protegidas com rate limit
-app.use('/api/ia-king', apiLimiter, iaKingRoutes);
-app.use('/api/ia-king', apiLimiter, iaKingTrainingRoutes);
-app.use('/api/ai-core', apiLimiter, aiCoreRoutes); // Nova ConectaKing AI Core
 app.use('/api/contracts', apiLimiter, contractsRoutes);
 const financeRoutes = require('./routes/finance.routes');
 app.use('/api/finance', apiLimiter, financeRoutes);
