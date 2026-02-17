@@ -118,14 +118,30 @@ async function getDevocionalDoDia(dateStr) {
     return { ...list[index], date: dateStr || new Date().toISOString().slice(0, 10) };
 }
 
+const LIVRO_TO_BOOK_ID = {
+    'João': 'jo', 'Salmos': 'ps', 'Provérbios': 'prv', 'Filipenses': 'ph', 'Isaías': 'is',
+    'Romanos': 'rm', 'Mateus': 'mt', 'Jeremias': 'jr', 'Josué': 'js', '2 Coríntios': '2co',
+    '1 Coríntios': '1co', 'Efésios': 'eph', '1 Pedro': '1pe'
+};
+
 async function getVerseOfDay(dateStr, translation) {
     const list = loadVerseOfDayList();
     if (!list.length) return null;
     const dayOfYear = getVerseOfDayIndex(dateStr);
     const index = dayOfYear % list.length;
     const item = list[index];
+    const trans = (translation || 'nvi').toLowerCase();
+    let texto = item.texto;
+    const bookId = LIVRO_TO_BOOK_ID[item.livro];
+    if (bookId && (trans === 'arc' || trans === 'acf' || trans === 'kja' || trans === 'nvi')) {
+        const ch = getBookChapter(bookId, String(item.capitulo), trans);
+        if (ch && ch.verses && ch.verses[item.versiculo - 1]) {
+            texto = ch.verses[item.versiculo - 1].text;
+        }
+    }
     return {
         ...item,
+        texto,
         date: dateStr || new Date().toISOString().slice(0, 10)
     };
 }
