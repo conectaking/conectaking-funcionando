@@ -53,7 +53,7 @@ CREATE TRIGGER trigger_bible_items_updated_at
 -- PASSO 3: Tabela bible_reading_progress (progresso de leitura/audição por usuário)
 CREATE TABLE IF NOT EXISTS bible_reading_progress (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
     book VARCHAR(50) NOT NULL,
     chapter SMALLINT NOT NULL,
     verse SMALLINT,
@@ -70,7 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_bible_progress_user ON bible_reading_progress(use
 -- PASSO 4: Tabela bible_user_goals (metas configuráveis)
 CREATE TABLE IF NOT EXISTS bible_user_goals (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL UNIQUE,
+    user_id VARCHAR(255) NOT NULL UNIQUE,
     goal_type VARCHAR(50) DEFAULT 'full_bible' CHECK (goal_type IN ('full_bible', 'nt_only', 'psalms', 'one_chapter_day')),
     target_date DATE,
     created_at TIMESTAMP DEFAULT NOW(),
