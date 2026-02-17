@@ -297,7 +297,12 @@ async function getTtsAudio(req, res) {
         }, null, 202);
     } catch (e) {
         logger.error('bible getTtsAudio:', e);
-        return responseFormatter.error(res, e.message || 'Erro ao obter áudio TTS', 500);
+        const raw = e.message || '';
+        const isSslOrNetwork = /EPROTO|ECONNREFUSED|ETIMEDOUT|handshake|SSL|TLS/i.test(raw);
+        const userMessage = isSslOrNetwork
+            ? 'Não foi possível conectar ao serviço de áudio. Tente de novo ou use o áudio no ambiente de produção.'
+            : (raw || 'Erro ao obter áudio TTS');
+        return responseFormatter.error(res, userMessage, 500);
     }
 }
 
