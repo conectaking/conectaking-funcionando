@@ -60,10 +60,34 @@ async function saveConfig(req, res) {
     }
 }
 
+async function getMyProgress(req, res) {
+    try {
+        const userId = req.user.userId;
+        const progress = await bibleService.getMyProgress(userId);
+        return responseFormatter.success(res, progress);
+    } catch (e) {
+        logger.error('bible getMyProgress:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao carregar progresso', 500);
+    }
+}
+
+async function markRead(req, res) {
+    try {
+        const userId = req.user.userId;
+        const progress = await bibleService.markRead(userId, req.body || {});
+        return responseFormatter.success(res, progress, 'Marcado como lido.');
+    } catch (e) {
+        logger.error('bible markRead:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao marcar', 400);
+    }
+}
+
 module.exports = {
     getVerseOfDay,
     getNumbers,
     getNameMeaning,
+    getMyProgress,
+    markRead,
     getConfig,
     saveConfig
 };

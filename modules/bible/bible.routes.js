@@ -12,5 +12,7 @@ router.get('/names', asyncHandler(controller.getNameMeaning));
 // Rotas PROTEGIDAS (requer login)
 router.get('/config/:itemId', protectUser, asyncHandler(controller.getConfig));
 router.put('/config/:itemId', protectUser, asyncHandler(controller.saveConfig));
+router.get('/my-progress', protectUser, asyncHandler(controller.getMyProgress));
+router.post('/mark-read', protectUser, asyncHandler(controller.markRead));
 
 module.exports = router;

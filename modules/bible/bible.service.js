@@ -87,10 +87,22 @@ function getNameMeaning(name) {
     return found || null;
 }
 
+async function getMyProgress(userId) {
+    const repo = require('./bible.repository');
+    return await repo.getProgress(userId);
+}
+
+async function markRead(userId, data) {
+    const repo = require('./bible.repository');
+    return await repo.markRead(userId, data);
+}
+
 module.exports = {
     getVerseOfDay,
     getNumbers,
     getNameMeaning,
+    getMyProgress,
+    markRead,
     getConfig,
     saveConfig
 };
