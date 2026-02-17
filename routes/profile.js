@@ -329,6 +329,21 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                     console.error('Erro ao carregar convite', { itemId: item.id, error: conviteError.message });
                     item.convite_data = {};
                 }
+            } else if (item.item_type === 'bible') {
+                try {
+                    const bibleRes = await client.query(
+                        'SELECT translation_code, is_visible FROM bible_items WHERE profile_item_id = $1',
+                        [item.id]
+                    );
+                    if (bibleRes.rows.length > 0) {
+                        item.bible_data = bibleRes.rows[0];
+                    } else {
+                        item.bible_data = { translation_code: 'nvi', is_visible: true };
+                    }
+                } catch (bibleError) {
+                    console.error('Erro ao carregar bíblia', { itemId: item.id, error: bibleError.message });
+                    item.bible_data = { translation_code: 'nvi', is_visible: true };
+                }
             }
             return item;
         }));
