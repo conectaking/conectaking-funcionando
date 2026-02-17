@@ -30,6 +30,8 @@
         .translation-select option { color: #000; background: #fff; }
         .btn-ouvir { padding: 10px 20px; background: #FFC700; color: #000; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
         .btn-ouvir:hover { filter: brightness(1.1); }
+        .btn-download-voice { border: 1px solid rgba(255,199,0,0.5); border-radius: 8px; }
+        .btn-download-voice:hover { background: rgba(255,199,0,0.15); }
     </style>
 </head>
 <body>
@@ -64,6 +66,7 @@
                 </select>
                 <label for="sel-voice" style="color:#A1A1A1;font-size:0.85rem;">Voz:</label>
                 <select id="sel-voice" class="translation-select"><option value="">Padrão</option></select>
+                <a href="https://play.google.com/store/apps/details?id=com.google.android.tts" id="btn-baixar-vozes" target="_blank" rel="noopener" class="btn-download-voice" style="display:none;font-size:0.8rem;color:#FFC700;text-decoration:none;padding:6px 10px;white-space:nowrap"><i class="fas fa-download"></i> Baixar vozes</a>
                 <button type="button" class="btn-ouvir" id="btn-ouvir"><i class="fas fa-volume-up"></i> Ouvir capítulo</button>
                 <button type="button" class="btn-ouvir" id="btn-parar" style="background:rgba(239,68,68,0.8);"><i class="fas fa-stop"></i> Parar</button>
             </div>
@@ -174,6 +177,16 @@
                 });
             }
             loadVoices();
+            (function() {
+                var isAndroid = /Android/i.test(navigator.userAgent);
+                var btn = document.getElementById('btn-baixar-vozes');
+                if (btn && isAndroid) {
+                    btn.style.display = 'inline-flex';
+                    btn.style.alignItems = 'center';
+                    btn.style.gap = '6px';
+                    btn.href = 'intent://#Intent;action=android.settings.TEXT_TO_SPEECH_SETTINGS;package=com.android.settings;S.browser_fallback_url=' + encodeURIComponent('https://play.google.com/store/apps/details?id=com.google.android.tts') + ';end';
+                }
+            })();
             speechSynthesis.addEventListener('voiceschanged', loadVoices);
             setTimeout(loadVoices, 100);
             setTimeout(loadVoices, 500);
