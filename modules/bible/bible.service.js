@@ -209,7 +209,22 @@ async function getDevocional365(dayOrDate) {
     } else {
         dayOfYear = getVerseOfDayIndex(dayOrDate);
     }
-    return repository.getDevocional365(dayOfYear);
+    if (dayOfYear < 1 || dayOfYear > 365) return null;
+    const fromDb = await repository.getDevocional365(dayOfYear);
+    if (fromDb) return fromDb;
+    const list = loadDevocionais();
+    if (!list.length) return null;
+    const index = (dayOfYear - 1) % list.length;
+    const item = list[index];
+    return {
+        day_of_year: dayOfYear,
+        titulo: item.titulo,
+        versiculo_ref: item.versiculo,
+        versiculo_texto: null,
+        reflexao: item.texto,
+        aplicacao: null,
+        oracao: item.oracao
+    };
 }
 
 async function getStudyThemes() {
