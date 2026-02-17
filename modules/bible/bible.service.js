@@ -6,12 +6,20 @@ const logger = require('../../utils/logger');
 const DATA_DIR = path.join(__dirname, '..', '..', 'data', 'bible');
 
 function getVerseOfDayIndex(dateStr) {
-    const date = dateStr ? new Date(dateStr) : new Date();
-    const start = new Date(date.getFullYear(), 0, 0);
-    const diff = date - start;
-    const oneDay = 86400000;
-    const dayOfYear = Math.floor(diff / oneDay);
-    return dayOfYear;
+    let y, m, d;
+    if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        [y, m, d] = dateStr.split('-').map(Number);
+    } else {
+        const tz = process.env.TZ || 'America/Sao_Paulo';
+        const now = new Date();
+        const brStr = now.toLocaleString('en-CA', { timeZone: tz }).slice(0, 10);
+        [y, m, d] = brStr.split('-').map(Number);
+    }
+    const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    if (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) daysInMonth[1] = 29;
+    let day = 0;
+    for (let i = 0; i < m - 1; i++) day += daysInMonth[i];
+    return day + d;
 }
 
 function loadVerseOfDayList() {
@@ -133,7 +141,7 @@ async function getVerseOfDay(dateStr, translation) {
     const trans = (translation || 'nvi').toLowerCase();
     let texto = item.texto;
     const bookId = LIVRO_TO_BOOK_ID[item.livro];
-    if (bookId && (trans === 'arc' || trans === 'acf' || trans === 'kja' || trans === 'nvi')) {
+    if (bookId && (trans === 'arc' || trans === 'acf' || trans === 'kja' || trans === 'nvi' || trans === 'kjv')) {
         const ch = getBookChapter(bookId, String(item.capitulo), trans);
         if (ch && ch.verses && ch.verses[item.versiculo - 1]) {
             texto = ch.verses[item.versiculo - 1].text;

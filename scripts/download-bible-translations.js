@@ -7,8 +7,15 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-const BASE = 'https://raw.githubusercontent.com/MaatheusGois/bible/main/versions/pt-br';
-const TRANSLATIONS = ['nvi', 'arc', 'acf', 'kja'];
+const PT_BR = 'https://raw.githubusercontent.com/MaatheusGois/bible/main/versions/pt-br';
+const EN_BASE = 'https://raw.githubusercontent.com/MaatheusGois/bible/main/versions/en';
+const TRANSLATIONS = [
+  { code: 'nvi', base: PT_BR },
+  { code: 'arc', base: PT_BR },
+  { code: 'acf', base: PT_BR },
+  { code: 'kja', base: PT_BR },
+  { code: 'kjv', base: EN_BASE }
+];
 const DATA_DIR = path.join(__dirname, '..', 'data', 'bible');
 
 function ensureDir(dir) {
@@ -25,10 +32,12 @@ function fetchUrl(url) {
     });
 }
 
-async function downloadTranslation(code) {
+async function downloadTranslation(item) {
+    const code = typeof item === 'string' ? item : item.code;
+    const base = typeof item === 'string' ? PT_BR : item.base;
     const booksDir = path.join(DATA_DIR, 'books', code);
     ensureDir(booksDir);
-    const url = `${BASE}/${code}.json`;
+    const url = `${base}/${code}.json`;
     console.log(`\nBaixando ${code.toUpperCase()}...`);
     let jsonStr = await fetchUrl(url);
     jsonStr = jsonStr.replace(/^\uFEFF/, '');
@@ -46,10 +55,11 @@ async function downloadTranslation(code) {
 }
 
 async function main() {
-    console.log('Baixando Bíblias em português...');
-    for (const code of TRANSLATIONS) {
+    console.log('Baixando Bíblias (NVI, ARC, ACF, KJA, KJV)...');
+    for (const item of TRANSLATIONS) {
+        const code = typeof item === 'string' ? item : item.code;
         try {
-            await downloadTranslation(code);
+            await downloadTranslation(item);
         } catch (e) {
             console.error(`Erro em ${code}:`, e.message);
         }

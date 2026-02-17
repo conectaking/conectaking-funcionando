@@ -58,7 +58,10 @@
                     <option value="nvi"<%= (typeof translation !== 'undefined' && translation === 'nvi') ? ' selected' : '' %>>NVI (Nova Versão Internacional)</option>
                     <option value="arc"<%= (typeof translation !== 'undefined' && translation === 'arc') ? ' selected' : '' %>>ARC (Almeida Revista e Corrigida)</option>
                     <option value="acf"<%= (typeof translation !== 'undefined' && translation === 'acf') ? ' selected' : '' %>>ACF (Almeida Corrigida Fiel)</option>
+                    <option value="ntlh"<%= (typeof translation !== 'undefined' && translation === 'ntlh') ? ' selected' : '' %>>NTLH (Nova Tradução na Linguagem de Hoje)</option>
+                    <option value="ara"<%= (typeof translation !== 'undefined' && translation === 'ara') ? ' selected' : '' %>>ARA (Almeida Revisada e Atualizada)</option>
                     <option value="kja"<%= (typeof translation !== 'undefined' && translation === 'kja') ? ' selected' : '' %>>KJA (King James Atualizada)</option>
+                    <option value="kjv"<%= (typeof translation !== 'undefined' && translation === 'kjv') ? ' selected' : '' %>>KJV (King James Version)</option>
                 </select>
                 <label for="sel-voice" style="color:#A1A1A1;font-size:0.85rem;">Voz:</label>
                 <select id="sel-voice" class="translation-select"><option value="">Padrão</option></select>
@@ -113,8 +116,16 @@
             var selVoice = document.getElementById('sel-voice');
             function loadVoices() {
                 var voices = speechSynthesis.getVoices().filter(function(v) { return v.lang.startsWith('pt'); });
+                var priority = ['Maria', 'Daniel', 'Google', 'Microsoft', 'Luciano', 'Francisca'];
+                voices.sort(function(a, b) {
+                    var ia = priority.findIndex(function(p) { return (a.name + '').indexOf(p) >= 0; });
+                    var ib = priority.findIndex(function(p) { return (b.name + '').indexOf(p) >= 0; });
+                    if (ia >= 0 && ib < 0) return -1;
+                    if (ia < 0 && ib >= 0) return 1;
+                    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+                });
                 if (selVoice && voices.length && selVoice.options.length <= 1) {
-                    voices.forEach(function(v) { var o = document.createElement('option'); o.value = v.name; o.textContent = v.name + (v.name.toLowerCase().indexOf('female') >= 0 || v.name.indexOf('Mulher') >= 0 ? ' (mulher)' : ' (homem)'); selVoice.appendChild(o); });
+                    voices.forEach(function(v) { var o = document.createElement('option'); o.value = v.name; o.textContent = v.name + (v.name.toLowerCase().indexOf('female') >= 0 || (v.name + '').indexOf('Mulher') >= 0 ? ' (voz feminina)' : ' (voz masculina)'); selVoice.appendChild(o); });
                 }
             }
             loadVoices();
