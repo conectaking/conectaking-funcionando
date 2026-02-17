@@ -7,10 +7,11 @@
 const crypto = require('crypto');
 const https = require('https');
 const logger = require('../../../utils/logger');
-const fetch = require('node-fetch');
+const axios = require('axios');
 
 /** Agente HTTPS que força TLS 1.2+ (evita handshake failure com Google em alguns hosts, ex.: Render). */
 const httpsAgent = new https.Agent({ minVersion: 'TLSv1.2' });
+const axiosConfig = { httpsAgent, timeout: 30000 };
 
 /**
  * Obtém credenciais a partir do JSON em base64 (variável de ambiente).
@@ -56,42 +57,49 @@ function createSignedJwt(credentials) {
 /** Obtém access token usando credenciais de service account (JWT bearer grant). */
 async function getAccessToken(credentials) {
   const jwt = createSignedJwt(credentials);
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    agent: httpsAgent,
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: jwt
-    }).toString()
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error('OAuth2 token failed: ' + res.status + ' ' + text);
+  try {
+    const res = await axios.post(
+      'https://oauth2.googleapis.com/token',
+      new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: jwt
+      }).toString(),
+      {
+        ...axiosConfig,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      }
+    );
+    if (!res.data || !res.data.access_token) throw new Error('OAuth2 token failed: no access_token');
+    return res.data.access_token;
+  } catch (err) {
+    const status = err.response?.status;
+    const text = err.response?.data ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data)) : err.message;
+    throw new Error('OAuth2 token failed: ' + (status || '') + ' ' + text);
   }
-  const data = await res.json();
-  return data.access_token;
 }
 
 /** Sintetiza áudio via API REST do Google TTS (evita gRPC/SSL em ambientes problemáticos). */
 async function synthesizeViaRest(credentials, request) {
   const token = await getAccessToken(credentials);
-  const res = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
-    method: 'POST',
-    agent: httpsAgent,
-    headers: {
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(request)
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error('TTS REST failed: ' + res.status + ' ' + text);
+  try {
+    const res = await axios.post(
+      'https://texttospeech.googleapis.com/v1/text:synthesize',
+      request,
+      {
+        ...axiosConfig,
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    if (res.data && res.data.audioContent) return Buffer.from(res.data.audioContent, 'base64');
+    return null;
+  } catch (err) {
+    const status = err.response?.status;
+    const text = err.response?.data ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data)) : err.message;
+    throw new Error('TTS REST failed: ' + (status || '') + ' ' + text);
   }
-  const data = await res.json();
-  if (data.audioContent) return Buffer.from(data.audioContent, 'base64');
-  return null;
 }
 
 /**
