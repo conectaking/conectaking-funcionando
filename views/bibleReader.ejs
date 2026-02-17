@@ -66,9 +66,8 @@
                 </select>
                 <label for="sel-voice" style="color:#A1A1A1;font-size:0.85rem;">Voz:</label>
                 <select id="sel-voice" class="translation-select" style="color:#000"><option value="">Padrão</option></select>
-                <label style="margin:0;font-size:0.85rem;color:#A1A1A1">Velocidade: <input type="range" id="tts-rate" min="0.6" max="1.2" step="0.05" value="0.85" style="width:70px"><span id="tts-rate-val" style="font-size:0.8rem">0.85</span></label>
-                <label style="margin:0;font-size:0.85rem;color:#A1A1A1">Tom: <input type="range" id="tts-pitch" min="0.8" max="1.2" step="0.05" value="1" style="width:60px"><span id="tts-pitch-val">1</span></label>
-                <a href="https://play.google.com/store/apps/details?id=com.google.android.tts" id="btn-baixar-vozes" target="_blank" rel="noopener" class="btn-download-voice" style="display:none;font-size:0.8rem;color:#FFC700;text-decoration:none;padding:6px 10px;white-space:nowrap"><i class="fas fa-download"></i> Baixar vozes</a>
+                <span id="tts-aviso" style="font-size:0.8rem;color:#FFA500;display:none">Instale vozes pt-BR (Brasil) nas Configurações do dispositivo</span>
+                <a href="https://play.google.com/store/apps/details?id=com.google.android.tts" id="btn-baixar-vozes" target="_blank" rel="noopener" class="btn-download-voice" style="display:none;font-size:0.8rem;color:#FFC700;text-decoration:none;padding:6px 10px;white-space:nowrap"><i class="fas fa-download"></i> Baixar vozes pt-BR</a>
                 <button type="button" class="btn-ouvir" id="btn-ouvir"><i class="fas fa-volume-up"></i> Ouvir capítulo</button>
                 <button type="button" class="btn-ouvir" id="btn-parar" style="background:rgba(239,68,68,0.8);"><i class="fas fa-stop"></i> Parar</button>
             </div>
@@ -148,14 +147,13 @@
                 selVoice.addEventListener('focus', loadVoices);
                 selVoice.addEventListener('click', loadVoices);
             }
-            ['tts-rate','tts-pitch'].forEach(function(id){
-                var inp = document.getElementById(id);
-                var span = document.getElementById(id + '-val');
-                if (inp && span) {
-                    inp.addEventListener('input', function() { span.textContent = inp.value; });
-                    span.textContent = inp.value;
-                }
-            });
+            function showAviso() {
+                var list = window.ConectaTTS ? window.ConectaTTS.getPreferredVoices(window.speechSynthesis.getVoices()) : [];
+                var hasBR = list.length > 0;
+                var aviso = document.getElementById('tts-aviso');
+                if (aviso) aviso.style.display = hasBR ? 'none' : 'inline';
+            }
+            setTimeout(showAviso, 3000);
         })();
     </script>
 </body>
