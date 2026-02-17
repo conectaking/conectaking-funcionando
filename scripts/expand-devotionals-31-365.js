@@ -236,9 +236,10 @@ function escapeSql(str) {
 }
 
 function main() {
-  console.log('-- Migration 179: Devocionais 31-365 expandidos (estilo bibliaonline.com.br)');
-  console.log('-- Reflexão completa, aplicação específica, oração completa');
-  console.log('');
+  const out = [];
+  out.push('-- Migration 179: Devocionais 31-365 expandidos (estilo bibliaonline.com.br)');
+  out.push('-- Reflexao completa, aplicacao especifica, oracao completa');
+  out.push('');
 
   for (let day = 31; day <= 365; day++) {
     const titulo = THEMES_ORDER[(day - 31) % THEMES_ORDER.length];
@@ -247,8 +248,12 @@ function main() {
     const reflexao = escapeSql(t.reflexao);
     const aplicacao = escapeSql(t.aplicacao);
     const oracao = escapeSql(t.oracao);
-    console.log(`UPDATE bible_devotionals_365 SET reflexao = '${reflexao}', aplicacao = '${aplicacao}', oracao = '${oracao}', updated_at = NOW() WHERE day_of_year = ${day};`);
+    out.push(`UPDATE bible_devotionals_365 SET reflexao = '${reflexao}', aplicacao = '${aplicacao}', oracao = '${oracao}', updated_at = NOW() WHERE day_of_year = ${day};`);
   }
+
+  const dest = path.join(__dirname, '..', 'migrations', '179_bible_devotionals_expanded.sql');
+  fs.writeFileSync(dest, out.join('\n'), 'utf8');
+  console.log('Migration 179 gerada em', dest);
 }
 
 main();
