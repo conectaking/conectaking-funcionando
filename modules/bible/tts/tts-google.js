@@ -9,8 +9,12 @@ const https = require('https');
 const logger = require('../../../utils/logger');
 const axios = require('axios');
 
-/** Timeout para chamadas ao Google. Sem agente HTTPS customizado para evitar EPROTO/handshake failure no Render. */
+/** Timeout para chamadas ao Google. Sem agente customizado por padrão; em EPROTO usamos agent com keepAlive:false. */
 const axiosConfig = { timeout: 30000 };
+
+function isSslHandshakeError(err) {
+  return err && (err.code === 'EPROTO' || /handshake|ssl3_read_bytes|SSL alert/i.test(String(err.message || '')));
+}
 
 /**
  * Obtém credenciais a partir do JSON em base64 (variável de ambiente).
@@ -58,24 +62,33 @@ function createSignedJwt(credentials) {
   return signatureInput + '.' + signature;
 }
 
-/** Obtém access token usando credenciais de service account (JWT bearer grant). */
+/** Obtém access token (JWT bearer). Em EPROTO, tenta de novo com conexão nova (keepAlive:false). */
 async function getAccessToken(credentials) {
   const jwt = createSignedJwt(credentials);
+  const body = new URLSearchParams({
+    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+    assertion: jwt
+  }).toString();
+  const tryOnce = (config) => axios.post('https://oauth2.googleapis.com/token', body, {
+    ...axiosConfig,
+    ...config,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  });
   try {
-    const res = await axios.post(
-      'https://oauth2.googleapis.com/token',
-      new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        assertion: jwt
-      }).toString(),
-      {
-        ...axiosConfig,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      }
-    );
+    let res = await tryOnce({});
     if (!res.data || !res.data.access_token) throw new Error('OAuth2 token failed: no access_token');
     return res.data.access_token;
   } catch (err) {
+    if (isSslHandshakeError(err)) {
+      logger.warn('tts-google: EPROTO no token, retry com conexão nova (keepAlive:false)');
+      try {
+        const retryRes = await tryOnce({ httpsAgent: new https.Agent({ keepAlive: false }) });
+        if (retryRes && retryRes.data && retryRes.data.access_token) return retryRes.data.access_token;
+      } catch (retryErr) {
+        logger.error('tts-google: retry token falhou:', retryErr?.message || retryErr);
+        throw retryErr;
+      }
+    }
     const status = err.response?.status;
     const isSsl = err.code === 'EPROTO' || /handshake|SSL|ECONNREFUSED|ETIMEDOUT/i.test(String(err.message || ''));
     const text = err.response?.data ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data)) : err.message;
@@ -101,24 +114,36 @@ function isVoiceUnavailableError(err) {
     || /INVALID_ARGUMENT|voice.*invalid|invalid.*voice/i.test(s);
 }
 
-/** Sintetiza áudio via API REST do Google TTS (evita gRPC/SSL em ambientes problemáticos). */
+/** Sintetiza áudio via API REST. Em EPROTO, retry com conexão nova (keepAlive:false). */
 async function synthesizeViaRest(credentials, request) {
   const token = await getAccessToken(credentials);
-  try {
-    const res = await axios.post(
-      'https://texttospeech.googleapis.com/v1/text:synthesize',
-      request,
-      {
-        ...axiosConfig,
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        }
+  const doPost = (extraConfig) => axios.post(
+    'https://texttospeech.googleapis.com/v1/text:synthesize',
+    request,
+    {
+      ...axiosConfig,
+      ...extraConfig,
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
       }
-    );
+    }
+  );
+  try {
+    const res = await doPost({});
     if (res.data && res.data.audioContent) return Buffer.from(res.data.audioContent, 'base64');
     return null;
   } catch (err) {
+    if (isSslHandshakeError(err)) {
+      logger.warn('tts-google: EPROTO no synthesize, retry com conexão nova (keepAlive:false)');
+      try {
+        const retryRes = await doPost({ httpsAgent: new https.Agent({ keepAlive: false }) });
+        if (retryRes && retryRes.data && retryRes.data.audioContent) return Buffer.from(retryRes.data.audioContent, 'base64');
+      } catch (retryErr) {
+        const t = retryErr.response?.data ? (typeof retryErr.response.data === 'string' ? retryErr.response.data : JSON.stringify(retryErr.response.data)) : retryErr.message;
+        throw new Error('TTS REST failed (retry): ' + (retryErr.response?.status || '') + ' ' + t);
+      }
+    }
     const status = err.response?.status;
     const text = err.response?.data ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data)) : err.message;
     throw new Error('TTS REST failed: ' + (status || '') + ' ' + text);
