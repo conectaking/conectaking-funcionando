@@ -73,9 +73,23 @@ O projeto já usa R2 (`utils/r2.js`). Para o TTS funcionar, as variáveis que vo
 - `R2_ACCESS_KEY_ID`
 - `R2_SECRET_ACCESS_KEY`
 - `R2_BUCKET`
-- `R2_PUBLIC_BASE_URL` (ex.: `https://r2.conectaking.com.br`)
+- `R2_PUBLIC_URL` – URL pública **dos áudios TTS** (domínio customizado do bucket, ex.: `https://tts.conectaking.com.br`)
 
 Se o R2 já está funcionando para imagens/outros arquivos, o TTS usará o **mesmo bucket**; os áudios ficarão em pastas separadas (ex.: `bible-tts/...`).
+
+### Passo 5b: Domínio customizado para TTS (tts.conectaking.com.br)
+
+Para servir os MP3 do TTS por um domínio próprio (evitando 401 da URL de desenvolvimento do R2):
+
+1. Acesse o **Cloudflare Dashboard** → **R2** → bucket **conectaking-pdfs**.
+2. Aba **Settings** → seção **Custom Domains** → **Adicionar**.
+3. Digite o subdomínio: **tts.conectaking.com.br**.
+4. Se o domínio `conectaking.com.br` já estiver na mesma conta Cloudflare, o painel pode oferecer criar o registro DNS automaticamente; confirme.
+5. Se pedir registro manual: em **DNS / Registros** do domínio `conectaking.com.br`, crie o registro que o R2 indicar (geralmente **CNAME** `tts` apontando para o alvo que o Cloudflare mostrar, ou um registro do tipo **R2**).
+6. Aguarde o status do domínio no bucket ficar **Ativo** (pode levar alguns minutos).
+7. No `.env` do projeto já está: `R2_PUBLIC_URL=https://tts.conectaking.com.br`. Reinicie o servidor após o domínio estar ativo.
+
+Depois disso, a API passará a devolver URLs no formato `https://tts.conectaking.com.br/bible-tts/.../arquivo.mp3`.
 
 ### Passo 6: Rodar a migration do banco
 
