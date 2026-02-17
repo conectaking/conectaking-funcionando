@@ -20,6 +20,31 @@ async function findByCacheKey(cacheKey) {
 }
 
 /**
+ * Fallback: busca qualquer áudio em cache para o mesmo ref + versão + voz.
+ * Usado quando o cache_key mudou (ex.: texto do versículo atualizado) mas já existe MP3 no R2 com outro hash.
+ * @param {string} ref - ex: "jo 3:16"
+ * @param {string} bibleVersion - ex: "NVI"
+ * @param {string} voiceName - ex: "pt-BR-Standard-A"
+ * @param {string} [voiceType] - ex: "Standard"
+ * @returns {Promise<{ r2_key: string, ... } | null>}
+ */
+async function findByRefAndVoice(ref, bibleVersion, voiceName, voiceType = 'Standard') {
+  const client = await db.pool.connect();
+  try {
+    const r = await client.query(
+      `SELECT id, cache_key, r2_key, bible_version, ref, scope, voice_name, voice_type, locale, content_length, created_at
+       FROM bible_tts_cache
+       WHERE ref = $1 AND bible_version = $2 AND voice_name = $3 AND voice_type = $4
+       ORDER BY created_at DESC LIMIT 1`,
+      [ref, (bibleVersion || 'NVI').toUpperCase(), voiceName || 'pt-BR-Standard-A', voiceType || 'Standard']
+    );
+    return r.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Insere registro no cache (após gerar áudio e subir no R2).
  * @param {object} data
  * @param {string} data.cache_key
@@ -61,5 +86,6 @@ async function insert(data) {
 
 module.exports = {
   findByCacheKey,
+  findByRefAndVoice,
   insert
 };

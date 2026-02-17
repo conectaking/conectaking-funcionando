@@ -29,7 +29,16 @@ async function getCachedAudioUrl(opts) {
   const { cacheKey } = getTtsCacheKey({ ...opts, text });
   const r2Path = getR2Path({ ...opts, text });
 
-  const row = await ttsRepo.findByCacheKey(cacheKey);
+  // Preferir busca por ref+voz: devolve qualquer áudio em cache para o trecho (evita 401 quando o cache_key mudou mas o MP3 no R2 é outro hash)
+  let row = opts.ref
+    ? await ttsRepo.findByRefAndVoice(
+        opts.ref,
+        opts.bibleVersion || 'NVI',
+        opts.voiceName || 'pt-BR-Standard-A',
+        opts.voiceType || 'Standard'
+      )
+    : null;
+  if (!row) row = await ttsRepo.findByCacheKey(cacheKey);
   if (row && row.r2_key) {
     const url = r2.r2PublicUrl(row.r2_key);
     if (url) return { url };
