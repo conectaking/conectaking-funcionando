@@ -241,13 +241,22 @@ async function searchBible(req, res) {
  */
 async function getTtsAudio(req, res) {
     try {
-        const ref = (req.query.ref || req.body?.ref || '').trim();
-        const version = (req.query.version || req.body?.version || 'nvi').toLowerCase();
+        let ref = (req.query.ref || req.body?.ref || '').trim();
+        let version = (req.query.version || req.body?.version || 'nvi').toLowerCase();
         const voiceName = (req.query.voice || req.body?.voice || 'pt-BR-Standard-A').trim();
         const voiceType = (req.query.voiceType || req.body?.voiceType || 'Standard').trim();
         const locale = (req.query.locale || req.body?.locale || 'pt-BR').trim();
         let text = (req.query.text || req.body?.text || '').trim();
         let scope = (req.query.scope || req.body?.scope || 'verse').toLowerCase();
+
+        // Se a URL veio com query string duplamente codificada (ex: ?ref%3Djo%203%3A16%26version%3Dnvi), tentar extrair ref e version
+        if (!ref && !text && req.url && req.url.includes('?')) {
+            const q = req.url.split('?')[1] || '';
+            const decoded = decodeURIComponent(q.replace(/\+/g, ' '));
+            const params = new URLSearchParams(decoded);
+            ref = (params.get('ref') || '').trim();
+            if (params.get('version')) version = params.get('version').toLowerCase();
+        }
 
         if (!ref && !text) {
             return responseFormatter.error(res, 'Informe ref (ex: jo 3:16) ou text', 400);
