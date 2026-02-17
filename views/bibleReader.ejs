@@ -65,7 +65,7 @@
                     <option value="kjv"<%= (typeof translation !== 'undefined' && translation === 'kjv') ? ' selected' : '' %>>KJV (King James Version)</option>
                 </select>
                 <label for="sel-voice" style="color:#A1A1A1;font-size:0.85rem;">Voz:</label>
-                <select id="sel-voice" class="translation-select" style="color:#000"><option value="">Padrão</option></select>
+                <select id="sel-voice" class="translation-select" style="color:#ECECEC;background:rgba(255,255,255,0.08);border:1px solid rgba(255,199,0,0.3);cursor:pointer"><option value="">Padrão</option></select>
                 <span id="tts-aviso" style="font-size:0.8rem;color:#FFA500;display:none">Instale vozes pt-BR (Brasil) nas Configurações do dispositivo</span>
                 <a href="https://play.google.com/store/apps/details?id=com.google.android.tts" id="btn-baixar-vozes" target="_blank" rel="noopener" class="btn-download-voice" style="display:none;font-size:0.8rem;color:#FFC700;text-decoration:none;padding:6px 10px;white-space:nowrap"><i class="fas fa-download"></i> Baixar vozes pt-BR</a>
                 <button type="button" class="btn-ouvir" id="btn-ouvir"><i class="fas fa-volume-up"></i> Ouvir capítulo</button>
