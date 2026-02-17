@@ -32,11 +32,10 @@
     </style>
 </head>
 <body>
-    <% const tParam = (typeof translation !== 'undefined' && translation && translation !== 'nvi') ? '?translation=' + encodeURIComponent(translation) : ''; %>
-    <% const bibleIndexBase = (typeof baseUrl !== 'undefined' && baseUrl) ? String(baseUrl).replace(/\/$/, '') : ''; %>
-    <% const bibleIndexUrl = bibleIndexBase ? (bibleIndexBase + '/' + slug + '/bible' + tParam) : ('/' + slug + '/bible' + tParam); %>
+    <% const biblePanelBase = (typeof baseUrl !== 'undefined' && baseUrl) ? String(baseUrl).replace(/\/$/, '') : ''; %>
+    <% const biblePanelUrl = biblePanelBase ? (biblePanelBase + '/' + slug) : ('/' + slug); %>
     <div class="reader-wrap">
-        <a href="javascript:void(0)" id="back-bible-link" class="back-link"><i class="fas fa-arrow-left"></i> Voltar à Bíblia</a>
+        <a href="javascript:void(0)" id="back-bible-link" class="back-link"><i class="fas fa-arrow-left"></i> Voltar ao painel da Bíblia</a>
         <div class="reader-header">
             <h1><%= chapterData.bookName %> — Capítulo <%= chapterData.chapter %></h1>
             <div class="nav-chapters">
@@ -83,11 +82,11 @@
             const verses = document.querySelectorAll('.verse-block');
             const texts = Array.from(verses).map(v => v.querySelector('.verse-text').textContent);
             const fullText = texts.join(' ');
-            const bibleIndexUrl = <%- JSON.stringify(bibleIndexUrl) %>;
+            const biblePanelUrl = <%- JSON.stringify(biblePanelUrl) %>;
             var btnOuvir = document.getElementById('btn-ouvir');
 
             document.getElementById('back-bible-link').addEventListener('click', function() {
-                if (window.history.length > 1) { window.history.back(); } else { window.location.href = bibleIndexUrl; }
+                window.location.href = biblePanelUrl;
             });
 
             function stopSpeech() { speechSynthesis.cancel(); if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i> Ouvir capítulo'; }
@@ -98,8 +97,8 @@
                 u.rate = 0.9;
                 var voiceId = document.getElementById('sel-voice') && document.getElementById('sel-voice').value;
                 if (voiceId) {
-                    var voices = speechSynthesis.getVoices().filter(function(v) { return v.lang.startsWith('pt'); });
-                    var chosen = voices.find(function(v) { return v.name === voiceId || v.voiceURI === voiceId; });
+                    var allVoices = speechSynthesis.getVoices();
+                    var chosen = allVoices.find(function(v) { return v.name === voiceId || v.voiceURI === voiceId; });
                     if (chosen) u.voice = chosen;
                 }
                 speechSynthesis.speak(u);
@@ -115,21 +114,31 @@
 
             var selVoice = document.getElementById('sel-voice');
             function loadVoices() {
-                var voices = speechSynthesis.getVoices().filter(function(v) { return v.lang.startsWith('pt'); });
+                if (!selVoice) return;
+                var voices = speechSynthesis.getVoices();
+                var ptVoices = voices.filter(function(v) { return v.lang.startsWith('pt'); });
+                var list = ptVoices.length ? ptVoices : voices;
+                if (!list.length || selVoice.options.length > 1) return;
                 var priority = ['Maria', 'Daniel', 'Google', 'Microsoft', 'Luciano', 'Francisca'];
-                voices.sort(function(a, b) {
+                list.sort(function(a, b) {
                     var ia = priority.findIndex(function(p) { return (a.name + '').indexOf(p) >= 0; });
                     var ib = priority.findIndex(function(p) { return (b.name + '').indexOf(p) >= 0; });
                     if (ia >= 0 && ib < 0) return -1;
                     if (ia < 0 && ib >= 0) return 1;
                     return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
                 });
-                if (selVoice && voices.length && selVoice.options.length <= 1) {
-                    voices.forEach(function(v) { var o = document.createElement('option'); o.value = v.name; o.textContent = v.name + (v.name.toLowerCase().indexOf('female') >= 0 || (v.name + '').indexOf('Mulher') >= 0 ? ' (voz feminina)' : ' (voz masculina)'); selVoice.appendChild(o); });
-                }
+                list.forEach(function(v) {
+                    var o = document.createElement('option');
+                    o.value = v.name;
+                    var label = (v.name + '').toLowerCase().indexOf('female') >= 0 || (v.name + '').indexOf('Mulher') >= 0 ? ' (voz feminina)' : ' (voz masculina)';
+                    o.textContent = v.name + label;
+                    selVoice.appendChild(o);
+                });
             }
             loadVoices();
             if (speechSynthesis.onvoiceschanged) speechSynthesis.onvoiceschanged = loadVoices;
+            setTimeout(loadVoices, 500);
+            setTimeout(loadVoices, 1500);
         })();
     </script>
 </body>
