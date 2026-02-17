@@ -337,12 +337,21 @@ router.get('/users/:id/dashboard', protectAdmin, async (req, res) => {
             [userId]
         );
 
+        const codeRes = await client.query(
+            `SELECT code FROM registration_codes
+             WHERE claimed_by_user_id = $1 AND is_claimed = TRUE
+             ORDER BY claimed_at DESC LIMIT 1`,
+            [userId]
+        );
+        const tagCode = codeRes.rows[0]?.code || null;
+
         res.json({
             user: {
                 id: user.id,
                 email: user.email,
                 display_name: user.display_name || user.email,
                 profile_slug: user.profile_slug,
+                tag_code: tagCode,
                 created_at: user.created_at
             },
             logins: {
