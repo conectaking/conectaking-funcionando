@@ -33,8 +33,10 @@
 </head>
 <body>
     <% const tParam = (typeof translation !== 'undefined' && translation && translation !== 'nvi') ? '?translation=' + encodeURIComponent(translation) : ''; %>
+    <% const bibleIndexBase = (typeof baseUrl !== 'undefined' && baseUrl) ? String(baseUrl).replace(/\/$/, '') : ''; %>
+    <% const bibleIndexUrl = bibleIndexBase ? (bibleIndexBase + '/' + slug + '/bible' + tParam) : ('/' + slug + '/bible' + tParam); %>
     <div class="reader-wrap">
-        <a href="/<%= slug %>/bible<%= tParam %>" class="back-link"><i class="fas fa-arrow-left"></i> Voltar à Bíblia</a>
+        <a href="<%= bibleIndexUrl %>" class="back-link" target="_top"><i class="fas fa-arrow-left"></i> Voltar à Bíblia</a>
         <div class="reader-header">
             <h1><%= chapterData.bookName %> — Capítulo <%= chapterData.chapter %></h1>
             <div class="nav-chapters">
