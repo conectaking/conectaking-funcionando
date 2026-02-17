@@ -39,8 +39,8 @@ function buildCacheInput(opts) {
   return {
     app: 'conectaking-tts-v1',
     provider: 'google',
-    voice_name: String(opts.voiceName || 'pt-BR-Standard-A'),
-    voice_type: String(opts.voiceType || 'Standard'),
+    voice_name: String(opts.voiceName || 'pt-BR-Wavenet-A'),
+    voice_type: String(opts.voiceType || 'WaveNet'),
     locale: String(opts.locale || 'pt-BR'),
     audio_encoding: String(opts.audioEncoding || 'MP3'),
     speaking_rate: Number(opts.speakingRate) || 1.0,
@@ -85,8 +85,8 @@ function getR2Path(opts) {
   const { cacheKey } = getTtsCacheKey(opts);
   const version = String(opts.bibleVersion || 'NVI').toUpperCase();
   const locale = String(opts.locale || 'pt-BR');
-  const voiceName = String(opts.voiceName || 'pt-BR-Standard-A').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const voiceType = String(opts.voiceType || 'Standard');
+  const voiceName = String(opts.voiceName || 'pt-BR-Wavenet-A').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const voiceType = String(opts.voiceType || 'WaveNet');
   const scope = String(opts.scope || 'verse');
   const ref = String(opts.ref || '').trim();
   const parts = ref.split(/\s+/);

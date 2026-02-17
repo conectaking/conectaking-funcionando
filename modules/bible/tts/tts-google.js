@@ -127,7 +127,7 @@ async function generateTts(opts) {
   if (!text) return null;
 
   const locale = String(opts.locale || 'pt-BR');
-  const voiceName = String(opts.voiceName || 'pt-BR-Standard-A');
+  const voiceName = String(opts.voiceName || 'pt-BR-Wavenet-A');
   const speakingRate = Number(opts.speakingRate) || 1.0;
   const pitch = Number(opts.pitch) || 0.0;
 

@@ -15,8 +15,8 @@ const logger = require('../../../utils/logger');
  * @param {string} text - Texto do trecho (normalizado internamente)
  * @param {string} bibleVersion - NVI, ARA, ARC...
  * @param {string} scope - verse | chapter
- * @param {string} voiceName - pt-BR-Standard-A
- * @param {string} voiceType - Standard | WaveNet | Neural2
+ * @param {string} voiceName - pt-BR-Wavenet-A (padrão; mais natural que Standard)
+ * @param {string} voiceType - WaveNet | Standard | Neural2
  * @param {string} locale - pt-BR
  */
 /**
@@ -34,8 +34,8 @@ async function getCachedAudioUrl(opts) {
     ? await ttsRepo.findByRefAndVoice(
         opts.ref,
         opts.bibleVersion || 'NVI',
-        opts.voiceName || 'pt-BR-Standard-A',
-        opts.voiceType || 'Standard'
+        opts.voiceName || 'pt-BR-Wavenet-A',
+        opts.voiceType || 'WaveNet'
       )
     : null;
   if (!row) row = await ttsRepo.findByCacheKey(cacheKey);
@@ -72,8 +72,8 @@ async function saveToCacheAndR2(opts, mp3Buffer) {
     bible_version: opts.bibleVersion || 'NVI',
     ref: opts.ref || '',
     scope: opts.scope || 'verse',
-    voice_name: opts.voiceName || 'pt-BR-Standard-A',
-    voice_type: opts.voiceType || 'Standard',
+    voice_name: opts.voiceName || 'pt-BR-Wavenet-A',
+    voice_type: opts.voiceType || 'WaveNet',
     locale: opts.locale || 'pt-BR',
     content_length: mp3Buffer ? mp3Buffer.length : null
   });

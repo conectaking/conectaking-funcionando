@@ -36,7 +36,7 @@ async function findByRefAndVoice(ref, bibleVersion, voiceName, voiceType = 'Stan
        FROM bible_tts_cache
        WHERE ref = $1 AND bible_version = $2 AND voice_name = $3 AND voice_type = $4
        ORDER BY created_at DESC LIMIT 1`,
-      [ref, (bibleVersion || 'NVI').toUpperCase(), voiceName || 'pt-BR-Standard-A', voiceType || 'Standard']
+      [ref, (bibleVersion || 'NVI').toUpperCase(), voiceName || 'pt-BR-Wavenet-A', voiceType || 'WaveNet']
     );
     return r.rows[0] || null;
   } finally {

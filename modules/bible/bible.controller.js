@@ -243,8 +243,8 @@ async function getTtsAudio(req, res) {
     try {
         let ref = (req.query.ref || req.body?.ref || '').trim();
         let version = (req.query.version || req.body?.version || 'nvi').toLowerCase();
-        const voiceName = (req.query.voice || req.body?.voice || 'pt-BR-Standard-A').trim();
-        const voiceType = (req.query.voiceType || req.body?.voiceType || 'Standard').trim();
+        const voiceName = (req.query.voice || req.body?.voice || 'pt-BR-Wavenet-A').trim();
+        const voiceType = (req.query.voiceType || req.body?.voiceType || 'WaveNet').trim();
         const locale = (req.query.locale || req.body?.locale || 'pt-BR').trim();
         let text = (req.query.text || req.body?.text || '').trim();
         let scope = (req.query.scope || req.body?.scope || 'verse').toLowerCase();
