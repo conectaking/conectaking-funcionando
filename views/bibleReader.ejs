@@ -83,7 +83,7 @@
             const verses = document.querySelectorAll('.verse-block');
             const texts = Array.from(verses).map(v => v.querySelector('.verse-text').textContent);
             const fullText = texts.join(' ');
-            const bibleIndexUrl = '<%= bibleIndexUrl %>';
+            const bibleIndexUrl = <%- JSON.stringify(bibleIndexUrl) %>;
             var btnOuvir = document.getElementById('btn-ouvir');
 
             document.getElementById('back-bible-link').addEventListener('click', function() {
