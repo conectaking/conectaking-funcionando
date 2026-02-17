@@ -99,8 +99,14 @@
                 if (selV && selV.value) {
                     var allVoices = speechSynthesis.getVoices();
                     var voiceId = selV.value;
-                    var voiceUri = selV.options[selV.selectedIndex] && selV.options[selV.selectedIndex].getAttribute('data-voice-uri');
-                    var chosen = allVoices.find(function(v) { return v.name === voiceId || v.voiceURI === voiceId || (voiceUri && v.voiceURI === voiceUri); });
+                    var opt = selV.options[selV.selectedIndex];
+                    var voiceUri = opt && opt.getAttribute('data-voice-uri');
+                    var chosen = allVoices.find(function(v) {
+                        if (v.name === voiceId || v.voiceURI === voiceId) return true;
+                        if (voiceUri && v.voiceURI && (v.voiceURI === voiceUri || v.voiceURI.indexOf(voiceUri) >= 0)) return true;
+                        if (v.name && voiceId && v.name.indexOf(voiceId) >= 0) return true;
+                        return false;
+                    });
                     if (chosen) u.voice = chosen;
                 }
                 speechSynthesis.speak(u);
