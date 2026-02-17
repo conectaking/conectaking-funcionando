@@ -58,6 +58,9 @@ GCP_SERVICE_ACCOUNT_JSON_BASE64=a_string_gigante_em_base64_que_voce_colou_aqui
 
 # Opcional (pode deixar vazio)
 GCP_LOCATION=
+
+# No Render: use REST em vez de gRPC para evitar erro EPROTO/SSL handshake
+GCP_TTS_USE_REST=1
 ```
 
 - **GCP_PROJECT_ID**: o ID do projeto do passo 1.  
