@@ -52,9 +52,30 @@ const config = {
         refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d'
     },
     
-    // CORS
+    // CORS: com credentials: true o origin não pode ser '*'; refletir a origem quando permitida.
     cors: {
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: (function() {
+            const envList = (process.env.CORS_ORIGIN || '')
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean);
+            const allowed = new Set([
+                'http://127.0.0.1:5500',
+                'http://127.0.0.1:5000',
+                'http://localhost:5500',
+                'http://localhost:5000',
+                'http://localhost',
+                'https://conectaking.com.br',
+                'https://www.conectaking.com.br',
+                ...envList
+            ]);
+            return function(origin, callback) {
+                if (!origin) return callback(null, true);
+                if (allowed.has(origin)) return callback(null, origin);
+                if (allowed.has('*')) return callback(null, origin);
+                callback(null, false);
+            };
+        })(),
         credentials: true
     },
     
