@@ -95,10 +95,12 @@
                 var u = new SpeechSynthesisUtterance(fullText);
                 u.lang = 'pt-BR';
                 u.rate = 0.9;
-                var voiceId = document.getElementById('sel-voice') && document.getElementById('sel-voice').value;
-                if (voiceId) {
+                var selV = document.getElementById('sel-voice');
+                if (selV && selV.value) {
                     var allVoices = speechSynthesis.getVoices();
-                    var chosen = allVoices.find(function(v) { return v.name === voiceId || v.voiceURI === voiceId; });
+                    var voiceId = selV.value;
+                    var voiceUri = selV.options[selV.selectedIndex] && selV.options[selV.selectedIndex].getAttribute('data-voice-uri');
+                    var chosen = allVoices.find(function(v) { return v.name === voiceId || v.voiceURI === voiceId || (voiceUri && v.voiceURI === voiceUri); });
                     if (chosen) u.voice = chosen;
                 }
                 speechSynthesis.speak(u);
@@ -113,12 +115,26 @@
             speechSynthesis.onend = function() { if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i> Ouvir capítulo'; };
 
             var selVoice = document.getElementById('sel-voice');
+            var loadVoicesRetries = 0;
+            function voiceIsFemale(name) {
+                var n = (name || '').toLowerCase();
+                if (n.indexOf('female') >= 0 || n.indexOf('mulher') >= 0 || n.indexOf('woman') >= 0 || n.indexOf('feminina') >= 0) return true;
+                if (n.indexOf('maria') >= 0 || n.indexOf('francisca') >= 0 || n.indexOf('luciana') >= 0 || n.indexOf('heloisa') >= 0 || n.indexOf('heloísa') >= 0) return true;
+                return false;
+            }
             function loadVoices() {
                 if (!selVoice) return;
+                if (selVoice.options.length > 1) return;
                 var voices = speechSynthesis.getVoices();
-                var ptVoices = voices.filter(function(v) { return v.lang.startsWith('pt'); });
+                var ptVoices = voices.filter(function(v) { return v.lang && v.lang.startsWith('pt'); });
                 var list = ptVoices.length ? ptVoices : voices;
-                if (!list.length || selVoice.options.length > 1) return;
+                if (!list.length) {
+                    if (loadVoicesRetries < 12) {
+                        loadVoicesRetries++;
+                        setTimeout(loadVoices, loadVoicesRetries * 250);
+                    }
+                    return;
+                }
                 var priority = ['Maria', 'Daniel', 'Google', 'Microsoft', 'Luciano', 'Francisca'];
                 list.sort(function(a, b) {
                     var ia = priority.findIndex(function(p) { return (a.name + '').indexOf(p) >= 0; });
@@ -130,15 +146,17 @@
                 list.forEach(function(v) {
                     var o = document.createElement('option');
                     o.value = v.name;
-                    var label = (v.name + '').toLowerCase().indexOf('female') >= 0 || (v.name + '').indexOf('Mulher') >= 0 ? ' (voz feminina)' : ' (voz masculina)';
-                    o.textContent = v.name + label;
+                    o.setAttribute('data-voice-uri', v.voiceURI || '');
+                    o.textContent = v.name + (voiceIsFemale(v.name) ? ' (voz feminina)' : ' (voz masculina)');
                     selVoice.appendChild(o);
                 });
             }
             loadVoices();
-            if (speechSynthesis.onvoiceschanged) speechSynthesis.onvoiceschanged = loadVoices;
+            speechSynthesis.addEventListener('voiceschanged', loadVoices);
+            setTimeout(loadVoices, 100);
             setTimeout(loadVoices, 500);
             setTimeout(loadVoices, 1500);
+            setTimeout(loadVoices, 3000);
         })();
     </script>
 </body>
