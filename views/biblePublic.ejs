@@ -284,6 +284,39 @@
             </div>
         </div>
 
+        <!-- Devocionais 365, Estudos, Esboços -->
+        <div class="bible-card">
+            <h3 style="margin-bottom:16px;color:#FFC700">Devocionais 365</h3>
+            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Reflexões para cada dia do ano.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+                <input type="number" id="dev365-day" min="1" max="365" placeholder="Dia (1-365)" style="width:100px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC">
+                <button type="button" class="bible-btn" id="btn-dev365-load"><i class="fas fa-book-open"></i> Carregar</button>
+                <button type="button" class="bible-btn secondary" id="btn-dev365-today"><i class="fas fa-calendar-check"></i> Dia de hoje</button>
+            </div>
+            <div id="dev365-content"><p style="color:#A1A1A1;font-size:0.9rem">Selecione um dia ou clique em "Dia de hoje".</p></div>
+        </div>
+
+        <div class="bible-card">
+            <h3 style="margin-bottom:16px;color:#FFC700">Estudos Bíblicos</h3>
+            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Estudos por temas: Escatologia, Família, Finanças, Liderança, Hermenêutica.</p>
+            <div id="estudos-public-content"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando temas...</p></div></div>
+        </div>
+
+        <div class="bible-card">
+            <h3 style="margin-bottom:16px;color:#FFC700">Esboços para Pregação</h3>
+            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Esboços por categorias: Avivamento, Casamento, Prosperidade, Batalha Espiritual, Família.</p>
+            <div id="esbocos-public-content"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando categorias...</p></div></div>
+        </div>
+
+        <div class="bible-card">
+            <h3 style="margin-bottom:16px;color:#FFC700">Busca</h3>
+            <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+                <input type="text" id="busca-public-input" placeholder="Buscar em devocionais, estudos e esboços..." style="flex:1;min-width:180px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC">
+                <button type="button" class="bible-btn" id="btn-busca-public"><i class="fas fa-search"></i> Buscar</button>
+            </div>
+            <div id="busca-public-resultados"></div>
+        </div>
+
         <!-- Livros da Bíblia (todos internos - sem links externos) -->
         <div class="bible-card">
             <h3 style="margin-bottom:16px;color:#FFC700">Livros da Bíblia</h3>
@@ -461,7 +494,8 @@
                     var json = await res.json().catch(function() { return {}; });
                     var d = json.data;
                     if (!d) throw new Error('Devocional não encontrado');
-                    var html = '<div class="bible-ref">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:0.9rem;margin-bottom:12px">' + (d.versiculo || '') + '</div><div class="bible-text" style="color:#e8e8e8;line-height:1.7">' + (d.texto || '').replace(/\n/g, '<br>') + '</div>';
+                    var html = '<div class="bible-ref">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:0.9rem;margin-bottom:12px">' + (d.versiculo || '') + '</div><div class="bible-text" style="color:#e8e8e8;line-height:1.7">' + (d.texto || d.reflexao || '').replace(/\n/g, '<br>') + '</div>';
+                    if (d.aplicacao) html += '<div class="bible-reflexao" style="margin-top:16px"><strong>Aplicação Prática</strong><br>' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</div>';
                     if (d.oracao) html += '<div class="bible-reflexao" style="margin-top:16px"><strong>Oração</strong><br>' + (d.oracao || '').replace(/\n/g, '<br>') + '</div>';
                     el.innerHTML = html;
                     devocionalLoaded = true;
@@ -469,6 +503,84 @@
                     el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
                 }
             }
+
+            function getDayOfYear() {
+                var now = new Date();
+                var start = new Date(now.getFullYear(), 0, 0);
+                return Math.floor((now - start) / 86400000);
+            }
+            async function loadDev365ByDay(day) {
+                var el = document.getElementById('dev365-content');
+                el.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>';
+                try {
+                    var res = await fetch(API_URL + '/api/bible/devotionals-365/' + day);
+                    var json = await res.json().catch(function() { return {}; });
+                    var d = json.data;
+                    if (!d) throw new Error('Devocional não encontrado para este dia.');
+                    el.innerHTML = '<div class="bible-ref">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:0.9rem;margin-bottom:12px">' + (d.versiculo_ref || '') + '</div>' + (d.versiculo_texto ? '<div class="bible-text" style="margin-bottom:16px">"' + d.versiculo_texto + '"</div>' : '') + '<div class="bible-text" style="line-height:1.7">' + (d.reflexao || '').replace(/\n/g, '<br>') + '</div>' + (d.aplicacao ? '<div class="bible-reflexao" style="margin-top:20px"><strong>Aplicação Prática</strong><br>' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</div>' : '') + (d.oracao ? '<div class="bible-reflexao" style="margin-top:16px"><strong>Oração</strong><br>' + (d.oracao || '').replace(/\n/g, '<br>') + '</div>' : '');
+                } catch (e) {
+                    el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
+                }
+            }
+            document.getElementById('btn-dev365-load').addEventListener('click', function() {
+                var day = parseInt(document.getElementById('dev365-day').value, 10);
+                if (day < 1 || day > 365) { alert('Digite um dia entre 1 e 365.'); return; }
+                loadDev365ByDay(day);
+            });
+            document.getElementById('btn-dev365-today').addEventListener('click', function() {
+                var day = getDayOfYear();
+                document.getElementById('dev365-day').value = day;
+                loadDev365ByDay(day);
+            });
+
+            (async function loadEstudosPublic() {
+                var el = document.getElementById('estudos-public-content');
+                try {
+                    var res = await fetch(API_URL + '/api/bible/study-themes');
+                    var json = await res.json().catch(function() { return {}; });
+                    var themes = (json.data && json.data.themes) || [];
+                    if (!themes.length) { el.innerHTML = '<p style="color:#A1A1A1">Nenhum tema disponível.</p>'; return; }
+                    el.innerHTML = themes.map(function(t) {
+                        return '<div style="margin-bottom:12px;padding:12px;border:1px solid rgba(255,255,255,0.08);border-radius:8px"><strong style="color:#FFC700">' + t.nome + '</strong>' + (t.descricao ? '<p style="font-size:0.85rem;color:#A1A1A1;margin-top:6px">' + t.descricao + '</p>' : '') + '<p style="font-size:0.85rem;color:#7dd3fc;margin-top:8px">Acesse pelo painel do cartão para ver os estudos.</p></div>';
+                    }).join('');
+                } catch (e) { el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro.') + '</div>'; }
+            })();
+
+            (async function loadEsbocosPublic() {
+                var el = document.getElementById('esbocos-public-content');
+                try {
+                    var res = await fetch(API_URL + '/api/bible/outline-categories');
+                    var json = await res.json().catch(function() { return {}; });
+                    var cats = (json.data && json.data.categories) || [];
+                    if (!cats.length) { el.innerHTML = '<p style="color:#A1A1A1">Nenhuma categoria disponível.</p>'; return; }
+                    var res2 = await fetch(API_URL + '/api/bible/outlines');
+                    var json2 = await res2.json().catch(function() { return {}; });
+                    var outlines = (json2.data && json2.data.outlines) || [];
+                    var byCat = {};
+                    outlines.forEach(function(o) { var c = o.category_name || 'Outros'; if (!byCat[c]) byCat[c] = []; byCat[c].push(o); });
+                    el.innerHTML = Object.keys(byCat).map(function(cat) {
+                        var list = byCat[cat].map(function(o) { return '<div style="font-size:0.9rem;color:#ECECEC;margin-top:6px">• ' + o.titulo + '</div>'; }).join('');
+                        return '<div style="margin-bottom:16px"><strong style="color:#FFC700">' + cat + '</strong>' + list + '</div>';
+                    }).join('') + '<p style="font-size:0.85rem;color:#7dd3fc;margin-top:12px">Acesse pelo painel do cartão para ver o conteúdo completo dos esboços.</p>';
+                } catch (e) { el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro.') + '</div>'; }
+            })();
+
+            document.getElementById('btn-busca-public').addEventListener('click', async function() {
+                var q = (document.getElementById('busca-public-input').value || '').trim();
+                var el = document.getElementById('busca-public-resultados');
+                if (!q || q.length < 2) { el.innerHTML = '<p style="color:#A1A1A1">Digite pelo menos 2 caracteres.</p>'; return; }
+                el.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Buscando...</p></div>';
+                try {
+                    var res = await fetch(API_URL + '/api/bible/search?q=' + encodeURIComponent(q) + '&limit=15');
+                    var json = await res.json().catch(function() { return {}; });
+                    var data = json.data || {};
+                    var dev = (data.devotionals || []).map(function(d) { return '<div style="padding:10px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:8px"><strong style="color:#FFC700">Devocional Dia ' + d.day_of_year + '</strong> — ' + d.titulo + '<div style="font-size:0.85rem;color:#A1A1A1;margin-top:4px">' + (d.reflexao_preview || '').substring(0, 120) + '...</div></div>'; }).join('');
+                    var stud = (data.studies || []).map(function(s) { return '<div style="padding:10px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:8px"><strong style="color:#FFC700">Estudo</strong> — ' + s.titulo + ' (' + (s.theme_name || '') + ')</div>'; }).join('');
+                    var out = (data.outlines || []).map(function(o) { return '<div style="padding:10px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:8px"><strong style="color:#FFC700">Esboço</strong> — ' + o.titulo + ' (' + (o.category_name || '') + ')</div>'; }).join('');
+                    var html = (dev ? '<h4 style="margin-bottom:10px;color:#ECECEC;font-size:1rem">Devocionais</h4>' + dev : '') + (stud ? '<h4 style="margin:16px 0 10px;color:#ECECEC;font-size:1rem">Estudos</h4>' + stud : '') + (out ? '<h4 style="margin:16px 0 10px;color:#ECECEC;font-size:1rem">Esboços</h4>' + out : '');
+                    el.innerHTML = html || '<p style="color:#A1A1A1">Nenhum resultado encontrado.</p>';
+                } catch (e) { el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro na busca.') + '</div>'; }
+            });
 
             (async function init() {
                 try {

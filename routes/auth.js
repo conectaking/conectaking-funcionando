@@ -67,7 +67,7 @@ router.post(
 
             await client.query('INSERT INTO user_profiles (user_id, display_name) VALUES ($1, $2)', [newUser.id, newUser.email]);
 
-            -- Módulo Bíblia ativo por padrão em todo cartão virtual
+            // Módulo Bíblia ativo por padrão em todo cartão virtual
             const bibleItem = await client.query(
                 `INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
                  VALUES ($1, 'bible', 'Bíblia', true, 0) RETURNING id`,
