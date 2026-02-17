@@ -87,6 +87,16 @@ async function getAccessToken(credentials) {
   }
 }
 
+/** Indica se o erro da API Google é por voz indisponível (ex.: Wavenet não habilitada no projeto). */
+function isVoiceUnavailableError(err) {
+  const status = err.response?.status;
+  const body = err.response?.data;
+  const msg = typeof body === 'string' ? body : (body && JSON.stringify(body)) || err.message || '';
+  const s = String(msg).toLowerCase();
+  return (status === 400 || status === 404 || status === 403) && /voice|invalid|not found|not available|unsupported|not enabled/i.test(s)
+    || /INVALID_ARGUMENT|voice.*invalid|invalid.*voice/i.test(s);
+}
+
 /** Sintetiza áudio via API REST do Google TTS (evita gRPC/SSL em ambientes problemáticos). */
 async function synthesizeViaRest(credentials, request) {
   const token = await getAccessToken(credentials);
@@ -145,6 +155,10 @@ async function generateTts(opts) {
     try {
       return await synthesizeViaRest(credentials, request);
     } catch (err) {
+      if (isVoiceUnavailableError(err) && voiceName !== 'pt-BR-Standard-A') {
+        logger.warn('tts-google: voz %s indisponível no projeto GCP, tentando pt-BR-Standard-A', voiceName);
+        return await generateTts({ ...opts, voiceName: 'pt-BR-Standard-A' });
+      }
       logger.error('tts-google synthesizeSpeech (REST):', err?.message || err);
       throw err;
     }
@@ -177,9 +191,17 @@ async function generateTts(opts) {
       try {
         return await synthesizeViaRest(credentials, request);
       } catch (restErr) {
+        if (isVoiceUnavailableError(restErr) && voiceName !== 'pt-BR-Standard-A') {
+          logger.warn('tts-google: voz %s indisponível no projeto GCP, tentando pt-BR-Standard-A', voiceName);
+          return await generateTts({ ...opts, voiceName: 'pt-BR-Standard-A' });
+        }
         logger.error('tts-google synthesizeSpeech (REST fallback):', restErr?.message || restErr);
         throw restErr;
       }
+    }
+    if (isVoiceUnavailableError(err) && voiceName !== 'pt-BR-Standard-A') {
+      logger.warn('tts-google: voz %s indisponível no projeto GCP, tentando pt-BR-Standard-A', voiceName);
+      return await generateTts({ ...opts, voiceName: 'pt-BR-Standard-A' });
     }
     logger.error('tts-google synthesizeSpeech:', err?.message || err);
     throw err;
