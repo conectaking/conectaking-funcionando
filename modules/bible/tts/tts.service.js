@@ -59,7 +59,7 @@ async function saveToCacheAndR2(opts, mp3Buffer) {
   const { cacheKey } = getTtsCacheKey({ ...opts, text });
   const r2Path = getR2Path({ ...opts, text });
 
-  await r2.r2PutObjectBuffer({
+  await r2.r2PutObjectBufferTts({
     key: r2Path,
     body: mp3Buffer,
     contentType: 'audio/mpeg',

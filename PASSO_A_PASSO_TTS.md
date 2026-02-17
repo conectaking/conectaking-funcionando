@@ -67,15 +67,21 @@ GCP_LOCATION=
 
 ### Passo 5: R2 já configurado
 
-O projeto já usa R2 (`utils/r2.js`). Para o TTS funcionar, as variáveis que você já tem costumam ser:
+O projeto já usa R2 (`utils/r2.js`). O **King Selection** usa o bucket **kingselection** (variável `R2_BUCKET`). O TTS da Bíblia pode usar outro bucket (**conectaking-pdfs**) para os áudios, sem atrapalhar o King Selection.
 
-- `R2_ACCOUNT_ID`
-- `R2_ACCESS_KEY_ID`
-- `R2_SECRET_ACCESS_KEY`
-- `R2_BUCKET`
-- `R2_PUBLIC_URL` – URL pública **dos áudios TTS** (domínio customizado do bucket, ex.: `https://tts.conectaking.com.br`)
+**Variáveis principais:**
 
-Se o R2 já está funcionando para imagens/outros arquivos, o TTS usará o **mesmo bucket**; os áudios ficarão em pastas separadas (ex.: `bible-tts/...`).
+- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` – credenciais R2 (usadas por King Selection e, se não houver TTS_*, pelo TTS).
+- `R2_BUCKET` – bucket do King Selection (ex.: **kingselection**). **Não troque** para conectaking-pdfs se o King Selection estiver em produção.
+- `R2_PUBLIC_URL` – URL pública **dos áudios TTS** (domínio customizado do bucket de TTS, ex.: `https://tts.conectaking.com.br`).
+
+**Para o TTS usar o bucket conectaking-pdfs (ex.: no Render):**
+
+- Defina **TTS_R2_BUCKET** = **conectaking-pdfs**. O upload dos MP3 do TTS passará a usar esse bucket; o King Selection continua usando `R2_BUCKET` (kingselection).
+- Se o bucket de TTS estiver na **mesma conta** Cloudflare, não é preciso definir `TTS_R2_ACCOUNT_ID`, `TTS_R2_ACCESS_KEY_ID` ou `TTS_R2_SECRET_ACCESS_KEY`; as credenciais `R2_*` servem para os dois.
+- Se for outra conta ou outras chaves, defina também: `TTS_R2_ACCOUNT_ID`, `TTS_R2_ACCESS_KEY_ID`, `TTS_R2_SECRET_ACCESS_KEY`.
+
+Resumo: **não altere** `R2_BUCKET` para conectaking-pdfs; use **TTS_R2_BUCKET** = conectaking-pdfs para que só o TTS use esse bucket e o King Selection não seja afetado.
 
 ### Passo 5b: Domínio customizado para TTS (tts.conectaking.com.br)
 

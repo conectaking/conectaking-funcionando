@@ -19,7 +19,19 @@ function getR2Config() {
   };
 }
 
+/** Config R2 só para TTS (bucket conectaking-pdfs). Se TTS_R2_BUCKET não estiver definido, usa o R2 principal. */
+function getR2ConfigTts() {
+  const bucket = (process.env.TTS_R2_BUCKET || process.env.R2_BUCKET || process.env.R2_BUCKET_NAME || '').toString().trim();
+  const accountId = (process.env.TTS_R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID || '').toString().trim();
+  const accessKeyId = (process.env.TTS_R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID || '').toString().trim();
+  const secretAccessKey = (process.env.TTS_R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY || '').toString().trim();
+  const enabled = !!(accountId && accessKeyId && secretAccessKey && bucket);
+  return { enabled, accountId, accessKeyId, secretAccessKey, bucket };
+}
+
 let _client = null;
+let _clientTts = null;
+
 function getR2Client() {
   const cfg = getR2Config();
   if (!cfg.enabled) return null;
@@ -37,6 +49,19 @@ function getR2Client() {
     forcePathStyle: true
   });
   return _client;
+}
+
+function getR2ClientTts() {
+  const cfg = getR2ConfigTts();
+  if (!cfg.enabled) return null;
+  if (_clientTts) return _clientTts;
+  _clientTts = new S3Client({
+    region: 'auto',
+    endpoint: `https://${cfg.accountId}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId: cfg.accessKeyId, secretAccessKey: cfg.secretAccessKey },
+    forcePathStyle: true
+  });
+  return _clientTts;
 }
 
 async function streamToBuffer(stream) {
@@ -120,6 +145,22 @@ async function r2PutObjectBuffer({ key, body, contentType, cacheControl }) {
   return { key, publicUrl: publicUrl || undefined };
 }
 
+/** Upload para o bucket TTS (conectaking-pdfs). Usa TTS_R2_* quando definido, senão o R2 principal. */
+async function r2PutObjectBufferTts({ key, body, contentType, cacheControl }) {
+  const cfg = getR2ConfigTts();
+  const client = getR2ClientTts();
+  if (!cfg.enabled || !client) throw new Error('R2 não configurado para TTS');
+  await client.send(new PutObjectCommand({
+    Bucket: cfg.bucket,
+    Key: key,
+    Body: body,
+    ContentType: contentType || 'application/octet-stream',
+    CacheControl: cacheControl || 'public, max-age=31536000, immutable'
+  }));
+  const publicUrl = r2PublicUrl(key);
+  return { key, publicUrl: publicUrl || undefined };
+}
+
 /** Testa a conexão com o R2 (diagnóstico de 502). */
 async function r2Diagnostic() {
   const cfg = getR2Config();
@@ -156,12 +197,15 @@ async function r2Diagnostic() {
 
 module.exports = {
   getR2Config,
+  getR2ConfigTts,
   getR2Client,
+  getR2ClientTts,
   r2PublicUrl,
   r2GetObjectBuffer,
   r2GetObjectViaPublicUrl,
   r2PresignPut,
   r2PutObjectBuffer,
+  r2PutObjectBufferTts,
   r2Diagnostic
 };
 
