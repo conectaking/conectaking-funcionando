@@ -6,7 +6,7 @@ function getR2Config() {
   const accountId = (process.env.R2_ACCOUNT_ID || '').toString().trim();
   const accessKeyId = (process.env.R2_ACCESS_KEY_ID || '').toString().trim();
   const secretAccessKey = (process.env.R2_SECRET_ACCESS_KEY || '').toString().trim();
-  const bucket = (process.env.R2_BUCKET || '').toString().trim();
+  const bucket = (process.env.R2_BUCKET || process.env.R2_BUCKET_NAME || '').toString().trim();
   const publicBaseUrl = (process.env.R2_PUBLIC_BASE_URL || '').toString().trim().replace(/\/$/, '');
   const enabled = !!(accountId && accessKeyId && secretAccessKey && bucket);
   return {
