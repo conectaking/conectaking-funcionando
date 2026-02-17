@@ -131,4 +131,11 @@ npm run migrate
 
 Assim, cada trecho só gera custo de TTS **uma vez**; depois todo mundo reutiliza o mesmo MP3.
 
+---
+
+## Problemas comuns
+
+- **Script tts.js com MIME type text/html:** abra a página com URL que inclua o diretório (ex.: `.../public_html/bibleEdit.html`); o script está como `./js/tts.js`.
+- **Erro SSL (handshake failure) ao "Ouvir":** o backend falha ao conectar ao GCP ou R2; em produção confira variáveis; em local pode ser proxy/Node; a API devolve mensagem genérica.
+
 Se quiser, na próxima mensagem você pode dizer em que passo parou (ex.: “criei a Service Account mas não sei onde colocar a variável no Render”) que eu te guio só naquela parte.
