@@ -160,6 +160,65 @@
             color: #ECECEC;
             font-size: 0.95rem;
         }
+        /* Receba mais de Deus hoje */
+        .receba-card {
+            background: linear-gradient(135deg, #1a4d2e 0%, #0d2818 100%);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255,199,0,0.2);
+        }
+        .receba-card h2 {
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        .receba-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        @media (max-width: 500px) { .receba-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 340px) { .receba-grid { grid-template-columns: 1fr; } }
+        .receba-item {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 14px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        .receba-item:hover {
+            background: rgba(255,199,0,0.15);
+            border-color: rgba(255,199,0,0.4);
+        }
+        .receba-item.active {
+            background: rgba(255,199,0,0.2);
+            border-color: #FFC700;
+        }
+        .receba-item span { color: #fff; font-size: 0.9rem; font-weight: 500; }
+        .receba-item i.fa-arrow-right { color: #FFC700; font-size: 0.85rem; }
+        .receba-content { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.15); }
+        .receba-content.show { display: block; }
+        .receba-content .bible-ref, .receba-content .bible-text, .receba-content .bible-reflexao { color: #e8e8e8; }
+        /* Livros da Bíblia */
+        .livros-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
+        @media (max-width: 500px) { .livros-section { grid-template-columns: 1fr; } }
+        .livros-col {
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .livros-col h3 { font-size: 0.95rem; color: #FFC700; margin-bottom: 12px; }
+        .livros-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 12px; }
+        .livros-grid a { color: #7dd3fc; text-decoration: none; font-size: 0.85rem; }
+        .livros-grid a:hover { color: #FFC700; text-decoration: underline; }
     </style>
 </head>
 <body>
