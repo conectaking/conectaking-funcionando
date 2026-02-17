@@ -203,6 +203,30 @@ function loadBooksManifest() {
     }
 }
 
+/**
+ * Retorna o texto de um trecho para TTS.
+ * ref: "jo 3:16" (versículo) ou "jo 3" (capítulo inteiro).
+ * @returns {{ text: string, scope: 'verse'|'chapter', ref: string } | null}
+ */
+function getTextForRef(ref, translation) {
+    const r = (ref || '').trim();
+    if (!r) return null;
+    const parts = r.split(/\s+/);
+    const bookId = (parts[0] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const chVerse = (parts[1] || '1').split(':');
+    const chapterNum = chVerse[0] || '1';
+    const verseNum = chVerse.length > 1 ? parseInt(chVerse[1], 10) : null;
+    const ch = getBookChapter(bookId, chapterNum, translation);
+    if (!ch || !ch.verses || !ch.verses.length) return null;
+    const normalizedRef = `${bookId} ${chapterNum}${verseNum ? ':' + verseNum : ''}`;
+    if (verseNum != null && verseNum >= 1 && verseNum <= ch.verses.length) {
+        const verse = ch.verses[verseNum - 1];
+        return { text: verse.text || '', scope: 'verse', ref: normalizedRef };
+    }
+    const text = ch.verses.map((v, i) => `${i + 1} ${v.text || ''}`).join(' ');
+    return { text, scope: 'chapter', ref: normalizedRef };
+}
+
 function getBookChapter(bookId, chapterNum, translation) {
     const trans = (translation || 'nvi').toLowerCase();
     let bookPath = path.join(DATA_DIR, 'books', trans, bookId + '.json');
@@ -312,5 +336,6 @@ module.exports = {
     getOutlineBySlug,
     searchBibleEcosystem,
     loadBooksManifest,
-    getBookChapter
+    getBookChapter,
+    getTextForRef
 };

@@ -24,6 +24,9 @@ router.get('/outlines', asyncHandler(controller.getOutlines));
 router.get('/outlines/:categorySlug/:outlineSlug', asyncHandler(controller.getOutlineBySlug));
 router.get('/search', asyncHandler(controller.searchBible));
 
+// TTS: áudio do trecho (cache R2 + Google TTS). Público para o leitor da Bíblia.
+router.get('/tts/audio', asyncHandler(controller.getTtsAudio));
+
 // Rotas PROTEGIDAS (requer login)
 router.get('/config/:itemId', protectUser, asyncHandler(controller.getConfig));
 router.put('/config/:itemId', protectUser, asyncHandler(controller.saveConfig));

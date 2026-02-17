@@ -1,4 +1,5 @@
 const bibleService = require('./bible.service');
+const ttsService = require('./tts/tts.service');
 const responseFormatter = require('../../utils/responseFormatter');
 const logger = require('../../utils/logger');
 
@@ -234,6 +235,63 @@ async function searchBible(req, res) {
     }
 }
 
+/**
+ * TTS: retorna URL do áudio (em cache no R2) ou gera com Google TTS e cacheia.
+ * Query: ref (ex: "jo 3:16"), version (nvi), voice (opcional), text (opcional; se omitido, busca pelo ref).
+ */
+async function getTtsAudio(req, res) {
+    try {
+        const ref = (req.query.ref || req.body?.ref || '').trim();
+        const version = (req.query.version || req.body?.version || 'nvi').toLowerCase();
+        const voiceName = (req.query.voice || req.body?.voice || 'pt-BR-Standard-A').trim();
+        const voiceType = (req.query.voiceType || req.body?.voiceType || 'Standard').trim();
+        const locale = (req.query.locale || req.body?.locale || 'pt-BR').trim();
+        let text = (req.query.text || req.body?.text || '').trim();
+        let scope = (req.query.scope || req.body?.scope || 'verse').toLowerCase();
+
+        if (!ref && !text) {
+            return responseFormatter.error(res, 'Informe ref (ex: jo 3:16) ou text', 400);
+        }
+
+        let effectiveRef = ref;
+        if (!text && ref) {
+            const refData = bibleService.getTextForRef(ref, version);
+            if (!refData) {
+                return responseFormatter.error(res, 'Trecho não encontrado: ' + ref, 404);
+            }
+            text = refData.text;
+            scope = refData.scope;
+            effectiveRef = refData.ref;
+        }
+
+        const result = await ttsService.getOrCreateAudio({
+            ref: effectiveRef || 'custom',
+            text,
+            bibleVersion: version,
+            scope,
+            voiceName,
+            voiceType,
+            locale
+        });
+
+        if (result.url) {
+            return responseFormatter.success(res, { url: result.url, fromCache: !!result.fromCache });
+        }
+        if (result.status === 'error') {
+            return responseFormatter.error(res, result.message || 'Falha ao gerar áudio', 500);
+        }
+        return responseFormatter.success(res, {
+            status: 'missing',
+            cacheKey: result.cacheKey,
+            r2Path: result.r2Path,
+            message: 'Áudio não está em cache e o TTS (GCP) não está configurado ou falhou.'
+        }, null, 202);
+    } catch (e) {
+        logger.error('bible getTtsAudio:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao obter áudio TTS', 500);
+    }
+}
+
 module.exports = {
     getVerseOfDay,
     getNumbers,
@@ -254,5 +312,6 @@ module.exports = {
     getMyProgress,
     markRead,
     getConfig,
-    saveConfig
+    saveConfig,
+    getTtsAudio
 };

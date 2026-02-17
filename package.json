@@ -25,6 +25,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google-cloud/text-to-speech": "^5.6.0",
     "@aws-sdk/client-s3": "^3.859.0",
     "@aws-sdk/s3-request-presigner": "^3.980.0",
     "axios": "^1.11.0",
