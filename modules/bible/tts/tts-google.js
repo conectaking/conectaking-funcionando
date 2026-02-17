@@ -12,8 +12,52 @@ const axios = require('axios');
 /** Timeout para chamadas ao Google. Sem agente customizado por padrão; em EPROTO usamos agent com keepAlive:false. */
 const axiosConfig = { timeout: 30000 };
 
-/** No Render, axios pode falhar com EPROTO; usar módulo nativo https primeiro (sem agent custom). */
+/** No Render, axios e às vezes https.request falham com EPROTO; tentar fetch (Node 18+) primeiro. */
 const USE_NATIVE_HTTPS_ON_RENDER = process.env.RENDER === 'true';
+const HAS_FETCH = typeof globalThis.fetch === 'function';
+
+/** POST com fetch nativo (Node 18+). Pode negociar TLS diferente e evitar EPROTO no Render. */
+async function fetchPost(url, body, headers, isJson = true) {
+  const opts = {
+    method: 'POST',
+    headers: { ...headers },
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+    signal: AbortSignal.timeout(30000)
+  };
+  if (isJson) opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
+  const res = await globalThis.fetch(url, opts);
+  const raw = await res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${raw}`);
+  return isJson ? JSON.parse(raw) : raw;
+}
+
+/** Obtém token com fetch nativo (Node 18+). */
+async function getAccessTokenFetch(credentials) {
+  const jwt = createSignedJwt(credentials);
+  const body = new URLSearchParams({
+    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+    assertion: jwt
+  }).toString();
+  const raw = await fetchPost('https://oauth2.googleapis.com/token', body, {
+    'Content-Type': 'application/x-www-form-urlencoded'
+  }, false);
+  const parsed = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch (e) { return null; } })() : raw;
+  if (!parsed || !parsed.access_token) throw new Error('OAuth2 token failed: no access_token');
+  return parsed.access_token;
+}
+
+/** Sintetiza com fetch nativo (Node 18+). */
+async function synthesizeViaRestFetch(credentials, request) {
+  const token = await getAccessTokenFetch(credentials);
+  const data = await fetchPost(
+    'https://texttospeech.googleapis.com/v1/text:synthesize',
+    request,
+    { 'Authorization': 'Bearer ' + token },
+    true
+  );
+  if (data && data.audioContent) return Buffer.from(data.audioContent, 'base64');
+  return null;
+}
 
 /** POST JSON ou form com https nativo (sem axios). Útil quando o handshake TLS falha com axios. */
 function httpsPost(hostname, path, body, headers, isJson = true) {
@@ -254,20 +298,27 @@ async function generateTts(opts) {
 
   if (USE_REST) {
     if (USE_NATIVE_HTTPS_ON_RENDER) {
-      try {
-        const buf = await synthesizeViaRestNative(credentials, request);
-        if (buf && buf.length) return buf;
-      } catch (nativeErr) {
-        logger.warn('tts-google: REST com https nativo falhou, tentando axios:', nativeErr?.message || nativeErr);
+      const tryOrder = HAS_FETCH ? ['fetch', 'https', 'axios'] : ['https', 'axios'];
+      logger.info('tts-google: Render → tentando ordem: %s', tryOrder.join(', '));
+      for (const client of tryOrder) {
         try {
-          return await synthesizeViaRest(credentials, request);
-        } catch (axiosErr) {
-          if (isVoiceUnavailableError(axiosErr) && voiceName !== 'pt-BR-Standard-A') {
-            logger.warn('tts-google: voz %s indisponível no projeto GCP, tentando pt-BR-Standard-A', voiceName);
-            return await generateTts({ ...opts, voiceName: 'pt-BR-Standard-A' });
+          let buf = null;
+          if (client === 'fetch') buf = await synthesizeViaRestFetch(credentials, request);
+          else if (client === 'https') buf = await synthesizeViaRestNative(credentials, request);
+          else buf = await synthesizeViaRest(credentials, request);
+          if (buf && buf.length) {
+            logger.info('tts-google: sucesso com cliente %s', client);
+            return buf;
           }
-          logger.error('tts-google synthesizeSpeech (REST axios fallback):', axiosErr?.message || axiosErr);
-          throw axiosErr;
+        } catch (err) {
+          logger.warn('tts-google: cliente %s falhou (%s), próximo: %s', client, err?.message || err?.code || err, err?.code === 'EPROTO' ? 'tentando próximo' : '');
+          if (client === tryOrder[tryOrder.length - 1]) {
+            if (isVoiceUnavailableError(err) && voiceName !== 'pt-BR-Standard-A') {
+              logger.warn('tts-google: voz %s indisponível, tentando pt-BR-Standard-A', voiceName);
+              return await generateTts({ ...opts, voiceName: 'pt-BR-Standard-A' });
+            }
+            throw err;
+          }
         }
       }
     }
