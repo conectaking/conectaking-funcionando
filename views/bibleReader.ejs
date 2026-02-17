@@ -36,7 +36,7 @@
     <% const bibleIndexBase = (typeof baseUrl !== 'undefined' && baseUrl) ? String(baseUrl).replace(/\/$/, '') : ''; %>
     <% const bibleIndexUrl = bibleIndexBase ? (bibleIndexBase + '/' + slug + '/bible' + tParam) : ('/' + slug + '/bible' + tParam); %>
     <div class="reader-wrap">
-        <a href="<%= bibleIndexUrl %>" class="back-link" target="_top"><i class="fas fa-arrow-left"></i> Voltar à Bíblia</a>
+        <a href="javascript:void(0)" id="back-bible-link" class="back-link"><i class="fas fa-arrow-left"></i> Voltar à Bíblia</a>
         <div class="reader-header">
             <h1><%= chapterData.bookName %> — Capítulo <%= chapterData.chapter %></h1>
             <div class="nav-chapters">
@@ -55,11 +55,18 @@
             <div class="reader-toolbar">
                 <label for="sel-translation" style="color:#A1A1A1;font-size:0.85rem;">Tradução:</label>
                 <select id="sel-translation" class="translation-select" onchange="var t=this.value; if(t) location.href='/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter %>'+(t!=='nvi'?'?translation='+encodeURIComponent(t):'');">
-                    <option value="nvi"<%= (typeof translation !== 'undefined' && translation === 'nvi') ? ' selected' : '' %>>NVI</option>
-                    <option value="arc"<%= (typeof translation !== 'undefined' && translation === 'arc') ? ' selected' : '' %>>ARC</option>
-                    <option value="acf"<%= (typeof translation !== 'undefined' && translation === 'acf') ? ' selected' : '' %>>ACF</option>
+                    <option value="nvi"<%= (typeof translation !== 'undefined' && translation === 'nvi') ? ' selected' : '' %>>NVI (Nova Versão Internacional)</option>
+                    <option value="arc"<%= (typeof translation !== 'undefined' && translation === 'arc') ? ' selected' : '' %>>ARC (Almeida Revista e Corrigida)</option>
+                    <option value="acf"<%= (typeof translation !== 'undefined' && translation === 'acf') ? ' selected' : '' %>>ACF (Almeida Corrigida Fiel)</option>
+                    <option value="ntlh"<%= (typeof translation !== 'undefined' && translation === 'ntlh') ? ' selected' : '' %>>NTLH (Nova Tradução na Linguagem de Hoje)</option>
+                    <option value="ara"<%= (typeof translation !== 'undefined' && translation === 'ara') ? ' selected' : '' %>>ARA (Almeida Revisada e Atualizada)</option>
+                    <option value="kja"<%= (typeof translation !== 'undefined' && translation === 'kja') ? ' selected' : '' %>>KJA (King James Atualizada)</option>
+                    <option value="kjv"<%= (typeof translation !== 'undefined' && translation === 'kjv') ? ' selected' : '' %>>KJV (King James Version)</option>
                 </select>
+                <label for="sel-voice" style="color:#A1A1A1;font-size:0.85rem;">Voz:</label>
+                <select id="sel-voice" class="translation-select"><option value="">Padrão</option></select>
                 <button type="button" class="btn-ouvir" id="btn-ouvir"><i class="fas fa-volume-up"></i> Ouvir capítulo</button>
+                <button type="button" class="btn-ouvir" id="btn-parar" style="background:rgba(239,68,68,0.8);"><i class="fas fa-stop"></i> Parar</button>
             </div>
         </div>
         <div id="verses-container">
@@ -76,12 +83,45 @@
             const verses = document.querySelectorAll('.verse-block');
             const texts = Array.from(verses).map(v => v.querySelector('.verse-text').textContent);
             const fullText = texts.join(' ');
-            document.getElementById('btn-ouvir').addEventListener('click', function() {
-                const u = new SpeechSynthesisUtterance(fullText);
+            const bibleIndexUrl = '<%= bibleIndexUrl %>';
+            var btnOuvir = document.getElementById('btn-ouvir');
+
+            document.getElementById('back-bible-link').addEventListener('click', function() {
+                if (window.history.length > 1) { window.history.back(); } else { window.location.href = bibleIndexUrl; }
+            });
+
+            function stopSpeech() { speechSynthesis.cancel(); if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i> Ouvir capítulo'; }
+            function speak() {
+                speechSynthesis.cancel();
+                var u = new SpeechSynthesisUtterance(fullText);
                 u.lang = 'pt-BR';
                 u.rate = 0.9;
+                var voiceId = document.getElementById('sel-voice') && document.getElementById('sel-voice').value;
+                if (voiceId) {
+                    var voices = speechSynthesis.getVoices().filter(function(v) { return v.lang.startsWith('pt'); });
+                    var chosen = voices.find(function(v) { return v.name === voiceId || v.voiceURI === voiceId; });
+                    if (chosen) u.voice = chosen;
+                }
                 speechSynthesis.speak(u);
+            }
+            document.querySelectorAll('.nav-chapters a').forEach(function(a) { a.addEventListener('click', stopSpeech); });
+            document.getElementById('btn-ouvir').addEventListener('click', function() {
+                if (speechSynthesis.speaking) { speechSynthesis.pause(); btnOuvir.innerHTML = '<i class="fas fa-play"></i> Continuar'; }
+                else if (speechSynthesis.paused) { speechSynthesis.resume(); btnOuvir.innerHTML = '<i class="fas fa-pause"></i> Pausar'; }
+                else { speak(); btnOuvir.innerHTML = '<i class="fas fa-pause"></i> Pausar'; }
             });
+            document.getElementById('btn-parar').addEventListener('click', stopSpeech);
+            speechSynthesis.onend = function() { if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i> Ouvir capítulo'; };
+
+            var selVoice = document.getElementById('sel-voice');
+            function loadVoices() {
+                var voices = speechSynthesis.getVoices().filter(function(v) { return v.lang.startsWith('pt'); });
+                if (selVoice && voices.length && selVoice.options.length <= 1) {
+                    voices.forEach(function(v) { var o = document.createElement('option'); o.value = v.name; o.textContent = v.name + (v.name.toLowerCase().indexOf('female') >= 0 || v.name.indexOf('Mulher') >= 0 ? ' (mulher)' : ' (homem)'); selVoice.appendChild(o); });
+                }
+            }
+            loadVoices();
+            if (speechSynthesis.onvoiceschanged) speechSynthesis.onvoiceschanged = loadVoices;
         })();
     </script>
 </body>
