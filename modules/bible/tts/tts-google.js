@@ -73,7 +73,16 @@ async function getAccessToken(credentials) {
     return res.data.access_token;
   } catch (err) {
     const status = err.response?.status;
+    const isSsl = err.code === 'EPROTO' || /handshake|SSL|ECONNREFUSED|ETIMEDOUT/i.test(String(err.message || ''));
     const text = err.response?.data ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data)) : err.message;
+    if (isSsl) {
+      logger.warn('tts-google: falha de conexão TLS/rede com o Google (não é credencial). Erro:', err.message || text);
+      throw new Error('Conexão com o Google falhou (TLS/rede). Não é problema de credencial. Tente rodar o servidor localmente para testar.');
+    }
+    if (status === 401 || status === 403 || /invalid_grant|invalid_credentials|unauthorized/i.test(String(text))) {
+      logger.warn('tts-google: credenciais GCP rejeitadas:', text);
+      throw new Error('Credenciais GCP inválidas ou expiradas. Verifique GCP_SERVICE_ACCOUNT_JSON_BASE64 e a API Text-to-Speech ativada.');
+    }
     throw new Error('OAuth2 token failed: ' + (status || '') + ' ' + text);
   }
 }
