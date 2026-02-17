@@ -53,7 +53,7 @@
                 <span class="disabled">Próximo <i class="fas fa-chevron-right"></i></span>
                 <% } %>
             </div>
-            <div class="reader-toolbar">
+            <div class="reader-toolbar" style="flex-wrap:wrap;gap:10px;align-items:center;">
                 <label for="sel-translation" style="color:#A1A1A1;font-size:0.85rem;">Tradução:</label>
                 <select id="sel-translation" class="translation-select" onchange="var t=this.value; if(t) location.href='/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter %>'+(t!=='nvi'?'?translation='+encodeURIComponent(t):'');">
                     <option value="nvi"<%= (typeof translation !== 'undefined' && translation === 'nvi') ? ' selected' : '' %>>NVI (Nova Versão Internacional)</option>
@@ -65,7 +65,9 @@
                     <option value="kjv"<%= (typeof translation !== 'undefined' && translation === 'kjv') ? ' selected' : '' %>>KJV (King James Version)</option>
                 </select>
                 <label for="sel-voice" style="color:#A1A1A1;font-size:0.85rem;">Voz:</label>
-                <select id="sel-voice" class="translation-select"><option value="">Padrão</option></select>
+                <select id="sel-voice" class="translation-select" style="color:#000"><option value="">Padrão</option></select>
+                <label style="margin:0;font-size:0.85rem;color:#A1A1A1">Velocidade: <input type="range" id="tts-rate" min="0.6" max="1.2" step="0.05" value="0.85" style="width:70px"><span id="tts-rate-val" style="font-size:0.8rem">0.85</span></label>
+                <label style="margin:0;font-size:0.85rem;color:#A1A1A1">Tom: <input type="range" id="tts-pitch" min="0.8" max="1.2" step="0.05" value="1" style="width:60px"><span id="tts-pitch-val">1</span></label>
                 <a href="https://play.google.com/store/apps/details?id=com.google.android.tts" id="btn-baixar-vozes" target="_blank" rel="noopener" class="btn-download-voice" style="display:none;font-size:0.8rem;color:#FFC700;text-decoration:none;padding:6px 10px;white-space:nowrap"><i class="fas fa-download"></i> Baixar vozes</a>
                 <button type="button" class="btn-ouvir" id="btn-ouvir"><i class="fas fa-volume-up"></i> Ouvir capítulo</button>
                 <button type="button" class="btn-ouvir" id="btn-parar" style="background:rgba(239,68,68,0.8);"><i class="fas fa-stop"></i> Parar</button>
@@ -80,6 +82,7 @@
             <% }); %>
         </div>
     </div>
+    <script src="/js/tts.js"></script>
     <script>
         (function() {
             const verses = document.querySelectorAll('.verse-block');
@@ -94,31 +97,15 @@
 
             function stopSpeech() { speechSynthesis.cancel(); if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i> Ouvir capítulo'; }
             function speak() {
-                speechSynthesis.cancel();
-                var u = new SpeechSynthesisUtterance(fullText);
-                u.lang = 'pt-BR';
-                u.rate = 0.9;
-                var selV = document.getElementById('sel-voice');
-                var allVoices = speechSynthesis.getVoices();
-                var chosen = null;
-                if (selV && selV.value) {
-                    var voiceId = selV.value;
-                    var opt = selV.options[selV.selectedIndex];
-                    var voiceUri = opt && opt.getAttribute('data-voice-uri');
-                    chosen = allVoices.find(function(v) {
-                        if (v.name === voiceId || v.voiceURI === voiceId) return true;
-                        if (voiceUri && v.voiceURI && (v.voiceURI === voiceUri || v.voiceURI.indexOf(voiceUri) >= 0)) return true;
-                        if (v.name && voiceId && v.name.indexOf(voiceId) >= 0) return true;
-                        return false;
-                    });
+                if (window.ConectaTTS && window.ConectaTTS.hasSupport()) {
+                    window.ConectaTTS.speak(fullText, { voiceSel: document.getElementById('sel-voice'), useChunks: true });
+                } else {
+                    speechSynthesis.cancel();
+                    var u = new SpeechSynthesisUtterance(fullText);
+                    u.lang = 'pt-BR';
+                    u.rate = 0.85;
+                    speechSynthesis.speak(u);
                 }
-                if (!chosen) {
-                    var ptVoices = allVoices.filter(function(v) { return v.lang && v.lang.startsWith('pt'); });
-                    var list = ptVoices.length ? ptVoices : allVoices;
-                    chosen = list.find(function(v) { return v.localService; }) || list[0];
-                }
-                if (chosen) u.voice = chosen;
-                speechSynthesis.speak(u);
             }
             document.querySelectorAll('.nav-chapters a').forEach(function(a) { a.addEventListener('click', stopSpeech); });
             document.getElementById('btn-ouvir').addEventListener('click', function() {
@@ -129,52 +116,14 @@
             document.getElementById('btn-parar').addEventListener('click', stopSpeech);
             speechSynthesis.onend = function() { if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i> Ouvir capítulo'; };
 
-            var selVoice = document.getElementById('sel-voice');
             var loadVoicesRetries = 0;
-            function voiceIsFemale(name) {
-                var n = (name || '').toLowerCase();
-                if (n.indexOf('female') >= 0 || n.indexOf('mulher') >= 0 || n.indexOf('woman') >= 0 || n.indexOf('feminina') >= 0) return true;
-                if (n.indexOf('maria') >= 0 || n.indexOf('francisca') >= 0 || n.indexOf('luciana') >= 0 || n.indexOf('heloisa') >= 0 || n.indexOf('heloísa') >= 0) return true;
-                return false;
-            }
-            function voiceLabel(v) {
-                var parts = [v.name];
-                if (v.localService) parts.push('(mais natural)');
-                else parts.push(voiceIsFemale(v.name) ? '(voz feminina)' : '(voz masculina)');
-                return parts.join(' ');
-            }
             function loadVoices() {
-                if (!selVoice) return;
-                if (selVoice.options.length > 1) return;
-                var voices = speechSynthesis.getVoices();
-                var ptVoices = voices.filter(function(v) { return v.lang && v.lang.startsWith('pt'); });
-                var list = ptVoices.length ? ptVoices : voices;
-                if (!list.length) {
-                    if (loadVoicesRetries < 12) {
-                        loadVoicesRetries++;
-                        setTimeout(loadVoices, loadVoicesRetries * 250);
-                    }
-                    return;
+                if (!window.ConectaTTS || !window.ConectaTTS.hasSupport()) return;
+                var list = window.ConectaTTS.loadVoices(['sel-voice']);
+                if (!list.length && loadVoicesRetries < 15) {
+                    loadVoicesRetries++;
+                    setTimeout(loadVoices, loadVoicesRetries * 200);
                 }
-                list.sort(function(a, b) {
-                    if (a.localService && !b.localService) return -1;
-                    if (!a.localService && b.localService) return 1;
-                    var ptBRa = (a.lang || '').indexOf('BR') >= 0 ? 1 : 0;
-                    var ptBRb = (b.lang || '').indexOf('BR') >= 0 ? 1 : 0;
-                    if (ptBRa !== ptBRb) return ptBRb - ptBRa;
-                    var priority = ['Maria', 'Daniel', 'Google', 'Microsoft', 'Luciano', 'Francisca'];
-                    var ia = priority.findIndex(function(p) { return (a.name + '').indexOf(p) >= 0; });
-                    var ib = priority.findIndex(function(p) { return (b.name + '').indexOf(p) >= 0; });
-                    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
-                });
-                list.forEach(function(v) {
-                    var o = document.createElement('option');
-                    o.value = v.name;
-                    o.setAttribute('data-voice-uri', v.voiceURI || '');
-                    o.setAttribute('data-local', v.localService ? '1' : '0');
-                    o.textContent = voiceLabel(v);
-                    selVoice.appendChild(o);
-                });
             }
             loadVoices();
             (function() {
@@ -187,15 +136,26 @@
                     btn.href = 'intent://#Intent;action=android.settings.TEXT_TO_SPEECH_SETTINGS;package=com.android.settings;S.browser_fallback_url=' + encodeURIComponent('https://play.google.com/store/apps/details?id=com.google.android.tts') + ';end';
                 }
             })();
-            speechSynthesis.addEventListener('voiceschanged', loadVoices);
-            setTimeout(loadVoices, 100);
-            setTimeout(loadVoices, 500);
-            setTimeout(loadVoices, 1500);
-            setTimeout(loadVoices, 3000);
+            if (window.speechSynthesis) {
+                speechSynthesis.addEventListener('voiceschanged', loadVoices);
+                setTimeout(loadVoices, 100);
+                setTimeout(loadVoices, 500);
+                setTimeout(loadVoices, 1500);
+                setTimeout(loadVoices, 3000);
+            }
+            var selVoice = document.getElementById('sel-voice');
             if (selVoice) {
                 selVoice.addEventListener('focus', loadVoices);
                 selVoice.addEventListener('click', loadVoices);
             }
+            ['tts-rate','tts-pitch'].forEach(function(id){
+                var inp = document.getElementById(id);
+                var span = document.getElementById(id + '-val');
+                if (inp && span) {
+                    inp.addEventListener('input', function() { span.textContent = inp.value; });
+                    span.textContent = inp.value;
+                }
+            });
         })();
     </script>
 </body>
