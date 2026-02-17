@@ -2181,6 +2181,19 @@ if (typeof details === 'undefined' || !details) {
                         </a>
 
                     <%# ========================================================== %>
+                    <%# TIPO: BÍBLIA %>
+                    <%# ========================================================== %>
+                    <% } else if (item.item_type === 'bible') { %>
+                        <%
+                            const bibleSlug = profile_slug || details.profile_slug || identifier;
+                            const bibleUrl = '/' + bibleSlug + '/bible';
+                        %>
+                        <a href="<%= bibleUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <i class="fas fa-bible"></i>
+                            <span><%= item.title || 'Bíblia' %></span>
+                        </a>
+
+                    <%# ========================================================== %>
                     <%# FALLBACK: Tipo de item não reconhecido %>
                     <%# ========================================================== %>
                     <% } else { %>

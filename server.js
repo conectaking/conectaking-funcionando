@@ -908,6 +908,9 @@ app.use('/', publicProductRoutes);
 // Convite digital público (/:slug/convite) — antes do perfil para capturar o path
 const publicConviteRoutes = require('./routes/publicConvite.routes');
 app.use('/', publicConviteRoutes);
+// Bíblia pública (/:slug/bible)
+const publicBibleRoutes = require('./routes/publicBible.routes');
+app.use('/', publicBibleRoutes);
 // Meu site público (/:slug/site)
 const sitesService = require('./modules/sites/sites.service');
 const publicSiteRoutes = require('./routes/publicSite.routes');

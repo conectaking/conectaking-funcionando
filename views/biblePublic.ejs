@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Versículo do Dia — ConectaKing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, #0D0D0F 0%, #1a1a1e 100%);
+            color: #ECECEC;
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        .bible-wrap {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 24px 0;
+        }
+        .bible-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .bible-header i {
+            font-size: 2.5rem;
+            color: #FFC700;
+            margin-bottom: 12px;
+        }
+        .bible-header h1 {
+            font-family: 'Lora', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ECECEC;
+        }
+        .bible-header .date-label {
+            font-size: 0.9rem;
+            color: #A1A1A1;
+            margin-top: 6px;
+        }
+        .bible-card {
+            background: rgba(28, 28, 33, 0.95);
+            border: 1px solid rgba(255, 199, 0, 0.2);
+            border-radius: 16px;
+            padding: 28px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .bible-ref {
+            font-family: 'Lora', serif;
+            font-size: 1rem;
+            color: #FFC700;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        .bible-text {
+            font-family: 'Lora', serif;
+            font-size: 1.2rem;
+            line-height: 1.7;
+            color: #ECECEC;
+            margin-bottom: 20px;
+        }
+        .bible-reflexao {
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #B8B8B8;
+            font-style: italic;
+        }
+        .bible-reflexao strong {
+            color: #ECECEC;
+            font-style: normal;
+            font-size: 0.85rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .bible-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .bible-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            color: #000;
+            background: #FFC700;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+        .bible-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 199, 0, 0.35);
+        }
+        .bible-btn.secondary {
+            background: rgba(255,255,255,0.08);
+            color: #ECECEC;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .bible-btn.secondary:hover {
+            background: rgba(255,255,255,0.12);
+        }
+        .bible-loading {
+            text-align: center;
+            padding: 48px 24px;
+            color: #A1A1A1;
+        }
+        .bible-loading i {
+            font-size: 2.5rem;
+            color: #FFC700;
+            margin-bottom: 16px;
+            animation: pulse 1.5s ease infinite;
+        }
+        @keyframes pulse { 50% { opacity: 0.6; } }
+        .bible-error {
+            text-align: center;
+            padding: 48px 24px;
+            color: #E74C3C;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #A1A1A1;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: #FFC700; }
+        .translation-select {
+            margin-bottom: 20px;
+        }
+        .translation-select label {
+            font-size: 0.85rem;
+            color: #A1A1A1;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .translation-select select {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(0,0,0,0.3);
+            color: #ECECEC;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="bible-wrap">
+        <a href="/<%= slug %>" class="back-link">
+            <i class="fas fa-arrow-left"></i> Voltar ao perfil
+        </a>
+
+        <div class="bible-header">
+            <i class="fas fa-bible"></i>
+            <h1>Versículo do Dia</h1>
+            <div class="date-label" id="date-label">Carregando...</div>
+        </div>
+
+        <div id="bible-content">
+            <div class="bible-loading" id="bible-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Carregando versículo...</p>
+            </div>
+        </div>
+
+        <div class="bible-actions" id="bible-actions" style="display: none;">
+            <button type="button" class="bible-btn" id="btn-prev-days">
+                <i class="fas fa-history"></i> Ver dias anteriores
+            </button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const API_URL = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '<%= typeof API_URL !== "undefined" ? API_URL : "" %>';
+            const translation = '<%= translation || "nvi" %>';
+            const slug = '<%= slug %>';
+
+            function formatDate(str) {
+                if (!str) return '';
+                const d = new Date(str);
+                const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+                return d.toLocaleDateString('pt-BR', opts);
+            }
+
+            async function loadVerse(dateStr) {
+                const url = `${API_URL}/api/bible/verse-of-day?date=${encodeURIComponent(dateStr || '')}&translation=${encodeURIComponent(translation)}`;
+                const res = await fetch(url);
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok || !json.success) throw new Error(json.message || 'Erro ao carregar');
+                return json.data;
+            }
+
+            function renderVerse(verse) {
+                const content = document.getElementById('bible-content');
+                const actions = document.getElementById('bible-actions');
+                const dateLabel = document.getElementById('date-label');
+
+                document.getElementById('bible-loading').style.display = 'none';
+                dateLabel.textContent = formatDate(verse.date);
+
+                content.innerHTML = `
+                    <div class="bible-card">
+                        <div class="bible-ref">${verse.ref || ''}</div>
+                        <div class="bible-text">"${verse.texto || ''}"</div>
+                        ${verse.reflexao ? `
+                        <div class="bible-reflexao">
+                            <strong>Reflexão</strong>
+                            ${verse.reflexao}
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                actions.style.display = 'flex';
+            }
+
+            function showError(msg) {
+                const content = document.getElementById('bible-content');
+                document.getElementById('bible-loading').style.display = 'none';
+                content.innerHTML = `<div class="bible-error"><i class="fas fa-exclamation-circle"></i><p>${msg}</p></div>`;
+            }
+
+            document.getElementById('btn-prev-days').addEventListener('click', function() {
+                const today = new Date();
+                const dates = [];
+                for (let i = 1; i <= 7; i++) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    dates.push(d.toISOString().slice(0, 10));
+                }
+                let html = '<div class="bible-card"><strong style="margin-bottom:12px;display:block;">Escolha uma data:</strong>';
+                dates.forEach(d => {
+                    const label = formatDate(d);
+                    html += `<button type="button" class="bible-btn secondary" style="margin-bottom:8px;width:100%;" data-date="${d}">${label}</button>`;
+                });
+                html += '</div>';
+                document.getElementById('bible-content').innerHTML = html;
+                document.getElementById('bible-content').querySelectorAll('[data-date]').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        document.getElementById('bible-content').innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>';
+                        try {
+                            const verse = await loadVerse(btn.dataset.date);
+                            renderVerse(verse);
+                        } catch (e) {
+                            showError(e.message || 'Erro ao carregar versículo.');
+                        }
+                    });
+                });
+            });
+
+            (async function init() {
+                try {
+                    const verse = await loadVerse('');
+                    renderVerse(verse);
+                } catch (e) {
+                    showError(e.message || 'Erro ao carregar versículo do dia.');
+                }
+            })();
+        })();
+    </script>
+</body>
+</html>
