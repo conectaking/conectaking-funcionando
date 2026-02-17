@@ -337,4 +337,4 @@ INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo
 (365, 'Tudo coopera para o bem', 'Romanos 8:28', 'E sabemos que todas as coisas cooperam para o bem daqueles que amam a Deus.', 'Todas as coisas cooperam para o bem daqueles que amam a Deus. Isso não significa que tudo que acontece é bom em si mesmo, mas que Deus pode usar até as dificuldades para nosso crescimento e para cumprir Seus propósitos. Confie no plano divino mesmo quando não entender.', 'Hoje, reflita sobre este tema e coloque em prática a mensagem do versículo.', 'Deus, ajuda-me a confiar que Tu trabalhas em todas as coisas para o meu bem. Amém.')
 ON CONFLICT (day_of_year) DO UPDATE SET titulo = EXCLUDED.titulo, versiculo_ref = EXCLUDED.versiculo_ref, versiculo_texto = EXCLUDED.versiculo_texto, reflexao = EXCLUDED.reflexao, aplicacao = EXCLUDED.aplicacao, oracao = EXCLUDED.oracao, updated_at = NOW();
 
--- Migration 178: 335 devocionais (dias 31-365) inseridos
+SELECT 'Migration 178: ' || COUNT(*) || ' devocionais (dias 31-365) inseridos.' AS status FROM bible_devotionals_365 WHERE day_of_year >= 31 AND day_of_year <= 365;
