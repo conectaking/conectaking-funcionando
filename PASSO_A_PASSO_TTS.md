@@ -68,6 +68,8 @@ GCP_TTS_USE_REST=1
 
 **Importante:** nunca coloque o conteúdo do JSON “solto” no front-end; ele só deve existir no backend (variável de ambiente).
 
+- **GCP_TTS_USE_REST:** no **Render**, defina `GCP_TTS_USE_REST=1` para usar a API REST do Google (evita erro EPROTO/SSL handshake nos logs). Em produção o código já tenta REST por padrão.
+
 ### Passo 5: R2 já configurado
 
 O projeto já usa R2 (`utils/r2.js`). O **King Selection** usa o bucket **kingselection** (variável `R2_BUCKET`). O TTS da Bíblia pode usar outro bucket (**conectaking-pdfs**) para os áudios, sem atrapalhar o King Selection.
