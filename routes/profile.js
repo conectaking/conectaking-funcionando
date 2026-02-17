@@ -3378,6 +3378,16 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
             }
         }
 
+        if (item_type === 'bible') {
+            try {
+                const bibleRepo = require('../modules/bible/bible.repository');
+                await bibleRepo.create(newItem.id);
+                console.log(`✅ Bíblia criada para item ${newItem.id}`);
+            } catch (error) {
+                console.error("Erro ao criar bíblia:", error);
+            }
+        }
+
         console.log(`✅ Item criado com sucesso:`, newItem);
         // Evitar cache do navegador
         res.set({
