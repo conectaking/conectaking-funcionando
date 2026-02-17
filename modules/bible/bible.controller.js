@@ -107,6 +107,30 @@ async function getMyProgress(req, res) {
     }
 }
 
+async function getBookChapter(req, res) {
+    try {
+        const bookId = req.params.bookId || '';
+        const chapter = req.params.chapter || '1';
+        const translation = req.query.translation || 'nvi';
+        const result = bibleService.getBookChapter(bookId, chapter, translation);
+        if (!result) return responseFormatter.error(res, 'Capítulo não encontrado', 404);
+        return responseFormatter.success(res, result);
+    } catch (e) {
+        logger.error('bible getBookChapter:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar capítulo', 500);
+    }
+}
+
+async function getBooksManifest(req, res) {
+    try {
+        const manifest = bibleService.loadBooksManifest();
+        return responseFormatter.success(res, manifest);
+    } catch (e) {
+        logger.error('bible getBooksManifest:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar livros', 500);
+    }
+}
+
 async function markRead(req, res) {
     try {
         const userId = req.user.userId;
@@ -125,6 +149,8 @@ module.exports = {
     getPalavraDoDia,
     getSalmoDoDia,
     getDevocionalDoDia,
+    getBookChapter,
+    getBooksManifest,
     getMyProgress,
     markRead,
     getConfig,

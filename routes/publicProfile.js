@@ -6,6 +6,7 @@ const cache = require('../utils/cache');
 const logger = require('../utils/logger');
 const { asyncHandler } = require('../middleware/errorHandler');
 const fetch = require('node-fetch');
+const bibleService = require('../modules/bible/bible.service');
 
 function hexToRgb(hex) {
     if (!hex || typeof hex !== 'string') return { r: 20, g: 20, b: 23 }; 
@@ -641,6 +642,19 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         const itemsFiltered = items.filter(i => i != null);
         
+        // Versículo do dia para o quadradinho da Bíblia (quando visível)
+        let verseOfDay = null;
+        const bibleItem = itemsFiltered.find(i => i.item_type === 'bible');
+        if (bibleItem && bibleItem.bible_data && bibleItem.bible_data.is_visible !== false) {
+            try {
+                verseOfDay = await bibleService.getVerseOfDay(null, bibleItem.bible_data.translation_code || 'nvi');
+            } catch (e) {
+                logger.warn('Erro ao buscar versículo do dia', { error: e.message });
+            }
+        }
+        // Remover Bíblia da lista de itens (aparece como quadradinho, não como link)
+        const itemsForLinks = itemsFiltered.filter(i => i.item_type !== 'bible');
+        
         const details = profileRes.rows[0];
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
@@ -700,7 +714,8 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         const profileData = {
             details: details,
-            items: itemsFiltered,
+            items: itemsForLinks,
+            verseOfDay: verseOfDay,
             origin: req.protocol + '://' + req.get('host'),
             ogImageUrl: ogImageUrl,
             profile_slug: userProfileSlug, // Adicionar profile_slug para uso no template
@@ -710,8 +725,9 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         logger.debug('✅ Renderizando perfil público', {
             identifier,
-            itemsCount: itemsFiltered.length,
-            itemTypes: itemsFiltered.map(i => i.item_type)
+            itemsCount: itemsForLinks.length,
+            itemTypes: itemsForLinks.map(i => i.item_type),
+            hasVerseOfDay: !!verseOfDay
         });
         res.render('profile', profileData);
 

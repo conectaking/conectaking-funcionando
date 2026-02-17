@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title><%= chapterData.bookName %> <%= chapterData.chapter %> — ConectaKing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #0D0D0F; color: #ECECEC; min-height: 100vh; padding: 20px; }
+        .reader-wrap { max-width: 560px; margin: 0 auto; }
+        .back-link { display: inline-flex; align-items: center; gap: 8px; color: #A1A1A1; text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; }
+        .back-link:hover { color: #FFC700; }
+        .reader-header { text-align: center; margin-bottom: 24px; }
+        .reader-header h1 { font-family: 'Lora', serif; font-size: 1.4rem; color: #FFC700; }
+        .reader-header .nav-chapters { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 12px; }
+        .reader-header .nav-chapters a, .reader-header .nav-chapters span {
+            padding: 8px 14px; border-radius: 8px; background: rgba(255,199,0,0.15); color: #FFC700;
+            text-decoration: none; font-size: 0.9rem;
+        }
+        .reader-header .nav-chapters a:hover { background: rgba(255,199,0,0.25); }
+        .reader-header .nav-chapters span.disabled { opacity: 0.4; cursor: not-allowed; }
+        .verse-block { margin-bottom: 14px; padding-left: 8px; border-left: 2px solid rgba(255,199,0,0.3); }
+        .verse-num { font-weight: 600; color: #FFC700; font-size: 0.85rem; margin-right: 8px; }
+        .verse-text { font-family: 'Lora', serif; font-size: 1.1rem; line-height: 1.7; }
+        .btn-ouvir { margin-top: 24px; padding: 12px 24px; background: #FFC700; color: #000; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-ouvir:hover { filter: brightness(1.1); }
+    </style>
+</head>
+<body>
+    <div class="reader-wrap">
+        <a href="/<%= slug %>/bible" class="back-link"><i class="fas fa-arrow-left"></i> Voltar à Bíblia</a>
+        <div class="reader-header">
+            <h1><%= chapterData.bookName %> — Capítulo <%= chapterData.chapter %></h1>
+            <div class="nav-chapters">
+                <% if (chapterData.chapter > 1) { %>
+                <a href="/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter - 1 %>"><i class="fas fa-chevron-left"></i> Cap. <%= chapterData.chapter - 1 %></a>
+                <% } else { %>
+                <span class="disabled"><i class="fas fa-chevron-left"></i> Anterior</span>
+                <% } %>
+                <span>Cap. <%= chapterData.chapter %> de <%= chapterData.totalChapters %></span>
+                <% if (chapterData.chapter < chapterData.totalChapters) { %>
+                <a href="/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter + 1 %>">Cap. <%= chapterData.chapter + 1 %> <i class="fas fa-chevron-right"></i></a>
+                <% } else { %>
+                <span class="disabled">Próximo <i class="fas fa-chevron-right"></i></span>
+                <% } %>
+            </div>
+        </div>
+        <div id="verses-container">
+            <% chapterData.verses.forEach(function(v) { %>
+            <div class="verse-block" data-verse="<%= v.verse %>">
+                <span class="verse-num"><%= v.verse %></span>
+                <span class="verse-text"><%= v.text %></span>
+            </div>
+            <% }); %>
+        </div>
+        <button type="button" class="btn-ouvir" id="btn-ouvir"><i class="fas fa-volume-up"></i> Ouvir capítulo</button>
+    </div>
+    <script>
+        (function() {
+            const verses = document.querySelectorAll('.verse-block');
+            const texts = Array.from(verses).map(v => v.querySelector('.verse-text').textContent);
+            const fullText = texts.join(' ');
+            document.getElementById('btn-ouvir').addEventListener('click', function() {
+                const u = new SpeechSynthesisUtterance(fullText);
+                u.lang = 'pt-BR';
+                u.rate = 0.9;
+                speechSynthesis.speak(u);
+            });
+        })();
+    </script>
+</body>
+</html>

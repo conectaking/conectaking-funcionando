@@ -284,84 +284,25 @@
             </div>
         </div>
 
-        <!-- Livros da Bíblia -->
+        <!-- Livros da Bíblia (todos internos - sem links externos) -->
         <div class="bible-card">
             <h3 style="margin-bottom:16px;color:#FFC700">Livros da Bíblia</h3>
+            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Leia a Bíblia completa. Clique em um livro para abrir o capítulo 1.</p>
             <div class="livros-section">
                 <div class="livros-col">
                     <h3>Antigo Testamento</h3>
                     <div class="livros-grid" id="livros-at">
-                        <a href="https://www.bible.com/bible/211/gen.1" target="_blank" rel="noopener">Gênesis</a>
-                        <a href="https://www.bible.com/bible/211/exo.1" target="_blank" rel="noopener">Êxodo</a>
-                        <a href="https://www.bible.com/bible/211/lev.1" target="_blank" rel="noopener">Levítico</a>
-                        <a href="https://www.bible.com/bible/211/num.1" target="_blank" rel="noopener">Números</a>
-                        <a href="https://www.bible.com/bible/211/deu.1" target="_blank" rel="noopener">Deuteronômio</a>
-                        <a href="https://www.bible.com/bible/211/jos.1" target="_blank" rel="noopener">Josué</a>
-                        <a href="https://www.bible.com/bible/211/jdg.1" target="_blank" rel="noopener">Juízes</a>
-                        <a href="https://www.bible.com/bible/211/rut.1" target="_blank" rel="noopener">Rute</a>
-                        <a href="https://www.bible.com/bible/211/1sa.1" target="_blank" rel="noopener">1 Samuel</a>
-                        <a href="https://www.bible.com/bible/211/2sa.1" target="_blank" rel="noopener">2 Samuel</a>
-                        <a href="https://www.bible.com/bible/211/1ki.1" target="_blank" rel="noopener">1 Reis</a>
-                        <a href="https://www.bible.com/bible/211/2ki.1" target="_blank" rel="noopener">2 Reis</a>
-                        <a href="https://www.bible.com/bible/211/1ch.1" target="_blank" rel="noopener">1 Crônicas</a>
-                        <a href="https://www.bible.com/bible/211/2ch.1" target="_blank" rel="noopener">2 Crônicas</a>
-                        <a href="https://www.bible.com/bible/211/ezr.1" target="_blank" rel="noopener">Esdras</a>
-                        <a href="https://www.bible.com/bible/211/neh.1" target="_blank" rel="noopener">Neemias</a>
-                        <a href="https://www.bible.com/bible/211/est.1" target="_blank" rel="noopener">Ester</a>
-                        <a href="https://www.bible.com/bible/211/job.1" target="_blank" rel="noopener">Jó</a>
-                        <a href="https://www.bible.com/bible/211/psa.1" target="_blank" rel="noopener">Salmos</a>
-                        <a href="https://www.bible.com/bible/211/pro.1" target="_blank" rel="noopener">Provérbios</a>
-                        <a href="https://www.bible.com/bible/211/ecc.1" target="_blank" rel="noopener">Eclesiastes</a>
-                        <a href="https://www.bible.com/bible/211/sng.1" target="_blank" rel="noopener">Cânticos</a>
-                        <a href="https://www.bible.com/bible/211/isa.1" target="_blank" rel="noopener">Isaías</a>
-                        <a href="https://www.bible.com/bible/211/jer.1" target="_blank" rel="noopener">Jeremias</a>
-                        <a href="https://www.bible.com/bible/211/lam.1" target="_blank" rel="noopener">Lamentações</a>
-                        <a href="https://www.bible.com/bible/211/ezk.1" target="_blank" rel="noopener">Ezequiel</a>
-                        <a href="https://www.bible.com/bible/211/dan.1" target="_blank" rel="noopener">Daniel</a>
-                        <a href="https://www.bible.com/bible/211/hos.1" target="_blank" rel="noopener">Oseias</a>
-                        <a href="https://www.bible.com/bible/211/jol.1" target="_blank" rel="noopener">Joel</a>
-                        <a href="https://www.bible.com/bible/211/amo.1" target="_blank" rel="noopener">Amós</a>
-                        <a href="https://www.bible.com/bible/211/oba.1" target="_blank" rel="noopener">Obadias</a>
-                        <a href="https://www.bible.com/bible/211/jon.1" target="_blank" rel="noopener">Jonas</a>
-                        <a href="https://www.bible.com/bible/211/mic.1" target="_blank" rel="noopener">Miqueias</a>
-                        <a href="https://www.bible.com/bible/211/nam.1" target="_blank" rel="noopener">Naum</a>
-                        <a href="https://www.bible.com/bible/211/hab.1" target="_blank" rel="noopener">Habacuque</a>
-                        <a href="https://www.bible.com/bible/211/zep.1" target="_blank" rel="noopener">Sofonias</a>
-                        <a href="https://www.bible.com/bible/211/hag.1" target="_blank" rel="noopener">Ageu</a>
-                        <a href="https://www.bible.com/bible/211/zec.1" target="_blank" rel="noopener">Zacarias</a>
-                        <a href="https://www.bible.com/bible/211/mal.1" target="_blank" rel="noopener">Malaquias</a>
+                        <% (booksManifest && booksManifest.at || []).forEach(function(b) { %>
+                        <a href="/<%= slug %>/bible/<%= b.id %>/1"><%= b.name %></a>
+                        <% }); %>
                     </div>
                 </div>
                 <div class="livros-col">
                     <h3>Novo Testamento</h3>
                     <div class="livros-grid" id="livros-nt">
-                        <a href="https://www.bible.com/bible/211/mat.1" target="_blank" rel="noopener">Mateus</a>
-                        <a href="https://www.bible.com/bible/211/mrk.1" target="_blank" rel="noopener">Marcos</a>
-                        <a href="https://www.bible.com/bible/211/luk.1" target="_blank" rel="noopener">Lucas</a>
-                        <a href="https://www.bible.com/bible/211/jhn.1" target="_blank" rel="noopener">João</a>
-                        <a href="https://www.bible.com/bible/211/act.1" target="_blank" rel="noopener">Atos</a>
-                        <a href="https://www.bible.com/bible/211/rom.1" target="_blank" rel="noopener">Romanos</a>
-                        <a href="https://www.bible.com/bible/211/1co.1" target="_blank" rel="noopener">1 Coríntios</a>
-                        <a href="https://www.bible.com/bible/211/2co.1" target="_blank" rel="noopener">2 Coríntios</a>
-                        <a href="https://www.bible.com/bible/211/gal.1" target="_blank" rel="noopener">Gálatas</a>
-                        <a href="https://www.bible.com/bible/211/eph.1" target="_blank" rel="noopener">Efésios</a>
-                        <a href="https://www.bible.com/bible/211/php.1" target="_blank" rel="noopener">Filipenses</a>
-                        <a href="https://www.bible.com/bible/211/col.1" target="_blank" rel="noopener">Colossenses</a>
-                        <a href="https://www.bible.com/bible/211/1th.1" target="_blank" rel="noopener">1 Tessalonicenses</a>
-                        <a href="https://www.bible.com/bible/211/2th.1" target="_blank" rel="noopener">2 Tessalonicenses</a>
-                        <a href="https://www.bible.com/bible/211/1ti.1" target="_blank" rel="noopener">1 Timóteo</a>
-                        <a href="https://www.bible.com/bible/211/2ti.1" target="_blank" rel="noopener">2 Timóteo</a>
-                        <a href="https://www.bible.com/bible/211/tit.1" target="_blank" rel="noopener">Tito</a>
-                        <a href="https://www.bible.com/bible/211/phm.1" target="_blank" rel="noopener">Filemom</a>
-                        <a href="https://www.bible.com/bible/211/heb.1" target="_blank" rel="noopener">Hebreus</a>
-                        <a href="https://www.bible.com/bible/211/jas.1" target="_blank" rel="noopener">Tiago</a>
-                        <a href="https://www.bible.com/bible/211/1pe.1" target="_blank" rel="noopener">1 Pedro</a>
-                        <a href="https://www.bible.com/bible/211/2pe.1" target="_blank" rel="noopener">2 Pedro</a>
-                        <a href="https://www.bible.com/bible/211/1jn.1" target="_blank" rel="noopener">1 João</a>
-                        <a href="https://www.bible.com/bible/211/2jn.1" target="_blank" rel="noopener">2 João</a>
-                        <a href="https://www.bible.com/bible/211/3jn.1" target="_blank" rel="noopener">3 João</a>
-                        <a href="https://www.bible.com/bible/211/jud.1" target="_blank" rel="noopener">Judas</a>
-                        <a href="https://www.bible.com/bible/211/rev.1" target="_blank" rel="noopener">Apocalipse</a>
+                        <% (booksManifest && booksManifest.nt || []).forEach(function(b) { %>
+                        <a href="/<%= slug %>/bible/<%= b.id %>/1"><%= b.name %></a>
+                        <% }); %>
                     </div>
                 </div>
             </div>

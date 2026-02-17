@@ -1,6 +1,7 @@
 /**
  * Rotas públicas do módulo Bíblia
- * GET /:slug/bible - Página do versículo do dia
+ * GET /:slug/bible - Página principal (versículo do dia, livros)
+ * GET /:slug/bible/:bookId/:chapter - Leitor de capítulo
  */
 
 const express = require('express');
@@ -8,6 +9,47 @@ const router = express.Router();
 const { asyncHandler } = require('../middleware/errorHandler');
 const db = require('../db');
 const logger = require('../utils/logger');
+const bibleService = require('../modules/bible/bible.service');
+
+router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
+    const { slug, bookId, chapter } = req.params;
+    try {
+        const client = await db.pool.connect();
+        try {
+            const userRes = await client.query(
+                `SELECT id FROM users WHERE LOWER(profile_slug) = LOWER($1) LIMIT 1`,
+                [slug]
+            );
+            if (userRes.rows.length === 0) {
+                return res.status(404).send('<h1>Bíblia não encontrada</h1>');
+            }
+            const itemRes = await client.query(
+                `SELECT bi.translation_code FROM profile_items pi
+                 LEFT JOIN bible_items bi ON bi.profile_item_id = pi.id
+                 WHERE pi.user_id = $1 AND pi.item_type = 'bible' AND pi.is_active = true LIMIT 1`,
+                [userRes.rows[0].id]
+            );
+            const translation = itemRes.rows[0]?.translation_code || 'nvi';
+            const chapterData = bibleService.getBookChapter(bookId, chapter, translation);
+            if (!chapterData) {
+                return res.status(404).send('<h1>Capítulo não encontrado</h1>');
+            }
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            res.render('bibleReader', {
+                slug,
+                translation,
+                chapterData,
+                baseUrl,
+                API_URL: process.env.FRONTEND_URL || baseUrl
+            });
+        } finally {
+            client.release();
+        }
+    } catch (e) {
+        logger.error('publicBible reader:', e);
+        res.status(500).send('<h1>Erro ao carregar capítulo</h1>');
+    }
+}));
 
 router.get('/:slug/bible', asyncHandler(async (req, res) => {
     const { slug } = req.params;
@@ -51,11 +93,13 @@ router.get('/:slug/bible', asyncHandler(async (req, res) => {
 
             const translation = itemRes.rows[0].translation_code || 'nvi';
             const baseUrl = `${req.protocol}://${req.get('host')}`;
+            const booksManifest = bibleService.loadBooksManifest();
             res.render('biblePublic', {
                 slug,
                 translation,
                 baseUrl,
-                API_URL: process.env.FRONTEND_URL || baseUrl
+                API_URL: process.env.FRONTEND_URL || baseUrl,
+                booksManifest: booksManifest || { at: [], nt: [] }
             });
         } finally {
             client.release();

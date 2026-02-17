@@ -6,6 +6,8 @@ const { asyncHandler } = require('../../middleware/errorHandler');
 
 // Rotas PÚBLICAS (sem autenticação) - versículo do dia, números e nomes
 router.get('/verse-of-day', asyncHandler(controller.getVerseOfDay));
+router.get('/books', asyncHandler(controller.getBooksManifest));
+router.get('/book/:bookId/:chapter', asyncHandler(controller.getBookChapter));
 router.get('/palavra-do-dia', asyncHandler(controller.getPalavraDoDia));
 router.get('/salmo-do-dia', asyncHandler(controller.getSalmoDoDia));
 router.get('/devocional-do-dia', asyncHandler(controller.getDevocionalDoDia));

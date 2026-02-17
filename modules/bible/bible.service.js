@@ -154,6 +154,40 @@ async function markRead(userId, data) {
     return await repo.markRead(userId, data);
 }
 
+function loadBooksManifest() {
+    try {
+        const filePath = path.join(DATA_DIR, 'books_manifest.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(data);
+    } catch (e) {
+        logger.error('bible.service loadBooksManifest:', e);
+        return { at: [], nt: [] };
+    }
+}
+
+function getBookChapter(bookId, chapterNum, translation) {
+    const trans = (translation || 'nvi').toLowerCase();
+    const bookPath = path.join(DATA_DIR, 'books', trans, bookId + '.json');
+    if (!fs.existsSync(bookPath)) return null;
+    try {
+        const book = JSON.parse(fs.readFileSync(bookPath, 'utf8'));
+        const chapters = book.chapters || [];
+        const chIndex = parseInt(chapterNum, 10) - 1;
+        if (chIndex < 0 || chIndex >= chapters.length) return null;
+        const verses = chapters[chIndex] || [];
+        return {
+            bookId: book.id,
+            bookName: book.name,
+            chapter: chIndex + 1,
+            totalChapters: chapters.length,
+            verses: verses.map((text, i) => ({ verse: i + 1, text }))
+        };
+    } catch (e) {
+        logger.error('bible.service getBookChapter:', e);
+        return null;
+    }
+}
+
 module.exports = {
     getVerseOfDay,
     getNumbers,
@@ -164,5 +198,7 @@ module.exports = {
     saveConfig,
     getPalavraDoDia,
     getSalmoDoDia,
-    getDevocionalDoDia
+    getDevocionalDoDia,
+    loadBooksManifest,
+    getBookChapter
 };

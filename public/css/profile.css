@@ -129,6 +129,38 @@ body {
 .profile-name { font-size: 2rem; font-weight: 800; margin: 0 0 8px 0; }
 .profile-bio { font-size: 1.1rem; line-height: 1.6; margin: 0; padding: 0 16px; }
 
+/* Quadradinho Palavra do Dia + Reflexão (Bíblia) */
+.verse-of-day-box {
+    background: linear-gradient(135deg, rgba(26, 77, 46, 0.4) 0%, rgba(13, 40, 24, 0.5) 100%);
+    border: 1px solid rgba(255, 199, 0, 0.25);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin: 0 16px 24px;
+    text-align: left;
+}
+.verse-of-day-ref {
+    font-family: 'Lora', serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #FFC700;
+    margin-bottom: 10px;
+}
+.verse-of-day-text {
+    font-family: 'Lora', serif;
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: #ECECEC;
+    margin-bottom: 12px;
+}
+.verse-of-day-reflexao {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: rgba(236, 236, 236, 0.85);
+    font-style: italic;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .profile-items-container {
     display: flex;
     flex-direction: column;

@@ -344,6 +344,19 @@ if (typeof details === 'undefined' || !details) {
             <% } %>
 
             <%# ========================================================== %>
+            <%# SEÇÃO: QUADRADINHO PALAVRA DO DIA + REFLEXÃO (Bíblia visível) %>
+            <%# ========================================================== %>
+            <% if (typeof verseOfDay !== 'undefined' && verseOfDay && verseOfDay.texto) { %>
+            <div class="verse-of-day-box">
+                <div class="verse-of-day-ref"><%= verseOfDay.ref || 'Versículo do Dia' %></div>
+                <div class="verse-of-day-text">"<%= verseOfDay.texto %>"</div>
+                <% if (verseOfDay.reflexao) { %>
+                <div class="verse-of-day-reflexao"><%= verseOfDay.reflexao %></div>
+                <% } %>
+            </div>
+            <% } %>
+
+            <%# ========================================================== %>
             <%# SEÇÃO: CONTAINER DE ITENS DO PERFIL %>
             <%# ========================================================== %>
         <section class="profile-items-container">
