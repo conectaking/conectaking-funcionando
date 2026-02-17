@@ -35,11 +35,13 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 return res.status(404).send('<h1>Capítulo não encontrado</h1>');
             }
             const baseUrl = `${req.protocol}://${req.get('host')}`;
+            const tParam = translation !== 'nvi' ? '?translation=' + encodeURIComponent(translation) : '';
             res.render('bibleReader', {
                 slug,
                 translation,
                 chapterData,
                 baseUrl,
+                tParam,
                 API_URL: process.env.FRONTEND_URL || baseUrl
             });
         } finally {
