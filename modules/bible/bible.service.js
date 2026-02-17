@@ -181,7 +181,10 @@ function loadBooksManifest() {
 
 function getBookChapter(bookId, chapterNum, translation) {
     const trans = (translation || 'nvi').toLowerCase();
-    const bookPath = path.join(DATA_DIR, 'books', trans, bookId + '.json');
+    let bookPath = path.join(DATA_DIR, 'books', trans, bookId + '.json');
+    if (!fs.existsSync(bookPath) && trans !== 'nvi') {
+        bookPath = path.join(DATA_DIR, 'books', 'nvi', bookId + '.json');
+    }
     if (!fs.existsSync(bookPath)) return null;
     try {
         const book = JSON.parse(fs.readFileSync(bookPath, 'utf8'));

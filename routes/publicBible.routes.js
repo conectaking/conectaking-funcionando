@@ -29,7 +29,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                  WHERE pi.user_id = $1 AND pi.item_type = 'bible' AND pi.is_active = true LIMIT 1`,
                 [userRes.rows[0].id]
             );
-            const translation = itemRes.rows[0]?.translation_code || 'nvi';
+            const translation = (req.query.translation || itemRes.rows[0]?.translation_code || 'nvi').toLowerCase();
             const chapterData = bibleService.getBookChapter(bookId, chapter, translation);
             if (!chapterData) {
                 return res.status(404).send('<h1>Capítulo não encontrado</h1>');

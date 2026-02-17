@@ -223,7 +223,7 @@
 </head>
 <body>
     <div class="bible-wrap">
-        <a href="/<%= slug %>" class="back-link">
+        <a href="<%= (typeof API_URL !== 'undefined' && API_URL ? API_URL.replace(/\/$/, '') : (typeof baseUrl !== 'undefined' ? baseUrl : '')) %>/<%= slug %>" class="back-link">
             <i class="fas fa-arrow-left"></i> Voltar ao perfil
         </a>
 
