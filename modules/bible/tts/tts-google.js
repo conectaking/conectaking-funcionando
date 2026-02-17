@@ -5,8 +5,12 @@
  */
 
 const crypto = require('crypto');
+const https = require('https');
 const logger = require('../../../utils/logger');
 const fetch = require('node-fetch');
+
+/** Agente HTTPS que força TLS 1.2+ (evita handshake failure com Google em alguns hosts, ex.: Render). */
+const httpsAgent = new https.Agent({ minVersion: 'TLSv1.2' });
 
 /**
  * Obtém credenciais a partir do JSON em base64 (variável de ambiente).
@@ -54,6 +58,7 @@ async function getAccessToken(credentials) {
   const jwt = createSignedJwt(credentials);
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
+    agent: httpsAgent,
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
@@ -73,6 +78,7 @@ async function synthesizeViaRest(credentials, request) {
   const token = await getAccessToken(credentials);
   const res = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
     method: 'POST',
+    agent: httpsAgent,
     headers: {
       'Authorization': 'Bearer ' + token,
       'Content-Type': 'application/json'
