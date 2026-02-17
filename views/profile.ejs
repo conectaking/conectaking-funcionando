@@ -332,19 +332,7 @@ if (typeof details === 'undefined' || !details) {
             </header>
             
             <%# ========================================================== %>
-            <%# SEÇÃO: BOTÃO SALVAR CONTATO (se habilitado) %>
-            <%# ========================================================== %>
-            <% if (details.show_vcard_button) { %>
-            <div class="profile-actions">
-                <a href="/vcard/<%= details.profile_slug || details.user_id %>" class="profile-link" id="save-contact-btn">
-                    <i class="fas fa-address-card"></i>
-                    <span>Salvar Contato</span>
-                </a>
-            </div>
-            <% } %>
-
-            <%# ========================================================== %>
-            <%# SEÇÃO: QUADRADINHO PALAVRA DO DIA + REFLEXÃO (Bíblia visível) %>
+            <%# SEÇÃO: QUADRADINHO PALAVRA DO DIA + REFLEXÃO (Bíblia visível) - ACIMA de Salvar Contato %>
             <%# ========================================================== %>
             <% if (typeof verseOfDay !== 'undefined' && verseOfDay && verseOfDay.texto) { %>
             <div class="verse-of-day-box">
@@ -353,6 +341,18 @@ if (typeof details === 'undefined' || !details) {
                 <% if (verseOfDay.reflexao) { %>
                 <div class="verse-of-day-reflexao"><%= verseOfDay.reflexao %></div>
                 <% } %>
+            </div>
+            <% } %>
+
+            <%# ========================================================== %>
+            <%# SEÇÃO: BOTÃO SALVAR CONTATO (se habilitado) %>
+            <%# ========================================================== %>
+            <% if (details.show_vcard_button) { %>
+            <div class="profile-actions">
+                <a href="/vcard/<%= details.profile_slug || details.user_id %>" class="profile-link" id="save-contact-btn">
+                    <i class="fas fa-address-card"></i>
+                    <span>Salvar Contato</span>
+                </a>
             </div>
             <% } %>
 
