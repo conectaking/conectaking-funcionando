@@ -185,7 +185,17 @@ function getBookChapter(bookId, chapterNum, translation) {
     if (!fs.existsSync(bookPath) && trans !== 'nvi') {
         bookPath = path.join(DATA_DIR, 'books', 'nvi', bookId + '.json');
     }
-    if (!fs.existsSync(bookPath)) return null;
+    if (!fs.existsSync(bookPath)) {
+        logger.warn('bible.service getBookChapter: arquivo não encontrado', {
+            bookPath,
+            bookId,
+            chapter: chapterNum,
+            translation: trans,
+            dataDirExists: fs.existsSync(DATA_DIR),
+            booksDirExists: fs.existsSync(path.join(DATA_DIR, 'books'))
+        });
+        return null;
+    }
     try {
         const book = JSON.parse(fs.readFileSync(bookPath, 'utf8'));
         const chapters = book.chapters || [];
