@@ -194,7 +194,8 @@ app.use(helmet({
             mediaSrc: [
                 "'self'",
                 "https://*.youtube.com",
-                "https://*.googlevideo.com"
+                "https://*.googlevideo.com",
+                "https://tts.conectaking.com.br"
             ],
             frameAncestors: [
                 "'self'",
