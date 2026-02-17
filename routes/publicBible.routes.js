@@ -70,15 +70,13 @@ router.get('/:slug/bible', asyncHandler(async (req, res) => {
                     </body></html>
                 `);
             }
-            const userId = userRes.rows[0].id;
-
             const itemRes = await client.query(
                 `SELECT pi.id, bi.translation_code
                  FROM profile_items pi
                  LEFT JOIN bible_items bi ON bi.profile_item_id = pi.id
                  WHERE pi.user_id = $1 AND pi.item_type = 'bible' AND pi.is_active = true
                  LIMIT 1`,
-                [userId]
+                [userRes.rows[0].id]
             );
             if (itemRes.rows.length === 0) {
                 return res.status(404).send(`
@@ -90,17 +88,9 @@ router.get('/:slug/bible', asyncHandler(async (req, res) => {
                     </body></html>
                 `);
             }
-
-            const translation = itemRes.rows[0].translation_code || 'nvi';
-            const baseUrl = `${req.protocol}://${req.get('host')}`;
-            const booksManifest = bibleService.loadBooksManifest();
-            res.render('biblePublic', {
-                slug,
-                translation,
-                baseUrl,
-                API_URL: process.env.FRONTEND_URL || baseUrl,
-                booksManifest: booksManifest || { at: [], nt: [] }
-            });
+            const trans = (req.query.translation || itemRes.rows[0].translation_code || 'nvi').toLowerCase();
+            const tParam = trans !== 'nvi' ? '?translation=' + encodeURIComponent(trans) : '';
+            return res.redirect(302, `/${slug}/bible/gn/1${tParam}`);
         } finally {
             client.release();
         }
