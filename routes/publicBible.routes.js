@@ -24,7 +24,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 return res.status(404).send('<h1>Bíblia não encontrada</h1>');
             }
             const itemRes = await client.query(
-                `SELECT bi.translation_code FROM profile_items pi
+                `SELECT pi.id, bi.translation_code FROM profile_items pi
                  LEFT JOIN bible_items bi ON bi.profile_item_id = pi.id
                  WHERE pi.user_id = $1 AND pi.item_type = 'bible' AND pi.is_active = true LIMIT 1`,
                 [userRes.rows[0].id]
@@ -36,12 +36,16 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             }
             const baseUrl = `${req.protocol}://${req.get('host')}`;
             const tParam = translation !== 'nvi' ? '?translation=' + encodeURIComponent(translation) : '';
+            const bibleItemId = itemRes.rows[0]?.id || null;
+            const frontendUrl = (process.env.FRONTEND_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
+            const biblePanelUrl = bibleItemId ? `${frontendUrl}/bibleEdit?itemId=${bibleItemId}` : `${baseUrl}/${slug}/bible/gn/1`;
             res.render('bibleReader', {
                 slug,
                 translation,
                 chapterData,
                 baseUrl,
                 tParam,
+                biblePanelUrl,
                 API_URL: process.env.FRONTEND_URL || baseUrl
             });
         } finally {
@@ -90,17 +94,9 @@ router.get('/:slug/bible', asyncHandler(async (req, res) => {
                     </body></html>
                 `);
             }
-            const translation = (req.query.translation || itemRes.rows[0].translation_code || 'nvi').toLowerCase();
-            const baseUrl = `${req.protocol}://${req.get('host')}`;
-            const API_URL = process.env.FRONTEND_URL || baseUrl;
-            const booksManifest = bibleService.loadBooksManifest();
-            return res.render('biblePublic', {
-                slug,
-                translation,
-                baseUrl,
-                API_URL,
-                booksManifest: booksManifest || { at: [], nt: [] }
-            });
+            const trans = (req.query.translation || itemRes.rows[0].translation_code || 'nvi').toLowerCase();
+            const tParam = trans !== 'nvi' ? '?translation=' + encodeURIComponent(trans) : '';
+            return res.redirect(302, `/${slug}/bible/gn/1${tParam}`);
         } finally {
             client.release();
         }
