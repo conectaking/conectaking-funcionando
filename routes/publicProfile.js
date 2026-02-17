@@ -647,7 +647,9 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         const bibleItem = itemsFiltered.find(i => i.item_type === 'bible');
         if (bibleItem && bibleItem.bible_data && bibleItem.bible_data.is_visible !== false) {
             try {
-                verseOfDay = await bibleService.getVerseOfDay(null, bibleItem.bible_data.translation_code || 'nvi');
+                const now = new Date();
+                const brDate = now.toLocaleString('en-CA', { timeZone: 'America/Sao_Paulo' }).slice(0, 10);
+                verseOfDay = await bibleService.getVerseOfDay(brDate, bibleItem.bible_data.translation_code || 'nvi');
             } catch (e) {
                 logger.warn('Erro ao buscar versículo do dia', { error: e.message });
             }

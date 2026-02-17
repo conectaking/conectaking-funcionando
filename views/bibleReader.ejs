@@ -34,7 +34,7 @@
 </head>
 <body>
     <% const biblePanelBase = (typeof baseUrl !== 'undefined' && baseUrl) ? String(baseUrl).replace(/\/$/, '') : ''; %>
-    <% const biblePanelUrl = biblePanelBase ? (biblePanelBase + '/' + slug) : ('/' + slug); %>
+    <% const biblePanelUrl = (biblePanelBase ? (biblePanelBase + '/' + slug) : ('/' + slug)) + '/bible'; %>
     <div class="reader-wrap">
         <a href="javascript:void(0)" id="back-bible-link" class="back-link"><i class="fas fa-arrow-left"></i> Voltar ao painel da Bíblia</a>
         <div class="reader-header">
