@@ -36,6 +36,17 @@ function loadNumbersList() {
     }
 }
 
+function loadNamesList() {
+    try {
+        const filePath = path.join(DATA_DIR, 'names.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(data);
+    } catch (e) {
+        logger.error('bible.service loadNamesList:', e);
+        return [];
+    }
+}
+
 async function getVerseOfDay(dateStr, translation) {
     const list = loadVerseOfDayList();
     if (!list.length) return null;
@@ -68,9 +79,18 @@ async function saveConfig(profileItemId, userId, data) {
     return await repository.update(profileItemId, data);
 }
 
+function getNameMeaning(name) {
+    const list = loadNamesList();
+    const q = (name || '').trim().toLowerCase();
+    if (!q) return null;
+    const found = list.find(n => n.nome.toLowerCase() === q);
+    return found || null;
+}
+
 module.exports = {
     getVerseOfDay,
     getNumbers,
+    getNameMeaning,
     getConfig,
     saveConfig
 };

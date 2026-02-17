@@ -80,7 +80,8 @@
         }
         .bible-actions {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            flex-wrap: wrap;
             gap: 12px;
             margin-top: 24px;
         }
@@ -181,7 +182,13 @@
         </div>
 
         <div class="bible-actions" id="bible-actions" style="display: none;">
-            <button type="button" class="bible-btn" id="btn-prev-days">
+            <button type="button" class="bible-btn" id="btn-ouvir">
+                <i class="fas fa-volume-up"></i> Ouvir
+            </button>
+            <button type="button" class="bible-btn" id="btn-compartilhar">
+                <i class="fas fa-share-alt"></i> Compartilhar
+            </button>
+            <button type="button" class="bible-btn secondary" id="btn-prev-days">
                 <i class="fas fa-history"></i> Ver dias anteriores
             </button>
         </div>
@@ -208,7 +215,10 @@
                 return json.data;
             }
 
+            let currentVerse = null;
+
             function renderVerse(verse) {
+                currentVerse = verse;
                 const content = document.getElementById('bible-content');
                 const actions = document.getElementById('bible-actions');
                 const dateLabel = document.getElementById('date-label');
@@ -230,6 +240,26 @@
                 `;
                 actions.style.display = 'flex';
             }
+
+            document.getElementById('btn-ouvir').addEventListener('click', function() {
+                if (!currentVerse || !currentVerse.texto) return;
+                const u = new SpeechSynthesisUtterance(currentVerse.texto);
+                u.lang = 'pt-BR';
+                speechSynthesis.speak(u);
+            });
+
+            document.getElementById('btn-compartilhar').addEventListener('click', function() {
+                if (!currentVerse || !currentVerse.texto) return;
+                const txt = '"' + currentVerse.texto + '" — ' + (currentVerse.ref || '');
+                const urlWhatsApp = 'https://wa.me/?text=' + encodeURIComponent(txt);
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(txt).then(function() {
+                        if (confirm('Versículo copiado! Deseja compartilhar no WhatsApp?')) window.open(urlWhatsApp);
+                    }).catch(function() { window.open(urlWhatsApp); });
+                } else {
+                    window.open(urlWhatsApp);
+                }
+            });
 
             function showError(msg) {
                 const content = document.getElementById('bible-content');

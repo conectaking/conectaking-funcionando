@@ -25,6 +25,17 @@ async function getNumbers(req, res) {
     }
 }
 
+async function getNameMeaning(req, res) {
+    try {
+        const name = req.query.name || req.query.nome || '';
+        const result = bibleService.getNameMeaning(name);
+        return responseFormatter.success(res, result);
+    } catch (e) {
+        logger.error('bible getNameMeaning:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar nome', 500);
+    }
+}
+
 async function getConfig(req, res) {
     try {
         const itemId = parseInt(req.params.itemId, 10);
@@ -52,6 +63,7 @@ async function saveConfig(req, res) {
 module.exports = {
     getVerseOfDay,
     getNumbers,
+    getNameMeaning,
     getConfig,
     saveConfig
 };
