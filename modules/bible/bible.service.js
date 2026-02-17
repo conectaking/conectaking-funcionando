@@ -203,17 +203,38 @@ function loadBooksManifest() {
     }
 }
 
+let _bookNameToId = null;
+function getBookIdFromName(bookName) {
+    if (!_bookNameToId) {
+        const manifest = loadBooksManifest();
+        _bookNameToId = {};
+        (manifest.at || []).concat(manifest.nt || []).forEach(function (b) {
+            if (b.name && b.id) _bookNameToId[b.name] = b.id;
+        });
+    }
+    return _bookNameToId[bookName] || null;
+}
+
 /**
  * Retorna o texto de um trecho para TTS.
- * ref: "jo 3:16" (versículo) ou "jo 3" (capítulo inteiro).
+ * ref: "João 3:16", "Josué 1:9", "1 Samuel 2:3" ou "jo 3:16" (abrev).
  * @returns {{ text: string, scope: 'verse'|'chapter', ref: string } | null}
  */
 function getTextForRef(ref, translation) {
     const r = (ref || '').trim();
     if (!r) return null;
     const parts = r.split(/\s+/);
-    const bookId = (parts[0] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const chVerse = (parts[1] || '1').split(':');
+    let bookName;
+    let chVerseStr;
+    if (parts.length >= 3 && /^\d+$/.test(parts[0])) {
+        bookName = parts[0] + ' ' + parts[1];
+        chVerseStr = parts[2] || '1';
+    } else {
+        bookName = parts[0] || '';
+        chVerseStr = parts[1] || '1';
+    }
+    const bookId = getBookIdFromName(bookName) || (bookName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const chVerse = chVerseStr.split(':');
     const chapterNum = chVerse[0] || '1';
     const verseNum = chVerse.length > 1 ? parseInt(chVerse[1], 10) : null;
     const ch = getBookChapter(bookId, chapterNum, translation);
