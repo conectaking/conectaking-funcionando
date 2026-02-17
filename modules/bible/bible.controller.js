@@ -36,6 +36,42 @@ async function getNameMeaning(req, res) {
     }
 }
 
+async function getPalavraDoDia(req, res) {
+    try {
+        const date = req.query.date || null;
+        const result = await bibleService.getPalavraDoDia(date);
+        if (!result) return responseFormatter.error(res, 'Palavra não encontrada', 404);
+        return responseFormatter.success(res, result);
+    } catch (e) {
+        logger.error('bible getPalavraDoDia:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar palavra', 500);
+    }
+}
+
+async function getSalmoDoDia(req, res) {
+    try {
+        const date = req.query.date || null;
+        const result = await bibleService.getSalmoDoDia(date);
+        if (!result) return responseFormatter.error(res, 'Salmo não encontrado', 404);
+        return responseFormatter.success(res, result);
+    } catch (e) {
+        logger.error('bible getSalmoDoDia:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar salmo', 500);
+    }
+}
+
+async function getDevocionalDoDia(req, res) {
+    try {
+        const date = req.query.date || null;
+        const result = await bibleService.getDevocionalDoDia(date);
+        if (!result) return responseFormatter.error(res, 'Devocional não encontrado', 404);
+        return responseFormatter.success(res, result);
+    } catch (e) {
+        logger.error('bible getDevocionalDoDia:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar devocional', 500);
+    }
+}
+
 async function getConfig(req, res) {
     try {
         const itemId = parseInt(req.params.itemId, 10);
@@ -86,6 +122,9 @@ module.exports = {
     getVerseOfDay,
     getNumbers,
     getNameMeaning,
+    getPalavraDoDia,
+    getSalmoDoDia,
+    getDevocionalDoDia,
     getMyProgress,
     markRead,
     getConfig,

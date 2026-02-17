@@ -47,6 +47,63 @@ function loadNamesList() {
     }
 }
 
+function loadPalavrasDoDia() {
+    try {
+        const filePath = path.join(DATA_DIR, 'palavras_do_dia.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(data);
+    } catch (e) {
+        logger.error('bible.service loadPalavrasDoDia:', e);
+        return [];
+    }
+}
+
+function loadSalmosDoDia() {
+    try {
+        const filePath = path.join(DATA_DIR, 'salmos_do_dia.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(data);
+    } catch (e) {
+        logger.error('bible.service loadSalmosDoDia:', e);
+        return [];
+    }
+}
+
+function loadDevocionais() {
+    try {
+        const filePath = path.join(DATA_DIR, 'devocionais.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(data);
+    } catch (e) {
+        logger.error('bible.service loadDevocionais:', e);
+        return [];
+    }
+}
+
+async function getPalavraDoDia(dateStr) {
+    const list = loadPalavrasDoDia();
+    if (!list.length) return null;
+    const dayOfYear = getVerseOfDayIndex(dateStr);
+    const index = dayOfYear % list.length;
+    return { ...list[index], date: dateStr || new Date().toISOString().slice(0, 10) };
+}
+
+async function getSalmoDoDia(dateStr) {
+    const list = loadSalmosDoDia();
+    if (!list.length) return null;
+    const dayOfYear = getVerseOfDayIndex(dateStr);
+    const index = dayOfYear % list.length;
+    return { ...list[index], date: dateStr || new Date().toISOString().slice(0, 10) };
+}
+
+async function getDevocionalDoDia(dateStr) {
+    const list = loadDevocionais();
+    if (!list.length) return null;
+    const dayOfYear = getVerseOfDayIndex(dateStr);
+    const index = dayOfYear % list.length;
+    return { ...list[index], date: dateStr || new Date().toISOString().slice(0, 10) };
+}
+
 async function getVerseOfDay(dateStr, translation) {
     const list = loadVerseOfDayList();
     if (!list.length) return null;
@@ -104,5 +161,8 @@ module.exports = {
     getMyProgress,
     markRead,
     getConfig,
-    saveConfig
+    saveConfig,
+    getPalavraDoDia,
+    getSalmoDoDia,
+    getDevocionalDoDia
 };
