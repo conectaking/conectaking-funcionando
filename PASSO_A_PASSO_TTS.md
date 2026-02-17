@@ -8,8 +8,9 @@ Este guia explica o que foi implementado e o que **você** precisa fazer (contas
 
 1. **Chave de cache** – Função que normaliza o texto e gera um hash único para cada trecho (assim não pagamos TTS duas vezes pelo mesmo trecho).
 2. **Tabela no banco** – `bible_tts_cache` para guardar: qual trecho já virou áudio e onde está no R2.
-3. **Serviço de TTS** – Verifica primeiro se o áudio já existe (banco + R2); se não existir, está pronto para chamar o Google TTS (falta só você configurar o GCP).
-4. **Rota da API** – `GET /api/bible/tts/audio` para pedir o áudio; devolve URL se já existir.
+3. **Serviço de TTS** – Verifica primeiro se o áudio já existe (banco + R2); se não existir, chama o Google TTS (módulo `tts-google.js`), sobe no R2 e grava no cache.
+4. **Módulo Google TTS** – `modules/bible/tts/tts-google.js`: usa `GCP_SERVICE_ACCOUNT_JSON_BASE64` para autenticar e gera MP3 com `@google-cloud/text-to-speech`.
+5. **Rota da API** – `GET /api/bible/tts/audio?ref=jo 3:16&version=nvi&voice=pt-BR-Standard-A` para pedir o áudio; devolve URL se já existir ou após gerar.
 
 ---
 

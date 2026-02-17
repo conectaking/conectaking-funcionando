@@ -1,48 +1,59 @@
 /**
  * Geração de áudio com Google Cloud Text-to-Speech.
- * Credenciais via GCP_SERVICE_ACCOUNT_JSON_BASE64 (nunca no front).
+ * Usa GCP_SERVICE_ACCOUNT_JSON_BASE64 para autenticar (nunca expor no front).
  */
 
 const logger = require('../../../utils/logger');
 
-let _client = null;
-
-function getTtsClient() {
-  if (_client) return _client;
+/**
+ * Obtém credenciais a partir do JSON em base64 (variável de ambiente).
+ * @returns {object | null} Objeto de credenciais ou null se não configurado
+ */
+function getCredentials() {
   const base64 = (process.env.GCP_SERVICE_ACCOUNT_JSON_BASE64 || '').trim();
-  if (!base64) {
-    throw new Error('GCP_SERVICE_ACCOUNT_JSON_BASE64 não configurado');
-  }
-  let credentials;
+  if (!base64) return null;
   try {
     const json = Buffer.from(base64, 'base64').toString('utf8');
-    credentials = JSON.parse(json);
+    return JSON.parse(json);
   } catch (e) {
-    logger.error('tts-google: falha ao decodificar/parsear GCP_SERVICE_ACCOUNT_JSON_BASE64', e);
-    throw new Error('Credenciais GCP inválidas (base64/JSON)');
+    logger.warn('tts-google: GCP_SERVICE_ACCOUNT_JSON_BASE64 inválido', e?.message);
+    return null;
   }
-  const { TextToSpeechClient } = require('@google-cloud/text-to-speech').v1;
-  _client = new TextToSpeechClient({
+}
+
+/**
+ * Gera áudio MP3 para o texto usando Google Cloud TTS.
+ * @param {object} opts - ref, text, bibleVersion, scope, voiceName, voiceType, locale, speakingRate, pitch
+ * @returns {Promise<Buffer|null>} Buffer do MP3 ou null em caso de erro
+ */
+async function generateTts(opts) {
+  const credentials = getCredentials();
+  if (!credentials) {
+    logger.warn('tts-google: GCP não configurado (GCP_SERVICE_ACCOUNT_JSON_BASE64)');
+    return null;
+  }
+
+  let TextToSpeechClient;
+  try {
+    const tts = require('@google-cloud/text-to-speech');
+    TextToSpeechClient = tts.v1?.TextToSpeechClient || tts.TextToSpeechClient;
+  } catch (e) {
+    logger.warn('tts-google: @google-cloud/text-to-speech não instalado. Rode: npm install @google-cloud/text-to-speech', e?.message);
+    return null;
+  }
+
+  const client = new TextToSpeechClient({
     credentials: {
       client_email: credentials.client_email,
       private_key: (credentials.private_key || '').replace(/\\n/g, '\n')
     }
   });
-  return _client;
-}
 
-/**
- * Gera MP3 para um texto usando Google Cloud TTS.
- * @param {object} opts - voiceName, voiceType, locale, text, speakingRate, pitch
- * @returns {Promise<Buffer>} - conteúdo do MP3
- */
-async function generateTts(opts) {
-  const text = (opts.text || '').trim();
-  if (!text) throw new Error('Texto vazio para TTS');
+  const text = String(opts.text || '').trim();
+  if (!text) return null;
 
-  const client = getTtsClient();
-  const voiceName = String(opts.voiceName || 'pt-BR-Standard-A');
   const locale = String(opts.locale || 'pt-BR');
+  const voiceName = String(opts.voiceName || 'pt-BR-Standard-A');
   const speakingRate = Number(opts.speakingRate) || 1.0;
   const pitch = Number(opts.pitch) || 0.0;
 
@@ -54,19 +65,24 @@ async function generateTts(opts) {
     },
     audioConfig: {
       audioEncoding: 'MP3',
-      speakingRate,
-      pitch
+      speakingRate: Math.max(0.25, Math.min(4.0, speakingRate)),
+      pitch: Math.max(-20.0, Math.min(20.0, pitch))
     }
   };
 
-  const [response] = await client.synthesizeSpeech(request);
-  if (!response.audioContent || !(response.audioContent instanceof Uint8Array)) {
-    throw new Error('Resposta do TTS sem áudio');
+  try {
+    const [response] = await client.synthesizeSpeech(request);
+    if (response?.audioContent) {
+      return Buffer.from(response.audioContent, 'base64');
+    }
+    return null;
+  } catch (err) {
+    logger.error('tts-google synthesizeSpeech:', err?.message || err);
+    throw err;
   }
-  return Buffer.from(response.audioContent);
 }
 
 module.exports = {
-  getTtsClient,
+  getCredentials,
   generateTts
 };
