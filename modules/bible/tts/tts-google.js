@@ -9,9 +9,8 @@ const https = require('https');
 const logger = require('../../../utils/logger');
 const axios = require('axios');
 
-/** Agente HTTPS que força TLS 1.2+ (evita handshake failure com Google em alguns hosts, ex.: Render). */
-const httpsAgent = new https.Agent({ minVersion: 'TLSv1.2' });
-const axiosConfig = { httpsAgent, timeout: 30000 };
+/** Timeout para chamadas ao Google. Sem agente HTTPS customizado para evitar EPROTO/handshake failure no Render. */
+const axiosConfig = { timeout: 30000 };
 
 /**
  * Obtém credenciais a partir do JSON em base64 (variável de ambiente).
@@ -29,9 +28,12 @@ function getCredentials() {
   }
 }
 
-const USE_REST = /^1|true|yes$/i.test(String(process.env.GCP_TTS_USE_REST || '').trim());
-if (process.env.GCP_TTS_USE_REST !== undefined) {
-  logger.info('tts-google: GCP_TTS_USE_REST=%s → using %s', String(process.env.GCP_TTS_USE_REST).trim() || '(empty)', USE_REST ? 'REST' : 'gRPC');
+// No Render (e em outros hosts com TLS restrito), gRPC costuma falhar com EPROTO; REST é mais estável.
+const explicitRest = process.env.GCP_TTS_USE_REST !== undefined && String(process.env.GCP_TTS_USE_REST).trim() !== '';
+const USE_REST = /^1|true|yes$/i.test(String(process.env.GCP_TTS_USE_REST || '').trim())
+  || (process.env.RENDER === 'true' && !/^0|false|no$/i.test(String(process.env.GCP_TTS_USE_REST || '').trim()));
+if (explicitRest || process.env.RENDER === 'true') {
+  logger.info('tts-google: GCP_TTS_USE_REST=%s RENDER=%s → using %s', String(process.env.GCP_TTS_USE_REST || '').trim() || '(empty)', process.env.RENDER || '(no)', USE_REST ? 'REST' : 'gRPC');
 }
 
 /** Gera JWT assinado para troca por access token (Google OAuth2). */
