@@ -223,42 +223,31 @@ Pedro repete a mesma ordem: "Lançando sobre ele toda a vossa ansiedade, porque 
   }
 };
 
+const THEMES_ORDER = [
+  'Sê forte e corajoso', 'Graça e salvação', 'O caminho, a verdade e a vida', 'Lança sobre Ele tua ansiedade',
+  'O amor é paciente', 'Refúgio na angústia', 'Buscai primeiro o reino', 'Amados por Deus', 'Deus é amor', 'Não andeis ansiosos',
+  'O amor que transforma', 'Descanso para a alma', 'Planos de esperança', 'Força para o caminho', 'Tudo coopera para o bem',
+  'Nada me faltará', 'Confiar no Senhor', 'Nova criatura', 'Tudo posso', 'Não temas'
+];
+
 function escapeSql(str) {
   if (!str) return '';
   return str.replace(/'/g, "''");
 }
 
 function main() {
-  const migration178 = fs.readFileSync(path.join(__dirname, '..', 'migrations', '178_bible_devotionals_31_365.sql'), 'utf8');
-  const lines = migration178.split('\n');
-  const updates = [];
-
-  for (const line of lines) {
-    const match = line.match(/^\((\d+),\s*'([^']+)',\s*'([^']+)',\s*'([^']*(?:''[^']*)*)'/);
-    if (match) {
-      const day = parseInt(match[1], 10);
-      const titulo = match[2];
-      const versiculoRef = match[3];
-      const versiculoTexto = match[4].replace(/''/g, "'");
-      if (day < 31) continue;
-      const t = TEMPLATES[titulo];
-      if (!t) continue;
-      updates.push({ day, titulo, versiculoRef, versiculoTexto, ...t });
-    }
-  }
-
   console.log('-- Migration 179: Devocionais 31-365 expandidos (estilo bibliaonline.com.br)');
   console.log('-- Reflexão completa, aplicação específica, oração completa');
   console.log('');
 
-  for (const u of updates) {
-    const reflexao = escapeSql(u.reflexao);
-    const aplicacao = escapeSql(u.aplicacao);
-    const oracao = escapeSql(u.oracao);
-    const titulo = escapeSql(u.titulo);
-    const versiculoRef = escapeSql(u.versiculoRef);
-    const versiculoTexto = escapeSql(u.versiculoTexto);
-    console.log(`UPDATE bible_devotionals_365 SET reflexao = '${reflexao}', aplicacao = '${aplicacao}', oracao = '${oracao}', updated_at = NOW() WHERE day_of_year = ${u.day};`);
+  for (let day = 31; day <= 365; day++) {
+    const titulo = THEMES_ORDER[(day - 31) % THEMES_ORDER.length];
+    const t = TEMPLATES[titulo];
+    if (!t) continue;
+    const reflexao = escapeSql(t.reflexao);
+    const aplicacao = escapeSql(t.aplicacao);
+    const oracao = escapeSql(t.oracao);
+    console.log(`UPDATE bible_devotionals_365 SET reflexao = '${reflexao}', aplicacao = '${aplicacao}', oracao = '${oracao}', updated_at = NOW() WHERE day_of_year = ${day};`);
   }
 }
 
