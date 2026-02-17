@@ -142,6 +142,98 @@ async function markRead(req, res) {
     }
 }
 
+// --- Ecossistema Bíblico (devocionais 365, estudos, esboços, busca) ---
+
+async function getDevocional365(req, res) {
+    try {
+        const day = req.params.day; // 1-365 ou date YYYY-MM-DD
+        const result = await bibleService.getDevocional365(day);
+        if (!result) return responseFormatter.error(res, 'Devocional não encontrado', 404);
+        return responseFormatter.success(res, result);
+    } catch (e) {
+        logger.error('bible getDevocional365:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar devocional', 500);
+    }
+}
+
+async function getStudyThemes(req, res) {
+    try {
+        const themes = await bibleService.getStudyThemes();
+        return responseFormatter.success(res, { themes });
+    } catch (e) {
+        logger.error('bible getStudyThemes:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar temas', 500);
+    }
+}
+
+async function getStudies(req, res) {
+    try {
+        const themeSlug = req.query.theme || null;
+        const studies = await bibleService.getStudies(themeSlug);
+        return responseFormatter.success(res, { studies });
+    } catch (e) {
+        logger.error('bible getStudies:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar estudos', 500);
+    }
+}
+
+async function getStudyBySlug(req, res) {
+    try {
+        const { themeSlug, studySlug } = req.params;
+        const study = await bibleService.getStudyBySlug(themeSlug, studySlug);
+        if (!study) return responseFormatter.error(res, 'Estudo não encontrado', 404);
+        return responseFormatter.success(res, study);
+    } catch (e) {
+        logger.error('bible getStudyBySlug:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar estudo', 500);
+    }
+}
+
+async function getOutlineCategories(req, res) {
+    try {
+        const categories = await bibleService.getOutlineCategories();
+        return responseFormatter.success(res, { categories });
+    } catch (e) {
+        logger.error('bible getOutlineCategories:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar categorias', 500);
+    }
+}
+
+async function getOutlines(req, res) {
+    try {
+        const categorySlug = req.query.category || null;
+        const outlines = await bibleService.getOutlines(categorySlug);
+        return responseFormatter.success(res, { outlines });
+    } catch (e) {
+        logger.error('bible getOutlines:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar esboços', 500);
+    }
+}
+
+async function getOutlineBySlug(req, res) {
+    try {
+        const { categorySlug, outlineSlug } = req.params;
+        const outline = await bibleService.getOutlineBySlug(categorySlug, outlineSlug);
+        if (!outline) return responseFormatter.error(res, 'Esboço não encontrado', 404);
+        return responseFormatter.success(res, outline);
+    } catch (e) {
+        logger.error('bible getOutlineBySlug:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar esboço', 500);
+    }
+}
+
+async function searchBible(req, res) {
+    try {
+        const q = (req.query.q || req.query.query || '').trim();
+        const limit = parseInt(req.query.limit, 10) || 30;
+        const result = await bibleService.searchBibleEcosystem(q, limit);
+        return responseFormatter.success(res, result);
+    } catch (e) {
+        logger.error('bible searchBible:', e);
+        return responseFormatter.error(res, e.message || 'Erro na busca', 500);
+    }
+}
+
 module.exports = {
     getVerseOfDay,
     getNumbers,
@@ -149,6 +241,14 @@ module.exports = {
     getPalavraDoDia,
     getSalmoDoDia,
     getDevocionalDoDia,
+    getDevocional365,
+    getStudyThemes,
+    getStudies,
+    getStudyBySlug,
+    getOutlineCategories,
+    getOutlines,
+    getOutlineBySlug,
+    searchBible,
     getBookChapter,
     getBooksManifest,
     getMyProgress,

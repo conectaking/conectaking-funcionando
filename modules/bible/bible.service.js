@@ -97,9 +97,23 @@ async function getSalmoDoDia(dateStr) {
 }
 
 async function getDevocionalDoDia(dateStr) {
+    const dayOfYear = getVerseOfDayIndex(dateStr);
+    const fromDb = await repository.getDevocional365(dayOfYear);
+    if (fromDb) {
+        return {
+            titulo: fromDb.titulo,
+            versiculo: fromDb.versiculo_ref,
+            versiculo_texto: fromDb.versiculo_texto,
+            texto: fromDb.reflexao,
+            reflexao: fromDb.reflexao,
+            aplicacao: fromDb.aplicacao,
+            oracao: fromDb.oracao,
+            day_of_year: fromDb.day_of_year,
+            date: dateStr || new Date().toISOString().slice(0, 10)
+        };
+    }
     const list = loadDevocionais();
     if (!list.length) return null;
-    const dayOfYear = getVerseOfDayIndex(dateStr);
     const index = dayOfYear % list.length;
     return { ...list[index], date: dateStr || new Date().toISOString().slice(0, 10) };
 }
@@ -188,6 +202,44 @@ function getBookChapter(bookId, chapterNum, translation) {
     }
 }
 
+async function getDevocional365(dayOrDate) {
+    let dayOfYear;
+    if (typeof dayOrDate === 'number' || (typeof dayOrDate === 'string' && /^\d+$/.test(dayOrDate))) {
+        dayOfYear = parseInt(dayOrDate, 10);
+    } else {
+        dayOfYear = getVerseOfDayIndex(dayOrDate);
+    }
+    return repository.getDevocional365(dayOfYear);
+}
+
+async function getStudyThemes() {
+    return repository.getStudyThemes();
+}
+
+async function getStudies(themeSlug) {
+    return repository.getStudies(themeSlug);
+}
+
+async function getStudyBySlug(themeSlug, studySlug) {
+    return repository.getStudyBySlug(themeSlug, studySlug);
+}
+
+async function getOutlineCategories() {
+    return repository.getOutlineCategories();
+}
+
+async function getOutlines(categorySlug) {
+    return repository.getOutlines(categorySlug);
+}
+
+async function getOutlineBySlug(categorySlug, outlineSlug) {
+    return repository.getOutlineBySlug(categorySlug, outlineSlug);
+}
+
+async function searchBibleEcosystem(query, limit) {
+    return repository.searchBibleEcosystem(query, limit);
+}
+
 module.exports = {
     getVerseOfDay,
     getNumbers,
@@ -199,6 +251,14 @@ module.exports = {
     getPalavraDoDia,
     getSalmoDoDia,
     getDevocionalDoDia,
+    getDevocional365,
+    getStudyThemes,
+    getStudies,
+    getStudyBySlug,
+    getOutlineCategories,
+    getOutlines,
+    getOutlineBySlug,
+    searchBibleEcosystem,
     loadBooksManifest,
     getBookChapter
 };

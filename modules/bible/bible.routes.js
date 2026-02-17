@@ -11,8 +11,18 @@ router.get('/book/:bookId/:chapter', asyncHandler(controller.getBookChapter));
 router.get('/palavra-do-dia', asyncHandler(controller.getPalavraDoDia));
 router.get('/salmo-do-dia', asyncHandler(controller.getSalmoDoDia));
 router.get('/devocional-do-dia', asyncHandler(controller.getDevocionalDoDia));
+router.get('/devotionals-365/:day', asyncHandler(controller.getDevocional365));
 router.get('/numbers', asyncHandler(controller.getNumbers));
 router.get('/names', asyncHandler(controller.getNameMeaning));
+
+// Ecossistema Bíblico - Estudos e Esboços
+router.get('/study-themes', asyncHandler(controller.getStudyThemes));
+router.get('/studies', asyncHandler(controller.getStudies));
+router.get('/studies/:themeSlug/:studySlug', asyncHandler(controller.getStudyBySlug));
+router.get('/outline-categories', asyncHandler(controller.getOutlineCategories));
+router.get('/outlines', asyncHandler(controller.getOutlines));
+router.get('/outlines/:categorySlug/:outlineSlug', asyncHandler(controller.getOutlineBySlug));
+router.get('/search', asyncHandler(controller.searchBible));
 
 // Rotas PROTEGIDAS (requer login)
 router.get('/config/:itemId', protectUser, asyncHandler(controller.getConfig));

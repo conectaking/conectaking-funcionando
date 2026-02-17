@@ -134,11 +134,190 @@ async function markRead(userId, data) {
     }
 }
 
+// --- Ecossistema Bíblico (devocionais 365, estudos, esboços) ---
+
+async function getDevocional365(dayOfYear) {
+    const client = await db.pool.connect();
+    try {
+        const day = parseInt(dayOfYear, 10);
+        if (day < 1 || day > 365) return null;
+        const r = await client.query(
+            'SELECT * FROM bible_devotionals_365 WHERE day_of_year = $1',
+            [day]
+        );
+        return r.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
+async function getStudyThemes() {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            'SELECT * FROM bible_study_themes ORDER BY display_order, nome'
+        );
+        return r.rows;
+    } finally {
+        client.release();
+    }
+}
+
+async function getStudies(themeSlug) {
+    const client = await db.pool.connect();
+    try {
+        let q = `
+            SELECT s.*, t.nome as theme_name, t.slug as theme_slug
+            FROM bible_studies s
+            JOIN bible_study_themes t ON t.id = s.theme_id
+        `;
+        const params = [];
+        if (themeSlug) {
+            q += ' WHERE t.slug = $1';
+            params.push(themeSlug);
+        }
+        q += ' ORDER BY s.display_order, s.titulo';
+        const r = await client.query(q, params);
+        return r.rows;
+    } finally {
+        client.release();
+    }
+}
+
+async function getStudyBySlug(themeSlug, studySlug) {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            `SELECT s.*, t.nome as theme_name, t.slug as theme_slug
+             FROM bible_studies s
+             JOIN bible_study_themes t ON t.id = s.theme_id
+             WHERE t.slug = $1 AND s.slug = $2`,
+            [themeSlug, studySlug]
+        );
+        return r.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
+async function getOutlineCategories() {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            'SELECT * FROM sermon_outline_categories ORDER BY display_order, nome'
+        );
+        return r.rows;
+    } finally {
+        client.release();
+    }
+}
+
+async function getOutlines(categorySlug) {
+    const client = await db.pool.connect();
+    try {
+        let q = `
+            SELECT o.*, c.nome as category_name, c.slug as category_slug
+            FROM sermon_outlines o
+            JOIN sermon_outline_categories c ON c.id = o.category_id
+        `;
+        const params = [];
+        if (categorySlug) {
+            q += ' WHERE c.slug = $1';
+            params.push(categorySlug);
+        }
+        q += ' ORDER BY o.display_order, o.titulo';
+        const r = await client.query(q, params);
+        return r.rows;
+    } finally {
+        client.release();
+    }
+}
+
+async function getOutlineBySlug(categorySlug, outlineSlug) {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            `SELECT o.*, c.nome as category_name, c.slug as category_slug
+             FROM sermon_outlines o
+             JOIN sermon_outline_categories c ON c.id = o.category_id
+             WHERE c.slug = $1 AND o.slug = $2`,
+            [categorySlug, outlineSlug]
+        );
+        return r.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
+async function searchBibleEcosystem(query, limit = 30) {
+    const client = await db.pool.connect();
+    try {
+        const q = (query || '').trim();
+        if (!q || q.length < 2) return { devotionals: [], studies: [], outlines: [] };
+
+        const term = '%' + q.replace(/\s+/g, '%') + '%';
+        const likeTerm = term;
+        const limitNum = Math.min(parseInt(limit, 10) || 30, 50);
+
+        const [devR, studR, outR] = await Promise.all([
+            client.query(
+                `SELECT id, day_of_year, titulo, versiculo_ref, LEFT(reflexao, 200) as reflexao_preview
+                 FROM bible_devotionals_365
+                 WHERE search_vector @@ plainto_tsquery('portuguese', $1)
+                    OR titulo ILIKE $2 OR versiculo_ref ILIKE $2 OR reflexao ILIKE $2 OR aplicacao ILIKE $2
+                 ORDER BY ts_rank(search_vector, plainto_tsquery('portuguese', $1)) DESC NULLS LAST
+                 LIMIT $3`,
+                [q, likeTerm, limitNum]
+            ).catch(() => ({ rows: [] })),
+            client.query(
+                `SELECT s.id, s.slug, s.titulo, t.slug as theme_slug, t.nome as theme_name, LEFT(s.conteudo, 200) as preview
+                 FROM bible_studies s
+                 JOIN bible_study_themes t ON t.id = s.theme_id
+                 WHERE s.search_vector @@ plainto_tsquery('portuguese', $1)
+                    OR s.titulo ILIKE $2 OR s.conteudo ILIKE $2 OR s.introducao ILIKE $2
+                 ORDER BY ts_rank(s.search_vector, plainto_tsquery('portuguese', $1)) DESC NULLS LAST
+                 LIMIT $3`,
+                [q, likeTerm, limitNum]
+            ).catch(() => ({ rows: [] })),
+            client.query(
+                `SELECT o.id, o.slug, o.titulo, c.slug as category_slug, c.nome as category_name, LEFT(o.introducao, 200) as preview
+                 FROM sermon_outlines o
+                 JOIN sermon_outline_categories c ON c.id = o.category_id
+                 WHERE o.search_vector @@ plainto_tsquery('portuguese', $1)
+                    OR o.titulo ILIKE $2 OR o.introducao ILIKE $2 OR o.conclusao ILIKE $2 OR o.apelo ILIKE $2
+                    OR o.topicos::text ILIKE $2
+                 ORDER BY ts_rank(o.search_vector, plainto_tsquery('portuguese', $1)) DESC NULLS LAST
+                 LIMIT $3`,
+                [q, likeTerm, limitNum]
+            ).catch(() => ({ rows: [] }))
+        ]);
+
+        return {
+            devotionals: devR.rows,
+            studies: studR.rows,
+            outlines: outR.rows
+        };
+    } catch (err) {
+        logger.error('bible.repository searchBibleEcosystem:', err);
+        return { devotionals: [], studies: [], outlines: [] };
+    } finally {
+        client.release();
+    }
+}
+
 module.exports = {
     findByProfileItemId,
     create,
     update,
     ensureOwnership,
     getProgress,
-    markRead
+    markRead,
+    getDevocional365,
+    getStudyThemes,
+    getStudies,
+    getStudyBySlug,
+    getOutlineCategories,
+    getOutlines,
+    getOutlineBySlug,
+    searchBibleEcosystem
 };
