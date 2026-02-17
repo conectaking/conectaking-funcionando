@@ -25,6 +25,9 @@ function getCredentials() {
 }
 
 const USE_REST = /^1|true|yes$/i.test(String(process.env.GCP_TTS_USE_REST || '').trim());
+if (process.env.GCP_TTS_USE_REST !== undefined) {
+  logger.info('tts-google: GCP_TTS_USE_REST=%s → using %s', String(process.env.GCP_TTS_USE_REST).trim() || '(empty)', USE_REST ? 'REST' : 'gRPC');
+}
 
 /** Gera JWT assinado para troca por access token (Google OAuth2). */
 function createSignedJwt(credentials) {
