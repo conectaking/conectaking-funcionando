@@ -90,9 +90,17 @@ router.get('/:slug/bible', asyncHandler(async (req, res) => {
                     </body></html>
                 `);
             }
-            const trans = (req.query.translation || itemRes.rows[0].translation_code || 'nvi').toLowerCase();
-            const tParam = trans !== 'nvi' ? '?translation=' + encodeURIComponent(trans) : '';
-            return res.redirect(302, `/${slug}/bible/gn/1${tParam}`);
+            const translation = (req.query.translation || itemRes.rows[0].translation_code || 'nvi').toLowerCase();
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            const API_URL = process.env.FRONTEND_URL || baseUrl;
+            const booksManifest = bibleService.loadBooksManifest();
+            return res.render('biblePublic', {
+                slug,
+                translation,
+                baseUrl,
+                API_URL,
+                booksManifest: booksManifest || { at: [], nt: [] }
+            });
         } finally {
             client.release();
         }
