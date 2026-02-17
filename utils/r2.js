@@ -56,16 +56,21 @@ async function r2GetObjectBuffer(key) {
 
 /**
  * Gera URL pública: R2_PUBLIC_BASE_URL + / + objectKey
+ * Para chaves bible-tts/* usa R2_PUBLIC_URL (URL direta do bucket) se existir, pois o domínio customizado pode não servir esse path.
  * Base sem / final, key sem / inicial, encoding por segmento (espaço, acento).
  */
 function r2PublicUrl(objectKey) {
   const cfg = getR2Config();
-  if (!cfg.publicBaseUrl) return null;
-  const base = cfg.publicBaseUrl.replace(/\/+$/, '');
   const k = String(objectKey || '').replace(/^\/+/, '').trim();
   if (!k) return null;
   const segments = k.split('/').filter(Boolean).map(s => encodeURIComponent(s));
-  return `${base}/${segments.join('/')}`;
+  const pathPart = segments.join('/');
+  // TTS da Bíblia: preferir URL direta do R2 (pub-xxx.r2.dev) se o domínio customizado não servir bible-tts
+  const directUrl = (process.env.R2_PUBLIC_URL || '').toString().trim().replace(/\/+$/, '');
+  if (k.startsWith('bible-tts/') && directUrl) return `${directUrl}/${pathPart}`;
+  if (!cfg.publicBaseUrl) return null;
+  const base = cfg.publicBaseUrl.replace(/\/+$/, '');
+  return `${base}/${pathPart}`;
 }
 
 /**
