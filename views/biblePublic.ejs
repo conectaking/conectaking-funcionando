@@ -229,27 +229,142 @@
 
         <div class="bible-header">
             <i class="fas fa-bible"></i>
-            <h1>Versículo do Dia</h1>
-            <div class="date-label" id="date-label">Carregando...</div>
+            <h1>Bíblia</h1>
+            <div class="date-label" id="date-label"></div>
         </div>
 
-        <div id="bible-content">
-            <div class="bible-loading" id="bible-loading">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>Carregando versículo...</p>
+        <!-- Receba mais de Deus hoje -->
+        <div class="receba-card">
+            <h2>Receba mais de Deus hoje:</h2>
+            <div class="receba-grid">
+                <div class="receba-item active" data-tipo="versiculo">
+                    <span><i class="fas fa-book-open" style="margin-right:8px"></i>Versículo do Dia</span>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="receba-item" data-tipo="palavra">
+                    <span><i class="fas fa-font" style="margin-right:8px"></i>Palavra do Dia</span>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="receba-item" data-tipo="salmo">
+                    <span><i class="fas fa-music" style="margin-right:8px"></i>Salmo do Dia</span>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="receba-item" data-tipo="devocional">
+                    <span><i class="fas fa-heart" style="margin-right:8px"></i>Devocional Diário</span>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            </div>
+            <div id="receba-versiculo" class="receba-content show">
+                <div id="bible-content">
+                    <div class="bible-loading" id="bible-loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Carregando versículo...</p>
+                    </div>
+                </div>
+                <div class="bible-actions" id="bible-actions" style="display: none;">
+                    <button type="button" class="bible-btn" id="btn-ouvir">
+                        <i class="fas fa-volume-up"></i> Ouvir
+                    </button>
+                    <button type="button" class="bible-btn" id="btn-compartilhar">
+                        <i class="fas fa-share-alt"></i> Compartilhar
+                    </button>
+                    <button type="button" class="bible-btn secondary" id="btn-prev-days">
+                        <i class="fas fa-history"></i> Ver dias anteriores
+                    </button>
+                </div>
+            </div>
+            <div id="receba-palavra" class="receba-content">
+                <div id="palavra-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
+            </div>
+            <div id="receba-salmo" class="receba-content">
+                <div id="salmo-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
+            </div>
+            <div id="receba-devocional" class="receba-content">
+                <div id="devocional-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
             </div>
         </div>
 
-        <div class="bible-actions" id="bible-actions" style="display: none;">
-            <button type="button" class="bible-btn" id="btn-ouvir">
-                <i class="fas fa-volume-up"></i> Ouvir
-            </button>
-            <button type="button" class="bible-btn" id="btn-compartilhar">
-                <i class="fas fa-share-alt"></i> Compartilhar
-            </button>
-            <button type="button" class="bible-btn secondary" id="btn-prev-days">
-                <i class="fas fa-history"></i> Ver dias anteriores
-            </button>
+        <!-- Livros da Bíblia -->
+        <div class="bible-card">
+            <h3 style="margin-bottom:16px;color:#FFC700">Livros da Bíblia</h3>
+            <div class="livros-section">
+                <div class="livros-col">
+                    <h3>Antigo Testamento</h3>
+                    <div class="livros-grid" id="livros-at">
+                        <a href="https://www.bible.com/bible/211/gen.1" target="_blank" rel="noopener">Gênesis</a>
+                        <a href="https://www.bible.com/bible/211/exo.1" target="_blank" rel="noopener">Êxodo</a>
+                        <a href="https://www.bible.com/bible/211/lev.1" target="_blank" rel="noopener">Levítico</a>
+                        <a href="https://www.bible.com/bible/211/num.1" target="_blank" rel="noopener">Números</a>
+                        <a href="https://www.bible.com/bible/211/deu.1" target="_blank" rel="noopener">Deuteronômio</a>
+                        <a href="https://www.bible.com/bible/211/jos.1" target="_blank" rel="noopener">Josué</a>
+                        <a href="https://www.bible.com/bible/211/jdg.1" target="_blank" rel="noopener">Juízes</a>
+                        <a href="https://www.bible.com/bible/211/rut.1" target="_blank" rel="noopener">Rute</a>
+                        <a href="https://www.bible.com/bible/211/1sa.1" target="_blank" rel="noopener">1 Samuel</a>
+                        <a href="https://www.bible.com/bible/211/2sa.1" target="_blank" rel="noopener">2 Samuel</a>
+                        <a href="https://www.bible.com/bible/211/1ki.1" target="_blank" rel="noopener">1 Reis</a>
+                        <a href="https://www.bible.com/bible/211/2ki.1" target="_blank" rel="noopener">2 Reis</a>
+                        <a href="https://www.bible.com/bible/211/1ch.1" target="_blank" rel="noopener">1 Crônicas</a>
+                        <a href="https://www.bible.com/bible/211/2ch.1" target="_blank" rel="noopener">2 Crônicas</a>
+                        <a href="https://www.bible.com/bible/211/ezr.1" target="_blank" rel="noopener">Esdras</a>
+                        <a href="https://www.bible.com/bible/211/neh.1" target="_blank" rel="noopener">Neemias</a>
+                        <a href="https://www.bible.com/bible/211/est.1" target="_blank" rel="noopener">Ester</a>
+                        <a href="https://www.bible.com/bible/211/job.1" target="_blank" rel="noopener">Jó</a>
+                        <a href="https://www.bible.com/bible/211/psa.1" target="_blank" rel="noopener">Salmos</a>
+                        <a href="https://www.bible.com/bible/211/pro.1" target="_blank" rel="noopener">Provérbios</a>
+                        <a href="https://www.bible.com/bible/211/ecc.1" target="_blank" rel="noopener">Eclesiastes</a>
+                        <a href="https://www.bible.com/bible/211/sng.1" target="_blank" rel="noopener">Cânticos</a>
+                        <a href="https://www.bible.com/bible/211/isa.1" target="_blank" rel="noopener">Isaías</a>
+                        <a href="https://www.bible.com/bible/211/jer.1" target="_blank" rel="noopener">Jeremias</a>
+                        <a href="https://www.bible.com/bible/211/lam.1" target="_blank" rel="noopener">Lamentações</a>
+                        <a href="https://www.bible.com/bible/211/ezk.1" target="_blank" rel="noopener">Ezequiel</a>
+                        <a href="https://www.bible.com/bible/211/dan.1" target="_blank" rel="noopener">Daniel</a>
+                        <a href="https://www.bible.com/bible/211/hos.1" target="_blank" rel="noopener">Oseias</a>
+                        <a href="https://www.bible.com/bible/211/jol.1" target="_blank" rel="noopener">Joel</a>
+                        <a href="https://www.bible.com/bible/211/amo.1" target="_blank" rel="noopener">Amós</a>
+                        <a href="https://www.bible.com/bible/211/oba.1" target="_blank" rel="noopener">Obadias</a>
+                        <a href="https://www.bible.com/bible/211/jon.1" target="_blank" rel="noopener">Jonas</a>
+                        <a href="https://www.bible.com/bible/211/mic.1" target="_blank" rel="noopener">Miqueias</a>
+                        <a href="https://www.bible.com/bible/211/nam.1" target="_blank" rel="noopener">Naum</a>
+                        <a href="https://www.bible.com/bible/211/hab.1" target="_blank" rel="noopener">Habacuque</a>
+                        <a href="https://www.bible.com/bible/211/zep.1" target="_blank" rel="noopener">Sofonias</a>
+                        <a href="https://www.bible.com/bible/211/hag.1" target="_blank" rel="noopener">Ageu</a>
+                        <a href="https://www.bible.com/bible/211/zec.1" target="_blank" rel="noopener">Zacarias</a>
+                        <a href="https://www.bible.com/bible/211/mal.1" target="_blank" rel="noopener">Malaquias</a>
+                    </div>
+                </div>
+                <div class="livros-col">
+                    <h3>Novo Testamento</h3>
+                    <div class="livros-grid" id="livros-nt">
+                        <a href="https://www.bible.com/bible/211/mat.1" target="_blank" rel="noopener">Mateus</a>
+                        <a href="https://www.bible.com/bible/211/mrk.1" target="_blank" rel="noopener">Marcos</a>
+                        <a href="https://www.bible.com/bible/211/luk.1" target="_blank" rel="noopener">Lucas</a>
+                        <a href="https://www.bible.com/bible/211/jhn.1" target="_blank" rel="noopener">João</a>
+                        <a href="https://www.bible.com/bible/211/act.1" target="_blank" rel="noopener">Atos</a>
+                        <a href="https://www.bible.com/bible/211/rom.1" target="_blank" rel="noopener">Romanos</a>
+                        <a href="https://www.bible.com/bible/211/1co.1" target="_blank" rel="noopener">1 Coríntios</a>
+                        <a href="https://www.bible.com/bible/211/2co.1" target="_blank" rel="noopener">2 Coríntios</a>
+                        <a href="https://www.bible.com/bible/211/gal.1" target="_blank" rel="noopener">Gálatas</a>
+                        <a href="https://www.bible.com/bible/211/eph.1" target="_blank" rel="noopener">Efésios</a>
+                        <a href="https://www.bible.com/bible/211/php.1" target="_blank" rel="noopener">Filipenses</a>
+                        <a href="https://www.bible.com/bible/211/col.1" target="_blank" rel="noopener">Colossenses</a>
+                        <a href="https://www.bible.com/bible/211/1th.1" target="_blank" rel="noopener">1 Tessalonicenses</a>
+                        <a href="https://www.bible.com/bible/211/2th.1" target="_blank" rel="noopener">2 Tessalonicenses</a>
+                        <a href="https://www.bible.com/bible/211/1ti.1" target="_blank" rel="noopener">1 Timóteo</a>
+                        <a href="https://www.bible.com/bible/211/2ti.1" target="_blank" rel="noopener">2 Timóteo</a>
+                        <a href="https://www.bible.com/bible/211/tit.1" target="_blank" rel="noopener">Tito</a>
+                        <a href="https://www.bible.com/bible/211/phm.1" target="_blank" rel="noopener">Filemom</a>
+                        <a href="https://www.bible.com/bible/211/heb.1" target="_blank" rel="noopener">Hebreus</a>
+                        <a href="https://www.bible.com/bible/211/jas.1" target="_blank" rel="noopener">Tiago</a>
+                        <a href="https://www.bible.com/bible/211/1pe.1" target="_blank" rel="noopener">1 Pedro</a>
+                        <a href="https://www.bible.com/bible/211/2pe.1" target="_blank" rel="noopener">2 Pedro</a>
+                        <a href="https://www.bible.com/bible/211/1jn.1" target="_blank" rel="noopener">1 João</a>
+                        <a href="https://www.bible.com/bible/211/2jn.1" target="_blank" rel="noopener">2 João</a>
+                        <a href="https://www.bible.com/bible/211/3jn.1" target="_blank" rel="noopener">3 João</a>
+                        <a href="https://www.bible.com/bible/211/jud.1" target="_blank" rel="noopener">Judas</a>
+                        <a href="https://www.bible.com/bible/211/rev.1" target="_blank" rel="noopener">Apocalipse</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -258,6 +373,8 @@
             const API_URL = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '<%= typeof API_URL !== "undefined" ? API_URL : "" %>';
             const translation = '<%= translation || "nvi" %>';
             const slug = '<%= slug %>';
+
+            let palavraLoaded = false, salmoLoaded = false, devocionalLoaded = false;
 
             function formatDate(str) {
                 if (!str) return '';
@@ -286,16 +403,14 @@
                 dateLabel.textContent = formatDate(verse.date);
 
                 content.innerHTML = `
-                    <div class="bible-card">
-                        <div class="bible-ref">${verse.ref || ''}</div>
-                        <div class="bible-text">"${verse.texto || ''}"</div>
-                        ${verse.reflexao ? `
-                        <div class="bible-reflexao">
-                            <strong>Reflexão</strong>
-                            ${verse.reflexao}
-                        </div>
-                        ` : ''}
+                    <div class="bible-ref">${verse.ref || ''}</div>
+                    <div class="bible-text">"${verse.texto || ''}"</div>
+                    ${verse.reflexao ? `
+                    <div class="bible-reflexao">
+                        <strong>Reflexão</strong>
+                        ${verse.reflexao}
                     </div>
+                    ` : ''}
                 `;
                 actions.style.display = 'flex';
             }
@@ -320,10 +435,10 @@
                 }
             });
 
-            function showError(msg) {
-                const content = document.getElementById('bible-content');
-                document.getElementById('bible-loading').style.display = 'none';
-                content.innerHTML = `<div class="bible-error"><i class="fas fa-exclamation-circle"></i><p>${msg}</p></div>`;
+            function showError(msg, containerId) {
+                const container = document.getElementById(containerId || 'bible-content');
+                if (!container) return;
+                container.innerHTML = `<div class="bible-error"><i class="fas fa-exclamation-circle"></i><p>${msg}</p></div>`;
             }
 
             document.getElementById('btn-prev-days').addEventListener('click', function() {
@@ -334,32 +449,93 @@
                     d.setDate(d.getDate() - i);
                     dates.push(d.toISOString().slice(0, 10));
                 }
-                let html = '<div class="bible-card"><strong style="margin-bottom:12px;display:block;">Escolha uma data:</strong>';
+                let html = '<strong style="margin-bottom:12px;display:block;">Escolha uma data:</strong>';
                 dates.forEach(d => {
                     const label = formatDate(d);
                     html += `<button type="button" class="bible-btn secondary" style="margin-bottom:8px;width:100%;" data-date="${d}">${label}</button>`;
                 });
-                html += '</div>';
                 document.getElementById('bible-content').innerHTML = html;
+                document.getElementById('bible-loading').style.display = 'none';
+                document.getElementById('bible-actions').style.display = 'none';
                 document.getElementById('bible-content').querySelectorAll('[data-date]').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         document.getElementById('bible-content').innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>';
+                        document.getElementById('bible-actions').style.display = 'none';
                         try {
                             const verse = await loadVerse(btn.dataset.date);
                             renderVerse(verse);
                         } catch (e) {
-                            showError(e.message || 'Erro ao carregar versículo.');
+                            showError(e.message || 'Erro ao carregar versículo.', 'bible-content');
                         }
                     });
                 });
             });
 
+            document.querySelectorAll('.receba-item').forEach(function(item) {
+                item.addEventListener('click', function() {
+                    const tipo = this.dataset.tipo;
+                    document.querySelectorAll('.receba-item').forEach(function(x) { x.classList.remove('active'); });
+                    document.querySelectorAll('.receba-content').forEach(function(x) { x.classList.remove('show'); });
+                    this.classList.add('active');
+                    var content = document.getElementById('receba-' + tipo);
+                    if (content) content.classList.add('show');
+                    if (tipo === 'palavra' && !palavraLoaded) loadPalavra();
+                    if (tipo === 'salmo' && !salmoLoaded) loadSalmo();
+                    if (tipo === 'devocional' && !devocionalLoaded) loadDevocional();
+                });
+            });
+
+            async function loadPalavra() {
+                var el = document.getElementById('palavra-container');
+                try {
+                    var res = await fetch(API_URL + '/api/bible/palavra-do-dia');
+                    var json = await res.json().catch(function() { return {}; });
+                    var p = json.data;
+                    if (!p) throw new Error('Palavra não encontrada');
+                    el.innerHTML = '<div class="bible-ref">' + p.palavra + '</div><div class="bible-text" style="color:#e8e8e8">' + (p.significado || '') + '</div>' + (p.ref ? '<div class="bible-reflexao" style="margin-top:12px"><strong>Referência</strong> ' + p.ref + '</div>' : '');
+                    palavraLoaded = true;
+                } catch (e) {
+                    el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
+                }
+            }
+
+            async function loadSalmo() {
+                var el = document.getElementById('salmo-container');
+                try {
+                    var res = await fetch(API_URL + '/api/bible/salmo-do-dia');
+                    var json = await res.json().catch(function() { return {}; });
+                    var s = json.data;
+                    if (!s) throw new Error('Salmo não encontrado');
+                    el.innerHTML = '<div class="bible-ref">' + (s.ref || 'Salmos ' + (s.capitulo || '') + ':' + (s.versiculo || '')) + '</div><div class="bible-text" style="color:#e8e8e8">"' + (s.texto || '') + '"</div>' + (s.reflexao ? '<div class="bible-reflexao"><strong>Reflexão</strong> ' + s.reflexao + '</div>' : '');
+                    salmoLoaded = true;
+                } catch (e) {
+                    el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
+                }
+            }
+
+            async function loadDevocional() {
+                var el = document.getElementById('devocional-container');
+                try {
+                    var res = await fetch(API_URL + '/api/bible/devocional-do-dia');
+                    var json = await res.json().catch(function() { return {}; });
+                    var d = json.data;
+                    if (!d) throw new Error('Devocional não encontrado');
+                    var html = '<div class="bible-ref">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:0.9rem;margin-bottom:12px">' + (d.versiculo || '') + '</div><div class="bible-text" style="color:#e8e8e8;line-height:1.7">' + (d.texto || '').replace(/\n/g, '<br>') + '</div>';
+                    if (d.oracao) html += '<div class="bible-reflexao" style="margin-top:16px"><strong>Oração</strong><br>' + (d.oracao || '').replace(/\n/g, '<br>') + '</div>';
+                    el.innerHTML = html;
+                    devocionalLoaded = true;
+                } catch (e) {
+                    el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
+                }
+            }
+
             (async function init() {
                 try {
-                    const verse = await loadVerse('');
+                    var verse = await loadVerse('');
                     renderVerse(verse);
                 } catch (e) {
-                    showError(e.message || 'Erro ao carregar versículo do dia.');
+                    document.getElementById('bible-loading').style.display = 'none';
+                    showError(e.message || 'Erro ao carregar versículo do dia.', 'bible-content');
                 }
             })();
         })();
