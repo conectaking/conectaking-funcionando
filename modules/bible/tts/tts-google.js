@@ -12,6 +12,49 @@ const axios = require('axios');
 /** Timeout para chamadas ao Google. Sem agente customizado por padrão; em EPROTO usamos agent com keepAlive:false. */
 const axiosConfig = { timeout: 30000 };
 
+/** No Render, axios pode falhar com EPROTO; usar módulo nativo https primeiro (sem agent custom). */
+const USE_NATIVE_HTTPS_ON_RENDER = process.env.RENDER === 'true';
+
+/** POST JSON ou form com https nativo (sem axios). Útil quando o handshake TLS falha com axios. */
+function httpsPost(hostname, path, body, headers, isJson = true) {
+  const bodyBuf = Buffer.from(typeof body === 'string' ? body : JSON.stringify(body), 'utf8');
+  const h = {
+    'Content-Length': bodyBuf.length,
+    ...headers
+  };
+  if (isJson) h['Content-Type'] = 'application/json';
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname,
+      port: 443,
+      path,
+      method: 'POST',
+      headers: h,
+      timeout: 30000
+      // sem agent: usa padrão do Node (pode negociar TLS diferente do axios)
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const raw = Buffer.concat(chunks).toString('utf8');
+        if (res.statusCode >= 400) {
+          reject(new Error(`HTTP ${res.statusCode} ${raw}`));
+          return;
+        }
+        try {
+          resolve(isJson ? JSON.parse(raw) : raw);
+        } catch (e) {
+          reject(new Error('Invalid JSON: ' + raw.substring(0, 200)));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    req.write(bodyBuf);
+    req.end();
+  });
+}
+
 function isSslHandshakeError(err) {
   return err && (err.code === 'EPROTO' || /handshake|ssl3_read_bytes|SSL alert/i.test(String(err.message || '')));
 }
@@ -60,6 +103,21 @@ function createSignedJwt(credentials) {
   const sign = crypto.createSign('RSA-SHA256').update(signatureInput).end();
   const signature = sign.sign(key, 'base64url');
   return signatureInput + '.' + signature;
+}
+
+/** Obtém token usando apenas https nativo (sem axios). Para contornar EPROTO no Render. */
+async function getAccessTokenNative(credentials) {
+  const jwt = createSignedJwt(credentials);
+  const body = new URLSearchParams({
+    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+    assertion: jwt
+  }).toString();
+  const raw = await httpsPost('oauth2.googleapis.com', '/token', body, {
+    'Content-Type': 'application/x-www-form-urlencoded'
+  }, false);
+  const parsed = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch (e) { return null; } })() : raw;
+  if (!parsed || !parsed.access_token) throw new Error('OAuth2 token failed: no access_token');
+  return parsed.access_token;
 }
 
 /** Obtém access token (JWT bearer). Em EPROTO, tenta de novo com conexão nova (keepAlive:false). */
@@ -112,6 +170,20 @@ function isVoiceUnavailableError(err) {
   const s = String(msg).toLowerCase();
   return (status === 400 || status === 404 || status === 403) && /voice|invalid|not found|not available|unsupported|not enabled/i.test(s)
     || /INVALID_ARGUMENT|voice.*invalid|invalid.*voice/i.test(s);
+}
+
+/** Sintetiza via REST usando apenas https nativo (sem axios). Para contornar EPROTO no Render. */
+async function synthesizeViaRestNative(credentials, request) {
+  const token = await getAccessTokenNative(credentials);
+  const data = await httpsPost(
+    'texttospeech.googleapis.com',
+    '/v1/text:synthesize',
+    request,
+    { 'Authorization': 'Bearer ' + token },
+    true
+  );
+  if (data && data.audioContent) return Buffer.from(data.audioContent, 'base64');
+  return null;
 }
 
 /** Sintetiza áudio via API REST. Em EPROTO, retry com conexão nova (keepAlive:false). */
@@ -181,6 +253,24 @@ async function generateTts(opts) {
   };
 
   if (USE_REST) {
+    if (USE_NATIVE_HTTPS_ON_RENDER) {
+      try {
+        const buf = await synthesizeViaRestNative(credentials, request);
+        if (buf && buf.length) return buf;
+      } catch (nativeErr) {
+        logger.warn('tts-google: REST com https nativo falhou, tentando axios:', nativeErr?.message || nativeErr);
+        try {
+          return await synthesizeViaRest(credentials, request);
+        } catch (axiosErr) {
+          if (isVoiceUnavailableError(axiosErr) && voiceName !== 'pt-BR-Standard-A') {
+            logger.warn('tts-google: voz %s indisponível no projeto GCP, tentando pt-BR-Standard-A', voiceName);
+            return await generateTts({ ...opts, voiceName: 'pt-BR-Standard-A' });
+          }
+          logger.error('tts-google synthesizeSpeech (REST axios fallback):', axiosErr?.message || axiosErr);
+          throw axiosErr;
+        }
+      }
+    }
     try {
       return await synthesizeViaRest(credentials, request);
     } catch (err) {
