@@ -2399,8 +2399,9 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
   const client = await db.pool.connect();
   try {
     const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
     const gRes = await client.query(
-      `SELECT id${hasAccessMode ? ', access_mode' : ''} FROM king_galleries WHERE slug=$1`,
+      `SELECT id${hasAccessMode ? ', access_mode' : ''}${hasAllowDownload ? ', allow_download' : ''} FROM king_galleries WHERE slug=$1`,
       [slug]
     );
     if (gRes.rows.length === 0) return res.status(404).send('Não encontrado');
@@ -2408,11 +2409,13 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
     if (accessMode === 'password') accessMode = 'signup';
     if (accessMode !== 'public') return res.status(403).send('Galeria não é pública');
     const galleryId = gRes.rows[0].id;
+    const allowDownload = hasAllowDownload && !!gRes.rows[0].allow_download;
+    const isDownload = String(req.query.download || '') === '1';
 
     const pRes = await client.query('SELECT * FROM king_photos WHERE id=$1 AND gallery_id=$2', [photoId, galleryId]);
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
-    const useThumb = ['1', 'true', 'thumb', 's'].includes(String(req.query.thumb || req.query.size || '').toLowerCase());
+    const useThumb = !isDownload && ['1', 'true', 'thumb', 's'].includes(String(req.query.thumb || req.query.size || '').toLowerCase());
     const [buf, wm] = await Promise.all([
       fetchPhotoFileBufferFromFilePath(photo.file_path),
       loadWatermarkForGallery(client, galleryId)
@@ -2435,6 +2438,10 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
     res.set('Content-Type', 'image/jpeg');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
+    if (isDownload && allowDownload) {
+      const fn = (photo.original_name || `foto-${photoId}.jpg`).toString().replace(/[\/\\:*?"<>|]+/g, '-');
+      res.set('Content-Disposition', `attachment; filename="${fn.endsWith('.jpg') || fn.endsWith('.jpeg') ? fn : fn + '.jpg'}"`);
+    }
     res.send(out);
   } finally {
     client.release();
