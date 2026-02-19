@@ -2302,14 +2302,19 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
     const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
     const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
     const hasEnabled = await hasColumn(client, 'king_galleries', 'client_enabled');
+    const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasSelf ? ', allow_self_signup' : ''}${hasEnabled ? ', client_enabled' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasSelf ? ', allow_self_signup' : ''}${hasEnabled ? ', client_enabled' : ''}${hasAccessMode ? ', access_mode' : ''}
        FROM king_galleries
        WHERE slug=$1`,
       [slug]
     );
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const g = gRes.rows[0];
+
+    let accessMode = hasAccessMode ? (g.access_mode || 'private') : 'private';
+    if (accessMode === 'password') accessMode = 'signup';
+    const allowSelfSignup = hasSelf ? !!g.allow_self_signup : (accessMode === 'signup');
 
     const pRes = await client.query('SELECT id FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [g.id]);
     const coverPhotoId = pRes.rows.length ? pRes.rows[0].id : null;
@@ -2326,12 +2331,111 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
         status: g.status,
         total_fotos_contratadas: g.total_fotos_contratadas || 0,
         min_selections: hasMin ? (g.min_selections || 0) : 0,
-        allow_self_signup: hasSelf ? !!g.allow_self_signup : false,
+        allow_self_signup: allowSelfSignup,
         client_enabled: hasEnabled ? !!g.client_enabled : true,
+        access_mode: accessMode,
         total_photos: totalPhotos,
         cover_photo_id: coverPhotoId
       }
     });
+  } finally {
+    client.release();
+  }
+}));
+
+// Conteúdo da galeria para modo PÚBLICO (sem login)
+router.get('/public/gallery-content', asyncHandler(async (req, res) => {
+  const slug = (req.query.slug || '').toString().trim();
+  if (!slug) return res.status(400).json({ message: 'slug é obrigatório.' });
+
+  const client = await db.pool.connect();
+  try {
+    const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
+    const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
+    const gRes = await client.query(
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasAccessMode ? ', access_mode' : ''}${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}
+       FROM king_galleries WHERE slug=$1`,
+      [slug]
+    );
+    if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const g = gRes.rows[0];
+    let accessMode = hasAccessMode ? (g.access_mode || 'private') : 'private';
+    if (accessMode === 'password') accessMode = 'signup';
+    if (accessMode !== 'public') return res.status(403).json({ message: 'Esta galeria não é pública.' });
+
+    const gallery = { ...g, min_selections: hasMin ? (g.min_selections || 0) : 0, allow_download: hasAllowDownload ? !!g.allow_download : false };
+
+    const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
+    const pRes = await client.query(
+      `SELECT id, original_name, "order"${hasFilePath ? ', file_path' : ''} FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC`,
+      [gallery.id]
+    );
+    const photos = (pRes.rows || []).map(p => {
+      const out = { id: p.id, original_name: p.original_name, order: p.order };
+      if (hasFilePath && p.file_path && String(p.file_path).toLowerCase().startsWith('r2:')) {
+        const objectKey = String(p.file_path).slice(3).trim().replace(/^\/+/, '');
+        if (objectKey) out.url = r2PublicUrl(objectKey) || undefined;
+      }
+      return out;
+    });
+    res.json({
+      success: true,
+      gallery: { ...gallery, photos, locked: true, allow_download: !!gallery.allow_download },
+      selectedPhotoIds: []
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+// Preview de foto para galeria PÚBLICA (sem token)
+router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
+  const slug = (req.query.slug || '').toString().trim();
+  if (!slug) return res.status(400).send('slug é obrigatório');
+  const photoId = parseInt(req.params.photoId, 10);
+  if (!photoId) return res.status(400).send('photoId inválido');
+
+  const client = await db.pool.connect();
+  try {
+    const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const gRes = await client.query(
+      `SELECT id${hasAccessMode ? ', access_mode' : ''} FROM king_galleries WHERE slug=$1`,
+      [slug]
+    );
+    if (gRes.rows.length === 0) return res.status(404).send('Não encontrado');
+    let accessMode = hasAccessMode ? (gRes.rows[0].access_mode || 'private') : 'private';
+    if (accessMode === 'password') accessMode = 'signup';
+    if (accessMode !== 'public') return res.status(403).send('Galeria não é pública');
+    const galleryId = gRes.rows[0].id;
+
+    const pRes = await client.query('SELECT * FROM king_photos WHERE id=$1 AND gallery_id=$2', [photoId, galleryId]);
+    if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
+    const photo = pRes.rows[0];
+    const useThumb = ['1', 'true', 'thumb', 's'].includes(String(req.query.thumb || req.query.size || '').toLowerCase());
+    const [buf, wm] = await Promise.all([
+      fetchPhotoFileBufferFromFilePath(photo.file_path),
+      loadWatermarkForGallery(client, galleryId)
+    ]);
+    if (!buf) return res.status(500).send('Não foi possível carregar a imagem.');
+    const img = sharp(buf).rotate();
+    const meta = await img.metadata();
+    const { width, height } = getDisplayDimensions(meta, 1200, 1200);
+    const max = useThumb ? 400 : 1200;
+    const scale = Math.min(max / Math.max(width, height), 1);
+    const outW = Math.max(1, Math.round(width * scale));
+    const outH = Math.max(1, Math.round(height * scale));
+    const out = await buildWatermarkedJpeg({
+      imgBuffer: buf,
+      outW,
+      outH,
+      watermark: wm,
+      jpegOpts: { quality: useThumb ? 76 : 80, progressive: true }
+    });
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
+    res.send(out);
   } finally {
     client.release();
   }
