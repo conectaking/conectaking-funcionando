@@ -1,4 +1,4 @@
-const { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+const { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const fetch = require('node-fetch');
 
@@ -77,6 +77,47 @@ async function r2GetObjectBuffer(key) {
   const out = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
   if (!out || !out.Body) return null;
   return await streamToBuffer(out.Body);
+}
+
+/** Retorna metadados do objeto (ETag, ContentLength). Para cache e idempotência no Rekognition. */
+async function r2HeadObject(key) {
+  const cfg = getR2Config();
+  const client = getR2Client();
+  if (!cfg.enabled || !client) return null;
+  try {
+    const out = await client.send(new HeadObjectCommand({ Bucket: cfg.bucket, Key: key }));
+    return {
+      etag: out.ETag ? out.ETag.replace(/"/g, '') : null,
+      contentLength: out.ContentLength,
+      contentType: out.ContentType
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+/** Lista objetos com prefixo; paginação via ContinuationToken. */
+async function r2ListObjectsV2(prefix, options = {}) {
+  const cfg = getR2Config();
+  const client = getR2Client();
+  if (!cfg.enabled || !client) return { Contents: [], IsTruncated: false, NextContinuationToken: null };
+  const maxKeys = options.maxKeys || 1000;
+  const continuationToken = options.continuationToken || undefined;
+  try {
+    const out = await client.send(new ListObjectsV2Command({
+      Bucket: cfg.bucket,
+      Prefix: prefix,
+      MaxKeys: maxKeys,
+      ContinuationToken: continuationToken
+    }));
+    return {
+      Contents: out.Contents || [],
+      IsTruncated: !!out.IsTruncated,
+      NextContinuationToken: out.NextContinuationToken || null
+    };
+  } catch (_) {
+    return { Contents: [], IsTruncated: false, NextContinuationToken: null };
+  }
 }
 
 /**
@@ -203,6 +244,8 @@ module.exports = {
   r2PublicUrl,
   r2GetObjectBuffer,
   r2GetObjectViaPublicUrl,
+  r2HeadObject,
+  r2ListObjectsV2,
   r2PresignPut,
   r2PutObjectBuffer,
   r2PutObjectBufferTts,

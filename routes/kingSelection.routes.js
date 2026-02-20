@@ -12,7 +12,10 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { getR2Config, r2PublicUrl, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer } = require('../utils/r2');
+const { getR2Config, r2PublicUrl, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer, r2HeadObject } = require('../utils/r2');
+const { getStagingConfig, buildStagingKey, putStagingObject, deleteStagingObject } = require('../utils/rekognition/s3StagingService');
+const { getRekogConfig, indexFacesFromS3 } = require('../utils/rekognition/rekognitionService');
+const { normalizeImageForRekognition } = require('../utils/rekognition/imageService');
 
 const router = express.Router();
 
@@ -1961,6 +1964,99 @@ router.post('/galleries/:id/clients/:clientId/reset-password', protectUser, asyn
       [senha_hash, senha_enc, galleryId, clientId]
     );
     res.json({ success: true, client_password: String(senha) });
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== Rekognition: cadastro de rosto do cliente (enroll) =====
+router.post('/galleries/:id/clients/:clientId/enroll-face', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const { referenceR2Key } = req.body || {};
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'galleryId e clientId são obrigatórios.' });
+  const r2Key = extractR2Key(referenceR2Key) || String(referenceR2Key || '').trim().replace(/^\/+/, '');
+  if (!r2Key || !r2Key.startsWith('galleries/')) {
+    return res.status(400).json({ message: 'referenceR2Key deve ser uma chave R2 válida (ex: galleries/123/ref.jpg).' });
+  }
+  const stagingCfg = getStagingConfig();
+  const rekogCfg = getRekogConfig();
+  if (!stagingCfg.enabled || !rekogCfg.enabled) {
+    return res.status(503).json({ message: 'Reconhecimento facial não configurado (S3 staging ou Rekognition).' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão.' });
+    if (!(await hasTable(client, 'king_gallery_clients'))) {
+      return res.status(500).json({ message: 'Tabela de clientes não disponível.' });
+    }
+    const clientRow = await client.query(
+      'SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2 AND enabled=TRUE',
+      [galleryId, clientId]
+    );
+    if (clientRow.rows.length === 0) return res.status(404).json({ message: 'Cliente não encontrado ou desativado.' });
+
+    let buffer = await r2GetObjectViaPublicUrl(r2Key);
+    if (!buffer) buffer = await r2GetObjectBuffer(r2Key);
+    if (!buffer || buffer.length === 0) {
+      return res.status(400).json({ message: 'Não foi possível obter a imagem do R2. Verifique a chave.' });
+    }
+    buffer = await normalizeImageForRekognition(buffer);
+
+    const stagingKey = buildStagingKey(String(galleryId), r2Key, 'enroll');
+    await putStagingObject(stagingKey, buffer, 'image/jpeg');
+    const externalImageId = `g${galleryId}_c${clientId}`;
+
+    let indexResult;
+    try {
+      indexResult = await indexFacesFromS3(stagingCfg.bucket, stagingKey, externalImageId);
+    } finally {
+      await deleteStagingObject(stagingKey);
+    }
+
+    const faceRecords = indexResult.FaceRecords || [];
+    if (faceRecords.length === 0) {
+      return res.status(400).json({
+        message: 'Nenhum rosto detectado na imagem. Use uma foto com o rosto visível.',
+        UnindexedFaces: indexResult.UnindexedFaces || []
+      });
+    }
+
+    if (!(await hasTable(client, 'rekognition_client_faces'))) {
+      return res.json({
+        success: true,
+        message: 'Rosto indexado no Rekognition. Tabela rekognition_client_faces não existe (rode a migration 181).',
+        faceCount: faceRecords.length,
+        faceIds: faceRecords.map(r => r.Face?.FaceId).filter(Boolean)
+      });
+    }
+
+    for (const rec of faceRecords) {
+      const faceId = rec.Face?.FaceId;
+      const imageId = rec.Face?.ImageId;
+      if (!faceId) continue;
+      await client.query(
+        `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (gallery_id, client_id, face_id) DO UPDATE SET image_id=EXCLUDED.image_id, reference_r2_key=EXCLUDED.reference_r2_key`,
+        [galleryId, clientId, faceId, imageId || null, r2Key]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Rosto(s) cadastrado(s) com sucesso.',
+      faceCount: faceRecords.length,
+      faceIds: faceRecords.map(r => r.Face?.FaceId).filter(Boolean)
+    });
   } finally {
     client.release();
   }
