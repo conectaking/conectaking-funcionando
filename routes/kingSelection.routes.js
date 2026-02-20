@@ -4755,3 +4755,43 @@ facialRouter.delete('/clients/:clientId/faces', protectUser, asyncHandler(async 
 
 // Montar sub-router de facial no router principal
 router.use('/facial', facialRouter);
+
+// GET /facial/diagnose  — diagnóstico do ambiente (migration, envvars, banco)
+facialRouter.get('/diagnose', protectUser, asyncHandler(async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    // Verificar coluna face_recognition_enabled
+    const colExists = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
+
+    // Verificar tabelas de Rekognition
+    const tables = ['rekognition_client_faces', 'rekognition_photo_jobs', 'rekognition_photo_faces', 'rekognition_face_matches'];
+    const tableStatus = {};
+    for (const t of tables) tableStatus[t] = await hasTable(client, t);
+
+    // Verificar envvars (sem expor valores sensíveis)
+    const env = {
+      AWS_ACCESS_KEY_ID: !!process.env.AWS_ACCESS_KEY_ID,
+      AWS_SECRET_ACCESS_KEY: !!process.env.AWS_SECRET_ACCESS_KEY,
+      AWS_REGION: process.env.AWS_REGION || '(não definido)',
+      S3_STAGING_BUCKET: process.env.S3_STAGING_BUCKET || '(não definido)',
+      REKOGNITION_COLLECTION_ID: process.env.REKOGNITION_COLLECTION_ID || '(não definido)',
+    };
+
+    // Verificar valor atual da galleryId se fornecida
+    const galleryId = parseInt(req.query.galleryId || 0, 10);
+    let galleryFaceEnabled = null;
+    if (galleryId && colExists) {
+      const r = await client.query('SELECT face_recognition_enabled FROM king_galleries WHERE id=$1', [galleryId]);
+      galleryFaceEnabled = r.rows[0]?.face_recognition_enabled ?? null;
+    }
+
+    return res.json({
+      success: true,
+      migration182: colExists ? '✅ Coluna face_recognition_enabled EXISTS' : '❌ Coluna face_recognition_enabled NÃO EXISTE — migration 182 não rodou',
+      tables: tableStatus,
+      env,
+      galleryId: galleryId || null,
+      galleryFaceEnabled: galleryFaceEnabled !== null ? galleryFaceEnabled : '(não verificado)'
+    });
+  } finally { client.release(); }
+}));
