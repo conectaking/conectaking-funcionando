@@ -3227,6 +3227,112 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
   }
 }));
 
+// ===== Rekognition CLIENTE: Buscar fotos do meu rosto =====
+router.get('/client/face-results', requireClient, asyncHandler(async (req, res) => {
+  const galleryId = req.ksClient.galleryId;
+  const clientId = req.ksClient.clientId; // pode ser null se for o cliente principal da galeria (legado)
+  
+  if (!clientId) {
+    // Para o cliente legado (email único da galeria), ele não tem face_id associado facilmente
+    // no modelo atual, o reconhecimento é focado nos clientes da lista.
+    return res.status(400).json({ message: 'Seu perfil de acesso não suporta reconhecimento facial. Solicite um acesso individual ao fotógrafo.' });
+  }
+
+  const page = Math.max(1, parseInt(req.query.page || '1', 10));
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '50', 10)));
+  const offset = (page - 1) * limit;
+
+  const client = await db.pool.connect();
+  try {
+    const countRes = await client.query(
+      `SELECT COUNT(DISTINCT kp.id)::int AS cnt
+       FROM king_photos kp
+       JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+       JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2`,
+      [galleryId, clientId]
+    );
+    const total = countRes.rows[0]?.cnt || 0;
+
+    const dataRes = await client.query(
+      `SELECT kp.id AS photo_id
+       FROM king_photos kp
+       JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+       JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2
+       GROUP BY kp.id
+       ORDER BY MAX(rfm.similarity) DESC, kp.id
+       LIMIT $3 OFFSET $4`,
+      [galleryId, clientId, limit, offset]
+    );
+
+    res.json({
+      success: true,
+      total,
+      photoIds: dataRes.rows.map(r => r.photo_id)
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== Rekognition CLIENTE: Upload de foto para cadastro de rosto =====
+router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'), asyncHandler(async (req, res) => {
+  const galleryId = req.ksClient.galleryId;
+  const clientId = req.ksClient.clientId;
+  if (!clientId) return res.status(403).json({ message: 'Apenas acessos individuais podem cadastrar rosto.' });
+  
+  if (!req.file) return res.status(400).json({ message: 'Nenhuma imagem enviada.' });
+
+  const stagingCfg = getStagingConfig();
+  const rekogCfg = getRekogConfig();
+  if (!stagingCfg.enabled || !rekogCfg.enabled) {
+    return res.status(503).json({ message: 'Reconhecimento facial não configurado no servidor.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    let buffer = await normalizeImageForRekognition(req.file.buffer);
+    const stagingKey = `staging/enroll/g${galleryId}/c${clientId}_${Date.now()}.jpg`;
+    
+    await putStagingObject(stagingKey, buffer, 'image/jpeg');
+    const externalImageId = `g${galleryId}_c${clientId}`;
+
+    let indexResult;
+    try {
+      indexResult = await indexFacesFromS3(stagingCfg.bucket, stagingKey, externalImageId);
+    } finally {
+      await deleteStagingObject(stagingKey);
+    }
+
+    const faceRecords = indexResult.FaceRecords || [];
+    if (faceRecords.length === 0) {
+      return res.status(400).json({ message: 'Nenhum rosto detectado na foto. Tente uma selfie mais nítida.' });
+    }
+
+    // Limpar rostos antigos deste cliente nesta galeria (opcional, mas recomendado para manter 1 rosto atual)
+    await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
+
+    for (const rec of faceRecords) {
+      const faceId = rec.Face?.FaceId;
+      if (!faceId) continue;
+      await client.query(
+        `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [galleryId, clientId, faceId, rec.Face?.ImageId || null, 'upload-manual']
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Rosto cadastrado com sucesso! Suas fotos serão identificadas em breve.',
+      faceCount: faceRecords.length
+    });
+  } finally {
+    client.release();
+  }
+}));
+
 router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
   const { slug, photo_id } = req.body || {};
   if (!slug || !photo_id) return res.status(400).json({ message: 'slug e photo_id são obrigatórios.' });
