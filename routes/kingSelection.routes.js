@@ -2062,6 +2062,32 @@ router.post('/galleries/:id/clients/:clientId/enroll-face', protectUser, asyncHa
   }
 }));
 
+// GET /api/king-selection/galleries/:id/enrolled-faces
+router.get('/galleries/:id/enrolled-faces', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido.' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão.' });
+
+    const efRes = await client.query(
+      `SELECT DISTINCT client_id FROM rekognition_client_faces WHERE gallery_id=$1`,
+      [galleryId]
+    );
+    res.json({ success: true, clientIds: efRes.rows.map(r => r.client_id) });
+  } finally {
+    client.release();
+  }
+}));
+
 router.get('/galleries/:id/clients/:clientId/password', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   const clientId = parseInt(req.params.clientId, 10);
