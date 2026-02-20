@@ -4584,42 +4584,148 @@ facialRouter.get('/matches', protectUser, asyncHandler(async (req, res) => {
   } finally { client.release(); }
 }));
 
-// POST /facial/process?galleryId=  — enfileira todas as fotos não processadas
+// POST /facial/process?galleryId=  — dispara processamento real em background
 facialRouter.post('/process', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.query.galleryId || req.body?.galleryId || 0, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId é obrigatório.' });
+
+  // Verificar se Rekognition está configurado
+  let stagingCfg, rekogCfg;
+  try {
+    const { getRekogConfig } = require('../utils/rekognition/rekognitionService');
+    stagingCfg = getStagingConfig();
+    rekogCfg = getRekogConfig();
+    if (!stagingCfg.enabled || !rekogCfg.enabled) {
+      return res.status(503).json({ message: 'Reconhecimento facial não configurado. Verifique as variáveis de ambiente AWS e S3 staging.' });
+    }
+  } catch (e) {
+    return res.status(503).json({ message: 'Serviço de reconhecimento facial indisponível: ' + e.message });
+  }
+
+  const client = await db.pool.connect();
+  let photos = [];
+  try {
+    const gallery = await _checkGalleryOwner(client, galleryId, req.user.userId);
+    if (!gallery) return res.status(403).json({ message: 'Sem permissão.' });
+
+    if (!(await hasTable(client, 'rekognition_photo_jobs'))) {
+      return res.status(503).json({ message: 'Tabelas de reconhecimento facial não encontradas. Execute as migrations.' });
+    }
+
+    // Buscar fotos ainda não processadas (ou com erro)
+    const pendingRes = await client.query(
+      `SELECT kp.id AS photo_id, kp.file_path
+       FROM king_photos kp
+       WHERE kp.gallery_id = $1
+         AND NOT EXISTS (
+           SELECT 1 FROM rekognition_photo_jobs rpj
+           WHERE rpj.gallery_id = $1 AND rpj.photo_id = kp.id AND rpj.process_status IN ('done', 'processing')
+         )
+       ORDER BY kp.id
+       LIMIT 500`,
+      [galleryId]
+    );
+    photos = pendingRes.rows;
+
+    if (photos.length === 0) {
+      return res.json({ success: true, queued: 0, message: 'Todas as fotos já foram processadas.' });
+    }
+
+    // Marcar todas como 'pending'
+    await client.query(
+      `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status)
+       SELECT $1, kp.id, COALESCE(kp.file_path,''), 'pending'
+       FROM king_photos kp WHERE kp.gallery_id=$1
+         AND NOT EXISTS (SELECT 1 FROM rekognition_photo_jobs WHERE gallery_id=$1 AND photo_id=kp.id AND process_status IN ('done','processing'))
+       ON CONFLICT (gallery_id, photo_id) DO UPDATE SET process_status='pending', error_message=NULL`,
+      [galleryId]
+    );
+  } finally {
+    client.release();
+  }
+
+  // Responder imediatamente e processar em background
+  res.json({ success: true, queued: photos.length, message: `${photos.length} foto(s) enviadas para processamento. Acompanhe o progresso no painel.` });
+
+  // Processar em background (não bloqueia a resposta HTTP)
+  setImmediate(async () => {
+    const BATCH_CONCURRENCY = 3; // processar 3 fotos por vez
+    const queue = photos.slice();
+
+    async function processOne(photo) {
+      const pgClient = await db.pool.connect();
+      try {
+        const r2Key = extractR2Key(photo.file_path) || String(photo.file_path || '').replace(/^r2:/, '').trim();
+        if (!r2Key || !r2Key.startsWith('galleries/')) {
+          await pgClient.query(
+            `UPDATE rekognition_photo_jobs SET process_status='error', processed_at=NOW(), error_message=$1
+             WHERE gallery_id=$2 AND photo_id=$3`,
+            ['file_path não contém chave R2 válida', galleryId, photo.photo_id]
+          );
+          return;
+        }
+        // Marcar como processando
+        await pgClient.query(
+          `UPDATE rekognition_photo_jobs SET process_status='processing' WHERE gallery_id=$1 AND photo_id=$2`,
+          [galleryId, photo.photo_id]
+        );
+        await _processPhotoFaces({ pgClient, galleryId, photoId: photo.photo_id, r2Key, photo: { file_path: photo.file_path } });
+      } catch (err) {
+        try {
+          await pgClient.query(
+            `UPDATE rekognition_photo_jobs SET process_status='error', processed_at=NOW(), error_message=$1
+             WHERE gallery_id=$2 AND photo_id=$3`,
+            [String(err?.message || err).slice(0, 500), galleryId, photo.photo_id]
+          );
+        } catch (_) { }
+      } finally {
+        pgClient.release();
+      }
+    }
+
+    // Pool de concorrência
+    async function runPool() {
+      const workers = Array.from({ length: BATCH_CONCURRENCY }, async () => {
+        while (queue.length > 0) {
+          const item = queue.shift();
+          if (item) await processOne(item);
+        }
+      });
+      await Promise.all(workers);
+    }
+
+    runPool().catch(err => console.error('[facial/process] Erro no background worker:', err?.message));
+  });
+}));
+
+// GET /facial/progress?galleryId=  — progresso do processamento para polling
+facialRouter.get('/progress', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.query.galleryId || 0, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId é obrigatório.' });
   const client = await db.pool.connect();
   try {
     const gallery = await _checkGalleryOwner(client, galleryId, req.user.userId);
     if (!gallery) return res.status(403).json({ message: 'Sem permissão.' });
 
-    // Inserir jobs pending para fotos ainda não processadas
-    if (!(await hasTable(client, 'rekognition_photo_jobs'))) {
-      return res.status(503).json({ message: 'Tabelas de reconhecimento facial não encontradas. Execute as migrations.' });
+    const totalRes = await client.query('SELECT COUNT(*)::int AS n FROM king_photos WHERE gallery_id=$1', [galleryId]);
+    const total = totalRes.rows[0]?.n || 0;
+
+    let done = 0, processing = 0, pending = 0, error = 0;
+    if (await hasTable(client, 'rekognition_photo_jobs')) {
+      const jobsRes = await client.query(
+        `SELECT process_status, COUNT(*)::int AS cnt FROM rekognition_photo_jobs WHERE gallery_id=$1 GROUP BY process_status`,
+        [galleryId]
+      );
+      for (const r of jobsRes.rows) {
+        if (r.process_status === 'done') done = r.cnt;
+        else if (r.process_status === 'processing') processing = r.cnt;
+        else if (r.process_status === 'pending') pending = r.cnt;
+        else if (r.process_status === 'error') error = r.cnt;
+      }
     }
-    const insertRes = await client.query(
-      `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status)
-       SELECT $1, kp.id, COALESCE(kp.file_path, ''), 'pending'
-       FROM king_photos kp
-       WHERE kp.gallery_id = $1
-         AND NOT EXISTS (
-           SELECT 1 FROM rekognition_photo_jobs rpj
-           WHERE rpj.gallery_id = $1 AND rpj.photo_id = kp.id AND rpj.process_status IN ('done','processing','pending')
-         )
-       ON CONFLICT (gallery_id, photo_id) DO UPDATE SET
-         process_status = CASE WHEN rekognition_photo_jobs.process_status = 'error' THEN 'pending' ELSE rekognition_photo_jobs.process_status END`,
-      [galleryId]
-    );
 
-    // Também re-enfileirar erros
-    await client.query(
-      `UPDATE rekognition_photo_jobs SET process_status='pending', error_message=NULL
-       WHERE gallery_id=$1 AND process_status='error'`,
-      [galleryId]
-    );
-
-    const queued = insertRes.rowCount || 0;
-    return res.json({ success: true, queued, message: `${queued} foto(s) enfileiradas para processamento.` });
+    const isRunning = processing > 0 || pending > 0;
+    return res.json({ success: true, total, done, processing, pending, error, isRunning, pct: total > 0 ? Math.round((done / total) * 100) : 0 });
   } finally { client.release(); }
 }));
 
