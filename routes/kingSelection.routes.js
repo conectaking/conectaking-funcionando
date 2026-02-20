@@ -14,8 +14,8 @@ const fs = require('fs');
 const path = require('path');
 const { getR2Config, r2PublicUrl, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer, r2HeadObject } = require('../utils/r2');
 const { getStagingConfig, buildStagingKey, putStagingObject, deleteStagingObject } = require('../utils/rekognition/s3StagingService');
-const { getRekogConfig, indexFacesFromS3 } = require('../utils/rekognition/rekognitionService');
-const { normalizeImageForRekognition } = require('../utils/rekognition/imageService');
+const { getRekogConfig, indexFacesFromS3, detectFacesFromS3, searchFacesByImageBytes } = require('../utils/rekognition/rekognitionService');
+const { normalizeImageForRekognition, cropFace } = require('../utils/rekognition/imageService');
 
 const router = express.Router();
 
@@ -128,7 +128,7 @@ async function notifyWhatsAppSelectionFinalized({
       );
       whatsapp = wRes.rows?.[0]?.whatsapp_number || null;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   // Fallback via env (se quiser forçar)
   whatsapp = whatsapp || process.env.KINGSELECTION_NOTIFY_WHATSAPP_NUMBER || null;
@@ -160,7 +160,7 @@ async function notifyWhatsAppSelectionFinalized({
       countRes = await pgClient.query('SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id=$1', [galleryId]);
     }
     selectedCount = countRes.rows?.[0]?.c || 0;
-  } catch (_) {}
+  } catch (_) { }
 
   const proj = owner.nome_projeto || owner.slug || 'Galeria';
   const when = new Date().toLocaleString('pt-BR');
@@ -198,7 +198,7 @@ async function notifyWhatsAppSelectionFinalized({
           message: text
         })
       });
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // Provider 2: CallMeBot (opcional) - envia WhatsApp de verdade
@@ -210,7 +210,7 @@ async function notifyWhatsAppSelectionFinalized({
         const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(callmebotKey)}`;
         await fetch(url, { method: 'GET' });
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 }
 
@@ -377,7 +377,7 @@ async function fetchDefaultWatermarkAssetBuffer() {
       try {
         const r = await fetch(raw);
         if (r.ok) return r.buffer();
-      } catch (_) {}
+      } catch (_) { }
     }
   }
 
@@ -398,7 +398,7 @@ async function fetchDefaultWatermarkAssetBuffer() {
     try {
       // eslint-disable-next-line no-await-in-loop
       return await fs.promises.readFile(abs);
-    } catch (_) {}
+    } catch (_) { }
   }
   // Fallback: procurar por nome parecido (public_html e raiz)
   try {
@@ -985,7 +985,7 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
         if (hasWmOpacity) ins.rows[0].watermark_opacity = 0.12;
         if (hasWmScale) ins.rows[0].watermark_scale = 1.20;
       }
-    } catch (_) {}
+    } catch (_) { }
 
     res.status(201).json({ success: true, gallery: ins.rows[0], client_password: String(senha) });
   } finally {
@@ -1111,7 +1111,7 @@ router.post('/galleries/:id/photos', protectUser, asyncHandler(async (req, res) 
       res.status(201).json({ success: true, photo: ins.rows[0] });
     } catch (e) {
       // Se o upload já ocorreu no Cloudflare mas o DB falhou, tentar limpar a imagem pra não ficar órfã.
-      try { await deleteCloudflareImage(String(imageId)); } catch (_) {}
+      try { await deleteCloudflareImage(String(imageId)); } catch (_) { }
       return res.status(500).json({
         success: false,
         message: 'Falha ao registrar a foto na galeria (DB). A imagem foi limpa do Cloudflare quando possível.'
@@ -1313,7 +1313,7 @@ async function deleteR2BatchViaWorker(keys) {
     });
     clearTimeout(timeoutId);
     let data = {};
-    try { data = JSON.parse((await res.text()) || '{}'); } catch (_) {}
+    try { data = JSON.parse((await res.text()) || '{}'); } catch (_) { }
     if (!res.ok) throw new Error(data.message || `Worker ${res.status}`);
     return { deleted: data.deleted ?? validKeys.length };
   } catch (e) {
@@ -1344,7 +1344,7 @@ async function deleteR2ObjectViaWorker(key) {
     });
     clearTimeout(timeoutId);
     let data = {};
-    try { data = JSON.parse((await res.text()) || '{}'); } catch (_) {}
+    try { data = JSON.parse((await res.text()) || '{}'); } catch (_) { }
     return res.ok && data.success === true;
   } catch (_) {
     clearTimeout(timeoutId);
@@ -2220,7 +2220,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
             [oldWmPath, galleryId]
           );
           if (!stillUsed.rows.length) r2Wm.deleted = await deleteR2ObjectViaWorker(r2Key);
-        } catch (_) {}
+        } catch (_) { }
       }
 
       if (!r2Key) {
@@ -2752,7 +2752,7 @@ router.post('/galleries/:galleryId/photos/delete-batch', protectUser, asyncHandl
           for (let i = 0; i < safeKeys.length; i += 100) chunks.push(safeKeys.slice(i, i + 100));
           for (const chunk of chunks) await deleteR2BatchViaWorker(chunk);
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     return res.json({ success: true, deleted: toDelete.length });
@@ -2810,7 +2810,7 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
         }
         const stillUsed = stillUsedPhotos.rows.length > 0 || stillUsedWatermark.rows.length > 0;
         if (!stillUsed) r2Deleted = await deleteR2ObjectViaWorker(r2Key);
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Cloudflare Images: apagar (best-effort)
@@ -2835,7 +2835,7 @@ router.delete('/photos/:photoId', protectUser, asyncHandler(async (req, res) => 
         } else {
           cfSkipped = true;
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     res.json({
@@ -3492,7 +3492,7 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
         clientId: cid,
         feedback
       });
-    } catch (_) {}
+    } catch (_) { }
 
     res.json({ success: true });
   } finally {
@@ -3614,7 +3614,7 @@ router.post('/cleanup-r2', protectUser, asyncHandler(async (req, res) => {
         deleted += out.deleted || 0;
       }
     }
-    try { await client.query('SELECT pg_advisory_unlock($1)', [lockKey]); } catch (_) {}
+    try { await client.query('SELECT pg_advisory_unlock($1)', [lockKey]); } catch (_) { }
     res.json({
       success: true,
       total: allKeys.length,
@@ -3624,10 +3624,689 @@ router.post('/cleanup-r2', protectUser, asyncHandler(async (req, res) => {
       dryRun
     });
   } finally {
-    try { await client.query('SELECT pg_advisory_unlock($1)', [lockKey]); } catch (_) {}
+    try { await client.query('SELECT pg_advisory_unlock($1)', [lockKey]); } catch (_) { }
+    client.release();
+  }
+}));
+
+// =============================================================
+// ===== RECONHECIMENTO FACIAL (Rekognition) ===================
+// =============================================================
+
+const CACHE_TTL_SECONDS = parseInt(process.env.REKOG_CACHE_TTL_SECONDS || '86400', 10); // 24h padrão
+
+// Helper: extrai clientId do ExternalImageId = "g<galleryId>_c<clientId>"
+function parseExternalImageId(externalImageId, expectedGalleryId) {
+  try {
+    const s = String(externalImageId || '');
+    const m = s.match(/^g(\d+)_c(\d+)$/);
+    if (!m) return null;
+    const gId = parseInt(m[1], 10);
+    const cId = parseInt(m[2], 10);
+    if (gId !== expectedGalleryId) return null; // não misturar galerias
+    return cId;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Helper interno: processa rostos de UMA foto (reutilizado no process-all)
+async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }) {
+  // 1. Obter ETag do R2
+  let etag = 'noetag';
+  try {
+    const head = await r2HeadObject(r2Key);
+    if (head && head.etag) etag = head.etag;
+  } catch (_) { /* seguir com noetag */ }
+
+  // 2. Montar cacheKey
+  const cfg = getRekogConfig();
+  const cacheKey = `match:${galleryId}:${r2Key}:${etag}:t${cfg.faceMatchThreshold}:m${cfg.maxFacesPerImage}`;
+
+  // 3. Checar cache
+  const cacheRes = await pgClient.query(
+    `SELECT payload_json FROM rekognition_processing_cache WHERE cache_key=$1 AND expires_at > NOW()`,
+    [cacheKey]
+  );
+  if (cacheRes.rows.length > 0) {
+    const payload = JSON.parse(cacheRes.rows[0].payload_json);
+    return { fromCache: true, ...payload };
+  }
+
+  // 4. Baixar imagem do R2
+  let buffer = await r2GetObjectViaPublicUrl(r2Key);
+  if (!buffer) buffer = await r2GetObjectBuffer(r2Key);
+  if (!buffer || buffer.length === 0) {
+    throw Object.assign(new Error('Não foi possível obter a imagem do R2. Verifique se o arquivo existe.'), { statusCode: 400 });
+  }
+
+  // 5. Normalizar imagem
+  buffer = await normalizeImageForRekognition(buffer);
+
+  // 6. Subir para S3 staging
+  const stagingCfg = getStagingConfig();
+  const stagingKey = buildStagingKey(galleryId, r2Key, 'match');
+  await putStagingObject(stagingKey, buffer, 'image/jpeg');
+
+  const resultFaces = [];
+  let processError = null;
+
+  try {
+    // 7. Detectar rostos
+    const detect = await detectFacesFromS3(stagingCfg.bucket, stagingKey);
+    const faces = detect.FaceDetails || [];
+
+    // 8. Limpar dados antigos dessa foto
+    await pgClient.query(
+      `DELETE FROM rekognition_face_matches
+       WHERE photo_face_id IN (SELECT id FROM rekognition_photo_faces WHERE photo_id=$1)`,
+      [photoId]
+    );
+    await pgClient.query(
+      `DELETE FROM rekognition_photo_faces WHERE photo_id=$1`,
+      [photoId]
+    );
+
+    // 9. Para cada rosto: crop + SearchFaces
+    for (let i = 0; i < faces.length; i++) {
+      const face = faces[i];
+      const box = face.BoundingBox;
+      const confidence = face.Confidence || 0;
+
+      // Inserir rosto detectado
+      const pfRes = await pgClient.query(
+        `INSERT INTO rekognition_photo_faces (photo_id, face_index, bounding_box_json, confidence)
+         VALUES ($1, $2, $3, $4) RETURNING id`,
+        [photoId, i, JSON.stringify(box), confidence]
+      );
+      const photoFaceId = pfRes.rows[0].id;
+
+      // Recortar rosto e buscar na collection
+      const matches = [];
+      try {
+        const faceBuffer = await cropFace(buffer, box);
+        const search = await searchFacesByImageBytes(faceBuffer);
+        const faceMatches = search.FaceMatches || [];
+
+        for (const fm of faceMatches) {
+          const extId = fm.Face?.ExternalImageId;
+          const clientId = parseExternalImageId(extId, galleryId);
+          if (!clientId) continue; // ignorar rostos de outras galerias
+
+          const similarity = fm.Similarity || 0;
+          const rekognitionFaceId = fm.Face?.FaceId || null;
+
+          await pgClient.query(
+            `INSERT INTO rekognition_face_matches (photo_face_id, client_id, similarity, rekognition_face_id)
+             VALUES ($1, $2, $3, $4)`,
+            [photoFaceId, clientId, similarity, rekognitionFaceId]
+          );
+
+          matches.push({ clientId, similarity, rekognitionFaceId });
+        }
+      } catch (searchErr) {
+        // SearchFacesByImage pode falhar se rosto for muito pequeno; continuar
+        console.warn(`[rekog] searchFacesByImage falhou para face ${i} da foto ${photoId}:`, searchErr?.message);
+      }
+
+      resultFaces.push({
+        index: i,
+        boundingBox: box,
+        confidence,
+        matches
+      });
+    }
+  } catch (err) {
+    processError = err;
+  } finally {
+    await deleteStagingObject(stagingKey);
+  }
+
+  // 10. Atualizar rekognition_photo_jobs
+  const status = processError ? 'error' : 'done';
+  const errorMsg = processError ? String(processError.message || processError).slice(0, 500) : null;
+  await pgClient.query(
+    `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, r2_etag, process_status, processed_at, error_message)
+     VALUES ($1, $2, $3, $4, $5, NOW(), $6)
+     ON CONFLICT (gallery_id, photo_id) DO UPDATE SET
+       r2_key = EXCLUDED.r2_key,
+       r2_etag = EXCLUDED.r2_etag,
+       process_status = EXCLUDED.process_status,
+       processed_at = EXCLUDED.processed_at,
+       error_message = EXCLUDED.error_message`,
+    [galleryId, photoId, r2Key, etag, status, errorMsg]
+  );
+
+  if (processError) throw processError;
+
+  // 11. Salvar no cache
+  const result = { galleryId, photoId, faces: resultFaces };
+  await pgClient.query(
+    `INSERT INTO rekognition_processing_cache (cache_key, payload_json, expires_at)
+     VALUES ($1, $2, NOW() + ($3 || ' seconds')::interval)
+     ON CONFLICT (cache_key) DO UPDATE SET payload_json = EXCLUDED.payload_json, expires_at = EXCLUDED.expires_at`,
+    [cacheKey, JSON.stringify(result), String(CACHE_TTL_SECONDS)]
+  );
+
+  return { fromCache: false, ...result };
+}
+
+// -----------------------------------------------------------
+// Passo 1: MATCH de uma foto da galeria
+// POST /api/king-selection/galleries/:galleryId/photos/:photoId/process-faces
+// -----------------------------------------------------------
+router.post('/galleries/:galleryId/photos/:photoId/process-faces', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.galleryId, 10);
+  const photoId = parseInt(req.params.photoId, 10);
+  if (!galleryId || galleryId <= 0 || !photoId || photoId <= 0) {
+    return res.status(400).json({ message: 'galleryId e photoId devem ser inteiros positivos.' });
+  }
+
+  const stagingCfg = getStagingConfig();
+  const { getRekogConfig } = require('../utils/rekognition/rekognitionService');
+  const rekogCfg = getRekogConfig();
+  if (!stagingCfg.enabled || !rekogCfg.enabled) {
+    return res.status(503).json({ message: 'Reconhecimento facial não configurado (S3 staging ou Rekognition).' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+
+    // Verificar propriedade da galeria
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão.' });
+
+    // Buscar foto
+    const photoRes = await client.query(
+      'SELECT * FROM king_photos WHERE id=$1 AND gallery_id=$2',
+      [photoId, galleryId]
+    );
+    if (photoRes.rows.length === 0) return res.status(404).json({ message: 'Foto não encontrada.' });
+    const photo = photoRes.rows[0];
+
+    // Extrair R2 key
+    const r2Key = extractR2Key(photo.file_path);
+    if (!r2Key || !r2Key.startsWith('galleries/')) {
+      return res.status(400).json({ message: 'file_path da foto não contém uma chave R2 válida (galleries/...).' });
+    }
+
+    const result = await _processPhotoFaces({ pgClient: client, galleryId, photoId, r2Key, photo });
+
+    return res.json({
+      success: true,
+      fromCache: result.fromCache,
+      galleryId: result.galleryId,
+      photoId: result.photoId,
+      faces: result.faces
+    });
+  } catch (err) {
+    // Tentar registrar erro no job
+    try {
+      await client.query(
+        `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, r2_etag, process_status, processed_at, error_message)
+         VALUES ($1, $2, '', '', 'error', NOW(), $3)
+         ON CONFLICT (gallery_id, photo_id) DO UPDATE SET
+           process_status = 'error', processed_at = NOW(), error_message = EXCLUDED.error_message`,
+        [galleryId, photoId, String(err?.message || err).slice(0, 500)]
+      );
+    } catch (_) { }
+    const statusCode = err?.statusCode || 500;
+    return res.status(statusCode).json({ message: err?.message || 'Erro ao processar reconhecimento facial.' });
+  } finally {
+    client.release();
+  }
+}));
+
+// -----------------------------------------------------------
+// Passo 2.1: Status de processamento da galeria
+// GET /api/king-selection/galleries/:galleryId/face-process-status
+// -----------------------------------------------------------
+router.get('/galleries/:galleryId/face-process-status', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.galleryId, 10);
+  if (!galleryId || galleryId <= 0) return res.status(400).json({ message: 'galleryId inválido.' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão.' });
+
+    // Total de fotos
+    const totalRes = await client.query(
+      'SELECT COUNT(*)::int AS total FROM king_photos WHERE gallery_id=$1',
+      [galleryId]
+    );
+    const totalPhotos = totalRes.rows[0]?.total || 0;
+
+    // Contagem por status nos jobs
+    const jobsRes = await client.query(
+      `SELECT process_status, COUNT(*)::int AS cnt
+       FROM rekognition_photo_jobs
+       WHERE gallery_id=$1
+       GROUP BY process_status`,
+      [galleryId]
+    );
+    const jobs = { pending: 0, processing: 0, done: 0, error: 0 };
+    for (const row of jobsRes.rows) {
+      const s = row.process_status;
+      if (jobs[s] !== undefined) jobs[s] = row.cnt;
+    }
+
+    return res.json({ success: true, galleryId, totalPhotos, jobs });
+  } finally {
+    client.release();
+  }
+}));
+
+// -----------------------------------------------------------
+// Passo 2.2: Resultados por cliente
+// GET /api/king-selection/galleries/:galleryId/face-results?clientId=&page=&limit=
+// -----------------------------------------------------------
+router.get('/galleries/:galleryId/face-results', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.galleryId, 10);
+  if (!galleryId || galleryId <= 0) return res.status(400).json({ message: 'galleryId inválido.' });
+
+  const clientId = parseInt(req.query.clientId, 10) || null;
+  const page = Math.max(1, parseInt(req.query.page || '1', 10));
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
+  const offset = (page - 1) * limit;
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão.' });
+
+    let rows = [];
+    let total = 0;
+
+    if (clientId) {
+      // Fotos onde o cliente foi reconhecido
+      const countRes = await client.query(
+        `SELECT COUNT(DISTINCT kp.id)::int AS cnt
+         FROM king_photos kp
+         JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+         JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+         WHERE kp.gallery_id=$1 AND rfm.client_id=$2`,
+        [galleryId, clientId]
+      );
+      total = countRes.rows[0]?.cnt || 0;
+
+      const dataRes = await client.query(
+        `SELECT kp.id AS photo_id, kp.file_path, kp.original_name,
+                MAX(rfm.similarity) AS max_similarity,
+                COUNT(DISTINCT rfm.id)::int AS match_count
+         FROM king_photos kp
+         JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+         JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+         WHERE kp.gallery_id=$1 AND rfm.client_id=$2
+         GROUP BY kp.id, kp.file_path, kp.original_name
+         ORDER BY max_similarity DESC, kp.id
+         LIMIT $3 OFFSET $4`,
+        [galleryId, clientId, limit, offset]
+      );
+      rows = dataRes.rows.map(r => ({
+        photoId: r.photo_id,
+        filePath: r.file_path,
+        originalName: r.original_name,
+        publicUrl: r2PublicUrl(extractR2Key(r.file_path) || r.file_path),
+        maxSimilarity: parseFloat(r.max_similarity) || null,
+        matchCount: r.match_count
+      }));
+    } else {
+      // Todas as fotos com pelo menos um match
+      const countRes = await client.query(
+        `SELECT COUNT(DISTINCT kp.id)::int AS cnt
+         FROM king_photos kp
+         JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+         JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+         WHERE kp.gallery_id=$1`,
+        [galleryId]
+      );
+      total = countRes.rows[0]?.cnt || 0;
+
+      const dataRes = await client.query(
+        `SELECT kp.id AS photo_id, kp.file_path, kp.original_name,
+                COUNT(DISTINCT rfm.client_id)::int AS client_count,
+                COUNT(DISTINCT rfm.id)::int AS match_count
+         FROM king_photos kp
+         JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+         JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+         WHERE kp.gallery_id=$1
+         GROUP BY kp.id, kp.file_path, kp.original_name
+         ORDER BY kp.id
+         LIMIT $2 OFFSET $3`,
+        [galleryId, limit, offset]
+      );
+      rows = dataRes.rows.map(r => ({
+        photoId: r.photo_id,
+        filePath: r.file_path,
+        originalName: r.original_name,
+        publicUrl: r2PublicUrl(extractR2Key(r.file_path) || r.file_path),
+        clientCount: r.client_count,
+        matchCount: r.match_count
+      }));
+    }
+
+    return res.json({
+      success: true,
+      galleryId,
+      clientId: clientId || null,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      photos: rows
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+// -----------------------------------------------------------
+// Passo 2.3: Detalhe de uma foto (rostos + clientes reconhecidos)
+// GET /api/king-selection/galleries/:galleryId/photos/:photoId/face-detail
+// -----------------------------------------------------------
+router.get('/galleries/:galleryId/photos/:photoId/face-detail', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.galleryId, 10);
+  const photoId = parseInt(req.params.photoId, 10);
+  if (!galleryId || !photoId) return res.status(400).json({ message: 'galleryId e photoId inválidos.' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão.' });
+
+    const photoRes = await client.query(
+      'SELECT id, file_path, original_name FROM king_photos WHERE id=$1 AND gallery_id=$2',
+      [photoId, galleryId]
+    );
+    if (photoRes.rows.length === 0) return res.status(404).json({ message: 'Foto não encontrada.' });
+
+    // Rostos detectados
+    const facesRes = await client.query(
+      `SELECT rpf.id, rpf.face_index, rpf.bounding_box_json, rpf.confidence
+       FROM rekognition_photo_faces rpf
+       WHERE rpf.photo_id=$1
+       ORDER BY rpf.face_index`,
+      [photoId]
+    );
+
+    const faces = [];
+    for (const faceRow of facesRes.rows) {
+      // Matches para este rosto
+      const matchRes = await client.query(
+        `SELECT rfm.client_id, rfm.similarity, rfm.rekognition_face_id,
+                kgc.nome AS client_name, kgc.email AS client_email
+         FROM rekognition_face_matches rfm
+         LEFT JOIN king_gallery_clients kgc ON kgc.id = rfm.client_id
+         WHERE rfm.photo_face_id=$1
+         ORDER BY rfm.similarity DESC`,
+        [faceRow.id]
+      );
+
+      faces.push({
+        index: faceRow.face_index,
+        boundingBox: faceRow.bounding_box_json ? JSON.parse(faceRow.bounding_box_json) : null,
+        confidence: parseFloat(faceRow.confidence) || null,
+        matches: matchRes.rows.map(m => ({
+          clientId: m.client_id,
+          clientName: m.client_name || null,
+          clientEmail: m.client_email || null,
+          similarity: parseFloat(m.similarity) || null,
+          rekognitionFaceId: m.rekognition_face_id || null
+        }))
+      });
+    }
+
+    // Status do job
+    const jobRes = await client.query(
+      'SELECT process_status, processed_at, error_message FROM rekognition_photo_jobs WHERE gallery_id=$1 AND photo_id=$2',
+      [galleryId, photoId]
+    );
+    const job = jobRes.rows[0] || null;
+
+    return res.json({
+      success: true,
+      photoId,
+      galleryId,
+      filePath: photoRes.rows[0].file_path,
+      publicUrl: r2PublicUrl(extractR2Key(photoRes.rows[0].file_path) || photoRes.rows[0].file_path),
+      processStatus: job?.process_status || 'not_processed',
+      processedAt: job?.processed_at || null,
+      errorMessage: job?.error_message || null,
+      faces
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+// -----------------------------------------------------------
+// Passo 3: Processar todas as fotos da galeria
+// POST /api/king-selection/galleries/:galleryId/process-all-faces
+// -----------------------------------------------------------
+router.post('/galleries/:galleryId/process-all-faces', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.galleryId, 10);
+  if (!galleryId || galleryId <= 0) return res.status(400).json({ message: 'galleryId inválido.' });
+
+  const stagingCfg = getStagingConfig();
+  const { getRekogConfig } = require('../utils/rekognition/rekognitionService');
+  const rekogCfg = getRekogConfig();
+  if (!stagingCfg.enabled || !rekogCfg.enabled) {
+    return res.status(503).json({ message: 'Reconhecimento facial não configurado (S3 staging ou Rekognition).' });
+  }
+
+  // Opções
+  const forceReprocess = req.body?.forceReprocess === true || req.query?.forceReprocess === 'true';
+  const concurrency = Math.min(5, Math.max(1, parseInt(req.body?.concurrency || req.query?.concurrency || '3', 10)));
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão.' });
+
+    // Listar fotos a processar
+    let photosQuery;
+    if (forceReprocess) {
+      // Todas as fotos
+      photosQuery = await client.query(
+        'SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id',
+        [galleryId]
+      );
+    } else {
+      // Apenas fotos sem job 'done'
+      photosQuery = await client.query(
+        `SELECT kp.id, kp.file_path
+         FROM king_photos kp
+         LEFT JOIN rekognition_photo_jobs rpj ON rpj.photo_id = kp.id AND rpj.gallery_id = kp.gallery_id
+         WHERE kp.gallery_id=$1
+           AND (rpj.process_status IS NULL OR rpj.process_status NOT IN ('done'))
+         ORDER BY kp.id`,
+        [galleryId]
+      );
+    }
+
+    const photos = photosQuery.rows;
+    const totalPhotos = photos.length;
+    client.release();
+
+    if (totalPhotos === 0) {
+      return res.json({
+        success: true,
+        message: 'Nenhuma foto pendente para processar.',
+        totalPhotos: 0,
+        processed: 0,
+        errors: 0
+      });
+    }
+
+    // Processar em paralelo com limite de concurrency
+    let processed = 0;
+    let errors = 0;
+    const errorDetails = [];
+
+    for (let i = 0; i < photos.length; i += concurrency) {
+      const batch = photos.slice(i, i + concurrency);
+      const results = await Promise.allSettled(
+        batch.map(async (photo) => {
+          const r2Key = extractR2Key(photo.file_path);
+          if (!r2Key || !r2Key.startsWith('galleries/')) {
+            throw new Error(`file_path inválido: ${photo.file_path}`);
+          }
+          const batchClient = await db.pool.connect();
+          try {
+            await _processPhotoFaces({
+              pgClient: batchClient,
+              galleryId,
+              photoId: photo.id,
+              r2Key,
+              photo
+            });
+          } finally {
+            batchClient.release();
+          }
+        })
+      );
+
+      for (let j = 0; j < results.length; j++) {
+        if (results[j].status === 'fulfilled') {
+          processed++;
+        } else {
+          errors++;
+          errorDetails.push({ photoId: batch[j].id, error: results[j].reason?.message || String(results[j].reason) });
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      galleryId,
+      totalPhotos,
+      processed,
+      errors,
+      errorDetails: errorDetails.slice(0, 20) // limitar erros na resposta
+    });
+  } catch (err) {
+    // client pode já ter sido liberado
+    try { client.release(); } catch (_) { }
+    return res.status(500).json({ message: err?.message || 'Erro ao processar galeria.' });
+  }
+}));
+
+// -----------------------------------------------------------
+// Endpoint público: cliente busca suas próprias fotos
+// GET /api/king-selection/public/galleries/:slug/my-photos?clientToken=...
+// (clientToken = JWT gerado no login do cliente)
+// -----------------------------------------------------------
+router.get('/public/galleries/:slug/my-photos', asyncHandler(async (req, res) => {
+  const slug = String(req.params.slug || '').trim();
+  if (!slug) return res.status(400).json({ message: 'slug inválido.' });
+
+  // Verificar token do cliente (criado no login do módulo client-auth)
+  const token = String(req.query.clientToken || req.headers['x-client-token'] || '').trim();
+  if (!token) return res.status(401).json({ message: 'clientToken obrigatório.' });
+
+  let clientPayload;
+  try {
+    const secret = config.jwt?.secret || process.env.JWT_SECRET || '';
+    clientPayload = jwt.verify(token, secret);
+  } catch (_) {
+    return res.status(401).json({ message: 'Token inválido ou expirado.' });
+  }
+
+  const page = Math.max(1, parseInt(req.query.page || '1', 10));
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
+  const offset = (page - 1) * limit;
+
+  const client = await db.pool.connect();
+  try {
+    // Buscar galeria pelo slug
+    const galRes = await client.query(
+      'SELECT id FROM king_galleries WHERE slug=$1',
+      [slug]
+    );
+    if (galRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const galleryId = galRes.rows[0].id;
+
+    const clientId = clientPayload.clientId || clientPayload.client_id;
+    if (!clientId) return res.status(401).json({ message: 'Token não contém clientId.' });
+
+    // Verificar se o cliente pertence a esta galeria
+    const cRes = await client.query(
+      'SELECT id FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 AND enabled=TRUE',
+      [clientId, galleryId]
+    );
+    if (cRes.rows.length === 0) return res.status(403).json({ message: 'Acesso negado.' });
+
+    // Fotos onde este cliente foi reconhecido
+    const countRes = await client.query(
+      `SELECT COUNT(DISTINCT kp.id)::int AS cnt
+       FROM king_photos kp
+       JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+       JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2`,
+      [galleryId, clientId]
+    );
+    const total = countRes.rows[0]?.cnt || 0;
+
+    const dataRes = await client.query(
+      `SELECT kp.id AS photo_id, kp.file_path, kp.original_name,
+              MAX(rfm.similarity) AS max_similarity
+       FROM king_photos kp
+       JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+       JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2
+       GROUP BY kp.id, kp.file_path, kp.original_name
+       ORDER BY max_similarity DESC, kp.id
+       LIMIT $3 OFFSET $4`,
+      [galleryId, clientId, limit, offset]
+    );
+
+    const photos = dataRes.rows.map(r => ({
+      photoId: r.photo_id,
+      originalName: r.original_name,
+      publicUrl: r2PublicUrl(extractR2Key(r.file_path) || r.file_path),
+      maxSimilarity: parseFloat(r.max_similarity) || null
+    }));
+
+    return res.json({
+      success: true,
+      galleryId,
+      clientId,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      photos
+    });
+  } finally {
     client.release();
   }
 }));
 
 module.exports = router;
+
 
