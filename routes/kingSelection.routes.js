@@ -2148,7 +2148,8 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'watermark_path',
     'watermark_opacity',
     'watermark_scale',
-    'watermark_rotate'
+    'watermark_rotate',
+    'face_recognition_enabled'
   ];
 
   const body = req.body || {};
@@ -3231,7 +3232,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
 router.get('/client/face-results', requireClient, asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
   const clientId = req.ksClient.clientId; // pode ser null se for o cliente principal da galeria (legado)
-  
+
   if (!clientId) {
     // Para o cliente legado (email único da galeria), ele não tem face_id associado facilmente
     // no modelo atual, o reconhecimento é focado nos clientes da lista.
@@ -3281,7 +3282,7 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
   const galleryId = req.ksClient.galleryId;
   const clientId = req.ksClient.clientId;
   if (!clientId) return res.status(403).json({ message: 'Apenas acessos individuais podem cadastrar rosto.' });
-  
+
   if (!req.file) return res.status(400).json({ message: 'Nenhuma imagem enviada.' });
 
   const stagingCfg = getStagingConfig();
@@ -3294,7 +3295,7 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
   try {
     let buffer = await normalizeImageForRekognition(req.file.buffer);
     const stagingKey = `staging/enroll/g${galleryId}/c${clientId}_${Date.now()}.jpg`;
-    
+
     await putStagingObject(stagingKey, buffer, 'image/jpeg');
     const externalImageId = `g${galleryId}_c${clientId}`;
 
