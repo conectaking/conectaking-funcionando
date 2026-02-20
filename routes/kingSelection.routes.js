@@ -3163,8 +3163,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
   try {
     const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
     const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
+    const hasFaceEnabled = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -3220,7 +3221,13 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     });
     res.json({
       success: true,
-      gallery: { ...gallery, photos, locked, allow_download: hasAllowDownload ? !!gallery.allow_download : false },
+      gallery: {
+        ...gallery,
+        photos,
+        locked,
+        allow_download: hasAllowDownload ? !!gallery.allow_download : false,
+        face_recognition_enabled: hasFaceEnabled ? !!gallery.face_recognition_enabled : false
+      },
       selectedPhotoIds
     });
   } finally {
@@ -4442,4 +4449,203 @@ router.get('/public/galleries/:slug/my-photos', asyncHandler(async (req, res) =>
 
 module.exports = router;
 
+// ============================================================
+// PAINEL ADMIN — RECONHECIMENTO FACIAL
+// Rotas: /api/king-selection/facial/*
+// ============================================================
 
+// Helper: verificar propriedade da galeria
+async function _checkGalleryOwner(pgClient, galleryId, userId) {
+  const r = await pgClient.query(
+    `SELECT g.id, g.nome_projeto FROM king_galleries g
+     JOIN profile_items pi ON pi.id = g.profile_item_id
+     WHERE g.id=$1 AND pi.user_id=$2`,
+    [galleryId, userId]
+  );
+  return r.rows[0] || null;
+}
+
+// GET /facial/status?galleryId=
+const facialRouter = require('express').Router();
+facialRouter.get('/status', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.query.galleryId || 0, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId é obrigatório.' });
+  const client = await db.pool.connect();
+  try {
+    const gallery = await _checkGalleryOwner(client, galleryId, req.user.userId);
+    if (!gallery) return res.status(403).json({ message: 'Sem permissão.' });
+
+    const totalPhotos = (await client.query('SELECT COUNT(*)::int AS n FROM king_photos WHERE gallery_id=$1', [galleryId])).rows[0]?.n || 0;
+
+    let processedPhotos = 0, totalFaces = 0, enrolledClients = 0;
+    if (await hasTable(client, 'rekognition_photo_jobs')) {
+      processedPhotos = (await client.query(
+        `SELECT COUNT(*)::int AS n FROM rekognition_photo_jobs WHERE gallery_id=$1 AND process_status='done'`, [galleryId]
+      )).rows[0]?.n || 0;
+    }
+    if (await hasTable(client, 'rekognition_photo_faces')) {
+      totalFaces = (await client.query(
+        `SELECT COUNT(*)::int AS n FROM rekognition_photo_faces rpf JOIN king_photos kp ON kp.id=rpf.photo_id WHERE kp.gallery_id=$1`, [galleryId]
+      )).rows[0]?.n || 0;
+    }
+    if (await hasTable(client, 'rekognition_client_faces')) {
+      enrolledClients = (await client.query(
+        `SELECT COUNT(DISTINCT client_id)::int AS n FROM rekognition_client_faces WHERE gallery_id=$1`, [galleryId]
+      )).rows[0]?.n || 0;
+    }
+
+    return res.json({ success: true, galleryName: gallery.nome_projeto, totalPhotos, processedPhotos, totalFaces, enrolledClients });
+  } finally { client.release(); }
+}));
+
+// GET /facial/clients?galleryId=
+facialRouter.get('/clients', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.query.galleryId || 0, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId é obrigatório.' });
+  const client = await db.pool.connect();
+  try {
+    const gallery = await _checkGalleryOwner(client, galleryId, req.user.userId);
+    if (!gallery) return res.status(403).json({ message: 'Sem permissão.' });
+
+    if (!(await hasTable(client, 'rekognition_client_faces'))) return res.json({ success: true, clients: [] });
+
+    const r = await client.query(
+      `SELECT c.id AS "clientId", c.nome, c.email,
+              COUNT(rcf.id)::int AS "faceCount",
+              (SELECT COUNT(DISTINCT kp.id)::int
+               FROM rekognition_face_matches rfm
+               JOIN rekognition_photo_faces rpf ON rpf.id = rfm.photo_face_id
+               JOIN king_photos kp ON kp.id = rpf.photo_id
+               WHERE rfm.client_id = c.id AND kp.gallery_id = $1
+              ) AS "matchCount"
+       FROM king_gallery_clients c
+       JOIN rekognition_client_faces rcf ON rcf.client_id = c.id AND rcf.gallery_id = $1
+       WHERE c.gallery_id = $1
+       GROUP BY c.id, c.nome, c.email
+       ORDER BY c.nome`,
+      [galleryId]
+    );
+    return res.json({ success: true, clients: r.rows });
+  } finally { client.release(); }
+}));
+
+// GET /facial/jobs?galleryId=&limit=
+facialRouter.get('/jobs', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.query.galleryId || 0, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId é obrigatório.' });
+  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit || '50', 10)));
+  const client = await db.pool.connect();
+  try {
+    const gallery = await _checkGalleryOwner(client, galleryId, req.user.userId);
+    if (!gallery) return res.status(403).json({ message: 'Sem permissão.' });
+
+    if (!(await hasTable(client, 'rekognition_photo_jobs'))) return res.json({ success: true, jobs: [] });
+
+    const r = await client.query(
+      `SELECT rpj.photo_id AS "photoId", kp.original_name AS "photoName",
+              rpj.process_status AS status, rpj.processed_at AS "processedAt",
+              rpj.error_message AS "errorMessage",
+              (SELECT COUNT(*)::int FROM rekognition_photo_faces WHERE photo_id=rpj.photo_id) AS "faceCount"
+       FROM rekognition_photo_jobs rpj
+       JOIN king_photos kp ON kp.id = rpj.photo_id
+       WHERE rpj.gallery_id=$1
+       ORDER BY rpj.processed_at DESC NULLS LAST, rpj.photo_id DESC
+       LIMIT $2`,
+      [galleryId, limit]
+    );
+    return res.json({ success: true, jobs: r.rows });
+  } finally { client.release(); }
+}));
+
+// GET /facial/matches?galleryId=&clientId=
+facialRouter.get('/matches', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.query.galleryId || 0, 10);
+  const clientId = parseInt(req.query.clientId || 0, 10);
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'galleryId e clientId são obrigatórios.' });
+  const client = await db.pool.connect();
+  try {
+    const gallery = await _checkGalleryOwner(client, galleryId, req.user.userId);
+    if (!gallery) return res.status(403).json({ message: 'Sem permissão.' });
+
+    if (!(await hasTable(client, 'rekognition_face_matches'))) return res.json({ success: true, matches: [] });
+
+    const r = await client.query(
+      `SELECT kp.id AS "photoId", kp.original_name AS "photoName",
+              MAX(rfm.similarity) AS similarity
+       FROM king_photos kp
+       JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+       JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2
+       GROUP BY kp.id, kp.original_name
+       ORDER BY similarity DESC, kp.id`,
+      [galleryId, clientId]
+    );
+    return res.json({ success: true, matches: r.rows });
+  } finally { client.release(); }
+}));
+
+// POST /facial/process?galleryId=  — enfileira todas as fotos não processadas
+facialRouter.post('/process', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.query.galleryId || req.body?.galleryId || 0, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId é obrigatório.' });
+  const client = await db.pool.connect();
+  try {
+    const gallery = await _checkGalleryOwner(client, galleryId, req.user.userId);
+    if (!gallery) return res.status(403).json({ message: 'Sem permissão.' });
+
+    // Inserir jobs pending para fotos ainda não processadas
+    if (!(await hasTable(client, 'rekognition_photo_jobs'))) {
+      return res.status(503).json({ message: 'Tabelas de reconhecimento facial não encontradas. Execute as migrations.' });
+    }
+    const insertRes = await client.query(
+      `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status)
+       SELECT $1, kp.id, COALESCE(kp.file_path, ''), 'pending'
+       FROM king_photos kp
+       WHERE kp.gallery_id = $1
+         AND NOT EXISTS (
+           SELECT 1 FROM rekognition_photo_jobs rpj
+           WHERE rpj.gallery_id = $1 AND rpj.photo_id = kp.id AND rpj.process_status IN ('done','processing','pending')
+         )
+       ON CONFLICT (gallery_id, photo_id) DO UPDATE SET
+         process_status = CASE WHEN rekognition_photo_jobs.process_status = 'error' THEN 'pending' ELSE rekognition_photo_jobs.process_status END`,
+      [galleryId]
+    );
+
+    // Também re-enfileirar erros
+    await client.query(
+      `UPDATE rekognition_photo_jobs SET process_status='pending', error_message=NULL
+       WHERE gallery_id=$1 AND process_status='error'`,
+      [galleryId]
+    );
+
+    const queued = insertRes.rowCount || 0;
+    return res.json({ success: true, queued, message: `${queued} foto(s) enfileiradas para processamento.` });
+  } finally { client.release(); }
+}));
+
+// DELETE /facial/clients/:clientId/faces?galleryId=
+facialRouter.delete('/clients/:clientId/faces', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.query.galleryId || 0, 10);
+  const clientId = parseInt(req.params.clientId || 0, 10);
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'galleryId e clientId são obrigatórios.' });
+  const client = await db.pool.connect();
+  try {
+    const gallery = await _checkGalleryOwner(client, galleryId, req.user.userId);
+    if (!gallery) return res.status(403).json({ message: 'Sem permissão.' });
+
+    // Deletar matches
+    if (await hasTable(client, 'rekognition_face_matches')) {
+      await client.query('DELETE FROM rekognition_face_matches WHERE client_id=$1', [clientId]);
+    }
+    // Deletar rostos cadastrados
+    let deleted = 0;
+    if (await hasTable(client, 'rekognition_client_faces')) {
+      const r = await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
+      deleted = r.rowCount || 0;
+    }
+    return res.json({ success: true, deleted, message: `${deleted} rosto(s) removido(s).` });
+  } finally { client.release(); }
+}));
+
+// Montar sub-router de facial no router principal
+router.use('/facial', facialRouter);
