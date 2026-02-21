@@ -2475,9 +2475,9 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
   try {
     const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
     const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
-    const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
+    const hasFaceEnabled = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasAccessMode ? ', access_mode' : ''}${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasAccessMode ? ', access_mode' : ''}${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}
        FROM king_galleries WHERE slug=$1`,
       [slug]
     );
@@ -2487,7 +2487,12 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
     if (accessMode === 'password') accessMode = 'signup';
     if (accessMode !== 'public') return res.status(403).json({ message: 'Esta galeria não é pública.' });
 
-    const gallery = { ...g, min_selections: hasMin ? (g.min_selections || 0) : 0, allow_download: hasAllowDownload ? !!g.allow_download : false };
+    const gallery = {
+      ...g,
+      min_selections: hasMin ? (g.min_selections || 0) : 0,
+      allow_download: hasAllowDownload ? !!g.allow_download : false,
+      face_recognition_enabled: hasFaceEnabled ? !!g.face_recognition_enabled : false
+    };
 
     const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
     const pRes = await client.query(
@@ -2504,7 +2509,7 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
     });
     res.json({
       success: true,
-      gallery: { ...gallery, photos, locked: true, allow_download: !!gallery.allow_download },
+      gallery: { ...gallery, photos, locked: true, allow_download: !!gallery.allow_download, face_recognition_enabled: !!gallery.face_recognition_enabled },
       selectedPhotoIds: []
     });
   } finally {
