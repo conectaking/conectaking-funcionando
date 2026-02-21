@@ -57,10 +57,12 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
     let guestRes = await client.query('SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND email=$2', [g.id, guestEmail]);
     let clientId;
     if (guestRes.rows.length === 0) {
+      // senha_hash é obrigatório no banco. Como é guest, usamos um placeholder.
+      const placeholderPass = crypto.randomBytes(16).toString('hex');
       const insRes = await client.query(
-        `INSERT INTO king_gallery_clients (gallery_id, nome, email, enabled, created_at, updated_at)
-         VALUES ($1, $2, $3, TRUE, NOW(), NOW()) RETURNING id`,
-        [g.id, 'Visitante', guestEmail]
+        `INSERT INTO king_gallery_clients (gallery_id, nome, email, senha_hash, enabled, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, TRUE, NOW(), NOW()) RETURNING id`,
+        [g.id, 'Visitante', guestEmail, placeholderPass]
       );
       clientId = insRes.rows[0].id;
     } else {
