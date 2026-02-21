@@ -2,13 +2,13 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 // Logar erros não tratados para aparecer nos logs do Render (evita "Exited with status 1" sem causa visível)
 process.on('uncaughtException', (err) => {
-  console.error('[uncaughtException]', err?.message || err);
-  if (err?.stack) console.error(err.stack);
-  process.exit(1);
+    console.error('[uncaughtException]', err?.message || err);
+    if (err?.stack) console.error(err.stack);
+    process.exit(1);
 });
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('[unhandledRejection]', reason);
-  process.exit(1);
+    console.error('[unhandledRejection]', reason);
+    process.exit(1);
 });
 
 const express = require('express');
@@ -83,9 +83,9 @@ app.use(helmet({
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: [
-                "'self'", 
+                "'self'",
                 "'unsafe-inline'",
-                "'unsafe-eval'",    
+                "'unsafe-eval'",
                 "https://cdn.jsdelivr.net",
                 "https://www.instagram.com",
                 "https://*.instagram.com",
@@ -104,18 +104,18 @@ app.use(helmet({
                 "'unsafe-inline'"
             ],
             styleSrc: [
-                "'self'", 
-                "'unsafe-inline'", 
-                "https://cdnjs.cloudflare.com", 
+                "'self'",
+                "'unsafe-inline'",
+                "https://cdnjs.cloudflare.com",
                 "https://fonts.googleapis.com",
                 "https://unpkg.com"
             ],
             imgSrc: [
-                "'self'", 
-                "data:", 
-                "https://imagedelivery.net", 
-                "https://i.ibb.co", 
-                "https://i.pravatar.cc", 
+                "'self'",
+                "data:",
+                "https://imagedelivery.net",
+                "https://i.ibb.co",
+                "https://i.pravatar.cc",
                 "https://avatar.iran.liara.run",
                 "https://images.unsplash.com",
                 "https://*.unsplash.com",
@@ -143,12 +143,12 @@ app.use(helmet({
                 "https://server.arcgisonline.com"
             ],
             fontSrc: [
-                "'self'", 
-                "https://fonts.gstatic.com", 
-                "https://cdnjs.cloudflare.com" 
+                "'self'",
+                "https://fonts.gstatic.com",
+                "https://cdnjs.cloudflare.com"
             ],
             frameSrc: [
-                "'self'", 
+                "'self'",
                 "https://www.instagram.com",
                 "https://*.instagram.com",
                 "https://snapwidget.com",
@@ -343,7 +343,7 @@ cron.schedule('0 8 * * *', async () => {
     const client = await db.pool.connect();
     try {
         const expiringSoon = await client.query("SELECT email FROM users WHERE subscription_expires_at BETWEEN NOW() + interval '2 days' AND NOW() + interval '3 days' AND subscription_status = 'active'");
-        
+
         if (expiringSoon.rows.length > 0) {
             logger.info(`Encontrados ${expiringSoon.rows.length} usuários com assinaturas expirando em 3 dias.`);
         }
@@ -366,7 +366,7 @@ app.use(cors(config.cors));
 app.use(securityHeaders); // Headers de segurança
 app.use(validateRequestSize(config.upload.maxFileSize)); // Valida tamanho de requisição
 app.use(express.json({ limit: `${config.upload.maxFileSize / 1024 / 1024}mb` }));
-app.use(requestLogger); 
+app.use(requestLogger);
 
 // ============================================
 // KingSelection (Laravel) - Proxy por caminho
@@ -453,13 +453,13 @@ app.use('/kingselection', proxyKingSelection);
 const publicHtmlDir = path.join(__dirname, 'public_html');
 // Rota explícita para tts.js: garante Content-Type application/javascript (evita MIME text/html em 404)
 app.get('/js/tts.js', (req, res) => {
-  const ttsPath = path.join(publicHtmlDir, 'js', 'tts.js');
-  if (fs.existsSync(ttsPath)) {
-    res.type('application/javascript');
-    res.sendFile(ttsPath);
-  } else {
-    res.status(404).type('text/plain').send('Not found');
-  }
+    const ttsPath = path.join(publicHtmlDir, 'js', 'tts.js');
+    if (fs.existsSync(ttsPath)) {
+        res.type('application/javascript');
+        res.sendFile(ttsPath);
+    } else {
+        res.status(404).type('text/plain').send('Not found');
+    }
 });
 app.use(express.static(publicHtmlDir, {
     etag: false,
@@ -605,7 +605,7 @@ app.use((req, res, next) => {
         return next();
     }
     const userAgent = (req.get('user-agent') || '').toLowerCase();
-    
+
     // Lista expandida de padrões de bots/scanners
     // IMPORTANTE: Não incluir '/api' aqui pois bloqueia rotas válidas
     const botPatterns = [
@@ -616,11 +616,11 @@ app.use((req, res, next) => {
         '/shell.php', '/c99.php', '/r57.php', '/admin.php', '/login.php',
         '/index.php' // Bloquear acesso direto a index.php (não é usado no sistema)
     ];
-    
+
     // Verificar se é acesso genérico a /api (sem rota específica) - apenas se for exatamente '/api'
     // IMPORTANTE: Não bloquear rotas válidas como /api/profile, /api/pix, etc.
     const isGenericApiAccess = path === '/api' && !req.path.startsWith('/api/');
-    
+
     // Padrões de user-agent suspeitos (incluindo URLs como user-agent)
     const suspiciousUserAgents = [
         'sqlmap', 'nikto', 'nmap', 'masscan', 'zap', 'burp', 'w3af',
@@ -629,25 +629,25 @@ app.use((req, res, next) => {
         'http://cnking.bio', 'https://cnking.bio', // User-agents que são URLs do próprio domínio
         'http://tag.conectaking.com.br', 'https://tag.conectaking.com.br'
     ];
-    
+
     // Verificar se o path corresponde a padrões de bot
     const isBotPath = botPatterns.some(pattern => path.includes(pattern));
-    
+
     // Verificar se o user-agent é suspeito (URL como user-agent é sempre suspeito)
     const isSuspiciousUA = suspiciousUserAgents.some(pattern => userAgent.includes(pattern)) ||
-                          userAgent.startsWith('http://') || 
-                          userAgent.startsWith('https://');
-    
+        userAgent.startsWith('http://') ||
+        userAgent.startsWith('https://');
+
     // IMPORTANTE: NUNCA bloquear rotas válidas da API (que começam com /api/)
     // Apenas bloquear se NÃO for uma rota válida da API
     const isValidApiRoute = path.startsWith('/api/');
-    
+
     // Bloquear se for path de bot OU user-agent suspeito OU acesso genérico a /api
     // MAS NUNCA bloquear rotas válidas da API
     if (!isValidApiRoute && (isBotPath || isSuspiciousUA || isGenericApiAccess)) {
         // Marcar como bot para não ser logado
         req._isBotRequest = true;
-        
+
         // Não logar em produção para reduzir ruído (apenas em debug)
         if (!config.isProduction) {
             logger.debug('Tentativa de acesso bloqueada (bot/scanner)', {
@@ -658,14 +658,14 @@ app.use((req, res, next) => {
                 reason: isBotPath ? 'bot_path' : (isSuspiciousUA ? 'suspicious_ua' : 'generic_api')
             });
         }
-        
+
         // Retornar resposta rápida sem processar
         return res.status(403).json({
             success: false,
             message: 'Acesso negado'
         });
     }
-    
+
     next();
 });
 
@@ -702,15 +702,16 @@ app.use((req, res, next) => {
         path.startsWith('/api/suggestions') ||
         path.startsWith('/api/log') ||
         path.startsWith('/api/vcard') ||
-        path.startsWith('/api/public')
+        path.startsWith('/api/public') ||
+        path.startsWith('/api/king-selection')
     );
-    
+
     if (!isValidApiRoute && (
-        (path === '/api' && !req.path.startsWith('/api/')) || 
-        path === '/index.php' || 
+        (path === '/api' && !req.path.startsWith('/api/')) ||
+        path === '/index.php' ||
         (path === '/admin' && !req.path.startsWith('/admin/')) ||
-        path.startsWith('/wp-') || 
-        path.includes('phpmyadmin') || 
+        path.startsWith('/wp-') ||
+        path.includes('phpmyadmin') ||
         (path.includes('.php') && !path.includes('/api/')) ||
         path.includes('.sql')
     )) {
@@ -748,7 +749,7 @@ app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) =
             ORDER BY mpa.module_type, mpa.plan_code
         `;
         const availabilityResult = await client.query(availabilityQuery);
-        
+
         // Organizar por módulo (mesma estrutura do router)
         const modulesMap = {};
         availabilityResult.rows.forEach(row => {
@@ -763,7 +764,7 @@ app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) =
                 id: row.id
             };
         });
-        
+
         res.json({
             success: true,
             modules: Object.values(modulesMap)
@@ -1051,39 +1052,39 @@ function scheduleCloudflareOrphanCleanup() {
 scheduleCloudflareOrphanCleanup();
 
 function scheduleR2OrphanCleanup() {
-  const enabled = isTruthy(process.env.R2_ORPHAN_CLEANUP_ENABLED);
-  if (!enabled) return;
+    const enabled = isTruthy(process.env.R2_ORPHAN_CLEANUP_ENABLED);
+    if (!enabled) return;
 
-  const cronExpr = (process.env.R2_ORPHAN_CLEANUP_CRON || '45 5 * * *').toString().trim();
-  if (!cron.validate(cronExpr)) {
-    logger.error('R2_ORPHAN_CLEANUP_CRON inválido; desativando', { cronExpr });
-    return;
-  }
-
-  cron.schedule(cronExpr, async () => {
-    try {
-      logger.info('🧹 Iniciando limpeza diária de órfãos R2 (KingSelection)...');
-      const env = {
-        ...process.env,
-        DRY_RUN: (process.env.R2_ORPHAN_CLEANUP_DRY_RUN ?? process.env.DRY_RUN ?? '1').toString(),
-        CONFIRM_DELETE: (process.env.R2_ORPHAN_CLEANUP_CONFIRM ?? process.env.CONFIRM_DELETE ?? 'SIM').toString(),
-        MAX_DELETE: (process.env.R2_ORPHAN_CLEANUP_MAX_DELETE ?? process.env.MAX_DELETE ?? '100').toString(),
-        SLEEP_MS: (process.env.R2_ORPHAN_CLEANUP_SLEEP_MS ?? process.env.SLEEP_MS ?? '200').toString(),
-        R2_ORPHAN_CLEANUP_LOCK_KEY: (process.env.R2_ORPHAN_CLEANUP_LOCK_KEY ?? '20260202').toString()
-      };
-      const scriptPath = path.join(__dirname, 'scripts', 'cleanup-r2-orphans.js');
-      const child = spawn(process.execPath, [scriptPath], { env, stdio: 'inherit' });
-      await new Promise((resolve, reject) => {
-        child.on('error', reject);
-        child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`cleanup-r2-orphans.js exit=${code}`))));
-      });
-      logger.info('✅ Limpeza diária R2 finalizada.');
-    } catch (error) {
-      logger.error('❌ Erro na limpeza de órfãos R2', { message: error?.message || String(error) });
+    const cronExpr = (process.env.R2_ORPHAN_CLEANUP_CRON || '45 5 * * *').toString().trim();
+    if (!cron.validate(cronExpr)) {
+        logger.error('R2_ORPHAN_CLEANUP_CRON inválido; desativando', { cronExpr });
+        return;
     }
-  });
 
-  logger.info('✅ Agendamento limpeza órfãos R2 ativado', { cronExpr });
+    cron.schedule(cronExpr, async () => {
+        try {
+            logger.info('🧹 Iniciando limpeza diária de órfãos R2 (KingSelection)...');
+            const env = {
+                ...process.env,
+                DRY_RUN: (process.env.R2_ORPHAN_CLEANUP_DRY_RUN ?? process.env.DRY_RUN ?? '1').toString(),
+                CONFIRM_DELETE: (process.env.R2_ORPHAN_CLEANUP_CONFIRM ?? process.env.CONFIRM_DELETE ?? 'SIM').toString(),
+                MAX_DELETE: (process.env.R2_ORPHAN_CLEANUP_MAX_DELETE ?? process.env.MAX_DELETE ?? '100').toString(),
+                SLEEP_MS: (process.env.R2_ORPHAN_CLEANUP_SLEEP_MS ?? process.env.SLEEP_MS ?? '200').toString(),
+                R2_ORPHAN_CLEANUP_LOCK_KEY: (process.env.R2_ORPHAN_CLEANUP_LOCK_KEY ?? '20260202').toString()
+            };
+            const scriptPath = path.join(__dirname, 'scripts', 'cleanup-r2-orphans.js');
+            const child = spawn(process.execPath, [scriptPath], { env, stdio: 'inherit' });
+            await new Promise((resolve, reject) => {
+                child.on('error', reject);
+                child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`cleanup-r2-orphans.js exit=${code}`))));
+            });
+            logger.info('✅ Limpeza diária R2 finalizada.');
+        } catch (error) {
+            logger.error('❌ Erro na limpeza de órfãos R2', { message: error?.message || String(error) });
+        }
+    });
+
+    logger.info('✅ Agendamento limpeza órfãos R2 ativado', { cronExpr });
 }
 
 scheduleR2OrphanCleanup();
@@ -1102,7 +1103,7 @@ async function startServer() {
         logger.error('❌ Erro ao executar migrations automáticas:', error);
         logger.warn('⚠️  Servidor será iniciado mesmo com erro nas migrations. Verifique manualmente.');
     }
-    
+
     const PORT = config.port;
     app.listen(PORT, () => {
         logger.info(`👑 Servidor Conecta King rodando na porta ${PORT} (${config.nodeEnv})`);
