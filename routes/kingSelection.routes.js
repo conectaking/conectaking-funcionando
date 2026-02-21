@@ -2593,11 +2593,6 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
   }
 }));
 
-  } finally {
-  client.release();
-}
-}));
-
 // Preview de foto para galeria PÚBLICA (sem token)
 router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
   const slug = (req.query.slug || '').toString().trim();
