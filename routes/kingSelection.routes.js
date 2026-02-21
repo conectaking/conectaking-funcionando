@@ -2518,6 +2518,78 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
   }
 }));
 
+// Enrollment anônimo para galeria pública
+router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHandler(async (req, res) => {
+  const slug = (req.query.slug || req.body.slug || '').toString().trim();
+  if (!slug) return res.status(400).json({ message: 'Slug é obrigatório.' });
+  if (!req.file) return res.status(400).json({ message: 'Nenhuma imagem enviada.' });
+
+  const stagingCfg = getStagingConfig();
+  const rekogCfg = getRekogConfig();
+  if (!stagingCfg.enabled || !rekogCfg.enabled) {
+    return res.status(503).json({ message: 'Reconhecimento facial não configurado no servidor.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const gRes = await client.query('SELECT id, slug, access_mode FROM king_galleries WHERE slug=$1', [slug]);
+    if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const g = gRes.rows[0];
+    if (g.access_mode !== 'public') return res.status(403).json({ message: 'Esta galeria não é pública. Use o login normal.' });
+
+    const visitorId = req.query.visitorId || crypto.randomUUID();
+    const guestEmail = `guest_${visitorId}@guest.com`;
+
+    let guestRes = await client.query('SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND email=$2', [g.id, guestEmail]);
+    let clientId;
+    if (guestRes.rows.length === 0) {
+      const insRes = await client.query(
+        `INSERT INTO king_gallery_clients (gallery_id, nome, email, enabled, created_at, updated_at)
+         VALUES ($1, $2, $3, TRUE, NOW(), NOW()) RETURNING id`,
+        [g.id, 'Visitante', guestEmail]
+      );
+      clientId = insRes.rows[0].id;
+    } else {
+      clientId = guestRes.rows[0].id;
+    }
+
+    let buffer = await normalizeImageForRekognition(req.file.buffer);
+    const stagingKey = `staging/enroll/g${g.id}/c${clientId}_${Date.now()}.jpg`;
+    await putStagingObject(stagingKey, buffer, 'image/jpeg');
+    const externalImageId = `g${g.id}_c${clientId}`;
+    let indexResult;
+    try {
+      indexResult = await indexFacesFromS3(stagingCfg.bucket, stagingKey, externalImageId);
+    } finally {
+      await deleteStagingObject(stagingKey);
+    }
+
+    const faceRecords = indexResult.FaceRecords || [];
+    if (faceRecords.length === 0) return res.status(400).json({ message: 'Rosto não detectado.' });
+
+    await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [g.id, clientId]);
+    for (const rec of faceRecords) {
+      const faceId = rec.Face?.FaceId;
+      if (!faceId) continue;
+      await client.query(
+        `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [g.id, clientId, faceId, rec.Face?.ImageId || null, 'anon']
+      );
+    }
+
+    const token = jwt.sign(
+      { type: 'kingselection_client', galleryId: g.id, clientId, slug: g.slug },
+      config.jwt.secret,
+      { expiresIn: '14d' }
+    );
+
+    res.json({ success: true, token, visitorId });
+  } finally {
+    client.release();
+  }
+}));
+
 // Preview de foto para galeria PÚBLICA (sem token)
 router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
   const slug = (req.query.slug || '').toString().trim();
