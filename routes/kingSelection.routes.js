@@ -30,7 +30,17 @@ const uploadMem = multer({
 });
 
 // TESTE DE VERSÃO - Para confirmar que o backend foi atualizado
-router.get('/ping-version', (req, res) => res.json({ success: true, version: '2026-02-21-v2', timestamp: new Date() }));
+router.get('/ping-version', (req, res) => res.json({ success: true, version: '2026-02-21-v3', timestamp: new Date() }));
+
+// Debug AWS
+router.get('/aws-check', protectUser, asyncHandler(async (req, res) => {
+  const s3Cfg = getStagingConfig();
+  const rekogCfg = getRekogConfig();
+  res.json({
+    s3: { enabled: s3Cfg.enabled, bucket: s3Cfg.bucket, region: s3Cfg.region },
+    rekog: { enabled: rekogCfg.enabled, collectionId: rekogCfg.collectionId, region: rekogCfg.region }
+  });
+}));
 
 // Enrollment anônimo para galeria pública - MOVIDO PARA O TOPO
 router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHandler(async (req, res) => {
@@ -101,6 +111,21 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
     );
 
     res.json({ success: true, token, visitorId });
+  } catch (e) {
+    console.error('[Face Enrollment Error]:', e);
+    // Verificar se é erro de unicidade (já cadastrado) ou outro
+    if (e.code === '23505' || (e.message && e.message.includes('unique'))) {
+      return res.status(400).json({ message: 'Este e-mail já está em uso ou este rosto já foi cadastrado.' });
+    }
+    // Erro de restrição de NOT NULL
+    if (e.code === '23502') {
+      return res.status(500).json({ message: 'Erro de banco de dados: campo obrigatório ausente.', detail: e.column });
+    }
+    res.status(500).json({
+      message: 'Erro interno ao processar reconhecimento facial.',
+      error: e.message,
+      code: e.code
+    });
   } finally {
     client.release();
   }
