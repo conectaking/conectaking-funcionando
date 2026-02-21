@@ -2475,6 +2475,7 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
   try {
     const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
     const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
+    const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
     const hasFaceEnabled = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
     const gRes = await client.query(
       `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasAccessMode ? ', access_mode' : ''}${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}
