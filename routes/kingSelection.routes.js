@@ -103,13 +103,34 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
       clientId = guestRes.rows[0].id;
     }
 
-    let buffer = await normalizeImageForRekognition(req.file.buffer);
+    let buffer;
+    try {
+      buffer = await normalizeImageForRekognition(req.file.buffer);
+    } catch (imgErr) {
+      console.error('[Face Enrollment] normalizeImageForRekognition:', imgErr?.message || imgErr);
+      return res.status(400).json({ message: 'Imagem inválida ou corrompida. Tente outra foto.' });
+    }
+
     const stagingKey = `staging/enroll/g${g.id}/c${clientId}_${Date.now()}.jpg`;
-    await putStagingObject(stagingKey, buffer, 'image/jpeg');
+    try {
+      await putStagingObject(stagingKey, buffer, 'image/jpeg');
+    } catch (s3Err) {
+      console.error('[Face Enrollment] S3 staging putStagingObject:', s3Err?.message || s3Err);
+      return res.status(503).json({
+        message: 'Serviço de reconhecimento facial temporariamente indisponível. Verifique no servidor: bucket S3 staging e permissões AWS.'
+      });
+    }
+
     const externalImageId = `g${g.id}_c${clientId}`;
     let indexResult;
     try {
       indexResult = await indexFacesFromS3(stagingCfg.bucket, stagingKey, externalImageId);
+    } catch (rekErr) {
+      console.error('[Face Enrollment] Rekognition indexFacesFromS3:', rekErr?.message || rekErr);
+      await deleteStagingObject(stagingKey).catch(() => { });
+      return res.status(503).json({
+        message: 'Serviço de reconhecimento facial temporariamente indisponível. Verifique no servidor: AWS Rekognition e coleção.'
+      });
     } finally {
       await deleteStagingObject(stagingKey).catch(() => { });
     }
