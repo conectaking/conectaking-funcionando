@@ -42,6 +42,19 @@ router.get('/aws-check', protectUser, asyncHandler(async (req, res) => {
   });
 }));
 
+// Ping público para teste rápido sem login
+router.get('/public/aws-ping', asyncHandler(async (req, res) => {
+  const s3Cfg = getStagingConfig();
+  const rekogCfg = getRekogConfig();
+  res.json({
+    success: true,
+    s3: s3Cfg.enabled,
+    rekog: rekogCfg.enabled,
+    bucket: s3Cfg.bucket ? '***' + s3Cfg.bucket.slice(-4) : null,
+    collection: rekogCfg.collectionId
+  });
+}));
+
 // Enrollment anônimo para galeria pública - MOVIDO PARA O TOPO
 router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHandler(async (req, res) => {
   const slug = (req.query.slug || req.body.slug || '').toString().trim();
@@ -59,6 +72,15 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
     const gRes = await client.query('SELECT id, slug, access_mode FROM king_galleries WHERE slug=$1', [slug]);
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const g = gRes.rows[0];
+
+    // Verificar se a tabela de faces existe
+    try {
+      await client.query('SELECT id FROM rekognition_client_faces LIMIT 1');
+    } catch (tblErr) {
+      console.error('[Face Enrollment] Tabela rekognition_client_faces não encontrada ou inacessível:', tblErr.message);
+      // Opcional: tentar criar a tabela se não existir? Melhor apenas reportar por enquanto.
+    }
+
     if (g.access_mode !== 'public') return res.status(403).json({ message: 'Esta galeria não é pública. Use o login normal.' });
 
     const visitorId = req.query.visitorId || crypto.randomUUID();
@@ -87,11 +109,11 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
     try {
       indexResult = await indexFacesFromS3(stagingCfg.bucket, stagingKey, externalImageId);
     } finally {
-      await deleteStagingObject(stagingKey);
+      await deleteStagingObject(stagingKey).catch(() => { });
     }
 
     const faceRecords = indexResult.FaceRecords || [];
-    if (faceRecords.length === 0) return res.status(400).json({ message: 'Rosto não detectado.' });
+    if (faceRecords.length === 0) return res.status(400).json({ message: 'Rosto não detectado na imagem. Tente uma foto mais clara.' });
 
     await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [g.id, clientId]);
     for (const rec of faceRecords) {
@@ -124,7 +146,8 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
     res.status(500).json({
       message: 'Erro interno ao processar reconhecimento facial.',
       error: e.message,
-      code: e.code
+      code: e.code,
+      aws_code: e.name || e.code
     });
   } finally {
     client.release();
