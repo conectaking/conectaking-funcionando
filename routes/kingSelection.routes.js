@@ -3440,6 +3440,80 @@ router.get('/client/face-results', requireClient, asyncHandler(async (req, res) 
   }
 }));
 
+// ===== Rekognition CLIENTE: Buscar minhas fotos por OUTRA foto (sem cadastrar de novo — só SearchFaces) =====
+router.post('/client/search-face-by-photo', requireClient, uploadMem.single('image'), asyncHandler(async (req, res) => {
+  const galleryId = req.ksClient.galleryId;
+  const clientId = req.ksClient.clientId;
+  if (!clientId) return res.status(400).json({ message: 'Seu perfil não suporta busca por rosto.' });
+  if (!req.file) return res.status(400).json({ message: 'Envie uma foto.' });
+
+  const rekogCfg = getRekogConfig();
+  if (!rekogCfg.enabled) return res.status(503).json({ message: 'Reconhecimento facial não configurado.' });
+
+  let buffer;
+  try {
+    buffer = await normalizeImageForRekognition(req.file.buffer);
+  } catch (e) {
+    return res.status(400).json({ message: 'Imagem inválida. Tente outra foto.' });
+  }
+
+  let searchResult;
+  try {
+    searchResult = await searchFacesByImageBytes(buffer);
+  } catch (e) {
+    console.error('[SearchFaceByPhoto] Rekognition:', e?.message || e);
+    return res.status(503).json({ message: 'Busca temporariamente indisponível. Tente de novo.' });
+  }
+
+  const matches = searchResult.FaceMatches || [];
+  const matchedFaceIds = matches.map(m => m.Face?.FaceId).filter(Boolean);
+  if (matchedFaceIds.length === 0) {
+    return res.json({ success: true, total: 0, photoIds: [], message: 'Nenhum rosto parecido encontrado na galeria.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const ours = await client.query(
+      `SELECT 1 FROM rekognition_client_faces
+       WHERE gallery_id=$1 AND client_id=$2 AND face_id = ANY($3::varchar[]) LIMIT 1`,
+      [galleryId, clientId, matchedFaceIds]
+    );
+    if (ours.rows.length === 0) {
+      return res.json({ success: true, total: 0, photoIds: [], message: 'Esta foto não corresponde ao rosto cadastrado. Tente outra ou use "Filtrar minhas fotos".' });
+    }
+
+    const countRes = await client.query(
+      `SELECT COUNT(DISTINCT kp.id)::int AS cnt
+       FROM king_photos kp
+       JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+       JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2`,
+      [galleryId, clientId]
+    );
+    const total = countRes.rows[0]?.cnt || 0;
+
+    const dataRes = await client.query(
+      `SELECT kp.id AS photo_id
+       FROM king_photos kp
+       JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+       JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2
+       GROUP BY kp.id
+       ORDER BY MAX(rfm.similarity) DESC, kp.id
+       LIMIT 500`,
+      [galleryId, clientId]
+    );
+
+    res.json({
+      success: true,
+      total,
+      photoIds: dataRes.rows.map(r => r.photo_id)
+    });
+  } finally {
+    client.release();
+  }
+}));
+
 // ===== Rekognition CLIENTE: Upload de foto para cadastro de rosto =====
 router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'), asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
