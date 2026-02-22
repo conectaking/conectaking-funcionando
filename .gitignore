@@ -4,7 +4,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Environment variables
+# Environment variables (caminho do .env: raiz do back-end = .../conectaking-funcionando)
 .env
 .env.local
 .env.*.local
@@ -40,15 +40,12 @@ public/uploads/
 # Cache
 .cache/
 
-# Frontend - não commitado (deploy manual na Hostinger)
-# Observação: o backend do Render precisa da marca d'água oficial, então liberamos APENAS
-# o arquivo padrão da marca d'água dentro de public_html/.
-public_html/*
-!public_html/marca dagua KingSelection .png
-# (opcional) variações aceitas pelo backend, caso você renomeie para remover espaços:
-!public_html/marca dagua KingSelection.png
-!public_html/marca_dagua_kingselection.png
-!public_html/marca_dagua_kingselection_.png
+# =============================================================================
+# FRONT-END: NÃO COMMITAR — deploy manual no hosting
+# Caminho do front-end: .../conectaking-funcionando/public_html
+# Caminho do back-end (ponto de envio Git): .../conectaking-funcionando
+# Nada de public_html sobe para o repositório; front-end sobe manualmente.
+# =============================================================================
+public_html/
 
-# Backend - DEVE ser commitado
-# conectaking-funcionando/ está permitido (não ignorado)
+# Backend - arquivos na raiz (server.js, routes/, views/, etc.) são commitados
