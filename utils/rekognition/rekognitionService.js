@@ -6,7 +6,8 @@ const {
   RekognitionClient,
   IndexFacesCommand,
   DetectFacesCommand,
-  SearchFacesByImageCommand
+  SearchFacesByImageCommand,
+  CreateCollectionCommand
 } = require('@aws-sdk/client-rekognition');
 
 function getRekogConfig() {
@@ -44,6 +45,7 @@ async function indexFacesFromS3(bucket, name, externalImageId) {
   const client = getRekogClient();
   const cfg = getRekogConfig();
   if (!client || !cfg.enabled) throw new Error('Rekognition não configurado');
+
   const cmd = new IndexFacesCommand({
     CollectionId: cfg.collectionId,
     Image: { S3Object: { Bucket: bucket, Name: name } },
@@ -51,8 +53,23 @@ async function indexFacesFromS3(bucket, name, externalImageId) {
     MaxFaces: 5,
     QualityFilter: 'AUTO'
   });
-  const out = await client.send(cmd);
-  return out;
+
+  try {
+    return await client.send(cmd);
+  } catch (err) {
+    if (err.name === 'ResourceNotFoundException') {
+      console.log(`[Rekognition] Coleção ${cfg.collectionId} não encontrada. Criando...`);
+      try {
+        await client.send(new CreateCollectionCommand({ CollectionId: cfg.collectionId }));
+        console.log(`[Rekognition] Coleção ${cfg.collectionId} criada. Tentando indexar novamente...`);
+        return await client.send(cmd);
+      } catch (createErr) {
+        console.error(`[Rekognition] Erro ao criar coleção: ${createErr.message}`);
+        throw err; // lança o erro original
+      }
+    }
+    throw err;
+  }
 }
 
 /**
