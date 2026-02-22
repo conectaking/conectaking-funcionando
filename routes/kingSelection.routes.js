@@ -4414,54 +4414,34 @@ router.post('/galleries/:galleryId/process-all-faces', protectUser, asyncHandler
       });
     }
 
-    // Processar em paralelo com limite de concurrency
-    let processed = 0;
-    let errors = 0;
-    const errorDetails = [];
-
-    for (let i = 0; i < photos.length; i += concurrency) {
-      const batch = photos.slice(i, i + concurrency);
-      const results = await Promise.allSettled(
-        batch.map(async (photo) => {
-          const r2Key = extractR2Key(photo.file_path);
-          if (!r2Key || !r2Key.startsWith('galleries/')) {
-            throw new Error(`file_path inválido: ${photo.file_path}`);
-          }
-          const batchClient = await db.pool.connect();
-          try {
-            await _processPhotoFaces({
-              pgClient: batchClient,
-              galleryId,
-              photoId: photo.id,
-              r2Key,
-              photo
-            });
-          } finally {
-            batchClient.release();
-          }
-        })
-      );
-
-      for (let j = 0; j < results.length; j++) {
-        if (results[j].status === 'fulfilled') {
-          processed++;
-        } else {
-          errors++;
-          errorDetails.push({ photoId: batch[j].id, error: results[j].reason?.message || String(results[j].reason) });
-        }
+    // Processar em background (evita timeout HTTP)
+    (async () => {
+      console.log(`[FACIAL-BATCH] Iniciando processamento de ${totalPhotos} fotos para galeria ${galleryId}...`);
+      let processed = 0, errors = 0;
+      for (let i = 0; i < photos.length; i += concurrency) {
+        const batch = photos.slice(i, i + concurrency);
+        const results = await Promise.allSettled(
+          batch.map(async (photo) => {
+            const r2Key = extractR2Key(photo.file_path);
+            if (!r2Key) return;
+            const batchClient = await db.pool.connect();
+            try {
+              await _processPhotoFaces({ pgClient: batchClient, galleryId, photoId: photo.id, r2Key, photo });
+            } finally { batchClient.release(); }
+          })
+        );
+        for (const r of results) { if (r.status === 'fulfilled') processed++; else errors++; }
+        if (i % (concurrency * 10) === 0) console.log(`[FACIAL-BATCH] Galeria ${galleryId}: ${processed}/${totalPhotos} processadas.`);
       }
-    }
+      console.log(`[FACIAL-BATCH] Fim galeria ${galleryId}. Processadas: ${processed}, Erros: ${errors}.`);
+    })().catch(err => console.error(`[FACIAL-BATCH-ERR] Galeria ${galleryId}:`, err));
 
     return res.json({
       success: true,
-      galleryId,
-      totalPhotos,
-      processed,
-      errors,
-      errorDetails: errorDetails.slice(0, 20) // limitar erros na resposta
+      message: `Processamento de ${totalPhotos} fotos iniciado em segundo plano.`,
+      totalPhotos
     });
   } catch (err) {
-    // client pode já ter sido liberado
     try { client.release(); } catch (_) { }
     return res.status(500).json({ message: err?.message || 'Erro ao processar galeria.' });
   }
