@@ -73,12 +73,14 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const g = gRes.rows[0];
 
-    // Verificar se a tabela de faces existe
+    // Verificar se a tabela de faces existe (obrigatório para enroll)
     try {
       await client.query('SELECT id FROM rekognition_client_faces LIMIT 1');
     } catch (tblErr) {
-      console.error('[Face Enrollment] Tabela rekognition_client_faces não encontrada ou inacessível:', tblErr.message);
-      // Opcional: tentar criar a tabela se não existir? Melhor apenas reportar por enquanto.
+      console.error('[Face Enrollment] Tabela rekognition_client_faces não encontrada:', tblErr.message);
+      return res.status(503).json({
+        message: 'Reconhecimento facial não está disponível. Execute as migrations do banco (rekognition) no servidor.'
+      });
     }
 
     if (g.access_mode !== 'public') return res.status(403).json({ message: 'Esta galeria não é pública. Use o login normal.' });
@@ -134,20 +136,19 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
 
     res.json({ success: true, token, visitorId });
   } catch (e) {
-    console.error('[Face Enrollment Error]:', e);
+    console.error('[Face Enrollment Error]:', e?.message || e);
+    if (e?.code) console.error('[Face Enrollment] code:', e.code, 'detail:', e.detail);
     // Verificar se é erro de unicidade (já cadastrado) ou outro
     if (e.code === '23505' || (e.message && e.message.includes('unique'))) {
       return res.status(400).json({ message: 'Este e-mail já está em uso ou este rosto já foi cadastrado.' });
     }
     // Erro de restrição de NOT NULL
     if (e.code === '23502') {
-      return res.status(500).json({ message: 'Erro de banco de dados: campo obrigatório ausente.', detail: e.column });
+      return res.status(500).json({ message: 'Erro de banco de dados: campo obrigatório ausente.' });
     }
+    // Não expor detalhes internos (AWS, stack) ao cliente
     res.status(500).json({
-      message: 'Erro interno ao processar reconhecimento facial.',
-      error: e.message,
-      code: e.code,
-      aws_code: e.name || e.code
+      message: 'Erro interno ao processar reconhecimento facial. Tente outra foto ou mais tarde.'
     });
   } finally {
     client.release();
@@ -4160,18 +4161,19 @@ router.get('/galleries/:galleryId/face-process-status', protectUser, asyncHandle
     );
     const totalPhotos = totalRes.rows[0]?.total || 0;
 
-    // Contagem por status nos jobs
-    const jobsRes = await client.query(
-      `SELECT process_status, COUNT(*)::int AS cnt
-       FROM rekognition_photo_jobs
-       WHERE gallery_id=$1
-       GROUP BY process_status`,
-      [galleryId]
-    );
     const jobs = { pending: 0, processing: 0, done: 0, error: 0 };
-    for (const row of jobsRes.rows) {
-      const s = row.process_status;
-      if (jobs[s] !== undefined) jobs[s] = row.cnt;
+    if (await hasTable(client, 'rekognition_photo_jobs')) {
+      const jobsRes = await client.query(
+        `SELECT process_status, COUNT(*)::int AS cnt
+         FROM rekognition_photo_jobs
+         WHERE gallery_id=$1
+         GROUP BY process_status`,
+        [galleryId]
+      );
+      for (const row of jobsRes.rows) {
+        const s = row.process_status;
+        if (jobs[s] !== undefined) jobs[s] = row.cnt;
+      }
     }
 
     return res.json({ success: true, galleryId, totalPhotos, jobs });
@@ -4387,9 +4389,9 @@ router.post('/galleries/:galleryId/process-all-faces', protectUser, asyncHandler
     return res.status(503).json({ message: 'Reconhecimento facial não configurado (S3 staging ou Rekognition).' });
   }
 
-  // Opções
+  // Opções (body pode vir como JSON ou vazio se Content-Type não for application/json)
   const forceReprocess = req.body?.forceReprocess === true || req.query?.forceReprocess === 'true';
-  const concurrency = Math.min(5, Math.max(1, parseInt(req.body?.concurrency || req.query?.concurrency || '3', 10)));
+  const concurrency = Math.min(5, Math.max(1, parseInt(req.body?.concurrency || req.query?.concurrency || '3', 10) || 3));
 
   const client = await db.pool.connect();
   try {
@@ -4446,10 +4448,30 @@ router.post('/galleries/:galleryId/process-all-faces', protectUser, asyncHandler
         const results = await Promise.allSettled(
           batch.map(async (photo) => {
             const r2Key = extractR2Key(photo.file_path);
-            if (!r2Key) return;
             const batchClient = await db.pool.connect();
             try {
-              await _processPhotoFaces({ pgClient: batchClient, galleryId, photoId: photo.id, r2Key, photo });
+              if (!r2Key || !r2Key.startsWith('galleries/')) {
+                await batchClient.query(
+                  `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status, processed_at, error_message)
+                   VALUES ($1, $2, '', 'error', NOW(), $3)
+                   ON CONFLICT (gallery_id, photo_id) DO UPDATE SET
+                     process_status = 'error', processed_at = NOW(), error_message = $3`,
+                  [galleryId, photo.id, 'file_path sem chave R2 válida (galleries/...).']
+                );
+                return;
+              }
+              try {
+                await _processPhotoFaces({ pgClient: batchClient, galleryId, photoId: photo.id, r2Key, photo });
+              } catch (err) {
+                await batchClient.query(
+                  `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status, processed_at, error_message)
+                   VALUES ($1, $2, $3, 'error', NOW(), $4)
+                   ON CONFLICT (gallery_id, photo_id) DO UPDATE SET
+                     process_status = 'error', processed_at = NOW(), error_message = $4`,
+                  [galleryId, photo.id, r2Key, String(err?.message || err).slice(0, 500)]
+                );
+                throw err;
+              }
             } finally { batchClient.release(); }
           })
         );
@@ -4461,8 +4483,10 @@ router.post('/galleries/:galleryId/process-all-faces', protectUser, asyncHandler
 
     return res.json({
       success: true,
-      message: `Processamento de ${totalPhotos} fotos iniciado em segundo plano.`,
-      totalPhotos
+      message: `Processamento de ${totalPhotos} fotos iniciado em segundo plano. Acompanhe o progresso na seção "Processadas" (atualize a página ou aguarde).`,
+      totalPhotos,
+      processed: 0,
+      errors: 0
     });
   } catch (err) {
     try { client.release(); } catch (_) { }
@@ -4588,10 +4612,16 @@ facialRouter.get('/status', protectUser, asyncHandler(async (req, res) => {
 
     const totalPhotos = (await client.query('SELECT COUNT(*)::int AS n FROM king_photos WHERE gallery_id=$1', [galleryId])).rows[0]?.n || 0;
 
-    let processedPhotos = 0, totalFaces = 0, enrolledClients = 0;
+    let processedPhotos = 0, errorPhotos = 0, pendingPhotos = 0, totalFaces = 0, enrolledClients = 0;
     if (await hasTable(client, 'rekognition_photo_jobs')) {
       processedPhotos = (await client.query(
         `SELECT COUNT(*)::int AS n FROM rekognition_photo_jobs WHERE gallery_id=$1 AND process_status='done'`, [galleryId]
+      )).rows[0]?.n || 0;
+      errorPhotos = (await client.query(
+        `SELECT COUNT(*)::int AS n FROM rekognition_photo_jobs WHERE gallery_id=$1 AND process_status='error'`, [galleryId]
+      )).rows[0]?.n || 0;
+      pendingPhotos = (await client.query(
+        `SELECT COUNT(*)::int AS n FROM rekognition_photo_jobs WHERE gallery_id=$1 AND process_status IN ('pending','processing')`, [galleryId]
       )).rows[0]?.n || 0;
     }
     if (await hasTable(client, 'rekognition_photo_faces')) {
@@ -4605,7 +4635,16 @@ facialRouter.get('/status', protectUser, asyncHandler(async (req, res) => {
       )).rows[0]?.n || 0;
     }
 
-    return res.json({ success: true, galleryName: gallery.nome_projeto, totalPhotos, processedPhotos, totalFaces, enrolledClients });
+    return res.json({
+      success: true,
+      galleryName: gallery.nome_projeto,
+      totalPhotos,
+      processedPhotos,
+      errorPhotos,
+      pendingPhotos,
+      totalFaces,
+      enrolledClients
+    });
   } finally { client.release(); }
 }));
 
