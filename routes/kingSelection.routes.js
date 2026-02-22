@@ -13,8 +13,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { getR2Config, r2PublicUrl, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer, r2HeadObject } = require('../utils/r2');
-const { getStagingConfig, buildStagingKey, putStagingObject, deleteStagingObject } = require('../utils/rekognition/s3StagingService');
-const { getRekogConfig, indexFacesFromS3, detectFacesFromS3, searchFacesByImageBytes } = require('../utils/rekognition/rekognitionService');
+const { getStagingConfig, buildStagingKey, putStagingObject, getStagingObject, deleteStagingObject } = require('../utils/rekognition/s3StagingService');
+const { getRekogConfig, indexFacesFromS3, detectFacesFromS3, searchFacesByImageBytes, compareFaces } = require('../utils/rekognition/rekognitionService');
 const { normalizeImageForRekognition, cropFace } = require('../utils/rekognition/imageService');
 
 const router = express.Router();
@@ -111,42 +111,61 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
       return res.status(400).json({ message: 'Imagem inválida ou corrompida. Tente outra foto.' });
     }
 
-    const stagingKey = `staging/enroll/g${g.id}/c${clientId}_${Date.now()}.jpg`;
-    try {
-      await putStagingObject(stagingKey, buffer, 'image/jpeg');
-    } catch (s3Err) {
-      console.error('[Face Enrollment] S3 staging putStagingObject:', s3Err?.message || s3Err);
-      return res.status(503).json({
-        message: 'Serviço de reconhecimento facial temporariamente indisponível. Verifique no servidor: bucket S3 staging e permissões AWS.'
-      });
-    }
-
-    const externalImageId = `g${g.id}_c${clientId}`;
-    let indexResult;
-    try {
-      indexResult = await indexFacesFromS3(stagingCfg.bucket, stagingKey, externalImageId);
-    } catch (rekErr) {
-      console.error('[Face Enrollment] Rekognition indexFacesFromS3:', rekErr?.message || rekErr);
-      await deleteStagingObject(stagingKey).catch(() => { });
-      return res.status(503).json({
-        message: 'Serviço de reconhecimento facial temporariamente indisponível. Verifique no servidor: AWS Rekognition e coleção.'
-      });
-    } finally {
-      await deleteStagingObject(stagingKey).catch(() => { });
-    }
-
-    const faceRecords = indexResult.FaceRecords || [];
-    if (faceRecords.length === 0) return res.status(400).json({ message: 'Rosto não detectado na imagem. Tente uma foto mais clara.' });
-
-    await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [g.id, clientId]);
-    for (const rec of faceRecords) {
-      const faceId = rec.Face?.FaceId;
-      if (!faceId) continue;
+    // Modo sob demanda: salva imagem de referência no staging (não deleta); não chama IndexFaces (evita custo)
+    if (useRekogOnDemand()) {
+      const refStagingKey = `staging/enroll/g${g.id}/c${clientId}.jpg`;
+      try {
+        await putStagingObject(refStagingKey, buffer, 'image/jpeg');
+      } catch (s3Err) {
+        console.error('[Face Enrollment] S3 staging putStagingObject:', s3Err?.message || s3Err);
+        return res.status(503).json({
+          message: 'Serviço de reconhecimento facial temporariamente indisponível. Verifique no servidor: bucket S3 staging e permissões AWS.'
+        });
+      }
+      await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [g.id, clientId]);
       await client.query(
         `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [g.id, clientId, faceId, rec.Face?.ImageId || null, 'anon']
+         VALUES ($1, $2, $3, NULL, $4)`,
+        [g.id, clientId, 'on_demand_' + clientId, refStagingKey]
       );
+    } else {
+      const stagingKey = `staging/enroll/g${g.id}/c${clientId}_${Date.now()}.jpg`;
+      try {
+        await putStagingObject(stagingKey, buffer, 'image/jpeg');
+      } catch (s3Err) {
+        console.error('[Face Enrollment] S3 staging putStagingObject:', s3Err?.message || s3Err);
+        return res.status(503).json({
+          message: 'Serviço de reconhecimento facial temporariamente indisponível. Verifique no servidor: bucket S3 staging e permissões AWS.'
+        });
+      }
+
+      const externalImageId = `g${g.id}_c${clientId}`;
+      let indexResult;
+      try {
+        indexResult = await indexFacesFromS3(stagingCfg.bucket, stagingKey, externalImageId);
+      } catch (rekErr) {
+        console.error('[Face Enrollment] Rekognition indexFacesFromS3:', rekErr?.message || rekErr);
+        await deleteStagingObject(stagingKey).catch(() => { });
+        return res.status(503).json({
+          message: 'Serviço de reconhecimento facial temporariamente indisponível. Verifique no servidor: AWS Rekognition e coleção.'
+        });
+      } finally {
+        await deleteStagingObject(stagingKey).catch(() => { });
+      }
+
+      const faceRecords = indexResult.FaceRecords || [];
+      if (faceRecords.length === 0) return res.status(400).json({ message: 'Rosto não detectado na imagem. Tente uma foto mais clara.' });
+
+      await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [g.id, clientId]);
+      for (const rec of faceRecords) {
+        const faceId = rec.Face?.FaceId;
+        if (!faceId) continue;
+        await client.query(
+          `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [g.id, clientId, faceId, rec.Face?.ImageId || null, 'anon']
+        );
+      }
     }
 
     const token = jwt.sign(
@@ -3391,14 +3410,101 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
   }
 }));
 
+// ----- Modo sob demanda: CompareFaces + cache (não processar 2k fotos; cobra só quando o cliente envia a foto) -----
+// Ativo por padrão. Use REKOG_ON_DEMAND=0 ou false para voltar ao fluxo antigo (processar todas as fotos + collection).
+function useRekogOnDemand() {
+  const v = String(process.env.REKOG_ON_DEMAND || '1').toLowerCase();
+  return v !== '0' && v !== 'false';
+}
+
+function searchCacheKey(galleryId, clientId, key) {
+  return `search:${galleryId}:${clientId}:${key}`;
+}
+
+const SEARCH_CACHE_TTL_DAYS = 7;
+
+async function getSearchCache(pgClient, galleryId, clientId, key) {
+  const ck = searchCacheKey(galleryId, clientId, key);
+  const r = await pgClient.query(
+    `SELECT payload_json FROM rekognition_processing_cache WHERE cache_key=$1 AND expires_at > NOW()`,
+    [ck]
+  );
+  if (r.rows.length === 0) return null;
+  try {
+    const payload = JSON.parse(r.rows[0].payload_json);
+    return Array.isArray(payload.photoIds) ? payload.photoIds : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function setSearchCache(pgClient, galleryId, clientId, key, photoIds, ttlDays = SEARCH_CACHE_TTL_DAYS) {
+  const ck = searchCacheKey(galleryId, clientId, key);
+  const payload = JSON.stringify({ photoIds: Array.isArray(photoIds) ? photoIds : [] });
+  await pgClient.query(
+    `INSERT INTO rekognition_processing_cache (cache_key, payload_json, expires_at)
+     VALUES ($1, $2, NOW() + ($3 || ' days')::interval)
+     ON CONFLICT (cache_key) DO UPDATE SET payload_json = EXCLUDED.payload_json, expires_at = EXCLUDED.expires_at`,
+    [ck, payload, String(ttlDays)]
+  );
+}
+
+async function getReferenceImageBytes(pgClient, galleryId, clientId) {
+  const r = await pgClient.query(
+    `SELECT reference_r2_key FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2 LIMIT 1`,
+    [galleryId, clientId]
+  );
+  const ref = r.rows[0]?.reference_r2_key;
+  if (!ref) return null;
+  if (String(ref).toLowerCase().startsWith('staging/')) {
+    return await getStagingObject(ref);
+  }
+  const key = ref.startsWith('r2:') ? ref.slice(3) : ref;
+  if (key && key.startsWith('galleries/')) return await fetchPhotoFileBufferFromFilePath('r2:' + key);
+  return null;
+}
+
+async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient) {
+  const photosRes = await pgClient.query(
+    'SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id',
+    [galleryId]
+  );
+  const photos = photosRes.rows;
+  const matchedIds = [];
+  const concurrency = 5;
+  for (let i = 0; i < photos.length; i += concurrency) {
+    const batch = photos.slice(i, i + concurrency);
+    const results = await Promise.allSettled(
+      batch.map(async (p) => {
+        const buf = await fetchPhotoFileBufferFromFilePath(p.file_path);
+        if (!buf || buf.length === 0) return null;
+        let targetBuf;
+        try {
+          targetBuf = await normalizeImageForRekognition(buf);
+        } catch (_) {
+          targetBuf = buf;
+        }
+        const out = await compareFaces(sourceImageBytes, targetBuf);
+        const matches = out.FaceMatches || [];
+        if (matches.length > 0 && (matches[0].Similarity || 0) >= (getRekogConfig().faceMatchThreshold || 80)) {
+          return p.id;
+        }
+        return null;
+      })
+    );
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value) matchedIds.push(r.value);
+    }
+  }
+  return matchedIds;
+}
+
 // ===== Rekognition CLIENTE: Buscar fotos do meu rosto =====
 router.get('/client/face-results', requireClient, asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
   const clientId = req.ksClient.clientId; // pode ser null se for o cliente principal da galeria (legado)
 
   if (!clientId) {
-    // Para o cliente legado (email único da galeria), ele não tem face_id associado facilmente
-    // no modelo atual, o reconhecimento é focado nos clientes da lista.
     return res.status(400).json({ message: 'Seu perfil de acesso não suporta reconhecimento facial. Solicite um acesso individual ao fotógrafo.' });
   }
 
@@ -3408,6 +3514,25 @@ router.get('/client/face-results', requireClient, asyncHandler(async (req, res) 
 
   const client = await db.pool.connect();
   try {
+    // Modo sob demanda: CompareFaces + cache (não precisa ter processado as fotos da galeria)
+    if (useRekogOnDemand()) {
+      const cached = await getSearchCache(client, galleryId, clientId, 'enroll');
+      if (cached !== null) {
+        const total = cached.length;
+        const photoIds = cached.slice(offset, offset + limit);
+        return res.json({ success: true, total, photoIds });
+      }
+      const refBytes = await getReferenceImageBytes(client, galleryId, clientId);
+      if (!refBytes || refBytes.length === 0) {
+        return res.json({ success: true, total: 0, photoIds: [], message: 'Nenhuma foto de referência. Cadastre seu rosto primeiro.' });
+      }
+      const photoIds = await compareFacesAgainstGallery(refBytes, galleryId, client);
+      await setSearchCache(client, galleryId, clientId, 'enroll', photoIds);
+      const total = photoIds.length;
+      const pageIds = photoIds.slice(offset, offset + limit);
+      return res.json({ success: true, total, photoIds: pageIds });
+    }
+
     const countRes = await client.query(
       `SELECT COUNT(DISTINCT kp.id)::int AS cnt
        FROM king_photos kp
@@ -3440,7 +3565,7 @@ router.get('/client/face-results', requireClient, asyncHandler(async (req, res) 
   }
 }));
 
-// ===== Rekognition CLIENTE: Buscar minhas fotos por OUTRA foto (sem cadastrar de novo — só SearchFaces) =====
+// ===== Rekognition CLIENTE: Buscar minhas fotos por OUTRA foto (sem cadastrar de novo) =====
 router.post('/client/search-face-by-photo', requireClient, uploadMem.single('image'), asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
   const clientId = req.ksClient.clientId;
@@ -3457,23 +3582,40 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
     return res.status(400).json({ message: 'Imagem inválida. Tente outra foto.' });
   }
 
-  let searchResult;
+  const pgClient = await db.pool.connect();
   try {
-    searchResult = await searchFacesByImageBytes(buffer);
-  } catch (e) {
-    console.error('[SearchFaceByPhoto] Rekognition:', e?.message || e);
-    return res.status(503).json({ message: 'Busca temporariamente indisponível. Tente de novo.' });
-  }
+    // Modo sob demanda: CompareFaces + cache (não cobra de novo se a mesma foto já foi buscada)
+    if (useRekogOnDemand()) {
+      const imageHash = crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 32);
+      const cached = await getSearchCache(pgClient, galleryId, clientId, imageHash);
+      if (cached !== null) {
+        return res.json({ success: true, total: cached.length, photoIds: cached });
+      }
+      const photoIds = await compareFacesAgainstGallery(buffer, galleryId, pgClient);
+      await setSearchCache(pgClient, galleryId, clientId, imageHash, photoIds);
+      return res.json({
+        success: true,
+        total: photoIds.length,
+        photoIds,
+        message: photoIds.length === 0 ? 'Nenhum rosto parecido encontrado na galeria.' : undefined
+      });
+    }
 
-  const matches = searchResult.FaceMatches || [];
-  const matchedFaceIds = matches.map(m => m.Face?.FaceId).filter(Boolean);
-  if (matchedFaceIds.length === 0) {
-    return res.json({ success: true, total: 0, photoIds: [], message: 'Nenhum rosto parecido encontrado na galeria.' });
-  }
+    let searchResult;
+    try {
+      searchResult = await searchFacesByImageBytes(buffer);
+    } catch (e) {
+      console.error('[SearchFaceByPhoto] Rekognition:', e?.message || e);
+      return res.status(503).json({ message: 'Busca temporariamente indisponível. Tente de novo.' });
+    }
 
-  const client = await db.pool.connect();
-  try {
-    const ours = await client.query(
+    const matches = searchResult.FaceMatches || [];
+    const matchedFaceIds = matches.map(m => m.Face?.FaceId).filter(Boolean);
+    if (matchedFaceIds.length === 0) {
+      return res.json({ success: true, total: 0, photoIds: [], message: 'Nenhum rosto parecido encontrado na galeria.' });
+    }
+
+    const ours = await pgClient.query(
       `SELECT 1 FROM rekognition_client_faces
        WHERE gallery_id=$1 AND client_id=$2 AND face_id = ANY($3::varchar[]) LIMIT 1`,
       [galleryId, clientId, matchedFaceIds]
@@ -3482,7 +3624,7 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
       return res.json({ success: true, total: 0, photoIds: [], message: 'Esta foto não corresponde ao rosto cadastrado. Tente outra ou use "Filtrar minhas fotos".' });
     }
 
-    const countRes = await client.query(
+    const countRes = await pgClient.query(
       `SELECT COUNT(DISTINCT kp.id)::int AS cnt
        FROM king_photos kp
        JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
@@ -3492,7 +3634,7 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
     );
     const total = countRes.rows[0]?.cnt || 0;
 
-    const dataRes = await client.query(
+    const dataRes = await pgClient.query(
       `SELECT kp.id AS photo_id
        FROM king_photos kp
        JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
@@ -3510,7 +3652,7 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
       photoIds: dataRes.rows.map(r => r.photo_id)
     });
   } finally {
-    client.release();
+    pgClient.release();
   }
 }));
 
@@ -3531,8 +3673,25 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
   const client = await db.pool.connect();
   try {
     let buffer = await normalizeImageForRekognition(req.file.buffer);
-    const stagingKey = `staging/enroll/g${galleryId}/c${clientId}_${Date.now()}.jpg`;
 
+    // Modo sob demanda: salva imagem de referência no staging (não deleta); não chama IndexFaces (evita custo)
+    if (useRekogOnDemand()) {
+      const refStagingKey = `staging/enroll/g${galleryId}/c${clientId}.jpg`;
+      await putStagingObject(refStagingKey, buffer, 'image/jpeg');
+      await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
+      await client.query(
+        `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
+         VALUES ($1, $2, $3, NULL, $4)`,
+        [galleryId, clientId, 'on_demand_' + clientId, refStagingKey]
+      );
+      return res.json({
+        success: true,
+        message: 'Rosto cadastrado. Ao filtrar ou buscar por rosto, a busca será feita sob demanda (resultado fica em cache).',
+        faceCount: 1
+      });
+    }
+
+    const stagingKey = `staging/enroll/g${galleryId}/c${clientId}_${Date.now()}.jpg`;
     await putStagingObject(stagingKey, buffer, 'image/jpeg');
     const externalImageId = `g${galleryId}_c${clientId}`;
 
@@ -3548,7 +3707,6 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
       return res.status(400).json({ message: 'Nenhum rosto detectado na foto. Tente uma selfie mais nítida.' });
     }
 
-    // Limpar rostos antigos deste cliente nesta galeria (opcional, mas recomendado para manter 1 rosto atual)
     await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
 
     for (const rec of faceRecords) {
@@ -4321,7 +4479,8 @@ router.get('/galleries/:galleryId/face-process-status', protectUser, asyncHandle
       }
     }
 
-    return res.json({ success: true, galleryId, totalPhotos, jobs });
+    const onDemand = useRekogOnDemand();
+    return res.json({ success: true, galleryId, totalPhotos, jobs, onDemand });
   } finally {
     client.release();
   }

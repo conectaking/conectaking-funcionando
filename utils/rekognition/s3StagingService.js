@@ -2,7 +2,7 @@
  * S3 Staging: ponte temporária R2 → Rekognition.
  * Usa bucket AWS S3 (kingselection-rekog-staging) em us-east-1.
  */
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('crypto');
 
 function getStagingConfig() {
@@ -60,6 +60,25 @@ async function putStagingObject(key, buffer, contentType = 'image/jpeg') {
 }
 
 /**
+ * Lê objeto do staging (ex.: imagem de referência do enroll para busca sob demanda).
+ * @param {string} key - chave no S3 staging (ex: staging/enroll/g123/c456.jpg)
+ * @returns {Promise<Buffer|null>}
+ */
+async function getStagingObject(key) {
+  const cfg = getStagingConfig();
+  const client = getStagingS3Client();
+  if (!cfg.enabled || !client || !key) return null;
+  try {
+    const out = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
+    const chunks = [];
+    for await (const chunk of out.Body) chunks.push(chunk);
+    return Buffer.concat(chunks);
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
  * Remove objeto do staging.
  */
 async function deleteStagingObject(key) {
@@ -77,5 +96,6 @@ module.exports = {
   getStagingConfig,
   buildStagingKey,
   putStagingObject,
+  getStagingObject,
   deleteStagingObject
 };

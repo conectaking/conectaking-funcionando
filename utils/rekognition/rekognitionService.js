@@ -1,5 +1,5 @@
 /**
- * AWS Rekognition: IndexFaces (enroll), DetectFaces, SearchFacesByImage (match).
+ * AWS Rekognition: IndexFaces (enroll), DetectFaces, SearchFacesByImage (match), CompareFaces (busca sob demanda).
  * Collection já existe: kingselection (us-east-1).
  */
 const {
@@ -7,6 +7,7 @@ const {
   IndexFacesCommand,
   DetectFacesCommand,
   SearchFacesByImageCommand,
+  CompareFacesCommand,
   CreateCollectionCommand
 } = require('@aws-sdk/client-rekognition');
 
@@ -124,10 +125,31 @@ async function searchFacesByImageS3(bucket, name) {
   return out;
 }
 
+/**
+ * Compara rosto na imagem fonte com rostos na imagem alvo (sem usar collection).
+ * Usado no modo sob demanda: cobra só quando o cliente envia a foto; resultado é cacheado.
+ * @param {Buffer} sourceImageBytes - foto do cliente (rosto a buscar)
+ * @param {Buffer} targetImageBytes - foto da galeria
+ * @returns {Promise<{ FaceMatches: Array<{ Similarity }> }>}
+ */
+async function compareFaces(sourceImageBytes, targetImageBytes) {
+  const client = getRekogClient();
+  const cfg = getRekogConfig();
+  if (!client || !cfg.enabled) throw new Error('Rekognition não configurado');
+  const cmd = new CompareFacesCommand({
+    SourceImage: { Bytes: sourceImageBytes },
+    TargetImage: { Bytes: targetImageBytes },
+    SimilarityThreshold: cfg.faceMatchThreshold
+  });
+  const out = await client.send(cmd);
+  return out;
+}
+
 module.exports = {
   getRekogConfig,
   indexFacesFromS3,
   detectFacesFromS3,
   searchFacesByImageBytes,
-  searchFacesByImageS3
+  searchFacesByImageS3,
+  compareFaces
 };
