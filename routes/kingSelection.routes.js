@@ -1563,6 +1563,7 @@ router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
       return res.status(500).json({ success: false, message: msg });
     }
 
+    scheduleFaceProcessingForNewPhotos(galleryId, ins.rows);
     return res.status(201).json({ success: true, photo: ins.rows[0] });
   } finally {
     client.release();
@@ -1727,6 +1728,7 @@ router.post('/galleries/:id/photos/worker-commit', protectUser, asyncHandler(asy
        RETURNING id, gallery_id, original_name, "order", file_path`,
       values
     );
+    scheduleFaceProcessingForNewPhotos(galleryId, ins.rows);
     res.status(201).json({ success: true, photos: ins.rows });
   } finally {
     client.release();
@@ -1776,6 +1778,7 @@ router.post('/galleries/:id/photos/batch', protectUser, asyncHandler(async (req,
       values
     );
 
+    scheduleFaceProcessingForNewPhotos(galleryId, ins.rows);
     res.status(201).json({ success: true, photos: ins.rows });
   } finally {
     client.release();
@@ -4082,6 +4085,53 @@ async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }
   );
 
   return { fromCache: false, ...result };
+}
+
+/**
+ * Agenda processamento facial em segundo plano para fotos recém-adicionadas.
+ * Só roda se a galeria tiver face_recognition_enabled e Rekognition/S3 staging estiverem configurados.
+ * Não bloqueia a resposta HTTP.
+ */
+function scheduleFaceProcessingForNewPhotos(galleryId, photos) {
+  if (!galleryId || !Array.isArray(photos) || photos.length === 0) return;
+  const list = photos.map(p => ({ id: p.id, file_path: p.file_path })).filter(p => p.id && p.file_path);
+  if (!list.length) return;
+
+  setImmediate(async () => {
+    try {
+      const stagingCfg = getStagingConfig();
+      const rekogCfg = getRekogConfig();
+      if (!stagingCfg.enabled || !rekogCfg.enabled) return;
+
+      const client = await db.pool.connect();
+      let faceEnabled = false;
+      try {
+        const hasCol = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
+        if (!hasCol) return;
+        const r = await client.query('SELECT face_recognition_enabled FROM king_galleries WHERE id=$1', [galleryId]);
+        faceEnabled = !!r.rows[0]?.face_recognition_enabled;
+      } finally {
+        client.release();
+      }
+      if (!faceEnabled) return;
+
+      for (const photo of list) {
+        const r2Key = extractR2Key(photo.file_path);
+        if (!r2Key || !r2Key.startsWith('galleries/')) continue;
+        const pgClient = await db.pool.connect();
+        try {
+          await _processPhotoFaces({ pgClient, galleryId, photoId: photo.id, r2Key, photo });
+          console.log('[FACIAL-AUTO] Foto', photo.id, 'processada (galeria', galleryId + ')');
+        } catch (err) {
+          console.error('[FACIAL-AUTO] Erro ao processar foto', photo.id, ':', err?.message || err);
+        } finally {
+          if (pgClient) pgClient.release();
+        }
+      }
+    } catch (e) {
+      console.error('[FACIAL-AUTO] Erro:', e?.message || e);
+    }
+  });
 }
 
 // -----------------------------------------------------------
