@@ -36,9 +36,19 @@ async function getBiblePageContext(client, slug) {
     };
 }
 
-/** Sem bookId: redireciona para a primeira página (Bíblia) com a seção Estudo por livro aberta. Evita página duplicada. */
+/** URL sem bookId desativada: página duplicada. Retorna 404 para forçar uso da página principal (bibleEdit). */
 router.get('/:slug/bible/estudo-livro', (req, res) => {
-    res.redirect(302, `/${req.params.slug}/bible#estudo-livro`);
+    const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || '';
+    const bibleEditUrl = frontendUrl ? (frontendUrl.replace(/\/$/, '') + '/bibleEdit') : 'https://www.conectaking.com.br/bibleEdit';
+    res.status(404).send(`
+        <!DOCTYPE html>
+        <html><head><meta charset="utf-8"><title>Página não disponível</title></head>
+        <body style="font-family:sans-serif;text-align:center;padding:3rem;background:#0D0D0F;color:#ECECEC;">
+            <h1>Página não disponível</h1>
+            <p>Use a página principal da Bíblia no painel.</p>
+            <p style="margin-top:20px"><a href="${bibleEditUrl}" style="color:#FFC700;text-decoration:none;font-weight:600">Abrir Bíblia no painel →</a></p>
+        </body></html>
+    `);
 });
 
 router.get('/:slug/bible/estudo-livro/:bookId', asyncHandler(async (req, res) => {
