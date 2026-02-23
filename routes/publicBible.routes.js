@@ -1,7 +1,7 @@
 /**
  * Rotas públicas do módulo Bíblia
  * GET /:slug/bible - Página principal (versículo do dia, livros)
- * GET /:slug/bible/estudo-livro/:bookId - Página principal com estudo do livro aberto (evita confundir com bookId/chapter)
+ * GET /:slug/biblia/estudos-livro/:bookId - Estudo do livro (URL limpa; antiga /bible/estudo-livro/:bookId redireciona)
  * GET /:slug/bible/:bookId/:chapter - Leitor de capítulo
  */
 
@@ -31,12 +31,13 @@ async function getBiblePageContext(client, slug) {
     return {
         slug,
         translation: itemRes.rows[0].translation_code || 'nvi',
+        bibleItemId: itemRes.rows[0].id || null,
         baseUrl: null,
         API_URL: null
     };
 }
 
-/** URL sem bookId desativada: página duplicada. Retorna 404 e link para o painel. */
+/** URL antiga: redireciona para a URL limpa /biblia/estudos-livro/:bookId */
 router.get('/:slug/bible/estudo-livro', (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br';
     const dashboardUrl = frontendUrl.replace(/\/$/, '') + '/dashboard.html';
@@ -51,51 +52,59 @@ router.get('/:slug/bible/estudo-livro', (req, res) => {
     `);
 });
 
-router.get('/:slug/bible/estudo-livro/:bookId', asyncHandler(async (req, res) => {
+router.get('/:slug/bible/estudo-livro/:bookId', (req, res) => {
+    res.redirect(302, `/${req.params.slug}/biblia/estudos-livro/${encodeURIComponent(req.params.bookId)}`);
+});
+
+/** Renderiza estudo do livro. URL limpa: /:slug/biblia/estudos-livro/:bookId */
+async function renderBookStudy(req, res, slug, bookId) {
+    const client = await db.pool.connect();
+    try {
+        const ctx = await getBiblePageContext(client, slug);
+        if (!ctx) {
+            return res.status(404).send(`
+                <!DOCTYPE html>
+                <html><head><meta charset="utf-8"><title>Bíblia não encontrada</title></head>
+                <body style="font-family:sans-serif;text-align:center;padding:3rem;background:#0D0D0F;color:#ECECEC;">
+                    <h1>Bíblia não encontrada</h1>
+                    <p>Este perfil não possui o módulo Bíblia ativo.</p>
+                </body></html>
+            `);
+        }
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const manifest = bibleService.loadBooksManifest();
+        const allBooks = (manifest.at || []).concat(manifest.nt || []);
+        const book = allBooks.find(b => b && b.id === bookId);
+        const bookName = book ? (book.name || bookId) : bookId;
+        const study = await bibleService.getBookStudy(bookId);
+        const frontendUrl = (process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
+        const bibleItemId = ctx.bibleItemId || null;
+        const biblePanelUrl = bibleItemId ? `${frontendUrl}/bible.html?itemId=${bibleItemId}` : `${frontendUrl}/dashboard.html`;
+        return res.render('bibleBookStudy', {
+            slug: ctx.slug,
+            bookId: bookId || '',
+            bookName,
+            study: study || null,
+            baseUrl: baseUrl.replace(/\/$/, ''),
+            biblePanelUrl,
+            returnTo: ''
+        });
+    } finally {
+        client.release();
+    }
+}
+
+router.get('/:slug/biblia/estudos-livro', (req, res) => {
+    const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br';
+    res.redirect(302, frontendUrl.replace(/\/$/, '') + '/dashboard.html');
+});
+
+router.get('/:slug/biblia/estudos-livro/:bookId', asyncHandler(async (req, res) => {
     const { slug, bookId } = req.params;
     try {
-        const client = await db.pool.connect();
-        try {
-            const ctx = await getBiblePageContext(client, slug);
-            if (!ctx) {
-                return res.status(404).send(`
-                    <!DOCTYPE html>
-                    <html><head><meta charset="utf-8"><title>Bíblia não encontrada</title></head>
-                    <body style="font-family:sans-serif;text-align:center;padding:3rem;background:#0D0D0F;color:#ECECEC;">
-                        <h1>Bíblia não encontrada</h1>
-                        <p>Este perfil não possui o módulo Bíblia ativo.</p>
-                    </body></html>
-                `);
-            }
-            const baseUrl = `${req.protocol}://${req.get('host')}`;
-            const manifest = bibleService.loadBooksManifest();
-            const allBooks = (manifest.at || []).concat(manifest.nt || []);
-            const book = allBooks.find(b => b && b.id === bookId);
-            const bookName = book ? (book.name || bookId) : bookId;
-            const study = await bibleService.getBookStudy(bookId);
-            const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br';
-            const biblePanelUrl = frontendUrl.replace(/\/$/, '') + '/dashboard.html';
-            let returnTo = (req.query.returnTo && typeof req.query.returnTo === 'string') ? req.query.returnTo.trim() : '';
-            if (returnTo) {
-              const baseUrlReq = (req.protocol + '://' + (req.get('host') || '')).replace(/\/$/, '');
-              const frontBase = (frontendUrl || '').replace(/\/$/, '');
-              const allowed = (frontBase && returnTo.indexOf(frontBase) === 0) || (baseUrlReq && returnTo.indexOf(baseUrlReq) === 0);
-              if (!allowed) returnTo = '';
-            }
-            return res.render('bibleBookStudy', {
-                slug: ctx.slug,
-                bookId: bookId || '',
-                bookName,
-                study: study || null,
-                baseUrl: baseUrl.replace(/\/$/, ''),
-                biblePanelUrl,
-                returnTo
-            });
-        } finally {
-            client.release();
-        }
+        await renderBookStudy(req, res, slug, bookId);
     } catch (e) {
-        logger.error('publicBible estudo-livro:', e);
+        logger.error('publicBible estudos-livro:', e);
         res.status(500).send('<h1>Erro ao carregar estudo</h1>');
     }
 }));

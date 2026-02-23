@@ -1045,13 +1045,13 @@
                         var name = (b.book_name || b.book_id);
                         var bid = (b.book_id || '').replace(/"/g, '&quot;');
                         var label = name + (hasStudy ? '' : ' <span style="font-size:0.8rem;color:#888;font-weight:normal">(em breve)</span>');
-                        var url = '/' + slug + '/bible/estudo-livro/' + (b.book_id || '');
+                        var url = '/' + slug + '/biblia/estudos-livro/' + (b.book_id || '');
                         return '<a href="' + url + '" target="_blank" rel="noopener" class="bible-btn secondary" data-book-id="' + bid + '" data-has-study="' + (hasStudy ? '1' : '0') + '" style="display:block;width:100%;text-align:left;margin-bottom:8px;padding:12px;text-decoration:none' + (hasStudy ? '' : ';opacity:0.85') + '"><i class="fas fa-book"></i> ' + label + ' <i class="fas fa-external-link-alt" style="float:right;font-size:0.8rem;opacity:0.7"></i></a>';
                     }).join('');
                     if (window.pendingEstudoLivroBookId) {
                         var bid = window.pendingEstudoLivroBookId;
                         delete window.pendingEstudoLivroBookId;
-                        window.open('/' + slug + '/bible/estudo-livro/' + bid, '_blank');
+                        window.open('/' + slug + '/biblia/estudos-livro/' + bid, '_blank');
                     }
                 } catch (e) {
                     listEl.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
