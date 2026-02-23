@@ -147,9 +147,21 @@ async function markRead(req, res) {
 
 async function getDevocionalBibliaInteira(req, res) {
     try {
-        const month = req.query.month || new Date().getMonth() + 1;
-        const day = req.query.day || new Date().getDate();
-        const result = bibleService.getDevocionalBibliaInteira(month, day);
+        const mode = req.query.mode || 'calendar';
+        const month = req.query.month;
+        const day = req.query.day;
+        let result;
+        if (mode === 'sequence' && day != null && day !== '') {
+            const dayNum = parseInt(day, 10);
+            if (dayNum >= 1 && dayNum <= 1189) {
+                result = bibleService.getDevocionalBibliaInteira('sequence', dayNum, null);
+            }
+        }
+        if (!result) {
+            const m = month != null && month !== '' ? month : new Date().getMonth() + 1;
+            const d = day != null && day !== '' ? day : new Date().getDate();
+            result = bibleService.getDevocionalBibliaInteira('calendar', m, d);
+        }
         if (!result) return responseFormatter.error(res, 'Devocional não encontrado', 404);
         return responseFormatter.success(res, result);
     } catch (e) {

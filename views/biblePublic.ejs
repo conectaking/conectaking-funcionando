@@ -322,8 +322,13 @@
                 </div>
             </div>
             <div id="receba-devocional-biblia-inteira" class="receba-content">
-                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Um livro por mês: cada dia um capítulo. Leitura mais longa (5–10 min) com reflexão profunda.</p>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:12px">Percorra a Bíblia inteira em devocionais: um capítulo por dia. Ao terminar, recomeça — para toda a vida.</p>
+                <div id="dev-biblia-mode-choice" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+                    <button type="button" class="bible-btn" id="btn-dev-biblia-comecar-hoje" title="Seu dia 1 será hoje; o plano segue até o fim da Bíblia e depois recomeça"><i class="fas fa-play"></i> Começar hoje</button>
+                    <span style="color:#A1A1A1;font-size:0.9rem">ou</span>
+                    <button type="button" class="bible-btn secondary" id="btn-dev-biblia-calendario" title="Usar mês e dia do calendário (ex.: janeiro = Gênesis)"><i class="fas fa-calendar-alt"></i> Seguir pelo calendário</button>
+                </div>
+                <div id="dev-biblia-calendario-picker" style="display:none;margin-bottom:16px;flex-wrap:wrap;gap:10px;align-items:center;display:flex">
                     <label style="font-size:0.9rem;color:#A1A1A1">Mês:</label>
                     <select id="dev-biblia-mes" style="padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:#ECECEC;font-size:0.9rem;cursor:pointer">
                         <option value="1">Janeiro — Gênesis</option><option value="2">Fevereiro — Êxodo</option><option value="3">Março — Levítico</option><option value="4">Abril — Números</option><option value="5">Maio — Deuteronômio</option><option value="6">Junho — Josué</option><option value="7">Julho — Juízes</option><option value="8">Agosto — Rute</option><option value="9">Setembro — 1 Samuel</option><option value="10">Outubro — 2 Samuel</option><option value="11">Novembro — 1 Reis</option><option value="12">Dezembro — 2 Reis</option>
@@ -331,9 +336,11 @@
                     <label style="font-size:0.9rem;color:#A1A1A1">Dia:</label>
                     <input type="number" id="dev-biblia-dia" min="1" max="31" placeholder="1-31" style="width:70px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:#ECECEC">
                     <button type="button" class="bible-btn" id="btn-dev-biblia-load"><i class="fas fa-book-open"></i> Carregar</button>
-                    <button type="button" class="bible-btn secondary" id="btn-dev-biblia-today"><i class="fas fa-calendar-day"></i> Hoje</button>
+                    <button type="button" class="bible-btn secondary" id="btn-dev-biblia-back-calendario" style="display:inline-flex"><i class="fas fa-arrow-left"></i> Voltar</button>
                 </div>
-                <div id="devocional-biblia-inteira-container"><p style="color:#A1A1A1;font-size:0.9rem">Escolha o mês e o dia ou clique em "Hoje".</p></div>
+                <div id="dev-biblia-sequence-info" style="display:none;margin-bottom:12px;font-size:0.9rem;color:#FFC700"></div>
+                <p id="dev-biblia-link-calendario" style="display:none;margin-top:8px"><button type="button" class="bible-btn secondary" id="btn-dev-biblia-usar-calendario" style="font-size:0.85rem"><i class="fas fa-calendar-alt"></i> Usar calendário em vez do meu plano</button></p>
+                <div id="devocional-biblia-inteira-container"><p style="color:#A1A1A1;font-size:0.9rem">Clique em <strong>Começar hoje</strong> para o seu dia 1 ser hoje, ou em <strong>Seguir pelo calendário</strong> para usar mês e dia.</p></div>
             </div>
             <div id="receba-plano" class="receba-content">
                 <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Leia a Bíblia inteira em um ano: 2–3 capítulos por dia. Escolha o dia (1–365) ou use o dia de hoje.</p>
@@ -612,41 +619,144 @@
                     if (tipo === 'palavra' && !palavraLoaded) loadPalavra();
                     if (tipo === 'salmo' && !salmoLoaded) loadSalmo();
                     if (tipo === 'devocional' && !devocionalLoaded) loadDevocional();
-                    if (tipo === 'devocional-biblia-inteira') { if (!devocionalBibliaInteiraLoaded) { var today = new Date(); document.getElementById('dev-biblia-mes').value = today.getMonth() + 1; document.getElementById('dev-biblia-dia').value = today.getDate(); loadDevocionalBibliaInteira(); } }
+                    if (tipo === 'devocional-biblia-inteira') {
+                        if (getDevBibliaStartDate()) { showDevBibliaSequence(); if (!devocionalBibliaInteiraLoaded) loadDevocionalBibliaInteira(true); }
+                        else if (!devocionalBibliaInteiraLoaded) { showDevBibliaModeChoice(); }
+                    }
                     if (tipo === 'estudo-livro' && !estudoLivroLoaded) loadEstudoLivroList();
                 });
             });
 
-            async function loadDevocionalBibliaInteira() {
-                var mes = document.getElementById('dev-biblia-mes').value;
-                var dia = document.getElementById('dev-biblia-dia').value || new Date().getDate();
+            var DEV_BIBLIA_STORAGE_KEY = 'devocional_biblia_inteira_start_' + (slug || 'default');
+            var TOTAL_CHAPTERS = 1189;
+
+            function getDevBibliaStartDate() {
+                try {
+                    var raw = localStorage.getItem(DEV_BIBLIA_STORAGE_KEY);
+                    return raw ? new Date(raw) : null;
+                } catch (e) { return null; }
+            }
+            function setDevBibliaStartDate(date) {
+                try { localStorage.setItem(DEV_BIBLIA_STORAGE_KEY, (date || new Date()).toISOString().slice(0, 10)); } catch (e) {}
+            }
+            function clearDevBibliaStartDate() {
+                try { localStorage.removeItem(DEV_BIBLIA_STORAGE_KEY); } catch (e) {}
+            }
+            function computeSequenceDayNumber() {
+                var start = getDevBibliaStartDate();
+                if (!start) return null;
+                var today = new Date();
+                today.setHours(0, 0, 0, 0);
+                start.setHours(0, 0, 0, 0);
+                var diffMs = today - start;
+                var diffDays = Math.floor(diffMs / 86400000);
+                if (diffDays < 0) return 1;
+                var dayNum = diffDays + 1;
+                return ((dayNum - 1) % TOTAL_CHAPTERS) + 1;
+            }
+
+            function renderDevocionalBiblia(d) {
+                var container = document.getElementById('devocional-biblia-inteira-container');
+                if (!container || !d) return;
+                var linkCap = '/' + slug + '/bible/' + d.bookId + '/' + d.chapter;
+                var html = '<div class="bible-ref" style="font-size:1rem;margin-bottom:12px">' + (d.titulo || d.ref) + '</div>';
+                html += '<p style="margin-bottom:12px"><a href="' + linkCap + '" class="bible-ref" style="display:inline-block">' + d.ref + ' — Ler capítulo na Bíblia</a></p>';
+                if (d.verse_ref && d.verse_text) {
+                    html += '<div style="color:#FFC700;font-size:0.9rem;margin-bottom:8px">' + (d.verse_ref || '') + '</div>';
+                    html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.65;margin-bottom:12px;font-style:italic">"' + (d.verse_text || '').replace(/</g, '&lt;') + '"</div>';
+                }
+                if (d.resumo_capitulo) html += '<div style="color:#A1A1A1;font-size:0.95rem;margin-bottom:12px">' + (d.resumo_capitulo || '').replace(/\n/g, '<br>') + '</div>';
+                html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.75;white-space:pre-wrap;margin-bottom:16px">' + (d.reflexao || '').replace(/\n/g, '<br>') + '</div>';
+                if (d.aplicacao) html += '<div style="color:#A1A1A1;font-size:0.95rem;margin-bottom:12px"><strong>Aplicação:</strong> ' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</div>';
+                if (d.oracao) html += '<div style="color:#FFC700;font-style:italic;font-size:0.95rem">' + (d.oracao || '').replace(/\n/g, '<br>') + '</div>';
+                container.innerHTML = html;
+            }
+
+            async function loadDevocionalBibliaInteira(useSequence) {
                 var container = document.getElementById('devocional-biblia-inteira-container');
                 if (!container) return;
                 container.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>';
+                var url;
+                if (useSequence) {
+                    var dayNum = computeSequenceDayNumber();
+                    if (dayNum == null) dayNum = 1;
+                    url = API_URL + '/api/bible/devocional-biblia-inteira?mode=sequence&day=' + dayNum;
+                } else {
+                    var mes = document.getElementById('dev-biblia-mes').value;
+                    var dia = document.getElementById('dev-biblia-dia').value || new Date().getDate();
+                    url = API_URL + '/api/bible/devocional-biblia-inteira?month=' + encodeURIComponent(mes) + '&day=' + encodeURIComponent(dia);
+                }
                 try {
-                    var res = await fetch(API_URL + '/api/bible/devocional-biblia-inteira?month=' + encodeURIComponent(mes) + '&day=' + encodeURIComponent(dia));
+                    var res = await fetch(url);
                     var json = await res.json().catch(function() { return {}; });
                     var d = json.data;
                     if (!d) throw new Error('Devocional não encontrado.');
                     devocionalBibliaInteiraLoaded = true;
-                    var linkCap = '/' + slug + '/bible/' + d.bookId + '/' + d.chapter;
-                    var html = '<div class="bible-ref" style="font-size:1rem;margin-bottom:12px">' + (d.titulo || d.ref) + '</div>';
-                    html += '<p style="margin-bottom:12px"><a href="' + linkCap + '" class="bible-ref" style="display:inline-block">' + d.ref + ' — Ler capítulo na Bíblia</a></p>';
-                    html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.75;white-space:pre-wrap;margin-bottom:16px">' + (d.reflexao || '').replace(/\n/g, '<br>') + '</div>';
-                    if (d.aplicacao) html += '<div style="color:#A1A1A1;font-size:0.95rem;margin-bottom:12px"><strong>Aplicação:</strong> ' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</div>';
-                    if (d.oracao) html += '<div style="color:#FFC700;font-style:italic;font-size:0.95rem">' + (d.oracao || '').replace(/\n/g, '<br>') + '</div>';
-                    container.innerHTML = html;
+                    if (d.mode === 'sequence' && d.dayNumber != null) {
+                        var infoEl = document.getElementById('dev-biblia-sequence-info');
+                        if (infoEl) {
+                            infoEl.style.display = 'block';
+                            infoEl.innerHTML = '<i class="fas fa-book-open"></i> Dia <strong>' + d.dayNumber + '</strong> de ' + (d.totalDays || TOTAL_CHAPTERS) + ' do seu plano';
+                        }
+                    }
+                    renderDevocionalBiblia(d);
                 } catch (e) {
                     container.innerHTML = '<p class="bible-error">' + (e.message || 'Erro ao carregar.') + '</p>';
                 }
             }
-            document.getElementById('btn-dev-biblia-load').addEventListener('click', function() { loadDevocionalBibliaInteira(); });
-            document.getElementById('btn-dev-biblia-today').addEventListener('click', function() {
+
+            function showDevBibliaModeChoice() {
+                document.getElementById('dev-biblia-mode-choice').style.display = 'flex';
+                document.getElementById('dev-biblia-calendario-picker').style.display = 'none';
+                document.getElementById('dev-biblia-sequence-info').style.display = 'none';
+                var linkCal = document.getElementById('dev-biblia-link-calendario');
+                if (linkCal) linkCal.style.display = 'none';
+            }
+            function showDevBibliaCalendarioPicker() {
+                document.getElementById('dev-biblia-mode-choice').style.display = 'none';
+                document.getElementById('dev-biblia-calendario-picker').style.display = 'flex';
+                document.getElementById('dev-biblia-sequence-info').style.display = 'none';
+                var linkCal = document.getElementById('dev-biblia-link-calendario');
+                if (linkCal) linkCal.style.display = 'none';
+            }
+            function showDevBibliaSequence() {
+                document.getElementById('dev-biblia-mode-choice').style.display = 'none';
+                document.getElementById('dev-biblia-calendario-picker').style.display = 'none';
+                document.getElementById('dev-biblia-sequence-info').style.display = 'block';
+                var linkCal = document.getElementById('dev-biblia-link-calendario');
+                if (linkCal) linkCal.style.display = 'block';
+            }
+
+            document.getElementById('btn-dev-biblia-comecar-hoje').addEventListener('click', function() {
+                setDevBibliaStartDate(new Date());
+                showDevBibliaSequence();
+                loadDevocionalBibliaInteira(true);
+            });
+            document.getElementById('btn-dev-biblia-calendario').addEventListener('click', function() {
+                showDevBibliaCalendarioPicker();
                 var today = new Date();
                 document.getElementById('dev-biblia-mes').value = today.getMonth() + 1;
                 document.getElementById('dev-biblia-dia').value = today.getDate();
-                loadDevocionalBibliaInteira();
+                loadDevocionalBibliaInteira(false);
             });
+            document.getElementById('btn-dev-biblia-back-calendario').addEventListener('click', function() {
+                showDevBibliaModeChoice();
+                document.getElementById('devocional-biblia-inteira-container').innerHTML = '<p style="color:#A1A1A1;font-size:0.9rem">Clique em <strong>Começar hoje</strong> ou em <strong>Seguir pelo calendário</strong>.</p>';
+            });
+            document.getElementById('btn-dev-biblia-load').addEventListener('click', function() { loadDevocionalBibliaInteira(false); });
+            document.getElementById('btn-dev-biblia-usar-calendario').addEventListener('click', function() {
+                clearDevBibliaStartDate();
+                showDevBibliaModeChoice();
+                document.getElementById('devocional-biblia-inteira-container').innerHTML = '<p style="color:#A1A1A1;font-size:0.9rem">Clique em <strong>Começar hoje</strong> ou em <strong>Seguir pelo calendário</strong>.</p>';
+            });
+
+            (function initDevBibliaOnShow() {
+                var start = getDevBibliaStartDate();
+                if (start) {
+                    showDevBibliaSequence();
+                    loadDevocionalBibliaInteira(true);
+                }
+            })();
 
             (function openEstudoLivroFromHash() {
                 var bookId = null;
