@@ -382,7 +382,7 @@
             const translation = '<%= translation || "nvi" %>';
             const slug = '<%= slug %>';
 
-            let palavraLoaded = false, salmoLoaded = false, devocionalLoaded = false;
+            let palavraLoaded = false, salmoLoaded = false, devocionalLoaded = false, estudoLivroLoaded = false;
 
             function getDayOfYear() {
                 const now = new Date();
@@ -518,6 +518,7 @@
                     if (tipo === 'palavra' && !palavraLoaded) loadPalavra();
                     if (tipo === 'salmo' && !salmoLoaded) loadSalmo();
                     if (tipo === 'devocional' && !devocionalLoaded) loadDevocional();
+                    if (tipo === 'estudo-livro' && !estudoLivroLoaded) loadEstudoLivroList();
                 });
             });
 
@@ -738,6 +739,62 @@
                 var day = getDayOfYear();
                 document.getElementById('plano-day').value = day;
                 loadPlanoDay(day);
+            });
+
+            async function loadEstudoLivroList() {
+                var listEl = document.getElementById('estudo-livro-list');
+                if (!listEl) return;
+                try {
+                    var res = await fetch(API_URL + '/api/bible/study/books');
+                    var json = await res.json().catch(function() { return {}; });
+                    var books = (json.data && json.data.books) || [];
+                    estudoLivroLoaded = true;
+                    if (!books.length) {
+                        listEl.innerHTML = '<p style="color:#A1A1A1;font-size:0.9rem">Nenhum estudo por livro disponível no momento.</p>';
+                        return;
+                    }
+                    listEl.innerHTML = books.map(function(b) {
+                        return '<button type="button" class="bible-btn secondary" data-book-id="' + (b.book_id || '').replace(/"/g, '&quot;') + '" style="display:block;width:100%;text-align:left;margin-bottom:8px;padding:12px"><i class="fas fa-book"></i> ' + (b.book_name || b.book_id) + '</button>';
+                    }).join('');
+                    listEl.querySelectorAll('[data-book-id]').forEach(function(btn) {
+                        btn.addEventListener('click', function() { loadEstudoLivroDetail(this.getAttribute('data-book-id')); });
+                    });
+                } catch (e) {
+                    listEl.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
+                }
+            }
+            async function loadEstudoLivroDetail(bookId) {
+                var listEl = document.getElementById('estudo-livro-list');
+                var detailEl = document.getElementById('estudo-livro-detail');
+                var bodyEl = document.getElementById('estudo-livro-body');
+                if (!detailEl || !bodyEl) return;
+                listEl.style.display = 'none';
+                detailEl.style.display = 'block';
+                bodyEl.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>';
+                try {
+                    var res = await fetch(API_URL + '/api/bible/study/book/' + encodeURIComponent(bookId));
+                    var json = await res.json().catch(function() { return {}; });
+                    if (!res.ok || !json.success) throw new Error(json.message || 'Estudo não encontrado');
+                    var d = json.data;
+                    var html = (d.title ? '<h3 style="color:#FFC700;font-size:1.05rem;margin-bottom:12px">' + d.title + '</h3>' : '') +
+                        '<div style="color:#e8e8e8;line-height:1.65;white-space:pre-wrap;font-size:0.95rem;margin-bottom:20px">' + (d.content || '').replace(/\n/g, '<br>') + '</div>';
+                    if (d.chapters && d.chapters.length) {
+                        html += '<p style="color:#A1A1A1;font-size:0.9rem;margin-bottom:8px">Estudos por capítulo:</p><p style="margin:0">';
+                        d.chapters.forEach(function(c) {
+                            html += '<a href="/' + slug + '/bible/' + bookId + '/' + c.chapter_number + '" class="bible-ref" style="display:inline-block;margin:4px 12px 4px 0">Cap. ' + c.chapter_number + (c.title ? ' — ' + c.title : '') + '</a> ';
+                        });
+                        html += '</p>';
+                    }
+                    bodyEl.innerHTML = html;
+                } catch (e) {
+                    bodyEl.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
+                }
+            }
+            document.getElementById('btn-estudo-livro-back').addEventListener('click', function() {
+                var listEl = document.getElementById('estudo-livro-list');
+                var detailEl = document.getElementById('estudo-livro-detail');
+                if (listEl) listEl.style.display = 'block';
+                if (detailEl) detailEl.style.display = 'none';
             });
 
             (async function loadEstudosPublic() {
