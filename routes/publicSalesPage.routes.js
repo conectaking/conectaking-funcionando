@@ -75,7 +75,10 @@ router.get('/:slug/:storeSlug', asyncHandler(async (req, res, next) => {
                     return next();
                 }
             } catch (error) {
-                logger.error('Erro ao buscar sales page por slug:', error);
+                // "Página de vendas não encontrada" é esperado quando o segmento não é uma sales page (ex: /slug/bible)
+                if (error.message !== 'Página de vendas não encontrada') {
+                    logger.error('Erro ao buscar sales page por slug:', error);
+                }
                 // Se erro, passar para próxima rota
                 return next();
             }
