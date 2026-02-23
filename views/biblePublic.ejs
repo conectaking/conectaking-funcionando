@@ -274,6 +274,10 @@
                     <span><i class="fas fa-heart" style="margin-right:8px"></i>Devocional Diário</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
+                <div class="receba-item" data-tipo="devocional-biblia-inteira">
+                    <span><i class="fas fa-bible" style="margin-right:8px"></i>Devocional da Bíblia inteira</span>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
                 <div class="receba-item" data-tipo="plano">
                     <span><i class="fas fa-calendar-check" style="margin-right:8px"></i>Plano de leitura (1 ano)</span>
                     <i class="fas fa-arrow-right"></i>
@@ -316,6 +320,20 @@
                     <button type="button" class="bible-btn secondary" id="devocional-btn-mark-read" title="Marcar como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
                     <span id="devocional-streak" style="display:none;font-size:0.85rem;color:#A1A1A1;"><i class="fas fa-fire" style="color:#FF6B35;margin-right:4px"></i><span id="devocional-streak-num">0</span> dias seguidos</span>
                 </div>
+            </div>
+            <div id="receba-devocional-biblia-inteira" class="receba-content">
+                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Um livro por mês: cada dia um capítulo. Leitura mais longa (5–10 min) com reflexão profunda.</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+                    <label style="font-size:0.9rem;color:#A1A1A1">Mês:</label>
+                    <select id="dev-biblia-mes" style="padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:#ECECEC;font-size:0.9rem;cursor:pointer">
+                        <option value="1">Janeiro — Gênesis</option><option value="2">Fevereiro — Êxodo</option><option value="3">Março — Levítico</option><option value="4">Abril — Números</option><option value="5">Maio — Deuteronômio</option><option value="6">Junho — Josué</option><option value="7">Julho — Juízes</option><option value="8">Agosto — Rute</option><option value="9">Setembro — 1 Samuel</option><option value="10">Outubro — 2 Samuel</option><option value="11">Novembro — 1 Reis</option><option value="12">Dezembro — 2 Reis</option>
+                    </select>
+                    <label style="font-size:0.9rem;color:#A1A1A1">Dia:</label>
+                    <input type="number" id="dev-biblia-dia" min="1" max="31" placeholder="1-31" style="width:70px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:#ECECEC">
+                    <button type="button" class="bible-btn" id="btn-dev-biblia-load"><i class="fas fa-book-open"></i> Carregar</button>
+                    <button type="button" class="bible-btn secondary" id="btn-dev-biblia-today"><i class="fas fa-calendar-day"></i> Hoje</button>
+                </div>
+                <div id="devocional-biblia-inteira-container"><p style="color:#A1A1A1;font-size:0.9rem">Escolha o mês e o dia ou clique em "Hoje".</p></div>
             </div>
             <div id="receba-plano" class="receba-content">
                 <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Leia a Bíblia inteira em um ano: 2–3 capítulos por dia. Escolha o dia (1–365) ou use o dia de hoje.</p>
@@ -409,7 +427,7 @@
             const slug = '<%= slug %>';
             const initialEstudoBookId = <%= typeof initialEstudoBookId !== 'undefined' && initialEstudoBookId ? JSON.stringify(initialEstudoBookId) : 'null' %>;
 
-            let palavraLoaded = false, salmoLoaded = false, devocionalLoaded = false, estudoLivroLoaded = false;
+            let palavraLoaded = false, salmoLoaded = false, devocionalLoaded = false, devocionalBibliaInteiraLoaded = false, estudoLivroLoaded = false;
 
             (function initContinuarThemeFavoritos() {
                 var keyLast = 'bible_last_' + (slug || 'default');
@@ -594,8 +612,40 @@
                     if (tipo === 'palavra' && !palavraLoaded) loadPalavra();
                     if (tipo === 'salmo' && !salmoLoaded) loadSalmo();
                     if (tipo === 'devocional' && !devocionalLoaded) loadDevocional();
+                    if (tipo === 'devocional-biblia-inteira') { if (!devocionalBibliaInteiraLoaded) { var today = new Date(); document.getElementById('dev-biblia-mes').value = today.getMonth() + 1; document.getElementById('dev-biblia-dia').value = today.getDate(); loadDevocionalBibliaInteira(); } }
                     if (tipo === 'estudo-livro' && !estudoLivroLoaded) loadEstudoLivroList();
                 });
+            });
+
+            async function loadDevocionalBibliaInteira() {
+                var mes = document.getElementById('dev-biblia-mes').value;
+                var dia = document.getElementById('dev-biblia-dia').value || new Date().getDate();
+                var container = document.getElementById('devocional-biblia-inteira-container');
+                if (!container) return;
+                container.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>';
+                try {
+                    var res = await fetch(API_URL + '/api/bible/devocional-biblia-inteira?month=' + encodeURIComponent(mes) + '&day=' + encodeURIComponent(dia));
+                    var json = await res.json().catch(function() { return {}; });
+                    var d = json.data;
+                    if (!d) throw new Error('Devocional não encontrado.');
+                    devocionalBibliaInteiraLoaded = true;
+                    var linkCap = '/' + slug + '/bible/' + d.bookId + '/' + d.chapter;
+                    var html = '<div class="bible-ref" style="font-size:1rem;margin-bottom:12px">' + (d.titulo || d.ref) + '</div>';
+                    html += '<p style="margin-bottom:12px"><a href="' + linkCap + '" class="bible-ref" style="display:inline-block">' + d.ref + ' — Ler capítulo na Bíblia</a></p>';
+                    html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.75;white-space:pre-wrap;margin-bottom:16px">' + (d.reflexao || '').replace(/\n/g, '<br>') + '</div>';
+                    if (d.aplicacao) html += '<div style="color:#A1A1A1;font-size:0.95rem;margin-bottom:12px"><strong>Aplicação:</strong> ' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</div>';
+                    if (d.oracao) html += '<div style="color:#FFC700;font-style:italic;font-size:0.95rem">' + (d.oracao || '').replace(/\n/g, '<br>') + '</div>';
+                    container.innerHTML = html;
+                } catch (e) {
+                    container.innerHTML = '<p class="bible-error">' + (e.message || 'Erro ao carregar.') + '</p>';
+                }
+            }
+            document.getElementById('btn-dev-biblia-load').addEventListener('click', function() { loadDevocionalBibliaInteira(); });
+            document.getElementById('btn-dev-biblia-today').addEventListener('click', function() {
+                var today = new Date();
+                document.getElementById('dev-biblia-mes').value = today.getMonth() + 1;
+                document.getElementById('dev-biblia-dia').value = today.getDate();
+                loadDevocionalBibliaInteira();
             });
 
             (function openEstudoLivroFromHash() {

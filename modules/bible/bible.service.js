@@ -253,6 +253,30 @@ function loadBooksManifest() {
     }
 }
 
+let _jesusVerses = null;
+function loadJesusVerses() {
+    if (_jesusVerses !== null) return _jesusVerses;
+    try {
+        const filePath = path.join(DATA_DIR, 'jesus_verses.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        _jesusVerses = JSON.parse(data);
+        return _jesusVerses;
+    } catch (e) {
+        _jesusVerses = {};
+        return _jesusVerses;
+    }
+}
+
+/** Retorna array de números de versículos em que Jesus fala no capítulo (para destaque no NT). */
+function getJesusVerseNumbersForChapter(bookId, chapterNum) {
+    const book = (bookId || '').toLowerCase();
+    const data = loadJesusVerses();
+    const chapters = data[book];
+    if (!chapters || typeof chapters !== 'object') return [];
+    const list = chapters[String(chapterNum)];
+    return Array.isArray(list) ? list : [];
+}
+
 let _bookNameToId = null;
 function getBookIdFromName(bookName) {
     if (!_bookNameToId) {
@@ -334,6 +358,46 @@ function getBookChapter(bookId, chapterNum, translation) {
     }
 }
 
+/** Devocional da Bíblia inteira: um livro por mês (1-12), cada dia = um capítulo desse livro. Conteúdo opcional em devocional_biblia_inteira.json. */
+function getDevocionalBibliaInteira(month, day) {
+    const m = Math.max(1, Math.min(12, parseInt(month, 10) || 1));
+    const d = Math.max(1, Math.min(31, parseInt(day, 10) || 1));
+    const manifest = loadBooksManifest();
+    const allBooks = (manifest.at || []).concat(manifest.nt || []);
+    const bookIndex = (m - 1) % allBooks.length;
+    const book = allBooks[bookIndex];
+    if (!book || !book.id) return null;
+    const chapterData = getBookChapter(book.id, '1', 'nvi');
+    const totalChapters = chapterData ? chapterData.totalChapters : 1;
+    const chapter = Math.min(d, totalChapters);
+    const key = book.id + '-' + chapter;
+    let content = null;
+    try {
+        const filePath = path.join(DATA_DIR, 'devocional_biblia_inteira.json');
+        if (fs.existsSync(filePath)) {
+            const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            content = data[key] || data[book.id + '_' + chapter];
+        }
+    } catch (e) {
+        logger.warn('bible.service getDevocionalBibliaInteira:', e.message);
+    }
+    const ref = (book.name || book.id) + ' ' + chapter;
+    const placeholderReflexao = 'Leia o capítulo ' + chapter + ' de ' + (book.name || book.id) + ' na Bíblia. Reflita sobre o que o Senhor está falando ao seu coração hoje. Este devocional cobre a Bíblia inteira ao longo dos meses: cada mês um livro, cada dia um capítulo.';
+    return {
+        month: m,
+        day: d,
+        bookId: book.id,
+        bookName: book.name,
+        chapter,
+        totalChapters,
+        ref,
+        titulo: content && content.titulo ? content.titulo : ref + ' — Devocional',
+        reflexao: content && content.reflexao ? content.reflexao : placeholderReflexao,
+        aplicacao: content && content.aplicacao ? content.aplicacao : 'Aplique em sua vida o que o Espírito Santo destacar na leitura.',
+        oracao: content && content.oracao ? content.oracao : 'Senhor, abre meus olhos para ver as maravilhas da Tua Palavra. Amém.'
+    };
+}
+
 async function getDevocional365(dayOrDate) {
     let dayOfYear;
     if (typeof dayOrDate === 'number' || (typeof dayOrDate === 'string' && /^\d+$/.test(dayOrDate))) {
@@ -398,6 +462,7 @@ module.exports = {
     getPalavraDoDia,
     getSalmoDoDia,
     getDevocionalDoDia,
+    getDevocionalBibliaInteira,
     getDevocional365,
     getStudyThemes,
     getStudies,
@@ -407,6 +472,7 @@ module.exports = {
     getOutlineBySlug,
     searchBibleEcosystem,
     loadBooksManifest,
+    getJesusVerseNumbersForChapter,
     getBookChapter,
     getTextForRef,
     markDevotionalRead,

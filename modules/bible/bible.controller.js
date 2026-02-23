@@ -145,6 +145,19 @@ async function markRead(req, res) {
 
 // --- Ecossistema Bíblico (devocionais 365, estudos, esboços, busca) ---
 
+async function getDevocionalBibliaInteira(req, res) {
+    try {
+        const month = req.query.month || new Date().getMonth() + 1;
+        const day = req.query.day || new Date().getDate();
+        const result = bibleService.getDevocionalBibliaInteira(month, day);
+        if (!result) return responseFormatter.error(res, 'Devocional não encontrado', 404);
+        return responseFormatter.success(res, result);
+    } catch (e) {
+        logger.error('bible getDevocionalBibliaInteira:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar devocional', 500);
+    }
+}
+
 async function getDevocional365(req, res) {
     try {
         const day = req.params.day; // 1-365 ou date YYYY-MM-DD
@@ -414,6 +427,7 @@ module.exports = {
     getPalavraDoDia,
     getSalmoDoDia,
     getDevocionalDoDia,
+    getDevocionalBibliaInteira,
     getDevocional365,
     markDevotionalRead,
     getDevotionalReadStatus,
