@@ -30,6 +30,9 @@
         .reader-header .nav-chapters a:hover { background: rgba(255,199,0,0.25); }
         .reader-header .nav-chapters span.disabled { opacity: 0.4; cursor: not-allowed; }
         .verse-block { margin-bottom: 14px; padding-left: 8px; border-left: 2px solid rgba(255,199,0,0.3); }
+        .verse-block.selectable { cursor: pointer; border-radius: 8px; padding: 8px 8px 8px 12px; transition: background 0.2s; }
+        .verse-block.selectable:hover { background: rgba(255,199,0,0.06); }
+        .verse-block.selectable.selected { background: rgba(255,199,0,0.15); border-left-color: #FFC700; }
         .verse-num { font-weight: 600; color: #FFC700; font-size: 0.85rem; margin-right: 8px; }
         .verse-text { font-family: 'Lora', serif; font-size: 1.1rem; line-height: 1.7; }
         body.theme-light { background: #f5f5f0; background-image: none; color: #1a1a1a; }
@@ -37,6 +40,7 @@
         body.theme-light .back-link:hover { color: #b8860b; }
         body.theme-light .reader-header h1, body.theme-light .verse-num { color: #b8860b; }
         body.theme-light .verse-text { color: #222; }
+        body.theme-light .verse-block.selectable.selected { background: rgba(184,134,11,0.2); border-left-color: #b8860b; }
         body.theme-light .verses-card { background: #fff; border-color: rgba(184,134,11,0.25); box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
         body.theme-light .reader-header .nav-chapters a { background: rgba(184,134,11,0.15); color: #8b6914; }
         body.theme-light .reader-header .nav-chapters a:hover { background: rgba(184,134,11,0.25); }
@@ -111,6 +115,7 @@
                 <button type="button" class="btn-ouvir secondary btn-font" data-size="large" title="Fonte maior" style="padding:8px 12px;font-weight:600">A+</button>
                 <button type="button" class="btn-ouvir secondary" id="btn-theme" title="Alternar tema claro/escuro" style="padding:8px 12px"><i class="fas fa-moon" id="icon-theme"></i></button>
                 <button type="button" class="btn-ouvir secondary" id="btn-favorito" title="Adicionar aos favoritos" style="padding:8px 12px"><i class="far fa-star"></i> Favorito</button>
+                <button type="button" class="btn-ouvir" id="btn-share-selection" style="display:none;padding:8px 14px"><i class="fas fa-share-alt"></i> Compartilhar seleção</button>
             </div>
             <div id="estudo-cap-content" style="display:none;margin-top:16px;padding:16px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,199,0,0.2);border-radius:12px;">
                 <div id="estudo-cap-body"></div>
@@ -119,7 +124,7 @@
         <div class="verses-card">
         <div id="verses-container">
             <% chapterData.verses.forEach(function(v) { %>
-            <div class="verse-block" data-verse="<%= v.verse %>">
+            <div class="verse-block selectable" data-verse="<%= v.verse %>">
                 <span class="verse-num"><%= v.verse %></span>
                 <span class="verse-text"><%= v.text %></span>
             </div>
@@ -138,7 +143,10 @@
             const readerBookId = <%- JSON.stringify(chapterData.bookId) %>;
             const readerChapter = <%- JSON.stringify(chapterData.chapter) %>;
             const readerBookName = <%- JSON.stringify(chapterData.bookName || '') %>;
+            const readerTranslation = <%- JSON.stringify(typeof translation !== 'undefined' ? translation : 'nvi') %>;
+            var translationNames = { nvi: 'NVI (Nova Versão Internacional)', arc: 'ARC (Almeida Revista e Corrigida)', acf: 'ACF (Almeida Corrigida Fiel)', ntlh: 'NTLH (Nova Tradução na Linguagem de Hoje)', ara: 'ARA (Almeida Revisada e Atualizada)', kja: 'KJA (King James Atualizada)', kjv: 'KJV (King James Version)' };
             var btnOuvir = document.getElementById('btn-ouvir');
+            var btnShareSel = document.getElementById('btn-share-selection');
 
             function getBibleReadKey() { return 'bible_read_' + (readerSlug || 'default'); }
             function getBibleReadList() {
@@ -295,6 +303,65 @@
             document.getElementById('back-bible-link').addEventListener('click', function() {
                 window.location.href = biblePanelUrl;
             });
+
+            (function verseSelection() {
+                var blocks = document.querySelectorAll('.verse-block.selectable');
+                function updateShareButton() {
+                    var n = document.querySelectorAll('.verse-block.selectable.selected').length;
+                    if (btnShareSel) btnShareSel.style.display = n > 0 ? 'inline-flex' : 'none';
+                }
+                blocks.forEach(function(block) {
+                    block.addEventListener('click', function() {
+                        this.classList.toggle('selected');
+                        updateShareButton();
+                    });
+                });
+                btnShareSel && btnShareSel.addEventListener('click', function() {
+                    var selected = Array.from(document.querySelectorAll('.verse-block.selectable.selected'))
+                        .map(function(b) {
+                            var num = parseInt(b.getAttribute('data-verse'), 10);
+                            var text = (b.querySelector('.verse-text') || {}).textContent || '';
+                            return { verse: num, text: text };
+                        })
+                        .sort(function(a, b) { return a.verse - b.verse; });
+                    if (selected.length === 0) return;
+                    var nums = selected.map(function(s) { return s.verse; });
+                    var refPart = readerBookName + ' ' + readerChapter + ':';
+                    if (nums.length === 1) refPart += nums[0];
+                    else if (nums.length === 2) refPart += nums[0] + ', ' + nums[1];
+                    else {
+                        var ranges = [], i = 0;
+                        while (i < nums.length) {
+                            var start = nums[i], end = start;
+                            while (i + 1 < nums.length && nums[i + 1] === end + 1) { i++; end = nums[i]; }
+                            ranges.push(start === end ? String(start) : start + '-' + end);
+                            i++;
+                        }
+                        refPart += ranges.join(', ');
+                    }
+                    var transName = translationNames[readerTranslation] || readerTranslation;
+                    var lines = [refPart + ' — ' + transName, ''];
+                    selected.forEach(function(s) { lines.push(s.verse + ' ' + s.text); });
+                    var toShare = lines.join('\n');
+                    if (navigator.share && /mobile|android|iphone|ipad/i.test(navigator.userAgent)) {
+                        navigator.share({ title: refPart, text: toShare }).catch(function() {
+                            copyToClipboard(toShare);
+                        });
+                    } else {
+                        copyToClipboard(toShare);
+                    }
+                    function copyToClipboard(str) {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(str).then(function() { alert('Copiado para a área de transferência.'); }).catch(function() { fallbackCopy(str); });
+                        } else fallbackCopy(str);
+                    }
+                    function fallbackCopy(str) {
+                        var ta = document.createElement('textarea'); ta.value = str; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+                        try { document.execCommand('copy'); alert('Copiado para a área de transferência.'); } catch (e) { alert('Texto pronto para compartilhar:\n\n' + str); }
+                        document.body.removeChild(ta);
+                    }
+                });
+            })();
 
             function stopSpeech() { speechSynthesis.cancel(); if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i> Ouvir capítulo'; }
             function speak() {
