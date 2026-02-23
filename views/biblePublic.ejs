@@ -765,7 +765,10 @@
                     bookId = hash === '#estudo-livro' ? null : decodeURIComponent(hash.replace('#estudo-livro/', ''));
                 }
                 if (typeof initialEstudoBookId !== 'undefined' && initialEstudoBookId) bookId = initialEstudoBookId;
-                if (bookId) window.pendingEstudoLivroBookId = bookId;
+                if (bookId) {
+                    window.pendingEstudoLivroBookId = bookId;
+                    location.hash = '#estudo-livro';
+                }
                 if (bookId || hash === '#estudo-livro' || hash.indexOf('#estudo-livro/') === 0) {
                     var el = document.querySelector('.receba-item[data-tipo="estudo-livro"]');
                     if (el) el.click();
@@ -1040,19 +1043,15 @@
                     listEl.innerHTML = books.map(function(b) {
                         var hasStudy = b.has_study === true;
                         var name = (b.book_name || b.book_id);
+                        var bid = (b.book_id || '').replace(/"/g, '&quot;');
                         var label = name + (hasStudy ? '' : ' <span style="font-size:0.8rem;color:#888;font-weight:normal">(em breve)</span>');
-                        return '<button type="button" class="bible-btn secondary" data-book-id="' + (b.book_id || '').replace(/"/g, '&quot;') + '" data-book-name="' + (name || '').replace(/"/g, '&quot;') + '" data-has-study="' + (hasStudy ? '1' : '0') + '" style="display:block;width:100%;text-align:left;margin-bottom:8px;padding:12px' + (hasStudy ? '' : ';opacity:0.85') + '"><i class="fas fa-book"></i> ' + label + '</button>';
+                        var url = '/' + slug + '/bible/estudo-livro/' + (b.book_id || '');
+                        return '<a href="' + url + '" target="_blank" rel="noopener" class="bible-btn secondary" data-book-id="' + bid + '" data-has-study="' + (hasStudy ? '1' : '0') + '" style="display:block;width:100%;text-align:left;margin-bottom:8px;padding:12px;text-decoration:none' + (hasStudy ? '' : ';opacity:0.85') + '"><i class="fas fa-book"></i> ' + label + ' <i class="fas fa-external-link-alt" style="float:right;font-size:0.8rem;opacity:0.7"></i></a>';
                     }).join('');
-                    listEl.querySelectorAll('[data-book-id]').forEach(function(btn) {
-                        btn.addEventListener('click', function() {
-                            if (this.getAttribute('data-has-study') === '1') loadEstudoLivroDetail(this.getAttribute('data-book-id'));
-                            else { var bodyEl = document.getElementById('estudo-livro-body'); var detailEl = document.getElementById('estudo-livro-detail'); var bookName = this.getAttribute('data-book-name') || (this.textContent || '').trim(); if (detailEl && bodyEl) { listEl.style.display = 'none'; detailEl.style.display = 'block'; bodyEl.innerHTML = '<p style="color:#A1A1A1;font-size:0.95rem">Estudo de <strong>' + bookName + '</strong> em breve. Enquanto isso, leia o livro na Bíblia.</p>'; } }
-                        });
-                    });
                     if (window.pendingEstudoLivroBookId) {
                         var bid = window.pendingEstudoLivroBookId;
                         delete window.pendingEstudoLivroBookId;
-                        loadEstudoLivroDetail(bid);
+                        window.open('/' + slug + '/bible/estudo-livro/' + bid, '_blank');
                     }
                 } catch (e) {
                     listEl.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';

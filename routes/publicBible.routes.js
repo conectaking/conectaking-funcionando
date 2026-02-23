@@ -36,6 +36,11 @@ async function getBiblePageContext(client, slug) {
     };
 }
 
+/** Sem bookId: redireciona para a primeira página (Bíblia) com a seção Estudo por livro aberta. Evita página duplicada. */
+router.get('/:slug/bible/estudo-livro', (req, res) => {
+    res.redirect(302, `/${req.params.slug}/bible#estudo-livro`);
+});
+
 router.get('/:slug/bible/estudo-livro/:bookId', asyncHandler(async (req, res) => {
     const { slug, bookId } = req.params;
     try {
