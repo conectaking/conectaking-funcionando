@@ -56,6 +56,29 @@ router.get('/:slug/bible/estudo-livro/:bookId', (req, res) => {
     res.redirect(302, `/${req.params.slug}/biblia/estudos-livro/${encodeURIComponent(req.params.bookId)}`);
 });
 
+/** Escapa HTML e opcionalmente transforma referências Gn/Gênesis em links para o leitor. */
+function prepareStudyContent(raw, baseUrl, slug, bookId, returnTo) {
+    if (!raw || typeof raw !== 'string') return '';
+    const escape = (s) => String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    let out = escape(raw).replace(/\n/g, '<br>');
+    if ((bookId || '').toLowerCase() === 'gn') {
+        const base = (baseUrl || '').replace(/\/$/, '') + '/' + (slug || '') + '/bible/gn/';
+        const returnQ = returnTo ? '?returnTo=' + encodeURIComponent(returnTo) : '';
+        out = out.replace(/\b(?:Gn|Gênesis)\s*(\d+)(?::(\d+))?(?:[–-]\d+)?(?:\s*[–-]\s*\d+(?::\d+(?:[–-]\d+)?)?)?\b/g, (match) => {
+            const m = match.match(/(\d+)(?::(\d+))?/);
+            const ch = m[1];
+            const v = m[2] || '';
+            const href = base + ch + (v ? '#v' + v : '') + returnQ;
+            return '<a href="' + href + '" class="bible-ref-link" target="_blank" rel="noopener">' + match + '</a>';
+        });
+    }
+    return out;
+}
+
 /** Renderiza estudo do livro. URL limpa: /:slug/biblia/estudos-livro/:bookId */
 async function renderBookStudy(req, res, slug, bookId) {
     const client = await db.pool.connect();
@@ -72,6 +95,7 @@ async function renderBookStudy(req, res, slug, bookId) {
             `);
         }
         const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const base = baseUrl.replace(/\/$/, '');
         const manifest = bibleService.loadBooksManifest();
         const allBooks = (manifest.at || []).concat(manifest.nt || []);
         const book = allBooks.find(b => b && b.id === bookId);
@@ -80,14 +104,18 @@ async function renderBookStudy(req, res, slug, bookId) {
         const frontendUrl = (process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
         const bibleItemId = ctx.bibleItemId || null;
         const biblePanelUrl = bibleItemId ? `${frontendUrl}/bibliaking.html?itemId=${bibleItemId}` : `${frontendUrl}/dashboard.html`;
+        const returnTo = base + '/' + slug + '/biblia/estudos-livro/' + encodeURIComponent(bookId || '');
+        const contentSafe = study && study.content
+            ? prepareStudyContent(study.content, base, slug, bookId, returnTo)
+            : '';
         return res.render('bibleBookStudy', {
             slug: ctx.slug,
             bookId: bookId || '',
             bookName,
-            study: study || null,
-            baseUrl: baseUrl.replace(/\/$/, ''),
+            study: study ? { ...study, contentSafe } : null,
+            baseUrl: base,
             biblePanelUrl,
-            returnTo: ''
+            returnTo
         });
     } finally {
         client.release();
@@ -137,6 +165,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             const bibleItemId = itemRes.rows[0]?.id || null;
             const frontendUrl = (process.env.FRONTEND_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
             const biblePanelUrl = bibleItemId ? `${frontendUrl}/bibliaking.html?itemId=${bibleItemId}` : `${baseUrl}/${slug}/bible/gn/1`;
+            const returnTo = (req.query.returnTo && typeof req.query.returnTo === 'string') ? req.query.returnTo : '';
             const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter);
             res.render('bibleReader', {
                 slug,
@@ -145,6 +174,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 baseUrl,
                 tParam,
                 biblePanelUrl,
+                returnTo,
                 API_URL: process.env.FRONTEND_URL || baseUrl,
                 jesusVerseNumbers: jesusVerseNumbers || []
             });

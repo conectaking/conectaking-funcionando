@@ -40,6 +40,13 @@
             white-space: pre-wrap;
         }
         .study-content p { margin-bottom: 1em; }
+        .study-content .bible-ref-link { color: #7dd3fc; text-decoration: none; border-bottom: 1px dotted rgba(125,211,252,0.5); }
+        .study-content .bible-ref-link:hover { color: #FFC700; border-bottom-color: #FFC700; }
+        .study-marcar-wrap { margin-top: 16px; margin-bottom: 20px; }
+        .btn-marcar { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: rgba(255,199,0,0.15); color: #FFC700; border: 1px solid rgba(255,199,0,0.4); border-radius: 10px; font-size: 0.9rem; cursor: pointer; font-weight: 600; }
+        .btn-marcar:hover { background: rgba(255,199,0,0.25); }
+        .badge-parou { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); padding: 10px 20px; background: rgba(34,197,94,0.9); color: #fff; border-radius: 10px; font-size: 0.9rem; font-weight: 600; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.3); animation: fadeOut 4s forwards; pointer-events: none; }
+        @keyframes fadeOut { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
         .chapters-section { margin-top: 28px; }
         .chapters-section h3 { font-size: 1rem; color: #A1A1A1; margin-bottom: 12px; font-weight: 600; }
         .chapters-grid { display: flex; flex-wrap: wrap; gap: 8px 14px; }
@@ -66,14 +73,17 @@
     <div class="study-wrap">
         <a href="<%= typeof biblePanelUrl !== 'undefined' && biblePanelUrl ? biblePanelUrl : (typeof baseUrl !== 'undefined' && baseUrl ? baseUrl : '') + '/dashboard.html' %>" class="back-link"><i class="fas fa-arrow-left"></i> Voltar à Bíblia</a>
 
-        <% if (study && (study.title || study.content)) { %>
+        <% if (study && (study.title || study.content || study.contentSafe)) { %>
         <div class="study-header">
             <div class="book-icon"><i class="fas fa-book-open"></i></div>
             <h1>Estudo: <%= bookName %></h1>
         </div>
         <div class="study-card">
             <% if (study.title) { %><h2><%= study.title %></h2><% } %>
-            <div class="study-content"><%= (study.content || '').replace(/\n/g, '<br>') %></div>
+            <div class="study-content" id="study-content"><%- study.contentSafe || (study.content ? (study.content).replace(/\n/g, '<br>') : '') %></div>
+            <div class="study-marcar-wrap">
+                <button type="button" class="btn-marcar" id="btn-marcar-parou" title="Salvar esta posição para continuar depois"><i class="fas fa-bookmark"></i> Marcar onde parei</button>
+            </div>
             <% if (study.chapters && study.chapters.length > 0) { %>
             <div class="chapters-section">
                 <h3><i class="fas fa-list-ol"></i> Estudos por capítulo</h3>
@@ -94,5 +104,44 @@
         </div>
         <% } %>
     </div>
+    <script>
+        (function() {
+            var bookId = <%- JSON.stringify(bookId || '') %>;
+            var key = 'bible_study_pos_' + (bookId || 'default');
+            var contentEl = document.getElementById('study-content');
+            var btnMarcar = document.getElementById('btn-marcar-parou');
+
+            function savePosition() {
+                try {
+                    var y = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+                    localStorage.setItem(key, String(y));
+                    var msg = document.createElement('div');
+                    msg.className = 'badge-parou';
+                    msg.textContent = 'Posição salva. Quando voltar, você verá onde parou.';
+                    document.body.appendChild(msg);
+                    setTimeout(function() { if (msg.parentNode) msg.parentNode.removeChild(msg); }, 4000);
+                } catch (e) {}
+            }
+
+            if (btnMarcar) btnMarcar.addEventListener('click', savePosition);
+
+            try {
+                var saved = localStorage.getItem(key);
+                if (saved && contentEl) {
+                    var y = parseInt(saved, 10);
+                    if (y >= 0) {
+                        requestAnimationFrame(function() {
+                            window.scrollTo(0, y);
+                            var badge = document.createElement('div');
+                            badge.className = 'badge-parou';
+                            badge.textContent = 'Você parou aqui';
+                            document.body.appendChild(badge);
+                            setTimeout(function() { if (badge.parentNode) badge.parentNode.removeChild(badge); }, 3500);
+                        });
+                    }
+                }
+            } catch (e) {}
+        })();
+    </script>
 </body>
 </html>

@@ -89,8 +89,14 @@
 </head>
 <body>
     <% if (typeof biblePanelUrl === 'undefined' || !biblePanelUrl) { biblePanelUrl = (baseUrl ? String(baseUrl).replace(/\/$/, '') : '') + '/' + slug + '/bible/gn/1'; } %>
+    <% var returnTo = typeof returnTo !== 'undefined' && returnTo ? returnTo : ''; %>
     <div class="reader-wrap">
+        <% if (returnTo) { %>
+        <a href="<%= returnTo %>" class="back-link" id="back-study-link"><i class="fas fa-arrow-left"></i> Voltar ao estudo</a>
+        <a href="javascript:void(0)" id="back-bible-link" class="back-link" style="margin-left:12px;font-size:0.85rem;opacity:0.9"><i class="fas fa-home"></i> Painel da Bíblia</a>
+        <% } else { %>
         <a href="javascript:void(0)" id="back-bible-link" class="back-link"><i class="fas fa-arrow-left"></i> Voltar ao painel da Bíblia</a>
+        <% } %>
         <div class="reader-header">
             <div class="book-icon"><i class="fas fa-book-open"></i></div>
             <h1><%= chapterData.bookName %> — Capítulo <%= chapterData.chapter %></h1>
@@ -334,9 +340,8 @@
                 });
             })();
 
-            document.getElementById('back-bible-link').addEventListener('click', function() {
-                window.location.href = biblePanelUrl;
-            });
+            var backBible = document.getElementById('back-bible-link');
+            if (backBible) backBible.addEventListener('click', function() { window.location.href = biblePanelUrl; });
 
             (function chapterPicker() {
                 var trigger = document.getElementById('cap-picker-trigger');
