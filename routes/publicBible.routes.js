@@ -122,7 +122,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             const tParam = translation !== 'nvi' ? '?translation=' + encodeURIComponent(translation) : '';
             const bibleItemId = itemRes.rows[0]?.id || null;
             const frontendUrl = (process.env.FRONTEND_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
-            const biblePanelUrl = bibleItemId ? `${frontendUrl}/bibleEdit?itemId=${bibleItemId}` : `${baseUrl}/${slug}/bible/gn/1`;
+            const biblePanelUrl = bibleItemId ? `${frontendUrl}/bible.html?itemId=${bibleItemId}` : `${baseUrl}/${slug}/bible/gn/1`;
             const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter);
             res.render('bibleReader', {
                 slug,
