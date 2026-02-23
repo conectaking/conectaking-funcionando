@@ -94,9 +94,14 @@ router.get('/:slug/bible', asyncHandler(async (req, res) => {
                     </body></html>
                 `);
             }
-            const trans = (req.query.translation || itemRes.rows[0].translation_code || 'nvi').toLowerCase();
-            const tParam = trans !== 'nvi' ? '?translation=' + encodeURIComponent(trans) : '';
-            return res.redirect(302, `/${slug}/bible/gn/1${tParam}`);
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            const API_URL = process.env.API_URL || process.env.FRONTEND_URL || baseUrl;
+            return res.render('biblePublic', {
+                slug,
+                API_URL: API_URL.replace(/\/$/, ''),
+                baseUrl: baseUrl.replace(/\/$/, ''),
+                translation: itemRes.rows[0].translation_code || 'nvi'
+            });
         } finally {
             client.release();
         }
