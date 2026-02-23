@@ -1,0 +1,37 @@
+---
+description: Padrão para estudos profundos de livros da Bíblia (Estudo por livro)
+globs: migrations/*bible*study*.sql,**/bible*Book*Study*,modules/bible/**/*.js
+alwaysApply: false
+---
+
+# Estudo por Livro da Bíblia — Padrão obrigatório
+
+Ao criar ou expandir conteúdo de **estudo profundo de um livro bíblico** (`bible_book_studies`, migrations 186+, view `bibleBookStudy.ejs`), seguir **sempre** a especificação completa em:
+
+**`docs/bible-estudo-livro-guia-completo.md`**
+
+## Resumo do formato "Guia Completo"
+
+O estudo deve incluir (na ordem e com o rigor do doc):
+
+1. **Ficha rápida** — nome, cânon, gênero, tema, palavras-chave, versículos-chave, personagens, "por que importa hoje".
+2. **Mapa mental** em 3 formatos: texto, Mermaid, JSON (com `refs` onde houver base textual).
+3. **Contexto e propósito** — por que foi escrito, para quem, autoria/data (tradicional + acadêmica quando debatido), fontes com links.
+4. **Estrutura detalhada** — blocos/capítulos com: o que acontece, significado, aplicação.
+5. **Narrativa por cenas** — cada cena com: o que aconteceu, refs, por quê, o que Deus revela, aplicação hoje.
+6. **Perfis dos personagens** (5–12) — crise, escolhas, o que Deus ensinou, lições hoje, refs.
+7. **Temas teológicos** (8–15) — definição, refs no livro, impacto hoje.
+8. **Perguntas difíceis** (≥8) — por que incomoda, o que o texto diz, leituras possíveis, aplicação madura.
+9. **Aplicações modernas** (15–25) por área + Plano 7 dias.
+10. **Plano de leitura** — 7 dias e 30 dias (capítulos + objetivo + pergunta guia).
+11. **Resumos** — 60s, 5 min, 30 min.
+12. **Referências e links** — mínimo 8 fontes confiáveis (BibleProject, Britannica, dicionário/comentário, acadêmica, 2 traduções, etc.).
+
+## Regras de rigor
+
+- Não inventar citações, datas, autores ou "fatos históricos".
+- Sempre incluir capítulos e versículos ao narrar ou afirmar.
+- Separar "O texto diz" de "Interpretações".
+- Em temas debatidos: apresentar perspectiva tradicional e acadêmica com neutralidade.
+
+Quando gerar ou editar estudos por livro, ler o guia completo e aplicar todos os pontos.

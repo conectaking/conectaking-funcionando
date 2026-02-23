@@ -1,6 +1,9 @@
 -- Migration 187: Estudo profundo expandido – 1 Samuel (modelo de estudo completo)
 -- Execute após 186. Atualiza o conteúdo de 1 Samuel para um estudo de verdade, não apenas demonstração.
--- Use este formato para enriquecer os demais livros (pesquisa, fontes confiáveis, múltiplos parágrafos por seção).
+--
+-- Padrão oficial para todos os estudos por livro: docs/bible-estudo-livro-guia-completo.md
+-- (Guia Completo: ficha rápida, mapa mental texto/Mermaid/JSON, contexto, estrutura, cenas,
+--  personagens, temas, perguntas difíceis, aplicações, planos de leitura, resumos, fontes.)
 
 UPDATE bible_book_studies
 SET
