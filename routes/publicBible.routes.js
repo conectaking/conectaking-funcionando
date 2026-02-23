@@ -1,6 +1,7 @@
 /**
  * Rotas públicas do módulo Bíblia
  * GET /:slug/bible - Página principal (versículo do dia, livros)
+ * GET /:slug/bible/estudo-livro/:bookId - Página principal com estudo do livro aberto (evita confundir com bookId/chapter)
  * GET /:slug/bible/:bookId/:chapter - Leitor de capítulo
  */
 
@@ -10,6 +11,64 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const db = require('../db');
 const logger = require('../utils/logger');
 const bibleService = require('../modules/bible/bible.service');
+
+/** Renderiza a página da Bíblia (biblePublic) com os dados do perfil. */
+async function getBiblePageContext(client, slug) {
+    const userRes = await client.query(
+        `SELECT id FROM users WHERE LOWER(profile_slug) = LOWER($1) LIMIT 1`,
+        [slug]
+    );
+    if (userRes.rows.length === 0) return null;
+    const itemRes = await client.query(
+        `SELECT pi.id, bi.translation_code
+         FROM profile_items pi
+         LEFT JOIN bible_items bi ON bi.profile_item_id = pi.id
+         WHERE pi.user_id = $1 AND pi.item_type = 'bible' AND pi.is_active = true
+         LIMIT 1`,
+        [userRes.rows[0].id]
+    );
+    if (itemRes.rows.length === 0) return null;
+    return {
+        slug,
+        translation: itemRes.rows[0].translation_code || 'nvi',
+        baseUrl: null,
+        API_URL: null
+    };
+}
+
+router.get('/:slug/bible/estudo-livro/:bookId', asyncHandler(async (req, res) => {
+    const { slug, bookId } = req.params;
+    try {
+        const client = await db.pool.connect();
+        try {
+            const ctx = await getBiblePageContext(client, slug);
+            if (!ctx) {
+                return res.status(404).send(`
+                    <!DOCTYPE html>
+                    <html><head><meta charset="utf-8"><title>Bíblia não encontrada</title></head>
+                    <body style="font-family:sans-serif;text-align:center;padding:3rem;background:#0D0D0F;color:#ECECEC;">
+                        <h1>Bíblia não encontrada</h1>
+                        <p>Este perfil não possui o módulo Bíblia ativo.</p>
+                    </body></html>
+                `);
+            }
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            const API_URL = process.env.API_URL || process.env.FRONTEND_URL || baseUrl;
+            return res.render('biblePublic', {
+                slug: ctx.slug,
+                API_URL: API_URL.replace(/\/$/, ''),
+                baseUrl: baseUrl.replace(/\/$/, ''),
+                translation: ctx.translation,
+                initialEstudoBookId: bookId || null
+            });
+        } finally {
+            client.release();
+        }
+    } catch (e) {
+        logger.error('publicBible estudo-livro:', e);
+        res.status(500).send('<h1>Erro ao carregar Bíblia</h1>');
+    }
+}));
 
 router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
     const { slug, bookId, chapter } = req.params;

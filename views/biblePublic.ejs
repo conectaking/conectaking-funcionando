@@ -407,6 +407,7 @@
             const API_URL = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '<%= typeof API_URL !== "undefined" ? API_URL : "" %>';
             const translation = '<%= translation || "nvi" %>';
             const slug = '<%= slug %>';
+            const initialEstudoBookId = <%= typeof initialEstudoBookId !== 'undefined' && initialEstudoBookId ? JSON.stringify(initialEstudoBookId) : 'null' %>;
 
             let palavraLoaded = false, salmoLoaded = false, devocionalLoaded = false, estudoLivroLoaded = false;
 
@@ -598,10 +599,14 @@
             });
 
             (function openEstudoLivroFromHash() {
+                var bookId = null;
                 var hash = (location.hash || '').trim();
                 if (hash === '#estudo-livro' || hash.indexOf('#estudo-livro/') === 0) {
-                    var bookId = hash === '#estudo-livro' ? null : decodeURIComponent(hash.replace('#estudo-livro/', ''));
-                    if (bookId) window.pendingEstudoLivroBookId = bookId;
+                    bookId = hash === '#estudo-livro' ? null : decodeURIComponent(hash.replace('#estudo-livro/', ''));
+                }
+                if (typeof initialEstudoBookId !== 'undefined' && initialEstudoBookId) bookId = initialEstudoBookId;
+                if (bookId) window.pendingEstudoLivroBookId = bookId;
+                if (bookId || hash === '#estudo-livro' || hash.indexOf('#estudo-livro/') === 0) {
                     var el = document.querySelector('.receba-item[data-tipo="estudo-livro"]');
                     if (el) el.click();
                 }
