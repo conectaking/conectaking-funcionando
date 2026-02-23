@@ -58,7 +58,10 @@ const uploadStudy = multer({
 });
 
 /** GET /api/admin/bible/study/books — Lista todos os livros com indicador has_study (só ADM). */
-router.get('/bible/study/books', protectAdmin, async (req, res) => {
+router.get('/bible/study/books', protectAdmin, (req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    next();
+}, async (req, res) => {
     try {
         let books = await bibleService.getStudyBooks();
         if (!books || books.length === 0) {
