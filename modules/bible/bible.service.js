@@ -360,8 +360,11 @@ function getBookChapter(bookId, chapterNum, translation) {
 
 const TOTAL_CHAPTERS_BIBLE = 1189;
 
+/** Número de capítulos por livro, na ordem do books_manifest (at + nt). Evita 66 leituras de arquivo que travavam o servidor. */
+const CHAPTER_COUNTS_66 = [50, 40, 27, 36, 34, 24, 21, 4, 31, 24, 22, 25, 29, 36, 10, 13, 10, 42, 150, 31, 12, 8, 66, 52, 5, 48, 12, 14, 3, 9, 1, 4, 7, 3, 3, 3, 2, 14, 4, 28, 16, 24, 21, 28, 16, 16, 13, 6, 6, 4, 4, 5, 3, 6, 4, 3, 1, 13, 5, 5, 3, 5, 1, 1, 1, 22];
+
 let _bibleChapterSequence = null;
-/** Lista ordenada de { bookId, bookName, chapter } para cada um dos 1189 capítulos da Bíblia. */
+/** Lista ordenada de { bookId, bookName, chapter } para cada um dos 1189 capítulos da Bíblia. Sem I/O pesado. */
 function getBibleChapterSequence() {
     if (_bibleChapterSequence && _bibleChapterSequence.length > 0) return _bibleChapterSequence;
     const manifest = loadBooksManifest();
@@ -370,8 +373,7 @@ function getBibleChapterSequence() {
     for (let i = 0; i < allBooks.length; i++) {
         const book = allBooks[i];
         if (!book || !book.id) continue;
-        const ch1 = getBookChapter(book.id, '1', 'nvi');
-        const totalCh = ch1 ? ch1.totalChapters : 1;
+        const totalCh = (CHAPTER_COUNTS_66[i] != null && CHAPTER_COUNTS_66[i] >= 1) ? CHAPTER_COUNTS_66[i] : 1;
         for (let c = 1; c <= totalCh; c++) {
             list.push({ bookId: book.id, bookName: book.name, chapter: c });
         }
