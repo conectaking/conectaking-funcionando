@@ -620,8 +620,8 @@
                     if (tipo === 'salmo' && !salmoLoaded) loadSalmo();
                     if (tipo === 'devocional' && !devocionalLoaded) loadDevocional();
                     if (tipo === 'devocional-biblia-inteira') {
-                        if (getDevBibliaStartDate()) { showDevBibliaSequence(); if (!devocionalBibliaInteiraLoaded) loadDevocionalBibliaInteira(true); }
-                        else if (!devocionalBibliaInteiraLoaded) { showDevBibliaModeChoice(); }
+                        if (getDevBibliaStartDate()) { showDevBibliaSequence(); loadDevocionalBibliaInteira(true); }
+                        else { showDevBibliaModeChoice(); }
                     }
                     if (tipo === 'estudo-livro' && !estudoLivroLoaded) loadEstudoLivroList();
                 });
