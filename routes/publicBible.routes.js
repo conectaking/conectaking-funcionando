@@ -79,7 +79,7 @@ async function renderBookStudy(req, res, slug, bookId) {
         const study = await bibleService.getBookStudy(bookId);
         const frontendUrl = (process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
         const bibleItemId = ctx.bibleItemId || null;
-        const biblePanelUrl = bibleItemId ? `${frontendUrl}/bibliaking.html` : `${frontendUrl}/dashboard.html`;
+        const biblePanelUrl = bibleItemId ? `${frontendUrl}/bibliaking.html?itemId=${bibleItemId}` : `${frontendUrl}/dashboard.html`;
         return res.render('bibleBookStudy', {
             slug: ctx.slug,
             bookId: bookId || '',
@@ -136,7 +136,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             const tParam = translation !== 'nvi' ? '?translation=' + encodeURIComponent(translation) : '';
             const bibleItemId = itemRes.rows[0]?.id || null;
             const frontendUrl = (process.env.FRONTEND_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
-            const biblePanelUrl = bibleItemId ? `${frontendUrl}/bibliaking.html` : `${baseUrl}/${slug}/bible/gn/1`;
+            const biblePanelUrl = bibleItemId ? `${frontendUrl}/bibliaking.html?itemId=${bibleItemId}` : `${baseUrl}/${slug}/bible/gn/1`;
             const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter);
             res.render('bibleReader', {
                 slug,
