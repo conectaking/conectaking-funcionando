@@ -142,6 +142,17 @@ async function markRead(req, res) {
     }
 }
 
+async function resetProgress(req, res) {
+    try {
+        const userId = req.user.userId;
+        const progress = await bibleService.resetProgress(userId);
+        return responseFormatter.success(res, progress, 'Progresso zerado. Você pode começar de novo.');
+    } catch (e) {
+        logger.error('bible resetProgress:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao zerar progresso', 400);
+    }
+}
+
 // --- Ecossistema Bíblico (devocionais 365, estudos, esboços, busca) ---
 
 async function getDevocionalBibliaInteira(req, res) {
@@ -387,6 +398,7 @@ module.exports = {
     getBooksManifest,
     getMyProgress,
     markRead,
+    resetProgress,
     getConfig,
     saveConfig
 };

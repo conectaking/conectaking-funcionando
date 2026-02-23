@@ -134,6 +134,19 @@ async function markRead(userId, data) {
     }
 }
 
+async function resetProgress(userId) {
+    const client = await db.pool.connect();
+    try {
+        await client.query('DELETE FROM bible_reading_progress WHERE user_id = $1', [userId]);
+        return await getProgress(userId);
+    } catch (err) {
+        logger.error('bible.repository resetProgress:', err);
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
 // --- Ecossistema Bíblico (devocionais 365, estudos, esboços) ---
 
 async function getDevocional365(dayOfYear) {
@@ -525,6 +538,7 @@ module.exports = {
     ensureOwnership,
     getProgress,
     markRead,
+    resetProgress,
     getDevocional365,
     getStudyThemes,
     getStudies,

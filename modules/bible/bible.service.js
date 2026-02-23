@@ -192,6 +192,11 @@ async function markRead(userId, data) {
     return await repo.markRead(userId, data);
 }
 
+async function resetProgress(userId) {
+    const repo = require('./bible.repository');
+    return await repo.resetProgress(userId);
+}
+
 async function markDevotionalRead(data) {
     const repo = require('./bible.repository');
     return await repo.markDevotionalRead(data);
@@ -569,6 +574,7 @@ module.exports = {
     getNameMeaning,
     getMyProgress,
     markRead,
+    resetProgress,
     getConfig,
     saveConfig,
     getPalavraDoDia,
