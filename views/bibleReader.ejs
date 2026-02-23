@@ -91,6 +91,10 @@
                 <button type="button" class="btn-ouvir" id="btn-ouvir"><i class="fas fa-volume-up"></i> Ouvir capítulo</button>
                 <button type="button" class="btn-ouvir" id="btn-parar" style="background:rgba(239,68,68,0.8);"><i class="fas fa-stop"></i> Parar</button>
                 <button type="button" class="btn-ouvir secondary" id="btn-mark-read" style="background:rgba(255,255,255,0.08);color:#ECECEC;border:1px solid rgba(255,199,0,0.4);" title="Marcar este capítulo como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
+                <a href="javascript:void(0)" id="btn-estudo-cap" class="btn-ouvir secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px" title="Ver estudo deste capítulo"><i class="fas fa-book-open"></i> Ver estudo</a>
+            </div>
+            <div id="estudo-cap-content" style="display:none;margin-top:16px;padding:16px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,199,0,0.2);border-radius:12px;">
+                <div id="estudo-cap-body"></div>
             </div>
         </div>
         <div class="verses-card">
@@ -152,6 +156,43 @@
                 setChapterRead(readerBookId, readerChapter);
                 updateMarkReadButton();
             });
+
+            (function() {
+                var apiUrl = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '';
+                var btnEstudo = document.getElementById('btn-estudo-cap');
+                var boxEstudo = document.getElementById('estudo-cap-content');
+                var bodyEstudo = document.getElementById('estudo-cap-body');
+                if (!btnEstudo || !boxEstudo || !bodyEstudo) return;
+                btnEstudo.addEventListener('click', function() {
+                    if (boxEstudo.style.display === 'block' && bodyEstudo.innerHTML) {
+                        boxEstudo.style.display = 'none';
+                        return;
+                    }
+                    if (bodyEstudo.getAttribute('data-loaded') === '1') {
+                        boxEstudo.style.display = boxEstudo.style.display === 'none' ? 'block' : 'none';
+                        return;
+                    }
+                    bodyEstudo.innerHTML = '<span style="color:#A1A1A1"><i class="fas fa-spinner fa-spin"></i> Carregando...</span>';
+                    boxEstudo.style.display = 'block';
+                    fetch(apiUrl + '/api/bible/study/book/' + encodeURIComponent(readerBookId) + '/chapter/' + readerChapter)
+                        .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, json: j }; }); })
+                        .then(function(result) {
+                            bodyEstudo.setAttribute('data-loaded', '1');
+                            if (!result.ok || !result.json.success) {
+                                bodyEstudo.innerHTML = '<p style="color:#A1A1A1;font-size:0.9rem">Nenhum estudo disponível para este capítulo.</p>';
+                                return;
+                            }
+                            var d = result.json.data;
+                            var html = (d.title ? '<h3 style="color:#FFC700;font-size:1rem;margin-bottom:10px">' + d.title + '</h3>' : '') +
+                                '<div style="color:#e8e8e8;line-height:1.65;white-space:pre-wrap;font-size:0.95rem">' + (d.content || '').replace(/\n/g, '<br>') + '</div>';
+                            bodyEstudo.innerHTML = html;
+                        })
+                        .catch(function() {
+                            bodyEstudo.setAttribute('data-loaded', '1');
+                            bodyEstudo.innerHTML = '<p style="color:#A1A1A1;font-size:0.9rem">Erro ao carregar o estudo.</p>';
+                        });
+                });
+            })();
 
             document.getElementById('back-bible-link').addEventListener('click', function() {
                 window.location.href = biblePanelUrl;

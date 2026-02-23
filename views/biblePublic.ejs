@@ -260,6 +260,10 @@
                     <span><i class="fas fa-calendar-check" style="margin-right:8px"></i>Plano de leitura (1 ano)</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
+                <div class="receba-item" data-tipo="estudo-livro">
+                    <span><i class="fas fa-book-open" style="margin-right:8px"></i>Estudo por livro</span>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
             </div>
             <div id="receba-versiculo" class="receba-content show">
                 <div id="bible-content">
@@ -302,6 +306,14 @@
                     <button type="button" class="bible-btn secondary" id="btn-plano-today"><i class="fas fa-calendar-day"></i> Dia de hoje</button>
                 </div>
                 <div id="plano-content"><p style="color:#A1A1A1;font-size:0.9rem">Selecione um dia ou clique em "Dia de hoje".</p></div>
+            </div>
+            <div id="receba-estudo-livro" class="receba-content">
+                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Introduções e estudos por livro e capítulo da Bíblia.</p>
+                <div id="estudo-livro-list"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
+                <div id="estudo-livro-detail" style="display:none;margin-top:20px;padding:16px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.08);border-radius:12px;">
+                    <button type="button" class="bible-btn secondary" id="btn-estudo-livro-back" style="margin-bottom:12px"><i class="fas fa-arrow-left"></i> Voltar</button>
+                    <div id="estudo-livro-body"></div>
+                </div>
             </div>
         </div>
 

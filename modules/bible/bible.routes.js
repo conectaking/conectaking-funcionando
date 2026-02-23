@@ -16,6 +16,9 @@ router.post('/devotional/mark-read', asyncHandler(controller.markDevotionalRead)
 router.get('/devotional/read-status', asyncHandler(controller.getDevotionalReadStatus));
 router.get('/reading-plan', asyncHandler(controller.getReadingPlan));
 router.get('/reading-plan/day/:day', asyncHandler(controller.getReadingPlanDay));
+router.get('/study/books', asyncHandler(controller.getStudyBooks));
+router.get('/study/book/:bookId', asyncHandler(controller.getBookStudy));
+router.get('/study/book/:bookId/chapter/:chapter', asyncHandler(controller.getChapterStudy));
 router.get('/numbers', asyncHandler(controller.getNumbers));
 router.get('/names', asyncHandler(controller.getNameMeaning));
 

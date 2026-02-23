@@ -392,6 +392,76 @@ async function getReadingPlanList() {
     }
 }
 
+// --- Estudo por livro/capítulo ---
+async function getStudyBooksList() {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(`
+            SELECT DISTINCT book_id FROM (
+                SELECT book_id FROM bible_book_studies
+                UNION
+                SELECT book_id FROM bible_chapter_studies
+            ) t ORDER BY book_id
+        `);
+        return r.rows.map(row => row.book_id);
+    } catch (err) {
+        logger.error('bible.repository getStudyBooksList:', err);
+        return [];
+    } finally {
+        client.release();
+    }
+}
+
+async function getBookStudy(bookId) {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            'SELECT book_id, title, content FROM bible_book_studies WHERE book_id = $1',
+            [bookId]
+        );
+        return r.rows[0] || null;
+    } catch (err) {
+        logger.error('bible.repository getBookStudy:', err);
+        return null;
+    } finally {
+        client.release();
+    }
+}
+
+async function getChapterStudy(bookId, chapterNumber) {
+    const client = await db.pool.connect();
+    try {
+        const num = parseInt(chapterNumber, 10);
+        if (num < 1) return null;
+        const r = await client.query(
+            'SELECT book_id, chapter_number, title, content FROM bible_chapter_studies WHERE book_id = $1 AND chapter_number = $2',
+            [bookId, num]
+        );
+        return r.rows[0] || null;
+    } catch (err) {
+        logger.error('bible.repository getChapterStudy:', err);
+        return null;
+    } finally {
+        client.release();
+    }
+}
+
+async function getChapterStudiesByBook(bookId) {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            'SELECT chapter_number, title FROM bible_chapter_studies WHERE book_id = $1 ORDER BY chapter_number',
+            [bookId]
+        );
+        return r.rows;
+    } catch (err) {
+        logger.error('bible.repository getChapterStudiesByBook:', err);
+        return [];
+    } finally {
+        client.release();
+    }
+}
+
 async function getDevotionalReadStatus(userId, visitorId, days) {
     const client = await db.pool.connect();
     try {
@@ -452,5 +522,9 @@ module.exports = {
     markDevotionalRead,
     getDevotionalReadStatus,
     getReadingPlanDay,
-    getReadingPlanList
+    getReadingPlanList,
+    getStudyBooksList,
+    getBookStudy,
+    getChapterStudy,
+    getChapterStudiesByBook
 };

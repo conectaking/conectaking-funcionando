@@ -215,6 +215,30 @@ async function getReadingPlanList() {
     return await repo.getReadingPlanList();
 }
 
+async function getStudyBooks() {
+    const repo = require('./bible.repository');
+    const bookIds = await repo.getStudyBooksList();
+    if (!bookIds.length) return [];
+    const manifest = loadBooksManifest();
+    const allBooks = (manifest.at || []).concat(manifest.nt || []);
+    const idToName = {};
+    allBooks.forEach(b => { if (b.id) idToName[b.id] = b.name || b.id; });
+    return bookIds.map(id => ({ book_id: id, book_name: idToName[id] || id }));
+}
+
+async function getBookStudy(bookId) {
+    const repo = require('./bible.repository');
+    const bookStudy = await repo.getBookStudy(bookId);
+    if (!bookStudy) return null;
+    const chapters = await repo.getChapterStudiesByBook(bookId);
+    return { ...bookStudy, chapters };
+}
+
+async function getChapterStudy(bookId, chapterNumber) {
+    const repo = require('./bible.repository');
+    return await repo.getChapterStudy(bookId, chapterNumber);
+}
+
 function loadBooksManifest() {
     try {
         const filePath = path.join(DATA_DIR, 'books_manifest.json');
@@ -385,5 +409,8 @@ module.exports = {
     markDevotionalRead,
     getDevotionalReadStatus,
     getReadingPlanDay,
-    getReadingPlanList
+    getReadingPlanList,
+    getStudyBooks,
+    getBookStudy,
+    getChapterStudy
 };

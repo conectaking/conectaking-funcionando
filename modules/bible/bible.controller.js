@@ -220,6 +220,44 @@ async function getReadingPlanDay(req, res) {
     }
 }
 
+async function getStudyBooks(req, res) {
+    try {
+        const books = await bibleService.getStudyBooks();
+        return responseFormatter.success(res, { books });
+    } catch (e) {
+        logger.error('bible getStudyBooks:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao listar livros com estudo', 500);
+    }
+}
+
+async function getBookStudy(req, res) {
+    try {
+        const bookId = (req.params.bookId || '').trim().toLowerCase();
+        if (!bookId) return responseFormatter.error(res, 'bookId obrigatório', 400);
+        const study = await bibleService.getBookStudy(bookId);
+        if (!study) return responseFormatter.error(res, 'Estudo do livro não encontrado', 404);
+        return responseFormatter.success(res, study);
+    } catch (e) {
+        logger.error('bible getBookStudy:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar estudo', 500);
+    }
+}
+
+async function getChapterStudy(req, res) {
+    try {
+        const bookId = (req.params.bookId || '').trim().toLowerCase();
+        const chapterNum = parseInt(req.params.chapter, 10);
+        if (!bookId) return responseFormatter.error(res, 'bookId obrigatório', 400);
+        if (chapterNum < 1) return responseFormatter.error(res, 'Capítulo inválido', 400);
+        const study = await bibleService.getChapterStudy(bookId, chapterNum);
+        if (!study) return responseFormatter.error(res, 'Estudo do capítulo não encontrado', 404);
+        return responseFormatter.success(res, study);
+    } catch (e) {
+        logger.error('bible getChapterStudy:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar estudo', 500);
+    }
+}
+
 async function getStudyThemes(req, res) {
     try {
         const themes = await bibleService.getStudyThemes();
@@ -381,6 +419,9 @@ module.exports = {
     getDevotionalReadStatus,
     getReadingPlan,
     getReadingPlanDay,
+    getStudyBooks,
+    getBookStudy,
+    getChapterStudy,
     getStudyThemes,
     getStudies,
     getStudyBySlug,
