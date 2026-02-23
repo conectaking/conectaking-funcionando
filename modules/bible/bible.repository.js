@@ -393,6 +393,20 @@ async function getReadingPlanList() {
 }
 
 // --- Estudo por livro/capítulo ---
+/** Lista de book_id que possuem estudo completo do livro (bible_book_studies). */
+async function getBookIdsWithFullStudy() {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query('SELECT DISTINCT book_id FROM bible_book_studies ORDER BY book_id');
+        return r.rows.map(row => row.book_id);
+    } catch (err) {
+        logger.error('bible.repository getBookIdsWithFullStudy:', err);
+        return [];
+    } finally {
+        client.release();
+    }
+}
+
 async function getStudyBooksList() {
     const client = await db.pool.connect();
     try {
@@ -523,6 +537,7 @@ module.exports = {
     getDevotionalReadStatus,
     getReadingPlanDay,
     getReadingPlanList,
+    getBookIdsWithFullStudy,
     getStudyBooksList,
     getBookStudy,
     getChapterStudy,

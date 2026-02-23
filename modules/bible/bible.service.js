@@ -217,13 +217,16 @@ async function getReadingPlanList() {
 
 async function getStudyBooks() {
     const repo = require('./bible.repository');
-    const bookIds = await repo.getStudyBooksList();
-    if (!bookIds.length) return [];
     const manifest = loadBooksManifest();
     const allBooks = (manifest.at || []).concat(manifest.nt || []);
-    const idToName = {};
-    allBooks.forEach(b => { if (b.id) idToName[b.id] = b.name || b.id; });
-    return bookIds.map(id => ({ book_id: id, book_name: idToName[id] || id }));
+    const bookIdsWithStudy = new Set(await repo.getBookIdsWithFullStudy());
+    return allBooks
+        .filter(b => b && b.id)
+        .map(b => ({
+            book_id: b.id,
+            book_name: b.name || b.id,
+            has_study: bookIdsWithStudy.has(b.id)
+        }));
 }
 
 async function getBookStudy(bookId) {
