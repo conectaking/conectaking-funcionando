@@ -64,7 +64,7 @@
 </head>
 <body>
     <div class="study-wrap">
-        <a href="<%= typeof baseUrl !== 'undefined' && baseUrl ? baseUrl : '' %>/<%= slug %>/bible" class="back-link"><i class="fas fa-arrow-left"></i> Voltar à Bíblia</a>
+        <a href="<%= typeof biblePanelUrl !== 'undefined' && biblePanelUrl ? biblePanelUrl : (typeof baseUrl !== 'undefined' && baseUrl ? baseUrl : '') + '/dashboard.html' %>" class="back-link"><i class="fas fa-arrow-left"></i> Voltar à Bíblia</a>
 
         <% if (study && (study.title || study.content)) { %>
         <div class="study-header">

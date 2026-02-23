@@ -36,17 +36,17 @@ async function getBiblePageContext(client, slug) {
     };
 }
 
-/** URL sem bookId desativada: página duplicada. Retorna 404 para forçar uso da página principal (bibleEdit). */
+/** URL sem bookId desativada: página duplicada. Retorna 404 e link para o painel. */
 router.get('/:slug/bible/estudo-livro', (req, res) => {
-    const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || '';
-    const bibleEditUrl = frontendUrl ? (frontendUrl.replace(/\/$/, '') + '/bibleEdit') : 'https://www.conectaking.com.br/bibleEdit';
+    const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br';
+    const dashboardUrl = frontendUrl.replace(/\/$/, '') + '/dashboard.html';
     res.status(404).send(`
         <!DOCTYPE html>
         <html><head><meta charset="utf-8"><title>Página não disponível</title></head>
         <body style="font-family:sans-serif;text-align:center;padding:3rem;background:#0D0D0F;color:#ECECEC;">
             <h1>Página não disponível</h1>
-            <p>Use a página principal da Bíblia no painel.</p>
-            <p style="margin-top:20px"><a href="${bibleEditUrl}" style="color:#FFC700;text-decoration:none;font-weight:600">Abrir Bíblia no painel →</a></p>
+            <p>Abra o painel e acesse a Bíblia por lá.</p>
+            <p style="margin-top:20px"><a href="${dashboardUrl}" style="color:#FFC700;text-decoration:none;font-weight:600">Abrir painel →</a></p>
         </body></html>
     `);
 });
@@ -73,12 +73,15 @@ router.get('/:slug/bible/estudo-livro/:bookId', asyncHandler(async (req, res) =>
             const book = allBooks.find(b => b && b.id === bookId);
             const bookName = book ? (book.name || bookId) : bookId;
             const study = await bibleService.getBookStudy(bookId);
+            const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br';
+            const biblePanelUrl = frontendUrl.replace(/\/$/, '') + '/dashboard.html';
             return res.render('bibleBookStudy', {
                 slug: ctx.slug,
                 bookId: bookId || '',
                 bookName,
                 study: study || null,
-                baseUrl: baseUrl.replace(/\/$/, '')
+                baseUrl: baseUrl.replace(/\/$/, ''),
+                biblePanelUrl
             });
         } finally {
             client.release();
@@ -137,17 +140,17 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
     }
 }));
 
-/** Página pública da Bíblia (dashboard) desativada: usar apenas a página principal (bibleEdit) no painel. */
+/** Página pública da Bíblia (dashboard) desativada: usar apenas a página principal no painel. */
 router.get('/:slug/bible', (req, res) => {
-    const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || '';
-    const bibleEditUrl = frontendUrl ? (frontendUrl.replace(/\/$/, '') + '/bibleEdit') : 'https://www.conectaking.com.br/bibleEdit';
+    const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br';
+    const dashboardUrl = frontendUrl.replace(/\/$/, '') + '/dashboard.html';
     res.status(404).send(`
         <!DOCTYPE html>
         <html><head><meta charset="utf-8"><title>Página não disponível</title></head>
         <body style="font-family:sans-serif;text-align:center;padding:3rem;background:#0D0D0F;color:#ECECEC;">
             <h1>Página não disponível</h1>
-            <p>Esta página da Bíblia foi desativada. Use a página principal da Bíblia no painel.</p>
-            <p style="margin-top:20px"><a href="${bibleEditUrl}" style="color:#FFC700;text-decoration:none;font-weight:600">Abrir Bíblia no painel →</a></p>
+            <p>Esta página da Bíblia foi desativada. Abra o painel e acesse a Bíblia por lá.</p>
+            <p style="margin-top:20px"><a href="${dashboardUrl}" style="color:#FFC700;text-decoration:none;font-weight:600">Abrir painel →</a></p>
         </body></html>
     `);
 });

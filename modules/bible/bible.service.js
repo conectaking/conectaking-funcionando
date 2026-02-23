@@ -202,12 +202,45 @@ async function getDevotionalReadStatus(userId, visitorId, days) {
     return await repo.getDevotionalReadStatus(userId, visitorId, days);
 }
 
+/** Fallback: plano de 365 dias a partir da sequência de capítulos (quando a tabela bible_reading_plan_days está vazia). */
+function getReadingPlanDayFallback(dayNumber) {
+    const seq = getBibleChapterSequence();
+    if (!seq.length) return null;
+    const day = Math.max(1, Math.min(365, parseInt(dayNumber, 10) || 1));
+    const totalCh = seq.length;
+    const chunkSize = Math.ceil(totalCh / 365);
+    const startIdx = (day - 1) * chunkSize;
+    const endIdx = Math.min(day * chunkSize, totalCh) - 1;
+    if (startIdx > endIdx) return null;
+    const first = seq[startIdx];
+    const last = seq[endIdx];
+    const sameBook = first && last && first.bookId === last.bookId;
+    return {
+        day_number: day,
+        book_id: first.bookId,
+        chapter_from: first.chapter,
+        chapter_to: sameBook ? last.chapter : first.chapter,
+        verse_count: 0,
+        summary: first.bookName && last.bookName
+            ? (sameBook ? `${first.bookName} ${first.chapter}–${last.chapter}` : `${first.bookName} ${first.chapter}`)
+            : null,
+        devocional: null
+    };
+}
+
 async function getReadingPlanDay(dayNumber) {
     const repo = require('./bible.repository');
     const dayRow = await repo.getReadingPlanDay(dayNumber);
-    if (!dayRow) return null;
-    const devocional = await repo.getDevocional365(dayNumber);
-    return { ...dayRow, devocional: devocional || null };
+    if (dayRow) {
+        const devocional = await repo.getDevocional365(dayNumber);
+        return { ...dayRow, devocional: devocional || null };
+    }
+    const fallback = getReadingPlanDayFallback(dayNumber);
+    if (fallback) {
+        const devocional = await repo.getDevocional365(dayNumber);
+        return { ...fallback, devocional: devocional || null };
+    }
+    return null;
 }
 
 async function getReadingPlanList() {
