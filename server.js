@@ -704,7 +704,8 @@ app.use((req, res, next) => {
         path.startsWith('/api/log') ||
         path.startsWith('/api/vcard') ||
         path.startsWith('/api/public') ||
-        path.startsWith('/api/king-selection')
+        path.startsWith('/api/king-selection') ||
+        path.startsWith('/api/documentos')
     );
 
     if (!isValidApiRoute && (
@@ -833,6 +834,8 @@ const sitesRoutes = require('./modules/sites/sites.routes');
 app.use('/api/sites', apiLimiter, sitesRoutes);
 const orcamentosRoutes = require('./modules/orcamentos/orcamentos.routes');
 app.use('/api/orcamentos', apiLimiter, orcamentosRoutes);
+const documentosRoutes = require('./modules/documentos/documentos.routes');
+app.use('/api/documentos', apiLimiter, documentosRoutes);
 // IMPORTANTE: cadastroLinksRoutes deve vir ANTES de guestListRoutes para que rotas específicas como /:id/cadastro-links sejam processadas antes da rota genérica /:id
 app.use('/api/guest-lists', apiLimiter, cadastroLinksRoutes);
 app.use('/api/guest-lists', apiLimiter, guestListCustomizeRoutes);
