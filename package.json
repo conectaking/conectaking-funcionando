@@ -27,6 +27,9 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "overrides": {
+    "bn.js": ">=5.2.3"
+  },
   "dependencies": {
     "@aws-sdk/client-rekognition": "^3.994.0",
     "@aws-sdk/client-s3": "^3.859.0",
