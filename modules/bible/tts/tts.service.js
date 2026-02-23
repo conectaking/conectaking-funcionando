@@ -1,7 +1,7 @@
 /**
- * Serviço TTS da Bíblia: cache em R2 + (futuro) Google Cloud TTS.
- * - Primeiro consulta bible_tts_cache e R2; se existir, devolve URL.
- * - Se não existir, quando GCP estiver configurado, gera com Google TTS, sobe no R2 e grava no cache.
+ * Serviço TTS da Bíblia: apenas cache em R2 (leitura).
+ * - Consulta bible_tts_cache e R2; se existir, devolve URL.
+ * - Geração por Google TTS foi removida; usa-se apenas voz gratuita do navegador (speechSynthesis).
  */
 
 const { getTtsCacheKey, getR2Path, normalizeText } = require('./tts-cache-key');
@@ -83,30 +83,12 @@ async function saveToCacheAndR2(opts, mp3Buffer) {
 }
 
 /**
- * Retorna URL do áudio se estiver em cache; senão retorna status 'missing' (e no futuro pode enfileirar geração).
+ * Retorna URL do áudio se estiver em cache; senão retorna status 'missing'.
+ * Geração por serviço pago (ex.: Google TTS) foi removida; usa-se apenas voz gratuita do navegador.
  */
 async function getOrCreateAudio(opts) {
   const cached = await getCachedAudioUrl(opts);
   if (cached.url) return { url: cached.url, fromCache: true };
-
-  const gcpConfigured =
-    process.env.GCP_PROJECT_ID &&
-    process.env.GCP_SERVICE_ACCOUNT_JSON_BASE64;
-
-  if (gcpConfigured && opts.text) {
-    try {
-      const generate = require('./tts-google'); // será criado no próximo passo
-      const mp3Buffer = await generate.generateTts(opts);
-      if (mp3Buffer && mp3Buffer.length) {
-        const { url } = await saveToCacheAndR2(opts, mp3Buffer);
-        return { url, fromCache: false };
-      }
-    } catch (err) {
-      logger.error('bible tts generate:', err);
-      return { status: 'error', message: err.message || 'Falha ao gerar áudio' };
-    }
-  }
-
   return { status: 'missing', cacheKey: cached.cacheKey, r2Path: cached.r2Path };
 }
 
