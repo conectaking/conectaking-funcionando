@@ -76,6 +76,25 @@ router.get('/bible/study/books', protectAdmin, async (req, res) => {
     }
 });
 
+/** DELETE /api/admin/bible/study/book/:bookId — Remove o estudo do livro (só ADM). */
+router.delete('/bible/study/book/:bookId', protectAdmin, async (req, res) => {
+    const bookId = (req.params.bookId || '').trim();
+    if (!bookId) {
+        return res.status(400).json({ success: false, message: 'bookId é obrigatório.' });
+    }
+    try {
+        const removed = await bibleRepository.deleteBookStudy(bookId);
+        if (!removed) {
+            return res.status(404).json({ success: false, message: 'Estudo deste livro não foi encontrado.' });
+        }
+        logger.info(`Admin: estudo do livro ${bookId} removido.`);
+        res.json({ success: true, message: 'Estudo removido com sucesso.' });
+    } catch (e) {
+        logger.error('adminBibleStudy deleteBookStudy:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao remover estudo.' });
+    }
+});
+
 /** POST /api/admin/bible/study/book/:bookId/upload — Upload Word/PDF, extrai texto e grava em bible_book_studies (só ADM). */
 router.post('/bible/study/book/:bookId/upload', protectAdmin, (req, res, next) => {
     uploadStudy.single('file')(req, res, (err) => {

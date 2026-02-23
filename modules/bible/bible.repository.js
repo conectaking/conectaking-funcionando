@@ -513,6 +513,22 @@ async function upsertBookStudy(bookId, title, content) {
     }
 }
 
+/** Remove o estudo do livro (bible_book_studies). Usado pelo admin para limpar estudos. */
+async function deleteBookStudy(bookId) {
+    const client = await db.pool.connect();
+    try {
+        const safeBookId = String(bookId || '').trim();
+        if (!safeBookId) throw new Error('book_id é obrigatório');
+        const r = await client.query('DELETE FROM bible_book_studies WHERE book_id = $1 RETURNING book_id', [safeBookId]);
+        return r.rowCount > 0;
+    } catch (err) {
+        logger.error('bible.repository deleteBookStudy:', err);
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
 async function getDevotionalReadStatus(userId, visitorId, days) {
     const client = await db.pool.connect();
     try {
@@ -580,5 +596,6 @@ module.exports = {
     getBookStudy,
     getChapterStudy,
     getChapterStudiesByBook,
-    upsertBookStudy
+    upsertBookStudy,
+    deleteBookStudy
 };
