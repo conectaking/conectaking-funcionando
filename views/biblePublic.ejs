@@ -597,10 +597,15 @@
                 });
             });
 
-            if (location.hash === '#estudo-livro') {
-                var el = document.querySelector('.receba-item[data-tipo="estudo-livro"]');
-                if (el) el.click();
-            }
+            (function openEstudoLivroFromHash() {
+                var hash = (location.hash || '').trim();
+                if (hash === '#estudo-livro' || hash.indexOf('#estudo-livro/') === 0) {
+                    var bookId = hash === '#estudo-livro' ? null : decodeURIComponent(hash.replace('#estudo-livro/', ''));
+                    if (bookId) window.pendingEstudoLivroBookId = bookId;
+                    var el = document.querySelector('.receba-item[data-tipo="estudo-livro"]');
+                    if (el) el.click();
+                }
+            })();
 
             async function loadPalavra() {
                 var el = document.getElementById('palavra-container');
@@ -879,6 +884,11 @@
                             else { var bodyEl = document.getElementById('estudo-livro-body'); var detailEl = document.getElementById('estudo-livro-detail'); var bookName = this.getAttribute('data-book-name') || (this.textContent || '').trim(); if (detailEl && bodyEl) { listEl.style.display = 'none'; detailEl.style.display = 'block'; bodyEl.innerHTML = '<p style="color:#A1A1A1;font-size:0.95rem">Estudo de <strong>' + bookName + '</strong> em breve. Enquanto isso, leia o livro na Bíblia.</p>'; } }
                         });
                     });
+                    if (window.pendingEstudoLivroBookId) {
+                        var bid = window.pendingEstudoLivroBookId;
+                        delete window.pendingEstudoLivroBookId;
+                        loadEstudoLivroDetail(bid);
+                    }
                 } catch (e) {
                     listEl.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
                 }
