@@ -305,6 +305,102 @@ async function searchBibleEcosystem(query, limit = 30) {
     }
 }
 
+// --- Devocional: marcar como lido (visitante ou usuário) ---
+
+async function markDevotionalRead(data) {
+    const { userId, visitorId, dayOfYear, userNote, slug } = data || {};
+    const day = parseInt(dayOfYear, 10);
+    if (!day || day < 1 || day > 365) throw new Error('day_of_year deve ser entre 1 e 365');
+    if (!userId && !visitorId) throw new Error('Informe user_id (logado) ou visitor_id');
+
+    const client = await db.pool.connect();
+    try {
+        if (userId) {
+            const existing = await client.query(
+                'SELECT id FROM bible_devotional_reads WHERE user_id = $1 AND day_of_year = $2',
+                [userId, day]
+            );
+            if (existing.rows.length > 0) {
+                await client.query(
+                    'UPDATE bible_devotional_reads SET read_at = NOW(), user_note = COALESCE($3, user_note) WHERE user_id = $1 AND day_of_year = $2',
+                    [userId, day, userNote || null]
+                );
+            } else {
+                await client.query(
+                    'INSERT INTO bible_devotional_reads (user_id, day_of_year, user_note, slug) VALUES ($1, $2, $3, $4)',
+                    [userId, day, userNote || null, slug || null]
+                );
+            }
+        } else {
+            const vid = String(visitorId).slice(0, 64);
+            if (!vid) throw new Error('visitor_id não pode ser vazio');
+            const existing = await client.query(
+                'SELECT id FROM bible_devotional_reads WHERE visitor_id = $1 AND day_of_year = $2',
+                [vid, day]
+            );
+            if (existing.rows.length > 0) {
+                await client.query(
+                    'UPDATE bible_devotional_reads SET read_at = NOW(), user_note = COALESCE($3, user_note) WHERE visitor_id = $1 AND day_of_year = $2',
+                    [vid, day, userNote || null]
+                );
+            } else {
+                await client.query(
+                    'INSERT INTO bible_devotional_reads (visitor_id, day_of_year, user_note, slug) VALUES ($1, $2, $3, $4)',
+                    [vid, day, userNote || null, slug || null]
+                );
+            }
+        }
+        return { success: true, day_of_year: day };
+    } catch (err) {
+        logger.error('bible.repository markDevotionalRead:', err);
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+async function getDevotionalReadStatus(userId, visitorId, days) {
+    const client = await db.pool.connect();
+    try {
+        let dayList = [];
+        if (days) {
+            const parts = String(days).split(',').map(d => parseInt(d, 10)).filter(d => d >= 1 && d <= 365);
+            dayList = [...new Set(parts)];
+        }
+        if (userId) {
+            const r = dayList.length > 0
+                ? await client.query(
+                    'SELECT day_of_year, read_at, user_note FROM bible_devotional_reads WHERE user_id = $1 AND day_of_year = ANY($2::int[])',
+                    [userId, dayList]
+                )
+                : await client.query(
+                    'SELECT day_of_year, read_at, user_note FROM bible_devotional_reads WHERE user_id = $1',
+                    [userId]
+                );
+            return r.rows.map(row => ({ day_of_year: row.day_of_year, read_at: row.read_at, user_note: row.user_note }));
+        }
+        if (visitorId) {
+            const vid = String(visitorId).slice(0, 64);
+            const r = dayList.length > 0
+                ? await client.query(
+                    'SELECT day_of_year, read_at, user_note FROM bible_devotional_reads WHERE visitor_id = $1 AND day_of_year = ANY($2::int[])',
+                    [vid, dayList]
+                )
+                : await client.query(
+                    'SELECT day_of_year, read_at, user_note FROM bible_devotional_reads WHERE visitor_id = $1',
+                    [vid]
+                );
+            return r.rows.map(row => ({ day_of_year: row.day_of_year, read_at: row.read_at, user_note: row.user_note }));
+        }
+        return [];
+    } catch (err) {
+        logger.error('bible.repository getDevotionalReadStatus:', err);
+        return [];
+    } finally {
+        client.release();
+    }
+}
+
 module.exports = {
     findByProfileItemId,
     create,
@@ -319,5 +415,7 @@ module.exports = {
     getOutlineCategories,
     getOutlines,
     getOutlineBySlug,
-    searchBibleEcosystem
+    searchBibleEcosystem,
+    markDevotionalRead,
+    getDevotionalReadStatus
 };

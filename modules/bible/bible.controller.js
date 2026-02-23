@@ -157,6 +157,46 @@ async function getDevocional365(req, res) {
     }
 }
 
+async function markDevotionalRead(req, res) {
+    try {
+        const userId = req.user ? req.user.userId : null;
+        const body = req.body || {};
+        const visitorId = body.visitor_id || body.visitorId || req.query.visitor_id;
+        const dayOfYear = body.day_of_year || body.dayOfYear || req.query.day_of_year;
+        const userNote = body.user_note || body.userNote;
+        const slug = body.slug || req.query.slug;
+        if (!dayOfYear) return responseFormatter.error(res, 'day_of_year é obrigatório', 400);
+        if (!userId && !visitorId) return responseFormatter.error(res, 'Faça login ou informe visitor_id (ex: localStorage)', 400);
+        const result = await bibleService.markDevotionalRead({
+            userId,
+            visitorId: visitorId || null,
+            dayOfYear,
+            userNote,
+            slug
+        });
+        return responseFormatter.success(res, result, 'Devocional marcado como lido.');
+    } catch (e) {
+        logger.error('bible markDevotionalRead:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao marcar devocional', 400);
+    }
+}
+
+async function getDevotionalReadStatus(req, res) {
+    try {
+        const userId = req.user ? req.user.userId : null;
+        const visitorId = req.query.visitor_id || req.body?.visitor_id || req.body?.visitorId;
+        const days = req.query.days || req.query.day_of_year;
+        if (!userId && !visitorId) {
+            return responseFormatter.success(res, { read: [] });
+        }
+        const read = await bibleService.getDevotionalReadStatus(userId, visitorId || null, days);
+        return responseFormatter.success(res, { read });
+    } catch (e) {
+        logger.error('bible getDevotionalReadStatus:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar status', 500);
+    }
+}
+
 async function getStudyThemes(req, res) {
     try {
         const themes = await bibleService.getStudyThemes();
@@ -314,6 +354,8 @@ module.exports = {
     getSalmoDoDia,
     getDevocionalDoDia,
     getDevocional365,
+    markDevotionalRead,
+    getDevotionalReadStatus,
     getStudyThemes,
     getStudies,
     getStudyBySlug,

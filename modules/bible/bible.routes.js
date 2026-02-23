@@ -12,6 +12,8 @@ router.get('/palavra-do-dia', asyncHandler(controller.getPalavraDoDia));
 router.get('/salmo-do-dia', asyncHandler(controller.getSalmoDoDia));
 router.get('/devocional-do-dia', asyncHandler(controller.getDevocionalDoDia));
 router.get('/devotionals-365/:day', asyncHandler(controller.getDevocional365));
+router.post('/devotional/mark-read', asyncHandler(controller.markDevotionalRead));
+router.get('/devotional/read-status', asyncHandler(controller.getDevotionalReadStatus));
 router.get('/numbers', asyncHandler(controller.getNumbers));
 router.get('/names', asyncHandler(controller.getNameMeaning));
 

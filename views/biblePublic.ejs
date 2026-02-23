@@ -282,6 +282,10 @@
             </div>
             <div id="receba-devocional" class="receba-content">
                 <div id="devocional-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
+                <div id="devocional-actions" class="bible-actions" style="display:none;margin-top:20px;flex-wrap:wrap;gap:10px">
+                    <button type="button" class="bible-btn" id="devocional-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                    <button type="button" class="bible-btn secondary" id="devocional-btn-mark-read" title="Marcar como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
+                </div>
             </div>
         </div>
 
@@ -509,21 +513,102 @@
                 }
             }
 
+            var currentDevocionalData = null;
+            var currentDevocionalDay = 0;
+
+            function getVisitorId() {
+                var key = 'bible_visitor_id';
+                var id = typeof localStorage !== 'undefined' && localStorage.getItem(key);
+                if (!id) {
+                    id = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+                    try { localStorage.setItem(key, id); } catch (e) {}
+                }
+                return id;
+            }
+
+            async function setDevocionalReadStatus(day, read) {
+                var btn = document.getElementById('devocional-btn-mark-read');
+                if (!btn) return;
+                if (read) {
+                    btn.innerHTML = '<i class="fas fa-check-circle" style="color:var(--green, #22c55e)"></i> Lido';
+                    btn.classList.add('read');
+                    btn.disabled = true;
+                } else {
+                    btn.innerHTML = '<i class="far fa-check-circle"></i> Marcar como lido';
+                    btn.classList.remove('read');
+                    btn.disabled = false;
+                }
+            }
+
+            async function loadDevocionalReadStatus(day) {
+                if (!day) return;
+                try {
+                    var vid = getVisitorId();
+                    var res = await fetch(API_URL + '/api/bible/devotional/read-status?visitor_id=' + encodeURIComponent(vid) + '&days=' + day);
+                    var json = await res.json().catch(function() { return {}; });
+                    var read = (json.data && json.data.read) || [];
+                    var isRead = read.some(function(r) { return r.day_of_year === day; });
+                    setDevocionalReadStatus(day, isRead);
+                } catch (e) {}
+            }
+
             async function loadDevocional() {
                 var el = document.getElementById('devocional-container');
+                var actionsEl = document.getElementById('devocional-actions');
                 try {
                     var res = await fetch(API_URL + '/api/bible/devocional-do-dia');
                     var json = await res.json().catch(function() { return {}; });
                     var d = json.data;
                     if (!d) throw new Error('Devocional não encontrado');
-                    var html = '<div class="bible-ref">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:0.9rem;margin-bottom:12px">' + (d.versiculo || '') + '</div><div class="bible-text" style="color:#e8e8e8;line-height:1.7">' + (d.texto || d.reflexao || '').replace(/\n/g, '<br>') + '</div>';
+                    currentDevocionalDay = (d.day_of_year && d.day_of_year >= 1 && d.day_of_year <= 365) ? d.day_of_year : getDayOfYear();
+                    currentDevocionalData = { titulo: d.titulo, versiculo_ref: d.versiculo_ref, versiculo_texto: d.versiculo_texto, reflexao: d.reflexao, aplicacao: d.aplicacao, oracao: d.oracao };
+                    var html = '<div class="bible-ref">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:0.9rem;margin-bottom:12px">' + (d.versiculo_ref || d.versiculo || '') + '</div>';
+                    if (d.versiculo_texto) html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.7;margin-bottom:16px">"' + (d.versiculo_texto || '').replace(/\n/g, '<br>') + '"</div>';
+                    html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.7">' + (d.reflexao || d.texto || '').replace(/\n/g, '<br>') + '</div>';
                     if (d.aplicacao) html += '<div class="bible-reflexao" style="margin-top:16px"><strong>Aplicação Prática</strong><br>' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</div>';
                     if (d.oracao) html += '<div class="bible-reflexao" style="margin-top:16px"><strong>Oração</strong><br>' + (d.oracao || '').replace(/\n/g, '<br>') + '</div>';
                     el.innerHTML = html;
+                    if (actionsEl) actionsEl.style.display = 'flex';
                     devocionalLoaded = true;
+                    loadDevocionalReadStatus(currentDevocionalDay);
+                    document.getElementById('devocional-btn-share').onclick = shareDevocional;
+                    document.getElementById('devocional-btn-mark-read').onclick = markDevocionalRead;
                 } catch (e) {
                     el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
                 }
+            }
+
+            function shareDevocional() {
+                if (!currentDevocionalData) return;
+                var ref = (currentDevocionalData.versiculo_ref || '').trim();
+                var txt = (currentDevocionalData.versiculo_texto || '').trim();
+                var titulo = (currentDevocionalData.titulo || '').trim();
+                var reflexao = (currentDevocionalData.reflexao || '').replace(/<[^>]+>/g, '').slice(0, 200);
+                var link = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href.split('?')[0] : '';
+                var shareText = (titulo ? titulo + '\n\n' : '') + (ref ? ref + (txt ? ' — ' + txt : '') + '\n\n' : '') + (reflexao ? reflexao + '...\n\n' : '') + (link ? 'Link: ' + link : '');
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(shareText).then(function() {
+                        if (confirm('Devocional copiado! Deseja compartilhar no WhatsApp?')) window.open('https://wa.me/?text=' + encodeURIComponent(shareText));
+                    }).catch(function() { window.open('https://wa.me/?text=' + encodeURIComponent(shareText)); });
+                } else {
+                    window.open('https://wa.me/?text=' + encodeURIComponent(shareText));
+                }
+            }
+
+            async function markDevocionalRead() {
+                if (!currentDevocionalDay) return;
+                var btn = document.getElementById('devocional-btn-mark-read');
+                if (btn && btn.disabled) return;
+                try {
+                    var vid = getVisitorId();
+                    var res = await fetch(API_URL + '/api/bible/devotional/mark-read', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ day_of_year: currentDevocionalDay, visitor_id: vid })
+                    });
+                    var json = await res.json().catch(function() { return {}; });
+                    if (json.success !== false) setDevocionalReadStatus(currentDevocionalDay, true);
+                } catch (e) {}
             }
 
             function getDayOfYear() {
@@ -531,6 +616,7 @@
                 var start = new Date(now.getFullYear(), 0, 0);
                 return Math.floor((now - start) / 86400000);
             }
+            var currentDev365Day = 0;
             async function loadDev365ByDay(day) {
                 var el = document.getElementById('dev365-content');
                 el.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>';
@@ -539,10 +625,31 @@
                     var json = await res.json().catch(function() { return {}; });
                     var d = json.data;
                     if (!d) throw new Error('Devocional não encontrado para este dia.');
+                    currentDev365Day = day;
                     var reflexaoHtml = (d.reflexao || '').replace(/\n/g, '<br>');
                     var aplicacaoHtml = d.aplicacao ? '<div class="bible-reflexao" style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)"><strong style="font-size:1rem;color:#FFC700">Aplicação Prática</strong><p style="margin-top:12px;font-size:1.05rem;line-height:1.8">' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
                     var oracaoHtml = d.oracao ? '<div class="bible-reflexao" style="margin-top:20px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1.05rem;line-height:1.8;font-style:italic">' + (d.oracao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
-                    el.innerHTML = '<div class="bible-ref" style="font-size:1.2rem;margin-bottom:12px">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:1rem;margin-bottom:16px;font-weight:600">' + (d.versiculo_ref || '') + '</div>' + (d.versiculo_texto ? '<div class="bible-text" style="margin-bottom:24px;font-size:1.1rem;line-height:1.8">"' + d.versiculo_texto + '"</div>' : '') + '<div class="bible-text" style="line-height:1.85;font-size:1.05rem">' + reflexaoHtml + '</div>' + aplicacaoHtml + oracaoHtml;
+                    var btnHtml = '<div class="bible-actions" style="margin-top:20px;flex-wrap:wrap;gap:10px"><button type="button" class="bible-btn secondary dev365-mark-read" data-day="' + day + '"><i class="far fa-check-circle"></i> Marcar como lido</button></div>';
+                    el.innerHTML = '<div class="bible-ref" style="font-size:1.2rem;margin-bottom:12px">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:1rem;margin-bottom:16px;font-weight:600">' + (d.versiculo_ref || '') + '</div>' + (d.versiculo_texto ? '<div class="bible-text" style="margin-bottom:24px;font-size:1.1rem;line-height:1.8">"' + d.versiculo_texto + '"</div>' : '') + '<div class="bible-text" style="line-height:1.85;font-size:1.05rem">' + reflexaoHtml + '</div>' + aplicacaoHtml + oracaoHtml + btnHtml;
+                    (async function checkAndBind() {
+                        var vid = getVisitorId();
+                        var r = await fetch(API_URL + '/api/bible/devotional/read-status?visitor_id=' + encodeURIComponent(vid) + '&days=' + day);
+                        var j = await r.json().catch(function() { return {}; });
+                        var read = (j.data && j.data.read) || [];
+                        var isRead = read.some(function(r) { return r.day_of_year === day; });
+                        var btn = el.querySelector('.dev365-mark-read');
+                        if (btn) {
+                            if (isRead) { btn.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> Lido'; btn.disabled = true; }
+                            btn.onclick = async function() {
+                                if (btn.disabled) return;
+                                try {
+                                    await fetch(API_URL + '/api/bible/devotional/mark-read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ day_of_year: day, visitor_id: vid }) });
+                                    btn.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> Lido';
+                                    btn.disabled = true;
+                                } catch (e) {}
+                            };
+                        }
+                    })();
                 } catch (e) {
                     el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
                 }

@@ -192,6 +192,16 @@ async function markRead(userId, data) {
     return await repo.markRead(userId, data);
 }
 
+async function markDevotionalRead(data) {
+    const repo = require('./bible.repository');
+    return await repo.markDevotionalRead(data);
+}
+
+async function getDevotionalReadStatus(userId, visitorId, days) {
+    const repo = require('./bible.repository');
+    return await repo.getDevotionalReadStatus(userId, visitorId, days);
+}
+
 function loadBooksManifest() {
     try {
         const filePath = path.join(DATA_DIR, 'books_manifest.json');
@@ -358,5 +368,7 @@ module.exports = {
     searchBibleEcosystem,
     loadBooksManifest,
     getBookChapter,
-    getTextForRef
+    getTextForRef,
+    markDevotionalRead,
+    getDevotionalReadStatus
 };
