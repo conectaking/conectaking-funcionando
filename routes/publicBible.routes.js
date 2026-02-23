@@ -54,12 +54,14 @@ router.get('/:slug/bible/estudo-livro/:bookId', asyncHandler(async (req, res) =>
             }
             const baseUrl = `${req.protocol}://${req.get('host')}`;
             const API_URL = process.env.API_URL || process.env.FRONTEND_URL || baseUrl;
+            const booksManifest = bibleService.loadBooksManifest();
             return res.render('biblePublic', {
                 slug: ctx.slug,
                 API_URL: API_URL.replace(/\/$/, ''),
                 baseUrl: baseUrl.replace(/\/$/, ''),
                 translation: ctx.translation,
-                initialEstudoBookId: bookId || null
+                initialEstudoBookId: bookId || null,
+                booksManifest
             });
         } finally {
             client.release();
@@ -155,11 +157,13 @@ router.get('/:slug/bible', asyncHandler(async (req, res) => {
             }
             const baseUrl = `${req.protocol}://${req.get('host')}`;
             const API_URL = process.env.API_URL || process.env.FRONTEND_URL || baseUrl;
+            const booksManifest = bibleService.loadBooksManifest();
             return res.render('biblePublic', {
                 slug,
                 API_URL: API_URL.replace(/\/$/, ''),
                 baseUrl: baseUrl.replace(/\/$/, ''),
-                translation: itemRes.rows[0].translation_code || 'nvi'
+                translation: itemRes.rows[0].translation_code || 'nvi',
+                booksManifest
             });
         } finally {
             client.release();
