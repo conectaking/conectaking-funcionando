@@ -53,22 +53,24 @@ router.get('/:slug/bible/estudo-livro/:bookId', asyncHandler(async (req, res) =>
                 `);
             }
             const baseUrl = `${req.protocol}://${req.get('host')}`;
-            const API_URL = process.env.API_URL || process.env.FRONTEND_URL || baseUrl;
-            const booksManifest = bibleService.loadBooksManifest();
-            return res.render('biblePublic', {
+            const manifest = bibleService.loadBooksManifest();
+            const allBooks = (manifest.at || []).concat(manifest.nt || []);
+            const book = allBooks.find(b => b && b.id === bookId);
+            const bookName = book ? (book.name || bookId) : bookId;
+            const study = await bibleService.getBookStudy(bookId);
+            return res.render('bibleBookStudy', {
                 slug: ctx.slug,
-                API_URL: API_URL.replace(/\/$/, ''),
-                baseUrl: baseUrl.replace(/\/$/, ''),
-                translation: ctx.translation,
-                initialEstudoBookId: bookId || null,
-                booksManifest
+                bookId: bookId || '',
+                bookName,
+                study: study || null,
+                baseUrl: baseUrl.replace(/\/$/, '')
             });
         } finally {
             client.release();
         }
     } catch (e) {
         logger.error('publicBible estudo-livro:', e);
-        res.status(500).send('<h1>Erro ao carregar Bíblia</h1>');
+        res.status(500).send('<h1>Erro ao carregar estudo</h1>');
     }
 }));
 
