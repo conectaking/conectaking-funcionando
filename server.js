@@ -39,6 +39,7 @@ const subscriptionRoutes = require('./routes/subscription');
 const moduleAvailabilityRoutes = require('./routes/moduleAvailability');
 const loggerRoutes = require('./routes/logger');
 const adminRoutes = require('./routes/admin');
+const adminBibleStudyRoutes = require('./routes/adminBibleStudy');
 const analyticsRoutes = require('./routes/analytics');
 const uploadRoutes = require('./routes/upload');
 const pdfUploadRoutes = require('./routes/pdf-upload');
@@ -801,6 +802,7 @@ app.use('/log', loggerRoutes);
 app.use('/api/checkin', checkinLimiter, checkinRoutes);
 
 app.use('/api/admin', adminLimiter, adminRoutes);
+app.use('/api/admin', adminLimiter, adminBibleStudyRoutes); // Estudos por livro: upload Word/PDF (apenas ADM)
 app.use('/api/admin', adminLimiter, ogImageRoutes); // Rotas de personalização de link (apenas ADM)
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/upload/pdf', uploadLimiter, pdfUploadRoutes);

@@ -489,6 +489,30 @@ async function getChapterStudiesByBook(bookId) {
     }
 }
 
+/** Cria ou atualiza o estudo do livro (bible_book_studies). Usado pelo admin ao importar Word/PDF. */
+async function upsertBookStudy(bookId, title, content) {
+    const client = await db.pool.connect();
+    try {
+        const safeBookId = String(bookId || '').trim();
+        const safeTitle = title != null ? String(title).trim() || null : null;
+        const safeContent = content != null ? String(content) : '';
+        if (!safeBookId) throw new Error('book_id é obrigatório');
+        const r = await client.query(
+            `INSERT INTO bible_book_studies (book_id, title, content, created_at, updated_at)
+             VALUES ($1, $2, $3, NOW(), NOW())
+             ON CONFLICT (book_id) DO UPDATE SET title = COALESCE(EXCLUDED.title, bible_book_studies.title), content = EXCLUDED.content, updated_at = NOW()
+             RETURNING id, book_id, title, updated_at`,
+            [safeBookId, safeTitle || null, safeContent]
+        );
+        return r.rows[0] || null;
+    } catch (err) {
+        logger.error('bible.repository upsertBookStudy:', err);
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
 async function getDevotionalReadStatus(userId, visitorId, days) {
     const client = await db.pool.connect();
     try {
@@ -555,5 +579,6 @@ module.exports = {
     getStudyBooksList,
     getBookStudy,
     getChapterStudy,
-    getChapterStudiesByBook
+    getChapterStudiesByBook,
+    upsertBookStudy
 };
