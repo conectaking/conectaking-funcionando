@@ -17,12 +17,25 @@
             padding: 20px;
             padding-bottom: env(safe-area-inset-bottom, 20px);
         }
+        body.theme-light { background: #f0f0eb; background-image: none; color: #1a1a1a; }
+        body.theme-light .bible-header h1, body.theme-light .bible-ref { color: #8b6914; }
+        body.theme-light .bible-text { color: #222; }
+        body.theme-light .bible-card { background: #fff; border-color: rgba(184,134,11,0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        body.theme-light .receba-item { background: rgba(0,0,0,0.06); border-color: rgba(184,134,11,0.2); }
+        body.theme-light .receba-item:hover { background: rgba(184,134,11,0.12); }
+        body.theme-light .receba-item span { color: #333; }
+        body.theme-light .back-link { color: #555; }
+        body.theme-light .back-link:hover { color: #8b6914; }
+        body.theme-light #continuar-onde-parei { background: rgba(184,134,11,0.12); border-color: rgba(184,134,11,0.3); }
+        body.theme-light #continuar-onde-parei a { color: #8b6914; }
+        body.theme-light #btn-theme-public { background: rgba(0,0,0,0.06); color: #333; border-color: rgba(184,134,11,0.3); }
         .bible-wrap {
             max-width: 480px;
             margin: 0 auto;
             padding: 24px 0;
         }
         .bible-header {
+            position: relative;
             text-align: center;
             margin-bottom: 28px;
         }
@@ -234,6 +247,11 @@
             <i class="fas fa-bible hero-icon"></i>
             <h1>Bíblia</h1>
             <div class="date-label" id="date-label"></div>
+            <button type="button" id="btn-theme-public" title="Alternar tema claro/escuro" style="position:absolute;top:20px;right:20px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,199,0,0.3);color:#ECECEC;cursor:pointer"><i class="fas fa-moon" id="icon-theme-public"></i></button>
+        </div>
+
+        <div id="continuar-onde-parei" style="display:none;margin-bottom:16px;padding:12px 16px;background:rgba(255,199,0,0.1);border:1px solid rgba(255,199,0,0.25);border-radius:10px;">
+            <a href="#" id="link-continuar" style="color:#FFC700;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:8px"><i class="fas fa-book-open"></i> Continuar de onde parei: <span id="continuar-label"></span></a>
         </div>
 
         <!-- Receba mais de Deus hoje -->
@@ -293,9 +311,10 @@
             </div>
             <div id="receba-devocional" class="receba-content">
                 <div id="devocional-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
-                <div id="devocional-actions" class="bible-actions" style="display:none;margin-top:20px;flex-wrap:wrap;gap:10px">
+                <div id="devocional-actions" class="bible-actions" style="display:none;margin-top:20px;flex-wrap:wrap;gap:10px;align-items:center">
                     <button type="button" class="bible-btn" id="devocional-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
                     <button type="button" class="bible-btn secondary" id="devocional-btn-mark-read" title="Marcar como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
+                    <span id="devocional-streak" style="display:none;font-size:0.85rem;color:#A1A1A1;"><i class="fas fa-fire" style="color:#FF6B35;margin-right:4px"></i><span id="devocional-streak-num">0</span> dias seguidos</span>
                 </div>
             </div>
             <div id="receba-plano" class="receba-content">
@@ -350,6 +369,13 @@
             <div id="busca-public-resultados"></div>
         </div>
 
+        <!-- Favoritos (localStorage) -->
+        <div class="bible-card" id="card-favoritos" style="display:none">
+            <h3 style="margin-bottom:16px;color:#FFC700"><i class="fas fa-star" style="margin-right:8px"></i>Favoritos</h3>
+            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Capítulos que você marcou como favoritos.</p>
+            <div id="favoritos-list"></div>
+        </div>
+
         <!-- Livros da Bíblia (todos internos - sem links externos) -->
         <div class="bible-card">
             <h3 style="margin-bottom:16px;color:#FFC700">Livros da Bíblia</h3>
@@ -383,6 +409,55 @@
             const slug = '<%= slug %>';
 
             let palavraLoaded = false, salmoLoaded = false, devocionalLoaded = false, estudoLivroLoaded = false;
+
+            (function initContinuarThemeFavoritos() {
+                var keyLast = 'bible_last_' + (slug || 'default');
+                var keyTheme = 'bible_theme_' + (slug || 'default');
+                var keyFav = 'bible_fav_' + (slug || 'default');
+                try {
+                    var last = localStorage.getItem(keyLast);
+                    if (last) {
+                        var data = JSON.parse(last);
+                        if (data && data.bookId && data.chapter) {
+                            var block = document.getElementById('continuar-onde-parei');
+                            var link = document.getElementById('link-continuar');
+                            var label = document.getElementById('continuar-label');
+                            if (block && link && label) {
+                                block.style.display = 'block';
+                                link.href = '/' + slug + '/bible/' + data.bookId + '/' + data.chapter;
+                                label.textContent = (data.bookName || data.bookId) + ' — Cap. ' + data.chapter;
+                            }
+                        }
+                    }
+                    var theme = localStorage.getItem(keyTheme) || 'dark';
+                    if (theme === 'light') {
+                        document.body.classList.add('theme-light');
+                        var icon = document.getElementById('icon-theme-public');
+                        if (icon) icon.className = 'fas fa-sun';
+                    }
+                } catch (e) {}
+                document.getElementById('btn-theme-public').addEventListener('click', function() {
+                    var isLight = document.body.classList.toggle('theme-light');
+                    var icon = document.getElementById('icon-theme-public');
+                    if (icon) icon.className = isLight ? 'fas fa-sun' : 'fas fa-moon';
+                    try { localStorage.setItem(keyTheme, isLight ? 'light' : 'dark'); } catch (e) {}
+                });
+                try {
+                    var favRaw = localStorage.getItem(keyFav);
+                    var favList = favRaw ? JSON.parse(favRaw) : [];
+                    if (Array.isArray(favList) && favList.length > 0) {
+                        var card = document.getElementById('card-favoritos');
+                        var listEl = document.getElementById('favoritos-list');
+                        if (card && listEl) {
+                            card.style.display = 'block';
+                            listEl.innerHTML = favList.map(function(f) {
+                                var label = (f.bookName || f.bookId) + ' — Cap. ' + f.chapter;
+                                return '<a href="/' + slug + '/bible/' + f.bookId + '/' + f.chapter + '" class="bible-ref" style="display:block;margin-bottom:8px">' + label + '</a>';
+                            }).join('');
+                        }
+                    }
+                } catch (e) {}
+            })();
 
             function getDayOfYear() {
                 const now = new Date();
@@ -608,11 +683,42 @@
                     if (actionsEl) actionsEl.style.display = 'flex';
                     devocionalLoaded = true;
                     loadDevocionalReadStatus(currentDevocionalDay);
+                    loadDevocionalStreak();
                     document.getElementById('devocional-btn-share').onclick = shareDevocional;
                     document.getElementById('devocional-btn-mark-read').onclick = markDevocionalRead;
                 } catch (e) {
                     el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
                 }
+            }
+
+            async function loadDevocionalStreak() {
+                var streakEl = document.getElementById('devocional-streak');
+                var numEl = document.getElementById('devocional-streak-num');
+                if (!streakEl || !numEl) return;
+                try {
+                    var today = getDayOfYear();
+                    var days = [];
+                    for (var i = 0; i < 30; i++) {
+                        var d = today - i;
+                        if (d < 1) d += 365;
+                        days.push(d);
+                    }
+                    var vid = getVisitorId();
+                    var res = await fetch(API_URL + '/api/bible/devotional/read-status?visitor_id=' + encodeURIComponent(vid) + '&days=' + days.join(','));
+                    var json = await res.json().catch(function() { return {}; });
+                    var read = (json.data && json.data.read) || [];
+                    var readSet = {};
+                    read.forEach(function(r) { readSet[r.day_of_year] = true; });
+                    var streak = 0;
+                    for (var j = 0; j < 30; j++) {
+                        var day = today - j;
+                        if (day < 1) day += 365;
+                        if (!readSet[day]) break;
+                        streak++;
+                    }
+                    numEl.textContent = streak;
+                    streakEl.style.display = streak > 0 ? 'inline' : 'none';
+                } catch (e) { streakEl.style.display = 'none'; }
             }
 
             function shareDevocional() {
@@ -644,7 +750,10 @@
                         body: JSON.stringify({ day_of_year: currentDevocionalDay, visitor_id: vid })
                     });
                     var json = await res.json().catch(function() { return {}; });
-                    if (json.success !== false) setDevocionalReadStatus(currentDevocionalDay, true);
+                    if (json.success !== false) {
+                        setDevocionalReadStatus(currentDevocionalDay, true);
+                        loadDevocionalStreak();
+                    }
                 } catch (e) {}
             }
 

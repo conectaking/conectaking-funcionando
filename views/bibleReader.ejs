@@ -32,6 +32,19 @@
         .verse-block { margin-bottom: 14px; padding-left: 8px; border-left: 2px solid rgba(255,199,0,0.3); }
         .verse-num { font-weight: 600; color: #FFC700; font-size: 0.85rem; margin-right: 8px; }
         .verse-text { font-family: 'Lora', serif; font-size: 1.1rem; line-height: 1.7; }
+        body.theme-light { background: #f5f5f0; background-image: none; color: #1a1a1a; }
+        body.theme-light .back-link { color: #555; }
+        body.theme-light .back-link:hover { color: #b8860b; }
+        body.theme-light .reader-header h1, body.theme-light .verse-num { color: #b8860b; }
+        body.theme-light .verse-text { color: #222; }
+        body.theme-light .verses-card { background: #fff; border-color: rgba(184,134,11,0.25); box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        body.theme-light .reader-header .nav-chapters a { background: rgba(184,134,11,0.15); color: #8b6914; }
+        body.theme-light .reader-header .nav-chapters a:hover { background: rgba(184,134,11,0.25); }
+        body.theme-light .translation-select, body.theme-light .btn-ouvir.secondary { background: rgba(0,0,0,0.06); color: #333; border-color: rgba(184,134,11,0.4); }
+        body.theme-light #estudo-cap-content { background: rgba(0,0,0,0.06); border-color: rgba(184,134,11,0.2); }
+        .font-small .verse-text { font-size: 0.95rem; }
+        .font-normal .verse-text { font-size: 1.1rem; }
+        .font-large .verse-text { font-size: 1.3rem; line-height: 1.75; }
         .reader-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; margin-bottom: 20px; }
         .translation-select { padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.08); color: #ECECEC; border: 1px solid rgba(255,199,0,0.3); font-size: 0.9rem; cursor: pointer; }
         .translation-select:focus { outline: none; border-color: #FFC700; }
@@ -92,6 +105,12 @@
                 <button type="button" class="btn-ouvir" id="btn-parar" style="background:rgba(239,68,68,0.8);"><i class="fas fa-stop"></i> Parar</button>
                 <button type="button" class="btn-ouvir secondary" id="btn-mark-read" style="background:rgba(255,255,255,0.08);color:#ECECEC;border:1px solid rgba(255,199,0,0.4);" title="Marcar este capítulo como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
                 <a href="javascript:void(0)" id="btn-estudo-cap" class="btn-ouvir secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px" title="Ver estudo deste capítulo"><i class="fas fa-book-open"></i> Ver estudo</a>
+                <span style="color:#A1A1A1;font-size:0.85rem;margin-left:4px">Fonte:</span>
+                <button type="button" class="btn-ouvir secondary btn-font" data-size="small" title="Fonte menor" style="padding:8px 12px;font-weight:600">A-</button>
+                <button type="button" class="btn-ouvir secondary btn-font active" data-size="normal" title="Fonte normal" style="padding:8px 12px;font-weight:600">A</button>
+                <button type="button" class="btn-ouvir secondary btn-font" data-size="large" title="Fonte maior" style="padding:8px 12px;font-weight:600">A+</button>
+                <button type="button" class="btn-ouvir secondary" id="btn-theme" title="Alternar tema claro/escuro" style="padding:8px 12px"><i class="fas fa-moon" id="icon-theme"></i></button>
+                <button type="button" class="btn-ouvir secondary" id="btn-favorito" title="Adicionar aos favoritos" style="padding:8px 12px"><i class="far fa-star"></i> Favorito</button>
             </div>
             <div id="estudo-cap-content" style="display:none;margin-top:16px;padding:16px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,199,0,0.2);border-radius:12px;">
                 <div id="estudo-cap-body"></div>
@@ -118,6 +137,7 @@
             const readerSlug = <%- JSON.stringify(slug) %>;
             const readerBookId = <%- JSON.stringify(chapterData.bookId) %>;
             const readerChapter = <%- JSON.stringify(chapterData.chapter) %>;
+            const readerBookName = <%- JSON.stringify(chapterData.bookName || '') %>;
             var btnOuvir = document.getElementById('btn-ouvir');
 
             function getBibleReadKey() { return 'bible_read_' + (readerSlug || 'default'); }
@@ -156,6 +176,84 @@
                 setChapterRead(readerBookId, readerChapter);
                 updateMarkReadButton();
             });
+
+            (function() {
+                var keyFont = 'bible_font_size_' + (readerSlug || 'default');
+                var keyTheme = 'bible_theme_' + (readerSlug || 'default');
+                var keyLast = 'bible_last_' + (readerSlug || 'default');
+                try {
+                    var savedFont = localStorage.getItem(keyFont) || 'normal';
+                    document.body.classList.add('font-' + savedFont);
+                    document.querySelectorAll('.btn-font').forEach(function(b) {
+                        b.classList.toggle('active', b.getAttribute('data-size') === savedFont);
+                    });
+                    var savedTheme = localStorage.getItem(keyTheme) || 'dark';
+                    if (savedTheme === 'light') {
+                        document.body.classList.add('theme-light');
+                        var icon = document.getElementById('icon-theme');
+                        if (icon) { icon.className = 'fas fa-sun'; }
+                    }
+                } catch (e) {}
+                document.querySelectorAll('.btn-font').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var size = this.getAttribute('data-size');
+                        document.body.classList.remove('font-small', 'font-normal', 'font-large');
+                        document.body.classList.add('font-' + size);
+                        document.querySelectorAll('.btn-font').forEach(function(b) { b.classList.remove('active'); });
+                        this.classList.add('active');
+                        try { localStorage.setItem(keyFont, size); } catch (e) {}
+                    });
+                });
+                document.getElementById('btn-theme').addEventListener('click', function() {
+                    var isLight = document.body.classList.toggle('theme-light');
+                    var icon = document.getElementById('icon-theme');
+                    if (icon) { icon.className = isLight ? 'fas fa-sun' : 'fas fa-moon'; }
+                    try { localStorage.setItem(keyTheme, isLight ? 'light' : 'dark'); } catch (e) {}
+                });
+                try {
+                    localStorage.setItem(keyLast, JSON.stringify({
+                        bookId: readerBookId,
+                        chapter: readerChapter,
+                        bookName: readerBookName
+                    }));
+                } catch (e) {}
+            })();
+
+            (function() {
+                var keyFav = 'bible_fav_' + (readerSlug || 'default');
+                function getFavList() {
+                    try {
+                        var raw = localStorage.getItem(keyFav);
+                        return raw ? JSON.parse(raw) : [];
+                    } catch (e) { return []; }
+                }
+                function setFavList(arr) {
+                    try { localStorage.setItem(keyFav, JSON.stringify(arr)); } catch (e) {}
+                }
+                function isFav(bookId, ch) {
+                    return getFavList().some(function(f) { return f.bookId === bookId && f.chapter === ch; });
+                }
+                function updateFavButton() {
+                    var btn = document.getElementById('btn-favorito');
+                    if (!btn) return;
+                    var fav = isFav(readerBookId, readerChapter);
+                    btn.innerHTML = fav ? '<i class="fas fa-star"></i> Nos favoritos' : '<i class="far fa-star"></i> Favorito';
+                    btn.title = fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
+                }
+                updateFavButton();
+                document.getElementById('btn-favorito').addEventListener('click', function() {
+                    var list = getFavList();
+                    var idx = list.findIndex(function(f) { return f.bookId === readerBookId && f.chapter === readerChapter; });
+                    if (idx >= 0) {
+                        list.splice(idx, 1);
+                        setFavList(list);
+                    } else {
+                        list.push({ bookId: readerBookId, chapter: readerChapter, bookName: readerBookName });
+                        setFavList(list);
+                    }
+                    updateFavButton();
+                });
+            })();
 
             (function() {
                 var apiUrl = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '';
