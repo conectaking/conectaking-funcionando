@@ -197,6 +197,29 @@ async function getDevotionalReadStatus(req, res) {
     }
 }
 
+async function getReadingPlan(req, res) {
+    try {
+        const list = await bibleService.getReadingPlanList();
+        return responseFormatter.success(res, { days: list });
+    } catch (e) {
+        logger.error('bible getReadingPlan:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar plano', 500);
+    }
+}
+
+async function getReadingPlanDay(req, res) {
+    try {
+        const day = parseInt(req.params.day, 10);
+        if (day < 1 || day > 365) return responseFormatter.error(res, 'Dia deve ser entre 1 e 365', 400);
+        const result = await bibleService.getReadingPlanDay(day);
+        if (!result) return responseFormatter.error(res, 'Dia do plano não encontrado', 404);
+        return responseFormatter.success(res, result);
+    } catch (e) {
+        logger.error('bible getReadingPlanDay:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao buscar dia', 500);
+    }
+}
+
 async function getStudyThemes(req, res) {
     try {
         const themes = await bibleService.getStudyThemes();
@@ -356,6 +379,8 @@ module.exports = {
     getDevocional365,
     markDevotionalRead,
     getDevotionalReadStatus,
+    getReadingPlan,
+    getReadingPlanDay,
     getStudyThemes,
     getStudies,
     getStudyBySlug,

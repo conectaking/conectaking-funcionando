@@ -10,7 +10,8 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(180deg, #0D0D0F 0%, #1a1a1e 100%);
+            background: #0D0D0F;
+            background-image: linear-gradient(180deg, #0D0D0F 0%, #12121a 30%, #1a1a1e 60%, #0f0f12 100%);
             color: #ECECEC;
             min-height: 100vh;
             padding: 20px;
@@ -25,11 +26,13 @@
             text-align: center;
             margin-bottom: 28px;
         }
-        .bible-header i {
+        .bible-header .hero-icon {
             font-size: 2.5rem;
             color: #FFC700;
             margin-bottom: 12px;
+            filter: drop-shadow(0 2px 8px rgba(255,199,0,0.3));
         }
+        .bible-header i.hero-icon { display: inline-block; }
         .bible-header h1 {
             font-family: 'Lora', serif;
             font-size: 1.5rem;
@@ -43,11 +46,11 @@
         }
         .bible-card {
             background: rgba(28, 28, 33, 0.95);
-            border: 1px solid rgba(255, 199, 0, 0.2);
+            border: 1px solid rgba(255, 199, 0, 0.25);
             border-radius: 16px;
             padding: 28px 24px;
             margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,199,0,0.05);
         }
         .bible-ref {
             font-family: 'Lora', serif;
@@ -228,7 +231,7 @@
         </a>
 
         <div class="bible-header">
-            <i class="fas fa-bible"></i>
+            <i class="fas fa-bible hero-icon"></i>
             <h1>Bíblia</h1>
             <div class="date-label" id="date-label"></div>
         </div>
@@ -251,6 +254,10 @@
                 </div>
                 <div class="receba-item" data-tipo="devocional">
                     <span><i class="fas fa-heart" style="margin-right:8px"></i>Devocional Diário</span>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="receba-item" data-tipo="plano">
+                    <span><i class="fas fa-calendar-check" style="margin-right:8px"></i>Plano de leitura (1 ano)</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
             </div>
@@ -286,6 +293,15 @@
                     <button type="button" class="bible-btn" id="devocional-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
                     <button type="button" class="bible-btn secondary" id="devocional-btn-mark-read" title="Marcar como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
                 </div>
+            </div>
+            <div id="receba-plano" class="receba-content">
+                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Leia a Bíblia inteira em um ano: 2–3 capítulos por dia. Escolha o dia (1–365) ou use o dia de hoje.</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+                    <input type="number" id="plano-day" min="1" max="365" placeholder="Dia (1-365)" style="width:100px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC">
+                    <button type="button" class="bible-btn" id="btn-plano-load"><i class="fas fa-book-open"></i> Carregar dia</button>
+                    <button type="button" class="bible-btn secondary" id="btn-plano-today"><i class="fas fa-calendar-day"></i> Dia de hoje</button>
+                </div>
+                <div id="plano-content"><p style="color:#A1A1A1;font-size:0.9rem">Selecione um dia ou clique em "Dia de hoje".</p></div>
             </div>
         </div>
 

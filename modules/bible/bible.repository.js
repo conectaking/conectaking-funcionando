@@ -359,6 +359,39 @@ async function markDevotionalRead(data) {
     }
 }
 
+async function getReadingPlanDay(dayNumber) {
+    const client = await db.pool.connect();
+    try {
+        const day = parseInt(dayNumber, 10);
+        if (day < 1 || day > 365) return null;
+        const r = await client.query(
+            'SELECT * FROM bible_reading_plan_days WHERE day_number = $1',
+            [day]
+        );
+        return r.rows[0] || null;
+    } catch (err) {
+        logger.error('bible.repository getReadingPlanDay:', err);
+        return null;
+    } finally {
+        client.release();
+    }
+}
+
+async function getReadingPlanList() {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            'SELECT day_number, book_id, chapter_from, chapter_to, verse_count FROM bible_reading_plan_days ORDER BY day_number'
+        );
+        return r.rows;
+    } catch (err) {
+        logger.error('bible.repository getReadingPlanList:', err);
+        return [];
+    } finally {
+        client.release();
+    }
+}
+
 async function getDevotionalReadStatus(userId, visitorId, days) {
     const client = await db.pool.connect();
     try {
@@ -417,5 +450,7 @@ module.exports = {
     getOutlineBySlug,
     searchBibleEcosystem,
     markDevotionalRead,
-    getDevotionalReadStatus
+    getDevotionalReadStatus,
+    getReadingPlanDay,
+    getReadingPlanList
 };

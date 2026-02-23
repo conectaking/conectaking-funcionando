@@ -202,6 +202,19 @@ async function getDevotionalReadStatus(userId, visitorId, days) {
     return await repo.getDevotionalReadStatus(userId, visitorId, days);
 }
 
+async function getReadingPlanDay(dayNumber) {
+    const repo = require('./bible.repository');
+    const dayRow = await repo.getReadingPlanDay(dayNumber);
+    if (!dayRow) return null;
+    const devocional = await repo.getDevocional365(dayNumber);
+    return { ...dayRow, devocional: devocional || null };
+}
+
+async function getReadingPlanList() {
+    const repo = require('./bible.repository');
+    return await repo.getReadingPlanList();
+}
+
 function loadBooksManifest() {
     try {
         const filePath = path.join(DATA_DIR, 'books_manifest.json');
@@ -370,5 +383,7 @@ module.exports = {
     getBookChapter,
     getTextForRef,
     markDevotionalRead,
-    getDevotionalReadStatus
+    getDevotionalReadStatus,
+    getReadingPlanDay,
+    getReadingPlanList
 };
