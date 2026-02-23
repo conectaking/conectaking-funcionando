@@ -116,6 +116,73 @@ async function uploadAnexo(req, res) {
     }
 }
 
+async function getByToken(req, res) {
+    try {
+        const token = (req.params.token || '').trim();
+        if (!token) return responseFormatter.error(res, 'Token inválido', 400);
+        const doc = await documentosService.getByLinkToken(token);
+        if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
+        return responseFormatter.success(res, doc);
+    } catch (e) {
+        logger.error('documentos getByToken:', e);
+        return responseFormatter.error(res, e.message || 'Erro', 500);
+    }
+}
+
+async function updateByToken(req, res) {
+    try {
+        const token = (req.params.token || '').trim();
+        if (!token) return responseFormatter.error(res, 'Token inválido', 400);
+        const body = req.body || {};
+        const doc = await documentosService.updateByToken(token, {
+            cliente_json: body.cliente_json,
+            itens_json: body.itens_json,
+            observacoes: body.observacoes
+        });
+        if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
+        return responseFormatter.success(res, doc, 'Alterações salvas.');
+    } catch (e) {
+        logger.error('documentos updateByToken:', e);
+        return responseFormatter.error(res, e.message || 'Erro', 500);
+    }
+}
+
+async function getPdfByToken(req, res) {
+    try {
+        const token = (req.params.token || '').trim();
+        if (!token) return responseFormatter.error(res, 'Token inválido', 400);
+        const doc = await documentosService.getByLinkToken(token);
+        if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
+        const buffer = await documentosService.gerarPdf(doc.id, doc.user_id);
+        if (!buffer) return responseFormatter.error(res, 'Erro ao gerar PDF', 500);
+        const nome = `documento-${doc.tipo || 'documento'}-${doc.id}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${nome}"`);
+        res.send(buffer);
+    } catch (e) {
+        logger.error('documentos getPdfByToken:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao gerar PDF', 500);
+    }
+}
+
+async function getPdf(req, res) {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (!id) return responseFormatter.error(res, 'ID inválido', 400);
+        const buffer = await documentosService.gerarPdf(id, req.user.userId);
+        if (!buffer) return responseFormatter.error(res, 'Documento não encontrado', 404);
+        const doc = await documentosService.getOne(id, req.user.userId);
+        const tipo = (doc && doc.tipo) || 'documento';
+        const nome = `documento-${tipo}-${id}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${nome}"`);
+        res.send(buffer);
+    } catch (e) {
+        logger.error('documentos getPdf:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao gerar PDF', 500);
+    }
+}
+
 async function processarComprovante(req, res) {
     try {
         const id = parseInt(req.params.id, 10);
@@ -144,8 +211,12 @@ module.exports = {
     create,
     list,
     getOne,
+    getByToken,
     update,
+    updateByToken,
     remove,
     uploadAnexo,
+    getPdf,
+    getPdfByToken,
     processarComprovante
 };

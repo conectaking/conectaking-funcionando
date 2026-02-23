@@ -14,10 +14,16 @@ const uploadImage = multer({
     }
 });
 
+// Rotas públicas (por token): cliente pode revisar e alterar sem login
+router.get('/ver/:token/pdf', asyncHandler(controller.getPdfByToken));
+router.get('/ver/:token', asyncHandler(controller.getByToken));
+router.put('/ver/:token', asyncHandler(controller.updateByToken));
+
 router.use(protectUser);
 
 router.post('/', asyncHandler(controller.create));
 router.get('/', asyncHandler(controller.list));
+router.get('/:id/pdf', asyncHandler(controller.getPdf));
 router.get('/:id', asyncHandler(controller.getOne));
 router.put('/:id', asyncHandler(controller.update));
 router.delete('/:id', asyncHandler(controller.remove));

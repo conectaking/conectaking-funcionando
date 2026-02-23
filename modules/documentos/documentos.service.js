@@ -1,5 +1,6 @@
 const { nanoid } = require('nanoid');
 const documentosRepository = require('./documentos.repository');
+const { gerarPdfBuffer } = require('../../utils/documentos-pdf');
 const logger = require('../../utils/logger');
 
 async function create(userId, data) {
@@ -87,6 +88,12 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
     return documentosRepository.update(id, userId, { itens_json: itens, anexos_json: anexos });
 }
 
+async function gerarPdf(id, userId) {
+    const doc = await documentosRepository.getById(id, userId);
+    if (!doc) return null;
+    return gerarPdfBuffer(doc);
+}
+
 module.exports = {
     create,
     list,
@@ -96,5 +103,6 @@ module.exports = {
     updateByToken,
     remove,
     addAnexo,
-    processarComprovante
+    processarComprovante,
+    gerarPdf
 };
