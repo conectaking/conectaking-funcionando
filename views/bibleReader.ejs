@@ -29,6 +29,21 @@
         }
         .reader-header .nav-chapters a:hover { background: rgba(255,199,0,0.25); }
         .reader-header .nav-chapters span.disabled { opacity: 0.4; cursor: not-allowed; }
+        .reader-header .nav-chapters .cap-picker-trigger { cursor: pointer; padding: 8px 14px; border-radius: 8px; background: rgba(255,199,0,0.2); color: #FFC700; border: 1px dashed rgba(255,199,0,0.5); }
+        .reader-header .nav-chapters .cap-picker-trigger:hover { background: rgba(255,199,0,0.3); }
+        .chapter-picker-panel { display: none; margin-top: 12px; padding: 16px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,199,0,0.2); border-radius: 12px; }
+        .chapter-picker-panel.open { display: block; }
+        .chapter-picker-panel h4 { font-size: 0.9rem; color: #A1A1A1; margin-bottom: 10px; }
+        .chapter-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; max-height: 200px; overflow-y: auto; }
+        .chapter-picker-grid a { display: block; text-align: center; padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.06); color: #ECECEC; text-decoration: none; font-size: 0.9rem; }
+        .chapter-picker-grid a:hover, .chapter-picker-grid a.current { background: rgba(255,199,0,0.25); color: #FFC700; }
+        .go-to-verse { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .go-to-verse input[type="number"] { width: 56px; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,199,0,0.3); background: rgba(255,255,255,0.08); color: #ECECEC; font-size: 0.9rem; }
+        .go-to-verse button { padding: 8px 14px; border-radius: 8px; background: rgba(255,199,0,0.2); color: #FFC700; border: 1px solid rgba(255,199,0,0.4); cursor: pointer; font-size: 0.85rem; }
+        .go-to-verse button:hover { background: rgba(255,199,0,0.35); }
+        body.theme-light .chapter-picker-panel { background: rgba(0,0,0,0.08); border-color: rgba(184,134,11,0.3); }
+        body.theme-light .chapter-picker-grid a { background: rgba(0,0,0,0.06); color: #333; }
+        body.theme-light .chapter-picker-grid a:hover, body.theme-light .chapter-picker-grid a.current { background: rgba(184,134,11,0.2); color: #8b6914; }
         .verse-block { margin-bottom: 14px; padding-left: 8px; border-left: 2px solid rgba(255,199,0,0.3); }
         .verse-block.selectable { cursor: pointer; border-radius: 8px; padding: 8px 8px 8px 12px; transition: background 0.2s; }
         .verse-block.selectable:hover { background: rgba(255,199,0,0.06); }
@@ -83,12 +98,27 @@
                 <% } else { %>
                 <span class="disabled"><i class="fas fa-chevron-left"></i> Anterior</span>
                 <% } %>
-                <span>Cap. <%= chapterData.chapter %> de <%= chapterData.totalChapters %></span>
+                <span class="cap-picker-trigger" id="cap-picker-trigger" title="Clique para ver todos os capítulos"><i class="fas fa-list"></i> Cap. <%= chapterData.chapter %> de <%= chapterData.totalChapters %></span>
                 <% if (chapterData.chapter < chapterData.totalChapters) { %>
                 <a href="/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter + 1 %><%= tParam %>">Cap. <%= chapterData.chapter + 1 %> <i class="fas fa-chevron-right"></i></a>
                 <% } else { %>
                 <span class="disabled">Próximo <i class="fas fa-chevron-right"></i></span>
                 <% } %>
+            </div>
+            <div class="chapter-picker-panel" id="chapter-picker-panel">
+                <h4><i class="fas fa-book-open"></i> Selecione o capítulo</h4>
+                <div class="chapter-picker-grid" id="chapter-picker-grid">
+                    <% for (var c = 1; c <= chapterData.totalChapters; c++) { %>
+                    <a href="/<%= slug %>/bible/<%= chapterData.bookId %>/<%= c %><%= tParam %>" class="<%= c === chapterData.chapter ? 'current' : '' %>"><%= c %></a>
+                    <% } %>
+                </div>
+                <div class="go-to-verse">
+                    <span style="color:#A1A1A1;font-size:0.85rem">Ir para cap.</span>
+                    <input type="number" id="go-cap" min="1" max="<%= chapterData.totalChapters %>" value="<%= chapterData.chapter %>" placeholder="Cap.">
+                    <span style="color:#A1A1A1;font-size:0.85rem">vers.</span>
+                    <input type="number" id="go-verse" min="1" max="<%= chapterData.verses && chapterData.verses.length || 1 %>" value="1" placeholder="Vers.">
+                    <button type="button" id="btn-go-verse"><i class="fas fa-arrow-right"></i> Ir</button>
+                </div>
             </div>
             <div class="reader-toolbar" style="flex-wrap:wrap;gap:10px;align-items:center;">
                 <label for="sel-translation" style="color:#A1A1A1;font-size:0.85rem;">Tradução:</label>
@@ -304,6 +334,46 @@
             document.getElementById('back-bible-link').addEventListener('click', function() {
                 window.location.href = biblePanelUrl;
             });
+
+            (function chapterPicker() {
+                var trigger = document.getElementById('cap-picker-trigger');
+                var panel = document.getElementById('chapter-picker-panel');
+                var tParam = (readerTranslation && readerTranslation !== 'nvi') ? '?translation=' + encodeURIComponent(readerTranslation) : '';
+                if (trigger && panel) {
+                    trigger.addEventListener('click', function() {
+                        panel.classList.toggle('open');
+                    });
+                    document.addEventListener('click', function(e) {
+                        if (panel.classList.contains('open') && !panel.contains(e.target) && e.target !== trigger) panel.classList.remove('open');
+                    });
+                }
+                var btnGo = document.getElementById('btn-go-verse');
+                var goCap = document.getElementById('go-cap');
+                var goVerse = document.getElementById('go-verse');
+                if (btnGo && goCap && goVerse) {
+                    var basePath = '/' + readerSlug + '/bible/' + readerBookId + '/';
+                    btnGo.addEventListener('click', function() {
+                        var cap = parseInt(goCap.value, 10);
+                        var ver = parseInt(goVerse.value, 10);
+                        if (cap >= 1 && cap <= <%= chapterData.totalChapters %>) {
+                            var url = basePath + cap + tParam;
+                            if (ver >= 1) url += '#v' + ver;
+                            window.location.href = url;
+                        }
+                    });
+                }
+                var hash = (location.hash || '').trim();
+                if (hash.indexOf('#v') === 0) {
+                    var vNum = parseInt(hash.replace('#v', ''), 10);
+                    if (vNum >= 1) {
+                        var block = document.querySelector('.verse-block[data-verse="' + vNum + '"]');
+                        if (block) {
+                            setTimeout(function() { block.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+                            block.classList.add('selected');
+                        }
+                    }
+                }
+            })();
 
             (function verseSelection() {
                 var blocks = document.querySelectorAll('.verse-block.selectable');
