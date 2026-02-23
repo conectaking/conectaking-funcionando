@@ -76,7 +76,12 @@ router.get('/:slug/bible/estudo-livro/:bookId', asyncHandler(async (req, res) =>
             const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br';
             const biblePanelUrl = frontendUrl.replace(/\/$/, '') + '/dashboard.html';
             let returnTo = (req.query.returnTo && typeof req.query.returnTo === 'string') ? req.query.returnTo.trim() : '';
-            if (returnTo && returnTo.indexOf(frontendUrl.replace(/\/$/, '')) !== 0) returnTo = '';
+            if (returnTo) {
+              const baseUrlReq = (req.protocol + '://' + (req.get('host') || '')).replace(/\/$/, '');
+              const frontBase = (frontendUrl || '').replace(/\/$/, '');
+              const allowed = (frontBase && returnTo.indexOf(frontBase) === 0) || (baseUrlReq && returnTo.indexOf(baseUrlReq) === 0);
+              if (!allowed) returnTo = '';
+            }
             return res.render('bibleBookStudy', {
                 slug: ctx.slug,
                 bookId: bookId || '',
