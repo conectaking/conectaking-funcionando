@@ -254,6 +254,20 @@
             <a href="#" id="link-continuar" style="color:#FFC700;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:8px"><i class="fas fa-book-open"></i> Continuar de onde parei: <span id="continuar-label"></span></a>
         </div>
 
+        <!-- Meu progresso (devocionais lidos) -->
+        <div class="bible-card" id="card-meu-progresso" style="margin-bottom:24px">
+            <h3 style="margin-bottom:12px;color:#FFC700"><i class="fas fa-chart-line" style="margin-right:8px"></i>Meu progresso</h3>
+            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Devocionais que você já marcou como lido aparecem aqui.</p>
+            <div id="meu-progresso-body">
+                <div class="bible-loading" id="meu-progresso-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>
+                <div id="meu-progresso-content" style="display:none">
+                    <p style="color:#ECECEC;font-size:1rem;margin-bottom:8px"><strong id="meu-progresso-total">0</strong> devocional(is) lido(s)</p>
+                    <p id="meu-progresso-dias" style="font-size:0.85rem;color:#A1A1A1;line-height:1.5"></p>
+                </div>
+                <div id="meu-progresso-empty" style="display:none;color:#A1A1A1;font-size:0.9rem">Nenhum devocional marcado como lido ainda. Leia o <strong>Devocional Diário</strong> e clique em &quot;Marcar como lido&quot;.</div>
+            </div>
+        </div>
+
         <!-- Receba mais de Deus hoje -->
         <div class="receba-card">
             <h2>Receba mais de Deus hoje:</h2>
@@ -309,9 +323,15 @@
             </div>
             <div id="receba-palavra" class="receba-content">
                 <div id="palavra-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
+                <div class="bible-actions" id="palavra-actions" style="display:none;margin-top:16px">
+                    <button type="button" class="bible-btn" id="palavra-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                </div>
             </div>
             <div id="receba-salmo" class="receba-content">
                 <div id="salmo-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
+                <div class="bible-actions" id="salmo-actions" style="display:none;margin-top:16px">
+                    <button type="button" class="bible-btn" id="salmo-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                </div>
             </div>
             <div id="receba-devocional" class="receba-content">
                 <div id="devocional-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
@@ -341,6 +361,9 @@
                 <div id="dev-biblia-sequence-info" style="display:none;margin-bottom:12px;font-size:0.9rem;color:#FFC700"></div>
                 <p id="dev-biblia-link-calendario" style="display:none;margin-top:8px"><button type="button" class="bible-btn secondary" id="btn-dev-biblia-usar-calendario" style="font-size:0.85rem"><i class="fas fa-calendar-alt"></i> Usar calendário em vez do meu plano</button></p>
                 <div id="devocional-biblia-inteira-container"><p style="color:#A1A1A1;font-size:0.9rem">Clique em <strong>Começar hoje</strong> para o seu dia 1 ser hoje, ou em <strong>Seguir pelo calendário</strong> para usar mês e dia.</p></div>
+                <div class="bible-actions" id="dev-biblia-actions" style="display:none;margin-top:16px">
+                    <button type="button" class="bible-btn" id="dev-biblia-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                </div>
             </div>
             <div id="receba-plano" class="receba-content">
                 <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Leia a Bíblia inteira em um ano: 2–3 capítulos por dia. Escolha o dia (1–365) ou use o dia de hoje.</p>
@@ -350,12 +373,18 @@
                     <button type="button" class="bible-btn secondary" id="btn-plano-today"><i class="fas fa-calendar-day"></i> Dia de hoje</button>
                 </div>
                 <div id="plano-content"><p style="color:#A1A1A1;font-size:0.9rem">Selecione um dia ou clique em "Dia de hoje".</p></div>
+                <div class="bible-actions" id="plano-actions" style="display:none;margin-top:16px">
+                    <button type="button" class="bible-btn" id="plano-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                </div>
             </div>
             <div id="receba-estudo-livro" class="receba-content">
                 <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Introduções e estudos por livro e capítulo da Bíblia.</p>
                 <div id="estudo-livro-list"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
                 <div id="estudo-livro-detail" style="display:none;margin-top:20px;padding:16px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.08);border-radius:12px;">
-                    <button type="button" class="bible-btn secondary" id="btn-estudo-livro-back" style="margin-bottom:12px"><i class="fas fa-arrow-left"></i> Voltar</button>
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
+                        <button type="button" class="bible-btn secondary" id="btn-estudo-livro-back"><i class="fas fa-arrow-left"></i> Voltar</button>
+                        <button type="button" class="bible-btn" id="estudo-livro-btn-share" style="display:none"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                    </div>
                     <div id="estudo-livro-body"></div>
                 </div>
             </div>
@@ -435,6 +464,45 @@
             const initialEstudoBookId = <%= typeof initialEstudoBookId !== 'undefined' && initialEstudoBookId ? JSON.stringify(initialEstudoBookId) : 'null' %>;
 
             let palavraLoaded = false, salmoLoaded = false, devocionalLoaded = false, devocionalBibliaInteiraLoaded = false, estudoLivroLoaded = false;
+            let currentPalavraData = null, currentSalmoData = null, currentDevBibliaData = null, currentPlanoData = null, currentDev365Data = null, currentEstudoLivroData = null;
+
+            function shareText(txt) {
+                var url = 'https://wa.me/?text=' + encodeURIComponent(txt);
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(txt).then(function() {
+                        if (confirm('Copiado! Deseja compartilhar no WhatsApp?')) window.open(url);
+                    }).catch(function() { window.open(url); });
+                } else { window.open(url); }
+            }
+
+            async function loadMeuProgresso() {
+                var loading = document.getElementById('meu-progresso-loading');
+                var content = document.getElementById('meu-progresso-content');
+                var empty = document.getElementById('meu-progresso-empty');
+                if (!loading || !content || !empty) return;
+                try {
+                    var vid = getVisitorId();
+                    var res = await fetch(API_URL + '/api/bible/devotional/read-status?visitor_id=' + encodeURIComponent(vid));
+                    var json = await res.json().catch(function() { return {}; });
+                    var read = (json.data && json.data.read) || [];
+                    loading.style.display = 'none';
+                    if (read.length === 0) {
+                        content.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    empty.style.display = 'none';
+                    content.style.display = 'block';
+                    document.getElementById('meu-progresso-total').textContent = read.length;
+                    var days = read.map(function(r) { return r.day_of_year; }).sort(function(a,b) { return a - b; });
+                    var last10 = days.slice(-10).reverse();
+                    document.getElementById('meu-progresso-dias').textContent = 'Dias lidos (últimos): ' + (last10.length ? last10.join(', ') : '—');
+                } catch (e) {
+                    loading.style.display = 'none';
+                    empty.style.display = 'block';
+                    empty.textContent = 'Não foi possível carregar o progresso.';
+                }
+            }
 
             (function initContinuarThemeFavoritos() {
                 var keyLast = 'bible_last_' + (slug || 'default');
@@ -692,6 +760,7 @@
                     var d = json.data;
                     if (!d) throw new Error('Devocional não encontrado.');
                     devocionalBibliaInteiraLoaded = true;
+                    currentDevBibliaData = d;
                     if (d.mode === 'sequence' && d.dayNumber != null) {
                         var infoEl = document.getElementById('dev-biblia-sequence-info');
                         if (infoEl) {
@@ -700,6 +769,8 @@
                         }
                     }
                     renderDevocionalBiblia(d);
+                    var devBibliaActions = document.getElementById('dev-biblia-actions');
+                    if (devBibliaActions) devBibliaActions.style.display = 'flex';
                 } catch (e) {
                     container.innerHTML = '<p class="bible-error">' + (e.message || 'Erro ao carregar.') + '</p>';
                 }
@@ -742,12 +813,22 @@
             document.getElementById('btn-dev-biblia-back-calendario').addEventListener('click', function() {
                 showDevBibliaModeChoice();
                 document.getElementById('devocional-biblia-inteira-container').innerHTML = '<p style="color:#A1A1A1;font-size:0.9rem">Clique em <strong>Começar hoje</strong> ou em <strong>Seguir pelo calendário</strong>.</p>';
+                var devBibliaActions = document.getElementById('dev-biblia-actions');
+                if (devBibliaActions) devBibliaActions.style.display = 'none';
             });
             document.getElementById('btn-dev-biblia-load').addEventListener('click', function() { loadDevocionalBibliaInteira(false); });
             document.getElementById('btn-dev-biblia-usar-calendario').addEventListener('click', function() {
                 clearDevBibliaStartDate();
                 showDevBibliaModeChoice();
                 document.getElementById('devocional-biblia-inteira-container').innerHTML = '<p style="color:#A1A1A1;font-size:0.9rem">Clique em <strong>Começar hoje</strong> ou em <strong>Seguir pelo calendário</strong>.</p>';
+                var devBibliaActions = document.getElementById('dev-biblia-actions');
+                if (devBibliaActions) devBibliaActions.style.display = 'none';
+            });
+            document.getElementById('dev-biblia-btn-share').addEventListener('click', function() {
+                if (!currentDevBibliaData) return;
+                var d = currentDevBibliaData;
+                var t = (d.titulo || d.ref || '') + '\n\n' + (d.verse_ref ? d.verse_ref + '\n' : '') + (d.verse_text ? '"' + d.verse_text + '"\n\n' : '') + (d.reflexao || '') + (d.aplicacao ? '\n\nAplicação: ' + d.aplicacao : '') + (d.oracao ? '\n\nOração: ' + d.oracao : '');
+                shareText(t);
             });
 
             (function initDevBibliaOnShow() {
@@ -777,31 +858,48 @@
 
             async function loadPalavra() {
                 var el = document.getElementById('palavra-container');
+                var actionsEl = document.getElementById('palavra-actions');
                 try {
                     var res = await fetch(API_URL + '/api/bible/palavra-do-dia');
                     var json = await res.json().catch(function() { return {}; });
                     var p = json.data;
                     if (!p) throw new Error('Palavra não encontrada');
+                    currentPalavraData = p;
                     el.innerHTML = '<div class="bible-ref">' + p.palavra + '</div><div class="bible-text" style="color:#e8e8e8">' + (p.significado || '') + '</div>' + (p.ref ? '<div class="bible-reflexao" style="margin-top:12px"><strong>Referência</strong> ' + p.ref + '</div>' : '');
+                    if (actionsEl) { actionsEl.style.display = 'flex'; }
                     palavraLoaded = true;
                 } catch (e) {
                     el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
                 }
             }
+            document.getElementById('palavra-btn-share').addEventListener('click', function() {
+                if (!currentPalavraData) return;
+                var t = (currentPalavraData.palavra || '') + '\n\n' + (currentPalavraData.significado || '') + (currentPalavraData.ref ? '\n\nRef: ' + currentPalavraData.ref : '');
+                shareText(t);
+            });
 
             async function loadSalmo() {
                 var el = document.getElementById('salmo-container');
+                var actionsEl = document.getElementById('salmo-actions');
                 try {
                     var res = await fetch(API_URL + '/api/bible/salmo-do-dia');
                     var json = await res.json().catch(function() { return {}; });
                     var s = json.data;
                     if (!s) throw new Error('Salmo não encontrado');
+                    currentSalmoData = s;
                     el.innerHTML = '<div class="bible-ref">' + (s.ref || 'Salmos ' + (s.capitulo || '') + ':' + (s.versiculo || '')) + '</div><div class="bible-text" style="color:#e8e8e8">"' + (s.texto || '') + '"</div>' + (s.reflexao ? '<div class="bible-reflexao"><strong>Reflexão</strong> ' + s.reflexao + '</div>' : '');
+                    if (actionsEl) { actionsEl.style.display = 'flex'; }
                     salmoLoaded = true;
                 } catch (e) {
                     el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
                 }
             }
+            document.getElementById('salmo-btn-share').addEventListener('click', function() {
+                if (!currentSalmoData) return;
+                var ref = currentSalmoData.ref || ('Salmos ' + (currentSalmoData.capitulo || '') + ':' + (currentSalmoData.versiculo || ''));
+                var t = ref + '\n\n"' + (currentSalmoData.texto || '') + '"' + (currentSalmoData.reflexao ? '\n\nReflexão: ' + currentSalmoData.reflexao : '');
+                shareText(t);
+            });
 
             var currentDevocionalData = null;
             var currentDevocionalDay = 0;
@@ -931,6 +1029,7 @@
                     if (json.success !== false) {
                         setDevocionalReadStatus(currentDevocionalDay, true);
                         loadDevocionalStreak();
+                        loadMeuProgresso();
                     }
                 } catch (e) {}
             }
@@ -964,6 +1063,9 @@
                         html += '</div>';
                     }
                     el.innerHTML = html;
+                    currentPlanoData = data;
+                    var planoActions = document.getElementById('plano-actions');
+                    if (planoActions) planoActions.style.display = 'flex';
                 } catch (e) {
                     el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar o dia.') + '</div>';
                 }
@@ -979,11 +1081,19 @@
                     var d = json.data;
                     if (!d) throw new Error('Devocional não encontrado para este dia.');
                     currentDev365Day = day;
+                    currentDev365Data = d;
                     var reflexaoHtml = (d.reflexao || '').replace(/\n/g, '<br>');
                     var aplicacaoHtml = d.aplicacao ? '<div class="bible-reflexao" style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)"><strong style="font-size:1rem;color:#FFC700">Aplicação Prática</strong><p style="margin-top:12px;font-size:1.05rem;line-height:1.8">' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
                     var oracaoHtml = d.oracao ? '<div class="bible-reflexao" style="margin-top:20px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1.05rem;line-height:1.8;font-style:italic">' + (d.oracao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
-                    var btnHtml = '<div class="bible-actions" style="margin-top:20px;flex-wrap:wrap;gap:10px"><button type="button" class="bible-btn secondary dev365-mark-read" data-day="' + day + '"><i class="far fa-check-circle"></i> Marcar como lido</button></div>';
+                    var btnHtml = '<div class="bible-actions" style="margin-top:20px;flex-wrap:wrap;gap:10px"><button type="button" class="bible-btn" id="dev365-btn-share" data-day="' + day + '"><i class="fas fa-share-alt"></i> Compartilhar</button><button type="button" class="bible-btn secondary dev365-mark-read" data-day="' + day + '"><i class="far fa-check-circle"></i> Marcar como lido</button></div>';
                     el.innerHTML = '<div class="bible-ref" style="font-size:1.2rem;margin-bottom:12px">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:1rem;margin-bottom:16px;font-weight:600">' + (d.versiculo_ref || '') + '</div>' + (d.versiculo_texto ? '<div class="bible-text" style="margin-bottom:24px;font-size:1.1rem;line-height:1.8">"' + d.versiculo_texto + '"</div>' : '') + '<div class="bible-text" style="line-height:1.85;font-size:1.05rem">' + reflexaoHtml + '</div>' + aplicacaoHtml + oracaoHtml + btnHtml;
+                    var dev365ShareBtn = el.querySelector('#dev365-btn-share');
+                    if (dev365ShareBtn) dev365ShareBtn.addEventListener('click', function() {
+                        if (!currentDev365Data) return;
+                        var x = currentDev365Data;
+                        var t = (x.titulo || '') + '\n\n' + (x.versiculo_ref || '') + (x.versiculo_texto ? '\n"' + x.versiculo_texto + '"\n\n' : '') + (x.reflexao || '').replace(/<[^>]+>/g, '') + (x.aplicacao ? '\n\nAplicação: ' + x.aplicacao : '') + (x.oracao ? '\n\nOração: ' + x.oracao : '');
+                        shareText(t);
+                    });
                     (async function checkAndBind() {
                         var vid = getVisitorId();
                         var r = await fetch(API_URL + '/api/bible/devotional/read-status?visitor_id=' + encodeURIComponent(vid) + '&days=' + day);
@@ -1026,6 +1136,13 @@
                 var day = getDayOfYear();
                 document.getElementById('plano-day').value = day;
                 loadPlanoDay(day);
+            });
+            document.getElementById('plano-btn-share').addEventListener('click', function() {
+                if (!currentPlanoData) return;
+                var d = currentPlanoData;
+                var dev = d.devocional;
+                var t = 'Plano de leitura — Dia ' + (document.getElementById('plano-day').value || '') + '\n\n' + (d.summary || '') + (dev && (dev.titulo || dev.reflexao) ? '\n\n' + (dev.titulo || '') + '\n' + (dev.versiculo_ref || '') + '\n' + (dev.versiculo_texto || '') + '\n' + (dev.reflexao || '') : '');
+                shareText(t);
             });
 
             async function loadEstudoLivroList() {
@@ -1070,6 +1187,7 @@
                     var json = await res.json().catch(function() { return {}; });
                     if (!res.ok || !json.success) throw new Error(json.message || 'Estudo não encontrado');
                     var d = json.data;
+                    currentEstudoLivroData = { title: d.title, content: d.content, bookId: bookId };
                     var html = (d.title ? '<h3 style="color:#FFC700;font-size:1.05rem;margin-bottom:12px">' + d.title + '</h3>' : '') +
                         '<div style="color:#e8e8e8;line-height:1.65;white-space:pre-wrap;font-size:0.95rem;margin-bottom:20px">' + (d.content || '').replace(/\n/g, '<br>') + '</div>';
                     if (d.chapters && d.chapters.length) {
@@ -1080,6 +1198,8 @@
                         html += '</p>';
                     }
                     bodyEl.innerHTML = html;
+                    var shareBtn = document.getElementById('estudo-livro-btn-share');
+                    if (shareBtn) { shareBtn.style.display = 'inline-flex'; }
                 } catch (e) {
                     bodyEl.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
                 }
@@ -1089,6 +1209,13 @@
                 var detailEl = document.getElementById('estudo-livro-detail');
                 if (listEl) listEl.style.display = 'block';
                 if (detailEl) detailEl.style.display = 'none';
+                var shareBtn = document.getElementById('estudo-livro-btn-share');
+                if (shareBtn) shareBtn.style.display = 'none';
+            });
+            document.getElementById('estudo-livro-btn-share').addEventListener('click', function() {
+                if (!currentEstudoLivroData) return;
+                var t = (currentEstudoLivroData.title || 'Estudo') + '\n\n' + (currentEstudoLivroData.content || '').replace(/<[^>]+>/g, '');
+                shareText(t);
             });
 
             (async function loadEstudosPublic() {
@@ -1141,6 +1268,7 @@
             });
 
             (async function init() {
+                loadMeuProgresso();
                 try {
                     var verse = await loadVerse('');
                     renderVerse(verse);
