@@ -188,19 +188,31 @@ async function processarComprovante(req, res) {
         const id = parseInt(req.params.id, 10);
         if (!id) return responseFormatter.error(res, 'ID inválido', 400);
         if (!req.file || !req.file.buffer) return responseFormatter.error(res, 'Envie uma imagem do comprovante.', 400);
-        const url = await uploadImageBuffer(
-            req.file.buffer,
-            req.file.mimetype,
-            req.file.originalname || 'comprovante.jpg'
-        );
-        const itensSugeridos = await processarImagem(req.file.buffer);
+        let url;
+        try {
+            url = await uploadImageBuffer(
+                req.file.buffer,
+                req.file.mimetype,
+                req.file.originalname || 'comprovante.jpg'
+            );
+        } catch (uploadErr) {
+            logger.error('documentos processarComprovante upload:', uploadErr);
+            return responseFormatter.error(res, uploadErr.message || 'Falha ao enviar imagem. Verifique a configuração (Cloudflare).', 503);
+        }
+        let itensSugeridos = [];
+        try {
+            itensSugeridos = await processarImagem(req.file.buffer) || [];
+        } catch (ocrErr) {
+            logger.error('documentos processarComprovante OCR:', ocrErr);
+            itensSugeridos = [];
+        }
         const doc = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos });
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
         return responseFormatter.success(res, {
             url,
             documento: doc,
             itensAdicionados: itensSugeridos
-        }, 'Comprovante processado e itens adicionados.', 201);
+        }, itensSugeridos.length > 0 ? 'Comprovante processado e itens adicionados.' : 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.', 201);
     } catch (e) {
         logger.error('documentos processarComprovante:', e);
         return responseFormatter.error(res, e.message || 'Erro ao processar comprovante', 500);

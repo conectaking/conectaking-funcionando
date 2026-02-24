@@ -90,6 +90,12 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
         });
     } else {
         anexos.push({ url, tipo_categoria: 'Comprovante', valor: null, descricao: 'Comprovante' });
+        itens.push({
+            descricao: 'Comprovante (preencha descrição e valor)',
+            quantidade: 1,
+            valor_unitario: 0,
+            valor: 0
+        });
     }
     return documentosRepository.update(id, userId, { itens_json: itens, anexos_json: anexos });
 }
