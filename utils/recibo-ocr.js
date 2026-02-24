@@ -335,11 +335,34 @@ function processarFaturaCartao(ocrText) {
 }
 
 /**
+ * Converte transactions[] do receipt-parser (print de lista) em itens para a tabela.
+ */
+function itensFromTransactionList(transactions) {
+    if (!Array.isArray(transactions) || transactions.length === 0) return [];
+    return transactions.map(tx => {
+        const descricao = tx.status === 'DECLINED' ? (tx.title || 'Transação') + ' (Recusada)' : (tx.title || 'Transação');
+        return {
+            valor: tx.amount || 0,
+            categoria: 'Comércio / Outros',
+            textoTrecho: descricao.slice(0, 120),
+            nome_estabelecimento: tx.status === 'DECLINED' ? undefined : (tx.title || undefined)
+        };
+    });
+}
+
+/**
  * Processa texto OCR: um comprovante = um item (ou 2 itens só se houver 2 blocos "VIA CLIENTE").
  * Se parecer fatura de cartão (várias linhas nome+data+valor), extrai um item por linha com data.
+ * Se for print de lista (receipt-parser retorna transactions[]), extrai um item por transação.
  * Retorna lista de { valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento?, data? }.
  */
 function processarTextoOcr(ocrText) {
+    const listParsed = receiptParser.parseReceipt(ocrText);
+    if (listParsed.transactions && listParsed.transactions.length > 0) {
+        const itens = itensFromTransactionList(listParsed.transactions);
+        if (itens.length > 0) return itens;
+    }
+
     if (pareceFaturaCartao(ocrText)) {
         const faturaItens = processarFaturaCartao(ocrText);
         if (faturaItens.length > 0) return faturaItens;
@@ -390,7 +413,10 @@ async function processarImagem(imageBuffer) {
                 confidence: parseResult.confidence,
                 candidates: (parseResult.candidates || []).slice(0, 5).map(c => ({ value: c.value, score: c.score, evidence: c.evidence || '' })),
                 amount_paid: parseResult.amount_paid,
-                status: parseResult.status
+                status: parseResult.status,
+                warnings: parseResult.warnings || [],
+                total_paid: parseResult.total_paid ?? null,
+                transactions: parseResult.transactions || null
             };
             return { itensSugeridos, parseResult: parseResultForApi };
         } finally {

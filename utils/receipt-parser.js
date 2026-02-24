@@ -115,6 +115,64 @@ function extractMerchant(rawText) {
     return null;
 }
 
+function splitLines(rawText) {
+    if (!rawText || typeof rawText !== 'string') return [];
+    return rawText.replace(/\r/g, '').split(/\n/).map(l => l.trim()).filter(Boolean);
+}
+
+/**
+ * Detecta se o texto parece "print de lista" (várias transações).
+ * Heurística: muitas linhas com valor + pouco texto de comprovante (sem NFC-e, VIA CLIENTE, etc.).
+ */
+function looksLikeTransactionList(lines) {
+    if (!lines || lines.length < 4) return false;
+    const moneyLines = lines.filter(l => /,\d{2}\s*R\$/i.test(l) || /R\$\s*\d+,\d{2}/i.test(l) || /\d+,\d{2}\s*(?:R\$)?/i.test(l));
+    const hasReceiptWords = lines.some(l => /DANFE|NFC|VALOR PAGO|CHAVE DE ACESSO|VIA CLIENTE|AUTORIZA|imagedelivery/i.test(l));
+    return moneyLines.length >= 4 && !hasReceiptWords;
+}
+
+/**
+ * Parse de PRINT DE LISTA: extrai cada linha com valor como transação; marca DECLINED se "Recusada" no bloco.
+ * Retorna transactions[] e total_paid (soma dos PAID).
+ */
+function parseTransactionList(rawText) {
+    const lines = splitLines(rawText);
+    const transactions = [];
+    let total = 0;
+    for (const line of lines) {
+        const up = line.toUpperCase();
+        const moneyMatch = line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R\$/i) || line.match(/R\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/i) || line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/);
+        if (!moneyMatch) continue;
+        const rawVal = moneyMatch[0].replace(/\s+/g, ' ').trim();
+        const val = normalizeBRL(rawVal);
+        if (val == null || val < 0 || val >= 1000000) continue;
+        const declined = up.includes('RECUSADA') || up.includes('RECUSADO') || up.includes('NEGADO') || up.includes('CANCELADO');
+        const title = line.replace(rawVal, '').replace(/R\$/gi, '').trim() || 'Transação';
+        transactions.push({
+            title: title.slice(0, 120),
+            amount: val,
+            status: declined ? 'DECLINED' : 'PAID',
+            evidence: rawVal
+        });
+        if (!declined) total += val;
+    }
+    total = Math.round(total * 100) / 100;
+    return {
+        status: 'PAID',
+        amount_paid: null,
+        currency: 'BRL',
+        paid_at: null,
+        merchant: null,
+        payment_method: 'OUTRO',
+        confidence: transactions.length ? 0.9 : 0.2,
+        warnings: transactions.length ? [] : ['nenhuma transação detectada no print'],
+        candidates: [],
+        raw_ocr_text: rawText,
+        transactions,
+        total_paid: transactions.length ? total : null
+    };
+}
+
 /**
  * Converte score (0..100) e ambiguous em confidence (0..1).
  * score < 55 => max 0.65; top1 - top2 < 10 => ambiguous => reduz.
@@ -156,6 +214,7 @@ function parseReceipt(ocrResult) {
         merchant: null,
         payment_method: 'OUTRO',
         confidence: 0,
+        warnings: [],
         candidates: [],
         raw_ocr_text
     };
@@ -170,10 +229,16 @@ function parseReceipt(ocrResult) {
             ...defaultOut,
             status: 'DECLINED',
             confidence: 0.99,
+            warnings: [],
             paid_at: extractPaidAt(rawText),
             merchant: extractMerchant(rawText),
             payment_method: extractPaymentMethod(rawText, null)
         };
+    }
+
+    const linesForList = splitLines(rawText);
+    if (looksLikeTransactionList(linesForList)) {
+        return parseTransactionList(rawText);
     }
 
     const lines = rawText.split(/\r?\n/);
@@ -192,7 +257,13 @@ function parseReceipt(ocrResult) {
         candidates = extractBRLMoneyTokens(rawText).filter(c => isValidBRLValue(c.value, c.raw));
     }
 
-    const scored = scoreCandidates(candidates, lines, profile);
+    let scored = scoreCandidates(candidates, lines, profile);
+    // Bônus se "VALOR PAGO" aparece em linha próxima (acima/abaixo) do candidato
+    for (const c of scored) {
+        const near = [lines[c.lineIndex - 1], lines[c.lineIndex], lines[c.lineIndex + 1]].filter(Boolean).join(' ').toUpperCase();
+        if (near.includes('VALOR PAGO')) { c.score += 35; c.evidence = (c.evidence || c.line || '').trim() || 'perto de VALOR PAGO'; }
+        if (near.includes('F.PGTO') || near.includes('F.PGTO:') || near.includes('DEBITO') || near.includes('CRÉDITO') || near.includes('CREDITO')) c.score += 5;
+    }
     scored.sort((a, b) => b.score - a.score);
 
     const top = scored[0];
@@ -203,10 +274,15 @@ function parseReceipt(ocrResult) {
     const amount_paid = top && top.score > 0 ? top.value : null;
     const confidence = scoreToConfidence(top ? top.score : 0, ambiguous);
 
+    const warnings = [];
+    if (!top || top.score <= 0) warnings.push('nenhum valor monetário detectado');
+    if (ambiguous) warnings.push('ambíguo: dois valores muito próximos');
+    if (lowScore) warnings.push('baixa confiança: pedir confirmação do usuário');
+
     const candidatesOut = scored.slice(0, 10).map(c => ({
         value: c.value,
         score: c.score,
-        evidence: (c.line || '').trim().slice(0, 120)
+        evidence: (c.evidence || c.line || '').trim().slice(0, 120)
     }));
 
     return {
@@ -217,6 +293,7 @@ function parseReceipt(ocrResult) {
         merchant: extractMerchant(rawText),
         payment_method: extractPaymentMethod(rawText, issuer),
         confidence,
+        warnings,
         candidates: candidatesOut,
         raw_ocr_text,
         issuer,
