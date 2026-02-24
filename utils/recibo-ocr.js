@@ -9,7 +9,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const logger = require('./logger');
-const { parseReceipt, detectIssuer } = require('./recibo-issuer-profiles');
+const { detectIssuer } = require('./recibo-issuer-profiles');
+const receiptParser = require('./receipt-parser');
 
 // Valores em R$: 1.234,56 ou 10,00 ou 25.50 ou 173,78
 const REGEX_VALOR_RS = /R\s*\$\s*[\d.]{1,3}(?:\.\d{3})*[,.]\d{2}|R\s*\$\s*\d+[,.]\d{2}/gi;
@@ -212,33 +213,51 @@ function detectarMultiplosComprovantes(ocrText, valoresComContexto) {
     return { blocos: [ocrText], multiplosValores: null };
 }
 
+/** Mapeia payment_method do receipt-parser para texto exibido. */
+function formaPagamentoFromMethod(method) {
+    const map = { PIX: 'PIX', DEBITO: 'Débito', CREDITO: 'Crédito', PEDAGIO: 'Pedágio', NFCe: 'NFC-e', OUTRO: '' };
+    return map[method] || '';
+}
+
+/** ISO date -> DD/MM/YYYY ou DD/MM para item. */
+function paidAtToData(iso) {
+    if (!iso) return undefined;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return undefined;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return day + '/' + month + '/' + d.getFullYear();
+}
+
 /**
  * Processa um bloco de texto (um comprovante) e retorna um item sugerido.
- * Usa issuer profiles quando disponível; senão usa escolherValorPrincipal.
+ * Usa receipt-parser (JSON padrão: amount_paid, DECLINED primeiro, candidates) e fallback em escolherValorPrincipal.
  */
 function processarBloco(blocoTexto, categorizar) {
+    const parsed = receiptParser.parseReceipt(blocoTexto);
+    if (parsed.status === 'DECLINED') return null;
+
     const valores = extractValoresComContexto(blocoTexto);
-    let valor = null;
-    const parsed = parseReceipt(blocoTexto);
-    if (parsed.status !== 'DECLINED' && parsed.value != null && parsed.value > 0) {
-        valor = parsed.value;
-    }
-    if (valor == null) {
-        valor = escolherValorPrincipal(valores);
-    }
-    const nome = extrairNomeEstabelecimento(blocoTexto);
-    const formaPagamento = extrairFormaPagamento(blocoTexto);
+    let valor = parsed.amount_paid != null && parsed.amount_paid > 0 ? parsed.amount_paid : null;
+    if (valor == null) valor = escolherValorPrincipal(valores);
+
+    const nome = parsed.merchant || extrairNomeEstabelecimento(blocoTexto);
+    const formaPagamento = formaPagamentoFromMethod(parsed.payment_method) || extrairFormaPagamento(blocoTexto);
     const categoria = categorizar(blocoTexto);
     const descricao = nome
         ? (formaPagamento ? `${nome} — ${formaPagamento}` : nome)
         : (formaPagamento ? formaPagamento : categoria);
-    return {
+
+    const item = {
         valor: valor != null ? valor : 0,
         categoria,
         textoTrecho: descricao,
         nome_estabelecimento: nome || undefined,
         forma_pagamento: formaPagamento || undefined
     };
+    const data = paidAtToData(parsed.paid_at);
+    if (data) item.data = data;
+    return item;
 }
 
 const CATEGORIAS = {
@@ -332,7 +351,7 @@ function processarTextoOcr(ocrText) {
 
     for (const bloco of blocos) {
         const item = processarBloco(bloco, categorizar);
-        if (item.valor > 0 || item.nome_estabelecimento || item.forma_pagamento) {
+        if (item != null && (item.valor > 0 || item.nome_estabelecimento || item.forma_pagamento)) {
             resultados.push(item);
         }
     }
