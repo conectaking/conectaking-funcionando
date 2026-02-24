@@ -369,10 +369,11 @@ function processarTextoOcr(ocrText) {
 }
 
 /**
- * Executa OCR na imagem e retorna itens sugeridos (nome, valor, forma de pagamento, um por comprovante).
+ * Executa OCR na imagem e retorna itens sugeridos + parse_result (confidence, candidates) para a UI.
+ * Retorno: { itensSugeridos: Array, parseResult?: { confidence, candidates, amount_paid, status } }
  */
 async function processarImagem(imageBuffer) {
-    if (!imageBuffer || !Buffer.isBuffer(imageBuffer)) return [];
+    if (!imageBuffer || !Buffer.isBuffer(imageBuffer)) return { itensSugeridos: [] };
     const ext = '.jpg';
     const tmpPath = path.join(os.tmpdir(), `recibo-ocr-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
     try {
@@ -381,8 +382,17 @@ async function processarImagem(imageBuffer) {
         const worker = await createWorker('por', 1, { logger: () => {} });
         try {
             const { data: { text } } = await worker.recognize(tmpPath);
-            if (!text || !text.trim()) return [];
-            return processarTextoOcr(text);
+            if (!text || !text.trim()) return { itensSugeridos: [] };
+            const itensSugeridos = processarTextoOcr(text);
+            const receiptParser = require('./receipt-parser');
+            const parseResult = receiptParser.parseReceipt(text);
+            const parseResultForApi = {
+                confidence: parseResult.confidence,
+                candidates: (parseResult.candidates || []).slice(0, 5).map(c => ({ value: c.value, score: c.score, evidence: c.evidence || '' })),
+                amount_paid: parseResult.amount_paid,
+                status: parseResult.status
+            };
+            return { itensSugeridos, parseResult: parseResultForApi };
         } finally {
             await worker.terminate();
         }
