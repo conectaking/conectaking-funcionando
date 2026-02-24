@@ -458,6 +458,13 @@ function runTests() {
             expectStatus: 'PAID',
             expectAmount: 100,
             expectMethod: 'PIX'
+        },
+        {
+            name: 'Linx OCR errado: VALOR PAGO (RS) 180,66 deve ser corrigido para 100 (Subtotal/Valor Total)',
+            text: 'LINX\nG E G AUTO POSTO LTDA\nSubtotal R$ 100,00\nValor Total R$ 100,00\nVALOR PAGO (RS) 180,66\nRECEBIMENTO PIX\nFederal R$ 7,40',
+            expectStatus: 'PAID',
+            expectAmount: 100,
+            expectMethod: 'PIX'
         }
     ];
     let ok = 0;
