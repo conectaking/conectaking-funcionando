@@ -12,6 +12,12 @@ const logger = require('./logger');
 const { detectIssuer } = require('./recibo-issuer-profiles');
 const receiptParser = require('./receipt-parser');
 
+/** Largura máxima para redimensionar imagem antes do OCR (acelera muito). */
+const OCR_MAX_WIDTH = 1200;
+/** Worker Tesseract reutilizado (evita criar/destruir a cada comprovante). */
+let _ocrWorker = null;
+let _ocrWorkerPromise = null;
+
 // Valores em R$: 1.234,56 ou 10,00 ou 25.50 ou 173,78
 const REGEX_VALOR_RS = /R\s*\$\s*[\d.]{1,3}(?:\.\d{3})*[,.]\d{2}|R\s*\$\s*\d+[,.]\d{2}/gi;
 // Número sozinho (valor sem R$ na mesma linha): "173,78" ou "100,00"
@@ -401,7 +407,44 @@ function processarTextoOcr(ocrText) {
 }
 
 /**
+ * Reduz o tamanho da imagem para acelerar o OCR (mantém proporção; max width OCR_MAX_WIDTH).
+ * Retorna buffer JPEG ou o buffer original em caso de erro.
+ */
+async function redimensionarParaOcr(imageBuffer) {
+    try {
+        const sharp = require('sharp');
+        const meta = await sharp(imageBuffer).metadata();
+        const w = meta.width || 0;
+        if (w <= OCR_MAX_WIDTH) return imageBuffer;
+        const resized = await sharp(imageBuffer)
+            .resize(OCR_MAX_WIDTH, null, { withoutEnlargement: true })
+            .jpeg({ quality: 85 })
+            .toBuffer();
+        return resized;
+    } catch (e) {
+        logger.warn('recibo-ocr redimensionar:', e.message);
+        return imageBuffer;
+    }
+}
+
+/**
+ * Obtém o worker Tesseract (cria uma vez e reutiliza).
+ */
+async function getOcrWorker() {
+    if (_ocrWorker) return _ocrWorker;
+    if (_ocrWorkerPromise) return _ocrWorkerPromise;
+    _ocrWorkerPromise = (async () => {
+        const { createWorker } = require('tesseract.js');
+        const worker = await createWorker('por', 1, { logger: () => {} });
+        _ocrWorker = worker;
+        return worker;
+    })();
+    return _ocrWorkerPromise;
+}
+
+/**
  * Executa OCR na imagem e retorna itens sugeridos + parse_result (confidence, candidates) para a UI.
+ * Otimizado: redimensiona imagem antes do OCR e reutiliza o worker Tesseract.
  * Retorno: { itensSugeridos: Array, parseResult?: { confidence, candidates, amount_paid, status } }
  */
 async function processarImagem(imageBuffer) {
@@ -409,28 +452,24 @@ async function processarImagem(imageBuffer) {
     const ext = '.jpg';
     const tmpPath = path.join(os.tmpdir(), `recibo-ocr-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
     try {
-        fs.writeFileSync(tmpPath, imageBuffer);
-        const { createWorker } = require('tesseract.js');
-        const worker = await createWorker('por', 1, { logger: () => {} });
-        try {
-            const { data: { text } } = await worker.recognize(tmpPath);
-            if (!text || !text.trim()) return { itensSugeridos: [] };
-            const itensSugeridos = processarTextoOcr(text);
-            const receiptParser = require('./receipt-parser');
-            const parseResult = receiptParser.parseReceipt(text);
-            const parseResultForApi = {
-                confidence: parseResult.confidence,
-                candidates: (parseResult.candidates || []).slice(0, 5).map(c => ({ value: c.value, score: c.score, evidence: c.evidence || '' })),
-                amount_paid: parseResult.amount_paid,
-                status: parseResult.status,
-                warnings: parseResult.warnings || [],
-                total_paid: parseResult.total_paid ?? null,
-                transactions: parseResult.transactions || null
-            };
-            return { itensSugeridos, parseResult: parseResultForApi };
-        } finally {
-            await worker.terminate();
-        }
+        const bufferParaOcr = await redimensionarParaOcr(imageBuffer);
+        fs.writeFileSync(tmpPath, bufferParaOcr);
+        const worker = await getOcrWorker();
+        const { data: { text } } = await worker.recognize(tmpPath);
+        try { fs.unlinkSync(tmpPath); } catch (_) {}
+        if (!text || !text.trim()) return { itensSugeridos: [] };
+        const itensSugeridos = processarTextoOcr(text);
+        const parseResult = receiptParser.parseReceipt(text);
+        const parseResultForApi = {
+            confidence: parseResult.confidence,
+            candidates: (parseResult.candidates || []).slice(0, 5).map(c => ({ value: c.value, score: c.score, evidence: c.evidence || '' })),
+            amount_paid: parseResult.amount_paid,
+            status: parseResult.status,
+            warnings: parseResult.warnings || [],
+            total_paid: parseResult.total_paid ?? null,
+            transactions: parseResult.transactions || null
+        };
+        return { itensSugeridos, parseResult: parseResultForApi };
     } catch (e) {
         logger.error('recibo-ocr processarImagem:', e);
         throw e;
