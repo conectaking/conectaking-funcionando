@@ -369,6 +369,13 @@ function runTests() {
             expectStatus: 'PAID',
             expectAmount: 10.50,
             expectMethod: 'DEBITO'
+        },
+        {
+            name: 'Arteris com tributos e data/hora — só 11.20 deve vencer',
+            text: 'DOC. FISCAL EQUIVALENTE IN1731/17 Art.2\nConc. Rodovias do Interior Paulista S/A\nPIRASSUNUNGA KM215+000 VIA:06 S\n21.02.26 17:31:59\nRecibo:M6UNU50KJOF2\nValor Pago:R$11.20\nF.Pgto: Débito\nValor aprx. de trib. 18,24% (fonte:IBPT)\nhttps://dfe.arteris.com.br',
+            expectStatus: 'PAID',
+            expectAmount: 11.20,
+            expectMethod: 'DEBITO'
         }
     ];
     let ok = 0;
