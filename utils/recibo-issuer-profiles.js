@@ -186,7 +186,8 @@ const ISSUER_PROFILES = {
         strong_value_keys: ['VALOR PAGO', 'VALOR TOTAL', 'TOTAL', 'Subtotal', 'RECEBIMENTO PIX'],
         negative_keys: ['ICMS', 'TRIBUTOS', 'TROCO', 'Federal R$', 'Estadual R$'],
         value_position_hint: 'MIDDLE',
-        notes: 'Posto/mercado NFC-e (priorizar Valor Total 100,00 e não tributos)',
+        prefer_subtotal_or_valor_total: true,
+        notes: 'Posto/mercado NFC-e (priorizar Subtotal/Valor Total sobre OCR errado em VALOR PAGO, ex.: 100 vs 180,66)',
         weights: { strong: 40, weak: 15, negative: -50, position_bonus: 10 }
     },
     BEMATECH: {
@@ -587,6 +588,7 @@ function scoreCandidates(candidates, lines, profile) {
         if (isRound && /TOTAL|VALOR PAGO|PAGO|PIX|Subtotal/i.test(lineNorm)) score += 5;
 
         if (c.fromValorPago === true) score += 80;
+        if (profile.prefer_subtotal_or_valor_total && c.fromSubtotalOrValorTotal === true) score += 50;
 
         return { ...c, score };
     });
