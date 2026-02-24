@@ -5,18 +5,21 @@ const logger = require('./logger');
 
 /**
  * Envia um buffer de imagem para Cloudflare Images e retorna a URL pública.
+ * Mesmo fluxo do banner e King Selection (routes/upload.js): direct_upload → POST no uploadURL → imagedelivery.net
+ * Usa as mesmas variáveis: CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_HASH (opcional).
  * @param {Buffer} buffer - Conteúdo da imagem
  * @param {string} mimetype - Ex: image/jpeg
  * @param {string} [filename='image.jpg'] - Nome do arquivo
- * @returns {Promise<string>} URL pública da imagem (imagedelivery.net)
+ * @returns {Promise<string>} URL pública (https://imagedelivery.net/...)
  */
 async function uploadImageBuffer(buffer, mimetype, filename = 'image.jpg') {
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ||
-        process.env.CF_IMAGES_ACCOUNT_ID ||
+    const accountId = process.env.CF_IMAGES_ACCOUNT_ID ||
+        process.env.CLOUDFLARE_ACCOUNT_ID ||
+        process.env.CLOUDFLARE_IMAGES_ACCOUNT_ID ||
         (config.cloudflare && config.cloudflare.accountId) ||
         null;
-    const apiToken = process.env.CLOUDFLARE_API_TOKEN ||
-        process.env.CF_IMAGES_API_TOKEN ||
+    const apiToken = process.env.CF_IMAGES_API_TOKEN ||
+        process.env.CLOUDFLARE_API_TOKEN ||
         (config.cloudflare && config.cloudflare.apiToken) ||
         null;
 
@@ -30,7 +33,7 @@ async function uploadImageBuffer(buffer, mimetype, filename = 'image.jpg') {
         `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2/direct_upload`,
         {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${apiToken}`, 'Accept': 'application/json' }
+            headers: { 'Authorization': `Bearer ${String(apiToken).trim()}`, 'Accept': 'application/json' }
         }
     );
     const authData = await authResponse.json();

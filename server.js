@@ -746,7 +746,8 @@ app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) =
                 'link', 'portfolio', 'banner', 'carousel', 
                 'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
                 'finance', 'agenda', 'contract',
-                'king_selection', 'convite', 'photographer_site', 'bible'
+                'king_selection', 'convite', 'photographer_site', 'bible',
+                'recibos_orcamentos'
             )
             ORDER BY mpa.module_type, mpa.plan_code
         `;
