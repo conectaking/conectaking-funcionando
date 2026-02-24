@@ -199,7 +199,7 @@ function detectarMultiplosComprovantes(ocrText, valoresComContexto) {
     const linhas = ocrText.split(/\r?\n/);
     const vias = [];
     for (let i = 0; i < linhas.length; i++) {
-        if (/VIA\s*CLIENTE|VIA\s*ESTAB|REIMPRESSÃO|REIMPRESSAO/i.test(linhas[i])) vias.push(i);
+        if (/VIA\s*CLIENTE|VIA\s*-\s*CLIENTE|VIA\s*ESTAB|REIMPRESSÃO|REIMPRESSAO|VIA\s*CLIENTE\s*\(/i.test(linhas[i])) vias.push(i);
     }
     // Só considerar múltiplos comprovantes quando há 2+ "VIA CLIENTE" (dois recibos na mesma foto).
     // Não criar um item por cada R$ encontrado (evita dezenas de linhas de um único comprovante).

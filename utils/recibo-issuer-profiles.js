@@ -280,6 +280,18 @@ function isDateTimeOnlyLine(line) {
     return /^\d{1,2}[./]\d{1,2}[./]\d{2,4}\s+\d{1,2}[.:]\d{2}([.:]\d{2})?\s*$/.test(t);
 }
 
+/** Linha contém data e hora (ex.: 21.02.26 17:31:59 no meio do texto) — não extrair números como valor. */
+function isLineContainingDateTime(line) {
+    if (!line || typeof line !== 'string') return false;
+    return /\d{1,2}[./]\d{1,2}[./]\d{2,4}\s+\d{1,2}[.:]\d{2}([.:]\d{2})?/.test(line);
+}
+
+/** Linha parece CNPJ (ex.: 03.207.703/0001-83) — números são CNPJ, não valor pago. */
+function isCNPJLine(line) {
+    if (!line || typeof line !== 'string') return false;
+    return /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\bCNPJ\s*:/i.test(line.trim());
+}
+
 /**
  * Normaliza string BRL para número (ex.: "R$ 1.234,56" ou "37,59" ou "10.50" -> número).
  */
@@ -309,7 +321,7 @@ function extractBRLMoneyTokens(text) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const lineNorm = line.toUpperCase();
-        const skipLineForGeneric = isTributosLine(line) || isDateTimeOnlyLine(line);
+        const skipLineForGeneric = isTributosLine(line) || isDateTimeOnlyLine(line) || isLineContainingDateTime(line) || isCNPJLine(line);
 
         if (!skipLineForGeneric) {
             const matches = line.match(REGEX_BRL);
@@ -355,8 +367,8 @@ function extractBRLMoneyTokens(text) {
                 });
             }
         }
-        // "Valor Pago:R$11.20" ou "Valor Pago: R$10.50" (Arteris, VIAPAULISTA) — sempre priorizar
-        const matchValorPago = line.match(/Valor\s*Pago\s*:\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
+        // "Valor Pago:R$11.20" ou "Valor Pago R$11.20" (com ou sem dois pontos — OCR pode variar)
+        const matchValorPago = line.match(/Valor\s*Pago\s*:?\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
         if (matchValorPago) {
             const value = normalizeBRL(matchValorPago[1]);
             if (value != null && value >= 0 && value < 1000000) {
