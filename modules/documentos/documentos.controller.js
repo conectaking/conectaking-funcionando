@@ -200,19 +200,24 @@ async function processarComprovante(req, res) {
             return responseFormatter.error(res, uploadErr.message || 'Falha ao enviar imagem. Verifique a configuração (Cloudflare).', 503);
         }
         let itensSugeridos = [];
+        let parseResult = null;
         try {
-            itensSugeridos = await processarImagem(req.file.buffer) || [];
+            const ocrResult = await processarImagem(req.file.buffer);
+            if (Array.isArray(ocrResult)) {
+                itensSugeridos = ocrResult;
+            } else if (ocrResult && ocrResult.itensSugeridos) {
+                itensSugeridos = ocrResult.itensSugeridos || [];
+                parseResult = ocrResult.parseResult || null;
+            }
         } catch (ocrErr) {
             logger.error('documentos processarComprovante OCR:', ocrErr);
             itensSugeridos = [];
         }
         const doc = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos });
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
-        return responseFormatter.success(res, {
-            url,
-            documento: doc,
-            itensAdicionados: itensSugeridos
-        }, itensSugeridos.length > 0 ? 'Comprovante processado e itens adicionados.' : 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.', 201);
+        const responseData = { url, documento: doc, itensAdicionados: itensSugeridos };
+        if (parseResult) responseData.parse_result = parseResult;
+        return responseFormatter.success(res, responseData, itensSugeridos.length > 0 ? 'Comprovante processado e itens adicionados.' : 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.', 201);
     } catch (e) {
         logger.error('documentos processarComprovante:', e);
         return responseFormatter.error(res, e.message || 'Erro ao processar comprovante', 500);
