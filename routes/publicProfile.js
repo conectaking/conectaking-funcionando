@@ -623,19 +623,6 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 }
             }
 
-            if (item.item_type === 'fala_deus_comigo') {
-                try {
-                    const fdcRes = await client.query(
-                        'SELECT 1 FROM fala_deus_comigo_items WHERE profile_item_id = $1',
-                        [item.id]
-                    );
-                    item.fala_deus_comigo_data = { exists: fdcRes.rows.length > 0 };
-                } catch (fdcError) {
-                    logger.error('Erro ao carregar Fala Deus Comigo', { itemId: item.id, error: fdcError.message });
-                    item.fala_deus_comigo_data = { exists: false };
-                }
-            }
-            
             return item;
         }));
         

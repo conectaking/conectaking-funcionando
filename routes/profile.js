@@ -329,17 +329,6 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                     console.error('Erro ao carregar bíblia', { itemId: item.id, error: bibleError.message });
                     item.bible_data = { translation_code: 'nvi', is_visible: true };
                 }
-            } else if (item.item_type === 'fala_deus_comigo') {
-                try {
-                    const fdcRes = await client.query(
-                        'SELECT 1 FROM fala_deus_comigo_items WHERE profile_item_id = $1',
-                        [item.id]
-                    );
-                    item.fala_deus_comigo_data = { exists: fdcRes.rows.length > 0 };
-                } catch (fdcError) {
-                    console.error('Erro ao carregar Fala Deus Comigo', { itemId: item.id, error: fdcError.message });
-                    item.fala_deus_comigo_data = { exists: false };
-                }
             }
             return item;
         }));
@@ -3369,16 +3358,6 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
                 console.log(`✅ Bíblia criada para item ${newItem.id}`);
             } catch (error) {
                 console.error("Erro ao criar bíblia:", error);
-            }
-        }
-
-        if (item_type === 'fala_deus_comigo') {
-            try {
-                const falaDeusComigoRepo = require('../modules/falaDeusComigo/falaDeusComigo.repository');
-                await falaDeusComigoRepo.create(newItem.id);
-                console.log(`✅ Fala Deus Comigo criado para item ${newItem.id}`);
-            } catch (error) {
-                console.error("Erro ao criar Fala Deus Comigo:", error);
             }
         }
 

@@ -747,7 +747,7 @@ app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) =
                 'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
                 'finance', 'agenda', 'contract',
                 'king_selection', 'photographer_site', 'bible',
-                'recibos_orcamentos', 'fala_deus_comigo'
+                'recibos_orcamentos'
             )
             ORDER BY mpa.module_type, mpa.plan_code
         `;
@@ -829,8 +829,6 @@ const agendaRoutes = require('./routes/agenda.routes');
 app.use('/api/agenda', apiLimiter, agendaRoutes);
 const bibleRoutes = require('./modules/bible/bible.routes');
 app.use('/api/bible', apiLimiter, bibleRoutes);
-const falaDeusComigoRoutes = require('./modules/falaDeusComigo/falaDeusComigo.routes');
-app.use('/api/fala-deus-comigo', apiLimiter, falaDeusComigoRoutes);
 const sitesRoutes = require('./modules/sites/sites.routes');
 app.use('/api/sites', apiLimiter, sitesRoutes);
 const orcamentosRoutes = require('./modules/orcamentos/orcamentos.routes');
@@ -926,9 +924,6 @@ app.use('/', publicProductRoutes);
 // Bíblia pública (/:slug/bible)
 const publicBibleRoutes = require('./routes/publicBible.routes');
 app.use('/', publicBibleRoutes);
-// Fala Deus Comigo público (/:slug/fala-deus-comigo)
-const publicFalaDeusComigoRoutes = require('./routes/publicFalaDeusComigo.routes');
-app.use('/', publicFalaDeusComigoRoutes);
 // Meu site público (/:slug/site)
 const sitesService = require('./modules/sites/sites.service');
 const publicSiteRoutes = require('./routes/publicSite.routes');
