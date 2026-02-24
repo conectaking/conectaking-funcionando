@@ -266,6 +266,20 @@ const ISSUER_PROFILES = {
 
 const REGEX_BRL = /R\s*\$\s*[\d.]{1,3}(?:\.\d{3})*[,.]\d{2}|R\s*\$\s*\d+[,.]\d{2}|\d{1,3}(?:\.\d{3})*[,.]\d{2}|\d+[,.]\d{2}/gi;
 
+/** Linha é de tributos (18,24% etc.) — não usar como valor pago. */
+function isTributosLine(line) {
+    if (!line || typeof line !== 'string') return false;
+    const u = line.toUpperCase();
+    return /VALOR\s*APRX|APRX\.?\s*DE\s*TRIB|TRIB\.?\s*\d|%\s*\(FONTE|FONTE:\s*IBPT/i.test(line);
+}
+
+/** Linha é só data/hora (ex.: 21.02.26 17:31:59) — números são data/hora, não valor. */
+function isDateTimeOnlyLine(line) {
+    if (!line || typeof line !== 'string') return false;
+    const t = line.trim();
+    return /^\d{1,2}[./]\d{1,2}[./]\d{2,4}\s+\d{1,2}[.:]\d{2}([.:]\d{2})?\s*$/.test(t);
+}
+
 /**
  * Normaliza string BRL para número (ex.: "R$ 1.234,56" ou "37,59" ou "10.50" -> número).
  */
@@ -294,35 +308,40 @@ function extractBRLMoneyTokens(text) {
     const candidates = [];
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        const matches = line.match(REGEX_BRL);
-        if (matches) {
-            for (const m of matches) {
-                const value = normalizeBRL(m);
+        const lineNorm = line.toUpperCase();
+        const skipLineForGeneric = isTributosLine(line) || isDateTimeOnlyLine(line);
+
+        if (!skipLineForGeneric) {
+            const matches = line.match(REGEX_BRL);
+            if (matches) {
+                for (const m of matches) {
+                    const value = normalizeBRL(m);
+                    if (value != null && value >= 0 && value < 1000000) {
+                        candidates.push({
+                            value,
+                            raw: m,
+                            line: line.trim(),
+                            lineNorm,
+                            lineIndex: i
+                        });
+                    }
+                }
+            }
+            const matchValor = line.match(/Valor\s*:\s*(\d{1,3}(?:\.\d{3})*[,.]\d{2}|\d+[,.]\d{2})/i);
+            if (matchValor) {
+                const value = normalizeBRL(matchValor[1]);
                 if (value != null && value >= 0 && value < 1000000) {
                     candidates.push({
                         value,
-                        raw: m,
+                        raw: matchValor[1],
                         line: line.trim(),
-                        lineNorm: line.toUpperCase(),
+                        lineNorm,
                         lineIndex: i
                     });
                 }
             }
         }
-        const matchValor = line.match(/Valor\s*:\s*(\d{1,3}(?:\.\d{3})*[,.]\d{2}|\d+[,.]\d{2})/i);
-        if (matchValor) {
-            const value = normalizeBRL(matchValor[1]);
-            if (value != null && value >= 0 && value < 1000000) {
-                candidates.push({
-                    value,
-                    raw: matchValor[1],
-                    line: line.trim(),
-                    lineNorm: line.toUpperCase(),
-                    lineIndex: i
-                });
-            }
-        }
-        // "Valor: R$9,10" (Entrevias) ou "Valor: R$ 9,10"
+        // "Valor: R$9,10" (Entrevias) — sempre confiável
         const matchValorRs = line.match(/Valor\s*:\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
         if (matchValorRs) {
             const value = normalizeBRL(matchValorRs[1]);
@@ -336,7 +355,7 @@ function extractBRLMoneyTokens(text) {
                 });
             }
         }
-        // "Valor Pago:R$11.20" ou "Valor Pago: R$10.50" (Arteris, VIAPAULISTA - decimal com ponto)
+        // "Valor Pago:R$11.20" ou "Valor Pago: R$10.50" (Arteris, VIAPAULISTA) — sempre priorizar
         const matchValorPago = line.match(/Valor\s*Pago\s*:\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
         if (matchValorPago) {
             const value = normalizeBRL(matchValorPago[1]);
@@ -345,12 +364,13 @@ function extractBRLMoneyTokens(text) {
                     value,
                     raw: matchValorPago[1],
                     line: line.trim(),
-                    lineNorm: line.toUpperCase(),
-                    lineIndex: i
+                    lineNorm,
+                    lineIndex: i,
+                    fromValorPago: true
                 });
             }
         }
-        // "VALOR PAGO (RS) 100,00" ou "(R$) 100,00" — OCR às vezes lê R$ como RS
+        // "VALOR PAGO (RS) 100,00" — OCR às vezes lê R$ como RS
         const matchValorPagoRs = line.match(/VALOR\s*PAGO\s*\(\s*R[S$]\s*\)\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
         if (matchValorPagoRs) {
             const value = normalizeBRL(matchValorPagoRs[1]);
@@ -359,8 +379,9 @@ function extractBRLMoneyTokens(text) {
                     value,
                     raw: matchValorPagoRs[1],
                     line: line.trim(),
-                    lineNorm: line.toUpperCase(),
-                    lineIndex: i
+                    lineNorm,
+                    lineIndex: i,
+                    fromValorPago: true
                 });
             }
         }
@@ -447,6 +468,8 @@ function scoreCandidates(candidates, lines, profile) {
 
         const isRound = (Math.round(c.value * 100) % 100) === 0;
         if (isRound && /TOTAL|VALOR PAGO|PAGO|PIX|Subtotal/i.test(lineNorm)) score += 5;
+
+        if (c.fromValorPago === true) score += 80;
 
         return { ...c, score };
     });
