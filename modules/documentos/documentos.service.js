@@ -68,12 +68,14 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
     for (const s of itensSugeridos || []) {
         const descricao = (s.nome_estabelecimento || s.textoTrecho || s.categoria).toString().slice(0, 120);
         const valor = Number(s.valor) || 0;
-        itens.push({
+        const item = {
             descricao,
             quantidade: 1,
             valor_unitario: valor,
             valor
-        });
+        };
+        if (s.data) item.data = String(s.data).slice(0, 20);
+        itens.push(item);
         totalValor += valor;
     }
     if (itensSugeridos && itensSugeridos.length > 0) {

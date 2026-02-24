@@ -252,10 +252,70 @@ function categorizar(texto) {
 }
 
 /**
+ * Reconhece se o texto parece fatura de cartão (várias linhas com nome + data DD/MM + valor).
+ */
+function pareceFaturaCartao(ocrText) {
+    const linhas = ocrText.split(/\r?\n/).filter(l => l.trim().length > 4);
+    let comDataValor = 0;
+    for (const linha of linhas) {
+        if (/\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\s+\d+[,.]\d{2}/.test(linha)) comDataValor++;
+    }
+    return comDataValor >= 2;
+}
+
+const PEDAGIO_NAMES = ['P1', 'P4', 'CCR AUTOBAN', 'CONCESSIONARIA ROTA', 'ENTREVIAS', 'ROTA SO', 'AUTOBAN', 'VIAPAULISTA'];
+
+function categoriaFatura(nome) {
+    if (!nome || typeof nome !== 'string') return 'Comércio / Outros';
+    const upper = nome.toUpperCase();
+    for (const p of PEDAGIO_NAMES) {
+        if (upper.includes(p)) return 'Pedágio';
+    }
+    return 'Comércio / Outros';
+}
+
+/**
+ * Extrai itens de fatura de cartão: cada linha com [Nome] [Data DD/MM] [Valor] vira um item.
+ * Ex.: "ImperatrizCarnes 22/02 37,59 R$" -> { descricao: "Imperatriz Carnes", data: "22/02", valor: 37.59 }
+ * Aceita também "Nome DD/MM R$ 37,59" ou "Nome 22/02 37,59".
+ */
+function processarFaturaCartao(ocrText) {
+    const linhas = ocrText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const itens = [];
+    for (const linha of linhas) {
+        const recusada = /Recusada|Recusado/i.test(linha);
+        let match = linha.match(/^(.+?)\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s+(\d+[,.]\d{2})\s*(?:R\s*\$)?/);
+        if (!match) match = linha.match(/^(.+?)\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s+R\s*\$\s*(\d+[,.]\d{2})/);
+        if (!match) continue;
+        let nome = match[1].trim().replace(/\s+/g, ' ');
+        const dataStr = match[2].trim();
+        const valor = parseValor(match[3]);
+        if (valor == null || valor < 0) continue;
+        if (nome.length > 60) nome = nome.slice(0, 57) + '...';
+        if (recusada) nome = nome + ' (Recusada)';
+        const categoria = categoriaFatura(nome);
+        itens.push({
+            valor: valor,
+            categoria,
+            textoTrecho: nome,
+            nome_estabelecimento: nome,
+            data: dataStr
+        });
+    }
+    return itens;
+}
+
+/**
  * Processa texto OCR: um comprovante = um item (ou 2 itens só se houver 2 blocos "VIA CLIENTE").
- * Retorna lista de { valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento? }.
+ * Se parecer fatura de cartão (várias linhas nome+data+valor), extrai um item por linha com data.
+ * Retorna lista de { valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento?, data? }.
  */
 function processarTextoOcr(ocrText) {
+    if (pareceFaturaCartao(ocrText)) {
+        const faturaItens = processarFaturaCartao(ocrText);
+        if (faturaItens.length > 0) return faturaItens;
+    }
+
     const valoresComContexto = extractValoresComContexto(ocrText);
     const { blocos } = detectarMultiplosComprovantes(ocrText, valoresComContexto);
     const resultados = [];

@@ -119,8 +119,9 @@ async function gerarPdfBuffer(documento) {
     if (cliente.endereco) drawText(cliente.endereco);
     y -= 8;
 
-    // Tabela de itens
+    // Tabela de itens (com coluna Data quando houver)
     const colDesc = MARGIN;
+    const colData = colDesc + 170;
     const colQtd = PAGE_WIDTH - MARGIN - 180;
     const colUnit = PAGE_WIDTH - MARGIN - 120;
     const colTotal = PAGE_WIDTH - MARGIN - 60;
@@ -130,6 +131,7 @@ async function gerarPdfBuffer(documento) {
         y = PAGE_HEIGHT - MARGIN;
     }
     page.drawText('Descrição', { x: colDesc, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
+    page.drawText('Data', { x: colData, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
     page.drawText('Qtd', { x: colQtd, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
     page.drawText('Valor unit.', { x: colUnit, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
     page.drawText('Subtotal', { x: colTotal, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
@@ -141,12 +143,14 @@ async function gerarPdfBuffer(documento) {
             page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
             y = PAGE_HEIGHT - MARGIN;
         }
-        const descricao = (item.descricao || '-').slice(0, 50);
+        const descricao = (item.descricao || '-').slice(0, 38);
+        const dataStr = (item.data || '').toString().slice(0, 10);
         const qtd = item.quantidade != null ? item.quantidade : 1;
         const valorUnit = item.valor_unitario != null ? item.valor_unitario : item.valor;
         const valor = item.valor != null ? item.valor : (valorUnit * qtd);
         totalGeral += valor;
         page.drawText(descricao, { x: colDesc, y: y - FONT_SIZE, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
+        page.drawText(dataStr, { x: colData, y: y - FONT_SIZE, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
         page.drawText(String(qtd), { x: colQtd, y: y - FONT_SIZE, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
         page.drawText(formatMoney(valorUnit), { x: colUnit, y: y - FONT_SIZE, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
         page.drawText(formatMoney(valor), { x: colTotal, y: y - FONT_SIZE, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
