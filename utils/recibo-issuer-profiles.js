@@ -367,8 +367,8 @@ function extractBRLMoneyTokens(text) {
                 }
             }
         }
-        // "Valor: R$9,10" (Entrevias) — sempre confiável
-        const matchValorRs = line.match(/Valor\s*:\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
+        // "Valor: R$9,10" ou "Valor R$9,10" (Entrevias — com ou sem dois pontos)
+        const matchValorRs = line.match(/Valor\s*:?\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
         if (matchValorRs) {
             const value = normalizeBRL(matchValorRs[1]);
             if (value != null && value >= 0 && value < 1000000) {
@@ -376,8 +376,39 @@ function extractBRLMoneyTokens(text) {
                     value,
                     raw: matchValorRs[1],
                     line: line.trim(),
-                    lineNorm: line.toUpperCase(),
-                    lineIndex: i
+                    lineNorm,
+                    lineIndex: i,
+                    fromValorPago: true
+                });
+            }
+        }
+        // "VALOR 173,78" (Sicredi, maquininha — valor na mesma linha)
+        const matchVALORNumero = line.match(/VALOR\s+(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
+        if (matchVALORNumero) {
+            const value = normalizeBRL(matchVALORNumero[1]);
+            if (value != null && value >= 0 && value < 1000000) {
+                candidates.push({
+                    value,
+                    raw: matchVALORNumero[1],
+                    line: line.trim(),
+                    lineNorm,
+                    lineIndex: i,
+                    fromValorPago: true
+                });
+            }
+        }
+        // "CREDITO A VISTA R$ 152,00" (Laranjinha, reimpressão)
+        const matchCreditoVista = line.match(/CREDITO\s+A\s*VISTA\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
+        if (matchCreditoVista) {
+            const value = normalizeBRL(matchCreditoVista[1]);
+            if (value != null && value >= 0 && value < 1000000) {
+                candidates.push({
+                    value,
+                    raw: matchCreditoVista[1],
+                    line: line.trim(),
+                    lineNorm,
+                    lineIndex: i,
+                    fromValorPago: true
                 });
             }
         }
@@ -389,6 +420,21 @@ function extractBRLMoneyTokens(text) {
                 candidates.push({
                     value,
                     raw: matchValorPago[1],
+                    line: line.trim(),
+                    lineNorm,
+                    lineIndex: i,
+                    fromValorPago: true
+                });
+            }
+        }
+        // "Valor Total R$ 100,00" ou "Subtotal R$ 100,00" (NFC-e Linx, posto)
+        const matchValorTotal = line.match(/(?:Valor\s*Total|Subtotal)\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
+        if (matchValorTotal) {
+            const value = normalizeBRL(matchValorTotal[1]);
+            if (value != null && value >= 0 && value < 1000000) {
+                candidates.push({
+                    value,
+                    raw: matchValorTotal[1],
                     line: line.trim(),
                     lineNorm,
                     lineIndex: i,

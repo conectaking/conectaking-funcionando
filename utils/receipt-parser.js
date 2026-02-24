@@ -384,6 +384,12 @@ function runTests() {
             expectAmount: 9.10
         },
         {
+            name: 'Entrevias Valor R$9,10 (sem dois pontos)',
+            text: 'DOC.FISCAL EQUIVALENTE\nEntrevias - 26.664.057/0001-89\nData: 21/02/2026 15:59:28\nValor R$9,10\nPgto:Cartao\nentrevias.com.br/dfe',
+            expectStatus: 'PAID',
+            expectAmount: 9.10
+        },
+        {
             name: 'Getnet CREDITO R$',
             text: 'Getnet\nVia Estab\nCREDITO R$ 178,00\nAUT:152940',
             expectStatus: 'PAID',
