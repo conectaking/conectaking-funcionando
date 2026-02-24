@@ -422,6 +422,27 @@ function runTests() {
             expectStatus: 'PAID',
             expectAmount: 11.20,
             expectMethod: 'DEBITO'
+        },
+        {
+            name: 'Sicredi Valor Total 173,78 (sem R$ na mesma linha)',
+            text: 'SICREDI\nVIA - CLIENTE\nPOSTO MORADA DO SOL ARARAQUARA LTDA\nRodovia Washington Luiz, Araraquara/SP\nValor Total 173,78\nCREDITO A VISTA\n19/02/26 01:28:42',
+            expectStatus: 'PAID',
+            expectAmount: 173.78,
+            expectMethod: 'CREDITO'
+        },
+        {
+            name: 'Laranjinha Valor Total R$ 154,00',
+            text: 'VIA CLIENTE (L)\nlaranjinha\nItaú\nSD077381\n20/02/2026 23H29\nCREDITO A VISTA\nValor Total R$ 154,00\nMASTERCARD',
+            expectStatus: 'PAID',
+            expectAmount: 154,
+            expectMethod: 'CREDITO'
+        },
+        {
+            name: 'Linx VALOR PAGO (R$) com valor na linha seguinte',
+            text: 'LINX\nG E G AUTO POSTO LTDA\nCNPJ: 08.718.778/0001-30\nSubtotal R$ 100,00\nValor Total R$ 100,00\nVALOR PAGO (R$)\n100,00\nRECEBIMENTO PIX',
+            expectStatus: 'PAID',
+            expectAmount: 100,
+            expectMethod: 'PIX'
         }
     ];
     let ok = 0;
