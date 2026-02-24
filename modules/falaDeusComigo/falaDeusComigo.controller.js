@@ -82,10 +82,90 @@ async function deleteMensagem(req, res) {
     }
 }
 
+async function uploadAndExtractText(req, res) {
+    try {
+        const itemId = parseInt(req.params.itemId, 10);
+        if (!itemId) return responseFormatter.error(res, 'itemId inválido', 400);
+        if (!req.file || !req.file.buffer) {
+            return responseFormatter.error(res, 'Envie um arquivo PDF ou Word (.doc, .docx).', 400);
+        }
+        const repo = require('./falaDeusComigo.repository');
+        const owned = await repo.ensureOwnership(itemId, req.user.userId);
+        if (!owned) return responseFormatter.error(res, 'Acesso negado a este módulo.', 403);
+
+        const buffer = req.file.buffer;
+        const mime = (req.file.mimetype || '').toLowerCase();
+        const pathModule = require('path');
+        const ext = pathModule.extname((req.file.originalname || '').toLowerCase());
+        let text = '';
+        const pdfParse = require('pdf-parse');
+        const mammoth = require('mammoth');
+
+        if (mime === 'application/pdf' || ext === '.pdf') {
+            const data = await pdfParse(buffer);
+            text = (data && data.text) ? data.text : '';
+        } else {
+            const result = await mammoth.extractRawText({ buffer });
+            text = (result && result.value) ? result.value : '';
+        }
+        text = (text || '').trim();
+
+        const uploadHelper = require('./falaDeusComigo.upload');
+        let attachmentUrl = null;
+        if (uploadHelper.isR2Configured()) {
+            try {
+                attachmentUrl = await uploadHelper.uploadAttachment(
+                    buffer,
+                    req.user.userId,
+                    itemId,
+                    req.file.originalname,
+                    req.file.mimetype
+                );
+            } catch (upErr) {
+                logger.warn('falaDeusComigo uploadAndExtract: upload falhou', upErr.message);
+            }
+        }
+        return responseFormatter.success(res, { text, attachment_url: attachmentUrl });
+    } catch (e) {
+        logger.error('falaDeusComigo uploadAndExtractText:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao processar arquivo.', 500);
+    }
+}
+
+async function uploadAttachment(req, res) {
+    try {
+        const itemId = parseInt(req.params.itemId, 10);
+        if (!itemId) return responseFormatter.error(res, 'itemId inválido', 400);
+        if (!req.file || !req.file.buffer) {
+            return responseFormatter.error(res, 'Envie um arquivo PDF ou Word (.doc, .docx).', 400);
+        }
+        const repo = require('./falaDeusComigo.repository');
+        const owned = await repo.ensureOwnership(itemId, req.user.userId);
+        if (!owned) return responseFormatter.error(res, 'Acesso negado a este módulo.', 403);
+        const uploadHelper = require('./falaDeusComigo.upload');
+        const attachmentUrl = await uploadHelper.uploadAttachment(
+            req.file.buffer,
+            req.user.userId,
+            itemId,
+            req.file.originalname,
+            req.file.mimetype
+        );
+        return responseFormatter.success(res, { attachment_url: attachmentUrl });
+    } catch (e) {
+        logger.error('falaDeusComigo uploadAttachment:', e);
+        if (e.message && e.message.includes('não está configurado')) {
+            return res.status(503).json({ success: false, message: e.message });
+        }
+        return responseFormatter.error(res, e.message || 'Erro no upload.', 500);
+    }
+}
+
 module.exports = {
     getConfig,
     listMensagens,
     createMensagem,
     updateMensagem,
-    deleteMensagem
+    deleteMensagem,
+    uploadAttachment,
+    uploadAndExtractText
 };
