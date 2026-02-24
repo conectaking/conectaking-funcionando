@@ -15,7 +15,7 @@ function isThrottleError(status, body) {
 
 /**
  * Envia um buffer de imagem para Cloudflare Images e retorna a URL pública.
- * Em caso de 503/throttling, repete até 3 vezes com espera (2s, 4s).
+ * Em caso de 503/throttling, repete até 5 vezes com backoff (0, 3s, 6s, 12s, 24s).
  */
 async function uploadImageBuffer(buffer, mimetype, filename = 'image.jpg') {
     const accountId = process.env.CF_IMAGES_ACCOUNT_ID ||
@@ -34,8 +34,8 @@ async function uploadImageBuffer(buffer, mimetype, filename = 'image.jpg') {
         throw err;
     }
 
-    const maxRetries = 3;
-    const delays = [0, 2000, 4000];
+    const maxRetries = 5;
+    const delays = [0, 3000, 6000, 12000, 24000];
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         if (attempt > 0) await sleep(delays[attempt]);
@@ -53,7 +53,7 @@ async function uploadImageBuffer(buffer, mimetype, filename = 'image.jpg') {
             const msg = authData.errors?.[0]?.message || authData.message || 'Falha ao obter URL de upload';
             const authThrottle = authResponse.status === 503 || authResponse.status === 429 || isThrottleError(authResponse.status, authBody);
             if (authThrottle && attempt < maxRetries - 1) {
-                logger.warn('Cloudflare throttling (direct_upload), retry em ' + (delays[attempt + 1] / 1000) + 's');
+                logger.warn('Cloudflare throttling (direct_upload), retry ' + (attempt + 2) + '/' + maxRetries + ' em ' + (delays[attempt + 1] / 1000) + 's');
                 continue;
             }
             throw new Error(msg);
@@ -91,7 +91,7 @@ async function uploadImageBuffer(buffer, mimetype, filename = 'image.jpg') {
         return `https://imagedelivery.net/${accountHash}/${imageId}/public`;
     }
 
-    throw new Error('Serviço de imagens temporariamente ocupado. Aguarde uns segundos e tente de novo.');
+    throw new Error('Serviço de imagens temporariamente ocupado. Aguarde 1–2 minutos e tente enviar uma foto de cada vez.');
 }
 
 module.exports = { uploadImageBuffer };
