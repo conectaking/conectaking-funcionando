@@ -292,6 +292,13 @@ function isCNPJLine(line) {
     return /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\bCNPJ\s*:/i.test(line.trim());
 }
 
+/** Linha é só hora (ex.: 17:31:59 ou 17.31.59) — não extrair como valor. */
+function isTimeOnlyLine(line) {
+    if (!line || typeof line !== 'string') return false;
+    const t = line.trim();
+    return /^\d{1,2}[.:]\d{2}[.:]\d{2}\s*$/.test(t);
+}
+
 /**
  * Normaliza string BRL para número (ex.: "R$ 1.234,56" ou "37,59" ou "10.50" -> número).
  */
@@ -321,7 +328,7 @@ function extractBRLMoneyTokens(text) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const lineNorm = line.toUpperCase();
-        const skipLineForGeneric = isTributosLine(line) || isDateTimeOnlyLine(line) || isLineContainingDateTime(line) || isCNPJLine(line);
+        const skipLineForGeneric = isTributosLine(line) || isDateTimeOnlyLine(line) || isLineContainingDateTime(line) || isCNPJLine(line) || isTimeOnlyLine(line);
 
         if (!skipLineForGeneric) {
             const prevLine = i > 0 ? lines[i - 1] : '';
