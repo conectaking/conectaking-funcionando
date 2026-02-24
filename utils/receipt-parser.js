@@ -376,6 +376,13 @@ function runTests() {
             expectStatus: 'PAID',
             expectAmount: 11.20,
             expectMethod: 'DEBITO'
+        },
+        {
+            name: 'Arteris — Valor Pago numa linha, R$11.20 na seguinte (OCR quebrou)',
+            text: 'Conc. Rodovias do Interior Paulista S/A\n21.02.26 17:31:59\nValor Pago:\nR$11.20\nF.Pgto: Débito',
+            expectStatus: 'PAID',
+            expectAmount: 11.20,
+            expectMethod: 'DEBITO'
         }
     ];
     let ok = 0;
