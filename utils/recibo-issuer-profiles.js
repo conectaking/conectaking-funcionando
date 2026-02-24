@@ -7,7 +7,7 @@ const ISSUER_PROFILES = {
     GENERIC_BR: {
         match_any: [],
         strong_value_keys: ['VALOR PAGO', 'TOTAL PAGO', 'VALOR TOTAL', 'TOTAL', 'VALOR DA COMPRA', 'PAGO', 'APROVADO', 'CONFIRMADO', 'CONCLUÍDO', 'REALIZADO'],
-        negative_keys: ['TROCO', 'TAXA', 'TARIFA', 'JUROS', 'MULTA', 'SUBTOTAL', 'DESCONTO', 'PARCELA', 'X', '1/', '2/', '10X', 'SEM JUROS', 'NSU', 'AUT', 'AUTORIZAÇÃO', 'AID', 'ARQC', 'TERM', 'DOC', 'CV', 'EC', 'CÓDIGO', 'LINHA DIGITÁVEL', 'PROTOCOLO', 'CHAVE DE ACESSO', 'ICMS', 'TRIBUTOS', 'IBPT', 'SALDO', 'LIMITE'],
+        negative_keys: ['TROCO', 'TAXA', 'TARIFA', 'JUROS', 'MULTA', 'SUBTOTAL', 'DESCONTO', 'PARCELA', 'X', '1/', '2/', '10X', 'SEM JUROS', 'NSU', 'AUT', 'AUTORIZAÇÃO', 'AID', 'ARQC', 'TERM', 'DOC', 'CV', 'EC', 'CÓDIGO', 'LINHA DIGITÁVEL', 'PROTOCOLO', 'CHAVE DE ACESSO', 'ICMS', 'TRIBUTOS', 'IBPT', 'SALDO', 'LIMITE', 'VALOR APRX', 'APRX. DE TRIB', 'fonte:IBPT'],
         status_declined_keys: ['RECUSADA', 'RECUSADO', 'NEGADA', 'NEGADO', 'CANCELADA', 'CANCELADO', 'ESTORNADO', 'ESTORNO', 'FALHOU', 'NÃO APROVADO', 'TRANSAÇÃO NÃO AUTORIZADA'],
         method_keys: { PIX: ['PIX'], DEBITO: ['DÉBITO', 'DEBITO'], CREDITO: ['CRÉDITO', 'CREDITO'], BOLETO: ['BOLETO'], TRANSFERENCIA: ['TRANSFERÊNCIA', 'TRANSFERENCIA'] },
         value_position_hint: 'ANY',
@@ -316,6 +316,48 @@ function extractBRLMoneyTokens(text) {
                 candidates.push({
                     value,
                     raw: matchValor[1],
+                    line: line.trim(),
+                    lineNorm: line.toUpperCase(),
+                    lineIndex: i
+                });
+            }
+        }
+        // "Valor: R$9,10" (Entrevias) ou "Valor: R$ 9,10"
+        const matchValorRs = line.match(/Valor\s*:\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
+        if (matchValorRs) {
+            const value = normalizeBRL(matchValorRs[1]);
+            if (value != null && value >= 0 && value < 1000000) {
+                candidates.push({
+                    value,
+                    raw: matchValorRs[1],
+                    line: line.trim(),
+                    lineNorm: line.toUpperCase(),
+                    lineIndex: i
+                });
+            }
+        }
+        // "Valor Pago:R$11.20" ou "Valor Pago: R$10.50" (Arteris, VIAPAULISTA - decimal com ponto)
+        const matchValorPago = line.match(/Valor\s*Pago\s*:\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
+        if (matchValorPago) {
+            const value = normalizeBRL(matchValorPago[1]);
+            if (value != null && value >= 0 && value < 1000000) {
+                candidates.push({
+                    value,
+                    raw: matchValorPago[1],
+                    line: line.trim(),
+                    lineNorm: line.toUpperCase(),
+                    lineIndex: i
+                });
+            }
+        }
+        // "VALOR PAGO (RS) 100,00" ou "(R$) 100,00" — OCR às vezes lê R$ como RS
+        const matchValorPagoRs = line.match(/VALOR\s*PAGO\s*\(\s*R[S$]\s*\)\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
+        if (matchValorPagoRs) {
+            const value = normalizeBRL(matchValorPagoRs[1]);
+            if (value != null && value >= 0 && value < 1000000) {
+                candidates.push({
+                    value,
+                    raw: matchValorPagoRs[1],
                     line: line.trim(),
                     lineNorm: line.toUpperCase(),
                     lineIndex: i

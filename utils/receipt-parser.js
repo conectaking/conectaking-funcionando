@@ -43,7 +43,7 @@ function extractPaidAt(rawText) {
     const lines = rawText.split(/\r?\n/);
     const currentYear = new Date().getFullYear();
     for (const line of lines) {
-        let m = line.match(/(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})\s+(\d{1,2})[.:](\d{2})[.:]?(\d{2})?/);
+        let m = line.match(/(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})\s+(\d{1,2})[Hh:.](\d{2})[.:]?(\d{2})?/);
         if (m) {
             const d = parseInt(m[1], 10);
             const mo = parseInt(m[2], 10) - 1;
@@ -81,7 +81,7 @@ function extractPaymentMethod(rawText, issuer) {
     if (/\bCARTAO\b|CARTÃO|PGTO\s*:\s*CARTAO/.test(t)) return 'CREDITO';
     const pedagio = ['ARTERIS', 'ENTREVIAS', 'VIAPAULISTA', 'CCR', 'ECOVIAS', 'SEM PARAR', 'PEDÁGIO', 'PEDAGIO', 'DFE.', 'VALOR PAGO:R'];
     if (pedagio.some(k => t.includes(k))) return 'PEDAGIO';
-    if (/\bNFC-E\b|NFC-E|LINX\b|VALOR PAGO\s*\(R\$\)|DOCUMENTO AUXILIAR/.test(t)) return 'NFCe';
+    if (/\bNFC-E\b|NFC-E|LINX\b|VALOR PAGO\s*\(R[S$]\)|DOCUMENTO AUXILIAR/.test(t)) return 'NFCe';
     return 'OUTRO';
 }
 
