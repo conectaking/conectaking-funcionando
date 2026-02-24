@@ -178,6 +178,26 @@ async function collectReferencedImageIds(client) {
   ];
 
   const ids = new Set();
+
+  // Documentos (recibos/orçamentos): anexos_json é array de { url, ... } com URLs imagedelivery.net
+  const hasDocAnexos = await hasColumn(client, 'documentos', 'anexos_json');
+  if (hasDocAnexos) {
+    const rDoc = await client.query(
+      `SELECT anexos_json FROM documentos WHERE anexos_json::text ILIKE '%imagedelivery.net%' LIMIT 50000`
+    );
+    for (const row of rDoc.rows) {
+      const arr = row.anexos_json;
+      if (!Array.isArray(arr)) continue;
+      for (const a of arr) {
+        const url = a && a.url;
+        if (url) {
+          const id = extractCloudflareImageIdFromUrl(url);
+          if (id) ids.add(id);
+        }
+      }
+    }
+  }
+
   for (const c of candidates) {
     // eslint-disable-next-line no-await-in-loop
     const ok = await hasColumn(client, c.table, c.col);
