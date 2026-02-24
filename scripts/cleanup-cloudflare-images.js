@@ -4,6 +4,7 @@
  * O que faz:
  * - Lista TODAS as imagens do Cloudflare Images
  * - Busca no Postgres todas as URLs que referenciam "imagedelivery.net/.../<imageId>/..."
+ *   (inclui documentos.anexos_json = comprovantes de recibos)
  * - Deleta do Cloudflare as imagens cujo ID NÃO aparece no banco
  *
  * Segurança:
