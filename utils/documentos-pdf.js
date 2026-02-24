@@ -58,8 +58,8 @@ async function gerarPdfBuffer(documento) {
     const itens = Array.isArray(documento.itens_json) ? documento.itens_json : [];
     const anexos = Array.isArray(documento.anexos_json) ? documento.anexos_json : [];
     const tipo = (documento.tipo || 'recibo').toLowerCase();
-    const tituloDoc = tipo === 'orcamento' ? 'ORÇAMENTO' : 'RECIBO';
-    const numero = documento.numero_sequencial != null ? `#${documento.numero_sequencial}` : '';
+    const tituloDoc = tipo === 'orcamento' ? 'ORÇAMENTO' : 'King';
+    const numero = documento.numero_sequencial != null ? `#${documento.numero_sequencial}` : (documento.id ? `#${documento.id}` : '');
 
     function drawText(text, opts = {}) {
         const size = opts.size || FONT_SIZE;
