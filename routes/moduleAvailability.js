@@ -26,7 +26,7 @@ router.get('/plan-availability-public', asyncHandler(async (req, res) => {
                 'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
                 'finance', 'agenda', 'contract',
                 'modo_empresa', 'branding', 'photographer_site', 'bible',
-                'recibos_orcamentos'
+                'recibos_orcamentos', 'fala_deus_comigo'
             )
             ORDER BY mpa.module_type, mpa.plan_code
         `;
