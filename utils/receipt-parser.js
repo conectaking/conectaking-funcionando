@@ -355,6 +355,20 @@ function runTests() {
             text: 'Getnet\nVia Estab\nCREDITO R$ 178,00\nAUT:152940',
             expectStatus: 'PAID',
             expectAmount: 178
+        },
+        {
+            name: 'NFC-e Linx VALOR PAGO (RS) — OCR R$ como RS',
+            text: 'LINX\nG E G AUTO POSTO LTDA\nSubtotal R$ 100,00\nValor Total RS 100,00\nVALOR PAGO (RS) 100,00\nRecebimento PIX\nTributos aproximados: Federal R$ 7,40',
+            expectStatus: 'PAID',
+            expectAmount: 100,
+            expectMethod: 'PIX'
+        },
+        {
+            name: 'VIAPAULISTA Valor Pago: R$10.50',
+            text: 'DOC. FISCAL EQUIVALENTE IN1731/17\nVIAPAULISTA S/A\nSTA. RITA PASSA QUATRO KM253+000\n21.02.26 17:05:18\nValor Pago: R$10.50\nF.Pgto: Debito\nValor aprx. de trib. 16,24% (fonte:IBPT)',
+            expectStatus: 'PAID',
+            expectAmount: 10.50,
+            expectMethod: 'DEBITO'
         }
     ];
     let ok = 0;
