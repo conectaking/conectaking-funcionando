@@ -152,6 +152,8 @@ function detectarMultiplosComprovantes(ocrText, valoresComContexto) {
     for (let i = 0; i < linhas.length; i++) {
         if (/VIA\s*CLIENTE|VIA\s*ESTAB|REIMPRESSÃO|REIMPRESSAO/i.test(linhas[i])) vias.push(i);
     }
+    // Só considerar múltiplos comprovantes quando há 2+ "VIA CLIENTE" (dois recibos na mesma foto).
+    // Não criar um item por cada R$ encontrado (evita dezenas de linhas de um único comprovante).
     if (vias.length >= 2) {
         const blocos = [];
         for (let b = 0; b < vias.length; b++) {
@@ -160,13 +162,6 @@ function detectarMultiplosComprovantes(ocrText, valoresComContexto) {
             blocos.push(linhas.slice(inicio, fim).join('\n'));
         }
         return { blocos, multiplosValores: null };
-    }
-    const comCreditoDebito = valoresComContexto.filter(r =>
-        /CREDITO|DEBITO|CRÉDITO|DÉBITO|R\s*\$\s*\d|VALOR\s*\d/.test(r.linha)
-    );
-    const valoresUnicos = [...new Set(comCreditoDebito.map(r => r.valor).filter(v => v > 0))];
-    if (valoresUnicos.length >= 2) {
-        return { blocos: [ocrText], multiplosValores: valoresUnicos };
     }
     return { blocos: [ocrText], multiplosValores: null };
 }
@@ -213,30 +208,13 @@ function categorizar(texto) {
 }
 
 /**
- * Processa texto OCR: detecta um ou mais comprovantes, extrai valor principal, nome e forma de pagamento.
+ * Processa texto OCR: um comprovante = um item (ou 2 itens só se houver 2 blocos "VIA CLIENTE").
  * Retorna lista de { valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento? }.
  */
 function processarTextoOcr(ocrText) {
     const valoresComContexto = extractValoresComContexto(ocrText);
-    const { blocos, multiplosValores } = detectarMultiplosComprovantes(ocrText, valoresComContexto);
+    const { blocos } = detectarMultiplosComprovantes(ocrText, valoresComContexto);
     const resultados = [];
-
-    if (multiplosValores && multiplosValores.length >= 2) {
-        const nome = extrairNomeEstabelecimento(ocrText);
-        const formaPagamento = extrairFormaPagamento(ocrText);
-        const cat = categorizar(ocrText);
-        for (const v of multiplosValores) {
-            const descricao = nome ? (formaPagamento ? `${nome} — ${formaPagamento}` : nome) : (formaPagamento || cat);
-            resultados.push({
-                valor: v,
-                categoria: cat,
-                textoTrecho: descricao,
-                nome_estabelecimento: nome || undefined,
-                forma_pagamento: formaPagamento || undefined
-            });
-        }
-        return resultados;
-    }
 
     for (const bloco of blocos) {
         const item = processarBloco(bloco, categorizar);
