@@ -114,6 +114,23 @@ async function gerarPdfBuffer(documento) {
 
     // Cliente
     drawText('Cliente:', { bold: true });
+    if (cliente.logo_url) {
+        try {
+            const { type, bytes } = await fetchImage(cliente.logo_url);
+            const img = type === 'png' ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
+            const scale = Math.min(80 / img.width, 40 / img.height, 1);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            if (y - h < MARGIN) {
+                page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                y = PAGE_HEIGHT - MARGIN;
+            }
+            page.drawImage(img, { x: MARGIN, y: y - h, width: w, height: h });
+            y -= h + 6;
+        } catch (e) {
+            logger.warn('documentos-pdf: logo do cliente não carregada', { url: cliente.logo_url, message: e.message });
+        }
+    }
     if (cliente.nome) drawText(cliente.nome);
     if (cliente.cpf_cnpj) drawText(`CNPJ/CPF: ${cliente.cpf_cnpj}`);
     if (cliente.endereco) drawText(cliente.endereco);
