@@ -16,6 +16,12 @@ const FONT_SIZE = 10;
 const FONT_SIZE_TITLE = 16;
 const FONT_SIZE_HEADER = 12;
 
+// Tema escuro (preto e bonito)
+const RGB_BG = { r: 15 / 255, g: 23 / 255, b: 42 / 255 };
+const RGB_TEXT = { r: 0.95, g: 0.95, b: 0.97 };
+const RGB_TEXT_MUTED = { r: 0.6, g: 0.63, b: 0.7 };
+const RGB_GOLD = { r: 212 / 255, g: 175 / 255, b: 55 / 255 };
+
 function formatMoney(n) {
     if (n == null || isNaN(n)) return '-';
     return `R$ ${Number(n).toFixed(2).replace('.', ',')}`;
@@ -46,11 +52,22 @@ async function fetchImage(url) {
  * @param {Object} documento - documento do banco (emitente_json, cliente_json, itens_json, anexos_json, tipo, etc.)
  * @returns {Promise<Buffer>}
  */
+function fillPageDark(page) {
+    page.drawRectangle({
+        x: 0,
+        y: 0,
+        width: PAGE_WIDTH,
+        height: PAGE_HEIGHT,
+        color: rgb(RGB_BG.r, RGB_BG.g, RGB_BG.b)
+    });
+}
+
 async function gerarPdfBuffer(documento) {
     const pdfDoc = await PDFDocument.create();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     let page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    fillPageDark(page);
     let y = PAGE_HEIGHT - MARGIN;
 
     const emitente = documento.emitente_json || {};
@@ -61,14 +78,21 @@ async function gerarPdfBuffer(documento) {
     const tituloDoc = tipo === 'orcamento' ? 'ORÇAMENTO' : 'King';
     const numero = documento.numero_sequencial != null ? `#${documento.numero_sequencial}` : (documento.id ? `#${documento.id}` : '');
 
+    const textColor = () => rgb(RGB_TEXT.r, RGB_TEXT.g, RGB_TEXT.b);
+    const goldColor = () => rgb(RGB_GOLD.r, RGB_GOLD.g, RGB_GOLD.b);
+    const mutedColor = () => rgb(RGB_TEXT_MUTED.r, RGB_TEXT_MUTED.g, RGB_TEXT_MUTED.b);
+
     function drawText(text, opts = {}) {
         const size = opts.size || FONT_SIZE;
         const useBold = opts.bold;
-        const maxWidth = opts.maxWidth || (PAGE_WIDTH - 2 * MARGIN);
+        const useGold = opts.gold;
+        const useMuted = opts.muted;
+        const color = useGold ? goldColor() : (useMuted ? mutedColor() : textColor());
         const lines = (text || '').toString().split(/\n/);
         for (const line of lines) {
             if (y < MARGIN + LINE_HEIGHT) {
                 page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                fillPageDark(page);
                 y = PAGE_HEIGHT - MARGIN;
             }
             page.drawText(line.slice(0, 120), {
@@ -76,7 +100,7 @@ async function gerarPdfBuffer(documento) {
                 y: y - size,
                 size,
                 font: useBold ? boldFont : font,
-                color: rgb(0, 0, 0)
+                color
             });
             y -= size + 4;
         }
@@ -92,6 +116,7 @@ async function gerarPdfBuffer(documento) {
             const h = img.height * scale;
             if (y - h < MARGIN) {
                 page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                fillPageDark(page);
                 y = PAGE_HEIGHT - MARGIN;
             }
             page.drawImage(img, { x: MARGIN, y: y - h, width: w, height: h });
@@ -108,8 +133,8 @@ async function gerarPdfBuffer(documento) {
     if (emitente.contato) drawText(emitente.contato);
     y -= 8;
 
-    // Título
-    drawText(`${tituloDoc} ${numero}`.trim(), { size: FONT_SIZE_TITLE, bold: true });
+    // Título (dourado)
+    drawText(`${tituloDoc} ${numero}`.trim(), { size: FONT_SIZE_TITLE, bold: true, gold: true });
     y -= 8;
 
     // Cliente
@@ -123,6 +148,7 @@ async function gerarPdfBuffer(documento) {
             const h = img.height * scale;
             if (y - h < MARGIN) {
                 page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                fillPageDark(page);
                 y = PAGE_HEIGHT - MARGIN;
             }
             page.drawImage(img, { x: MARGIN, y: y - h, width: w, height: h });
@@ -145,19 +171,23 @@ async function gerarPdfBuffer(documento) {
 
     if (y < MARGIN + 80) {
         page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+        fillPageDark(page);
         y = PAGE_HEIGHT - MARGIN;
     }
-    page.drawText('Descrição', { x: colDesc, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
-    page.drawText('Data', { x: colData, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
-    page.drawText('Qtd', { x: colQtd, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
-    page.drawText('Valor unit.', { x: colUnit, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
-    page.drawText('Subtotal', { x: colTotal, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
+    const cT = textColor();
+    const cG = goldColor();
+    page.drawText('Descrição', { x: colDesc, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cG });
+    page.drawText('Data', { x: colData, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cG });
+    page.drawText('Qtd', { x: colQtd, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cG });
+    page.drawText('Valor unit.', { x: colUnit, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cG });
+    page.drawText('Subtotal', { x: colTotal, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cG });
     y -= LINE_HEIGHT + 4;
 
     let totalGeral = 0;
     for (const item of itens) {
         if (y < MARGIN + LINE_HEIGHT) {
             page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+            fillPageDark(page);
             y = PAGE_HEIGHT - MARGIN;
         }
         const descricao = (item.descricao || '-').slice(0, 38);
@@ -166,16 +196,16 @@ async function gerarPdfBuffer(documento) {
         const valorUnit = item.valor_unitario != null ? item.valor_unitario : item.valor;
         const valor = item.valor != null ? item.valor : (valorUnit * qtd);
         totalGeral += valor;
-        page.drawText(descricao, { x: colDesc, y: y - FONT_SIZE, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
-        page.drawText(dataStr, { x: colData, y: y - FONT_SIZE, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
-        page.drawText(String(qtd), { x: colQtd, y: y - FONT_SIZE, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
-        page.drawText(formatMoney(valorUnit), { x: colUnit, y: y - FONT_SIZE, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
-        page.drawText(formatMoney(valor), { x: colTotal, y: y - FONT_SIZE, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
+        page.drawText(descricao, { x: colDesc, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cT });
+        page.drawText(dataStr, { x: colData, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cT });
+        page.drawText(String(qtd), { x: colQtd, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cT });
+        page.drawText(formatMoney(valorUnit), { x: colUnit, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cT });
+        page.drawText(formatMoney(valor), { x: colTotal, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cT });
         y -= LINE_HEIGHT;
     }
 
     y -= 6;
-    page.drawText(`Total: ${formatMoney(totalGeral)}`, { x: colTotal - 60, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
+    page.drawText(`Total: ${formatMoney(totalGeral)}`, { x: colTotal - 60, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cG });
     y -= LINE_HEIGHT + 10;
 
     if (documento.observacoes) {
@@ -183,12 +213,13 @@ async function gerarPdfBuffer(documento) {
         drawText(documento.observacoes);
         y -= 4;
     }
-    if (documento.data_documento) drawText(`Data: ${formatDate(documento.data_documento)}`);
-    if (documento.validade_ate && tipo === 'orcamento') drawText(`Válido até: ${formatDate(documento.validade_ate)}`);
+    if (documento.data_documento) drawText(`Data: ${formatDate(documento.data_documento)}`, { muted: true });
+    if (documento.validade_ate && tipo === 'orcamento') drawText(`Válido até: ${formatDate(documento.validade_ate)}`, { muted: true });
     y -= 16;
 
     // Recibo: imagens dos comprovantes
     if (tipo === 'recibo' && anexos.length > 0) {
+        const cM = mutedColor();
         for (const anexo of anexos) {
             if (!anexo.url) continue;
             try {
@@ -205,10 +236,11 @@ async function gerarPdfBuffer(documento) {
                 }
                 if (y - h - LINE_HEIGHT < MARGIN) {
                     page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                    fillPageDark(page);
                     y = PAGE_HEIGHT - MARGIN;
                 }
                 const caption = anexo.descricao || `Comprovante - ${anexo.tipo_categoria || ''}`;
-                page.drawText(caption.slice(0, 80), { x: MARGIN, y: y - FONT_SIZE, size: 9, font, color: rgb(0.3, 0.3, 0.3) });
+                page.drawText(caption.slice(0, 80), { x: MARGIN, y: y - FONT_SIZE, size: 9, font, color: cM });
                 y -= LINE_HEIGHT;
                 page.drawImage(img, { x: MARGIN, y: y - h, width: w, height: h });
                 y -= h + 12;
