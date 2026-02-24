@@ -324,6 +324,8 @@ function extractBRLMoneyTokens(text) {
         const skipLineForGeneric = isTributosLine(line) || isDateTimeOnlyLine(line) || isLineContainingDateTime(line) || isCNPJLine(line);
 
         if (!skipLineForGeneric) {
+            const prevLine = i > 0 ? lines[i - 1] : '';
+            const valorPagoNaLinhaAnterior = /Valor\s*Pago/i.test(prevLine);
             const matches = line.match(REGEX_BRL);
             if (matches) {
                 for (const m of matches) {
@@ -334,7 +336,8 @@ function extractBRLMoneyTokens(text) {
                             raw: m,
                             line: line.trim(),
                             lineNorm,
-                            lineIndex: i
+                            lineIndex: i,
+                            fromValorPago: valorPagoNaLinhaAnterior
                         });
                     }
                 }
