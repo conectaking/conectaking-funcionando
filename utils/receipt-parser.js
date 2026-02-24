@@ -301,6 +301,21 @@ function parseReceipt(ocrResult) {
         }
     }
 
+    // Linx/NFC-e: OCR às vezes lê 100,00 como 180,66 ou 188 na linha VALOR PAGO (RS). Preferir o valor que
+    // aparece em Subtotal/Valor Total (geralmente 100) quando o melhor candidato está na faixa de erro (175–195).
+    const isLinxNfce = issuer === 'LINX' || issuer === 'NFCe' || /LINX|VALOR\s*TOTAL\s*R\$|Subtotal\s*R\$/i.test(rawText);
+    if (top && isLinxNfce && top.value != null && top.value >= 175 && top.value <= 195) {
+        const valorSubtotalTotal = scored.find(c => {
+            if (c.value == null || c.value <= 0) return false;
+            const line = (c.line || '').toUpperCase();
+            const round = (Math.round(c.value * 100) % 100) === 0;
+            return round && (line.includes('SUBTOTAL') || line.includes('VALOR TOTAL')) && c.value >= 1 && c.value <= 5000;
+        });
+        if (valorSubtotalTotal != null && Math.abs(valorSubtotalTotal.value - 100) < 0.02) {
+            top = valorSubtotalTotal;
+        }
+    }
+
     // Usar sempre o melhor candidato para preencher o valor (evita 0 quando a linha tem EC/TERM e score fica baixo)
     const amount_paid = top && top.value != null && top.value > 0 ? top.value : null;
     const confidence = scoreToConfidence(top ? top.score : 0, ambiguous);

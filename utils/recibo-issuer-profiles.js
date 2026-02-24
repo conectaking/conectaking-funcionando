@@ -435,7 +435,7 @@ function extractBRLMoneyTokens(text) {
                 });
             }
         }
-        // "Valor Total R$ 100,00" ou "Subtotal R$ 100,00" (NFC-e Linx, posto)
+        // "Valor Total R$ 100,00" ou "Subtotal R$ 100,00" (NFC-e Linx, posto) — priorizar sobre OCR errado em VALOR PAGO (ex.: 180,66)
         const matchValorTotal = line.match(/(?:Valor\s*Total|Subtotal)\s*R\s*\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
         if (matchValorTotal) {
             const value = normalizeBRL(matchValorTotal[1]);
@@ -446,7 +446,8 @@ function extractBRLMoneyTokens(text) {
                     line: line.trim(),
                     lineNorm,
                     lineIndex: i,
-                    fromValorPago: true
+                    fromValorPago: true,
+                    fromSubtotalOrValorTotal: true
                 });
             }
         }
@@ -496,7 +497,8 @@ function extractBRLMoneyTokens(text) {
                     line: line.trim(),
                     lineNorm,
                     lineIndex: i,
-                    fromValorPago: true
+                    fromValorPago: true,
+                    fromSubtotalOrValorTotal: true
                 });
             }
         }
