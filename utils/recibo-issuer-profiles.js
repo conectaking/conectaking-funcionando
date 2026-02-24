@@ -83,10 +83,10 @@ const ISSUER_PROFILES = {
     },
     SICREDI: {
         match_any: ['SICREDI', 'VIA - CLIENTE', 'VIA CLIENTE'],
-        strong_value_keys: ['VALOR'],
-        negative_keys: ['AUT', 'CV', 'DOC', 'TERM', 'NSU'],
+        strong_value_keys: ['VALOR', 'R$'],
+        negative_keys: ['AUT', 'CV', 'DOC', 'TERM', 'NSU', 'EC:', 'TERM:'],
         value_position_hint: 'BOTTOM',
-        notes: 'TEF/maquininha cooperativa',
+        notes: 'TEF/maquininha cooperativa (ex.: POSTO MORADA DO SOL, VALOR 173,78)',
         weights: { strong: 40, weak: 15, negative: -50, position_bonus: 10 }
     },
     SICOOB: {
@@ -183,10 +183,10 @@ const ISSUER_PROFILES = {
     },
     LINX: {
         match_any: ['LINX'],
-        strong_value_keys: ['VALOR PAGO', 'VALOR TOTAL', 'TOTAL', 'Subtotal'],
-        negative_keys: ['ICMS', 'TRIBUTOS', 'TROCO'],
+        strong_value_keys: ['VALOR PAGO', 'VALOR TOTAL', 'TOTAL', 'Subtotal', 'RECEBIMENTO PIX'],
+        negative_keys: ['ICMS', 'TRIBUTOS', 'TROCO', 'Federal R$', 'Estadual R$'],
         value_position_hint: 'MIDDLE',
-        notes: 'Posto/mercado',
+        notes: 'Posto/mercado NFC-e (priorizar Valor Total 100,00 e não tributos)',
         weights: { strong: 40, weak: 15, negative: -50, position_bonus: 10 }
     },
     BEMATECH: {
@@ -196,16 +196,25 @@ const ISSUER_PROFILES = {
         value_position_hint: 'BOTTOM',
         weights: { strong: 40, weak: 15, negative: -50, position_bonus: 10 }
     },
+    ENTREVIAS: {
+        match_any: ['ENTREVIAS', 'entrevias.com.br', 'entrevias.com.br/dfe'],
+        strong_value_keys: ['Valor', 'VALOR', 'VALOR PAGO', 'R$'],
+        negative_keys: ['tributos', 'aprox', 'placa', 'IBPT'],
+        value_position_hint: 'MIDDLE',
+        notes: 'Pedágio Entrevias (ex.: Valor: R$9,10, Pgto:Cartao)',
+        weights: { strong: 40, weak: 15, negative: -50, position_bonus: 10 }
+    },
     ARTERIS: {
-        match_any: ['ARTERIS', 'dfe.arteris.com.br'],
+        match_any: ['ARTERIS', 'dfe.arteris.com.br', 'CONC. RODOVIAS'],
         strong_value_keys: ['Valor Pago', 'VALOR PAGO', 'F.Pgto', 'R$'],
-        negative_keys: ['tributos', 'aprox', 'placa'],
+        negative_keys: ['tributos', 'aprox', 'placa', 'IBPT'],
         value_position_hint: 'MIDDLE',
         method_keys: { DEBITO: ['Debito', 'Débito'] },
+        notes: 'Pedágio Arteris / Conc. Rodovias do Interior Paulista (Valor Pago:R$11.20)',
         weights: { strong: 40, weak: 15, negative: -50, position_bonus: 10 }
     },
     CCR: {
-        match_any: ['CCR', 'AUTOBAN', 'ROTA DAS BANDEIRAS', 'ROTA SO'],
+        match_any: ['CCR', 'AUTOBAN', 'ROTA DAS BANDEIRAS', 'ROTA SO', 'CONCESSIONARIA ROTA'],
         strong_value_keys: ['Valor Pago', 'VALOR PAGO', 'R$'],
         negative_keys: ['tributos', 'aprox', 'placa'],
         value_position_hint: 'MIDDLE',
@@ -219,7 +228,7 @@ const ISSUER_PROFILES = {
         weights: { strong: 40, weak: 15, negative: -50, position_bonus: 10 }
     },
     VIAPAULISTA: {
-        match_any: ['RODOVIAS', 'VIAPAULISTA', 'VIA PAULISTA', 'ENTREVIAS'],
+        match_any: ['RODOVIAS', 'VIAPAULISTA', 'VIA PAULISTA', 'VIAPAULISTA S/A'],
         strong_value_keys: ['Valor Pago', 'VALOR PAGO', 'F.Pgto', 'R$'],
         negative_keys: ['tributos', 'aprox', 'placa'],
         value_position_hint: 'MIDDLE',
@@ -469,6 +478,24 @@ function runTests() {
             text: 'Estabelecimento XYZ\nValor Total R$ 50,00',
             expectIssuer: 'GENERIC_BR',
             expectValue: 50
+        },
+        {
+            name: 'Sicredi (Posto Morada do Sol)',
+            text: 'SICREDI\nVIA - CLIENTE\nPOSTO MORADA DO SOL ARARAQUARA LTDA\nVALOR 173,78\nCREDITO A VISTA',
+            expectIssuer: 'SICREDI',
+            expectValue: 173.78
+        },
+        {
+            name: 'Entrevias pedágio',
+            text: 'DOC. FISCAL EQUIVALENTE\nEntrevias\nValor: R$9,10\nPgto:Cartao\nentrevias.com.br/dfe',
+            expectIssuer: 'ENTREVIAS',
+            expectValue: 9.10
+        },
+        {
+            name: 'Arteris / Conc. Rodovias Interior Paulista',
+            text: 'Conc. Rodovias do Interior Paulista S/A\nValor Pago:R$11.20\nF.Pgto: Débito\ndfe.arteris.com.br',
+            expectIssuer: 'ARTERIS',
+            expectValue: 11.20
         }
     ];
     let ok = 0;
