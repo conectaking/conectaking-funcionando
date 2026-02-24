@@ -91,7 +91,7 @@ function extractPaymentMethod(rawText, issuer) {
 function extractMerchant(rawText) {
     if (!rawText || typeof rawText !== 'string') return null;
     const linhas = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    const ignorar = new Set(['getnet', 'cielo', 'linx', 'via cliente', 'via estab', 'reimpressao', 'documento auxiliar', 'consumidor nao identificado', 'sicredi']);
+    const ignorar = new Set(['getnet', 'cielo', 'linx', 'via cliente', 'via estab', 'via - cliente', 'reimpressao', 'documento auxiliar', 'consumidor nao identificado', 'sicredi']);
     let melhor = '';
     for (let i = 0; i < linhas.length; i++) {
         const linha = linhas[i];

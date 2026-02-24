@@ -162,7 +162,10 @@ function extrairNomeEstabelecimento(ocrText) {
         if (/\b(LTDA|S\/A|ME|EPP)\s*$/i.test(linha) && linha.length > 6) {
             return linha;
         }
-        if (/POSTO\s+|AUTO\s*POSTO|ENTREVIAS|VIAPAULISTA|SICREDI/i.test(linha) && linha.length <= 80) {
+        if (/POSTO\s+|AUTO\s*POSTO|ENTREVIAS|VIAPAULISTA|SICREDI|MORADA\s*DO\s*SOL|RODOVIAS\s*DO\s*INTERIOR|CONC\.\s*RODOVIAS/i.test(linha) && linha.length <= 80) {
+            if (!melhor || linha.length > melhor.length) melhor = linha;
+        }
+        if (/laranjinha|LARANJINHA/i.test(linha) && linha.length <= 40) {
             if (!melhor || linha.length > melhor.length) melhor = linha;
         }
         if (linha.includes('CNPJ') && i > 0) {

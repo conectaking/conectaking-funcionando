@@ -205,7 +205,7 @@ const ISSUER_PROFILES = {
         weights: { strong: 40, weak: 15, negative: -50, position_bonus: 10 }
     },
     ARTERIS: {
-        match_any: ['ARTERIS', 'dfe.arteris.com.br', 'CONC. RODOVIAS'],
+        match_any: ['ARTERIS', 'dfe.arteris.com.br', 'CONC. RODOVIAS', 'RODOVIAS DO INTERIOR', 'INTERIOR PAULISTA', 'PIRASSUNUNGA', 'dfe.arteris'],
         strong_value_keys: ['Valor Pago', 'VALOR PAGO', 'F.Pgto', 'R$'],
         negative_keys: ['tributos', 'aprox', 'placa', 'IBPT'],
         value_position_hint: 'MIDDLE',
@@ -225,6 +225,14 @@ const ISSUER_PROFILES = {
         strong_value_keys: ['Valor Pago', 'VALOR PAGO', 'R$'],
         negative_keys: ['tributos', 'aprox'],
         value_position_hint: 'MIDDLE',
+        weights: { strong: 40, weak: 15, negative: -50, position_bonus: 10 }
+    },
+    LARANJINHA: {
+        match_any: ['LARANJINHA', 'LARANJINHA'],
+        strong_value_keys: ['VALOR TOTAL', 'VALOR', 'CREDITO A VISTA', 'CRÉDITO', 'R$'],
+        negative_keys: ['AUT', 'AID', 'N.ESTAB', 'TERM'],
+        value_position_hint: 'MIDDLE',
+        notes: 'Maquininha Laranjinha/Itaú (VIA CLIENTE, Valor Total R$)',
         weights: { strong: 40, weak: 15, negative: -50, position_bonus: 10 }
     },
     VIAPAULISTA: {
@@ -450,6 +458,41 @@ function extractBRLMoneyTokens(text) {
                 candidates.push({
                     value,
                     raw: matchValorPagoRs[1],
+                    line: line.trim(),
+                    lineNorm,
+                    lineIndex: i,
+                    fromValorPago: true
+                });
+            }
+        }
+        // Valor Pago (R$) ou (RS) na linha anterior e valor na linha atual (Linx NFC-e)
+        if (i > 0) {
+            const prevLine = lines[i - 1].trim();
+            if (/VALOR\s*PAGO\s*\(\s*R[S$]\s*\)\s*$/i.test(prevLine) || /VALOR\s*PAGO\s*\(R\$\)\s*$/i.test(prevLine)) {
+                const matchNum = line.match(/(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/);
+                if (matchNum) {
+                    const value = normalizeBRL(matchNum[1]);
+                    if (value != null && value >= 0 && value < 1000000) {
+                        candidates.push({
+                            value,
+                            raw: matchNum[1],
+                            line: line.trim(),
+                            lineNorm,
+                            lineIndex: i,
+                            fromValorPago: true
+                        });
+                    }
+                }
+            }
+        }
+        // "Valor Total 173,78" ou "Valor Total: R$ 154,00" (Sicredi maquininha / Laranjinha)
+        const matchValorTotalG = line.match(/Valor\s*Total\s*:?\s*(?:R\s*\$\s*)?(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/i);
+        if (matchValorTotalG) {
+            const value = normalizeBRL(matchValorTotalG[1]);
+            if (value != null && value >= 0 && value < 1000000) {
+                candidates.push({
+                    value,
+                    raw: matchValorTotalG[1],
                     line: line.trim(),
                     lineNorm,
                     lineIndex: i,
