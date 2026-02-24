@@ -54,8 +54,8 @@ async function addAnexo(id, userId, anexo) {
 }
 
 /**
- * Processa comprovante: adiciona itens sugeridos pelo OCR + um anexo (imagem).
- * itensSugeridos: [{ valor, categoria, textoTrecho }]
+ * Processa comprovante: adiciona itens sugeridos pelo OCR (nome estabelecimento, valor, forma pagamento) + anexo.
+ * itensSugeridos: [{ valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento? }]
  * url: URL pública da imagem após upload.
  */
 async function processarComprovante(id, userId, { url, itensSugeridos }) {
@@ -66,21 +66,25 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
     const primeiraCategoria = itensSugeridos && itensSugeridos.length > 0 ? itensSugeridos[0].categoria : 'Comprovante';
     let totalValor = 0;
     for (const s of itensSugeridos || []) {
-        const descricao = s.textoTrecho ? `${s.categoria} - ${String(s.textoTrecho).slice(0, 80)}` : s.categoria;
+        const descricao = (s.nome_estabelecimento || s.textoTrecho || s.categoria).toString().slice(0, 120);
+        const valor = Number(s.valor) || 0;
         itens.push({
             descricao,
             quantidade: 1,
-            valor_unitario: s.valor,
-            valor: s.valor
+            valor_unitario: valor,
+            valor
         });
-        totalValor += s.valor;
+        totalValor += valor;
     }
     if (itensSugeridos && itensSugeridos.length > 0) {
+        const primeiroNome = itensSugeridos[0].nome_estabelecimento || primeiraCategoria;
         anexos.push({
             url,
             tipo_categoria: primeiraCategoria,
             valor: totalValor,
-            descricao: `Comprovante - ${primeiraCategoria} - R$ ${totalValor.toFixed(2).replace('.', ',')}`
+            descricao: totalValor > 0
+                ? `${primeiroNome} — R$ ${totalValor.toFixed(2).replace('.', ',')}`
+                : `Comprovante — ${primeiroNome}`
         });
     } else {
         anexos.push({ url, tipo_categoria: 'Comprovante', valor: null, descricao: 'Comprovante' });
