@@ -188,17 +188,8 @@ async function processarComprovante(req, res) {
         const id = parseInt(req.params.id, 10);
         if (!id) return responseFormatter.error(res, 'ID inválido', 400);
         if (!req.file || !req.file.buffer) return responseFormatter.error(res, 'Envie uma imagem do comprovante.', 400);
-        let url;
-        try {
-            url = await uploadImageBuffer(
-                req.file.buffer,
-                req.file.mimetype,
-                req.file.originalname || 'comprovante.jpg'
-            );
-        } catch (uploadErr) {
-            logger.error('documentos processarComprovante upload:', uploadErr);
-            return responseFormatter.error(res, uploadErr.message || 'Falha ao enviar imagem. Verifique a configuração (Cloudflare).', 503);
-        }
+
+        // 1) OCR primeiro: extrair valor/itens mesmo que o upload falhe depois (ex.: throttling Cloudflare)
         let itensSugeridos = [];
         let parseResult = null;
         try {
@@ -211,13 +202,29 @@ async function processarComprovante(req, res) {
             }
         } catch (ocrErr) {
             logger.error('documentos processarComprovante OCR:', ocrErr);
-            itensSugeridos = [];
         }
+
+        // 2) Tentar upload para Cloudflare; se falhar, continuamos e devolvemos só o valor (imagem descartada)
+        let url = null;
+        try {
+            url = await uploadImageBuffer(
+                req.file.buffer,
+                req.file.mimetype,
+                req.file.originalname || 'comprovante.jpg'
+            );
+        } catch (uploadErr) {
+            logger.error('documentos processarComprovante upload:', uploadErr);
+            // Não retornar erro: utilizador fica com o valor extraído pelo OCR; imagem não é guardada
+        }
+
         const doc = await documentosService.processarComprovante(id, req.user.userId, { url, itensSugeridos });
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const responseData = { url, documento: doc, itensAdicionados: itensSugeridos };
         if (parseResult) responseData.parse_result = parseResult;
-        return responseFormatter.success(res, responseData, itensSugeridos.length > 0 ? 'Comprovante processado e itens adicionados.' : 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.', 201);
+        const msg = itensSugeridos.length > 0
+            ? (url ? 'Comprovante processado e itens adicionados.' : 'Valor extraído da imagem e itens adicionados. (A imagem não foi guardada por falha no envio.)')
+            : (url ? 'Imagem anexada. Preencha descrição e valor se o OCR não identificou.' : 'Imagem recebida mas o envio falhou e o OCR não identificou valor. Tente novamente ou preencha manualmente.');
+        return responseFormatter.success(res, responseData, msg, 201);
     } catch (e) {
         logger.error('documentos processarComprovante:', e);
         return responseFormatter.error(res, e.message || 'Erro ao processar comprovante', 500);

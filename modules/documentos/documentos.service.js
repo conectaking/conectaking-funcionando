@@ -54,9 +54,9 @@ async function addAnexo(id, userId, anexo) {
 }
 
 /**
- * Processa comprovante: adiciona itens sugeridos pelo OCR (nome estabelecimento, valor, forma pagamento) + anexo.
+ * Processa comprovante: adiciona itens sugeridos pelo OCR (nome estabelecimento, valor, forma pagamento) + anexo (se url existir).
  * itensSugeridos: [{ valor, categoria, textoTrecho, nome_estabelecimento?, forma_pagamento? }]
- * url: URL pública da imagem após upload.
+ * url: URL pública da imagem após upload; se null (ex.: falha Cloudflare), só atualiza itens (imagem não é guardada).
  */
 async function processarComprovante(id, userId, { url, itensSugeridos }) {
     const doc = await documentosRepository.getById(id, userId);
@@ -78,18 +78,23 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
         itens.push(item);
         totalValor += valor;
     }
-    if (itensSugeridos && itensSugeridos.length > 0) {
-        const primeiroNome = itensSugeridos[0].nome_estabelecimento || primeiraCategoria;
-        anexos.push({
-            url,
-            tipo_categoria: primeiraCategoria,
-            valor: totalValor,
-            descricao: totalValor > 0
-                ? `${primeiroNome} — R$ ${totalValor.toFixed(2).replace('.', ',')}`
-                : `Comprovante — ${primeiroNome}`
-        });
-    } else {
-        anexos.push({ url, tipo_categoria: 'Comprovante', valor: null, descricao: 'Comprovante' });
+    // Só adicionar anexo se tivermos URL (upload Cloudflare ok); se falhou, não guardamos a imagem
+    if (url) {
+        if (itensSugeridos && itensSugeridos.length > 0) {
+            const primeiroNome = itensSugeridos[0].nome_estabelecimento || primeiraCategoria;
+            anexos.push({
+                url,
+                tipo_categoria: primeiraCategoria,
+                valor: totalValor,
+                descricao: totalValor > 0
+                    ? `${primeiroNome} — R$ ${totalValor.toFixed(2).replace('.', ',')}`
+                    : `Comprovante — ${primeiroNome}`
+            });
+        } else {
+            anexos.push({ url, tipo_categoria: 'Comprovante', valor: null, descricao: 'Comprovante' });
+        }
+    }
+    if (!itensSugeridos || itensSugeridos.length === 0) {
         itens.push({
             descricao: 'Comprovante (preencha descrição e valor)',
             quantidade: 1,
