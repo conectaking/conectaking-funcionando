@@ -74,28 +74,72 @@ function extractValoresComContexto(ocrText) {
     return resultados;
 }
 
+// Linhas que são tributos/percentuais — nunca usar como valor pago
+const LINHA_EH_TRIBUTO = /Federal\s*R\s*\$|Estadual\s*R\s*\$|Municipal\s*R\s*\$|tributo|ICMS|retenção|retencao|aprox|%\s*\d|ST\s+R\s*\$/i;
+
+/** Valor "redondo" (ex.: 100.00) — totais de compra costumam ser redondos; evita pegar 188.80 por OCR errado */
+function valorEhRedondo(valor) {
+    if (valor == null) return false;
+    const centavos = Math.round(valor * 100) % 100;
+    return centavos === 0;
+}
+
 /**
- * Escolhe o valor principal: prioriza "Valor Total", "Subtotal", "Total R$", depois "VALOR"/"Valor:",
- * evita "Valor Pago" quando há outro valor que seja o total da compra (ex.: Total 100 e Pago 180).
+ * Escolhe o valor principal: prioriza "Subtotal" e "Valor Total" com valor correto (evita 188,80 quando o certo é 100,00).
+ * Ignora linhas de tributos e preferência por valores redondos (100,00) quando a linha diz Subtotal/Valor Total/PIX.
  */
 function escolherValorPrincipal(resultados) {
     if (!resultados.length) return null;
-    const comTotal = resultados.filter(r =>
-        /VALOR\s*TOTAL|Valor\s*Total|Subtotal|Total\s*R\s*\$|TOTAL\s*R\s*\$/.test(r.linhaNorm) &&
+    const semTributo = resultados.filter(r => !LINHA_EH_TRIBUTO.test(r.linha));
+
+    const comSubtotalOuTotal = semTributo.filter(r =>
+        (/Subtotal\s*R\s*\$|Subtotal\s*\$|VALOR\s*TOTAL|Valor\s*Total\s*R\s*\$|TOTAL\s*R\s*\$/.test(r.linhaNorm) ||
+         /Recebimento\s*PIX|Recebimento\s+PIX|PIX\s+\d/.test(r.linhaNorm)) &&
+        !/VALOR PAGO\s*\(RS\)|Valor Pago\s*\(RS\)/.test(r.linha)
+    );
+
+    if (comSubtotalOuTotal.length > 0) {
+        const redondos = comSubtotalOuTotal.filter(r => valorEhRedondo(r.valor));
+        if (redondos.length > 0) return redondos[0].valor;
+        const comSubtotal = comSubtotalOuTotal.filter(r => /Subtotal/i.test(r.linha));
+        if (comSubtotal.length > 0) return comSubtotal[0].valor;
+        return comSubtotalOuTotal[0].valor;
+    }
+
+    const comTotal = semTributo.filter(r =>
+        /VALOR\s*TOTAL|Valor\s*Total|Total\s*R\s*\$|TOTAL\s*R\s*\$/.test(r.linhaNorm) &&
         !/VALOR PAGO|Valor Pago|VALOR PAGO \(RS\)/.test(r.linha)
     );
     if (comTotal.length > 0) {
-        const primeiro = comTotal[0];
-        return primeiro.valor;
+        const redondos = comTotal.filter(r => valorEhRedondo(r.valor));
+        if (redondos.length > 0) return redondos[0].valor;
+        return comTotal[0].valor;
     }
-    const comValor = resultados.filter(r =>
+
+    const comValor = semTributo.filter(r =>
         /\bVALOR\b|\bValor\s*:/.test(r.linhaNorm) &&
         !/VALOR PAGO|Valor Pago|Valor\s*aprx|tributos/.test(r.linha)
     );
-    if (comValor.length > 0) return comValor[0].valor;
-    const comValorPago = resultados.filter(r => /VALOR PAGO|Valor Pago|Valor\s*Pago\s*:/i.test(r.linha));
-    if (comValorPago.length > 0) return comValorPago[0].valor;
-    return resultados[0].valor;
+    if (comValor.length > 0) {
+        const redondos = comValor.filter(r => valorEhRedondo(r.valor));
+        if (redondos.length > 0) return redondos[0].valor;
+        return comValor[0].valor;
+    }
+    const comValorPago = semTributo.filter(r => /VALOR PAGO|Valor Pago|Valor\s*Pago\s*:|Recebimento\s*PIX|PIX/i.test(r.linha));
+    if (comValorPago.length > 0) {
+        const redondos = comValorPago.filter(r => valorEhRedondo(r.valor));
+        if (redondos.length > 0) return redondos[0].valor;
+        return comValorPago[0].valor;
+    }
+
+    const primeiro = semTributo.length > 0 ? semTributo[0] : resultados[0];
+    const valorEscolhido = primeiro.valor;
+    const valorRedondoEmTotal = semTributo.find(r =>
+        valorEhRedondo(r.valor) &&
+        (/Total|Subtotal|PIX|100|50|200|150/i.test(r.linha) || r.valor >= 1 && r.valor <= 5000)
+    );
+    if (valorRedondoEmTotal && !valorEhRedondo(valorEscolhido)) return valorRedondoEmTotal.valor;
+    return valorEscolhido;
 }
 
 /**
