@@ -13,7 +13,8 @@
  *
  * Como usar:
  *   DRY_RUN=1 node scripts/cleanup-cloudflare-images.js
- *   DRY_RUN=0 MIN_AGE_DAYS=3 node scripts/cleanup-cloudflare-images.js
+ *   DRY_RUN=0 CONFIRM_DELETE=SIM MIN_AGE_DAYS=3 node scripts/cleanup-cloudflare-images.js
+ *   (Para apagar de verdade é obrigatório CONFIRM_DELETE=SIM. Opcional: MAX_DELETE=100 SLEEP_MS=200 OUT_FILE=orphans.json)
  *
  * Requisitos (env):
  * - CF_IMAGES_ACCOUNT_ID (ou CLOUDFLARE_ACCOUNT_ID)
@@ -307,10 +308,13 @@ async function listCloudflareImages({ accountId, apiToken }) {
       const t = await resp.text().catch(() => '');
       if (resp.status === 401) {
         throw new Error(
-          `Falha ao listar imagens (401 Authentication error). ` +
-          `Seu token/chave não está válido OU não tem permissão de Cloudflare Images. ` +
-          `Crie um API Token com: Account -> Cloudflare Images -> Read (e Edit se for deletar). ` +
-          `Detalhe: ${t}`
+          `Falha ao listar imagens (401). O token não é válido ou não tem permissão Cloudflare Images.\n` +
+          `Como corrigir:\n` +
+          `1. Acesse https://dash.cloudflare.com/profile/api-tokens\n` +
+          `2. Crie um token "Edit" para "Cloudflare Images" (ou use um existente).\n` +
+          `3. Garanta permissões: Account > Cloudflare Images > Read e Edit.\n` +
+          `4. Defina CLOUDFLARE_API_TOKEN (ou CF_IMAGES_API_TOKEN) com esse token no .env ou no ambiente.\n` +
+          `Detalhe da API: ${t.slice(0, 200)}`
         );
       }
       throw new Error(`Falha ao listar imagens (status ${resp.status}): ${t}`);
