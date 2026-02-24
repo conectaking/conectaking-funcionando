@@ -2,12 +2,14 @@
  * OCR para comprovantes de recibo: extrai nome do estabelecimento (loja/pessoa que cobrou),
  * valor principal (priorizando Valor Total / Subtotal / VALOR), forma de pagamento e
  * detecta múltiplos comprovantes na mesma imagem.
+ * Usa Dicionário de Fontes (issuer profiles) para melhorar extração por tipo de comprovante.
  */
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const logger = require('./logger');
+const { parseReceipt, detectIssuer } = require('./recibo-issuer-profiles');
 
 // Valores em R$: 1.234,56 ou 10,00 ou 25.50 ou 173,78
 const REGEX_VALOR_RS = /R\s*\$\s*[\d.]{1,3}(?:\.\d{3})*[,.]\d{2}|R\s*\$\s*\d+[,.]\d{2}/gi;
@@ -212,10 +214,18 @@ function detectarMultiplosComprovantes(ocrText, valoresComContexto) {
 
 /**
  * Processa um bloco de texto (um comprovante) e retorna um item sugerido.
+ * Usa issuer profiles quando disponível; senão usa escolherValorPrincipal.
  */
 function processarBloco(blocoTexto, categorizar) {
     const valores = extractValoresComContexto(blocoTexto);
-    const valor = escolherValorPrincipal(valores);
+    let valor = null;
+    const parsed = parseReceipt(blocoTexto);
+    if (parsed.status !== 'DECLINED' && parsed.value != null && parsed.value > 0) {
+        valor = parsed.value;
+    }
+    if (valor == null) {
+        valor = escolherValorPrincipal(valores);
+    }
     const nome = extrairNomeEstabelecimento(blocoTexto);
     const formaPagamento = extrairFormaPagamento(blocoTexto);
     const categoria = categorizar(blocoTexto);
