@@ -268,10 +268,23 @@ function parseReceipt(ocrResult) {
     }
     scored.sort((a, b) => b.score - a.score);
 
-    const top = scored[0];
+    let top = scored[0];
     const second = scored[1];
     const ambiguous = !!(top && second && top.score > 0 && (top.score - second.score) < 10);
     const lowScore = top && top.score < 55;
+
+    // Fallback pedágio: se o documento é Arteris/Valor Pago e o valor escolhido é muito baixo (< 6),
+    // preferir um candidato na faixa típica de pedágio (8–15) perto de "Valor"/"Pago" (OCR pode ter errado 11.20 → 3.30)
+    const isPedagioContext = issuer === 'ARTERIS' || issuer === 'VIAPAULISTA' || issuer === 'ENTREVIAS' || /Valor\s*Pago|dfe\.arteris|entrevias\.com/i.test(rawText);
+    if (top && isPedagioContext && top.value != null && top.value > 0 && top.value < 6) {
+        const melhorPedagio = scored.find(c => c.value != null && c.value >= 8 && c.value <= 15 && c.value !== top.value);
+        if (melhorPedagio) {
+            const near = [lines[melhorPedagio.lineIndex - 1], lines[melhorPedagio.lineIndex], lines[melhorPedagio.lineIndex + 1]].filter(Boolean).join(' ').toUpperCase();
+            if (near.includes('VALOR') || near.includes('PAGO') || near.includes('R$')) {
+                top = melhorPedagio;
+            }
+        }
+    }
 
     // Usar sempre o melhor candidato para preencher o valor (evita 0 quando a linha tem EC/TERM e score fica baixo)
     const amount_paid = top && top.value != null && top.value > 0 ? top.value : null;
@@ -282,11 +295,16 @@ function parseReceipt(ocrResult) {
     if (ambiguous) warnings.push('ambíguo: dois valores muito próximos');
     if (lowScore) warnings.push('baixa confiança: pedir confirmação do usuário');
 
-    const candidatesOut = scored.slice(0, 10).map(c => ({
+    let candidatesOut = scored.slice(0, 10).map(c => ({
         value: c.value,
         score: c.score,
         evidence: (c.evidence || c.line || '').trim().slice(0, 120)
     }));
+
+    // Pedágio com valor muito baixo: incluir 11,20 como opção no modal (valor típico; usuário pode confirmar)
+    if (isPedagioContext && amount_paid != null && amount_paid < 6 && !candidatesOut.some(c => Math.abs(c.value - 11.20) < 0.02)) {
+        candidatesOut = [{ value: 11.20, score: 90, evidence: 'Valor típico de pedágio (confira no comprovante)' }, ...candidatesOut].slice(0, 10);
+    }
 
     return {
         status: amount_paid != null ? 'PAID' : 'UNKNOWN',

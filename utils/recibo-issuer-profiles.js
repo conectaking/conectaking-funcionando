@@ -328,7 +328,11 @@ function extractBRLMoneyTokens(text) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const lineNorm = line.toUpperCase();
-        const skipLineForGeneric = isTributosLine(line) || isDateTimeOnlyLine(line) || isLineContainingDateTime(line) || isCNPJLine(line) || isTimeOnlyLine(line);
+        // Não ignorar linha que tenha data/hora E Valor Pago ou R$ (ex.: "21.02.26 17:31:59 Valor Pago:R$11.20")
+        const linhaTemValorPagoOuRs = /Valor\s*Pago|R\s*\$\s*\d/i.test(line);
+        const skipLineForGeneric = isTributosLine(line) || isDateTimeOnlyLine(line)
+            || (isLineContainingDateTime(line) && !linhaTemValorPagoOuRs)
+            || isCNPJLine(line) || isTimeOnlyLine(line);
 
         if (!skipLineForGeneric) {
             const prevLine = i > 0 ? lines[i - 1] : '';
