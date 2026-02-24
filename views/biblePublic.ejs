@@ -467,6 +467,7 @@
             let currentPalavraData = null, currentSalmoData = null, currentDevBibliaData = null, currentPlanoData = null, currentDev365Data = null, currentEstudoLivroData = null;
 
             function shareText(txt) {
+                txt = (txt || '').trim() + '\n\n— Bíblia King';
                 var url = 'https://wa.me/?text=' + encodeURIComponent(txt);
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(txt).then(function() {
@@ -629,7 +630,7 @@
 
             document.getElementById('btn-compartilhar').addEventListener('click', function() {
                 if (!currentVerse || !currentVerse.texto) return;
-                const txt = '"' + currentVerse.texto + '" — ' + (currentVerse.ref || '');
+                const txt = '"' + currentVerse.texto + '" — ' + (currentVerse.ref || '') + '\n\n— Bíblia King';
                 const urlWhatsApp = 'https://wa.me/?text=' + encodeURIComponent(txt);
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(txt).then(function() {
@@ -1004,7 +1005,7 @@
                 var titulo = (currentDevocionalData.titulo || '').trim();
                 var reflexao = (currentDevocionalData.reflexao || '').replace(/<[^>]+>/g, '').slice(0, 200);
                 var link = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href.split('?')[0] : '';
-                var shareText = (titulo ? titulo + '\n\n' : '') + (ref ? ref + (txt ? ' — ' + txt : '') + '\n\n' : '') + (reflexao ? reflexao + '...\n\n' : '') + (link ? 'Link: ' + link : '');
+                var shareText = (titulo ? titulo + '\n\n' : '') + (ref ? ref + (txt ? ' — ' + txt : '') + '\n\n' : '') + (reflexao ? reflexao + '...\n\n' : '') + (link ? 'Link: ' + link : '') + '\n\n— Bíblia King';
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(shareText).then(function() {
                         if (confirm('Devocional copiado! Deseja compartilhar no WhatsApp?')) window.open('https://wa.me/?text=' + encodeURIComponent(shareText));

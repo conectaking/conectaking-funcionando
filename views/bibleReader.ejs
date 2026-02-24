@@ -421,7 +421,7 @@
                     var transName = translationNames[readerTranslation] || readerTranslation;
                     var lines = [refPart + ' — ' + transName, ''];
                     selected.forEach(function(s) { lines.push(s.verse + ' ' + s.text); });
-                    var toShare = lines.join('\n');
+                    var toShare = lines.join('\n') + '\n\n— Bíblia King';
                     if (navigator.share && /mobile|android|iphone|ipad/i.test(navigator.userAgent)) {
                         navigator.share({ title: refPart, text: toShare }).catch(function() {
                             copyToClipboard(toShare);
