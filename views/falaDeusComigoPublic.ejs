@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title><%= typeof title !== 'undefined' ? title : 'Fala Deus Comigo' %> — ConectaKing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0D0D0F;
+            background-image: linear-gradient(180deg, #0D0D0F 0%, #12121a 30%, #1a1a1e 60%, #0f0f12 100%);
+            color: #ECECEC;
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        .wrap {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 24px 0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .header .logo-img {
+            max-width: 80px;
+            max-height: 80px;
+            object-fit: contain;
+            margin-bottom: 12px;
+        }
+        .header .hero-icon {
+            font-size: 2.5rem;
+            color: #FFC700;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 2px 8px rgba(255,199,0,0.3));
+        }
+        .header h1 {
+            font-family: 'Lora', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ECECEC;
+        }
+        .card {
+            background: rgba(28, 28, 33, 0.95);
+            border: 1px solid rgba(255, 199, 0, 0.25);
+            border-radius: 16px;
+            padding: 28px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,199,0,0.05);
+        }
+        .versiculo-ref {
+            font-family: 'Lora', serif;
+            font-size: 1rem;
+            color: #FFC700;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .versiculo-texto {
+            font-family: 'Lora', serif;
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: #ECECEC;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        .resumo {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #B8B8B8;
+            margin-bottom: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            white-space: pre-wrap;
+        }
+        .resumo strong { color: #ECECEC; font-size: 0.85rem; display: block; margin-bottom: 8px; }
+        .mensagem {
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 1rem;
+            line-height: 1.7;
+            color: #ECECEC;
+            white-space: pre-wrap;
+        }
+        .empty-state {
+            text-align: center;
+            color: #A1A1A1;
+            padding: 2rem 0;
+        }
+        .empty-state i { font-size: 2rem; margin-bottom: 12px; opacity: 0.6; }
+        .btn-voltar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            color: #000;
+            background: #FFC700;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+            margin-top: 24px;
+            width: 100%;
+            max-width: 280px;
+        }
+        .btn-voltar:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,199,0,0.35); }
+        .actions { text-align: center; margin-top: 24px; }
+        .outro-link {
+            display: block;
+            margin-top: 16px;
+            font-size: 0.9rem;
+            color: #A1A1A1;
+            text-decoration: none;
+        }
+        .outro-link:hover { color: #FFC700; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="header">
+            <% if (typeof logoUrl !== 'undefined' && logoUrl && logoUrl.trim() && !logoUrl.includes('placeholder')) { %>
+                <img src="<%= logoUrl %>" alt="Logo" class="logo-img" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                <i class="fas fa-heart hero-icon" style="display: none;"></i>
+            <% } else { %>
+                <i class="fas fa-heart hero-icon"></i>
+            <% } %>
+            <h1><%= typeof title !== 'undefined' ? title : 'Fala Deus Comigo' %></h1>
+        </div>
+
+        <div class="card">
+            <% if (message) { %>
+                <% if (message.versiculo_ref) { %>
+                    <div class="versiculo-ref"><%= message.versiculo_ref %></div>
+                <% } %>
+                <% if (message.versiculo_texto) { %>
+                    <div class="versiculo-texto">"<%= message.versiculo_texto %>"</div>
+                <% } %>
+                <% if (message.resumo) { %>
+                    <div class="resumo"><strong>Resumo</strong><%= message.resumo %></div>
+                <% } %>
+                <div class="mensagem"><%= message.mensagem %></div>
+                <% if (message.attachment_url) { %>
+                    <p style="margin-top:16px"><a href="<%= message.attachment_url %>" target="_blank" rel="noopener" style="color:#FFC700;font-size:0.9rem"><i class="fas fa-file-pdf"></i> Ver anexo</a></p>
+                <% } %>
+            <% } else { %>
+                <div class="empty-state">
+                    <i class="fas fa-book-bible"></i>
+                    <p>Nenhuma mensagem configurada ainda.</p>
+                    <p style="margin-top:8px;font-size:0.9rem">Quem gerencia este perfil pode adicionar versículos e mensagens no painel.</p>
+                </div>
+            <% } %>
+        </div>
+
+        <div class="actions">
+            <a href="<%= typeof cardUrl !== 'undefined' ? cardUrl : '/' + (typeof slug !== 'undefined' ? slug : '') %>" class="btn-voltar">
+                <i class="fas fa-arrow-left"></i> Voltar ao cartão
+            </a>
+            <a href="<%= typeof cardUrl !== 'undefined' ? cardUrl : '/' + (typeof slug !== 'undefined' ? slug : '') %>" class="outro-link">Quer outra palavra? Volte ao cartão e clique de novo em &quot;Fala Deus Comigo&quot;</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -2207,6 +2207,32 @@ if (typeof details === 'undefined' || !details) {
                         </a>
 
                     <%# ========================================================== %>
+                    <%# TIPO: FALA DEUS COMIGO %>
+                    <%# ========================================================== %>
+                    <% } else if (item.item_type === 'fala_deus_comigo') { %>
+                        <%
+                            const fdcSlug = profile_slug || details.profile_slug || identifier;
+                            const fdcUrl = '/' + fdcSlug + '/fala-deus-comigo';
+                            const fdcHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
+                            const fdcLogoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
+                            const fdcIsJpeg = fdcHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
+                            const fdcBorderRadius = fdcHasLogo ? (fdcIsJpeg ? '50%' : '0') : '50%';
+                            let fdcObjectFit = 'contain';
+                            if (fdcHasLogo && item.logo_fit_mode && ['contain', 'cover'].includes(item.logo_fit_mode)) {
+                                fdcObjectFit = item.logo_fit_mode;
+                            }
+                        %>
+                        <a href="<%= fdcUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                            <% if (fdcHasLogo) { %>
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Fala Deus Comigo' %>" class="profile-link-logo <%= fdcIsJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= fdcLogoSize %>px !important; height: <%= fdcLogoSize %>px !important; border-radius: <%= fdcBorderRadius %>; object-fit: <%= fdcObjectFit %> !important;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+                                <i class="fas fa-heart" style="display: none;"></i>
+                            <% } else { %>
+                                <i class="fas fa-heart"></i>
+                            <% } %>
+                            <span><%= item.title || 'Fala Deus Comigo' %></span>
+                        </a>
+
+                    <%# ========================================================== %>
                     <%# FALLBACK: Tipo de item não reconhecido %>
                     <%# ========================================================== %>
                     <% } else { %>
