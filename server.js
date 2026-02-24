@@ -746,7 +746,7 @@ app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) =
                 'link', 'portfolio', 'banner', 'carousel', 
                 'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
                 'finance', 'agenda', 'contract',
-                'king_selection', 'convite', 'photographer_site', 'bible',
+                'king_selection', 'photographer_site', 'bible',
                 'recibos_orcamentos'
             )
             ORDER BY mpa.module_type, mpa.plan_code
@@ -827,9 +827,7 @@ const financeRoutes = require('./routes/finance.routes');
 app.use('/api/finance', apiLimiter, financeRoutes);
 const agendaRoutes = require('./routes/agenda.routes');
 app.use('/api/agenda', apiLimiter, agendaRoutes);
-const conviteRoutes = require('./modules/convite/convite.routes');
 const bibleRoutes = require('./modules/bible/bible.routes');
-app.use('/api/convite', apiLimiter, conviteRoutes);
 app.use('/api/bible', apiLimiter, bibleRoutes);
 const sitesRoutes = require('./modules/sites/sites.routes');
 app.use('/api/sites', apiLimiter, sitesRoutes);
@@ -923,9 +921,6 @@ app.use('/', publicSalesPageRoutes);
 const publicProductRoutes = require('./routes/publicProduct');
 app.use('/', publicProductRoutes);
 
-// Convite digital público (/:slug/convite) — antes do perfil para capturar o path
-const publicConviteRoutes = require('./routes/publicConvite.routes');
-app.use('/', publicConviteRoutes);
 // Bíblia pública (/:slug/bible)
 const publicBibleRoutes = require('./routes/publicBible.routes');
 app.use('/', publicBibleRoutes);

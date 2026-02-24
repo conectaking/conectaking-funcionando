@@ -314,21 +314,6 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
                     });
                     item.guest_list_data = {};
                 }
-            } else if (item.item_type === 'convite') {
-                try {
-                    const conviteRes = await client.query(
-                        'SELECT * FROM convite_items WHERE profile_item_id = $1',
-                        [item.id]
-                    );
-                    if (conviteRes.rows.length > 0) {
-                        item.convite_data = conviteRes.rows[0];
-                    } else {
-                        item.convite_data = {};
-                    }
-                } catch (conviteError) {
-                    console.error('Erro ao carregar convite', { itemId: item.id, error: conviteError.message });
-                    item.convite_data = {};
-                }
             } else if (item.item_type === 'bible') {
                 try {
                     const bibleRes = await client.query(
@@ -974,8 +959,8 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             // Deletar apenas itens que existem no banco mas não foram enviados no save-all
             // ========== PROTEÇÃO CRÍTICA: NÃO REMOVER ==========
             // Estes tipos NUNCA podem ser deletados pelo save-all (ficam de fora do payload por plano/ocultação/erro e têm dados críticos: galerias, links, vendas).
-            // bible e convite também ficam fora do #items-container (são gerenciados separadamente).
-            const PROTECTED_ITEM_TYPES_SAVE_ALL = ['sales_page', 'king_selection', 'bible', 'convite'];
+            // bible também fica fora do #items-container (gerenciado separadamente).
+            const PROTECTED_ITEM_TYPES_SAVE_ALL = ['sales_page', 'king_selection', 'bible'];
             const candidateIds = Array.from(existingItemIds).filter(id => !savedItemIds.has(id));
             let itemsToDelete = candidateIds;
             if (candidateIds.length > 0) {
@@ -2852,24 +2837,6 @@ router.post('/items/:id/duplicate', protectUser, asyncHandler(async (req, res) =
         if (item.item_type === 'guest_list') {
             await copyGuestListItemsFull(client, sourceId, newItem.id, ' (cópia)');
         }
-        if (item.item_type === 'convite') {
-            const cv = await client.query('SELECT * FROM convite_items WHERE profile_item_id = $1', [sourceId]);
-            if (cv.rows.length > 0) {
-                const c = cv.rows[0];
-                await client.query(
-                    `INSERT INTO convite_items (profile_item_id, titulo, subtitulo, texto_abrir, subtitulo_extra, texto_pagina_2,
-                     data_dia, data_mes, data_ano, dia_semana, hora, local_nome, local_endereco, local_maps_url, dress_code,
-                     rsvp_url, rsvp_label, som_habilitado, audio_url, imagem_envelope_url, imagem_fundo_url, imagem_selo_url,
-                     cor_primaria, cor_secundaria, tema, mostrar_contagem_regressiva, share_habilitado, calendar_habilitado, galeria_fotos)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29::jsonb)`,
-                    [newItem.id, c.titulo, (c.subtitulo || '') + ' (cópia)', c.texto_abrir, c.subtitulo_extra, c.texto_pagina_2,
-                     c.data_dia, c.data_mes, c.data_ano, c.dia_semana, c.hora, c.local_nome, c.local_endereco, c.local_maps_url, c.dress_code,
-                     c.rsvp_url, c.rsvp_label, c.som_habilitado, c.audio_url, c.imagem_envelope_url, c.imagem_fundo_url, c.imagem_selo_url,
-                     c.cor_primaria, c.cor_secundaria, c.tema, c.mostrar_contagem_regressiva, c.share_habilitado, c.calendar_habilitado,
-                     typeof c.galeria_fotos === 'string' ? c.galeria_fotos : JSON.stringify(c.galeria_fotos || [])]
-                );
-            }
-        }
         res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
         res.status(201).json(newItem);
     } catch (error) {
@@ -3381,16 +3348,6 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
             } catch (error) {
                 console.error("Erro ao criar lista de convidados:", error);
                 // Não falhar a criação do item se falhar criar a lista
-            }
-        }
-
-        if (item_type === 'convite') {
-            try {
-                const conviteRepo = require('../modules/convite/convite.repository');
-                await conviteRepo.create(newItem.id);
-                console.log(`✅ Convite criado para item ${newItem.id}`);
-            } catch (error) {
-                console.error("Erro ao criar convite:", error);
             }
         }
 
