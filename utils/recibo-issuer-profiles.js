@@ -330,11 +330,16 @@ function extractBRLMoneyTokens(text) {
  * Detecta o emissor (issuer) do comprovante por palavras-chave.
  * @returns {string} issuer_id ou "GENERIC_BR"
  */
+// Ordem de detecção: pedágio primeiro (evita INTER casar com "Interior Paulista"), depois resto
+const PEDAGIO_IDS = ['ENTREVIAS', 'ARTERIS', 'CCR', 'ECOVIAS', 'VIAPAULISTA', 'SEM_PARAR'];
+
 function detectIssuer(rawText) {
     if (!rawText || typeof rawText !== 'string') return 'GENERIC_BR';
     const upper = rawText.toUpperCase().replace(/\s+/g, ' ');
-    const entries = Object.entries(ISSUER_PROFILES).filter(([id]) => id !== 'GENERIC_BR');
-    for (const [id, profile] of entries) {
+    const allIds = [...new Set([...PEDAGIO_IDS, ...Object.keys(ISSUER_PROFILES).filter(k => k !== 'GENERIC_BR')])];
+    for (const id of allIds) {
+        const profile = ISSUER_PROFILES[id];
+        if (!profile) continue;
         const keys = profile.match_any || [];
         for (const key of keys) {
             if (upper.includes(key.toUpperCase())) return id;
