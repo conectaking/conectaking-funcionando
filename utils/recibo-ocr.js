@@ -314,22 +314,44 @@ function categoriaFatura(nome) {
     return 'Comércio / Outros';
 }
 
+/** Linha contém só data DD/MM ou DD/MM/YY (ex.: 22/02). */
+function isOnlyDateLine(line) {
+    return line && /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/.test(line.trim());
+}
+
 /**
  * Extrai itens de fatura de cartão: cada linha com [Nome] [Data DD/MM] [Valor] vira um item.
- * Ex.: "ImperatrizCarnes 22/02 37,59 R$" -> { descricao: "Imperatriz Carnes", data: "22/02", valor: 37.59 }
- * Aceita também "Nome DD/MM R$ 37,59" ou "Nome 22/02 37,59".
+ * Ex.: "ImperatrizCarnes 22/02 37,59 R$" -> { data: "22/02", valor: 37.59 }
+ * Aceita também data na linha seguinte (layout app: nome+valor numa linha, data abaixo).
+ * Ex.: "ImperatrizCarnes 37,59 R$" + próxima linha "22/02" -> data: "22/02".
  */
 function processarFaturaCartao(ocrText) {
     const linhas = ocrText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     const itens = [];
-    for (const linha of linhas) {
+    for (let i = 0; i < linhas.length; i++) {
+        const linha = linhas[i];
+        if (isOnlyDateLine(linha)) continue;
         const recusada = /Recusada|Recusado/i.test(linha);
         let match = linha.match(/^(.+?)\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s+(\d+[,.]\d{2})\s*(?:R\s*\$)?/);
         if (!match) match = linha.match(/^(.+?)\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s+R\s*\$\s*(\d+[,.]\d{2})/);
-        if (!match) continue;
-        let nome = match[1].trim().replace(/\s+/g, ' ');
-        const dataStr = match[2].trim();
-        const valor = parseValor(match[3]);
+        let dataStr = null;
+        let nome = '';
+        let valor = null;
+        if (match) {
+            nome = match[1].trim().replace(/\s+/g, ' ');
+            dataStr = match[2].trim();
+            valor = parseValor(match[3]);
+        } else {
+            const matchSemData = linha.match(/^(.+?)\s+(\d+[,.]\d{2})\s*(?:R\s*\$)?/);
+            if (matchSemData && i + 1 < linhas.length && isOnlyDateLine(linhas[i + 1])) {
+                nome = matchSemData[1].trim().replace(/\s+/g, ' ');
+                valor = parseValor(matchSemData[2]);
+                dataStr = linhas[i + 1].trim();
+                i++;
+            } else {
+                continue;
+            }
+        }
         if (valor == null || valor < 0) continue;
         if (nome.length > 60) nome = nome.slice(0, 57) + '...';
         if (recusada) nome = nome + ' (Recusada)';
@@ -339,7 +361,7 @@ function processarFaturaCartao(ocrText) {
             categoria,
             textoTrecho: nome,
             nome_estabelecimento: nome,
-            data: dataStr
+            data: dataStr || undefined
         });
     }
     return itens;

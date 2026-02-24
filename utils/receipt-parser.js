@@ -133,16 +133,24 @@ function looksLikeTransactionList(lines) {
     return moneyLines.length >= 4 && !hasReceiptWords;
 }
 
+/** Linha contém só data DD/MM ou DD/MM/YY (ex.: 22/02 ou 21/02/26). */
+function isOnlyDateLine(line) {
+    return line && /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/.test(line.trim());
+}
+
 /**
  * Parse de PRINT DE LISTA (ex.: app com Nome, Data DD/MM, Valor R$).
- * Extrai por linha: nome, data (DD/MM), valor; marca DECLINED se "Recusada"; não conta Recusada no total.
+ * Extrai por linha: nome, data (DD/MM), valor; data pode estar na mesma linha ou na linha seguinte (abaixo do nome).
+ * Marca DECLINED se "Recusada"; não conta Recusada no total.
  * Retorna transactions[] (com title, name, date, amount, status) e total_paid (soma só dos PAID).
  */
 function parseTransactionList(rawText) {
     const lines = splitLines(rawText);
     const transactions = [];
     let total = 0;
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (isOnlyDateLine(line)) continue;
         const up = line.toUpperCase();
         const moneyMatch = line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})\s*R\$/i) || line.match(/R\$\s*(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/i) || line.match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/);
         if (!moneyMatch) continue;
@@ -160,6 +168,10 @@ function parseTransactionList(rawText) {
             name = rest.slice(0, -dateMatch[0].length).trim();
         } else {
             name = rest || 'Transação';
+            if (i + 1 < lines.length && isOnlyDateLine(lines[i + 1])) {
+                date = lines[i + 1].trim();
+                i++;
+            }
         }
         if (!name) name = 'Transação';
         transactions.push({
