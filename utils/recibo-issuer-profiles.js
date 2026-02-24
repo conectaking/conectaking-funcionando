@@ -371,9 +371,17 @@ function scoreCandidates(candidates, lines, profile) {
         }
         if (score === 0) score += w.weak || 15;
 
+        const strongVal = w.strong || 40;
+        const hadStrong = score >= strongVal;
+        const technicalNegatives = ['TERM', 'EC', 'NSU', 'AUT', 'AID', 'ARQC', 'DOC', 'CV'];
         for (const k of negative) {
             if (lineNorm.includes(k)) {
-                score += w.negative || -50;
+                const penalty = w.negative || -50;
+                if (hadStrong && technicalNegatives.includes(k)) {
+                    score += Math.ceil(penalty / 2);
+                } else {
+                    score += penalty;
+                }
                 break;
             }
         }

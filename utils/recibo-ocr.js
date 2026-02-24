@@ -156,6 +156,8 @@ function extrairNomeEstabelecimento(ocrText) {
         const linha = linhas[i];
         const lower = linha.toLowerCase();
         if (ignorar.has(lower) || lower.length < 4) continue;
+        // Ignorar linhas que são só códigos de terminal (EC:, TERM) — não são nome do estabelecimento
+        if (/EC\s*:.*TERM|TERM\s+[A-Z0-9]/i.test(linha) && linha.length < 70) continue;
         if (/^\d|^R\s*\$\s*|^[\d.,\s]+$/.test(linha)) continue;
         if (/\b(LTDA|S\/A|ME|EPP)\s*$/i.test(linha) && linha.length > 6) {
             return linha;

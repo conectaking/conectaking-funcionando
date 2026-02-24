@@ -97,6 +97,7 @@ function extractMerchant(rawText) {
         const linha = linhas[i];
         const lower = linha.toLowerCase();
         if (ignorar.has(lower) || lower.length < 4) continue;
+        if (/EC\s*:.*TERM|TERM\s+[A-Z0-9]/i.test(linha) && linha.length < 70) continue;
         if (/^\d|^R\s*\$\s*|^[\d.,\s]+$/.test(linha)) continue;
         if (/\b(LTDA|S\/A|ME|EPP)\s*$/i.test(linha) && linha.length > 6) return linha;
         if (/POSTO\s+|AUTO\s*POSTO|ENTREVIAS|VIAPAULISTA|SICREDI/i.test(linha) && linha.length <= 80) {
@@ -109,6 +110,7 @@ function extractMerchant(rawText) {
     }
     if (melhor) return melhor;
     for (const linha of linhas) {
+        if (/EC\s*:.*TERM|TERM\s+[A-Z0-9]/i.test(linha) && linha.length < 70) continue;
         if (linha.length >= 8 && linha.length <= 60 && !/^\d|R\s*\$/i.test(linha) && !ignorar.has(linha.toLowerCase()))
             return linha;
     }
@@ -271,11 +273,12 @@ function parseReceipt(ocrResult) {
     const ambiguous = !!(top && second && top.score > 0 && (top.score - second.score) < 10);
     const lowScore = top && top.score < 55;
 
-    const amount_paid = top && top.score > 0 ? top.value : null;
+    // Usar sempre o melhor candidato para preencher o valor (evita 0 quando a linha tem EC/TERM e score fica baixo)
+    const amount_paid = top && top.value != null && top.value > 0 ? top.value : null;
     const confidence = scoreToConfidence(top ? top.score : 0, ambiguous);
 
     const warnings = [];
-    if (!top || top.score <= 0) warnings.push('nenhum valor monetário detectado');
+    if (!top || (top.value == null || top.value <= 0)) warnings.push('nenhum valor monetário detectado');
     if (ambiguous) warnings.push('ambíguo: dois valores muito próximos');
     if (lowScore) warnings.push('baixa confiança: pedir confirmação do usuário');
 
