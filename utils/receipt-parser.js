@@ -239,7 +239,13 @@ function parseReceipt(ocrResult) {
         return defaultOut;
     }
 
-    // ----- PRIORIDADE MÁXIMA: comprovante recusado/negado -----
+    const linesForList = splitLines(rawText);
+    // Print de lista (Nome, Data, Valor) tem prioridade: pode ter uma linha "Recusada" sem ser recibo único recusado
+    if (looksLikeTransactionList(linesForList)) {
+        return parseTransactionList(rawText);
+    }
+
+    // ----- Comprovante único recusado/negado -----
     if (isDeclinedReceipt(rawText)) {
         return {
             ...defaultOut,
@@ -250,11 +256,6 @@ function parseReceipt(ocrResult) {
             merchant: extractMerchant(rawText),
             payment_method: extractPaymentMethod(rawText, null)
         };
-    }
-
-    const linesForList = splitLines(rawText);
-    if (looksLikeTransactionList(linesForList)) {
-        return parseTransactionList(rawText);
     }
 
     const lines = rawText.split(/\r?\n/);
