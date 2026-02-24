@@ -338,17 +338,21 @@ function processarFaturaCartao(ocrText) {
 
 /**
  * Converte transactions[] do receipt-parser (print de lista) em itens para a tabela.
+ * Usa name como nome/descrição, date como data, amount como valor; Recusada fica no textoTrecho.
  */
 function itensFromTransactionList(transactions) {
     if (!Array.isArray(transactions) || transactions.length === 0) return [];
     return transactions.map(tx => {
-        const descricao = tx.status === 'DECLINED' ? (tx.title || 'Transação') + ' (Recusada)' : (tx.title || 'Transação');
-        return {
+        const nome = tx.name || tx.title || 'Transação';
+        const descricao = tx.status === 'DECLINED' ? nome + ' (Recusada)' : nome;
+        const item = {
             valor: tx.amount || 0,
             categoria: 'Comércio / Outros',
             textoTrecho: descricao.slice(0, 120),
-            nome_estabelecimento: tx.status === 'DECLINED' ? undefined : (tx.title || undefined)
+            nome_estabelecimento: tx.status === 'DECLINED' ? undefined : nome
         };
+        if (tx.date) item.data = tx.date;
+        return item;
     });
 }
 

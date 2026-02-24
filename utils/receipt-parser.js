@@ -134,8 +134,9 @@ function looksLikeTransactionList(lines) {
 }
 
 /**
- * Parse de PRINT DE LISTA: extrai cada linha com valor como transação; marca DECLINED se "Recusada" no bloco.
- * Retorna transactions[] e total_paid (soma dos PAID).
+ * Parse de PRINT DE LISTA (ex.: app com Nome, Data DD/MM, Valor R$).
+ * Extrai por linha: nome, data (DD/MM), valor; marca DECLINED se "Recusada"; não conta Recusada no total.
+ * Retorna transactions[] (com title, name, date, amount, status) e total_paid (soma só dos PAID).
  */
 function parseTransactionList(rawText) {
     const lines = splitLines(rawText);
@@ -149,9 +150,22 @@ function parseTransactionList(rawText) {
         const val = normalizeBRL(rawVal);
         if (val == null || val < 0 || val >= 1000000) continue;
         const declined = up.includes('RECUSADA') || up.includes('RECUSADO') || up.includes('NEGADO') || up.includes('CANCELADO');
-        const title = line.replace(rawVal, '').replace(/R\$/gi, '').trim() || 'Transação';
+        let rest = line.replace(moneyMatch[0], '').replace(/R\$/gi, '').replace(/\s*Recusada\s*/gi, '').trim();
+        rest = rest.replace(/\s+/g, ' ').trim();
+        let name = '';
+        let date = null;
+        const dateMatch = rest.match(/\s*(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s*$/);
+        if (dateMatch) {
+            date = dateMatch[1];
+            name = rest.slice(0, -dateMatch[0].length).trim();
+        } else {
+            name = rest || 'Transação';
+        }
+        if (!name) name = 'Transação';
         transactions.push({
-            title: title.slice(0, 120),
+            title: (name + (date ? ' ' + date : '')).slice(0, 120),
+            name: name.slice(0, 80),
+            date: date,
             amount: val,
             status: declined ? 'DECLINED' : 'PAID',
             evidence: rawVal
