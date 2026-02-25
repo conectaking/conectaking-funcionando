@@ -130,18 +130,15 @@ router.post('/generate-code', protectUser, enrichUserForBusiness, protectBusines
 router.put('/branding', protectUser, enrichUserForBusiness, protectBusinessOwnerOrLogo, async (req, res) => {
     const { logoUrl, logoSize, logoLink } = req.body;
     const ownerId = req.user.userId;
-
-    if (!logoUrl) {
-        return res.status(400).json({ message: 'URL do logo é obrigatória.' });
-    }
+    const urlToSave = (logoUrl && String(logoUrl).trim()) || null;
     const size = parseInt(logoSize, 10) || 60;
 
     try {
         await db.query(
             'UPDATE users SET company_logo_url = $1, company_logo_size = $2, company_logo_link = $3 WHERE id = $4',
-            [logoUrl, size, logoLink, ownerId]
+            [urlToSave, size, logoLink || null, ownerId]
         );
-        res.status(200).json({ message: 'Personalização da marca salva com sucesso!' });
+        res.status(200).json({ message: urlToSave ? 'Personalização da marca salva com sucesso!' : 'Logo da empresa removido.' });
     } catch (error) {
         console.error("Erro ao salvar personalização da marca:", error);
         res.status(500).json({ message: 'Erro no servidor ao salvar as alterações.' });

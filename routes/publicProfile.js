@@ -75,18 +75,9 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 u.profile_slug,
                 p.*,
                 COALESCE(p.logo_spacing, 'center') as logo_spacing,
-                CASE
-                    WHEN u.account_type IN ('business_owner', 'individual_com_logo', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate') THEN u.company_logo_url
-                    ELSE parent.company_logo_url
-                END AS company_logo_url,
-                CASE
-                    WHEN u.account_type IN ('business_owner', 'individual_com_logo', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate') THEN u.company_logo_size
-                    ELSE parent.company_logo_size
-                END AS company_logo_size,
-                CASE
-                    WHEN u.account_type IN ('business_owner', 'individual_com_logo', 'king_finance', 'king_finance_plus', 'king_premium_plus', 'king_corporate') THEN u.company_logo_link
-                    ELSE parent.company_logo_link
-                END AS company_logo_link,
+                CASE WHEN u.parent_user_id IS NOT NULL THEN parent.company_logo_url ELSE u.company_logo_url END AS company_logo_url,
+                CASE WHEN u.parent_user_id IS NOT NULL THEN parent.company_logo_size ELSE u.company_logo_size END AS company_logo_size,
+                CASE WHEN u.parent_user_id IS NOT NULL THEN parent.company_logo_link ELSE u.company_logo_link END AS company_logo_link,
                 p.share_image_url
             FROM users u
             INNER JOIN user_profiles p ON u.id = p.user_id
