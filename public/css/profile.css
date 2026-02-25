@@ -351,8 +351,8 @@ body {
     }
     
     .branding-logo img {
-        height: 80px;
         max-width: 100%;
+        /* altura: inline style (company_logo_size) no template */
     }
     
     .pix-modal-content {
@@ -457,7 +457,7 @@ body {
     /* Removido width/height fixos para permitir que logo_size seja aplicado */
     
     .branding-logo img {
-        height: 70px;
+        /* altura: inline style (company_logo_size) no template */
     }
     
     .pix-modal-content {
@@ -546,8 +546,8 @@ body {
 }
 
 .branding-logo img {
-    height: 100px; 
-    width: auto;  
+    width: auto;
+    /* altura controlada por data-logo-size / inline style no template (company_logo_size) */
 }
 
 body.light-theme .branding-logo span {

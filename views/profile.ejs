@@ -2232,12 +2232,13 @@ if (typeof details === 'undefined' || !details) {
         <%# SEÇÃO: LOGO DA EMPRESA / BRANDING (rodapé) %>
         <%# ========================================================== %>
         <% if (details.company_logo_url) { %>
+            <% const logoSizePx = details.company_logo_size || 60; %>
             <% if (details.company_logo_link) { %>
                 <a href="<%= details.company_logo_link %>" target="_blank" rel="noopener noreferrer" class="branding-logo">
-                    <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= details.company_logo_size || 60 %>">
+                    <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= logoSizePx %>" style="max-height: <%= logoSizePx %>px; height: <%= logoSizePx %>px; width: auto; object-fit: contain;">
                 </a>
             <% } else { %>
-                <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= details.company_logo_size || 60 %>">
+                <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= logoSizePx %>" style="max-height: <%= logoSizePx %>px; height: <%= logoSizePx %>px; width: auto; object-fit: contain;">
             <% } %>
         <% } else { %>
             <a href="https://www.instagram.com/conectaking" target="_blank" rel="noopener noreferrer" class="branding-logo">
