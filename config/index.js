@@ -92,12 +92,17 @@ const config = {
         api: {
             windowMs: 15 * 60 * 1000, // 15 minutos
             max: 600 // 600 requisições por janela (aumentado de 300 para reduzir rate limiting)
+        },
+        kingbrief: {
+            windowMs: 60 * 60 * 1000, // 1 hora
+            max: 30 // 30 POSTs (processamentos) por hora por usuário
         }
     },
     
     // Upload
     upload: {
         maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '104857600', 10), // 100MB em bytes (aumentado para permitir Bíblia completa e livros grandes)
+        kingbriefMaxFileSize: parseInt(process.env.KINGBRIEF_MAX_FILE_SIZE || '209715200', 10), // 200MB para áudio KingBrief
         allowedMimeTypes: {
             image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
             pdf: ['application/pdf']
