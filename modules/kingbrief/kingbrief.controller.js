@@ -28,8 +28,13 @@ async function create(req, res) {
         return responseFormatter.success(res, meeting, 'Reunião processada com sucesso.', 201);
     } catch (err) {
         logger.error('KingBrief create error', { error: err.message, userId: req.user?.userId });
-        const status = err.statusCode || (err.message && err.message.includes('indisponível') ? 503 : 500);
-        return responseFormatter.error(res, err.message || 'Erro ao processar o áudio.', status);
+        let status = err.statusCode || 500;
+        let message = err.message || 'Erro ao processar o áudio.';
+        if (message.includes('OPENAI_API_KEY') || message.includes('não configurado') || message.includes('não configurada')) {
+            status = 503;
+            message = 'Serviço de transcrição/resumo não configurado. Configure a variável OPENAI_API_KEY no servidor (backend) para usar transcrição (Whisper) e resumo (GPT).';
+        }
+        return responseFormatter.error(res, message, status);
     }
 }
 

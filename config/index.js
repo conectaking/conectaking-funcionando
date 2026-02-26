@@ -95,7 +95,7 @@ const config = {
         },
         kingbrief: {
             windowMs: 60 * 60 * 1000, // 1 hora
-            max: 30 // 30 POSTs (processamentos) por hora por usuário
+            max: parseInt(process.env.KINGBRIEF_RATE_LIMIT_MAX || '60', 10) // 60 por hora (aumentável via env para dev)
         }
     },
     
