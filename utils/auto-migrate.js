@@ -198,11 +198,36 @@ class AutoMigrator {
     }
 
     /**
+     * Testa se o banco está acessível (evita centenas de erros quando DB está down)
+     */
+    async checkConnection() {
+        try {
+            await db.query('SELECT 1');
+            return true;
+        } catch (error) {
+            const code = error.code || (error.cause && error.cause.code);
+            const msg = (error.message || (error.cause && error.cause.message) || String(error)).toLowerCase();
+            const isConnectionError = code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'ETIMEDOUT' ||
+                /connect|econnrefused|enotfound|etimedout|aggregateerror/i.test(msg);
+            if (isConnectionError) return false;
+            throw error;
+        }
+    }
+
+    /**
      * Executar todas as migrations pendentes
      */
     async runPendingMigrations() {
         try {
             logger.info('🚀 Iniciando execução automática de migrations...');
+
+            const connected = await this.checkConnection();
+            if (!connected) {
+                logger.warn('⚠️  Banco de dados indisponível (conexão recusada ou inacessível).');
+                logger.warn('   Preencha DB_USER, DB_HOST, DB_DATABASE, DB_PASSWORD, DB_PORT no .env e tenha o PostgreSQL a correr.');
+                logger.warn('   Migrations ignoradas. O servidor vai arrancar na mesma; rotas que usem o banco falharão até a conexão estar ativa.');
+                return { executed: 0, skipped: 0, errors: 0 };
+            }
             
             // Garantir que a tabela de controle existe
             await this.ensureMigrationsTable();
