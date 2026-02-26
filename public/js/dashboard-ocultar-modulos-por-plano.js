@@ -45,7 +45,8 @@
             { key: 'hasContract', module: 'contract', labels: ['Contratos'] },
             { key: 'hasAgenda', module: 'agenda', labels: ['Agenda Inteligente', 'Agenda'] },
             { key: 'hasModoEmpresa', module: 'modo_empresa', labels: ['Modo Empresa'] },
-            { key: 'hasBranding', module: 'branding', labels: ['Personalização da Marca', 'Personalizacao da Marca'] }
+            { key: 'hasBranding', module: 'branding', labels: ['Personalização da Marca', 'Personalizacao da Marca'] },
+            { key: 'hasKingBrief', module: 'kingbrief', labels: ['KingBrief'] }
         ];
 
         map.forEach(function (item) {

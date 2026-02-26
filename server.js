@@ -70,6 +70,7 @@ const linkLimitsRoutes = require('./modules/linkLimits/linkLimits.routes');
 const checkoutRoutes = require('./modules/checkout/checkout.routes');
 const checkoutWebhookRoutes = require('./modules/checkout/webhook.routes');
 const kingSelectionRoutes = require('./routes/kingSelection.routes');
+const kingbriefRoutes = require('./routes/kingbrief.routes');
 const requestLogger = require('./middleware/requestLogger');
 const { securityHeaders, validateRequestSize, botLimiter } = require('./middleware/security');
 const autoMigrate = require('./utils/auto-migrate');
@@ -337,6 +338,14 @@ const kingSelectionLimiter = rateLimit({
             retryAfter: retryAfter
         });
     }
+});
+
+const kingbriefLimiter = rateLimit({
+    windowMs: config.rateLimit.kingbrief.windowMs,
+    max: config.rateLimit.kingbrief.max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: 'Muitos processamentos de áudio. Aguarde 1 hora para tentar novamente.'
 });
 
 cron.schedule('0 8 * * *', async () => {
@@ -817,6 +826,7 @@ app.use('/api/upload', (req, res, next) => {
 
 // KingSelection: rate limit mais alto para upload em massa
 app.use('/api/king-selection', kingSelectionLimiter, kingSelectionRoutes);
+app.use('/api/kingbrief', kingbriefLimiter, kingbriefRoutes);
 app.use('/download', downloadRoutes);
 app.use('/api/pix', apiLimiter, pixRoutes);
 app.use('/api/business', apiLimiter, businessRoutes);

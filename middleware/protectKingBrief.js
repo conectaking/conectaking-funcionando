@@ -1,5 +1,5 @@
 /**
- * Middleware de proteção para rotas do KingBrief.
+ * Middleware de proteção para rotas do módulo KingBrief.
  * Exige autenticação e que o plano do usuário tenha o módulo "kingbrief".
  */
 

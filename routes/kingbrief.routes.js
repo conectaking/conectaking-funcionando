@@ -1,32 +1,32 @@
 /**
- * KingBrief – Rotas API
- * POST / (upload áudio), GET / (listar), GET /usage (estatísticas), GET /:id, PATCH /:id, DELETE /:id
+ * Rotas KingBrief: POST (upload), GET (list), GET /:id, PATCH /:id, DELETE /:id, GET /usage
+ * Proteção: protectKingBrief (auth + módulo no plano). Upload com multer (áudio, limite 200MB).
  */
 
 const express = require('express');
 const multer = require('multer');
 const config = require('../config');
-const { protectKingBrief } = require('../middleware/protectKingBrief');
-const { asyncHandler } = require('../middleware/errorHandler');
+const { protectKingBrief } = require('../modules/kingbrief/protectKingBrief');
 const controller = require('../modules/kingbrief/kingbrief.controller');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 const router = express.Router();
 
-const maxFileSize = config.upload.kingbriefMaxFileSize || 200 * 1024 * 1024; // 200MB
-const uploadAudio = multer({
+const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: maxFileSize },
+    limits: { fileSize: config.upload.kingbriefMaxFileSize },
     fileFilter: (req, file, cb) => {
-        const mime = (file.mimetype || '').toLowerCase();
-        if (mime.startsWith('audio/')) cb(null, true);
-        else cb(new Error('Apenas ficheiros de áudio são permitidos (mp3, wav, m4a, webm).'), false);
+        if (file.mimetype && file.mimetype.startsWith('audio/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Apenas ficheiros de áudio são permitidos (mp3, wav, m4a, webm).'), false);
+        }
     }
 });
 
-// Todas as rotas exigem autenticação e módulo kingbrief no plano
 router.use(protectKingBrief);
 
-router.post('/', uploadAudio.single('audio'), asyncHandler(controller.create));
+router.post('/', upload.single('audio'), asyncHandler(controller.create));
 router.get('/', asyncHandler(controller.list));
 router.get('/usage', asyncHandler(controller.usage));
 router.get('/:id', asyncHandler(controller.getById));

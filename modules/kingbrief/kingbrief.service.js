@@ -1,77 +1,81 @@
 /**
  * KingBrief – Serviço principal
- * Orquestra: upload R2 → transcrição → resumo/mapa mental → gravar em kingbrief_meetings.
- * Em falha da OpenAI não grava meeting (controller devolve 503).
+ * Orquestra: upload R2 → transcrição → resumo/mapa mental → gravar reunião.
+ * Não grava meeting em falha da OpenAI (devolve erro 503).
  */
 
-const crypto = require('crypto');
-const config = require('../../config');
-const logger = require('../../utils/logger');
-const { r2PutObjectBuffer } = require('../../utils/r2');
+const { nanoid } = require('nanoid');
+const repository = require('./kingbrief.repository');
 const transcriptionService = require('../../services/transcriptionService');
 const summaryMindmapService = require('../../services/summaryMindmapService');
-const repository = require('./kingbrief.repository');
-
-const AUDIO_PREFIX = 'kingbrief-audio';
+const { r2PutObjectBuffer } = require('../../utils/r2');
+const logger = require('../../utils/logger');
+const config = require('../../config');
 
 /**
- * Obtém extensão e contentType a partir do mimetype ou nome do ficheiro
+ * Gera extensão a partir do mimetype ou nome do ficheiro
  */
-function getExtensionAndType(mimetype, originalName) {
-    const name = (originalName || '').toLowerCase();
-    const mime = (mimetype || '').toLowerCase();
-    if (mime.includes('mpeg') || mime.includes('mp3') || name.endsWith('.mp3')) return { ext: 'mp3', contentType: 'audio/mpeg' };
-    if (mime.includes('wav') || name.endsWith('.wav')) return { ext: 'wav', contentType: 'audio/wav' };
-    if (mime.includes('m4a') || mime.includes('mp4') || name.endsWith('.m4a')) return { ext: 'm4a', contentType: 'audio/mp4' };
-    if (mime.includes('webm') || name.endsWith('.webm')) return { ext: 'webm', contentType: 'audio/webm' };
-    return { ext: 'mp3', contentType: mimetype || 'audio/mpeg' };
+function getExtension(mimeType, filename) {
+    if (filename) {
+        const m = filename.match(/\.([a-z0-9]+)$/i);
+        if (m) return m[1].toLowerCase();
+    }
+    const map = {
+        'audio/mpeg': 'mp3',
+        'audio/mp3': 'mp3',
+        'audio/wav': 'wav',
+        'audio/x-wav': 'wav',
+        'audio/mp4': 'm4a',
+        'audio/x-m4a': 'm4a',
+        'audio/webm': 'webm'
+    };
+    return map[mimeType] || 'mp3';
 }
 
 /**
- * Processa áudio: upload R2, transcreve, gera resumo/mapa mental, grava meeting
- * @param {string} userId
- * @param {Buffer} audioBuffer
- * @param {string} mimeType
- * @param {string} originalName
- * @param {string} [title]
- * @returns {Promise<Object>} meeting criado (campos para resposta API)
+ * Processa áudio: upload R2, transcrição, resumo/mapa mental, grava reunião.
+ * Em falha da OpenAI não grava; lança erro para o controller devolver 503.
+ * @param {Object} params - { userId, buffer, mimeType, originalname, title }
+ * @returns {Promise<Object>} meeting criado
  */
-async function processAudio(userId, audioBuffer, mimeType, originalName, title = null) {
-    const { ext, contentType } = getExtensionAndType(mimeType, originalName);
-    const key = `${AUDIO_PREFIX}/${userId}/${crypto.randomUUID()}.${ext}`;
+async function processAudio(params) {
+    const { userId, buffer, mimeType, originalname, title } = params;
+    const ext = getExtension(mimeType, originalname);
+    const key = `kingbrief-audio/${userId}/${nanoid(12)}.${ext}`;
 
     let audioUrl = null;
     try {
         const r2Result = await r2PutObjectBuffer({
             key,
-            body: audioBuffer,
-            contentType
+            body: buffer,
+            contentType: mimeType || 'audio/mpeg',
+            cacheControl: 'public, max-age=31536000'
         });
-        audioUrl = r2Result.publicUrl || null;
+        audioUrl = r2Result.publicUrl;
     } catch (err) {
-        logger.error('KingBrief R2 upload failed', { userId, error: err.message });
+        logger.error('KingBrief R2 upload error', { userId, error: err.message });
         throw new Error('Falha ao guardar o áudio. Tente novamente.');
     }
 
     let transcript = '';
     try {
-        transcript = await transcriptionService.transcribe(audioBuffer, contentType, originalName || `audio.${ext}`);
+        transcript = await transcriptionService.transcribe(buffer, mimeType, originalname || `audio.${ext}`);
     } catch (err) {
-        logger.error('KingBrief transcription failed', { userId, error: err.message });
-        throw err; // Controller não grava meeting, devolve 503
+        logger.error('KingBrief transcription error', { userId, error: err.message });
+        throw Object.assign(err, { statusCode: err.statusCode || 503 });
     }
 
     let summaryData;
     try {
         summaryData = await summaryMindmapService.generateSummaryAndMindmap(transcript);
     } catch (err) {
-        logger.error('KingBrief summary/mindmap failed', { userId, error: err.message });
-        throw err; // Controller não grava meeting, devolve 503
+        logger.error('KingBrief summary error', { userId, error: err.message });
+        throw Object.assign(err, { statusCode: err.statusCode || 503 });
     }
 
     const meeting = await repository.create({
         user_id: userId,
-        title: title || `Reunião ${new Date().toLocaleDateString('pt-BR')}`,
+        title: title || null,
         audio_url: audioUrl,
         transcript,
         summary: summaryData.summary,
@@ -86,5 +90,9 @@ async function processAudio(userId, audioBuffer, mimeType, originalName, title =
 
 module.exports = {
     processAudio,
-    getExtensionAndType
+    findByUserId: repository.findByUserId,
+    findById: repository.findById,
+    update: repository.update,
+    remove: repository.remove,
+    countByUser: repository.countByUser
 };

@@ -151,6 +151,7 @@ router.get('/status', protectUser, async (req, res) => {
         user.hasContract = hasModule('contract');
         user.hasAgenda = hasModule('agenda');
         user.hasBranding = hasModule('branding');
+        user.hasKingBrief = hasModule('kingbrief');
         user.hasPhotographerSite = hasModule('photographer_site');
         user.plan_code = planCode; // para debug: qual plano foi usado para calcular os módulos
         
@@ -295,6 +296,7 @@ router.get('/debug-plan/:email', protectUser, async (req, res) => {
                 hasAgenda: availableModules.includes('agenda') || indRes.rows.some(r => r.module_type === 'agenda'),
                 hasModoEmpresa: availableModules.includes('modo_empresa') || indRes.rows.some(r => r.module_type === 'modo_empresa'),
                 hasBranding: availableModules.includes('branding') || indRes.rows.some(r => r.module_type === 'branding'),
+                hasKingBrief: availableModules.includes('kingbrief') || indRes.rows.some(r => r.module_type === 'kingbrief'),
                 hasPhotographerSite: availableModules.includes('photographer_site') || indRes.rows.some(r => r.module_type === 'photographer_site')
             }
         });
