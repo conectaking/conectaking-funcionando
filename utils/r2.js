@@ -4,14 +4,16 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { NodeHttpHandler } = require('@smithy/node-http-handler');
 const fetch = require('node-fetch');
 
-/** Agente HTTPS com TLS 1.2 mínimo para evitar EPROTO / handshake failure ao conectar ao R2 (Cloudflare) a partir de alguns ambientes (ex.: Render). */
-function createR2HttpsAgent() {
-  return new https.Agent({
+/** Agente HTTPS com TLS 1.2 e SNI explícito para handshake com R2 (Cloudflare). Em Render, TLS 1.3 pode falhar (EPROTO); forçar 1.2. */
+function createR2HttpsAgent(hostname) {
+  const opts = {
     keepAlive: true,
     minVersion: 'TLSv1.2',
-    maxVersion: 'TLSv1.3',
+    maxVersion: 'TLSv1.2',
     rejectUnauthorized: true
-  });
+  };
+  if (hostname) opts.servername = hostname;
+  return new https.Agent(opts);
 }
 
 function getR2Config() {
@@ -20,6 +22,17 @@ function getR2Config() {
   const secretAccessKey = (process.env.R2_SECRET_ACCESS_KEY || '').toString().trim();
   const bucket = (process.env.R2_BUCKET || process.env.R2_BUCKET_NAME || '').toString().trim();
   const publicBaseUrl = (process.env.R2_PUBLIC_BASE_URL || '').toString().trim().replace(/\/$/, '');
+  const endpointRaw = (process.env.R2_ENDPOINT || '').toString().trim().replace(/\/$/, '');
+  let endpointUrl = endpointRaw || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '');
+  let endpointHostname = '';
+  if (endpointUrl) {
+    try {
+      const u = new URL(endpointUrl);
+      endpointHostname = u.hostname;
+    } catch (_) {
+      endpointHostname = accountId ? `${accountId}.r2.cloudflarestorage.com` : '';
+    }
+  }
   const enabled = !!(accountId && accessKeyId && secretAccessKey && bucket);
   return {
     enabled,
@@ -27,7 +40,9 @@ function getR2Config() {
     accessKeyId,
     secretAccessKey,
     bucket,
-    publicBaseUrl
+    publicBaseUrl,
+    endpointUrl: endpointUrl || undefined,
+    endpointHostname: endpointHostname || undefined
   };
 }
 
@@ -48,19 +63,18 @@ function getR2Client() {
   const cfg = getR2Config();
   if (!cfg.enabled) return null;
   if (_client) return _client;
+  const endpoint = cfg.endpointUrl || `https://${cfg.accountId}.r2.cloudflarestorage.com`;
   const requestHandler = new NodeHttpHandler({
-    httpsAgent: createR2HttpsAgent()
+    httpsAgent: createR2HttpsAgent(cfg.endpointHostname || `${cfg.accountId}.r2.cloudflarestorage.com`)
   });
   _client = new S3Client({
     region: 'auto',
-    endpoint: `https://${cfg.accountId}.r2.cloudflarestorage.com`,
+    endpoint,
     credentials: {
       accessKeyId: cfg.accessKeyId,
       secretAccessKey: cfg.secretAccessKey
     },
     requestHandler,
-    // Preferir path-style (usa apenas <accountId>.r2.cloudflarestorage.com),
-    // porque algumas redes/ambientes bloqueiam/bugam o wildcard TLS do host-style.
     forcePathStyle: true
   });
   return _client;
@@ -70,12 +84,13 @@ function getR2ClientTts() {
   const cfg = getR2ConfigTts();
   if (!cfg.enabled) return null;
   if (_clientTts) return _clientTts;
+  const hostname = `${cfg.accountId}.r2.cloudflarestorage.com`;
   const requestHandler = new NodeHttpHandler({
-    httpsAgent: createR2HttpsAgent()
+    httpsAgent: createR2HttpsAgent(hostname)
   });
   _clientTts = new S3Client({
     region: 'auto',
-    endpoint: `https://${cfg.accountId}.r2.cloudflarestorage.com`,
+    endpoint: `https://${hostname}`,
     credentials: { accessKeyId: cfg.accessKeyId, secretAccessKey: cfg.secretAccessKey },
     requestHandler,
     forcePathStyle: true
@@ -231,7 +246,7 @@ async function r2Diagnostic() {
     hasAccountId: !!cfg.accountId,
     hasBucket: !!cfg.bucket,
     hasCredentials: !!(cfg.accessKeyId && cfg.secretAccessKey),
-    endpoint: cfg.enabled ? `https://${cfg.accountId}.r2.cloudflarestorage.com` : null,
+    endpoint: cfg.enabled ? (cfg.endpointUrl || `https://${cfg.accountId}.r2.cloudflarestorage.com`) : null,
     error: null,
     objectCount: null,
     durationMs: null
