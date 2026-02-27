@@ -162,11 +162,12 @@ function r2PublicUrl(objectKey) {
  * Obtém o objeto do R2 via URL pública (evita SSL handshake do Render).
  * Requer R2_PUBLIC_BASE_URL = https://r2.conectaking.com.br
  */
-async function r2GetObjectViaPublicUrl(key) {
+async function r2GetObjectViaPublicUrl(key, options = {}) {
   const url = r2PublicUrl(key);
   if (!url) return null;
+  const accept = options.accept || '*/*';
   try {
-    const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'image/*' } });
+    const res = await fetch(url, { method: 'GET', headers: { 'Accept': accept } });
     if (!res.ok) return null;
     const buf = await res.buffer();
     return buf && buf.length ? buf : null;
