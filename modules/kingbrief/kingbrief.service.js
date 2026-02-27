@@ -53,11 +53,30 @@ async function processAudio(params) {
         });
         audioUrl = r2Result.publicUrl;
     } catch (err) {
-        logger.error('KingBrief R2 upload error', { userId, error: err.message });
-        const isR2NotConfigured = (err.message || '').includes('R2 não configurado');
-        const e = new Error(isR2NotConfigured
-            ? 'Armazenamento de áudio não configurado no servidor. O administrador deve configurar R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET e R2_PUBLIC_BASE_URL no backend (ex.: Render).'
-            : 'Falha ao guardar o áudio. Tente novamente.');
+        const msg = err && err.message ? String(err.message) : '';
+        const code = err && err.code;
+        const name = err && err.name;
+        logger.error('KingBrief R2 upload error', {
+            userId,
+            error: msg,
+            code: code || undefined,
+            name: name || undefined,
+            key: key || undefined
+        });
+        const isR2NotConfigured = msg.includes('R2 não configurado');
+        let userMessage = 'Falha ao guardar o áudio. Tente novamente.';
+        if (isR2NotConfigured) {
+            userMessage = 'Armazenamento de áudio não configurado no servidor. O administrador deve configurar R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET e R2_PUBLIC_BASE_URL no backend (ex.: Render).';
+        } else if (code === 'NoSuchBucket' || msg.includes('NoSuchBucket')) {
+            userMessage = 'Bucket R2 não encontrado. Verifique R2_BUCKET no backend.';
+        } else if (code === 'AccessDenied' || name === 'AccessDenied' || msg.includes('Access Denied')) {
+            userMessage = 'Sem permissão para gravar no R2. Verifique R2_ACCESS_KEY_ID e R2_SECRET_ACCESS_KEY no backend.';
+        } else if (code === 'InvalidAccessKeyId' || msg.includes('InvalidAccessKeyId')) {
+            userMessage = 'Chave de acesso R2 inválida. Verifique R2_ACCESS_KEY_ID no backend.';
+        } else if (code === 'SignatureDoesNotMatch' || msg.includes('Signature')) {
+            userMessage = 'Assinatura R2 inválida. Verifique R2_SECRET_ACCESS_KEY no backend.';
+        }
+        const e = new Error(userMessage);
         e.statusCode = isR2NotConfigured ? 503 : 500;
         throw e;
     }
