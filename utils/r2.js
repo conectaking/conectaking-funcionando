@@ -1,6 +1,18 @@
+const https = require('https');
 const { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
 const fetch = require('node-fetch');
+
+/** Agente HTTPS com TLS 1.2 mínimo para evitar EPROTO / handshake failure ao conectar ao R2 (Cloudflare) a partir de alguns ambientes (ex.: Render). */
+function createR2HttpsAgent() {
+  return new https.Agent({
+    keepAlive: true,
+    minVersion: 'TLSv1.2',
+    maxVersion: 'TLSv1.3',
+    rejectUnauthorized: true
+  });
+}
 
 function getR2Config() {
   const accountId = (process.env.R2_ACCOUNT_ID || '').toString().trim();
@@ -36,6 +48,9 @@ function getR2Client() {
   const cfg = getR2Config();
   if (!cfg.enabled) return null;
   if (_client) return _client;
+  const requestHandler = new NodeHttpHandler({
+    httpsAgent: createR2HttpsAgent()
+  });
   _client = new S3Client({
     region: 'auto',
     endpoint: `https://${cfg.accountId}.r2.cloudflarestorage.com`,
@@ -43,9 +58,9 @@ function getR2Client() {
       accessKeyId: cfg.accessKeyId,
       secretAccessKey: cfg.secretAccessKey
     },
+    requestHandler,
     // Preferir path-style (usa apenas <accountId>.r2.cloudflarestorage.com),
     // porque algumas redes/ambientes bloqueiam/bugam o wildcard TLS do host-style.
-    // Ex.: https://<accountId>.r2.cloudflarestorage.com/<bucket>/<key>
     forcePathStyle: true
   });
   return _client;
@@ -55,10 +70,14 @@ function getR2ClientTts() {
   const cfg = getR2ConfigTts();
   if (!cfg.enabled) return null;
   if (_clientTts) return _clientTts;
+  const requestHandler = new NodeHttpHandler({
+    httpsAgent: createR2HttpsAgent()
+  });
   _clientTts = new S3Client({
     region: 'auto',
     endpoint: `https://${cfg.accountId}.r2.cloudflarestorage.com`,
     credentials: { accessKeyId: cfg.accessKeyId, secretAccessKey: cfg.secretAccessKey },
+    requestHandler,
     forcePathStyle: true
   });
   return _clientTts;
