@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../db');
 const config = require('../config');
 const logger = require('../utils/logger');
+const { UnauthorizedError } = require('./errorHandler');
 
 /**
  * Gera par de tokens (access + refresh)
@@ -96,22 +97,32 @@ async function validateRefreshToken(refreshToken) {
             throw new Error('Token inválido: não é um refresh token');
         }
 
-        // Verifica se o token existe no banco e não expirou
-        const result = await db.query(
-            `SELECT * FROM refresh_tokens 
-             WHERE token = $1 AND user_id = $2 AND expires_at > NOW()`,
-            [refreshToken, decoded.userId]
-        );
+        // Verifica se o token existe no banco e não expirou (tabela pode não existir se migration não foi rodada)
+        let result;
+        try {
+            result = await db.query(
+                `SELECT * FROM refresh_tokens 
+                 WHERE token = $1 AND user_id = $2 AND expires_at > NOW()`,
+                [refreshToken, decoded.userId]
+            );
+        } catch (dbErr) {
+            if (dbErr.code === '42P01' || (dbErr.message && String(dbErr.message).includes('does not exist'))) {
+                logger.warn('Tabela refresh_tokens não existe. Execute a migration 001_create_refresh_tokens_table.sql para ativar renovação de token.');
+                throw new UnauthorizedError('Refresh token inválido ou expirado');
+            }
+            throw dbErr;
+        }
 
         if (result.rows.length === 0) {
-            throw new Error('Refresh token não encontrado ou expirado');
+            throw new UnauthorizedError('Refresh token não encontrado ou expirado');
         }
 
         return decoded;
     } catch (error) {
+        if (error instanceof UnauthorizedError) throw error;
         if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
             logger.warn('Refresh token inválido ou expirado', { error: error.message });
-            throw new Error('Refresh token inválido ou expirado');
+            throw new UnauthorizedError('Refresh token inválido ou expirado');
         }
         throw error;
     }
@@ -125,6 +136,10 @@ async function revokeRefreshToken(refreshToken) {
         await db.query('DELETE FROM refresh_tokens WHERE token = $1', [refreshToken]);
         logger.debug('Refresh token revogado');
     } catch (error) {
+        if (error.code === '42P01' || (error.message && String(error.message).includes('does not exist'))) {
+            logger.warn('Tabela refresh_tokens não existe. Ignorando revogação.');
+            return;
+        }
         logger.error('Erro ao revogar refresh token', error);
         throw error;
     }
