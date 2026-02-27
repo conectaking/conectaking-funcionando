@@ -54,7 +54,12 @@ async function processAudio(params) {
         audioUrl = r2Result.publicUrl;
     } catch (err) {
         logger.error('KingBrief R2 upload error', { userId, error: err.message });
-        throw new Error('Falha ao guardar o áudio. Tente novamente.');
+        const isR2NotConfigured = (err.message || '').includes('R2 não configurado');
+        const e = new Error(isR2NotConfigured
+            ? 'Armazenamento de áudio não configurado no servidor. O administrador deve configurar R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET e R2_PUBLIC_BASE_URL no backend (ex.: Render).'
+            : 'Falha ao guardar o áudio. Tente novamente.');
+        e.statusCode = isR2NotConfigured ? 503 : 500;
+        throw e;
     }
 
     let transcript = '';

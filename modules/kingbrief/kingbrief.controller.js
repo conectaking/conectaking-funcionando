@@ -30,9 +30,12 @@ async function create(req, res) {
         logger.error('KingBrief create error', { error: err.message, userId: req.user?.userId });
         let status = err.statusCode || 500;
         let message = err.message || 'Erro ao processar o áudio.';
-        if (message.includes('OPENAI_API_KEY') || message.includes('não configurado') || message.includes('não configurada')) {
+        if (message.includes('OPENAI_API_KEY') || (message.includes('transcrição') && message.includes('não configurado'))) {
             status = 503;
             message = 'Serviço de transcrição/resumo não configurado. Configure a variável OPENAI_API_KEY no servidor (backend) para usar transcrição (Whisper) e resumo (GPT).';
+        }
+        if (message.includes('Armazenamento de áudio não configurado') || message.includes('R2_')) {
+            status = 503;
         }
         return responseFormatter.error(res, message, status);
     }
