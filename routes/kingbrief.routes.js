@@ -26,6 +26,8 @@ const upload = multer({
 
 router.use(protectKingBrief);
 
+router.post('/upload-url', express.json(), asyncHandler(controller.uploadUrl));
+router.post('/confirm', express.json(), asyncHandler(controller.confirm));
 router.post('/', upload.single('audio'), asyncHandler(controller.create));
 router.get('/', asyncHandler(controller.list));
 router.get('/usage', asyncHandler(controller.usage));

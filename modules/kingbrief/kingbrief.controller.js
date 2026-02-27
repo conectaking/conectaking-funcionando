@@ -7,6 +7,60 @@ const service = require('./kingbrief.service');
 const responseFormatter = require('../../utils/responseFormatter');
 const logger = require('../../utils/logger');
 
+/** POST /upload-url: devolve URL assinada para o browser fazer PUT direto no R2 (evita SSL Render→R2). */
+async function uploadUrl(req, res) {
+    try {
+        const userId = req.user.userId;
+        const { contentType, filename } = req.body || {};
+        if (!contentType || !String(contentType).startsWith('audio/')) {
+            return responseFormatter.error(res, 'contentType de áudio é obrigatório (ex.: audio/webm, audio/mpeg).', 400);
+        }
+        const result = await service.getUploadUrl(userId, {
+            contentType: String(contentType).trim(),
+            filename: filename ? String(filename).trim() : undefined
+        });
+        return responseFormatter.success(res, result);
+    } catch (err) {
+        const msg = err.message || 'Erro ao obter URL de upload.';
+        const status = err.statusCode || 500;
+        if (msg.includes('R2 não configurado') || msg.includes('R2_PUBLIC_BASE_URL')) {
+            return responseFormatter.error(res, msg, 503);
+        }
+        return responseFormatter.error(res, msg, status);
+    }
+}
+
+/** POST /confirm: áudio já subido no R2; backend obtém pela URL pública, transcreve e resume. */
+async function confirm(req, res) {
+    try {
+        const userId = req.user.userId;
+        const { key, publicUrl, title, contentType, filename } = req.body || {};
+        if (!key || !publicUrl) {
+            return responseFormatter.error(res, 'key e publicUrl são obrigatórios.', 400);
+        }
+        const meeting = await service.processAudioFromUrl(userId, {
+            key,
+            publicUrl,
+            title: title ? String(title).trim() : null,
+            contentType: contentType ? String(contentType).trim() : undefined,
+            filename: filename ? String(filename).trim() : undefined
+        });
+        return responseFormatter.success(res, meeting, 'Reunião processada com sucesso.', 201);
+    } catch (err) {
+        logger.error('KingBrief confirm error', { error: err.message, userId: req.user?.userId });
+        let status = err.statusCode || 500;
+        let message = err.message || 'Erro ao processar o áudio.';
+        if (message.includes('OPENAI_API_KEY') || (message.includes('transcrição') && message.includes('não configurado'))) {
+            status = 503;
+            message = 'Serviço de transcrição/resumo não configurado. Configure a variável OPENAI_API_KEY no servidor (backend) para usar transcrição (Whisper) e resumo (GPT).';
+        }
+        if (message.includes('R2_PUBLIC_BASE_URL') || message.includes('Não foi possível obter o áudio')) {
+            status = 503;
+        }
+        return responseFormatter.error(res, message, status);
+    }
+}
+
 async function create(req, res) {
     try {
         const userId = req.user.userId;
@@ -115,6 +169,8 @@ async function usage(req, res) {
 }
 
 module.exports = {
+    uploadUrl,
+    confirm,
     create,
     list,
     getById,

@@ -8,7 +8,7 @@ const { nanoid } = require('nanoid');
 const repository = require('./kingbrief.repository');
 const transcriptionService = require('../../services/transcriptionService');
 const summaryMindmapService = require('../../services/summaryMindmapService');
-const { r2PutObjectBuffer } = require('../../utils/r2');
+const { r2PutObjectBuffer, r2PresignPut, r2GetObjectViaPublicUrl } = require('../../utils/r2');
 const logger = require('../../utils/logger');
 const config = require('../../config');
 
@@ -112,8 +112,74 @@ async function processAudio(params) {
     return meeting;
 }
 
+/**
+ * Obtém URL de upload assinada (presigned). O backend não conecta ao R2; o browser faz PUT direto.
+ * Evita EPROTO/SSL quando o servidor (ex.: Render) não consegue handshake com o R2.
+ * @param {string} userId
+ * @param {{ contentType: string, filename: string }} params
+ * @returns {Promise<{ uploadUrl: string, publicUrl: string, key: string }>}
+ */
+async function getUploadUrl(userId, params) {
+    const { contentType, filename } = params || {};
+    const ext = getExtension(contentType, filename);
+    const key = `kingbrief-audio/${userId}/${nanoid(12)}.${ext}`;
+    const { uploadUrl, publicUrl } = await r2PresignPut({
+        key,
+        contentType: contentType || 'audio/mpeg',
+        cacheControl: 'public, max-age=31536000',
+        expiresInSeconds: 900
+    });
+    if (!publicUrl) throw new Error('R2_PUBLIC_BASE_URL não configurado. Necessário para o fluxo de upload direto.');
+    return { uploadUrl, publicUrl, key };
+}
+
+/**
+ * Processa áudio já subido no R2: obtém o ficheiro pela URL pública (sem usar cliente S3 no servidor),
+ * depois transcrição, resumo e gravação da reunião.
+ */
+async function processAudioFromUrl(userId, params) {
+    const { key, publicUrl, title, contentType, filename } = params || {};
+    if (!key || !publicUrl) throw new Error('key e publicUrl são obrigatórios.');
+    const buffer = await r2GetObjectViaPublicUrl(key);
+    if (!buffer || !buffer.length) {
+        const e = new Error('Não foi possível obter o áudio. Verifique R2_PUBLIC_BASE_URL no backend e que o ficheiro foi subido.');
+        e.statusCode = 503;
+        throw e;
+    }
+    const ext = getExtension(contentType, filename);
+    const originalname = filename || `audio.${ext}`;
+    let transcript = '';
+    try {
+        transcript = await transcriptionService.transcribe(buffer, contentType || 'audio/mpeg', originalname);
+    } catch (err) {
+        logger.error('KingBrief transcription error', { userId, error: err.message });
+        throw Object.assign(err, { statusCode: err.statusCode || 503 });
+    }
+    let summaryData;
+    try {
+        summaryData = await summaryMindmapService.generateSummaryAndMindmap(transcript);
+    } catch (err) {
+        logger.error('KingBrief summary error', { userId, error: err.message });
+        throw Object.assign(err, { statusCode: err.statusCode || 503 });
+    }
+    const meeting = await repository.create({
+        user_id: userId,
+        title: title || null,
+        audio_url: publicUrl,
+        transcript,
+        summary: summaryData.summary,
+        topics_json: summaryData.topics,
+        actions_json: summaryData.actions,
+        mindmap_json: summaryData.mindmap,
+        duration_sec: null
+    });
+    return meeting;
+}
+
 module.exports = {
     processAudio,
+    getUploadUrl,
+    processAudioFromUrl,
     findByUserId: repository.findByUserId,
     findById: repository.findById,
     update: repository.update,
