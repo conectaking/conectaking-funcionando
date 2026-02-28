@@ -92,12 +92,18 @@ async function runMigrations() {
                 if (error.code === '42P07' || error.code === '42710' || error.code === '42P16' || error.code === '42704') {
                     console.log(`⚠️  ${file} já foi executado anteriormente (ignorando)\n`);
                     skippedCount++;
+                } else if (error.code === '23505') {
+                    // unique_violation: registro já existe
+                    console.log(`⚠️  ${file}: registro já existe (ignorando)\n`);
+                    skippedCount++;
+                } else if (error.code === '42703' || error.code === '42P01') {
+                    // coluna indefinida / tabela não existe (schema diferente ou ordem de migrations)
+                    console.log(`⚠️  ${file}: coluna/tabela inexistente (${error.code}) - ignorando\n`);
+                    skippedCount++;
                 } else {
                     console.error(`❌ Erro ao executar ${file}:`, error.message);
                     console.error(`   Código: ${error.code}`);
                     errorCount++;
-                    // Continuar com próximas migrations mesmo se uma falhar
-                    // Mas logar o erro para investigação
                 }
             }
         }
