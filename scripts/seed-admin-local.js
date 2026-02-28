@@ -34,7 +34,10 @@ async function main() {
             );
             const upExists = await client.query('SELECT 1 FROM user_profiles WHERE user_id = $1', [id]);
             if (upExists.rows.length === 0) {
-                await client.query('INSERT INTO user_profiles (user_id, display_name) VALUES ($1, $2)', [id, 'Conecta King Admin']);
+                await client.query(
+                    `INSERT INTO user_profiles (user_id, display_name, logo_spacing) VALUES ($1, $2, 'center')`,
+                    [id, 'Conecta King Admin']
+                );
             }
             console.log('Usuário conectaking@gmail.com CRIADO (admin).');
         }
