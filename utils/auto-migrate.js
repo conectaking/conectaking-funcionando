@@ -191,6 +191,22 @@ class AutoMigrator {
                 
                 return { success: true, skipped: true, executionTime };
             }
+
+            // 23505 = unique_violation: dados já existem (ex.: INSERT duplicado). Marcar como sucesso para não bloquear arranque.
+            if (error.code === '23505') {
+                logger.warn(`⚠️  Migration ${migrationName}: registro já existe (unique violation). Marcando como aplicada.`);
+                await db.query(`
+                    INSERT INTO schema_migrations (migration_name, execution_time_ms, success)
+                    VALUES ($1, $2, TRUE)
+                    ON CONFLICT (migration_name) 
+                    DO UPDATE SET 
+                        executed_at = NOW(),
+                        execution_time_ms = $2,
+                        success = TRUE,
+                        error_message = NULL
+                `, [migrationName, executionTime]);
+                return { success: true, skipped: true, executionTime };
+            }
             
             logger.error(`❌ Erro ao executar migration ${migrationName}:`, error);
             return { success: false, error: error.message, executionTime };
