@@ -9,12 +9,12 @@ const poolOptions = {
   idleTimeoutMillis: config.db.pool.idleTimeoutMillis
 };
 
-// Preferir DATABASE_URL (ex.: Render External URL) para evitar "Connection terminated unexpectedly" com SSL
+// Preferir DATABASE_URL (ex.: Render External URL). Render exige SSL; forçar uso.
 const databaseUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.trim();
 const pool = databaseUrl
   ? new Pool({
       connectionString: databaseUrl,
-      ssl: { rejectUnauthorized: false },
+      ssl: process.env.DATABASE_SSL !== 'false' ? { rejectUnauthorized: false } : false,
       ...poolOptions
     })
   : new Pool({

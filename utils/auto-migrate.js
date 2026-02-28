@@ -207,8 +207,8 @@ class AutoMigrator {
         } catch (error) {
             const code = error.code || (error.cause && error.cause.code);
             const msg = (error.message || (error.cause && error.cause.message) || String(error)).toLowerCase();
-            const isConnectionError = code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'ETIMEDOUT' ||
-                /connect|econnrefused|enotfound|etimedout|aggregateerror/i.test(msg);
+            const isConnectionError = code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'ETIMEDOUT' || code === 'ECONNRESET' ||
+                /connection terminated|econnrefused|enotfound|etimedout|aggregateerror|econnreset/i.test(msg);
             if (isConnectionError) return false;
             throw error;
         }
@@ -223,8 +223,12 @@ class AutoMigrator {
 
             const connected = await this.checkConnection();
             if (!connected) {
-                logger.warn('⚠️  Banco de dados indisponível (conexão recusada ou inacessível).');
-                logger.warn('   Preencha DB_USER, DB_HOST, DB_DATABASE, DB_PASSWORD, DB_PORT no .env e tenha o PostgreSQL a correr.');
+                logger.warn('⚠️  Banco de dados indisponível (conexão recusada ou encerrada).');
+                if (process.env.DATABASE_URL) {
+                    logger.warn('   Está a usar DATABASE_URL. Se o Postgres estiver no Render e o plano estiver pausado, reactive o serviço no painel do Render.');
+                } else {
+                    logger.warn('   Preencha DATABASE_URL ou DB_USER, DB_HOST, DB_DATABASE, DB_PASSWORD, DB_PORT no .env e tenha o PostgreSQL a correr.');
+                }
                 logger.warn('   Migrations ignoradas. O servidor vai arrancar na mesma; rotas que usem o banco falharão até a conexão estar ativa.');
                 return { executed: 0, skipped: 0, errors: 0 };
             }
