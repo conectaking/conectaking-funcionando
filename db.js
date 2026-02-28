@@ -9,12 +9,14 @@ const poolOptions = {
   idleTimeoutMillis: config.db.pool.idleTimeoutMillis
 };
 
-// Preferir DATABASE_URL (ex.: Render External URL). Render exige SSL; forçar uso.
+// Preferir DATABASE_URL. Local (localhost) não usa SSL; Render exige SSL.
 const databaseUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.trim();
+const isLocalDb = databaseUrl && (/localhost|127\.0\.0\.1/.test(databaseUrl));
+const useSsl = process.env.DATABASE_SSL === 'false' ? false : !isLocalDb;
 const pool = databaseUrl
   ? new Pool({
       connectionString: databaseUrl,
-      ssl: process.env.DATABASE_SSL !== 'false' ? { rejectUnauthorized: false } : false,
+      ssl: useSsl ? { rejectUnauthorized: false } : false,
       ...poolOptions
     })
   : new Pool({
