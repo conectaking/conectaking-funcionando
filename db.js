@@ -3,17 +3,31 @@ require('dotenv').config();
 const config = require('./config');
 const logger = require('./utils/logger');
 
-const pool = new Pool({
-  user: config.db.user,
-  host: config.db.host,
-  database: config.db.database,
-  password: config.db.password,
-  port: config.db.port,
-  ssl: config.db.ssl,
+const poolOptions = {
   max: config.db.pool.max,
   min: config.db.pool.min,
   idleTimeoutMillis: config.db.pool.idleTimeoutMillis
-});
+};
+
+// Preferir DATABASE_URL. Local (localhost) não usa SSL; Render exige SSL.
+const databaseUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.trim();
+const isLocalDb = databaseUrl && (/localhost|127\.0\.0\.1/.test(databaseUrl));
+const useSsl = (process.env.DATABASE_SSL === 'false' || process.env.DATABASE_SSL === '0') ? false : !isLocalDb;
+const pool = databaseUrl
+  ? new Pool({
+      connectionString: databaseUrl,
+      ssl: useSsl ? { rejectUnauthorized: false } : false,
+      ...poolOptions
+    })
+  : new Pool({
+      user: config.db.user,
+      host: config.db.host,
+      database: config.db.database,
+      password: config.db.password,
+      port: config.db.port,
+      ssl: config.db.ssl,
+      ...poolOptions
+    });
 
 pool.on('connect', () => {
     logger.info('🔗 Base de dados conectada com sucesso!');

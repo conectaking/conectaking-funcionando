@@ -2200,11 +2200,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_contracts_updated_at ON ck_contracts;
 CREATE TRIGGER trigger_contracts_updated_at
     BEFORE UPDATE ON ck_contracts
     FOR EACH ROW
     EXECUTE FUNCTION update_contracts_updated_at();
 
+DROP TRIGGER IF EXISTS trigger_contracts_templates_updated_at ON ck_contracts_templates;
 CREATE TRIGGER trigger_contracts_templates_updated_at
     BEFORE UPDATE ON ck_contracts_templates
     FOR EACH ROW

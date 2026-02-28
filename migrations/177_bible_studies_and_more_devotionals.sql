@@ -20,7 +20,8 @@ SELECT id, 'retorno-de-cristo', 'O Retorno de Cristo: Esperança e Preparação'
 4. Vida prática na expectativa: Tito 2:12-13 diz que a graça nos ensina a viver de forma piedosa, aguardando a bendita esperança. A escatologia não deve nos levar ao escapismo, mas a uma vida santa e produtiva.',
 'Mt 24-25; 1 Ts 4:13-18; 2 Pe 3:10-13; Ap 22:20',
 1
-FROM bible_study_themes WHERE slug = 'escatologia' LIMIT 1;
+FROM bible_study_themes WHERE slug = 'escatologia' LIMIT 1
+ON CONFLICT (theme_id, slug) DO NOTHING;
 
 INSERT INTO bible_studies (theme_id, slug, titulo, subtitulo, introducao, conteudo, referencias, display_order)
 SELECT id, 'papel-dos-pais', 'O Papel dos Pais na Educação Espiritual', 'Deuteronômio 6 como fundamento',
@@ -36,7 +37,8 @@ SELECT id, 'papel-dos-pais', 'O Papel dos Pais na Educação Espiritual', 'Deute
 4. O exemplo de Timóteo: Paulo lembra a Timóteo da fé de sua avó Loide e de sua mãe Eunice (2 Timóteo 1:5). A fé genuína passa de geração em geração através do exemplo e do ensino.',
 'Dt 6:6-7; Ef 6:4; 2 Tm 1:5; Pv 22:6',
 1
-FROM bible_study_themes WHERE slug = 'familia' LIMIT 1;
+FROM bible_study_themes WHERE slug = 'familia' LIMIT 1
+ON CONFLICT (theme_id, slug) DO NOTHING;
 
 INSERT INTO bible_studies (theme_id, slug, titulo, subtitulo, introducao, conteudo, referencias, display_order)
 SELECT id, 'dizimo-e-mordomia', 'O Dízimo e a Mordomia Cristã', 'Perspectiva bíblica sobre recursos',
@@ -52,7 +54,8 @@ SELECT id, 'dizimo-e-mordomia', 'O Dízimo e a Mordomia Cristã', 'Perspectiva b
 4. 2 Coríntios 9:7: "Cada um contribua conforme propôs no seu coração; não com tristeza ou por necessidade, pois Deus ama ao que dá com alegria." A oferta voluntária e alegre é aceita por Deus.',
 'Gn 14:20; Ml 3:8-10; Mt 6:21; 2 Co 9:6-7',
 1
-FROM bible_study_themes WHERE slug = 'financas' LIMIT 1;
+FROM bible_study_themes WHERE slug = 'financas' LIMIT 1
+ON CONFLICT (theme_id, slug) DO NOTHING;
 
 INSERT INTO bible_studies (theme_id, slug, titulo, subtitulo, introducao, conteudo, referencias, display_order)
 SELECT id, 'visao-e-oracao', 'Neemias: Visão, Oração e Ação', 'Princípios de liderança do reconstruidor',
@@ -70,7 +73,8 @@ SELECT id, 'visao-e-oracao', 'Neemias: Visão, Oração e Ação', 'Princípios 
 5. Liderança servidora: Neemias não exigiu tributo; trabalhou ao lado do povo (5:14-19). O líder que serve inspira compromisso.',
 'Ne 1-2; 4-6; Fp 2:5-8',
 1
-FROM bible_study_themes WHERE slug = 'lideranca-neemias' LIMIT 1;
+FROM bible_study_themes WHERE slug = 'lideranca-neemias' LIMIT 1
+ON CONFLICT (theme_id, slug) DO NOTHING;
 
 INSERT INTO bible_studies (theme_id, slug, titulo, subtitulo, introducao, conteudo, referencias, display_order)
 SELECT id, 'contexto-e-cultura', 'Contexto Histórico e Cultural na Interpretação', 'Introdução à hermenêutica',
@@ -88,7 +92,8 @@ SELECT id, 'contexto-e-cultura', 'Contexto Histórico e Cultural na Interpretaç
 5. Aplicação: Após entender o significado original, perguntamos: "O que isso significa para nós hoje?" A aplicação deve ser fiel ao texto.',
 '2 Tm 2:15; 2 Pe 1:20-21; At 17:11',
 1
-FROM bible_study_themes WHERE slug = 'hermeneutica' LIMIT 1;
+FROM bible_study_themes WHERE slug = 'hermeneutica' LIMIT 1
+ON CONFLICT (theme_id, slug) DO NOTHING;
 
 -- ===========================================
 -- DEVOCIONAIS 16-30 (mais 15 dias)

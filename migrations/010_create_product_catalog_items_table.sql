@@ -37,6 +37,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_product_catalog_items_updated_at ON product_catalog_items;
 CREATE TRIGGER trigger_update_product_catalog_items_updated_at
     BEFORE UPDATE ON product_catalog_items
     FOR EACH ROW

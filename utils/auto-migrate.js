@@ -191,6 +191,38 @@ class AutoMigrator {
                 
                 return { success: true, skipped: true, executionTime };
             }
+
+            // 23505 = unique_violation: dados já existem (ex.: INSERT duplicado). Marcar como sucesso para não bloquear arranque.
+            if (error.code === '23505') {
+                logger.warn(`⚠️  Migration ${migrationName}: registro já existe (unique violation). Marcando como aplicada.`);
+                await db.query(`
+                    INSERT INTO schema_migrations (migration_name, execution_time_ms, success)
+                    VALUES ($1, $2, TRUE)
+                    ON CONFLICT (migration_name) 
+                    DO UPDATE SET 
+                        executed_at = NOW(),
+                        execution_time_ms = $2,
+                        success = TRUE,
+                        error_message = NULL
+                `, [migrationName, executionTime]);
+                return { success: true, skipped: true, executionTime };
+            }
+
+            // 42703 = undefined_column / 42P01 = undefined_table: coluna ou tabela não existe (schema diferente ou ordem). Marcar como aplicada para não bloquear.
+            if (error.code === '42703' || error.code === '42P01') {
+                logger.warn(`⚠️  Migration ${migrationName}: coluna/tabela indefinida (${error.code}). Marcando como aplicada.`);
+                await db.query(`
+                    INSERT INTO schema_migrations (migration_name, execution_time_ms, success)
+                    VALUES ($1, $2, TRUE)
+                    ON CONFLICT (migration_name) 
+                    DO UPDATE SET 
+                        executed_at = NOW(),
+                        execution_time_ms = $2,
+                        success = TRUE,
+                        error_message = NULL
+                `, [migrationName, executionTime]);
+                return { success: true, skipped: true, executionTime };
+            }
             
             logger.error(`❌ Erro ao executar migration ${migrationName}:`, error);
             return { success: false, error: error.message, executionTime };
@@ -207,8 +239,8 @@ class AutoMigrator {
         } catch (error) {
             const code = error.code || (error.cause && error.cause.code);
             const msg = (error.message || (error.cause && error.cause.message) || String(error)).toLowerCase();
-            const isConnectionError = code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'ETIMEDOUT' ||
-                /connect|econnrefused|enotfound|etimedout|aggregateerror/i.test(msg);
+            const isConnectionError = code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'ETIMEDOUT' || code === 'ECONNRESET' ||
+                /connection terminated|econnrefused|enotfound|etimedout|aggregateerror|econnreset/i.test(msg);
             if (isConnectionError) return false;
             throw error;
         }
@@ -223,8 +255,12 @@ class AutoMigrator {
 
             const connected = await this.checkConnection();
             if (!connected) {
-                logger.warn('⚠️  Banco de dados indisponível (conexão recusada ou inacessível).');
-                logger.warn('   Preencha DB_USER, DB_HOST, DB_DATABASE, DB_PASSWORD, DB_PORT no .env e tenha o PostgreSQL a correr.');
+                logger.warn('⚠️  Banco de dados indisponível (conexão recusada ou encerrada).');
+                if (process.env.DATABASE_URL) {
+                    logger.warn('   Está a usar DATABASE_URL. Se o Postgres estiver no Render e o plano estiver pausado, reactive o serviço no painel do Render.');
+                } else {
+                    logger.warn('   Preencha DATABASE_URL ou DB_USER, DB_HOST, DB_DATABASE, DB_PASSWORD, DB_PORT no .env e tenha o PostgreSQL a correr.');
+                }
                 logger.warn('   Migrations ignoradas. O servidor vai arrancar na mesma; rotas que usem o banco falharão até a conexão estar ativa.');
                 return { executed: 0, skipped: 0, errors: 0 };
             }

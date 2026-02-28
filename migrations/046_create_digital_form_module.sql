@@ -77,6 +77,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_digital_form_items_updated_at ON digital_form_items;
 CREATE TRIGGER trigger_update_digital_form_items_updated_at
     BEFORE UPDATE ON digital_form_items
     FOR EACH ROW

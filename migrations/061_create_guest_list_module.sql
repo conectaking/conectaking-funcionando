@@ -132,6 +132,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_guest_list_items_updated_at ON guest_list_items;
 CREATE TRIGGER trigger_update_guest_list_items_updated_at
     BEFORE UPDATE ON guest_list_items
     FOR EACH ROW
@@ -145,6 +146,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_guests_updated_at ON guests;
 CREATE TRIGGER trigger_update_guests_updated_at
     BEFORE UPDATE ON guests
     FOR EACH ROW

@@ -88,16 +88,18 @@ async function runMigrations() {
                 // Rollback da transação desta migration
                 await client.query('ROLLBACK');
                 
-                // Se erro for de tabela/índice já existe, ignora
+                // Apenas ignorar quando objeto já existe (tabela/índice/constraint) — não esconder outros erros
                 if (error.code === '42P07' || error.code === '42710' || error.code === '42P16' || error.code === '42704') {
                     console.log(`⚠️  ${file} já foi executado anteriormente (ignorando)\n`);
+                    skippedCount++;
+                } else if (error.code === '23505') {
+                    // unique_violation: registro já existe (ex.: INSERT duplicado)
+                    console.log(`⚠️  ${file}: registro já existe (ignorando)\n`);
                     skippedCount++;
                 } else {
                     console.error(`❌ Erro ao executar ${file}:`, error.message);
                     console.error(`   Código: ${error.code}`);
                     errorCount++;
-                    // Continuar com próximas migrations mesmo se uma falhar
-                    // Mas logar o erro para investigação
                 }
             }
         }

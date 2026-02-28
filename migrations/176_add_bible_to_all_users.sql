@@ -3,6 +3,9 @@
 -- Insere profile_item bible + bible_items para usuários que não têm
 -- ===========================================
 
+-- Garantir que a coluna title existe em profile_items (alguns ambientes só têm o schema base)
+ALTER TABLE profile_items ADD COLUMN IF NOT EXISTS title VARCHAR(255);
+
 -- PASSO 1: Inserir profile_item tipo 'bible' para cada usuário que ainda não tem
 INSERT INTO profile_items (user_id, item_type, title, is_active, display_order)
 SELECT u.id, 'bible', 'Bíblia', true,

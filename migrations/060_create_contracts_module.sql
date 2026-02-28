@@ -100,6 +100,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_contract_items_updated_at ON contract_items;
 CREATE TRIGGER trigger_update_contract_items_updated_at
     BEFORE UPDATE ON contract_items
     FOR EACH ROW

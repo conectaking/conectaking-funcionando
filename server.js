@@ -48,7 +48,9 @@ const pixRoutes = require('./routes/pix');
 const businessRoutes = require('./routes/business');
 const paymentRoutes = require('./routes/payment');
 const vcardRoutes = require('./routes/vcard');
-const healthRoutes = require('./routes/health');
+const healthModule = require('./routes/health');
+const healthRoutes = healthModule;
+const healthHandler = healthModule.healthHandler;
 const passwordRoutes = require('./routes/password');
 const imageProxyRoutes = require('./routes/imageProxy');
 const ogImageRoutes = require('./routes/ogImage');
@@ -79,6 +81,9 @@ const app = express();
 
 // Configurar trust proxy para funcionar corretamente atrás do proxy do Render
 app.set('trust proxy', true);
+
+// Health check na raiz (ANTES de qualquer outro middleware/rota, para nunca devolver 404 de perfil)
+app.get('/health', (req, res, next) => Promise.resolve(healthHandler(req, res)).catch(next));
 
 app.use(helmet({
     contentSecurityPolicy: {
@@ -684,7 +689,7 @@ app.get('/plan-availability', (req, res) => {
     res.redirect(302, '/api/modules/plan-availability');
 });
 
-// Health check (sem rate limit)
+// API: health também em /api/health (rota raiz /health já registrada no início do server)
 app.use('/api', healthRoutes);
 
 // Aplicar rate limiting agressivo para rotas genéricas suspeitas
