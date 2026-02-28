@@ -5,16 +5,12 @@ require('dotenv').config();
  * Valida variáveis de ambiente obrigatórias
  */
 
-const requiredEnvVars = [
-    'DB_USER',
-    'DB_HOST',
-    'DB_DATABASE',
-    'DB_PASSWORD',
-    'DB_PORT',
-    'JWT_SECRET'
-];
+// Se DATABASE_URL estiver definida, não exige DB_* (conexão por URL). Caso contrário exige DB_USER, DB_HOST, etc.
+const hasDatabaseUrl = !!(process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
+const requiredEnvVars = hasDatabaseUrl
+    ? ['JWT_SECRET']
+    : ['DB_USER', 'DB_HOST', 'DB_DATABASE', 'DB_PASSWORD', 'DB_PORT', 'JWT_SECRET'];
 
-// Valida variáveis obrigatórias
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingVars.length > 0) {
     console.error('❌ Variáveis de ambiente obrigatórias faltando:', missingVars.join(', '));
@@ -67,6 +63,7 @@ const config = {
                 'http://localhost',
                 'https://conectaking.com.br',
                 'https://www.conectaking.com.br',
+                'https://tag.conectaking.com.br',
                 ...envList
             ]);
             return function(origin, callback) {
