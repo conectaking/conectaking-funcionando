@@ -40,7 +40,7 @@ router.get('/diagnostic/r2', async (req, res) => {
     }
 });
 
-router.get('/health', async (req, res) => {
+async function healthHandler(req, res) {
     const health = {
         status: 'ok',
         timestamp: new Date().toISOString(),
@@ -57,7 +57,6 @@ router.get('/health', async (req, res) => {
         }
     };
 
-    // Verificar conexão com banco de dados
     try {
         const client = await db.pool.connect();
         try {
@@ -74,6 +73,9 @@ router.get('/health', async (req, res) => {
 
     const statusCode = health.status === 'ok' ? 200 : 503;
     res.status(statusCode).json(health);
-});
+}
+
+router.get('/health', healthHandler);
 
 module.exports = router;
+module.exports.healthHandler = healthHandler;

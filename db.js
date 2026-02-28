@@ -12,7 +12,7 @@ const poolOptions = {
 // Preferir DATABASE_URL. Local (localhost) não usa SSL; Render exige SSL.
 const databaseUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.trim();
 const isLocalDb = databaseUrl && (/localhost|127\.0\.0\.1/.test(databaseUrl));
-const useSsl = process.env.DATABASE_SSL === 'false' ? false : !isLocalDb;
+const useSsl = (process.env.DATABASE_SSL === 'false' || process.env.DATABASE_SSL === '0') ? false : !isLocalDb;
 const pool = databaseUrl
   ? new Pool({
       connectionString: databaseUrl,
