@@ -126,6 +126,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_sales_pages_updated_at ON sales_pages;
 CREATE TRIGGER trigger_update_sales_pages_updated_at
     BEFORE UPDATE ON sales_pages
     FOR EACH ROW
@@ -139,6 +140,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_sales_page_products_updated_at ON sales_page_products;
 CREATE TRIGGER trigger_update_sales_page_products_updated_at
     BEFORE UPDATE ON sales_page_products
     FOR EACH ROW
