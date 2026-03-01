@@ -223,6 +223,7 @@ function contractToLegacy(contract) {
     const topicos = contract.topicos || [];
     const mapa = contract.mapaMental || {};
     const nodes = Array.isArray(mapa.nodes) ? mapa.nodes : [];
+    const isV2 = mapa.version === 'kingbrief.mindmap.v2' && mapa.root;
 
     function mapNodeToLegacy(n) {
         if (!n || typeof n !== 'object') return null;
@@ -237,9 +238,11 @@ function contractToLegacy(contract) {
         };
     }
 
-    const legacyMindmap = nodes.length
-        ? { id: 'root', title: 'Tema Central', collapsed: false, children: nodes.map(mapNodeToLegacy).filter(Boolean) }
-        : { id: 'root', title: 'Tema Central', collapsed: false, children: [] };
+    const legacyMindmap = isV2
+        ? { id: 'root', title: mapa.root.label || 'Tema Central', collapsed: false, children: (mapa.root.children || []).map(mapNodeToLegacy).filter(Boolean) }
+        : nodes.length
+            ? { id: 'root', title: 'Tema Central', collapsed: false, children: nodes.map(mapNodeToLegacy).filter(Boolean) }
+            : { id: 'root', title: 'Tema Central', collapsed: false, children: [] };
 
     function flattenTopics(arr, out) {
         if (!Array.isArray(arr)) return;
