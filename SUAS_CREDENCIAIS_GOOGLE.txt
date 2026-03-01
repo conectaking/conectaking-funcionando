@@ -1,10 +1,10 @@
 # 🔐 Suas Credenciais Google OAuth
 
 ## ✅ Client ID
-1056182922492-g2g5mo30pg52sm4d57hm9uafhrnntn4v.apps.googleusercontent.com
+(obtenha em Google Cloud Console > APIs & Services > Credentials)
 
 ## ✅ Client Secret
-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
+(obtenha na mesma página; guarde em local seguro e não coloque no repositório)
 
 ---
 
@@ -19,7 +19,7 @@ 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
    - Seu serviço > "Environment"
    - Adicione:
      - Key: GOOGLE_CLIENT_ID
-     - Value: 1056182922492-g2g5mo30pg52sm4d57hm9uafhrnntn4v.apps.googleusercontent.com
+     - Value: (o Client ID do seu projeto Google)
    
    - Adicione:
      - Key: GOOGLE_CLIENT_SECRET
