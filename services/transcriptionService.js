@@ -20,8 +20,8 @@ const WHISPER_URL = 'https://api.openai.com/v1/audio/transcriptions';
 /** Limite da API Whisper (OpenAI): 25 MB por ficheiro. */
 const WHISPER_MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 
-/** Duração de cada segmento ao dividir áudio longo (segundos). 20 min ≈ 18–20 MB em MP3. */
-const SEGMENT_DURATION_SEC = 20 * 60;
+/** Duração de cada segmento (segundos). 12 min + MP3 -q:a 3 ≈ 14 MB, sempre < 25 MB do Whisper. */
+const SEGMENT_DURATION_SEC = 12 * 60;
 
 /** Máximo de palavras no prompt de contexto para o próximo segmento (Whisper aceita ~224). */
 const PROMPT_MAX_WORDS = 200;
@@ -60,6 +60,11 @@ async function transcribeOneChunk(audioBuffer, mimeType, filename, prompt) {
     if (!response.ok) {
         logger.error('KingBrief Whisper API error', { status: response.status, body: text?.slice(0, 300) });
         if (response.status === 429) throw new Error('Limite de uso da API de transcrição atingido. Tente novamente mais tarde.');
+        if (response.status === 413 || ((text || '').includes('26214400') || (text || '').includes('Maximum content size'))) {
+            const e = new Error('Segmento de áudio ainda demasiado grande para a API. O servidor vai usar segmentos mais curtos na próxima versão.');
+            e.statusCode = 503;
+            throw e;
+        }
         if (response.status >= 500) throw new Error('Serviço de transcrição temporariamente indisponível.');
         if (response.status === 400 && (text || '').toLowerCase().includes('file') && ((text || '').toLowerCase().includes('large') || (text || '').toLowerCase().includes('25'))) {
             const e = new Error('Segmento ainda demasiado grande. O servidor deve usar ffmpeg para dividir o áudio em partes menores.');
@@ -98,7 +103,7 @@ async function transcribeLongAudio(audioBuffer, mimeType, filename) {
                 '-f', 'segment',
                 '-segment_time', String(SEGMENT_DURATION_SEC),
                 '-acodec', 'libmp3lame',
-                '-q:a', '2',
+                '-q:a', '3',
                 '-reset_timestamps', '1',
                 '-y',
                 segmentPattern
