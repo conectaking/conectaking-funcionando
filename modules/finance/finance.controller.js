@@ -2,6 +2,8 @@ const service = require('./finance.service');
 const responseFormatter = require('../../utils/responseFormatter');
 const logger = require('../../utils/logger');
 
+const parseProfileId = (q) => (q && q !== '' && q !== 'undefined' ? parseInt(q, 10) : null);
+
 class FinanceController {
     /**
      * Obter dashboard financeiro
@@ -770,6 +772,57 @@ class FinanceController {
             return responseFormatter.success(res, saved, 'Dados sincronizados.');
         } catch (error) {
             logger.error('Erro ao salvar king-data:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /** GET /goals - Listar metas e total de receitas já ganhas */
+    async getGoals(req, res) {
+        try {
+            const userId = req.user.userId;
+            const profileId = parseProfileId(req.query.profile_id);
+            const result = await service.getGoals(userId, profileId);
+            return responseFormatter.success(res, result);
+        } catch (error) {
+            logger.error('Erro ao listar metas:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /** POST /goals - Criar meta */
+    async createGoal(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { name, target_value, target_date, profile_id } = req.body;
+            if (!name || !target_value || !target_date) {
+                return responseFormatter.error(res, 'name, target_value e target_date são obrigatórios.', 400);
+            }
+            const goal = await service.createGoal(userId, {
+                name: String(name).trim(),
+                target_value: parseFloat(target_value),
+                target_date,
+                profile_id: parseProfileId(profile_id)
+            });
+            return responseFormatter.success(res, goal, 'Meta criada.', 201);
+        } catch (error) {
+            logger.error('Erro ao criar meta:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /** DELETE /goals/:id - Excluir meta */
+    async deleteGoal(req, res) {
+        try {
+            const userId = req.user.userId;
+            const id = parseInt(req.params.id, 10);
+            if (!id) return responseFormatter.error(res, 'ID inválido.', 400);
+            await service.deleteGoal(id, userId);
+            return responseFormatter.success(res, { deleted: true }, 'Meta excluída.');
+        } catch (error) {
+            if (error.message === 'Meta não encontrada') {
+                return responseFormatter.error(res, error.message, 404);
+            }
+            logger.error('Erro ao excluir meta:', error);
             return responseFormatter.error(res, error.message, 500);
         }
     }

@@ -610,6 +610,25 @@ class FinanceService {
     async saveKingData(userId, profileId, data) {
         return await repository.saveKingSync(userId, profileId, data);
     }
+
+    /** Listar metas e total de receitas já ganhas (para progresso) */
+    async getGoals(userId, profileId = null) {
+        const goals = await repository.findGoalsByUserId(userId, profileId);
+        const totalIncomeEarned = await repository.getTotalIncomePaidUntilToday(userId, profileId);
+        return { goals, total_income_earned: totalIncomeEarned };
+    }
+
+    /** Criar meta */
+    async createGoal(userId, data) {
+        return await repository.createGoal(userId, data);
+    }
+
+    /** Excluir meta */
+    async deleteGoal(id, userId) {
+        const deleted = await repository.deleteGoal(id, userId);
+        if (!deleted) throw new Error('Meta não encontrada');
+        return deleted;
+    }
 }
 
 module.exports = new FinanceService();

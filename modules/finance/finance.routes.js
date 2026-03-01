@@ -78,6 +78,11 @@ router.get('/cards', controller.getCards);
 router.post('/cards', controller.createCard);
 router.delete('/cards/:id', controller.deleteCard);
 
+// Metas (valor alvo + data; progresso = soma automática das receitas)
+router.get('/goals', controller.getGoals);
+router.post('/goals', controller.createGoal);
+router.delete('/goals/:id', controller.deleteGoal);
+
 // Orçamentos
 router.get('/budgets', controller.getBudgets);
 router.post('/budgets', controller.createBudget);

@@ -988,6 +988,83 @@ class FinanceRepository {
             client.release();
         }
     }
+
+    /**
+     * Listar metas do usuário (opcionalmente por perfil)
+     */
+    async findGoalsByUserId(userId, profileId = null) {
+        const client = await db.pool.connect();
+        try {
+            let query = 'SELECT * FROM finance_goals WHERE user_id = $1';
+            const params = [userId];
+            if (profileId != null) {
+                query += ' AND (profile_id = $2 OR profile_id IS NULL)';
+                params.push(profileId);
+            }
+            query += ' ORDER BY target_date ASC, created_at ASC';
+            const result = await client.query(query, params);
+            return result.rows;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Criar meta
+     */
+    async createGoal(userId, data) {
+        const client = await db.pool.connect();
+        try {
+            const { name, target_value, target_date, profile_id } = data;
+            const result = await client.query(
+                `INSERT INTO finance_goals (user_id, profile_id, name, target_value, target_date)
+                 VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                [userId, profile_id || null, name, target_value, target_date]
+            );
+            return result.rows[0];
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Excluir meta
+     */
+    async deleteGoal(id, userId) {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                'DELETE FROM finance_goals WHERE id = $1 AND user_id = $2 RETURNING *',
+                [id, userId]
+            );
+            return result.rows[0] || null;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Soma de todas as receitas (INCOME PAID) até hoje - para progresso das metas
+     */
+    async getTotalIncomePaidUntilToday(userId, profileId = null) {
+        const client = await db.pool.connect();
+        try {
+            const profileFilter = profileId != null
+                ? 'AND t.profile_id = $2'
+                : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const params = profileId != null ? [userId, profileId] : [userId];
+            const result = await client.query(
+                `SELECT COALESCE(SUM(t.amount), 0) as total
+                 FROM finance_transactions t
+                 WHERE t.user_id = $1 AND t.type = 'INCOME' AND t.status = 'PAID'
+                 AND t.transaction_date <= CURRENT_DATE ${profileFilter}`,
+                params
+            );
+            return parseFloat(result.rows[0]?.total || 0);
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = new FinanceRepository();
