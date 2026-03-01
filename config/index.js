@@ -92,7 +92,7 @@ const config = {
         },
         kingbrief: {
             windowMs: 60 * 60 * 1000, // 1 hora
-            max: parseInt(process.env.KINGBRIEF_RATE_LIMIT_MAX || '60', 10) // 60 por hora (aumentável via env para dev)
+            max: parseInt(process.env.KINGBRIEF_RATE_LIMIT_MAX || '120', 10) // 120 por hora (evita 429 em uso normal; aumentável via env)
         }
     },
     
