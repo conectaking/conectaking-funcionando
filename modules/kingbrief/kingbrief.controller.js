@@ -34,7 +34,7 @@ async function uploadUrl(req, res) {
 async function confirm(req, res) {
     try {
         const userId = req.user.userId;
-        const { key, publicUrl, title, contentType, filename } = req.body || {};
+        const { key, publicUrl, title, contentType, filename, durationSeconds } = req.body || {};
         if (!key || !publicUrl) {
             return responseFormatter.error(res, 'key e publicUrl são obrigatórios.', 400);
         }
@@ -43,7 +43,8 @@ async function confirm(req, res) {
             publicUrl,
             title: title ? String(title).trim() : null,
             contentType: contentType ? String(contentType).trim() : undefined,
-            filename: filename ? String(filename).trim() : undefined
+            filename: filename ? String(filename).trim() : undefined,
+            durationSeconds: durationSeconds != null && Number.isFinite(Number(durationSeconds)) ? Number(durationSeconds) : undefined
         });
         return responseFormatter.success(res, meeting, 'Reunião processada com sucesso.', 201);
     } catch (err) {
@@ -66,6 +67,7 @@ async function create(req, res) {
         const userId = req.user.userId;
         const file = req.file;
         const title = (req.body && req.body.title) ? String(req.body.title).trim() : null;
+        const durationSeconds = req.body && req.body.durationSeconds != null ? Number(req.body.durationSeconds) : null;
 
         if (!file || !file.buffer) {
             return responseFormatter.error(res, 'Nenhum ficheiro de áudio enviado.', 400);
@@ -76,7 +78,8 @@ async function create(req, res) {
             buffer: file.buffer,
             mimeType: file.mimetype,
             originalname: file.originalname,
-            title: title || undefined
+            title: title || undefined,
+            durationSeconds: durationSeconds != null && Number.isFinite(durationSeconds) ? durationSeconds : undefined
         });
 
         return responseFormatter.success(res, meeting, 'Reunião processada com sucesso.', 201);

@@ -8,9 +8,26 @@ const { nanoid } = require('nanoid');
 const repository = require('./kingbrief.repository');
 const transcriptionService = require('../../services/transcriptionService');
 const summaryMindmapService = require('../../services/summaryMindmapService');
+const { getUserPlan } = require('../../utils/plan-helpers');
 const { r2PutObjectBuffer, r2PresignPut, r2GetObjectViaPublicUrl } = require('../../utils/r2');
 const logger = require('../../utils/logger');
 const config = require('../../config');
+
+/** Verifica limite KingBrief por plano (minutos/mês). Rejeita se exceder. */
+async function checkPlanMinutesLimit(userId, additionalDurationSeconds) {
+    const plan = await getUserPlan(userId);
+    if (!plan || plan.kingbrief_minutes_per_month == null) return;
+    const limitMinutes = Number(plan.kingbrief_minutes_per_month);
+    if (!Number.isFinite(limitMinutes) || limitMinutes < 0) return;
+    const usedSeconds = await repository.getTotalDurationSecondsThisMonth(userId);
+    const additionalMinutes = (Number(additionalDurationSeconds) || 0) / 60;
+    const totalMinutes = usedSeconds / 60 + additionalMinutes;
+    if (totalMinutes > limitMinutes) {
+        const e = new Error('Limite de minutos KingBrief do seu plano foi atingido este mês. Contacte o administrador para alterar o plano.');
+        e.statusCode = 403;
+        throw e;
+    }
+}
 
 /**
  * Gera extensão a partir do mimetype ou nome do ficheiro
@@ -39,7 +56,9 @@ function getExtension(mimeType, filename) {
  * @returns {Promise<Object>} meeting criado
  */
 async function processAudio(params) {
-    const { userId, buffer, mimeType, originalname, title } = params;
+    const { userId, buffer, mimeType, originalname, title, durationSeconds } = params;
+    const durationSec = durationSeconds != null ? Math.round(Number(durationSeconds)) : null;
+    if (durationSec != null && durationSec > 0) await checkPlanMinutesLimit(userId, durationSec);
     const ext = getExtension(mimeType, originalname);
     const key = `kingbrief-audio/${userId}/${nanoid(12)}.${ext}`;
 
@@ -106,7 +125,7 @@ async function processAudio(params) {
         topics_json: summaryData.topics,
         actions_json: summaryData.actions,
         mindmap_json: summaryData.mindmap,
-        duration_sec: null
+        duration_sec: durationSec
     });
 
     return meeting;
@@ -138,8 +157,10 @@ async function getUploadUrl(userId, params) {
  * depois transcrição, resumo e gravação da reunião.
  */
 async function processAudioFromUrl(userId, params) {
-    const { key, publicUrl, title, contentType, filename } = params || {};
+    const { key, publicUrl, title, contentType, filename, durationSeconds } = params || {};
     if (!key || !publicUrl) throw new Error('key e publicUrl são obrigatórios.');
+    const durationSec = durationSeconds != null ? Math.round(Number(durationSeconds)) : null;
+    if (durationSec != null && durationSec > 0) await checkPlanMinutesLimit(userId, durationSec);
     const buffer = await r2GetObjectViaPublicUrl(key);
     if (!buffer || !buffer.length) {
         const e = new Error('Não foi possível obter o áudio. Verifique R2_PUBLIC_BASE_URL no backend e que o ficheiro foi subido.');
@@ -171,7 +192,7 @@ async function processAudioFromUrl(userId, params) {
         topics_json: summaryData.topics,
         actions_json: summaryData.actions,
         mindmap_json: summaryData.mindmap,
-        duration_sec: null
+        duration_sec: durationSec
     });
     return meeting;
 }

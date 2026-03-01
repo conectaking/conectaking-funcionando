@@ -176,11 +176,25 @@ async function countByUser(userId, since = null) {
     };
 }
 
+/** Soma duration_sec das reuniões do utilizador no mês atual (created_at). */
+async function getTotalDurationSecondsThisMonth(userId) {
+    const startOfMonth = new Date();
+    startOfMonth.setUTCDate(1);
+    startOfMonth.setUTCHours(0, 0, 0, 0);
+    const result = await db.query(
+        `SELECT COALESCE(SUM(duration_sec), 0)::bigint AS total FROM ${TABLE}
+         WHERE user_id = $1 AND created_at >= $2`,
+        [userId, startOfMonth.toISOString()]
+    );
+    return Number(result.rows[0].total) || 0;
+}
+
 module.exports = {
     create,
     findByUserId,
     findById,
     update,
     remove,
-    countByUser
+    countByUser,
+    getTotalDurationSecondsThisMonth
 };
