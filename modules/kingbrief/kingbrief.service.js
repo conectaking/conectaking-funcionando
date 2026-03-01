@@ -239,6 +239,25 @@ async function getCommunicationReport(id, userId) {
     return report;
 }
 
+/**
+ * Gera ou devolve share_token da reunião (para link partilhável).
+ * @param {string} id - meeting id
+ * @param {string} userId
+ * @returns {Promise<{ share_token: string }>}
+ */
+async function ensureShareToken(id, userId) {
+    const meeting = await repository.findById(id, userId);
+    if (!meeting) return null;
+    if (meeting.share_token) return { share_token: meeting.share_token };
+    const token = nanoid(32);
+    await repository.update(id, userId, { share_token: token });
+    return { share_token: token };
+}
+
+async function getSharedMeeting(shareToken) {
+    return repository.findByShareToken(shareToken);
+}
+
 module.exports = {
     processAudio,
     getUploadUrl,
@@ -250,5 +269,7 @@ module.exports = {
     countByUser: repository.countByUser,
     getBusinessReport,
     getLessonReport,
-    getCommunicationReport
+    getCommunicationReport,
+    ensureShareToken,
+    getSharedMeeting
 };

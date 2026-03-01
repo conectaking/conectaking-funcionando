@@ -125,6 +125,11 @@ async function update(id, userId, updates) {
             values.push(JSON.stringify(updates.communication_json));
             n++;
         }
+        if (updates.share_token !== undefined) {
+            sets.push(`share_token = $${n}`);
+            values.push(updates.share_token);
+            n++;
+        }
         if (sets.length === 0) return findById(id, userId);
         values.push(id, userId);
         const result = await client.query(
@@ -189,6 +194,21 @@ async function getTotalDurationSecondsThisMonth(userId) {
     return Number(result.rows[0].total) || 0;
 }
 
+/**
+ * Obter reunião por share_token (para link partilhável, sem auth)
+ * @param {string} shareToken
+ * @returns {Promise<Object|null>}
+ */
+async function findByShareToken(shareToken) {
+    if (!shareToken || !shareToken.trim()) return null;
+    const result = await db.query(
+        `SELECT id, user_id, title, audio_url, transcript, summary, topics_json, actions_json, mindmap_json, duration_sec, created_at, share_token
+         FROM ${TABLE} WHERE share_token = $1`,
+        [shareToken.trim()]
+    );
+    return result.rows[0] || null;
+}
+
 module.exports = {
     create,
     findByUserId,
@@ -196,5 +216,6 @@ module.exports = {
     update,
     remove,
     countByUser,
-    getTotalDurationSecondsThisMonth
+    getTotalDurationSecondsThisMonth,
+    findByShareToken
 };
