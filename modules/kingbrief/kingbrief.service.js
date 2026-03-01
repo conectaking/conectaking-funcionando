@@ -176,6 +176,20 @@ async function processAudioFromUrl(userId, params) {
     return meeting;
 }
 
+async function getBusinessReport(id, userId) {
+    const meeting = await repository.findById(id, userId);
+    if (!meeting) return null;
+    const transcript = meeting.transcript || '';
+    return summaryMindmapService.generateBusinessReport(transcript);
+}
+
+async function getLessonReport(id, userId) {
+    const meeting = await repository.findById(id, userId);
+    if (!meeting) return null;
+    const transcript = meeting.transcript || '';
+    return summaryMindmapService.generateLessonReport(transcript);
+}
+
 module.exports = {
     processAudio,
     getUploadUrl,
@@ -184,5 +198,7 @@ module.exports = {
     findById: repository.findById,
     update: repository.update,
     remove: repository.remove,
-    countByUser: repository.countByUser
+    countByUser: repository.countByUser,
+    getBusinessReport,
+    getLessonReport
 };

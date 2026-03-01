@@ -147,6 +147,72 @@ function extractAndParseJson(content) {
     }
 }
 
+const BUSINESS_PROMPT = `Analisa a transcrição de reunião e devolve APENAS um objeto JSON válido, sem texto antes ou depois:
+{
+  "problem": "Problema central discutido",
+  "targetAudience": "Público-alvo mencionado (ou null)",
+  "opportunities": ["Oportunidade 1", "..."],
+  "bottlenecks": ["Gargalo 1", "..."],
+  "risks": ["Risco 1", "..."],
+  "potential": "Avaliação do potencial estratégico em 1-2 frases"
+}
+Retorna SOMENTE o JSON.`;
+
+const LESSON_PROMPT = `Transforma o conteúdo da reunião num formato didático. Devolve APENAS um objeto JSON válido:
+{
+  "summary": "Resumo didático em 3-5 frases",
+  "concepts": ["Conceito principal 1", "..."],
+  "reviewQuestions": ["Pergunta de revisão 1", "..."],
+  "keywords": ["palavra1", "..."],
+  "flashcards": [{"front": "Pergunta ou termo", "back": "Resposta ou definição"}]
+}
+Máximo 5 conceitos, 5 perguntas, 10 palavras-chave, 8 flashcards. Retorna SOMENTE o JSON.`;
+
+async function callGpt(systemPrompt, userContent, maxTokens = 1200) {
+    if (!OPENAI_API_KEY || !OPENAI_API_KEY.trim()) {
+        throw new Error('Serviço não configurado (OPENAI_API_KEY).');
+    }
+    const response = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY.trim()}`
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userContent }
+            ],
+            temperature: 0.3,
+            max_tokens: maxTokens
+        })
+    });
+    const text = await response.text();
+    if (!response.ok) {
+        if (response.status === 429) throw new Error('Limite de uso da API atingido.');
+        throw new Error(text || 'Falha na análise.');
+    }
+    const data = JSON.parse(text);
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Resposta vazia.');
+    const parsed = extractAndParseJson(content);
+    if (!parsed) throw new Error('Resposta inválida.');
+    return parsed;
+}
+
+async function generateBusinessReport(transcript) {
+    const text = typeof transcript === 'string' ? transcript : (Array.isArray(transcript) ? transcript.map(function (t) { return (t.speaker ? t.speaker + ': ' : '') + (t.text || ''); }).join('\n') : '');
+    return callGpt(BUSINESS_PROMPT, 'Transcrição:\n' + (text || '').slice(0, 12000));
+}
+
+async function generateLessonReport(transcript) {
+    const text = typeof transcript === 'string' ? transcript : (Array.isArray(transcript) ? transcript.map(function (t) { return (t.speaker ? t.speaker + ': ' : '') + (t.text || ''); }).join('\n') : '');
+    return callGpt(LESSON_PROMPT, 'Conteúdo da reunião:\n' + (text || '').slice(0, 12000));
+}
+
 module.exports = {
-    generateSummaryAndMindmap
+    generateSummaryAndMindmap,
+    generateBusinessReport,
+    generateLessonReport
 };

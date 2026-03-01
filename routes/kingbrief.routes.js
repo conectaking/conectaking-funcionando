@@ -31,6 +31,8 @@ router.post('/confirm', express.json(), asyncHandler(controller.confirm));
 router.post('/', upload.single('audio'), asyncHandler(controller.create));
 router.get('/', asyncHandler(controller.list));
 router.get('/usage', asyncHandler(controller.usage));
+router.get('/:id/business', asyncHandler(controller.businessReport));
+router.get('/:id/lesson', asyncHandler(controller.lessonReport));
 router.get('/:id', asyncHandler(controller.getById));
 router.patch('/:id', asyncHandler(controller.update));
 router.delete('/:id', asyncHandler(controller.remove));

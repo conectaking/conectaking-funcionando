@@ -122,6 +122,36 @@ async function getById(req, res) {
     }
 }
 
+async function businessReport(req, res) {
+    try {
+        const userId = req.user.userId;
+        const report = await service.getBusinessReport(req.params.id, userId);
+        if (!report) {
+            return responseFormatter.error(res, 'Reunião não encontrada.', 404);
+        }
+        return responseFormatter.success(res, report);
+    } catch (err) {
+        logger.error('KingBrief businessReport error', err);
+        const status = err.statusCode || (err.message && err.message.includes('Limite') ? 429 : 503);
+        return responseFormatter.error(res, err.message || 'Erro ao gerar relatório de negócio.', status);
+    }
+}
+
+async function lessonReport(req, res) {
+    try {
+        const userId = req.user.userId;
+        const report = await service.getLessonReport(req.params.id, userId);
+        if (!report) {
+            return responseFormatter.error(res, 'Reunião não encontrada.', 404);
+        }
+        return responseFormatter.success(res, report);
+    } catch (err) {
+        logger.error('KingBrief lessonReport error', err);
+        const status = err.statusCode || (err.message && err.message.includes('Limite') ? 429 : 503);
+        return responseFormatter.error(res, err.message || 'Erro ao gerar modo aula.', status);
+    }
+}
+
 async function update(req, res) {
     try {
         const userId = req.user.userId;
@@ -176,5 +206,7 @@ module.exports = {
     getById,
     update,
     remove,
-    usage
+    usage,
+    businessReport,
+    lessonReport
 };
