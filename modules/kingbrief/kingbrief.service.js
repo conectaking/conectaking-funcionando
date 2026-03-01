@@ -190,6 +190,13 @@ async function getLessonReport(id, userId) {
     return summaryMindmapService.generateLessonReport(transcript);
 }
 
+async function getCommunicationReport(id, userId) {
+    const meeting = await repository.findById(id, userId);
+    if (!meeting) return null;
+    const transcript = meeting.transcript || '';
+    return summaryMindmapService.generateCommunicationAnalysis(transcript);
+}
+
 module.exports = {
     processAudio,
     getUploadUrl,
@@ -200,5 +207,6 @@ module.exports = {
     remove: repository.remove,
     countByUser: repository.countByUser,
     getBusinessReport,
-    getLessonReport
+    getLessonReport,
+    getCommunicationReport
 };

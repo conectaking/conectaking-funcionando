@@ -211,8 +211,46 @@ async function generateLessonReport(transcript) {
     return callGpt(LESSON_PROMPT, 'Conteúdo da reunião:\n' + (text || '').slice(0, 12000));
 }
 
+const COMMUNICATION_PROMPT = `Analisa a transcrição e devolve APENAS um objeto JSON válido, sem texto antes ou depois:
+{
+  "segments": [
+    { "speaker": "Speaker 1", "text": "trecho falado", "wordCount": 12 }
+  ],
+  "topWords": [["palavra", 5], ["outra", 3]],
+  "tone": "positivo|neutro|tenso",
+  "clarity": "alta|média|baixa"
+}
+Regras: segmenta por falante (Speaker 1, Speaker 2, ...); topWords são as 10 palavras mais repetidas (excluindo stop words) com contagem; tone e clarity em minúsculas. Retorna SOMENTE o JSON.`;
+
+function computeCommunicationStats(parsed) {
+    const segments = Array.isArray(parsed.segments) ? parsed.segments : [];
+    const bySpeaker = {};
+    segments.forEach(function (seg) {
+        const name = seg.speaker || 'Desconhecido';
+        if (!bySpeaker[name]) bySpeaker[name] = { wordCount: 0, segments: 0 };
+        bySpeaker[name].wordCount += seg.wordCount || (typeof seg.text === 'string' ? seg.text.split(/\s+/).length : 0);
+        bySpeaker[name].segments += 1;
+    });
+    Object.keys(bySpeaker).forEach(function (name) {
+        bySpeaker[name].estimatedSeconds = Math.round(bySpeaker[name].wordCount / 2.5);
+    });
+    return {
+        bySpeaker,
+        topWords: Array.isArray(parsed.topWords) ? parsed.topWords.slice(0, 15) : [],
+        tone: parsed.tone || 'neutro',
+        clarity: parsed.clarity || 'média'
+    };
+}
+
+async function generateCommunicationAnalysis(transcript) {
+    const text = typeof transcript === 'string' ? transcript : (Array.isArray(transcript) ? transcript.map(function (t) { return (t.speaker ? t.speaker + ': ' : '') + (t.text || ''); }).join('\n') : '');
+    const parsed = await callGpt(COMMUNICATION_PROMPT, 'Transcrição:\n' + (text || '').slice(0, 12000), 2000);
+    return computeCommunicationStats(parsed);
+}
+
 module.exports = {
     generateSummaryAndMindmap,
     generateBusinessReport,
-    generateLessonReport
+    generateLessonReport,
+    generateCommunicationAnalysis
 };

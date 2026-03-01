@@ -48,7 +48,7 @@ Documento de referência: **PROMPT OFICIAL – KING BRIEFING 2.0 (ÁUDIO ONLY)**
 - [x] Transcrição: falantes e destaques por tipo (pergunta, tarefa, decisão)
 - [x] Mapa mental: export PDF
 - [ ] Mapa mental: drag-and-drop (reorganizar hierarquia)
-- [ ] Modo Negócio (backend + UI)
-- [ ] Modo Aula (backend + UI)
+- [x] Modo Negócio (backend + UI: GET /:id/business, aba Negócio)
+- [x] Modo Aula (backend + UI: GET /:id/lesson, aba Aula)
 - [ ] Análise de comunicação (backend + UI)
 - [x] Exportação Markdown, JSON, link compartilhável (copiar link)

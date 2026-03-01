@@ -152,6 +152,21 @@ async function lessonReport(req, res) {
     }
 }
 
+async function communicationReport(req, res) {
+    try {
+        const userId = req.user.userId;
+        const report = await service.getCommunicationReport(req.params.id, userId);
+        if (!report) {
+            return responseFormatter.error(res, 'Reunião não encontrada.', 404);
+        }
+        return responseFormatter.success(res, report);
+    } catch (err) {
+        logger.error('KingBrief communicationReport error', err);
+        const status = err.statusCode || (err.message && err.message.includes('Limite') ? 429 : 503);
+        return responseFormatter.error(res, err.message || 'Erro ao gerar análise de comunicação.', status);
+    }
+}
+
 async function update(req, res) {
     try {
         const userId = req.user.userId;
@@ -208,5 +223,6 @@ module.exports = {
     remove,
     usage,
     businessReport,
-    lessonReport
+    lessonReport,
+    communicationReport
 };
