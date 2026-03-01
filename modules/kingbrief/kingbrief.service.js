@@ -9,6 +9,7 @@ const repository = require('./kingbrief.repository');
 const transcriptionService = require('../../services/transcriptionService');
 const summaryMindmapService = require('../../services/summaryMindmapService');
 const kingbriefContractService = require('../../services/kingbriefContractService');
+const kingbriefMindmapV2Service = require('../../services/kingbriefMindmapV2Service');
 const { getUserPlan } = require('../../utils/plan-helpers');
 const { r2PutObjectBuffer, r2PresignPut, r2GetObjectViaPublicUrl } = require('../../utils/r2');
 const logger = require('../../utils/logger');
@@ -210,6 +211,31 @@ async function processAudioFromUrl(userId, params) {
         } catch (err) {
             logger.error('KingBrief summary error', { userId, error: err.message });
             throw Object.assign(err, { statusCode: err.statusCode || 503 });
+        }
+    }
+    if (contract && transcriptSegments.length > 0) {
+        try {
+            const segmentsForV2 = transcriptSegments.map((s) => ({
+                from: kingbriefContractService.secToHhMmSs(s.start_sec),
+                to: kingbriefContractService.secToHhMmSs(s.end_sec),
+                text: (s.text || '').trim()
+            })).filter((s) => s.text);
+            if (segmentsForV2.length > 0) {
+                const v2 = await kingbriefMindmapV2Service.generateMindmapV2(
+                    title || 'Reunião',
+                    durationSec,
+                    segmentsForV2
+                );
+                contract.mapaMental = {
+                    version: 'kingbrief.mindmap.v2',
+                    root: v2.root,
+                    style: v2.style,
+                    quality: v2.quality,
+                    nodes: [v2.root]
+                };
+            }
+        } catch (err) {
+            logger.warn('KingBrief mindmap v2 failed, keeping contract mapaMental', { userId, error: err.message });
         }
     }
     const meeting = await repository.create({
