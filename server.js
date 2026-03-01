@@ -350,7 +350,8 @@ const kingbriefLimiter = rateLimit({
     max: config.rateLimit.kingbrief.max,
     standardHeaders: true,
     legacyHeaders: false,
-    message: 'Muitos processamentos de áudio. Aguarde 1 hora para tentar novamente.'
+    message: 'Muitos processamentos de áudio. Aguarde 1 hora para tentar novamente.',
+    skip: (req) => process.env.NODE_ENV === 'development'
 });
 
 cron.schedule('0 8 * * *', async () => {
