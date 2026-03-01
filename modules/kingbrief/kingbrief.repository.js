@@ -110,6 +110,11 @@ async function update(id, userId, updates) {
             values.push(JSON.stringify(updates.mindmap_json));
             n++;
         }
+        if (updates.transcript !== undefined) {
+            sets.push(`transcript = $${n}`);
+            values.push(updates.transcript);
+            n++;
+        }
         if (updates.business_json !== undefined) {
             sets.push(`business_json = $${n}::jsonb`);
             values.push(JSON.stringify(updates.business_json));

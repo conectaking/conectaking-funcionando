@@ -324,18 +324,22 @@
             <div id="receba-palavra" class="receba-content">
                 <div id="palavra-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
                 <div class="bible-actions" id="palavra-actions" style="display:none;margin-top:16px">
+                    <button type="button" class="bible-btn" id="palavra-btn-ouvir" title="Ouvir"><i class="fas fa-volume-up"></i> Ouvir</button>
                     <button type="button" class="bible-btn" id="palavra-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
                 </div>
             </div>
             <div id="receba-salmo" class="receba-content">
                 <div id="salmo-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
                 <div class="bible-actions" id="salmo-actions" style="display:none;margin-top:16px">
+                    <button type="button" class="bible-btn" id="salmo-btn-ouvir" title="Ouvir"><i class="fas fa-volume-up"></i> Ouvir</button>
                     <button type="button" class="bible-btn" id="salmo-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
                 </div>
             </div>
             <div id="receba-devocional" class="receba-content">
                 <div id="devocional-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
                 <div id="devocional-actions" class="bible-actions" style="display:none;margin-top:20px;flex-wrap:wrap;gap:10px;align-items:center">
+                    <button type="button" class="bible-btn" id="devocional-btn-ouvir" title="Ouvir o devocional do dia"><i class="fas fa-volume-up"></i> Ouvir</button>
+                    <button type="button" class="bible-btn secondary" id="devocional-btn-parar" style="display:none;background:rgba(239,68,68,0.2);color:#f87171;border-color:rgba(239,68,68,0.5)"><i class="fas fa-stop"></i> Parar</button>
                     <button type="button" class="bible-btn" id="devocional-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
                     <button type="button" class="bible-btn secondary" id="devocional-btn-mark-read" title="Marcar como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
                     <span id="devocional-streak" style="display:none;font-size:0.85rem;color:#A1A1A1;"><i class="fas fa-fire" style="color:#FF6B35;margin-right:4px"></i><span id="devocional-streak-num">0</span> dias seguidos</span>
@@ -362,6 +366,8 @@
                 <p id="dev-biblia-link-calendario" style="display:none;margin-top:8px"><button type="button" class="bible-btn secondary" id="btn-dev-biblia-usar-calendario" style="font-size:0.85rem"><i class="fas fa-calendar-alt"></i> Usar calendário em vez do meu plano</button></p>
                 <div id="devocional-biblia-inteira-container"><p style="color:#A1A1A1;font-size:0.9rem">Clique em <strong>Começar hoje</strong> para o seu dia 1 ser hoje, ou em <strong>Seguir pelo calendário</strong> para usar mês e dia.</p></div>
                 <div class="bible-actions" id="dev-biblia-actions" style="display:none;margin-top:16px">
+                    <button type="button" class="bible-btn" id="dev-biblia-btn-ouvir" title="Ouvir o devocional"><i class="fas fa-volume-up"></i> Ouvir</button>
+                    <button type="button" class="bible-btn secondary" id="dev-biblia-btn-parar" style="display:none;background:rgba(239,68,68,0.2);color:#f87171"><i class="fas fa-stop"></i> Parar</button>
                     <button type="button" class="bible-btn" id="dev-biblia-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
                 </div>
             </div>
@@ -374,6 +380,7 @@
                 </div>
                 <div id="plano-content"><p style="color:#A1A1A1;font-size:0.9rem">Selecione um dia ou clique em "Dia de hoje".</p></div>
                 <div class="bible-actions" id="plano-actions" style="display:none;margin-top:16px">
+                    <button type="button" class="bible-btn" id="plano-btn-ouvir" title="Ouvir"><i class="fas fa-volume-up"></i> Ouvir</button>
                     <button type="button" class="bible-btn" id="plano-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
                 </div>
             </div>
@@ -400,6 +407,10 @@
                 <button type="button" class="bible-btn secondary" id="btn-dev365-today"><i class="fas fa-calendar-check"></i> Dia de hoje</button>
             </div>
             <div id="dev365-content"><p style="color:#A1A1A1;font-size:0.9rem">Selecione um dia ou clique em "Dia de hoje".</p></div>
+            <div class="bible-actions" id="dev365-actions" style="display:none;margin-top:12px;flex-wrap:wrap;gap:10px">
+                <button type="button" class="bible-btn" id="dev365-btn-ouvir" title="Ouvir o devocional 365"><i class="fas fa-volume-up"></i> Ouvir</button>
+                <button type="button" class="bible-btn secondary" id="dev365-btn-parar" style="display:none;background:rgba(239,68,68,0.2);color:#f87171"><i class="fas fa-stop"></i> Parar</button>
+            </div>
         </div>
 
         <div class="bible-card">
@@ -616,6 +627,49 @@
                 setTimeout(loadVoicesPublic, 2000);
             }
 
+            function getTextFromElement(el) {
+                if (!el) return '';
+                return (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+            }
+            function speakText(text, voiceSelId) {
+                if (!text || !window.speechSynthesis) return;
+                speechSynthesis.cancel();
+                var voiceSel = voiceSelId ? document.getElementById(voiceSelId) : null;
+                if (window.ConectaTTS && window.ConectaTTS.hasSupport()) {
+                    window.ConectaTTS.speak(text, { voiceSel: voiceSel, useChunks: true });
+                } else {
+                    var u = new SpeechSynthesisUtterance(text);
+                    u.lang = 'pt-BR';
+                    u.rate = 0.9;
+                    speechSynthesis.speak(u);
+                }
+            }
+            function bindOuvirParar(containerId, btnOuvirId, btnPararId, voiceSelId) {
+                var btnOuvir = document.getElementById(btnOuvirId);
+                var btnParar = document.getElementById(btnPararId);
+                if (!btnOuvir) return;
+                btnOuvir.addEventListener('click', function() {
+                    var el = document.getElementById(containerId);
+                    var text = getTextFromElement(el);
+                    if (!text) return;
+                    speakText(text, voiceSelId);
+                    if (btnParar) { btnParar.style.display = 'inline-flex'; btnOuvir.style.display = 'none'; }
+                    if (window.speechSynthesis) {
+                        speechSynthesis.onend = function() {
+                            if (btnParar) btnParar.style.display = 'none';
+                            if (btnOuvir) btnOuvir.style.display = 'inline-flex';
+                        };
+                    }
+                });
+                if (btnParar) {
+                    btnParar.addEventListener('click', function() {
+                        speechSynthesis.cancel();
+                        btnParar.style.display = 'none';
+                        if (btnOuvir) btnOuvir.style.display = 'inline-flex';
+                    });
+                }
+            }
+
             document.getElementById('btn-ouvir').addEventListener('click', function() {
                 if (!currentVerse || !currentVerse.texto) return;
                 if (window.ConectaTTS && window.ConectaTTS.hasSupport()) {
@@ -627,6 +681,13 @@
                     speechSynthesis.speak(u);
                 }
             });
+
+            bindOuvirParar('devocional-container', 'devocional-btn-ouvir', 'devocional-btn-parar', 'sel-voice-public');
+            bindOuvirParar('devocional-biblia-inteira-container', 'dev-biblia-btn-ouvir', 'dev-biblia-btn-parar', 'sel-voice-public');
+            bindOuvirParar('dev365-content', 'dev365-btn-ouvir', 'dev365-btn-parar', 'sel-voice-public');
+            bindOuvirParar('palavra-container', 'palavra-btn-ouvir', null, 'sel-voice-public');
+            bindOuvirParar('salmo-container', 'salmo-btn-ouvir', null, 'sel-voice-public');
+            bindOuvirParar('plano-content', 'plano-btn-ouvir', null, 'sel-voice-public');
 
             document.getElementById('btn-compartilhar').addEventListener('click', function() {
                 if (!currentVerse || !currentVerse.texto) return;
@@ -1088,6 +1149,8 @@
                     var oracaoHtml = d.oracao ? '<div class="bible-reflexao" style="margin-top:20px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1.05rem;line-height:1.8;font-style:italic">' + (d.oracao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
                     var btnHtml = '<div class="bible-actions" style="margin-top:20px;flex-wrap:wrap;gap:10px"><button type="button" class="bible-btn" id="dev365-btn-share" data-day="' + day + '"><i class="fas fa-share-alt"></i> Compartilhar</button><button type="button" class="bible-btn secondary dev365-mark-read" data-day="' + day + '"><i class="far fa-check-circle"></i> Marcar como lido</button></div>';
                     el.innerHTML = '<div class="bible-ref" style="font-size:1.2rem;margin-bottom:12px">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:1rem;margin-bottom:16px;font-weight:600">' + (d.versiculo_ref || '') + '</div>' + (d.versiculo_texto ? '<div class="bible-text" style="margin-bottom:24px;font-size:1.1rem;line-height:1.8">"' + d.versiculo_texto + '"</div>' : '') + '<div class="bible-text" style="line-height:1.85;font-size:1.05rem">' + reflexaoHtml + '</div>' + aplicacaoHtml + oracaoHtml + btnHtml;
+                    var dev365Actions = document.getElementById('dev365-actions');
+                    if (dev365Actions) dev365Actions.style.display = 'flex';
                     var dev365ShareBtn = el.querySelector('#dev365-btn-share');
                     if (dev365ShareBtn) dev365ShareBtn.addEventListener('click', function() {
                         if (!currentDev365Data) return;
@@ -1116,6 +1179,8 @@
                     })();
                 } catch (e) {
                     el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
+                    var dev365Actions = document.getElementById('dev365-actions');
+                    if (dev365Actions) dev365Actions.style.display = 'none';
                 }
             }
             document.getElementById('btn-dev365-load').addEventListener('click', function() {

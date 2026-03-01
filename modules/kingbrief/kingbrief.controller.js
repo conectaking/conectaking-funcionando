@@ -179,11 +179,12 @@ async function communicationReport(req, res) {
 async function update(req, res) {
     try {
         const userId = req.user.userId;
-        const { actions_json, title, mindmap_json } = req.body || {};
+        const { actions_json, title, mindmap_json, transcript } = req.body || {};
         const updates = {};
         if (actions_json !== undefined) updates.actions_json = actions_json;
         if (title !== undefined) updates.title = title;
         if (mindmap_json !== undefined) updates.mindmap_json = mindmap_json;
+        if (transcript !== undefined) updates.transcript = transcript;
         const meeting = await service.update(req.params.id, userId, updates);
         if (!meeting) {
             return responseFormatter.error(res, 'Reunião não encontrada.', 404);
@@ -237,6 +238,25 @@ async function getSharedByToken(req, res) {
     }
 }
 
+/** POST /:id/improve-text – melhora a transcrição (ortografia, fluência). Devolve improved_text; opcional body.apply=true para guardar na reunião. */
+async function improveText(req, res) {
+    try {
+        const userId = req.user.userId;
+        const id = req.params.id;
+        const apply = !!(req.body && req.body.apply === true);
+        const meeting = await service.findById(id, userId);
+        if (!meeting) return responseFormatter.error(res, 'Reunião não encontrada.', 404);
+        const transcript = meeting.transcript || '';
+        if (!transcript.trim()) return responseFormatter.error(res, 'Esta reunião não tem transcrição para melhorar.', 400);
+        const result = await service.improveTranscript(id, userId, transcript, apply);
+        return responseFormatter.success(res, result, apply ? 'Texto melhorado e guardado.' : 'Texto melhorado (use "Aplicar" para guardar na reunião).');
+    } catch (err) {
+        logger.error('KingBrief improveText error', err);
+        const status = err.statusCode || (err.message && err.message.includes('Limite') ? 429 : 503);
+        return responseFormatter.error(res, err.message || 'Erro ao melhorar o texto.', status);
+    }
+}
+
 /** POST /:id/share – gera ou devolve share_token e URL partilhável (requer auth). */
 async function generateShareToken(req, res) {
     try {
@@ -264,6 +284,7 @@ module.exports = {
     businessReport,
     lessonReport,
     communicationReport,
+    improveText,
     getSharedByToken,
     generateShareToken
 };

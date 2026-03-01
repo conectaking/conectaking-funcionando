@@ -258,6 +258,19 @@ async function getSharedMeeting(shareToken) {
     return repository.findByShareToken(shareToken);
 }
 
+/**
+ * Melhora o texto da transcrição (ortografia, fluência). Opcionalmente guarda na reunião.
+ * @returns {Promise<{ improved_text: string, saved?: boolean }>}
+ */
+async function improveTranscript(meetingId, userId, transcript, apply) {
+    const { improved_text } = await summaryMindmapService.improveTranscript(transcript);
+    if (apply && improved_text) {
+        await repository.update(meetingId, userId, { transcript: improved_text });
+        return { improved_text, saved: true };
+    }
+    return { improved_text, saved: false };
+}
+
 module.exports = {
     processAudio,
     getUploadUrl,
@@ -270,6 +283,7 @@ module.exports = {
     getBusinessReport,
     getLessonReport,
     getCommunicationReport,
+    improveTranscript,
     ensureShareToken,
     getSharedMeeting
 };

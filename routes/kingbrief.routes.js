@@ -37,6 +37,7 @@ router.get('/usage', asyncHandler(controller.usage));
 router.get('/:id/business', asyncHandler(controller.businessReport));
 router.get('/:id/lesson', asyncHandler(controller.lessonReport));
 router.get('/:id/communication', asyncHandler(controller.communicationReport));
+router.post('/:id/improve-text', express.json(), asyncHandler(controller.improveText));
 router.get('/:id', asyncHandler(controller.getById));
 router.post('/:id/share', asyncHandler(controller.generateShareToken));
 router.patch('/:id', asyncHandler(controller.update));

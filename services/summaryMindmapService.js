@@ -10,7 +10,7 @@ const logger = require('../utils/logger');
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const CHAT_URL = 'https://api.openai.com/v1/chat/completions';
 
-const SYSTEM_PROMPT = `Tu és um assistente que analisa transcrições de reuniões e devolves APENAS um objeto JSON válido, sem texto antes ou depois, com a seguinte estrutura exata:
+const SYSTEM_PROMPT = `Tu és um assistente que analisa transcrições de reuniões (podem ser longas, 1h ou mais) e devolves APENAS um objeto JSON válido, sem texto antes ou depois, com a seguinte estrutura exata:
 
 {
   "summary": "Resumo executivo curto e estratégico (2-4 frases)",
@@ -27,17 +27,25 @@ const SYSTEM_PROMPT = `Tu és um assistente que analisa transcrições de reuni�
         "id": "node1",
         "title": "Ramo principal (2-6 palavras)",
         "collapsed": true,
-        "children": []
+        "children": [
+          {
+            "id": "node1a",
+            "title": "Subtópico ou continuação (2-6 palavras)",
+            "collapsed": true,
+            "children": []
+          }
+        ]
       }
     ]
   }
 }
 
-Regras do mapa mental:
-- Máximo 6 ramos principais (filhos diretos de root).
-- Máximo 4 níveis de profundidade (root -> child -> ...).
-- Cada "title" deve ser curto: 2 a 6 palavras.
-- "collapsed": true em todos os nós exceto root (root tem "collapsed": false).
+Regras do mapa mental (OBRIGATÓRIO cumprir para transcrições longas):
+- Usa TODO o conteúdo da transcrição para extrair os temas: principais tópicos, subtópicos e desdobramentos.
+- Máximo 6 ramos principais (filhos diretos de root). Cada ramo deve ser um tema real discutido na reunião.
+- Até 4 níveis de profundidade: root -> ramo principal -> subtópico -> sub-subtópico. Preenche os níveis com continuação do tema (significado, detalhes, conclusões).
+- Cada "title": 2 a 6 palavras, claras e descritivas (não genéricas). Subtópicos devem continuar/desdobrar o ramo pai.
+- "collapsed": true em todos os nós exceto root (root "collapsed": false).
 - Retorna SOMENTE o JSON, sem markdown e sem explicações.`;
 
 /**
@@ -51,7 +59,9 @@ async function generateSummaryAndMindmap(transcript) {
         throw new Error('Serviço de resumo não configurado (OPENAI_API_KEY).');
     }
 
-    const userContent = `Analisa a seguinte transcrição de reunião e devolve o JSON com summary, topics, actions e mindmap conforme as regras.\n\nTranscrição:\n${(transcript || '').slice(0, 12000)}`;
+    // Transcrições longas (ex.: 1h): usar até 60k caracteres para o mapa mental refletir todo o conteúdo
+    const transcriptSlice = (transcript || '').slice(0, 60000);
+    const userContent = `Analisa a seguinte transcrição de reunião (pode ser longa) e devolve o JSON com summary, topics, actions e mindmap conforme as regras. Extrai tópicos e mapa mental de TODO o texto.\n\nTranscrição:\n${transcriptSlice}`;
 
     const response = await fetch(CHAT_URL, {
         method: 'POST',
@@ -66,7 +76,7 @@ async function generateSummaryAndMindmap(transcript) {
                 { role: 'user', content: userContent }
             ],
             temperature: 0.3,
-            max_tokens: 2000
+            max_tokens: 4000
         })
     });
 
@@ -248,9 +258,56 @@ async function generateCommunicationAnalysis(transcript) {
     return computeCommunicationStats(parsed);
 }
 
+const IMPROVE_TEXT_PROMPT = `Corrige e melhora o seguinte texto transcrito de áudio (reunião ou fala):
+- Corrige erros de ortografia e gramática.
+- Ajusta palavras que foram mal transcritas (ex.: "tá" → "está", gírias conforme contexto).
+- Mantém o sentido e o tom original; não inventes conteúdo.
+- Preserva parágrafos e quebras de linha quando fizer sentido.
+Devolve APENAS o texto melhorado, sem explicações nem cabeçalhos.`;
+
+/**
+ * Melhora o texto da transcrição: correção ortográfica e de fala, sem alterar o conteúdo.
+ * @param {string} transcript - Texto transcrito (pode ser longo)
+ * @returns {Promise<{ improved_text: string }>}
+ */
+async function improveTranscript(transcript) {
+    if (!OPENAI_API_KEY || !OPENAI_API_KEY.trim()) {
+        logger.error('KingBrief improveTranscript: OPENAI_API_KEY não configurada');
+        throw new Error('Serviço não configurado (OPENAI_API_KEY).');
+    }
+    const text = typeof transcript === 'string' ? transcript : (Array.isArray(transcript) ? transcript.map(function (t) { return (t.speaker ? t.speaker + ': ' : '') + (t.text || ''); }).join('\n') : '');
+    if (!text || !text.trim()) throw new Error('Nenhum texto para melhorar.');
+    const slice = (text || '').slice(0, 50000);
+    const response = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY.trim()}`
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: IMPROVE_TEXT_PROMPT },
+                { role: 'user', content: 'Texto a melhorar:\n\n' + slice }
+            ],
+            temperature: 0.2,
+            max_tokens: 8000
+        })
+    });
+    const data = await response.json().catch(() => ({}));
+    const content = data?.choices?.[0]?.message?.content;
+    if (!response.ok) {
+        if (response.status === 429) throw new Error('Limite de uso da API atingido. Tente mais tarde.');
+        throw new Error(content || 'Falha ao melhorar o texto.');
+    }
+    const improved = (content || '').trim() || text;
+    return { improved_text: improved };
+}
+
 module.exports = {
     generateSummaryAndMindmap,
     generateBusinessReport,
     generateLessonReport,
-    generateCommunicationAnalysis
+    generateCommunicationAnalysis,
+    improveTranscript
 };
