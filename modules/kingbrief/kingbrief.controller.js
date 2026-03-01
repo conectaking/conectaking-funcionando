@@ -257,6 +257,20 @@ async function improveText(req, res) {
     }
 }
 
+/** POST /:id/regenerate-mindmap – regenera mapa mental v2 a partir dos segmentos guardados. */
+async function regenerateMindmap(req, res) {
+    try {
+        const userId = req.user.userId;
+        const id = req.params.id;
+        const meeting = await service.regenerateMindmapV2(id, userId);
+        return responseFormatter.success(res, meeting, 'Mapa mental regenerado. Atualize a página para ver.');
+    } catch (err) {
+        logger.error('KingBrief regenerateMindmap error', err);
+        const status = err.statusCode || 400;
+        return responseFormatter.error(res, err.message || 'Erro ao regenerar mapa mental.', status);
+    }
+}
+
 /** POST /:id/share – gera ou devolve share_token e URL partilhável (requer auth). */
 async function generateShareToken(req, res) {
     try {
@@ -285,6 +299,7 @@ module.exports = {
     lessonReport,
     communicationReport,
     improveText,
+    regenerateMindmap,
     getSharedByToken,
     generateShareToken
 };

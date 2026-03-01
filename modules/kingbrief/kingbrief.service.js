@@ -330,6 +330,77 @@ async function improveTranscript(meetingId, userId, transcript, apply) {
     return { improved_text, saved: false };
 }
 
+/**
+ * Regenera o mapa mental v2 a partir dos segmentos guardados. Só funciona se a reunião tiver transcript_segments_json.
+ * @param {string} meetingId
+ * @param {string} userId
+ * @returns {Promise<Object>} meeting atualizado
+ */
+async function regenerateMindmapV2(meetingId, userId) {
+    const meeting = await repository.findById(meetingId, userId);
+    if (!meeting) {
+        const e = new Error('Reunião não encontrada.');
+        e.statusCode = 404;
+        throw e;
+    }
+    let segments = meeting.transcript_segments_json;
+    if (typeof segments === 'string' && segments.trim()) {
+        try {
+            segments = JSON.parse(segments);
+        } catch (_) {
+            segments = null;
+        }
+    }
+    if (!Array.isArray(segments) || segments.length === 0) {
+        const e = new Error('Esta reunião não tem segmentos de tempo guardados. Para ter o mapa completo, envie o áudio novamente (processar de novo).');
+        e.statusCode = 400;
+        throw e;
+    }
+    const segmentsForV2 = segments.map((s) => ({
+        from: kingbriefContractService.secToHhMmSs(s.start_sec != null ? s.start_sec : s.start),
+        to: kingbriefContractService.secToHhMmSs(s.end_sec != null ? s.end_sec : s.end),
+        text: (s.text || '').trim()
+    })).filter((s) => s.text);
+    if (segmentsForV2.length === 0) {
+        const e = new Error('Segmentos sem texto. Não é possível regenerar o mapa.');
+        e.statusCode = 400;
+        throw e;
+    }
+    const durationSec = meeting.duration_sec != null ? Math.round(Number(meeting.duration_sec)) : 0;
+    const v2 = await kingbriefMindmapV2Service.generateMindmapV2(
+        meeting.title || 'Reunião',
+        durationSec,
+        segmentsForV2
+    );
+    let contract = meeting.contract_json;
+    if (typeof contract === 'string' && contract.trim()) {
+        try {
+            contract = JSON.parse(contract);
+        } catch (_) {
+            contract = null;
+        }
+    }
+    if (!contract || typeof contract !== 'object') {
+        contract = {
+            version: 'kingbrief.v1',
+            language: 'pt-BR',
+            quality: {},
+            resumo: {},
+            topicos: [],
+            transcricao: { segments: [], timeline_minuto_a_minuto: [] }
+        };
+    }
+    contract.mapaMental = {
+        version: 'kingbrief.mindmap.v2',
+        root: v2.root,
+        style: v2.style,
+        quality: v2.quality,
+        nodes: [v2.root]
+    };
+    await repository.update(meetingId, userId, { contract_json: contract });
+    return repository.findById(meetingId, userId);
+}
+
 module.exports = {
     processAudio,
     getUploadUrl,
@@ -343,6 +414,7 @@ module.exports = {
     getLessonReport,
     getCommunicationReport,
     improveTranscript,
+    regenerateMindmapV2,
     ensureShareToken,
     getSharedMeeting
 };

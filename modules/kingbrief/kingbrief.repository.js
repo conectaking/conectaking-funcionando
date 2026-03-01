@@ -140,6 +140,11 @@ async function update(id, userId, updates) {
             values.push(updates.share_token);
             n++;
         }
+        if (updates.contract_json !== undefined) {
+            sets.push(`contract_json = $${n}::jsonb`);
+            values.push(updates.contract_json == null ? null : JSON.stringify(updates.contract_json));
+            n++;
+        }
         if (sets.length === 0) return findById(id, userId);
         values.push(id, userId);
         const result = await client.query(
