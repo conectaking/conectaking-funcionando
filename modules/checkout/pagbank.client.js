@@ -380,8 +380,13 @@ async function getTransactionByNotificationCode(notificationCode) {
     const res = await fetch(url, { method: 'GET', headers: { Accept: 'application/xml' } });
     const text = await res.text();
     if (!res.ok) {
-      logger.warn('[Checkout] PagBank legacy notification consult error', { status: res.status, notificationCode });
-      return { success: false, error: `PagBank API ${res.status}` };
+      const errMsg = `PagBank API ${res.status}`;
+      if (res.status === 404 || res.status === 486) {
+        logger.debug('[Checkout] PagBank legacy notification não encontrada ou expirada', { status: res.status, notificationCode });
+      } else {
+        logger.warn('[Checkout] PagBank legacy notification consult error', { status: res.status, notificationCode });
+      }
+      return { success: false, error: errMsg, statusCode: res.status };
     }
     const reference = (text.match(/<reference>([^<]*)<\/reference>/i) || [])[1];
     const statusStr = (text.match(/<status>([^<]*)<\/status>/i) || [])[1];
@@ -389,7 +394,7 @@ async function getTransactionByNotificationCode(notificationCode) {
     return { success: true, reference: (reference || '').trim(), status };
   } catch (e) {
     logger.warn('[Checkout] PagBank legacy consult exception', { message: e.message });
-    return { success: false, error: e.message || 'Falha ao consultar notificação' };
+    return { success: false, error: e.message || 'Falha ao consultar notificação', statusCode: null };
   }
 }
 

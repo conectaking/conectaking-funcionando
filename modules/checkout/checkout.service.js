@@ -268,6 +268,14 @@ async function processWebhook(payload, rawBody, signature) {
   if (notificationCode && notificationType === 'transaction') {
     const consult = await pagbank.getTransactionByNotificationCode(notificationCode);
     if (!consult.success) {
+      const statusCode = consult.statusCode;
+      if (statusCode === 404 || statusCode === 486) {
+        return { processed: true };
+      }
+      if (statusCode === 408) {
+        logger.warn('[Checkout] Legacy notification consult timeout', { notificationCode });
+        return { processed: true };
+      }
       logger.warn('[Checkout] Legacy notification consult failed', { notificationCode, error: consult.error });
       return { processed: false, error: consult.error };
     }
