@@ -10,15 +10,15 @@ const TABLE = 'kingbrief_meetings';
 
 /**
  * Criar uma nova reunião
- * @param {Object} data - { user_id, title, audio_url, transcript, transcript_segments_json, summary, summary_strategic, highlights_json, topics_json, actions_json, mindmap_json, duration_sec }
+ * @param {Object} data - inclui contract_json (opcional), além dos campos existentes
  * @returns {Promise<Object>} meeting criado
  */
 async function create(data) {
     const client = await db.pool.connect();
     try {
         const result = await client.query(
-            `INSERT INTO ${TABLE} (user_id, title, audio_url, transcript, transcript_segments_json, summary, summary_strategic, highlights_json, topics_json, actions_json, mindmap_json, duration_sec)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            `INSERT INTO ${TABLE} (user_id, title, audio_url, transcript, transcript_segments_json, summary, summary_strategic, highlights_json, topics_json, actions_json, mindmap_json, duration_sec, contract_json)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
              RETURNING *`,
             [
                 data.user_id,
@@ -32,7 +32,8 @@ async function create(data) {
                 JSON.stringify(data.topics_json || []),
                 JSON.stringify(data.actions_json || []),
                 JSON.stringify(data.mindmap_json || { id: 'root', title: 'Tema Central', collapsed: false, children: [] }),
-                data.duration_sec || null
+                data.duration_sec || null,
+                data.contract_json != null ? JSON.stringify(data.contract_json) : null
             ]
         );
         return result.rows[0];

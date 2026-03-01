@@ -8,6 +8,7 @@ const { nanoid } = require('nanoid');
 const repository = require('./kingbrief.repository');
 const transcriptionService = require('../../services/transcriptionService');
 const summaryMindmapService = require('../../services/summaryMindmapService');
+const kingbriefContractService = require('../../services/kingbriefContractService');
 const { getUserPlan } = require('../../utils/plan-helpers');
 const { r2PutObjectBuffer, r2PresignPut, r2GetObjectViaPublicUrl } = require('../../utils/r2');
 const logger = require('../../utils/logger');
@@ -112,11 +113,20 @@ async function processAudio(params) {
     }
 
     let summaryData;
+    let contract = null;
     try {
-        summaryData = await summaryMindmapService.generateSummaryAndMindmap(transcript);
+        contract = await kingbriefContractService.generateKingBriefContract(transcript, transcriptSegments, durationSec);
+        summaryData = kingbriefContractService.contractToLegacy(contract);
     } catch (err) {
-        logger.error('KingBrief summary error', { userId, error: err.message });
-        throw Object.assign(err, { statusCode: err.statusCode || 503 });
+        logger.warn('KingBrief contract failed, using legacy summary', { userId, error: err.message });
+    }
+    if (!summaryData) {
+        try {
+            summaryData = await summaryMindmapService.generateSummaryAndMindmap(transcript);
+        } catch (err) {
+            logger.error('KingBrief summary error', { userId, error: err.message });
+            throw Object.assign(err, { statusCode: err.statusCode || 503 });
+        }
     }
 
     const meeting = await repository.create({
@@ -131,7 +141,8 @@ async function processAudio(params) {
         topics_json: summaryData.topics,
         actions_json: summaryData.actions,
         mindmap_json: summaryData.mindmap,
-        duration_sec: durationSec
+        duration_sec: durationSec,
+        contract_json: contract || null
     });
 
     return meeting;
@@ -186,11 +197,20 @@ async function processAudioFromUrl(userId, params) {
         throw Object.assign(err, { statusCode: err.statusCode || 503 });
     }
     let summaryData;
+    let contract = null;
     try {
-        summaryData = await summaryMindmapService.generateSummaryAndMindmap(transcript);
+        contract = await kingbriefContractService.generateKingBriefContract(transcript, transcriptSegments, durationSec);
+        summaryData = kingbriefContractService.contractToLegacy(contract);
     } catch (err) {
-        logger.error('KingBrief summary error', { userId, error: err.message });
-        throw Object.assign(err, { statusCode: err.statusCode || 503 });
+        logger.warn('KingBrief contract failed, using legacy summary', { userId, error: err.message });
+    }
+    if (!summaryData) {
+        try {
+            summaryData = await summaryMindmapService.generateSummaryAndMindmap(transcript);
+        } catch (err) {
+            logger.error('KingBrief summary error', { userId, error: err.message });
+            throw Object.assign(err, { statusCode: err.statusCode || 503 });
+        }
     }
     const meeting = await repository.create({
         user_id: userId,
@@ -204,7 +224,8 @@ async function processAudioFromUrl(userId, params) {
         topics_json: summaryData.topics,
         actions_json: summaryData.actions,
         mindmap_json: summaryData.mindmap,
-        duration_sec: durationSec
+        duration_sec: durationSec,
+        contract_json: contract || null
     });
     return meeting;
 }
