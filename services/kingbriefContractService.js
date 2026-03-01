@@ -12,11 +12,13 @@ const CHAT_URL = 'https://api.openai.com/v1/chat/completions';
 const KINGBRIEF_MASTER_PROMPT = `VOCÊ É A IA DO KINGBRIEF (transcrição, validação e mapa mental).
 Seu objetivo é provar que você leu TODO o conteúdo, usando timestamps e cobertura por minutos.
 
+REGRA GERAL: Resumo, tópicos e mapa mental devem ser extraídos da TRANSCRIÇÃO COMPLETA que você recebe na ENTRADA. Não invente conteúdo que não esteja no texto. Use as palavras e a mensagem da transcrição.
+
 ENTRADA (você receberá um destes formatos):
 A) TRANSCRIÇÃO COM SEGMENTOS E TEMPO:
-- segments: [{start: segundos, end: segundos, text: "..."}]
+- segments: [{start: segundos, end: segundos, text: "..."}]  → texto completo da fala
 B) TRANSCRIÇÃO SEM TEMPO (menos ideal):
-- text: "..." e duration_seconds: N
+- text: "..." (transcrição completa) e duration_seconds: N
 
 TAREFAS OBRIGATÓRIAS (ordem fixa):
 1) NORMALIZAR TEMPOS
@@ -50,11 +52,11 @@ TAREFAS OBRIGATÓRIAS (ordem fixa):
 - Cada tópico: title, bullets, sources: [{from:"HH:MM:SS",to:"HH:MM:SS"}], children
 - A soma da cobertura de sources deve cobrir pelo menos 90% dos minutos com fala.
 
-7) ABA: mapaMental
-- root central; 6 a 10 ramos principais (level 1); cada um com 2 a 6 subramos (level 2); cada subramo com 2 a 8 folhas (level 3).
-- style: layout "radial", rootPosition "center", level1NodeShape "pill", branchColors array.
-- Cada nó: id, label, emoji, color, collapsed, sources: [{from,to}], children.
-- REGRA: Cada nó deve ter sources. Se sobrar conteúdo, crie ramo "Outros".
+7) ABA: mapaMental – EXTRAÇÃO EXCLUSIVA DA TRANSCRIÇÃO COMPLETA
+- FONTE ÚNICA: a transcrição completa que você recebeu na ENTRADA (format A ou B). O mapa mental NÃO pode ser baseado em resumo nem em tópicos genéricos: deve ser extraído das palavras, frases e temas que aparecem no TEXTO da transcrição. Cada label (ramo/folha) deve corresponder a algo que está dito na transcrição.
+- Estrutura: root central (label = tema principal da transcrição). 6 a 10 ramos principais (level 1), cada um com 2 a 6 subramos (level 2), cada subramo com 2 a 8 folhas (level 3). Estilo rede/mapa mental: tema central no centro, ramos irradiando. NUNCA devolva apenas 4 ou 5 itens; extraia e desdobre TODOS os temas que aparecem na transcrição.
+- Cada nó: id, label (2-6 palavras, extraídas ou resumidas do texto), emoji (opcional), color (branchColors por índice), collapsed (false no root, true nos ramos), sources: [{from,to}] obrigatório (intervalos onde esse conteúdo aparece na transcrição), children.
+- REGRA: Cada nó deve ter sources que apontem para os minutos/trechos da transcrição onde esse tema é tratado. Se sobrar conteúdo, crie ramo "Outros". O mapa mental é a rede de ideias da transcrição completa.
 
 FORMATO DE SAÍDA (obrigatório): Retorne APENAS um JSON válido com esta estrutura (sem texto antes ou depois):
 
@@ -175,7 +177,7 @@ async function generateKingBriefContract(transcript, segments, durationSeconds) 
             model: 'gpt-4o-mini',
             messages: [
                 { role: 'system', content: KINGBRIEF_MASTER_PROMPT },
-                { role: 'user', content: 'ENTRADA (use exatamente este formato para processar):\n\n' + userInput }
+                { role: 'user', content: 'Processa a seguinte ENTRADA. O resumo, os tópicos e sobretudo o mapaMental devem ser extraídos EXCLUSIVAMENTE do conteúdo desta transcrição (palavras e mensagem do texto). Use esta transcrição como única fonte.\n\nENTRADA:\n\n' + userInput }
             ],
             temperature: 0.2,
             max_tokens: 16000

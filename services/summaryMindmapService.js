@@ -28,13 +28,16 @@ const SYSTEM_PROMPT = `Tu és um assistente que analisa transcrições de reuni�
       {
         "id": "node1",
         "title": "Ramo principal (2-6 palavras)",
+        "emoji": "📌",
         "collapsed": true,
         "children": [
           {
             "id": "node1a",
-            "title": "Subtópico ou continuação (2-6 palavras)",
+            "title": "Subtópico (2-6 palavras)",
             "collapsed": true,
-            "children": []
+            "children": [
+              { "id": "node1a1", "title": "Detalhe ou exemplo", "collapsed": true, "children": [] }
+            ]
           }
         ]
       }
@@ -42,11 +45,10 @@ const SYSTEM_PROMPT = `Tu és um assistente que analisa transcrições de reuni�
   }
 }
 
-Regras do mapa mental (OBRIGATÓRIO cumprir para transcrições longas):
-- Usa TODO o conteúdo da transcrição para extrair os temas: principais tópicos, subtópicos e desdobramentos.
-- Máximo 6 ramos principais (filhos diretos de root). Cada ramo deve ser um tema real discutido na reunião.
-- Até 4 níveis de profundidade: root -> ramo principal -> subtópico -> sub-subtópico. Preenche os níveis com continuação do tema (significado, detalhes, conclusões).
-- Cada "title": 2 a 6 palavras, claras e descritivas (não genéricas). Subtópicos devem continuar/desdobrar o ramo pai.
+Regras do mapa mental (OBRIGATÓRIO – extração da transcrição completa):
+- O mapa mental é extraído EXCLUSIVAMENTE da transcrição completa que se segue. Cada ramo e subtópico deve refletir temas, ideias e palavras que aparecem no texto. Não invente temas que não estejam na transcrição.
+- Usa TODO o conteúdo da transcrição. 6 a 8 ramos principais (filhos diretos de root), cada um com 2 a 6 subramos, cada subramo com 2 a 8 folhas. NUNCA devolva só 4 ou 5 itens; desdobre os temas que estão na transcrição.
+- Até 4 níveis: root -> ramo principal -> subtópico -> sub-subtópico. Cada "title": 2 a 6 palavras, baseadas no que está escrito na transcrição. Pode adicionar "emoji" por ramo (opcional).
 - "collapsed": true em todos os nós exceto root (root "collapsed": false).
 - Retorna SOMENTE o JSON, sem markdown e sem explicações.`;
 
@@ -63,7 +65,7 @@ async function generateSummaryAndMindmap(transcript) {
 
     // Transcrições longas (ex.: 1h): usar até 60k caracteres para o mapa mental refletir todo o conteúdo
     const transcriptSlice = (transcript || '').slice(0, 60000);
-    const userContent = `Analisa a seguinte transcrição de reunião (pode ser longa) e devolve o JSON com summary, topics, actions e mindmap conforme as regras. Extrai tópicos e mapa mental de TODO o texto.\n\nTranscrição:\n${transcriptSlice}`;
+    const userContent = `Analisa a seguinte transcrição de reunião (pode ser longa) e devolve o JSON com summary, topics, actions e mindmap conforme as regras. O mapa mental (mindmap) deve ser extraído EXCLUSIVAMENTE desta transcrição completa: cada ramo e subtópico deve corresponder a temas e palavras que aparecem no texto abaixo. Usa TODO o texto.\n\nTranscrição completa:\n${transcriptSlice}`;
 
     const response = await fetch(CHAT_URL, {
         method: 'POST',
