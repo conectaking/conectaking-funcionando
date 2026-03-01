@@ -84,10 +84,9 @@ async function transcribeOneChunk(audioBuffer, mimeType, filename, prompt) {
  */
 async function transcribeLongAudio(audioBuffer, mimeType, filename) {
     const ext = (filename && path.extname(filename)) || (mimeType === 'audio/mpeg' || mimeType === 'audio/mp3' ? '.mp3' : mimeType === 'audio/wav' ? '.wav' : '.m4a');
-    const baseName = (filename && path.basename(filename, path.extname(filename))) || 'audio';
     const tmpDir = path.join(os.tmpdir(), 'kingbrief-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10));
     const inputPath = path.join(tmpDir, 'input' + ext);
-    const segmentPattern = path.join(tmpDir, 'seg_%03d' + ext);
+    const segmentPattern = path.join(tmpDir, 'seg_%03d.mp3');
 
     await fs.mkdir(tmpDir, { recursive: true });
     await fs.writeFile(inputPath, audioBuffer);
@@ -98,7 +97,8 @@ async function transcribeLongAudio(audioBuffer, mimeType, filename) {
                 '-i', inputPath,
                 '-f', 'segment',
                 '-segment_time', String(SEGMENT_DURATION_SEC),
-                '-c', 'copy',
+                '-acodec', 'libmp3lame',
+                '-q:a', '2',
                 '-reset_timestamps', '1',
                 '-y',
                 segmentPattern
@@ -121,7 +121,7 @@ async function transcribeLongAudio(audioBuffer, mimeType, filename) {
     }
 
     const entries = await fs.readdir(tmpDir);
-    const segmentFiles = entries.filter(f => /^seg_\d+\./.test(path.basename(f))).sort();
+    const segmentFiles = entries.filter(f => /^seg_\d+\.mp3$/.test(path.basename(f))).sort();
     if (segmentFiles.length === 0) {
         await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
         throw new Error('ffmpeg não gerou segmentos. Verifique o formato do áudio.');
@@ -135,7 +135,7 @@ async function transcribeLongAudio(audioBuffer, mimeType, filename) {
         const buf = await fs.readFile(segPath);
         await fs.unlink(segPath).catch(() => {});
         logger.info('KingBrief transcription: segmento ' + (i + 1) + '/' + segmentFiles.length);
-        const text = await transcribeOneChunk(buf, mimeType, segmentFiles[i], previousPrompt);
+        const text = await transcribeOneChunk(buf, 'audio/mpeg', segmentFiles[i], previousPrompt);
         if (text) {
             parts.push(text);
             previousPrompt = text;
