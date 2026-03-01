@@ -101,8 +101,11 @@ async function processAudio(params) {
     }
 
     let transcript = '';
+    let transcriptSegments = [];
     try {
-        transcript = await transcriptionService.transcribe(buffer, mimeType, originalname || `audio.${ext}`);
+        const transResult = await transcriptionService.transcribe(buffer, mimeType, originalname || `audio.${ext}`);
+        transcript = typeof transResult === 'string' ? transResult : (transResult.text || '');
+        transcriptSegments = (transResult && transResult.segments) ? transResult.segments : [];
     } catch (err) {
         logger.error('KingBrief transcription error', { userId, error: err.message });
         throw Object.assign(err, { statusCode: err.statusCode || 503 });
@@ -121,7 +124,10 @@ async function processAudio(params) {
         title: title || null,
         audio_url: audioUrl,
         transcript,
+        transcript_segments_json: transcriptSegments.length ? transcriptSegments : null,
         summary: summaryData.summary,
+        summary_strategic: summaryData.summary_strategic || null,
+        highlights_json: (summaryData.highlights && summaryData.highlights.length) ? summaryData.highlights : null,
         topics_json: summaryData.topics,
         actions_json: summaryData.actions,
         mindmap_json: summaryData.mindmap,
@@ -170,8 +176,11 @@ async function processAudioFromUrl(userId, params) {
     const ext = getExtension(contentType, filename);
     const originalname = filename || `audio.${ext}`;
     let transcript = '';
+    let transcriptSegments = [];
     try {
-        transcript = await transcriptionService.transcribe(buffer, contentType || 'audio/mpeg', originalname);
+        const transResult = await transcriptionService.transcribe(buffer, contentType || 'audio/mpeg', originalname);
+        transcript = typeof transResult === 'string' ? transResult : (transResult.text || '');
+        transcriptSegments = (transResult && transResult.segments) ? transResult.segments : [];
     } catch (err) {
         logger.error('KingBrief transcription error', { userId, error: err.message });
         throw Object.assign(err, { statusCode: err.statusCode || 503 });
@@ -188,7 +197,10 @@ async function processAudioFromUrl(userId, params) {
         title: title || null,
         audio_url: publicUrl,
         transcript,
+        transcript_segments_json: transcriptSegments.length ? transcriptSegments : null,
         summary: summaryData.summary,
+        summary_strategic: summaryData.summary_strategic || null,
+        highlights_json: (summaryData.highlights && summaryData.highlights.length) ? summaryData.highlights : null,
         topics_json: summaryData.topics,
         actions_json: summaryData.actions,
         mindmap_json: summaryData.mindmap,

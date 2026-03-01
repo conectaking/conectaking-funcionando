@@ -32,9 +32,10 @@ const PROMPT_MAX_WORDS = 200;
  * @param {string} mimeType
  * @param {string} filename
  * @param {string} [prompt] - Contexto do segmento anterior para continuidade
- * @returns {Promise<string>}
+ * @param {boolean} [withSegments] - Se true, pede verbose_json e devolve { text, segments }
+ * @returns {Promise<string|{ text: string, segments: Array<{ start_sec: number, end_sec: number, text: string }>}>}
  */
-async function transcribeOneChunk(audioBuffer, mimeType, filename, prompt) {
+async function transcribeOneChunk(audioBuffer, mimeType, filename, prompt, withSegments) {
     const form = new FormData();
     form.append('file', audioBuffer, {
         filename: filename || 'audio.mp3',
@@ -42,6 +43,10 @@ async function transcribeOneChunk(audioBuffer, mimeType, filename, prompt) {
     });
     form.append('model', 'whisper-1');
     form.append('language', 'pt');
+    if (withSegments) {
+        form.append('response_format', 'verbose_json');
+        form.append('timestamp_granularities[]', 'segment');
+    }
     if (prompt && prompt.trim()) {
         const truncated = prompt.trim().split(/\s+/).slice(-PROMPT_MAX_WORDS).join(' ');
         if (truncated) form.append('prompt', truncated);
@@ -80,7 +85,18 @@ async function transcribeOneChunk(audioBuffer, mimeType, filename, prompt) {
     } catch (_) {
         throw new Error('Resposta inválida do serviço de transcrição.');
     }
-    return (data && data.text) ? String(data.text).trim() : '';
+    const fullText = (data && data.text) ? String(data.text).trim() : '';
+    if (withSegments && data && Array.isArray(data.segments)) {
+        const segments = data.segments
+            .filter(s => s && (s.text || '').trim())
+            .map(s => ({
+                start_sec: Number(s.start),
+                end_sec: Number(s.end),
+                text: String(s.text || '').trim()
+            }));
+        return { text: fullText, segments };
+    }
+    return fullText;
 }
 
 /**
@@ -133,6 +149,7 @@ async function transcribeLongAudio(audioBuffer, mimeType, filename) {
     }
 
     const parts = [];
+    const segments = [];
     let previousPrompt = '';
 
     for (let i = 0; i < segmentFiles.length; i++) {
@@ -140,15 +157,20 @@ async function transcribeLongAudio(audioBuffer, mimeType, filename) {
         const buf = await fs.readFile(segPath);
         await fs.unlink(segPath).catch(() => {});
         logger.info('KingBrief transcription: segmento ' + (i + 1) + '/' + segmentFiles.length);
-        const text = await transcribeOneChunk(buf, 'audio/mpeg', segmentFiles[i], previousPrompt);
+        const result = await transcribeOneChunk(buf, 'audio/mpeg', segmentFiles[i], previousPrompt, false);
+        const text = typeof result === 'string' ? result : (result && result.text) || '';
         if (text) {
             parts.push(text);
             previousPrompt = text;
+            const startSec = i * SEGMENT_DURATION_SEC;
+            const endSec = (i + 1) * SEGMENT_DURATION_SEC;
+            segments.push({ start_sec: startSec, end_sec: endSec, text });
         }
     }
 
     await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
-    return parts.join('\n\n').trim();
+    const fullText = parts.join('\n\n').trim();
+    return { text: fullText, segments };
 }
 
 /**
@@ -156,7 +178,7 @@ async function transcribeLongAudio(audioBuffer, mimeType, filename) {
  * @param {Buffer} audioBuffer - Conteúdo do ficheiro de áudio
  * @param {string} [mimeType] - Ex.: audio/mpeg, audio/wav
  * @param {string} [filename] - Ex.: audio.mp3
- * @returns {Promise<string>} Texto transcrito em português
+ * @returns {Promise<{ text: string, segments: Array<{ start_sec: number, end_sec: number, text: string }>}>}
  */
 async function transcribe(audioBuffer, mimeType = 'audio/mpeg', filename = 'audio.mp3') {
     if (!OPENAI_API_KEY || !OPENAI_API_KEY.trim()) {
@@ -167,7 +189,9 @@ async function transcribe(audioBuffer, mimeType = 'audio/mpeg', filename = 'audi
     const size = (audioBuffer && audioBuffer.length) || 0;
 
     if (size <= WHISPER_MAX_FILE_SIZE_BYTES) {
-        return transcribeOneChunk(audioBuffer, mimeType, filename);
+        const result = await transcribeOneChunk(audioBuffer, mimeType, filename, undefined, true);
+        if (typeof result === 'string') return { text: result, segments: [] };
+        return { text: result.text || '', segments: result.segments || [] };
     }
 
     const sizeMB = (size / (1024 * 1024)).toFixed(1);

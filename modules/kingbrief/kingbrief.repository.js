@@ -10,22 +10,25 @@ const TABLE = 'kingbrief_meetings';
 
 /**
  * Criar uma nova reunião
- * @param {Object} data - { user_id, title, audio_url, transcript, summary, topics_json, actions_json, mindmap_json, duration_sec }
+ * @param {Object} data - { user_id, title, audio_url, transcript, transcript_segments_json, summary, summary_strategic, highlights_json, topics_json, actions_json, mindmap_json, duration_sec }
  * @returns {Promise<Object>} meeting criado
  */
 async function create(data) {
     const client = await db.pool.connect();
     try {
         const result = await client.query(
-            `INSERT INTO ${TABLE} (user_id, title, audio_url, transcript, summary, topics_json, actions_json, mindmap_json, duration_sec)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            `INSERT INTO ${TABLE} (user_id, title, audio_url, transcript, transcript_segments_json, summary, summary_strategic, highlights_json, topics_json, actions_json, mindmap_json, duration_sec)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
              RETURNING *`,
             [
                 data.user_id,
                 data.title || null,
                 data.audio_url || null,
                 data.transcript || null,
+                data.transcript_segments_json != null ? JSON.stringify(data.transcript_segments_json) : null,
                 data.summary || null,
+                data.summary_strategic || null,
+                data.highlights_json != null ? JSON.stringify(data.highlights_json) : null,
                 JSON.stringify(data.topics_json || []),
                 JSON.stringify(data.actions_json || []),
                 JSON.stringify(data.mindmap_json || { id: 'root', title: 'Tema Central', collapsed: false, children: [] }),
@@ -114,6 +117,7 @@ async function update(id, userId, updates) {
             sets.push(`transcript = $${n}`);
             values.push(updates.transcript);
             n++;
+            sets.push(`transcript_segments_json = NULL`);
         }
         if (updates.business_json !== undefined) {
             sets.push(`business_json = $${n}::jsonb`);
@@ -207,7 +211,7 @@ async function getTotalDurationSecondsThisMonth(userId) {
 async function findByShareToken(shareToken) {
     if (!shareToken || !shareToken.trim()) return null;
     const result = await db.query(
-        `SELECT id, user_id, title, audio_url, transcript, summary, topics_json, actions_json, mindmap_json, duration_sec, created_at, share_token
+        `SELECT id, user_id, title, audio_url, transcript, transcript_segments_json, summary, summary_strategic, highlights_json, topics_json, actions_json, mindmap_json, duration_sec, created_at, share_token
          FROM ${TABLE} WHERE share_token = $1`,
         [shareToken.trim()]
     );

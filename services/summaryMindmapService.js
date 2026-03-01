@@ -13,7 +13,9 @@ const CHAT_URL = 'https://api.openai.com/v1/chat/completions';
 const SYSTEM_PROMPT = `Tu és um assistente que analisa transcrições de reuniões (podem ser longas, 1h ou mais) e devolves APENAS um objeto JSON válido, sem texto antes ou depois, com a seguinte estrutura exata:
 
 {
-  "summary": "Resumo executivo curto e estratégico (2-4 frases)",
+  "summary": "Resumo RÁPIDO em 2-3 frases (visão geral em poucas linhas)",
+  "summary_strategic": "Resumo ESTRATÉGICO: use bullet points com decisões tomadas, próximos passos e conclusões principais. Pode ter múltiplos parágrafos.",
+  "highlights": ["Frase ou trecho importante 1 citado na reunião", "Frase importante 2", "..."],
   "topics": ["Tópico 1", "Tópico 2", "..."],
   "actions": [
     {"task": "Descrição da tarefa", "owner": null, "due": null}
@@ -105,8 +107,11 @@ async function generateSummaryAndMindmap(transcript) {
         throw new Error('Não foi possível extrair JSON válido da resposta.');
     }
 
+    const highlights = Array.isArray(parsed.highlights) ? parsed.highlights.map(sanitizeString).filter(Boolean).slice(0, 15) : [];
     return {
         summary: sanitizeString(parsed.summary),
+        summary_strategic: sanitizeString(parsed.summary_strategic),
+        highlights,
         topics: Array.isArray(parsed.topics) ? parsed.topics.map(sanitizeString) : [],
         actions: Array.isArray(parsed.actions) ? parsed.actions.map(sanitizeAction) : [],
         mindmap: sanitizeMindmap(parsed.mindmap) || { id: 'root', title: 'Tema Central', collapsed: false, children: [] }
