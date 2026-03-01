@@ -33,6 +33,7 @@ Documento de referência: **PROMPT OFICIAL – KING BRIEFING 2.0 (ÁUDIO ONLY)**
 ## Regras técnicas
 
 - **Áudio apenas**: não implementar upload de vídeo; aceitar apenas .mp3, .wav, .m4a (e webm de gravação).
+- **Áudios longos (>25 MB, ex.: 1 hora)**: o backend divide automaticamente com **ffmpeg** (segmentos de 20 min), transcreve cada parte no Whisper e junta o texto. Para isso, **ffmpeg** deve estar instalado no servidor (ex.: `apt-get install ffmpeg`, ou imagem Docker com ffmpeg). Se não estiver, o utilizador vê mensagem a pedir áudios até ~25 min ou a instalação de ffmpeg.
 - Backend desacoplado, API modular, processamento assíncrono, BD por sessões, cache para evitar reprocessamento.
 - Interface responsiva; preparado para integração com KingAgenda e ConectaKing.
 

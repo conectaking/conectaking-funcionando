@@ -2,13 +2,15 @@
 
 ## 📋 Valores para Copiar e Colar:
 
+Obtenha as credenciais em: **Google Cloud Console** → APIs & Services → Credentials (crie ou use um OAuth 2.0 Client ID).
+
 ### Variável 1:
 **Key:** GOOGLE_CLIENT_ID
-**Value:** 1056182922492-g2g5mo30pg52sm4d57hm9uafhrnntn4v.apps.googleusercontent.com
+**Value:** (cole aqui o Client ID do seu projeto Google)
 
 ### Variável 2:
 **Key:** GOOGLE_CLIENT_SECRET
-**Value:** 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
+**Value:** (cole aqui o Client Secret do seu projeto Google)
 
 ---
 
@@ -29,13 +31,13 @@
 ### 4. Adicionar Primeira Variável:
    - Clique em **"Add Environment Variable"** ou **"Add Variable"**
    - **Key:** `GOOGLE_CLIENT_ID`
-   - **Value:** `1056182922492-g2g5mo30pg52sm4d57hm9uafhrnntn4v.apps.googleusercontent.com`
+   - **Value:** (o Client ID que você copiou do Google Cloud Console)
    - Clique em **"Save"** ou **"Add"**
 
 ### 5. Adicionar Segunda Variável:
    - Clique novamente em **"Add Environment Variable"**
    - **Key:** `GOOGLE_CLIENT_SECRET`
-   - **Value:** `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`
+   - **Value:** (o Client Secret que você copiou do Google Cloud Console)
    - Clique em **"Save"** ou **"Add"**
 
 ### 6. Verificar:
@@ -60,7 +62,7 @@
 
 1. **NÃO** adicione espaços antes ou depois do "="
 2. **NÃO** adicione aspas nos valores
-3. Copie e cole os valores **exatamente** como estão acima
+3. Use os valores que você obteve no Google Cloud Console (não partilhe credenciais no repositório)
 4. Certifique-se de que ambas as variáveis foram salvas
 
 ---
@@ -91,3 +93,17 @@ Procure por:
 ## 🎯 Pronto!
 
 Após adicionar essas variáveis e fazer deploy, a conexão com Google Calendar deve funcionar perfeitamente!
+
+---
+
+## 🎙️ KingBrief – Áudios longos (ex.: 1 hora) – OK
+
+O projeto já inclui um **Dockerfile** que instala o **ffmpeg** no servidor. Para o Render usar esse Dockerfile e ter ffmpeg disponível:
+
+1. No Render, abra o seu serviço da API (Web Service).
+2. Em **Settings** (ou configuração do serviço), em **Build & Deploy**:
+   - **Environment**: escolha **Docker** (em vez de Node/native).
+   - O Render vai usar o ficheiro **Dockerfile** na raiz do repositório.
+3. Faça deploy. A imagem inclui Node + ffmpeg; o KingBrief consegue transcrever áudios de 1 hora ou mais sem instalar nada à parte.
+
+Se o serviço já for **Native (Node)** e não quiser mudar para Docker, áudios até ~25 min continuam a funcionar; para áudios maiores é preciso passar a usar Docker com este Dockerfile.

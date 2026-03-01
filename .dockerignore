@@ -1,0 +1,11 @@
+node_modules
+.git
+.env
+*.log
+.DS_Store
+.cursor
+.vscode
+terminals
+*.md
+!ADICIONAR_NO_RENDER.txt
+!VARIAVEIS-RENDER.txt
