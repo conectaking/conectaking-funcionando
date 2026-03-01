@@ -105,6 +105,26 @@ async function update(id, userId, updates) {
             values.push(updates.title);
             n++;
         }
+        if (updates.mindmap_json !== undefined) {
+            sets.push(`mindmap_json = $${n}::jsonb`);
+            values.push(JSON.stringify(updates.mindmap_json));
+            n++;
+        }
+        if (updates.business_json !== undefined) {
+            sets.push(`business_json = $${n}::jsonb`);
+            values.push(JSON.stringify(updates.business_json));
+            n++;
+        }
+        if (updates.lesson_json !== undefined) {
+            sets.push(`lesson_json = $${n}::jsonb`);
+            values.push(JSON.stringify(updates.lesson_json));
+            n++;
+        }
+        if (updates.communication_json !== undefined) {
+            sets.push(`communication_json = $${n}::jsonb`);
+            values.push(JSON.stringify(updates.communication_json));
+            n++;
+        }
         if (sets.length === 0) return findById(id, userId);
         values.push(id, userId);
         const result = await client.query(

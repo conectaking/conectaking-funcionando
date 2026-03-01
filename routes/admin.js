@@ -1255,5 +1255,61 @@ router.get('/analytics/user/:userId/details', protectAdmin, async (req, res) => 
     }
 });
 
+/**
+ * @route   GET /api/admin/plans
+ * @desc    Lista planos de assinatura (só ADM). Inclui kingbrief_minutes_per_month para edição em "Planos".
+ * @access  Private (Admin)
+ */
+router.get('/plans', protectAdmin, async (req, res) => {
+    try {
+        const { rows } = await db.query(`
+            SELECT id, plan_code, plan_name, price, description, is_active,
+                   kingbrief_minutes_per_month,
+                   created_at, updated_at
+            FROM subscription_plans
+            ORDER BY price ASC NULLS LAST, plan_code
+        `);
+        res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error('Erro GET /api/admin/plans:', err);
+        res.status(500).json({ success: false, message: 'Erro ao listar planos.' });
+    }
+});
+
+/**
+ * @route   PATCH /api/admin/plans/:id
+ * @desc    Atualiza limite KingBrief do plano (minutos/mês). Só ADM. null = ilimitado.
+ * @access  Private (Admin)
+ */
+router.patch('/plans/:id', protectAdmin, async (req, res) => {
+    try {
+        const planId = parseInt(req.params.id, 10);
+        const body = req.body || {};
+        if (isNaN(planId)) {
+            return res.status(400).json({ success: false, message: 'ID do plano inválido.' });
+        }
+        if (!('kingbrief_minutes_per_month' in body)) {
+            return res.status(400).json({ success: false, message: 'Envie kingbrief_minutes_per_month (número ou null para ilimitado).' });
+        }
+        const raw = body.kingbrief_minutes_per_month;
+        const minutes = (raw === null || raw === '' || raw === undefined)
+            ? null
+            : Math.max(0, parseInt(raw, 10));
+        const { rows } = await db.query(
+            `UPDATE subscription_plans
+             SET kingbrief_minutes_per_month = $1, updated_at = NOW()
+             WHERE id = $2
+             RETURNING id, plan_code, plan_name, kingbrief_minutes_per_month, updated_at`,
+            [minutes, planId]
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Plano não encontrado.' });
+        }
+        res.json({ success: true, data: rows[0], message: 'Plano atualizado.' });
+    } catch (err) {
+        console.error('Erro PATCH /api/admin/plans/:id:', err);
+        res.status(500).json({ success: false, message: 'Erro ao atualizar plano.' });
+    }
+});
 
 module.exports = router;

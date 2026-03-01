@@ -179,22 +179,43 @@ async function processAudioFromUrl(userId, params) {
 async function getBusinessReport(id, userId) {
     const meeting = await repository.findById(id, userId);
     if (!meeting) return null;
+    const cached = meeting.business_json;
+    if (cached != null && typeof cached === 'object') return cached;
+    if (cached != null && typeof cached === 'string') {
+        try { return JSON.parse(cached); } catch (_) {}
+    }
     const transcript = meeting.transcript || '';
-    return summaryMindmapService.generateBusinessReport(transcript);
+    const report = await summaryMindmapService.generateBusinessReport(transcript);
+    await repository.update(id, userId, { business_json: report });
+    return report;
 }
 
 async function getLessonReport(id, userId) {
     const meeting = await repository.findById(id, userId);
     if (!meeting) return null;
+    const cached = meeting.lesson_json;
+    if (cached != null && typeof cached === 'object') return cached;
+    if (cached != null && typeof cached === 'string') {
+        try { return JSON.parse(cached); } catch (_) {}
+    }
     const transcript = meeting.transcript || '';
-    return summaryMindmapService.generateLessonReport(transcript);
+    const report = await summaryMindmapService.generateLessonReport(transcript);
+    await repository.update(id, userId, { lesson_json: report });
+    return report;
 }
 
 async function getCommunicationReport(id, userId) {
     const meeting = await repository.findById(id, userId);
     if (!meeting) return null;
+    const cached = meeting.communication_json;
+    if (cached != null && typeof cached === 'object') return cached;
+    if (cached != null && typeof cached === 'string') {
+        try { return JSON.parse(cached); } catch (_) {}
+    }
     const transcript = meeting.transcript || '';
-    return summaryMindmapService.generateCommunicationAnalysis(transcript);
+    const report = await summaryMindmapService.generateCommunicationAnalysis(transcript);
+    await repository.update(id, userId, { communication_json: report });
+    return report;
 }
 
 module.exports = {
