@@ -12,6 +12,9 @@ const { asyncHandler } = require('../middleware/errorHandler');
 
 const router = express.Router();
 
+// Rota pública (sem auth): link partilhável só leitura
+router.get('/shared/:token', asyncHandler(controller.getSharedByToken));
+
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: config.upload.kingbriefMaxFileSize },
@@ -35,6 +38,7 @@ router.get('/:id/business', asyncHandler(controller.businessReport));
 router.get('/:id/lesson', asyncHandler(controller.lessonReport));
 router.get('/:id/communication', asyncHandler(controller.communicationReport));
 router.get('/:id', asyncHandler(controller.getById));
+router.post('/:id/share', asyncHandler(controller.generateShareToken));
 router.patch('/:id', asyncHandler(controller.update));
 router.delete('/:id', asyncHandler(controller.remove));
 

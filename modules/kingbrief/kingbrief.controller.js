@@ -217,6 +217,35 @@ async function usage(req, res) {
     }
 }
 
+/** GET /shared/:token – público, sem auth. Devolve reunião em modo só leitura. */
+async function getSharedByToken(req, res) {
+    try {
+        const token = req.params.token;
+        if (!token) return responseFormatter.error(res, 'Token em falta.', 400);
+        const meeting = await service.getSharedMeeting(token);
+        if (!meeting) return responseFormatter.error(res, 'Link inválido ou expirado.', 404);
+        return responseFormatter.success(res, meeting);
+    } catch (err) {
+        logger.error('KingBrief getSharedByToken error', err);
+        return responseFormatter.error(res, err.message || 'Erro ao obter reunião.', 500);
+    }
+}
+
+/** POST /:id/share – gera ou devolve share_token e URL partilhável (requer auth). */
+async function generateShareToken(req, res) {
+    try {
+        const userId = req.user.userId;
+        const id = req.params.id;
+        if (!id) return responseFormatter.error(res, 'ID da reunião em falta.', 400);
+        const result = await service.ensureShareToken(id, userId);
+        if (!result) return responseFormatter.error(res, 'Reunião não encontrada.', 404);
+        return responseFormatter.success(res, result);
+    } catch (err) {
+        logger.error('KingBrief generateShareToken error', err);
+        return responseFormatter.error(res, err.message || 'Erro ao gerar link.', 500);
+    }
+}
+
 module.exports = {
     uploadUrl,
     confirm,
@@ -228,5 +257,7 @@ module.exports = {
     usage,
     businessReport,
     lessonReport,
-    communicationReport
+    communicationReport,
+    getSharedByToken,
+    generateShareToken
 };
