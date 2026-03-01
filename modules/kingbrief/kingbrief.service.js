@@ -331,7 +331,9 @@ async function improveTranscript(meetingId, userId, transcript, apply) {
 }
 
 /**
- * Regenera o mapa mental v2 a partir dos segmentos guardados. Só funciona se a reunião tiver transcript_segments_json.
+ * Regenera o mapa mental v2 a partir da TRANSCRIÇÃO COMPLETA.
+ * Se existirem segmentos com tempo, usa-os; senão, parte a transcrição em blocos e atribui tempos aproximados.
+ * Fonte única: o texto da transcrição (resumo, tópicos, partes importantes e mapa vêm daqui).
  * @param {string} meetingId
  * @param {string} userId
  * @returns {Promise<Object>} meeting atualizado
@@ -343,6 +345,16 @@ async function regenerateMindmapV2(meetingId, userId) {
         e.statusCode = 404;
         throw e;
     }
+    const transcript = (meeting.transcript || '').trim();
+    if (!transcript) {
+        const e = new Error('Esta reunião não tem transcrição. Não é possível gerar o mapa mental.');
+        e.statusCode = 400;
+        throw e;
+    }
+
+    let segmentsForV2 = [];
+    let durationSec = meeting.duration_sec != null ? Math.round(Number(meeting.duration_sec)) : 0;
+
     let segments = meeting.transcript_segments_json;
     if (typeof segments === 'string' && segments.trim()) {
         try {
@@ -351,22 +363,43 @@ async function regenerateMindmapV2(meetingId, userId) {
             segments = null;
         }
     }
-    if (!Array.isArray(segments) || segments.length === 0) {
-        const e = new Error('Esta reunião não tem segmentos de tempo guardados. Para ter o mapa completo, envie o áudio novamente (processar de novo).');
-        e.statusCode = 400;
-        throw e;
+    if (Array.isArray(segments) && segments.length > 0) {
+        segmentsForV2 = segments.map((s) => ({
+            from: kingbriefContractService.secToHhMmSs(s.start_sec != null ? s.start_sec : s.start),
+            to: kingbriefContractService.secToHhMmSs(s.end_sec != null ? s.end_sec : s.end),
+            text: (s.text || '').trim()
+        })).filter((s) => s.text);
     }
-    const segmentsForV2 = segments.map((s) => ({
-        from: kingbriefContractService.secToHhMmSs(s.start_sec != null ? s.start_sec : s.start),
-        to: kingbriefContractService.secToHhMmSs(s.end_sec != null ? s.end_sec : s.end),
-        text: (s.text || '').trim()
-    })).filter((s) => s.text);
+
     if (segmentsForV2.length === 0) {
-        const e = new Error('Segmentos sem texto. Não é possível regenerar o mapa.');
+        if (!durationSec || durationSec < 1) {
+            const wordCount = transcript.split(/\s+/).filter(Boolean).length;
+            durationSec = Math.max(60, Math.round((wordCount / 150) * 60));
+        }
+        const chunkSize = Math.max(800, Math.min(4000, Math.floor(transcript.length / 20)));
+        const chunks = [];
+        for (let i = 0; i < transcript.length; i += chunkSize) {
+            const text = transcript.slice(i, i + chunkSize).trim();
+            if (text) chunks.push(text);
+        }
+        if (chunks.length === 0) chunks.push(transcript);
+        const n = chunks.length;
+        for (let i = 0; i < n; i++) {
+            const fromSec = Math.floor((i * durationSec) / n);
+            const toSec = Math.min(durationSec, Math.floor(((i + 1) * durationSec) / n));
+            segmentsForV2.push({
+                from: kingbriefContractService.secToHhMmSs(fromSec),
+                to: kingbriefContractService.secToHhMmSs(toSec),
+                text: chunks[i]
+            });
+        }
+    }
+
+    if (segmentsForV2.length === 0) {
+        const e = new Error('Não foi possível preparar o texto para o mapa. Transcrição vazia ou inválida.');
         e.statusCode = 400;
         throw e;
     }
-    const durationSec = meeting.duration_sec != null ? Math.round(Number(meeting.duration_sec)) : 0;
     const v2 = await kingbriefMindmapV2Service.generateMindmapV2(
         meeting.title || 'Reunião',
         durationSec,
