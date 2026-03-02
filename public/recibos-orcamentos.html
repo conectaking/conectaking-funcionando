@@ -56,15 +56,15 @@
         </button>
     </nav>
     <div class="flex flex-col gap-6 mt-6">
-        <a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="/dashboard.html" title="Painel principal">
+        <a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="dashboard-recibos-orcamentos.html" title="Painel do módulo">
             <span class="material-icons-outlined">dashboard</span>
             <span class="text-[10px] font-semibold uppercase">Painel</span>
         </a>
-        <a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="/dashboard.html#clientes" title="Clientes">
+        <a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="clientes-recibos-orcamentos.html" title="Clientes">
             <span class="material-icons-outlined">people</span>
             <span class="text-[10px] font-semibold uppercase">Clientes</span>
         </a>
-        <a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="/dashboard.html#configuracoes" title="Configurações do perfil e módulos">
+        <a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="configuracoes-recibos-orcamentos.html" title="Configurações do módulo">
             <span class="material-icons-outlined">settings</span>
             <span class="text-[10px] font-semibold uppercase">Config.</span>
         </a>
@@ -79,7 +79,7 @@
                 <p class="text-slate-500 dark:text-slate-400" id="page-subtitle">Crie documentos profissionais em segundos</p>
             </div>
             <div class="flex flex-wrap gap-3 items-center">
-                <a href="/dashboard.html" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:bg-slate-200 dark:hover:border-primary/50 transition-all text-inherit no-underline" title="Voltar ao painel principal">
+                <a href="dashboard-recibos-orcamentos.html" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:bg-slate-200 dark:hover:border-primary/50 transition-all text-inherit no-underline" title="Voltar ao painel do módulo">
                     <span class="material-icons-outlined text-sm">home</span>
                     <span class="text-sm font-medium">Voltar ao painel</span>
                 </a>
@@ -324,9 +324,10 @@
     function handleResponse(r, msgLogin) {
         msgLogin = msgLogin || 'Faça login na aplicação para usar recibos e orçamentos.';
         if (r.status === 401) throw new Error(msgLogin);
+        if (r.status === 404) throw new Error('Serviço indisponível (404). Verifique se está no mesmo domínio do painel e se a API está ativa.');
         var ct = (r.headers.get('content-type') || '').toLowerCase();
         return r.text().then(function(text) {
-            if (ct.indexOf('application/json') === -1) throw new Error(msgLogin);
+            if (ct.indexOf('application/json') === -1) throw new Error(r.ok ? 'Resposta inválida do servidor.' : (msgLogin));
             var data;
             try { data = JSON.parse(text); } catch (e) { throw new Error(msgLogin); }
             if (!r.ok) throw new Error((data && data.message) || msgLogin);

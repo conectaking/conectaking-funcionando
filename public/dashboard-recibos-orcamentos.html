@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Painel — Recibos e Orçamentos | ConectaKing</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#EAB308",
+                        "background-dark": "#0A0A0A",
+                        "card-dark": "#171717",
+                        "border-dark": "#262626"
+                    },
+                    fontFamily: { display: ["Inter", "sans-serif"] }
+                },
+            },
+        };
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #171717; }
+        ::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<aside class="fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark flex flex-col items-center py-8 z-50">
+    <div class="mb-10 text-primary"><span class="material-icons-outlined text-4xl">description</span></div>
+    <nav class="flex flex-col gap-6">
+        <a href="dashboard-recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-primary">
+            <span class="material-icons-outlined">dashboard</span>
+            <span class="text-[10px] font-semibold uppercase">Painel</span>
+        </a>
+        <a href="recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+            <span class="material-icons-outlined">receipt_long</span>
+            <span class="text-[10px] font-semibold uppercase">Recibos</span>
+        </a>
+        <a href="recibos-orcamentos.html?tipo=orcamento" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors">
+            <span class="material-icons-outlined">request_quote</span>
+            <span class="text-[10px] font-semibold uppercase">Orçamentos</span>
+        </a>
+    </nav>
+    <div class="flex flex-col gap-6 mt-6">
+        <a href="clientes-recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Clientes">
+            <span class="material-icons-outlined">people</span>
+            <span class="text-[10px] font-semibold uppercase">Clientes</span>
+        </a>
+        <a href="configuracoes-recibos-orcamentos.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" title="Configurações">
+            <span class="material-icons-outlined">settings</span>
+            <span class="text-[10px] font-semibold uppercase">Config.</span>
+        </a>
+    </div>
+</aside>
+
+<main class="ml-20 p-8 lg:p-12">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold dark:text-white mb-2">Painel — Recibos e Orçamentos</h1>
+            <p class="text-slate-500 dark:text-slate-400">Gerencie seus documentos e acesse as outras áreas do módulo.</p>
+        </header>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            <a href="recibos-orcamentos.html?tipo=recibo" class="flex items-center gap-4 p-6 rounded-2xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 transition-all">
+                <span class="material-icons-outlined text-4xl text-primary">receipt_long</span>
+                <div>
+                    <h2 class="font-bold text-lg dark:text-white">Novo Recibo</h2>
+                    <p class="text-sm text-slate-500">Emitir novo recibo</p>
+                </div>
+            </a>
+            <a href="recibos-orcamentos.html?tipo=orcamento" class="flex items-center gap-4 p-6 rounded-2xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 transition-all">
+                <span class="material-icons-outlined text-4xl text-primary">request_quote</span>
+                <div>
+                    <h2 class="font-bold text-lg dark:text-white">Novo Orçamento</h2>
+                    <p class="text-sm text-slate-500">Criar novo orçamento</p>
+                </div>
+            </a>
+        </div>
+
+        <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="uppercase tracking-widest text-xs font-bold text-primary flex items-center gap-2">
+                    <span class="material-icons-outlined">list</span>
+                    Documentos recentes
+                </h2>
+                <span id="loading-docs" class="text-sm text-slate-500">A carregar…</span>
+            </div>
+            <div id="lista-documentos" class="space-y-2 max-h-96 overflow-y-auto">
+                <!-- preenchido via JS -->
+            </div>
+            <p id="empty-docs" class="text-slate-500 text-sm hidden">Nenhum documento ainda. Crie um recibo ou orçamento acima.</p>
+        </section>
+    </div>
+</main>
+
+<script>
+(function() {
+    var host = window.location.hostname || '';
+    var port = String(window.location.port || '');
+    var isLocal = /^127\.0\.0\.1|localhost$/i.test(host);
+    var portasEstaticas = ['5500', '3000', '8080', '5173', '4173'];
+    try {
+        var token = (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || null;
+        if (isLocal && portasEstaticas.indexOf(port) >= 0 && !token) {
+            window.location.replace(window.location.protocol + '//' + host + ':5000/dashboard-recibos-orcamentos.html');
+            return;
+        }
+    } catch (e) {}
+    var apiOrigin = isLocal && portasEstaticas.indexOf(port) >= 0 ? (window.location.protocol + '//' + host + ':5000') : '';
+    var API = apiOrigin + '/api/documentos';
+
+    function getAuthHeaders(extra) {
+        var h = extra ? Object.assign({}, extra) : {};
+        try {
+            var token = (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || null;
+            if (token) h['Authorization'] = 'Bearer ' + token;
+        } catch (e) {}
+        return h;
+    }
+
+    var lista = document.getElementById('lista-documentos');
+    var loading = document.getElementById('loading-docs');
+    var empty = document.getElementById('empty-docs');
+
+    fetch(API, { method: 'GET', credentials: 'include', headers: getAuthHeaders() })
+        .then(function(r) {
+            if (r.status === 401) { loading.textContent = 'Faça login para ver os documentos.'; return null; }
+            return r.json().then(function(data) { return r.ok ? data : null; }).catch(function() { return null; });
+        })
+        .then(function(data) {
+            loading.classList.add('hidden');
+            var docs = (data && data.data && data.data.documentos) ? data.data.documentos : (Array.isArray(data && data.data) ? data.data : []);
+            if (!docs.length) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            docs = docs.slice(0, 30);
+            docs.forEach(function(doc) {
+                var tipo = (doc.tipo || 'orcamento').toLowerCase();
+                var label = tipo === 'recibo' ? 'Recibo' : 'Orçamento';
+                var titulo = doc.titulo || (doc.emitente_json && doc.emitente_json.nome) || ('Documento #' + doc.id);
+                var dataDoc = doc.data_documento ? doc.data_documento.slice(0, 10) : '';
+                var tr = document.createElement('a');
+                tr.href = 'recibos-orcamentos.html?id=' + doc.id;
+                tr.className = 'flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-border-dark hover:bg-slate-50 dark:hover:bg-black/40 transition-colors no-underline text-inherit';
+                tr.innerHTML = '<div><span class="font-medium dark:text-white">' + escapeHtml(titulo) + '</span><span class="text-slate-500 text-sm ml-2">' + label + '</span></div><span class="text-slate-500 text-sm">' + escapeHtml(dataDoc) + '</span>';
+                lista.appendChild(tr);
+            });
+        })
+        .catch(function() {
+            loading.textContent = 'Erro ao carregar. Verifique o login.';
+            empty.classList.add('hidden');
+        });
+
+    function escapeHtml(s) {
+        if (!s) return '';
+        var div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    }
+})();
+</script>
+</body>
+</html>
