@@ -7,6 +7,7 @@ const { protectUser } = require('../middleware/protectUser');
 const config = require('../config');
 const logger = require('../utils/logger');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { uploadImageToR2 } = require('../utils/r2');
 require('dotenv').config();
 
 const router = express.Router();
@@ -211,22 +212,28 @@ router.post('/auth', protectUser, uploadAuthLimiter, asyncHandler(async (req, re
 
 /**
  * POST /api/upload/image - Upload direto de imagem (banner, personalização, etc.)
- * Usa a mesma fila de auth do /auth para evitar 429 do Cloudflare. Recebe FormData com 'image'.
+ * Preferência: R2 (mais rápido). Fallback: Cloudflare Images (fila de auth).
  */
 router.post('/image', protectUser, upload.single('image'), asyncHandler(async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({
+            success: false,
+            message: 'Nenhuma imagem enviada.'
+        });
+    }
+
+    const r2Url = await uploadImageToR2(req.file.buffer, req.file.mimetype, req.file.originalname || 'image.jpg');
+    if (r2Url) {
+        logger.info('✅ [UPLOAD] Imagem enviada via R2', { userId: req.user.userId });
+        return res.json({ success: true, url: r2Url, imageUrl: r2Url });
+    }
+
     const creds = getCloudflareCreds();
     if (!creds) {
         logger.error('Credenciais do Cloudflare não encontradas');
         return res.status(500).json({
             success: false,
-            message: 'Erro de configuração do servidor.'
-        });
-    }
-
-    if (!req.file) {
-        return res.status(400).json({
-            success: false,
-            message: 'Nenhuma imagem enviada.'
+            message: 'Configure R2 (R2_ACCOUNT_ID, R2_BUCKET, R2_PUBLIC_BASE_URL) ou Cloudflare Images para upload de imagens.'
         });
     }
 
@@ -279,20 +286,10 @@ router.post('/image', protectUser, upload.single('image'), asyncHandler(async (r
 
 /**
  * POST /api/upload/images - Upload de múltiplas imagens (carrossel, etc.)
- * Recebe FormData com campo 'images' (vários ficheiros). Processa em série pela fila de auth
- * para evitar 429. Devolve { success: true, urls: [url1, url2, ...] }.
+ * Preferência: R2 (mais rápido, sem fila). Fallback: Cloudflare Images por ficheiro.
  */
 const maxCarouselImages = 20;
 router.post('/images', protectUser, upload.array('images', maxCarouselImages), asyncHandler(async (req, res) => {
-    const creds = getCloudflareCreds();
-    if (!creds) {
-        logger.error('Credenciais do Cloudflare não encontradas');
-        return res.status(500).json({
-            success: false,
-            message: 'Erro de configuração do servidor.'
-        });
-    }
-
     const files = req.files && Array.isArray(req.files) ? req.files : [];
     if (files.length === 0) {
         return res.status(400).json({
@@ -301,9 +298,22 @@ router.post('/images', protectUser, upload.array('images', maxCarouselImages), a
         });
     }
 
+    const creds = getCloudflareCreds();
     const urls = [];
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        let url = await uploadImageToR2(file.buffer, file.mimetype, file.originalname || `image-${i + 1}.jpg`);
+        if (url) {
+            urls.push(url);
+            continue;
+        }
+        if (!creds) {
+            return res.status(500).json({
+                success: false,
+                message: 'Configure R2 ou Cloudflare Images para upload. Falha na imagem ' + (i + 1),
+                uploaded_so_far: urls
+            });
+        }
         const out = await enqueueThrottledAuth(creds.accountId, creds.headers);
         if (!out.ok) {
             const status = out.status || 502;
@@ -311,12 +321,11 @@ router.post('/images', protectUser, upload.array('images', maxCarouselImages), a
             if (retrySec) res.set('Retry-After', String(retrySec));
             return res.status(status).json({
                 success: false,
-                message: out.message || (i === 0 ? 'Falha ao obter autorização para upload. Aguarde e tente novamente.' : `Falha na imagem ${i + 1}/${files.length}. ${out.message}`),
+                message: out.message || `Falha na imagem ${i + 1}/${files.length}. Aguarde e tente novamente.`,
                 retry_after_seconds: retrySec,
                 uploaded_so_far: urls
             });
         }
-
         const { uploadURL, imageId, accountHash } = out.payload;
         const formData = new FormData();
         formData.append('file', file.buffer, {

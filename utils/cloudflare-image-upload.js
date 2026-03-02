@@ -14,10 +14,22 @@ function isThrottleError(status, body) {
 }
 
 /**
- * Envia um buffer de imagem para Cloudflare Images e retorna a URL pública.
- * Em caso de 503/throttling, repete até 5 vezes com backoff (0, 3s, 6s, 12s, 24s).
+ * Envia um buffer de imagem: primeiro tenta R2 (mais rápido, sem rate-limit de auth).
+ * Se R2 não estiver configurado ou falhar, usa Cloudflare Images.
+ * Usado por: documentos (logo, comprovante), e qualquer módulo que chame uploadImageBuffer.
  */
 async function uploadImageBuffer(buffer, mimetype, filename = 'image.jpg') {
+    // Preferir R2 quando configurado (upload direto, mais rápido)
+    try {
+        const { uploadImageToR2 } = require('./r2');
+        const r2Url = await uploadImageToR2(buffer, mimetype, filename);
+        if (r2Url) {
+            logger.debug('cloudflare-image-upload: imagem enviada via R2', { url: r2Url.slice(0, 60) });
+            return r2Url;
+        }
+    } catch (e) {
+        logger.warn('cloudflare-image-upload: R2 indisponível, usando Cloudflare Images', { msg: e?.message });
+    }
     const accountId = process.env.CF_IMAGES_ACCOUNT_ID ||
         process.env.CLOUDFLARE_ACCOUNT_ID ||
         process.env.CLOUDFLARE_IMAGES_ACCOUNT_ID ||

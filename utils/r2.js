@@ -237,6 +237,38 @@ async function r2PutObjectBufferTts({ key, body, contentType, cacheControl }) {
   return { key, publicUrl: publicUrl || undefined };
 }
 
+/**
+ * Upload de imagem para R2 (banner, carrossel, logo, etc.).
+ * Usa key images/YYYY/MM/uuid.ext. Requer R2_PUBLIC_BASE_URL para URLs públicas.
+ * @returns {Promise<string|null>} URL pública da imagem ou null se R2 não configurado/falha
+ */
+async function uploadImageToR2(buffer, mimetype, filename = 'image.jpg') {
+  const cfg = getR2Config();
+  if (!cfg.enabled || !cfg.publicBaseUrl) return null;
+  const client = getR2Client();
+  if (!client) return null;
+  const ext = (filename && filename.includes('.')) ? filename.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg' : 'jpg';
+  const safeExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'jpg';
+  const now = new Date();
+  const y = now.getUTCFullYear();
+  const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const uuid = require('crypto').randomUUID ? require('crypto').randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const key = `images/${y}/${m}/${uuid}.${safeExt}`;
+  const contentType = mimetype && mimetype.startsWith('image/') ? mimetype : `image/${safeExt === 'jpg' ? 'jpeg' : safeExt}`;
+  try {
+    const result = await r2PutObjectBuffer({
+      key,
+      body: buffer,
+      contentType,
+      cacheControl: 'public, max-age=31536000, immutable'
+    });
+    return result.publicUrl || null;
+  } catch (err) {
+    console.error('R2 image upload failed', key, err?.message);
+    return null;
+  }
+}
+
 /** Testa a conexão com o R2 (diagnóstico de 502). */
 async function r2Diagnostic() {
   const cfg = getR2Config();
@@ -284,6 +316,7 @@ module.exports = {
   r2PresignPut,
   r2PutObjectBuffer,
   r2PutObjectBufferTts,
+  uploadImageToR2,
   r2Diagnostic
 };
 
