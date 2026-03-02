@@ -248,7 +248,11 @@
 
 <script>
 (function() {
-    var API = '/api/documentos';
+    // Se a página for servida pelo Live Server (porta 5500), a API está no Express (porta 5000)
+    var apiOrigin = (window.location.port === '5500') && /^127\.0\.0\.1|localhost$/i.test(window.location.hostname)
+        ? (window.location.protocol + '//' + window.location.hostname + ':5000')
+        : '';
+    var API = apiOrigin + '/api/documentos';
     var docId = (function() { var m = /[?&]id=([^&]+)/.exec(location.search); return m ? m[1] : null; })();
 
     function fmtMoney(n) {
