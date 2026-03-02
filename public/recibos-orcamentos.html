@@ -299,6 +299,19 @@
     var API = apiOrigin + '/api/documentos';
     var docId = (function() { var m = /[?&]id=([^&]+)/.exec(location.search); return m ? m[1] : null; })();
 
+    // Se a página está numa porta "estática" (ex.: 5500 Live Server) e não há token aqui,
+    // redireciona para o mesmo app na porta da API (5000), onde o login guardou o token.
+    (function checkOrigin() {
+        try {
+            var token = (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || null;
+            if (isLocal && portasEstaticas.indexOf(port) >= 0 && !token) {
+                var url5000 = window.location.protocol + '//' + host + ':5000/recibos-orcamentos.html' + (location.search || '');
+                window.location.replace(url5000);
+                return;
+            }
+        } catch (e) {}
+    })();
+
     function getAuthHeaders(extra) {
         var h = extra ? Object.assign({}, extra) : {};
         try {
