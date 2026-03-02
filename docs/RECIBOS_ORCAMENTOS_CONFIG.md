@@ -66,3 +66,40 @@ Se o upload de imagens (ex.: King Selection) já funciona no seu ambiente, o sis
 - **Botão "Importar logomarca"**: em vez de campo URL da logo, usar um botão que chama `POST /api/documentos/upload-logo` com o ficheiro e preenche `emitente_json.logo_url` com a resposta.
 - **Separar Orçamento vs Recibo**: na lista/criação, usar dois botões ou abas distintas ("Novo orçamento" e "Novo recibo") para deixar claro o tipo.
 - **Texto padrão para condições**: opcionalmente guardar um texto padrão (ex.: "20% marcação, 30% 1 dia antes, 50% no dia") para pré-preencher `condicoes_pagamento` em novos orçamentos de evento.
+
+---
+
+## Layout do PDF (estilo fatura — azul e laranja)
+
+O PDF exportado usa o mesmo estilo da fatura de referência:
+
+- **Topo**: faixa azul com título "ORÇAMENTO" ou "RECIBO" e número à direita; faixa laranja fina por baixo.
+- **Logo**: logo abaixo do topo, à esquerda (ou use o upload de logomarca para aparecer no documento).
+- **Colunas**: "Faturado para" (cliente) à esquerda; "Emitido por" (emitente) à direita.
+- **Tabela**: cabeçalho laranja (Descrição, Data, Qtd, Valor unit., Total); total geral em caixa laranja.
+- **Condições de pagamento** e **Observações** abaixo da tabela; **Data** e **Válido até**; rodapé "Obrigado pela preferência.".
+- Cores: azul escuro (#1e3a5f), laranja (#e67e22), branco no cabeçalho e no total.
+
+---
+
+## Ver na página e exportar a própria página (WYSIWYG)
+
+**Ideia:** ter o mesmo layout (azul, laranja, logo no topo) na própria página do painel e um botão "Exportar PDF" que gera o PDF a partir do que se vê (ou que abre o PDF do backend no mesmo visual).
+
+**Opções:**
+
+1. **Backend gera o PDF (atual)**  
+   O servidor gera o PDF com o layout estilo fatura. O utilizador clica em "Descarregar PDF" e recebe o ficheiro. **Vantagem:** funciona em qualquer cliente; não depende de JavaScript no browser. **Desvantagem:** não há pré-visualização idêntica no ecrã antes de descarregar.
+
+2. **Preview na página + exportar a página (recomendado)**  
+   - Na área Recibos/Orçamentos, uma **vista de pré-visualização** em HTML/CSS com o mesmo layout (header azul, logo, colunas, tabela laranja, total, condições, observações).  
+   - O utilizador vê exactamente o que sairá no documento.  
+   - Botão **"Exportar PDF"** pode fazer uma de duas coisas:  
+     - **A)** Chamar o endpoint actual `GET /api/documentos/:id/pdf` (ou por token) e descarregar o PDF gerado no backend (layout já igual ao da imagem).  
+     - **B)** Usar "Imprimir" do browser (Ctrl+P) com CSS `@media print` desenhado para essa preview, e "Guardar como PDF" na janela de impressão — assim o PDF é literalmente "a página exportada".  
+   - **Recomendação:** ter **preview em HTML** com o mesmo estilo + botão que descarrega o PDF do backend (opção A). Assim: vê na página o resultado e, ao exportar, recebe o PDF oficial com o mesmo layout. Opcionalmente, adicionar um segundo botão "Imprimir / Guardar como PDF" que abre a janela de impressão (opção B) para quem quiser exportar a própria página.
+
+3. **Só imprimir a página**  
+   Se a página de edição já tiver o layout de fatura, o utilizador pode usar Ctrl+P e "Guardar como PDF". Não é necessário novo endpoint; basta que o CSS da preview esteja preparado para impressão.
+
+**Resumo:** O layout do PDF no backend já está como na imagem (azul, laranja, logo no topo). Para "ver na página e exportar a página", o melhor é: **criar uma preview em HTML com o mesmo visual** e um botão "Exportar PDF" que descarrega o PDF gerado no servidor; opcionalmente, um botão "Imprimir" que usa a impressão do browser para guardar a própria página como PDF.
