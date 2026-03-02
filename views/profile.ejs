@@ -1135,6 +1135,38 @@ if (typeof details === 'undefined' || !details) {
                         <% } %>
 
                     <%# ========================================================== %>
+                    <%# TIPO: LOCALIZAÇÃO (Mapa + Waze / Google Maps) %>
+                    <%# ========================================================== %>
+                    <% } else if (item.item_type === 'location' && item.location_data) { %>
+                        <%
+                            const loc = item.location_data;
+                            const lat = loc.latitude != null ? parseFloat(loc.latitude) : null;
+                            const lng = loc.longitude != null ? parseFloat(loc.longitude) : null;
+                            const hasCoords = lat != null && lng != null && !isNaN(lat) && !isNaN(lng);
+                            const addr = (loc.address_formatted || loc.address || loc.place_name || '').trim();
+                            const googleUrl = hasCoords ? ('https://www.google.com/maps?q=' + lat + ',' + lng) : (addr ? ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(addr)) : '#');
+                            const wazeUrl = hasCoords ? ('https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes') : (addr ? ('https://waze.com/ul?q=' + encodeURIComponent(addr)) : '#');
+                            const osmIframe = hasCoords ? ('https://www.openstreetmap.org/export/embed.html?bbox=' + (lng-0.008) + '%2C' + (lat-0.008) + '%2C' + (lng+0.008) + '%2C' + (lat+0.008) + '&layer=mapnik&marker=' + lat + '%2C' + lng) : null;
+                        %>
+                        <div class="profile-link profile-location-card" data-item-id="<%= item.id %>" data-google="<%= googleUrl %>" data-waze="<%= wazeUrl %>" style="cursor: pointer; flex-direction: column; align-items: stretch; text-align: left; padding: 0; overflow: hidden; border-radius: 16px;">
+                            <div class="location-map-preview" style="height: 140px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); position: relative; display: flex; align-items: center; justify-content: center;">
+                                <% if (osmIframe) { %>
+                                <iframe src="<%= osmIframe %>" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;pointer-events:none;" title="Mapa"></iframe>
+                                <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); color: #fff; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px;">© OpenStreetMap</div>
+                                <% } %>
+                                <i class="fas fa-map-marker-alt" style="font-size: 2.5rem; color: rgba(255,255,255,0.9); position: relative; z-index: 1; text-shadow: 0 2px 8px rgba(0,0,0,0.5);"></i>
+                            </div>
+                            <div style="padding: 14px 16px;">
+                                <div style="font-weight: 700; margin-bottom: 8px; color: inherit;"><%= item.title || 'Localização' %></div>
+                                <% if (addr) { %><div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 12px; line-height: 1.3;"><%= addr %></div><% } %>
+                                <div class="location-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <a href="<%= googleUrl %>" target="_blank" rel="noopener noreferrer" class="location-btn location-btn-google" onclick="event.stopPropagation();" style="flex: 1; min-width: 120px; padding: 10px 14px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #4285f4; color: #fff; border: none;"><i class="fas fa-map"></i> Google Maps</a>
+                                    <a href="<%= wazeUrl %>" target="_blank" rel="noopener noreferrer" class="location-btn location-btn-waze" onclick="event.stopPropagation();" style="flex: 1; min-width: 120px; padding: 10px 14px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #33ccff; color: #000; border: none;"><i class="fab fa-waze"></i> Waze</a>
+                                </div>
+                            </div>
+                        </div>
+
+                    <%# ========================================================== %>
                     <%# TIPO: PIX QR CODE (Modal com QR Code PIX) %>
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'pix_qrcode') { %>

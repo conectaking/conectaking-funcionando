@@ -166,7 +166,8 @@ app.use(helmet({
                 "https://*.youtube.com",
                 "https://*.googlevideo.com",
                 "https://www.google.com",
-                "https://*.google.com"
+                "https://*.google.com",
+                "https://www.openstreetmap.org"
             ],
             connectSrc: [
                 "'self'",
@@ -845,7 +846,9 @@ app.use('/api/finance', apiLimiter, financeRoutes);
 const agendaRoutes = require('./routes/agenda.routes');
 app.use('/api/agenda', apiLimiter, agendaRoutes);
 const bibleRoutes = require('./modules/bible/bible.routes');
+const locationRoutes = require('./modules/location/location.routes');
 app.use('/api/bible', apiLimiter, bibleRoutes);
+app.use('/api/location', apiLimiter, locationRoutes);
 const sitesRoutes = require('./modules/sites/sites.routes');
 app.use('/api/sites', apiLimiter, sitesRoutes);
 const orcamentosRoutes = require('./modules/orcamentos/orcamentos.routes');

@@ -3361,6 +3361,16 @@ router.post('/items', protectUser, asyncHandler(async (req, res) => {
             }
         }
 
+        if (item_type === 'location') {
+            try {
+                const locationRepo = require('../modules/location/location.repository');
+                await locationRepo.create(newItem.id);
+                console.log(`✅ Localização criada para item ${newItem.id}`);
+            } catch (error) {
+                console.error("Erro ao criar localização:", error);
+            }
+        }
+
         console.log(`✅ Item criado com sucesso:`, newItem);
         // Evitar cache do navegador
         res.set({

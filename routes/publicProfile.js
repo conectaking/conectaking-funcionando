@@ -614,6 +614,23 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 }
             }
 
+            if (item.item_type === 'location') {
+                try {
+                    const locRes = await client.query(
+                        'SELECT address, address_formatted, latitude, longitude, place_name FROM location_items WHERE profile_item_id = $1',
+                        [item.id]
+                    );
+                    if (locRes.rows.length > 0) {
+                        item.location_data = locRes.rows[0];
+                    } else {
+                        item.location_data = null;
+                    }
+                } catch (locError) {
+                    logger.error('Erro ao carregar localização', { itemId: item.id, error: locError.message });
+                    item.location_data = null;
+                }
+            }
+
             return item;
         }));
         
