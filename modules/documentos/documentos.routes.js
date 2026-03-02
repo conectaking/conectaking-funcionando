@@ -21,6 +21,7 @@ router.put('/ver/:token', asyncHandler(controller.updateByToken));
 
 router.use(protectUser);
 
+router.post('/upload-logo', uploadImage.single('image'), asyncHandler(controller.uploadLogo));
 router.post('/', asyncHandler(controller.create));
 router.get('/', asyncHandler(controller.list));
 router.get('/:id/pdf', asyncHandler(controller.getPdf));

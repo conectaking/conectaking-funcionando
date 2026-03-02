@@ -5,8 +5,8 @@ async function insert(userId, data) {
     const client = await db.pool.connect();
     try {
         const r = await client.query(
-            `INSERT INTO documentos (user_id, tipo, titulo, emitente_json, cliente_json, itens_json, anexos_json, observacoes, data_documento, validade_ate, link_token, numero_sequencial)
-             VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb, $8, $9, $10, $11, $12) RETURNING *`,
+            `INSERT INTO documentos (user_id, tipo, titulo, emitente_json, cliente_json, itens_json, anexos_json, observacoes, condicoes_pagamento, data_documento, validade_ate, link_token, numero_sequencial)
+             VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb, $8, $9, $10, $11, $12, $13) RETURNING *`,
             [
                 userId,
                 data.tipo || 'recibo',
@@ -16,6 +16,7 @@ async function insert(userId, data) {
                 JSON.stringify(data.itens_json || []),
                 JSON.stringify(data.anexos_json || []),
                 data.observacoes || null,
+                data.condicoes_pagamento || null,
                 data.data_documento || null,
                 data.validade_ate || null,
                 data.link_token,
@@ -77,7 +78,7 @@ async function update(id, userId, data) {
         const fields = [];
         const values = [];
         let i = 1;
-        const allowed = ['titulo', 'emitente_json', 'cliente_json', 'itens_json', 'anexos_json', 'observacoes', 'data_documento', 'validade_ate'];
+        const allowed = ['titulo', 'emitente_json', 'cliente_json', 'itens_json', 'anexos_json', 'observacoes', 'condicoes_pagamento', 'data_documento', 'validade_ate'];
         for (const key of allowed) {
             if (data[key] !== undefined) {
                 if (key.endsWith('_json')) {
@@ -108,7 +109,7 @@ async function updateByToken(linkToken, data) {
         const fields = [];
         const values = [];
         let i = 1;
-        const allowed = ['titulo', 'emitente_json', 'cliente_json', 'itens_json', 'anexos_json', 'observacoes', 'data_documento', 'validade_ate'];
+        const allowed = ['titulo', 'emitente_json', 'cliente_json', 'itens_json', 'anexos_json', 'observacoes', 'condicoes_pagamento', 'data_documento', 'validade_ate'];
         for (const key of allowed) {
             if (data[key] !== undefined) {
                 if (key.endsWith('_json')) {

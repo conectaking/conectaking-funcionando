@@ -15,6 +15,7 @@ async function create(req, res) {
             itens_json: body.itens_json || [],
             anexos_json: body.anexos_json || [],
             observacoes: body.observacoes,
+            condicoes_pagamento: body.condicoes_pagamento,
             data_documento: body.data_documento,
             validade_ate: body.validade_ate
         });
@@ -61,6 +62,7 @@ async function update(req, res) {
             itens_json: body.itens_json,
             anexos_json: body.anexos_json,
             observacoes: body.observacoes,
+            condicoes_pagamento: body.condicoes_pagamento,
             data_documento: body.data_documento,
             validade_ate: body.validade_ate
         });
@@ -82,6 +84,22 @@ async function remove(req, res) {
     } catch (e) {
         logger.error('documentos remove:', e);
         return responseFormatter.error(res, e.message || 'Erro', 500);
+    }
+}
+
+/** POST /upload-logo — importar logomarca (upload de imagem). Devolve { url } para usar em emitente_json.logo_url. */
+async function uploadLogo(req, res) {
+    try {
+        if (!req.file || !req.file.buffer) return responseFormatter.error(res, 'Nenhuma imagem enviada. Envie um ficheiro (ex.: logo.png).', 400);
+        const url = await uploadImageBuffer(
+            req.file.buffer,
+            req.file.mimetype,
+            req.file.originalname || 'logo.png'
+        );
+        return responseFormatter.success(res, { url }, 'Logomarca enviada. Use o campo "url" em emitente_json.logo_url.', 201);
+    } catch (e) {
+        logger.error('documentos uploadLogo:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao enviar logomarca', 500);
     }
 }
 
@@ -137,7 +155,8 @@ async function updateByToken(req, res) {
         const doc = await documentosService.updateByToken(token, {
             cliente_json: body.cliente_json,
             itens_json: body.itens_json,
-            observacoes: body.observacoes
+            observacoes: body.observacoes,
+            condicoes_pagamento: body.condicoes_pagamento
         });
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
         return responseFormatter.success(res, doc, 'Alterações salvas.');
@@ -242,6 +261,7 @@ module.exports = {
     update,
     updateByToken,
     remove,
+    uploadLogo,
     uploadAnexo,
     getPdf,
     getPdfByToken,

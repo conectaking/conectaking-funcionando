@@ -183,6 +183,7 @@ async function gerarPdfBuffer(documento) {
     page.drawText('Subtotal', { x: colTotal, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cG });
     y -= LINE_HEIGHT + 4;
 
+    const cM = mutedColor();
     let totalGeral = 0;
     for (const item of itens) {
         if (y < MARGIN + LINE_HEIGHT) {
@@ -202,12 +203,33 @@ async function gerarPdfBuffer(documento) {
         page.drawText(formatMoney(valorUnit), { x: colUnit, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cT });
         page.drawText(formatMoney(valor), { x: colTotal, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cT });
         y -= LINE_HEIGHT;
+        // Conteúdo do pacote / detalhes (ex.: "O que vai no pacote") — abaixo da linha do item
+        const conteudoPacote = (item.conteudo_pacote || item.detalhes || '').toString().trim();
+        if (conteudoPacote) {
+            const linhas = conteudoPacote.split(/\n/);
+            for (const linha of linhas) {
+                if (y < MARGIN + 10) {
+                    page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                    fillPageDark(page);
+                    y = PAGE_HEIGHT - MARGIN;
+                }
+                page.drawText(('  • ' + linha).slice(0, 100), { x: colDesc, y: y - 9, size: 9, font, color: cM });
+                y -= 10;
+            }
+            y -= 2;
+        }
     }
 
     y -= 6;
     page.drawText(`Total: ${formatMoney(totalGeral)}`, { x: colTotal - 60, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cG });
     y -= LINE_HEIGHT + 10;
 
+    // Condições de pagamento (ex.: 20% marcação, 30% antes do evento, 50% no dia) — abaixo dos valores
+    if (documento.condicoes_pagamento && String(documento.condicoes_pagamento).trim()) {
+        drawText('Condições de pagamento:', { bold: true });
+        drawText(documento.condicoes_pagamento);
+        y -= 4;
+    }
     if (documento.observacoes) {
         drawText('Observações:', { bold: true });
         drawText(documento.observacoes);
@@ -219,7 +241,6 @@ async function gerarPdfBuffer(documento) {
 
     // Recibo: imagens dos comprovantes
     if (tipo === 'recibo' && anexos.length > 0) {
-        const cM = mutedColor();
         for (const anexo of anexos) {
             if (!anexo.url) continue;
             try {
