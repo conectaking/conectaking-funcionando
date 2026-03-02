@@ -45,12 +45,21 @@
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
 <aside class="fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark flex flex-col items-center py-8 z-50">
     <div class="mb-10 text-primary"><span class="material-icons-outlined text-4xl">description</span></div>
-    <nav class="flex flex-col gap-8">
-        <a class="text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-icons-outlined">dashboard</span></a>
-        <a class="text-primary" href="#"><span class="material-icons-outlined">receipt_long</span></a>
-        <a class="text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-icons-outlined">people</span></a>
-        <a class="text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-icons-outlined">settings</span></a>
+    <nav class="flex flex-col gap-6" role="tablist">
+        <button type="button" role="tab" id="nav-recibo" class="nav-side-btn flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" data-tipo="recibo" title="Recibos">
+            <span class="material-icons-outlined">receipt_long</span>
+            <span class="text-[10px] font-semibold uppercase">Recibos</span>
+        </button>
+        <button type="button" role="tab" id="nav-orcamento" class="nav-side-btn flex flex-col items-center gap-1 text-primary transition-colors" data-tipo="orcamento" title="Orçamentos" aria-selected="true">
+            <span class="material-icons-outlined">request_quote</span>
+            <span class="text-[10px] font-semibold uppercase">Orçamentos</span>
+        </button>
     </nav>
+    <div class="flex flex-col gap-6 mt-6">
+        <a class="text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-icons-outlined" title="Dashboard">dashboard</span></a>
+        <a class="text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-icons-outlined" title="Clientes">people</span></a>
+        <a class="text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-icons-outlined" title="Configurações">settings</span></a>
+    </div>
     <div class="mt-auto"><div class="w-10 h-10 rounded-full border-2 border-primary bg-slate-700"></div></div>
 </aside>
 
@@ -72,11 +81,6 @@
                 </button>
             </div>
         </header>
-
-        <nav class="flex gap-1 mb-10 p-1 bg-slate-100 dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark w-fit" role="tablist">
-            <button type="button" role="tab" id="tab-recibo" class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors" data-tipo="recibo">Recibos</button>
-            <button type="button" role="tab" id="tab-orcamento" class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold bg-primary text-black transition-colors" data-tipo="orcamento" aria-selected="true">Orçamentos</button>
-        </nav>
 
         <form id="form-doc" class="space-y-8">
             <input type="hidden" name="tipo" value="orcamento"/>
@@ -212,6 +216,24 @@
                 </button>
             </section>
 
+            <section id="section-comprovantes" class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm" style="display: none;">
+                <div class="flex items-center gap-2 mb-4 text-primary">
+                    <span class="material-icons-outlined">camera_alt</span>
+                    <h2 class="uppercase tracking-widest text-xs font-bold">Comprovantes</h2>
+                </div>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Tire uma foto ou envie uma imagem do comprovante. O sistema extrai o valor e adiciona aos itens; você pode ajustar os valores abaixo.</p>
+                <div id="comprovante-sem-id" class="mb-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-sm">
+                    Salve o recibo primeiro para adicionar comprovantes.
+                </div>
+                <div id="comprovante-upload-area" style="display: none;">
+                    <input type="file" id="file-comprovante" accept="image/*" capture="environment" class="hidden"/>
+                    <button type="button" id="btn-enviar-comprovante" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/30 text-primary font-semibold hover:bg-primary/20 transition-colors">
+                        <span class="material-icons-outlined">add_a_photo</span>
+                        Tirar foto / Enviar comprovante
+                    </button>
+                </div>
+            </section>
+
             <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
                 <div class="flex items-center gap-2 mb-4 text-primary">
                     <span class="material-icons-outlined">payment</span>
@@ -269,26 +291,57 @@
         document.getElementById('itens-section-title').textContent = isRecibo ? 'Itens do Recibo' : 'Itens';
         document.getElementById('total-label').textContent = isRecibo ? 'Valor Total' : 'Valor Total Estimado';
         document.getElementById('btn-submit-text').textContent = isRecibo ? 'Salvar Recibo' : 'Salvar Orçamento';
-        var tabRecibo = document.getElementById('tab-recibo');
-        var tabOrcamento = document.getElementById('tab-orcamento');
+        var secComprovantes = document.getElementById('section-comprovantes');
+        secComprovantes.style.display = isRecibo ? 'block' : 'none';
         if (isRecibo) {
-            tabRecibo.classList.add('bg-primary', 'text-black');
-            tabRecibo.classList.remove('text-slate-500', 'dark:text-slate-400');
-            tabRecibo.setAttribute('aria-selected', 'true');
-            tabOrcamento.classList.remove('bg-primary', 'text-black');
-            tabOrcamento.classList.add('text-slate-500', 'dark:text-slate-400');
-            tabOrcamento.setAttribute('aria-selected', 'false');
+            document.getElementById('comprovante-sem-id').style.display = docId ? 'none' : 'block';
+            document.getElementById('comprovante-upload-area').style.display = docId ? 'flex' : 'none';
+        }
+        var navRecibo = document.getElementById('nav-recibo');
+        var navOrcamento = document.getElementById('nav-orcamento');
+        if (isRecibo) {
+            navRecibo.classList.add('text-primary');
+            navRecibo.classList.remove('text-slate-400');
+            navRecibo.setAttribute('aria-selected', 'true');
+            navOrcamento.classList.remove('text-primary');
+            navOrcamento.classList.add('text-slate-400');
+            navOrcamento.setAttribute('aria-selected', 'false');
         } else {
-            tabOrcamento.classList.add('bg-primary', 'text-black');
-            tabOrcamento.classList.remove('text-slate-500', 'dark:text-slate-400');
-            tabOrcamento.setAttribute('aria-selected', 'true');
-            tabRecibo.classList.remove('bg-primary', 'text-black');
-            tabRecibo.classList.add('text-slate-500', 'dark:text-slate-400');
-            tabRecibo.setAttribute('aria-selected', 'false');
+            navOrcamento.classList.add('text-primary');
+            navOrcamento.classList.remove('text-slate-400');
+            navOrcamento.setAttribute('aria-selected', 'true');
+            navRecibo.classList.remove('text-primary');
+            navRecibo.classList.add('text-slate-400');
+            navRecibo.setAttribute('aria-selected', 'false');
         }
     }
-    document.getElementById('tab-recibo').onclick = function() { applyTipoUI('recibo'); };
-    document.getElementById('tab-orcamento').onclick = function() { applyTipoUI('orcamento'); };
+    document.getElementById('nav-recibo').onclick = function() { applyTipoUI('recibo'); };
+    document.getElementById('nav-orcamento').onclick = function() { applyTipoUI('orcamento'); };
+
+    document.getElementById('btn-enviar-comprovante').onclick = function() { document.getElementById('file-comprovante').click(); };
+    document.getElementById('file-comprovante').onchange = function() {
+        var file = this.files && this.files[0];
+        if (!file || !docId) return;
+        var fd = new FormData();
+        fd.append('image', file);
+        var btn = document.getElementById('btn-enviar-comprovante');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-icons-outlined animate-spin">hourglass_empty</span> Processando...';
+        fetch(API + '/' + docId + '/processar-comprovante', { method: 'POST', body: fd, credentials: 'include' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data && data.data && data.data.documento) {
+                    setFormDoc(data.data.documento);
+                    alert(data.message || 'Comprovante processado. Ajuste os valores se necessário.');
+                } else { alert(data.message || 'Falha ao processar comprovante.'); }
+            })
+            .catch(function() { alert('Erro ao enviar comprovante. Verifique se está autenticado.'); })
+            .finally(function() {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-icons-outlined">add_a_photo</span> Tirar foto / Enviar comprovante';
+            });
+        this.value = '';
+    };
 
     function fmtMoney(n) {
         if (n == null || isNaN(n)) return '0,00';
@@ -462,6 +515,8 @@
             .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
             .then(function(res) { if (res.data) setFormDoc(res.data); })
             .catch(function() {});
+    } else {
+        applyTipoUI('orcamento');
     }
 })();
 </script>
