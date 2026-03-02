@@ -1,22 +1,42 @@
--- Adiciona photographer_site à constraint CHECK de profile_items.item_type (se existir)
+-- Adiciona photographer_site à constraint CHECK recriando a partir do enum (evita violação por linhas existentes).
 DO $$
+DECLARE
+    col RECORD;
+    labels_sql TEXT;
+    c RECORD;
 BEGIN
-    IF EXISTS (
-        SELECT 1 FROM information_schema.table_constraints
-        WHERE table_name = 'profile_items' AND constraint_name = 'profile_items_item_type_check'
-    ) THEN
-        ALTER TABLE profile_items DROP CONSTRAINT profile_items_item_type_check;
-        ALTER TABLE profile_items ADD CONSTRAINT profile_items_item_type_check
-        CHECK (item_type IN (
-            'link', 'whatsapp', 'telegram', 'email', 'facebook', 'instagram', 'pinterest', 'reddit',
-            'tiktok', 'twitch', 'twitter', 'linkedin', 'portfolio', 'youtube', 'spotify', 'banner',
-            'carousel', 'pdf', 'pdf_embed', 'pix', 'pix_qrcode', 'instagram_embed', 'youtube_embed',
-            'tiktok_embed', 'spotify_embed', 'linkedin_embed', 'pinterest_embed', 'product_catalog',
-            'sales_page', 'digital_form', 'guest_list', 'contract', 'king_selection', 'agenda',
-            'convite', 'photographer_site'
-        ));
-        RAISE NOTICE 'profile_items_item_type_check atualizada com photographer_site.';
+    SELECT data_type, udt_name INTO col
+    FROM information_schema.columns
+    WHERE table_name = 'profile_items' AND column_name = 'item_type';
+
+    IF col.data_type <> 'USER-DEFINED' OR col.udt_name <> 'item_type_enum' THEN
+        RAISE NOTICE 'profile_items.item_type não usa item_type_enum. Nada a fazer.';
+        RETURN;
     END IF;
+
+    SELECT string_agg(quote_literal(e.enumlabel) || '::item_type_enum', ', ' ORDER BY e.enumsortorder)
+    INTO labels_sql
+    FROM pg_enum e
+    JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'item_type_enum';
+
+    IF labels_sql IS NULL OR length(labels_sql) = 0 THEN
+        RAISE NOTICE 'Não foi possível listar item_type_enum.';
+        RETURN;
+    END IF;
+
+    FOR c IN
+        SELECT tc.constraint_name
+        FROM information_schema.table_constraints tc
+        LEFT JOIN information_schema.check_constraints cc ON cc.constraint_name = tc.constraint_name
+        WHERE tc.table_name = 'profile_items' AND tc.constraint_type = 'CHECK'
+          AND (tc.constraint_name ILIKE '%item_type%' OR (cc.check_clause IS NOT NULL AND cc.check_clause ILIKE '%item_type%'))
+    LOOP
+        EXECUTE 'ALTER TABLE profile_items DROP CONSTRAINT IF EXISTS ' || quote_ident(c.constraint_name);
+    END LOOP;
+
+    EXECUTE 'ALTER TABLE profile_items ADD CONSTRAINT profile_items_item_type_check CHECK (item_type = ANY (ARRAY[' || labels_sql || ']))';
+    RAISE NOTICE 'profile_items_item_type_check recriada com photographer_site e todos os valores do enum.';
 END $$;
 
 SELECT 'Migration 168: photographer_site na CHECK de profile_items.' AS status;

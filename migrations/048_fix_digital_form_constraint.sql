@@ -1,56 +1,45 @@
 -- ===========================================
 -- FIX: Atualizar constraint CHECK para incluir digital_form
--- Data: 2026-01-05
--- Execute este script no DBeaver ou Render Shell
--- IMPORTANTE: Execute PRIMEIRO a parte 1, depois a parte 2
+-- Recria a CHECK a partir dos valores atuais do enum (evita violação por linhas existentes).
 -- ===========================================
 
--- ===========================================
--- PARTE 1: Remover a constraint antiga
--- ===========================================
--- Execute APENAS esta parte primeiro (Ctrl+Enter)
-ALTER TABLE profile_items 
-DROP CONSTRAINT IF EXISTS profile_items_item_type_check;
+DO $$
+DECLARE
+    col RECORD;
+    labels_sql TEXT;
+    c RECORD;
+BEGIN
+    SELECT data_type, udt_name INTO col
+    FROM information_schema.columns
+    WHERE table_name = 'profile_items' AND column_name = 'item_type';
 
--- ===========================================
--- PARTE 2: Criar nova constraint com TODOS os tipos (incluindo digital_form)
--- ===========================================
--- Execute esta parte DEPOIS de executar a PARTE 1
--- Inclui também king_selection e agenda para não violar linhas já existentes (enum/add anteriores)
-ALTER TABLE profile_items 
-ADD CONSTRAINT profile_items_item_type_check 
-CHECK (item_type IN (
-    'link',
-    'whatsapp',
-    'telegram',
-    'email',
-    'facebook',
-    'instagram',
-    'pinterest',
-    'reddit',
-    'tiktok',
-    'twitch',
-    'twitter',
-    'linkedin',
-    'portfolio',
-    'youtube',
-    'spotify',
-    'banner',
-    'carousel',
-    'pdf',
-    'pdf_embed',
-    'pix',
-    'pix_qrcode',
-    'instagram_embed',
-    'youtube_embed',
-    'tiktok_embed',
-    'spotify_embed',
-    'linkedin_embed',
-    'pinterest_embed',
-    'product_catalog',
-    'sales_page',
-    'digital_form',
-    'king_selection',
-    'agenda'
-));
+    IF col.data_type <> 'USER-DEFINED' OR col.udt_name <> 'item_type_enum' THEN
+        RAISE NOTICE 'profile_items.item_type não usa item_type_enum. Nada a fazer.';
+        RETURN;
+    END IF;
+
+    SELECT string_agg(quote_literal(e.enumlabel) || '::item_type_enum', ', ' ORDER BY e.enumsortorder)
+    INTO labels_sql
+    FROM pg_enum e
+    JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'item_type_enum';
+
+    IF labels_sql IS NULL OR length(labels_sql) = 0 THEN
+        RAISE NOTICE 'Não foi possível listar item_type_enum.';
+        RETURN;
+    END IF;
+
+    FOR c IN
+        SELECT tc.constraint_name
+        FROM information_schema.table_constraints tc
+        LEFT JOIN information_schema.check_constraints cc ON cc.constraint_name = tc.constraint_name
+        WHERE tc.table_name = 'profile_items' AND tc.constraint_type = 'CHECK'
+          AND (tc.constraint_name ILIKE '%item_type%' OR (cc.check_clause IS NOT NULL AND cc.check_clause ILIKE '%item_type%'))
+    LOOP
+        EXECUTE 'ALTER TABLE profile_items DROP CONSTRAINT IF EXISTS ' || quote_ident(c.constraint_name);
+    END LOOP;
+
+    EXECUTE 'ALTER TABLE profile_items ADD CONSTRAINT profile_items_item_type_check CHECK (item_type = ANY (ARRAY[' || labels_sql || ']))';
+    RAISE NOTICE 'profile_items_item_type_check recriada (inclui digital_form e todos os valores do enum).';
+END $$;
 
