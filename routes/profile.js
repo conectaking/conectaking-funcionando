@@ -802,6 +802,8 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                 
                 if (itemExists) {
                     // UPDATE: item existe, atualizar campos
+                    // COALESCE em destination_url e image_url: se o front enviar null (ex: ao salvar só o banner),
+                    // preservamos o valor atual no DB para não apagar fotos do carrossel nem imagem do banner.
                     const updateFields = [];
                     const updateValues = [];
                     let paramIndex = 1;
@@ -809,10 +811,10 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     // Campos padrão
                     updateFields.push(`title = $${paramIndex++}`);
                     updateValues.push(item.title || null);
-                    updateFields.push(`destination_url = $${paramIndex++}`);
+                    updateFields.push(`destination_url = COALESCE($${paramIndex++}, destination_url)`);
                     updateValues.push(normalizedDestinationUrl);
-                    updateFields.push(`image_url = $${paramIndex++}`);
-                    updateValues.push(item.image_url || null);
+                    updateFields.push(`image_url = COALESCE($${paramIndex++}, image_url)`);
+                    updateValues.push(item.image_url !== undefined ? (item.image_url || null) : null);
                     updateFields.push(`icon_class = $${paramIndex++}`);
                     updateValues.push(item.icon_class || null);
                     updateFields.push(`display_order = $${paramIndex++}`);
