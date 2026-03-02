@@ -3,7 +3,7 @@
 if (typeof details === 'undefined' || !details) {
     throw new Error('Variável details não está definida');
 }
-var hasLocationMap = (items || []).some(function(i){ return i && i.item_type === 'location' && i.location_data && i.location_data.latitude != null && i.location_data.longitude != null; });
+var hasLocationMap = (items || []).some(function(i){ return i && i.item_type === 'location' && i.location_data; });
 %>
 <!DOCTYPE html>
 <html lang="pt-BR" style="background-color: <%= (details && details.background_color) ? details.background_color : '#0D0D0F' %>;">
@@ -1152,15 +1152,12 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         %>
                         <div class="profile-link profile-location-card" data-item-id="<%= item.id %>" data-google="<%= googleUrl %>" data-waze="<%= wazeUrl %>" style="cursor: pointer; flex-direction: column; align-items: stretch; text-align: left; padding: 0; overflow: hidden; border-radius: 16px;">
                             <div class="location-map-preview" style="height: 200px; background: #e8ecee; position: relative; overflow: hidden; border-radius: 16px 16px 0 0;">
-                                <% if (hasCoords) { %>
-                                <div id="location-map-<%= item.id %>" class="location-map-leaflet" data-lat="<%= lat %>" data-lng="<%= lng %>" style="position:absolute;top:0;left:0;width:100%;height:200px;border-radius:16px 16px 0 0;"></div>
-                                <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(255,255,255,0.95); color: #333; font-size: 0.65rem; padding: 4px 8px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); z-index: 1000;">© OpenStreetMap © CARTO</div>
-                                <% } else { %>
-                                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(145deg, #2c3e50 0%, #34495e 100%); color: rgba(255,255,255,0.9); padding: 20px;">
+                                <div id="location-map-<%= item.id %>" class="location-map-leaflet" data-lat="<%= lat != null ? lat : '' %>" data-lng="<%= lng != null ? lng : '' %>" data-address="<%= (addr || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') %>" style="position:absolute;top:0;left:0;width:100%;height:200px;border-radius:16px 16px 0 0;"></div>
+                                <div class="location-map-attribution" style="position: absolute; bottom: 8px; right: 8px; background: rgba(255,255,255,0.95); color: #333; font-size: 0.65rem; padding: 4px 8px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); z-index: 1000; display: none;">© OpenStreetMap © CARTO</div>
+                                <div class="location-map-loading" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(145deg, #2c3e50 0%, #34495e 100%); color: rgba(255,255,255,0.9); padding: 20px; z-index: 2;">
                                     <i class="fas fa-map-marker-alt" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.9;"></i>
-                                    <span style="font-size: 0.9rem;">Endereço disponível nos botões abaixo</span>
+                                    <span class="location-map-loading-text" style="font-size: 0.9rem;">Carregando mapa...</span>
                                 </div>
-                                <% } %>
                             </div>
                             <div style="padding: 14px 16px;">
                                 <div style="font-weight: 700; margin-bottom: 8px; color: inherit;"><%= item.title || 'Localização' %></div>
@@ -3117,10 +3114,12 @@ document.addEventListener('DOMContentLoaded', () => {
     (function(){
         var containers = document.querySelectorAll('.location-map-leaflet');
         if (!window.L || !containers.length) return;
-        function initMap(el){
-            var lat = parseFloat(el.getAttribute('data-lat'));
-            var lng = parseFloat(el.getAttribute('data-lng'));
-            if (isNaN(lat) || isNaN(lng)) return;
+        function showMap(el, lat, lng){
+            var wrap = el.closest('.location-map-preview');
+            var loading = wrap ? wrap.querySelector('.location-map-loading') : null;
+            var attribution = wrap ? wrap.querySelector('.location-map-attribution') : null;
+            if (loading) loading.style.display = 'none';
+            if (attribution) attribution.style.display = 'block';
             var map = window.L.map(el, { center: [lat, lng], zoom: 16, zoomControl: true });
             window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '',
@@ -3128,9 +3127,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxZoom: 20
             }).addTo(map);
             window.L.marker([lat, lng]).addTo(map);
-            setTimeout(function(){ map.invalidateSize(); }, 100);
+            setTimeout(function(){ map.invalidateSize(); }, 150);
         }
-        containers.forEach(initMap);
+        function showError(el, msg){
+            var wrap = el.closest('.location-map-preview');
+            var loading = wrap ? wrap.querySelector('.location-map-loading') : null;
+            var txt = wrap ? wrap.querySelector('.location-map-loading-text') : null;
+            if (txt) txt.textContent = msg || 'Endereço disponível nos botões abaixo';
+        }
+        containers.forEach(function(el){
+            var lat = parseFloat(el.getAttribute('data-lat'));
+            var lng = parseFloat(el.getAttribute('data-lng'));
+            var addr = (el.getAttribute('data-address') || '').trim();
+            if (!isNaN(lat) && !isNaN(lng)) {
+                showMap(el, lat, lng);
+                return;
+            }
+            if (addr) {
+                fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(addr) + '&format=json&limit=1', { headers: { 'Accept': 'application/json' } })
+                    .then(function(r){ return r.json(); })
+                    .then(function(arr){
+                        if (arr && arr[0]) {
+                            var lat2 = parseFloat(arr[0].lat);
+                            var lng2 = parseFloat(arr[0].lon);
+                            if (!isNaN(lat2) && !isNaN(lng2)) showMap(el, lat2, lng2);
+                            else showError(el);
+                        } else showError(el);
+                    })
+                    .catch(function(){ showError(el); });
+            } else showError(el);
+        });
     })();
     </script>
     <% } %>
