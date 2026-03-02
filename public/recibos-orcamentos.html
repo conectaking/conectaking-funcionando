@@ -291,6 +291,19 @@
     var API = apiOrigin + '/api/documentos';
     var docId = (function() { var m = /[?&]id=([^&]+)/.exec(location.search); return m ? m[1] : null; })();
 
+    function handleResponse(r, msgLogin) {
+        msgLogin = msgLogin || 'Faça login na aplicação para usar recibos e orçamentos.';
+        if (r.status === 401) throw new Error(msgLogin);
+        var ct = (r.headers.get('content-type') || '').toLowerCase();
+        return r.text().then(function(text) {
+            if (ct.indexOf('application/json') === -1) throw new Error(msgLogin);
+            var data;
+            try { data = JSON.parse(text); } catch (e) { throw new Error(msgLogin); }
+            if (!r.ok) throw new Error((data && data.message) || msgLogin);
+            return data;
+        });
+    }
+
     function applyTipoUI(tipo) {
         var isRecibo = (tipo || '').toLowerCase() === 'recibo';
         document.querySelector('input[name="tipo"]').value = isRecibo ? 'recibo' : 'orcamento';
@@ -333,13 +346,7 @@
         document.querySelector('input[name="tipo"]').value = 'recibo';
         var body = getFormDoc();
         fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'include' })
-            .then(function(r) {
-                if (r.status === 401) {
-                    throw new Error('Faça login primeiro. Abra a página pelo servidor (ex.: http://127.0.0.1:5000) e entre na sua conta.');
-                }
-                if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'Erro ao criar recibo'); });
-                return r.json();
-            })
+            .then(function(r) { return handleResponse(r, 'Faça login na aplicação para criar recibos.'); })
             .then(function(data) {
                 var id = data.data && data.data.id;
                 if (!id) throw new Error('Recibo não foi criado.');
@@ -366,12 +373,7 @@
             var origHtml = btn ? btn.innerHTML : '';
             if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined">hourglass_empty</span> Digitalizando...'; }
             fetch(API + '/' + docId + '/processar-comprovante', { method: 'POST', body: fd, credentials: 'include' })
-                .then(function(r) {
-                    if (r.status === 401) {
-                        return r.json().then(function() { throw new Error('Faça login. Abra a página pelo servidor (http://127.0.0.1:5000) e entre na sua conta.'); });
-                    }
-                    return r.json();
-                })
+                .then(function(r) { return handleResponse(r, 'Faça login para enviar comprovantes.'); })
                 .then(function(data) {
                     if (data && data.data && data.data.documento) {
                         setFormDoc(data.data.documento);
@@ -453,13 +455,13 @@
         var fd = new FormData();
         fd.append('image', file);
         fetch(API + '/upload-logo', { method: 'POST', body: fd, credentials: 'include' })
-            .then(function(r) { return r.json(); })
+            .then(function(r) { return handleResponse(r, 'Faça login para importar logomarca.'); })
             .then(function(data) {
                 if (data && data.data && data.data.url) {
                     document.getElementById('input-logo-url').value = data.data.url;
                 } else { alert(data.message || 'Falha ao enviar logo.'); }
             })
-            .catch(function() { alert('Erro ao enviar logo. Verifique se está autenticado.'); });
+            .catch(function(err) { alert(err.message || 'Erro ao enviar logo.'); });
         this.value = '';
     };
 
@@ -551,11 +553,7 @@
         var opts = { method: docId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'include' };
         var url = docId ? API + '/' + docId : API;
         fetch(url, opts)
-            .then(function(r) {
-                if (r.status === 401) throw new Error('Faça login primeiro. Abra a página pelo servidor (ex.: http://127.0.0.1:5000) e entre na sua conta.');
-                if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'Erro ao salvar'); });
-                return r.json();
-            })
+            .then(function(r) { return handleResponse(r, 'Faça login para salvar o documento.'); })
             .then(function(data) {
                 var id = data.data && data.data.id;
                 if (id && !docId) { docId = id; location.replace(location.pathname + '?id=' + id); document.getElementById('btn-exportar-pdf').style.display = ''; }
@@ -568,8 +566,8 @@
 
     if (docId) {
         fetch(API + '/' + docId, { credentials: 'include' })
-            .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
-            .then(function(res) { if (res.data) setFormDoc(res.data); })
+            .then(function(r) { return handleResponse(r); })
+            .then(function(res) { if (res && res.data) setFormDoc(res.data); })
             .catch(function() {});
     } else {
         applyTipoUI('orcamento');
