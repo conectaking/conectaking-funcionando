@@ -1146,15 +1146,20 @@ if (typeof details === 'undefined' || !details) {
                             const addr = (loc.address_formatted || loc.address || loc.place_name || '').trim();
                             const googleUrl = hasCoords ? ('https://www.google.com/maps?q=' + lat + ',' + lng) : (addr ? ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(addr)) : '#');
                             const wazeUrl = hasCoords ? ('https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes') : (addr ? ('https://waze.com/ul?q=' + encodeURIComponent(addr)) : '#');
-                            const osmIframe = hasCoords ? ('https://www.openstreetmap.org/export/embed.html?bbox=' + (lng-0.008) + '%2C' + (lat-0.008) + '%2C' + (lng+0.008) + '%2C' + (lat+0.008) + '&layer=mapnik&marker=' + lat + '%2C' + lng) : null;
+                            const bbox = hasCoords ? (lng-0.006) + ',' + (lat-0.006) + ',' + (lng+0.006) + ',' + (lat+0.006) : '';
+                            const osmIframe = hasCoords ? ('https://www.openstreetmap.org/export/embed.html?bbox=' + encodeURIComponent(bbox) + '&layer=mapnik&marker=' + encodeURIComponent(lat + ',' + lng)) : null;
                         %>
                         <div class="profile-link profile-location-card" data-item-id="<%= item.id %>" data-google="<%= googleUrl %>" data-waze="<%= wazeUrl %>" style="cursor: pointer; flex-direction: column; align-items: stretch; text-align: left; padding: 0; overflow: hidden; border-radius: 16px;">
-                            <div class="location-map-preview" style="height: 140px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); position: relative; display: flex; align-items: center; justify-content: center;">
+                            <div class="location-map-preview" style="height: 180px; background: #e8e8e8; position: relative; overflow: hidden;">
                                 <% if (osmIframe) { %>
-                                <iframe src="<%= osmIframe %>" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;pointer-events:none;" title="Mapa"></iframe>
-                                <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); color: #fff; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px;">© OpenStreetMap</div>
+                                <iframe src="<%= osmIframe %>" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" title="Mapa da localização"></iframe>
+                                <div style="position: absolute; bottom: 6px; right: 6px; background: rgba(255,255,255,0.95); color: #333; font-size: 0.65rem; padding: 3px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">© OpenStreetMap</div>
+                                <% } else { %>
+                                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: rgba(255,255,255,0.85); padding: 16px;">
+                                    <i class="fas fa-map-marker-alt" style="font-size: 1.75rem; margin-bottom: 8px; opacity: 0.9;"></i>
+                                    <span style="font-size: 0.85rem;">Endereço disponível nos botões abaixo</span>
+                                </div>
                                 <% } %>
-                                <i class="fas fa-map-marker-alt" style="font-size: 2.5rem; color: rgba(255,255,255,0.9); position: relative; z-index: 1; text-shadow: 0 2px 8px rgba(0,0,0,0.5);"></i>
                             </div>
                             <div style="padding: 14px 16px;">
                                 <div style="font-weight: 700; margin-bottom: 8px; color: inherit;"><%= item.title || 'Localização' %></div>
