@@ -56,10 +56,10 @@
 
 <main class="ml-20 p-8 lg:p-12">
     <div class="max-w-5xl mx-auto">
-        <header class="mb-12 flex flex-wrap justify-between items-end gap-4">
+        <header class="mb-8 flex flex-wrap justify-between items-end gap-4">
             <div>
-                <h1 class="text-3xl font-bold dark:text-white mb-2">Novo Orçamento</h1>
-                <p class="text-slate-500 dark:text-slate-400">Crie documentos profissionais em segundos</p>
+                <h1 class="text-3xl font-bold dark:text-white mb-2" id="page-title">Novo Orçamento</h1>
+                <p class="text-slate-500 dark:text-slate-400" id="page-subtitle">Crie documentos profissionais em segundos</p>
             </div>
             <div class="flex gap-4">
                 <button type="button" id="btn-visualizar" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:bg-slate-200 dark:hover:border-primary/50 transition-all">
@@ -72,6 +72,11 @@
                 </button>
             </div>
         </header>
+
+        <nav class="flex gap-1 mb-10 p-1 bg-slate-100 dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark w-fit" role="tablist">
+            <button type="button" role="tab" id="tab-recibo" class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors" data-tipo="recibo">Recibos</button>
+            <button type="button" role="tab" id="tab-orcamento" class="tab-btn px-6 py-2.5 rounded-lg text-sm font-semibold bg-primary text-black transition-colors" data-tipo="orcamento" aria-selected="true">Orçamentos</button>
+        </nav>
 
         <form id="form-doc" class="space-y-8">
             <input type="hidden" name="tipo" value="orcamento"/>
@@ -153,7 +158,7 @@
                         <input name="data_documento" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" type="date"/>
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Validade do Orçamento (Até)</label>
+                        <label id="label-validade" class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Validade do Orçamento (Até)</label>
                         <input name="validade_ate" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" type="date"/>
                     </div>
                 </div>
@@ -163,7 +168,7 @@
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-2 text-primary">
                         <span class="material-icons-outlined">list_alt</span>
-                        <h2 class="uppercase tracking-widest text-xs font-bold">Itens</h2>
+                        <h2 id="itens-section-title" class="uppercase tracking-widest text-xs font-bold">Itens</h2>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -230,12 +235,12 @@
                 </button>
                 <div class="flex items-center gap-4 w-full sm:w-auto">
                     <div class="hidden lg:flex flex-col items-end mr-4">
-                        <span class="text-[10px] uppercase font-bold text-slate-500">Valor Total Estimado</span>
+                        <span id="total-label" class="text-[10px] uppercase font-bold text-slate-500">Valor Total Estimado</span>
                         <span id="total-display" class="text-2xl font-bold text-primary">R$ 0,00</span>
                     </div>
-                    <button type="submit" class="flex-1 sm:flex-none flex items-center justify-center gap-3 bg-primary text-black px-10 py-4 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+                    <button type="submit" id="btn-submit" class="flex-1 sm:flex-none flex items-center justify-center gap-3 bg-primary text-black px-10 py-4 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
                         <span class="material-icons-outlined">save</span>
-                        Salvar Orçamento
+                        <span id="btn-submit-text">Salvar Orçamento</span>
                     </button>
                 </div>
             </div>
@@ -254,6 +259,36 @@
         : '';
     var API = apiOrigin + '/api/documentos';
     var docId = (function() { var m = /[?&]id=([^&]+)/.exec(location.search); return m ? m[1] : null; })();
+
+    function applyTipoUI(tipo) {
+        var isRecibo = (tipo || '').toLowerCase() === 'recibo';
+        document.querySelector('input[name="tipo"]').value = isRecibo ? 'recibo' : 'orcamento';
+        document.getElementById('page-title').textContent = isRecibo ? 'Novo Recibo' : 'Novo Orçamento';
+        document.getElementById('page-subtitle').textContent = isRecibo ? 'Emita recibos profissionais' : 'Crie documentos profissionais em segundos';
+        document.getElementById('label-validade').textContent = isRecibo ? 'Validade (Até)' : 'Validade do Orçamento (Até)';
+        document.getElementById('itens-section-title').textContent = isRecibo ? 'Itens do Recibo' : 'Itens';
+        document.getElementById('total-label').textContent = isRecibo ? 'Valor Total' : 'Valor Total Estimado';
+        document.getElementById('btn-submit-text').textContent = isRecibo ? 'Salvar Recibo' : 'Salvar Orçamento';
+        var tabRecibo = document.getElementById('tab-recibo');
+        var tabOrcamento = document.getElementById('tab-orcamento');
+        if (isRecibo) {
+            tabRecibo.classList.add('bg-primary', 'text-black');
+            tabRecibo.classList.remove('text-slate-500', 'dark:text-slate-400');
+            tabRecibo.setAttribute('aria-selected', 'true');
+            tabOrcamento.classList.remove('bg-primary', 'text-black');
+            tabOrcamento.classList.add('text-slate-500', 'dark:text-slate-400');
+            tabOrcamento.setAttribute('aria-selected', 'false');
+        } else {
+            tabOrcamento.classList.add('bg-primary', 'text-black');
+            tabOrcamento.classList.remove('text-slate-500', 'dark:text-slate-400');
+            tabOrcamento.setAttribute('aria-selected', 'true');
+            tabRecibo.classList.remove('bg-primary', 'text-black');
+            tabRecibo.classList.add('text-slate-500', 'dark:text-slate-400');
+            tabRecibo.setAttribute('aria-selected', 'false');
+        }
+    }
+    document.getElementById('tab-recibo').onclick = function() { applyTipoUI('recibo'); };
+    document.getElementById('tab-orcamento').onclick = function() { applyTipoUI('orcamento'); };
 
     function fmtMoney(n) {
         if (n == null || isNaN(n)) return '0,00';
@@ -373,6 +408,7 @@
         document.querySelector('textarea[name="condicoes_pagamento"]').value = doc.condicoes_pagamento || '';
         document.querySelector('input[name="data_documento"]').value = (doc.data_documento || '').slice(0, 10);
         document.querySelector('input[name="validade_ate"]').value = (doc.validade_ate || '').slice(0, 10);
+        applyTipoUI(doc.tipo || 'orcamento');
         var tbody = document.getElementById('itens-tbody');
         tbody.innerHTML = '';
         (doc.itens_json || []).forEach(function(item) {
@@ -414,7 +450,9 @@
             .then(function(data) {
                 var id = data.data && data.data.id;
                 if (id && !docId) { docId = id; location.replace(location.pathname + '?id=' + id); document.getElementById('btn-exportar-pdf').style.display = ''; }
-                alert(id ? 'Orçamento salvo.' : (data.message || 'Salvo.'));
+                var tipo = document.querySelector('input[name="tipo"]').value;
+                var msg = tipo === 'recibo' ? 'Recibo salvo.' : 'Orçamento salvo.';
+                alert(id ? msg : (data.message || 'Salvo.'));
             })
             .catch(function(err) { alert(err.message || 'Erro ao salvar. Verifique se está autenticado.'); });
     };
