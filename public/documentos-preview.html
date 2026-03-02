@@ -290,7 +290,17 @@
             if (doc.data_documento) document.getElementById('meta-data').textContent = 'Data: ' + (doc.data_documento || '').slice(0, 10);
             if (doc.validade_ate && tipo === 'orcamento') document.getElementById('meta-validade').textContent = (doc.data_documento ? '  |  ' : '') + 'Válido até: ' + (doc.validade_ate || '').slice(0, 10);
         }
-        // Se houver ?token=xxx ou ?id=xxx, pode chamar a API e fillPreview(doc) — exemplo deixado para o front integrar
+        // Ao carregar: se vier da página de formulário (recibos-orcamentos.html), ler doc do sessionStorage
+        (function() {
+            try {
+                var stored = sessionStorage.getItem('documentoPreview');
+                if (stored) {
+                    var doc = JSON.parse(stored);
+                    fillPreview(doc);
+                    sessionStorage.removeItem('documentoPreview');
+                }
+            } catch (e) {}
+        })();
     </script>
 </body>
 </html>

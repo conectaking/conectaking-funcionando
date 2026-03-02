@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Recibos e Orçamentos — ConectaKing</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#EAB308",
+                        "background-light": "#F9FAFB",
+                        "background-dark": "#0A0A0A",
+                        "card-dark": "#171717",
+                        "border-dark": "#262626"
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        serif: ["Playfair Display", "serif"],
+                    },
+                    borderRadius: { DEFAULT: "0.5rem" },
+                },
+            },
+        };
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .premium-border { border: 1px solid rgba(234, 179, 8, 0.1); }
+        input:focus, select:focus, textarea:focus {
+            border-color: #EAB308 !important;
+            box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.2) !important;
+            outline: none;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #171717; }
+        ::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #EAB308; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<aside class="fixed left-0 top-0 h-full w-20 bg-white dark:bg-card-dark border-r border-slate-200 dark:border-border-dark flex flex-col items-center py-8 z-50">
+    <div class="mb-10 text-primary"><span class="material-icons-outlined text-4xl">description</span></div>
+    <nav class="flex flex-col gap-8">
+        <a class="text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-icons-outlined">dashboard</span></a>
+        <a class="text-primary" href="#"><span class="material-icons-outlined">receipt_long</span></a>
+        <a class="text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-icons-outlined">people</span></a>
+        <a class="text-slate-400 hover:text-primary transition-colors" href="#"><span class="material-icons-outlined">settings</span></a>
+    </nav>
+    <div class="mt-auto"><div class="w-10 h-10 rounded-full border-2 border-primary bg-slate-700"></div></div>
+</aside>
+
+<main class="ml-20 p-8 lg:p-12">
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-12 flex flex-wrap justify-between items-end gap-4">
+            <div>
+                <h1 class="text-3xl font-bold dark:text-white mb-2">Novo Orçamento</h1>
+                <p class="text-slate-500 dark:text-slate-400">Crie documentos profissionais em segundos</p>
+            </div>
+            <div class="flex gap-4">
+                <button type="button" id="btn-visualizar" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:bg-slate-200 dark:hover:border-primary/50 transition-all">
+                    <span class="material-icons-outlined text-sm">visibility</span>
+                    <span class="text-sm font-medium">Visualizar</span>
+                </button>
+                <button type="button" id="btn-exportar-pdf" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:bg-slate-200 dark:hover:border-primary/50 transition-all" style="display: none;">
+                    <span class="material-icons-outlined text-sm">file_download</span>
+                    <span class="text-sm font-medium">Exportar PDF</span>
+                </button>
+            </div>
+        </header>
+
+        <form id="form-doc" class="space-y-8">
+            <input type="hidden" name="tipo" value="orcamento"/>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm premium-border">
+                    <div class="flex items-center gap-2 mb-6 text-primary">
+                        <span class="material-icons-outlined">business</span>
+                        <h2 class="uppercase tracking-widest text-xs font-bold">Emitente</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Nome ou Razão Social</label>
+                            <input name="emitente_nome" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Ex: Sua Empresa LTDA" type="text"/>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">CPF/CNPJ</label>
+                                <input name="emitente_cpf" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="00.000.000/0000-00" type="text"/>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Contato</label>
+                                <input name="emitente_contato" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="(00) 00000-0000" type="text"/>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Endereço</label>
+                            <input name="emitente_endereco" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Rua, número, bairro, cidade" type="text"/>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Logomarca</label>
+                            <div class="flex gap-2">
+                                <div class="relative flex-1">
+                                    <span class="material-icons-outlined absolute left-3 top-2.5 text-slate-400 text-sm">link</span>
+                                    <input name="emitente_logo_url" id="input-logo-url" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg pl-10 pr-4 py-2.5 text-sm" placeholder="URL ou importe abaixo" type="text"/>
+                                </div>
+                                <button type="button" id="btn-importar-logo" class="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-colors shrink-0">
+                                    <span class="material-icons-outlined text-lg">upload_file</span>
+                                    Importar
+                                </button>
+                                <input type="file" id="file-logo" accept="image/*" class="hidden"/>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
+                    <div class="flex items-center gap-2 mb-6 text-primary">
+                        <span class="material-icons-outlined">person</span>
+                        <h2 class="uppercase tracking-widest text-xs font-bold">Cliente</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Nome do Cliente</label>
+                            <input name="cliente_nome" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Nome completo" type="text"/>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">CPF/CNPJ do Cliente</label>
+                            <input name="cliente_cpf" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="000.000.000-00" type="text"/>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Endereço</label>
+                            <input name="cliente_endereco" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Rua, Número, Bairro, Cidade" type="text"/>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Contato</label>
+                            <input name="cliente_contato" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" placeholder="Telefone ou e-mail" type="text"/>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
+                <div class="flex items-center gap-2 mb-6 text-primary">
+                    <span class="material-icons-outlined">calendar_today</span>
+                    <h2 class="uppercase tracking-widest text-xs font-bold">Datas</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Data do Documento</label>
+                        <input name="data_documento" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" type="date"/>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Validade do Orçamento (Até)</label>
+                        <input name="validade_ate" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-2.5 text-sm" type="date"/>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-2 text-primary">
+                        <span class="material-icons-outlined">list_alt</span>
+                        <h2 class="uppercase tracking-widest text-xs font-bold">Itens</h2>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-separate border-spacing-y-2">
+                        <thead>
+                            <tr class="text-[10px] uppercase font-bold text-slate-500 text-left">
+                                <th class="px-4 py-2">Descrição</th>
+                                <th class="px-4 py-2 w-24">Data</th>
+                                <th class="px-4 py-2 w-20 text-center">Qtd</th>
+                                <th class="px-4 py-2 w-32">Unit. (R$)</th>
+                                <th class="px-4 py-2 w-32 text-right">Total</th>
+                                <th class="px-4 py-2 w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="itens-tbody">
+                            <tr class="item-row bg-slate-50 dark:bg-black/40 group">
+                                <td class="px-4 py-3 rounded-l-lg border-y border-l border-slate-200 dark:border-border-dark">
+                                    <input name="item_descricao[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="Serviço ou Produto" type="text"/>
+                                    <input name="item_pacote[]" class="w-full mt-1 bg-transparent border-none focus:ring-0 p-0 text-xs text-slate-400" placeholder="O que vai no pacote (opcional)" type="text"/>
+                                </td>
+                                <td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark">
+                                    <input name="item_data[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="DD/MM" type="text"/>
+                                </td>
+                                <td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark text-center">
+                                    <input name="item_qtd[]" class="w-12 bg-transparent border-none focus:ring-0 p-0 text-sm text-center" type="number" min="1" value="1"/>
+                                </td>
+                                <td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark">
+                                    <input name="item_unit[]" class="item-unit w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="0,00" type="text"/>
+                                </td>
+                                <td class="item-total px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium text-primary">R$ 0,00</td>
+                                <td class="px-4 py-3 rounded-r-lg border-y border-r border-slate-200 dark:border-border-dark text-center">
+                                    <button type="button" class="btn-remove-item text-slate-400 hover:text-red-500 transition-colors"><span class="material-icons-outlined text-sm">close</span></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" id="btn-add-item" class="mt-4 w-full py-4 border-2 border-dashed border-slate-200 dark:border-border-dark rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-primary hover:border-primary transition-all">
+                    <span class="material-icons-outlined text-lg">add_circle_outline</span>
+                    <span class="text-sm font-semibold uppercase tracking-wider">Adicionar Nova Linha</span>
+                </button>
+            </section>
+
+            <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
+                <div class="flex items-center gap-2 mb-4 text-primary">
+                    <span class="material-icons-outlined">payment</span>
+                    <h2 class="uppercase tracking-widest text-xs font-bold">Condições de pagamento</h2>
+                </div>
+                <textarea name="condicoes_pagamento" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-3 text-sm resize-none" placeholder="Ex.: 20% para marcação; 30% um dia antes do evento; 50% no encerramento." rows="3"></textarea>
+            </section>
+
+            <section class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm">
+                <div class="flex items-center gap-2 mb-4 text-primary">
+                    <span class="material-icons-outlined">notes</span>
+                    <h2 class="uppercase tracking-widest text-xs font-bold">Observações</h2>
+                </div>
+                <textarea name="observacoes" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg px-4 py-3 text-sm resize-none" placeholder="Notas adicionais..." rows="4"></textarea>
+            </section>
+
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-6 py-10 border-t border-slate-200 dark:border-border-dark">
+                <button type="button" id="btn-voltar" class="flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    <span class="material-icons-outlined">west</span>
+                    Voltar para lista
+                </button>
+                <div class="flex items-center gap-4 w-full sm:w-auto">
+                    <div class="hidden lg:flex flex-col items-end mr-4">
+                        <span class="text-[10px] uppercase font-bold text-slate-500">Valor Total Estimado</span>
+                        <span id="total-display" class="text-2xl font-bold text-primary">R$ 0,00</span>
+                    </div>
+                    <button type="submit" class="flex-1 sm:flex-none flex items-center justify-center gap-3 bg-primary text-black px-10 py-4 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+                        <span class="material-icons-outlined">save</span>
+                        Salvar Orçamento
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+
+<div class="fixed top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="fixed bottom-0 left-0 -z-10 w-[300px] h-[300px] bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+<script>
+(function() {
+    var API = '/api/documentos';
+    var docId = (function() { var m = /[?&]id=([^&]+)/.exec(location.search); return m ? m[1] : null; })();
+
+    function fmtMoney(n) {
+        if (n == null || isNaN(n)) return '0,00';
+        return Number(n).toFixed(2).replace('.', ',');
+    }
+    function parseBr(s) {
+        if (!s || !String(s).trim()) return 0;
+        return parseFloat(String(s).replace(/\s/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+    }
+
+    function buildItemRow() {
+        var tr = document.createElement('tr');
+        tr.className = 'item-row bg-slate-50 dark:bg-black/40 group';
+        tr.innerHTML = '<td class="px-4 py-3 rounded-l-lg border-y border-l border-slate-200 dark:border-border-dark"><input name="item_descricao[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="Serviço ou Produto" type="text"/><input name="item_pacote[]" class="w-full mt-1 bg-transparent border-none focus:ring-0 p-0 text-xs text-slate-400" placeholder="O que vai no pacote (opcional)" type="text"/></td>' +
+            '<td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark"><input name="item_data[]" class="w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="DD/MM" type="text"/></td>' +
+            '<td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark text-center"><input name="item_qtd[]" class="w-12 bg-transparent border-none focus:ring-0 p-0 text-sm text-center" type="number" min="1" value="1"/></td>' +
+            '<td class="px-4 py-3 border-y border-slate-200 dark:border-border-dark"><input name="item_unit[]" class="item-unit w-full bg-transparent border-none focus:ring-0 p-0 text-sm" placeholder="0,00" type="text"/></td>' +
+            '<td class="item-total px-4 py-3 border-y border-slate-200 dark:border-border-dark text-right font-medium text-primary">R$ 0,00</td>' +
+            '<td class="px-4 py-3 rounded-r-lg border-y border-r border-slate-200 dark:border-border-dark text-center"><button type="button" class="btn-remove-item text-slate-400 hover:text-red-500 transition-colors"><span class="material-icons-outlined text-sm">close</span></button></td>';
+        tr.querySelector('.btn-remove-item').onclick = function() { tr.remove(); updateTotal(); };
+        tr.querySelector('.item-unit').addEventListener('input', updateTotal);
+        tr.querySelector('input[name="item_qtd[]"]').addEventListener('input', updateTotal);
+        return tr;
+    }
+    function updateTotal() {
+        var total = 0;
+        document.querySelectorAll('.item-row').forEach(function(tr) {
+            var qtd = parseInt(tr.querySelector('input[name="item_qtd[]"]').value, 10) || 1;
+            var unit = parseBr(tr.querySelector('.item-unit').value);
+            var val = qtd * unit;
+            total += val;
+            tr.querySelector('.item-total').textContent = 'R$ ' + fmtMoney(val);
+        });
+        document.getElementById('total-display').textContent = 'R$ ' + fmtMoney(total);
+    }
+
+    document.getElementById('btn-add-item').onclick = function() {
+        document.getElementById('itens-tbody').appendChild(buildItemRow());
+    };
+    document.getElementById('itens-tbody').querySelectorAll('.btn-remove-item').forEach(function(btn) {
+        btn.onclick = function() { btn.closest('tr').remove(); updateTotal(); };
+    });
+    document.getElementById('itens-tbody').querySelectorAll('.item-unit').forEach(function(inp) {
+        inp.addEventListener('input', updateTotal);
+    });
+    document.getElementById('itens-tbody').querySelectorAll('input[name="item_qtd[]"]').forEach(function(inp) {
+        inp.addEventListener('input', updateTotal);
+    });
+
+    document.getElementById('btn-importar-logo').onclick = function() { document.getElementById('file-logo').click(); };
+    document.getElementById('file-logo').onchange = function() {
+        var file = this.files && this.files[0];
+        if (!file) return;
+        var fd = new FormData();
+        fd.append('image', file);
+        fetch(API + '/upload-logo', { method: 'POST', body: fd, credentials: 'include' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data && data.data && data.data.url) {
+                    document.getElementById('input-logo-url').value = data.data.url;
+                } else { alert(data.message || 'Falha ao enviar logo.'); }
+            })
+            .catch(function() { alert('Erro ao enviar logo. Verifique se está autenticado.'); });
+        this.value = '';
+    };
+
+    function getFormDoc() {
+        var emitente = {
+            nome: document.querySelector('input[name="emitente_nome"]').value,
+            cpf_cnpj: document.querySelector('input[name="emitente_cpf"]').value,
+            contato: document.querySelector('input[name="emitente_contato"]').value,
+            endereco: document.querySelector('input[name="emitente_endereco"]').value,
+            logo_url: document.getElementById('input-logo-url').value || undefined
+        };
+        var cliente = {
+            nome: document.querySelector('input[name="cliente_nome"]').value,
+            cpf_cnpj: document.querySelector('input[name="cliente_cpf"]').value,
+            endereco: document.querySelector('input[name="cliente_endereco"]').value,
+            contato: document.querySelector('input[name="cliente_contato"]').value
+        };
+        var itens = [];
+        document.querySelectorAll('.item-row').forEach(function(tr) {
+            var desc = (tr.querySelector('input[name="item_descricao[]"]').value || '').trim();
+            var pacote = (tr.querySelector('input[name="item_pacote[]"]').value || '').trim();
+            var data = (tr.querySelector('input[name="item_data[]"]').value || '').trim();
+            var qtd = parseInt(tr.querySelector('input[name="item_qtd[]"]').value, 10) || 1;
+            var unit = parseBr(tr.querySelector('.item-unit').value);
+            var item = { descricao: desc || '-', data: data, quantidade: qtd, valor_unitario: unit, valor: qtd * unit };
+            if (pacote) item.conteudo_pacote = pacote;
+            itens.push(item);
+        });
+        return {
+            tipo: document.querySelector('input[name="tipo"]').value || 'orcamento',
+            titulo: null,
+            emitente_json: emitente,
+            cliente_json: cliente,
+            itens_json: itens,
+            observacoes: (document.querySelector('textarea[name="observacoes"]').value || '').trim() || null,
+            condicoes_pagamento: (document.querySelector('textarea[name="condicoes_pagamento"]').value || '').trim() || null,
+            data_documento: (document.querySelector('input[name="data_documento"]').value || '').trim() || null,
+            validade_ate: (document.querySelector('input[name="validade_ate"]').value || '').trim() || null
+        };
+    }
+    function setFormDoc(doc) {
+        var e = doc.emitente_json || {};
+        var c = doc.cliente_json || {};
+        document.querySelector('input[name="emitente_nome"]').value = e.nome || '';
+        document.querySelector('input[name="emitente_cpf"]').value = e.cpf_cnpj || '';
+        document.querySelector('input[name="emitente_contato"]').value = e.contato || '';
+        document.querySelector('input[name="emitente_endereco"]').value = e.endereco || '';
+        document.getElementById('input-logo-url').value = e.logo_url || '';
+        document.querySelector('input[name="cliente_nome"]').value = c.nome || '';
+        document.querySelector('input[name="cliente_cpf"]').value = c.cpf_cnpj || '';
+        document.querySelector('input[name="cliente_endereco"]').value = c.endereco || '';
+        document.querySelector('input[name="cliente_contato"]').value = c.contato || '';
+        document.querySelector('textarea[name="observacoes"]').value = doc.observacoes || '';
+        document.querySelector('textarea[name="condicoes_pagamento"]').value = doc.condicoes_pagamento || '';
+        document.querySelector('input[name="data_documento"]').value = (doc.data_documento || '').slice(0, 10);
+        document.querySelector('input[name="validade_ate"]').value = (doc.validade_ate || '').slice(0, 10);
+        var tbody = document.getElementById('itens-tbody');
+        tbody.innerHTML = '';
+        (doc.itens_json || []).forEach(function(item) {
+            var tr = buildItemRow();
+            tr.querySelector('input[name="item_descricao[]"]').value = item.descricao || '';
+            var pacoteInp = tr.querySelector('input[name="item_pacote[]"]');
+            if (pacoteInp) pacoteInp.value = item.conteudo_pacote || item.detalhes || '';
+            tr.querySelector('input[name="item_data[]"]').value = item.data || '';
+            tr.querySelector('input[name="item_qtd[]"]').value = item.quantidade != null ? item.quantidade : 1;
+            tr.querySelector('.item-unit').value = item.valor_unitario != null ? fmtMoney(item.valor_unitario) : '';
+            tbody.appendChild(tr);
+        });
+        if ((doc.itens_json || []).length === 0) tbody.appendChild(buildItemRow());
+        updateTotal();
+    }
+
+    document.getElementById('btn-visualizar').onclick = function() {
+        var doc = getFormDoc();
+        if (docId) doc.id = docId; if (docId) doc.numero_sequencial = parseInt(docId, 10);
+        try { sessionStorage.setItem('documentoPreview', JSON.stringify(doc)); } catch (e) {}
+        window.open('documentos-preview.html', '_blank', 'noopener');
+    };
+    document.getElementById('btn-exportar-pdf').onclick = function() {
+        if (!docId) return;
+        window.open(API + '/' + docId + '/pdf', '_blank');
+    };
+    if (docId) document.getElementById('btn-exportar-pdf').style.display = '';
+
+    document.getElementById('form-doc').onsubmit = function(ev) {
+        ev.preventDefault();
+        var body = getFormDoc();
+        var opts = { method: docId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'include' };
+        var url = docId ? API + '/' + docId : API;
+        fetch(url, opts)
+            .then(function(r) {
+                if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'Erro ao salvar'); });
+                return r.json();
+            })
+            .then(function(data) {
+                var id = data.data && data.data.id;
+                if (id && !docId) { docId = id; location.replace(location.pathname + '?id=' + id); document.getElementById('btn-exportar-pdf').style.display = ''; }
+                alert(id ? 'Orçamento salvo.' : (data.message || 'Salvo.'));
+            })
+            .catch(function(err) { alert(err.message || 'Erro ao salvar. Verifique se está autenticado.'); });
+    };
+
+    if (docId) {
+        fetch(API + '/' + docId, { credentials: 'include' })
+            .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function(res) { if (res.data) setFormDoc(res.data); })
+            .catch(function() {});
+    }
+})();
+</script>
+</body>
+</html>
