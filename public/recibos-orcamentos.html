@@ -299,6 +299,15 @@
     var API = apiOrigin + '/api/documentos';
     var docId = (function() { var m = /[?&]id=([^&]+)/.exec(location.search); return m ? m[1] : null; })();
 
+    function getAuthHeaders(extra) {
+        var h = extra ? Object.assign({}, extra) : {};
+        try {
+            var token = (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || null;
+            if (token) h['Authorization'] = 'Bearer ' + token;
+        } catch (e) {}
+        return h;
+    }
+
     function handleResponse(r, msgLogin) {
         msgLogin = msgLogin || 'Faça login na aplicação para usar recibos e orçamentos.';
         if (r.status === 401) throw new Error(msgLogin);
@@ -353,7 +362,7 @@
         if (docId) return callback();
         document.querySelector('input[name="tipo"]').value = 'recibo';
         var body = getFormDoc();
-        fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'include' })
+        fetch(API, { method: 'POST', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(body), credentials: 'include' })
             .then(function(r) { return handleResponse(r, 'Faça login na aplicação para criar recibos.'); })
             .then(function(data) {
                 var id = data.data && data.data.id;
@@ -380,7 +389,7 @@
             var btn = document.getElementById('btn-tirar-foto');
             var origHtml = btn ? btn.innerHTML : '';
             if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined">hourglass_empty</span> Digitalizando...'; }
-            fetch(API + '/' + docId + '/processar-comprovante', { method: 'POST', body: fd, credentials: 'include' })
+            fetch(API + '/' + docId + '/processar-comprovante', { method: 'POST', body: fd, credentials: 'include', headers: getAuthHeaders() })
                 .then(function(r) { return handleResponse(r, 'Faça login para enviar comprovantes.'); })
                 .then(function(data) {
                     if (data && data.data && data.data.documento) {
@@ -462,7 +471,7 @@
         if (!file) return;
         var fd = new FormData();
         fd.append('image', file);
-        fetch(API + '/upload-logo', { method: 'POST', body: fd, credentials: 'include' })
+        fetch(API + '/upload-logo', { method: 'POST', body: fd, credentials: 'include', headers: getAuthHeaders() })
             .then(function(r) { return handleResponse(r, 'Faça login para importar logomarca.'); })
             .then(function(data) {
                 if (data && data.data && data.data.url) {
@@ -558,7 +567,7 @@
     document.getElementById('form-doc').onsubmit = function(ev) {
         ev.preventDefault();
         var body = getFormDoc();
-        var opts = { method: docId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'include' };
+        var opts = { method: docId ? 'PUT' : 'POST', headers: getAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(body), credentials: 'include' };
         var url = docId ? API + '/' + docId : API;
         fetch(url, opts)
             .then(function(r) { return handleResponse(r, 'Faça login para salvar o documento.'); })
@@ -573,7 +582,7 @@
     };
 
     if (docId) {
-        fetch(API + '/' + docId, { credentials: 'include' })
+        fetch(API + '/' + docId, { credentials: 'include', headers: getAuthHeaders() })
             .then(function(r) { return handleResponse(r); })
             .then(function(res) { if (res && res.data) setFormDoc(res.data); })
             .catch(function() {});
