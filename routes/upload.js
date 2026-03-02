@@ -189,13 +189,45 @@ async function enqueueThrottledAuth(accountId, headers) {
     return p;
 }
 
+/** Base URL da API (para devolver uploadURL quando usamos R2 em /auth). Em produção (Render) usar API_URL ou X-Forwarded-*. */
+function getApiBaseUrl(req) {
+    const env = (process.env.API_URL || process.env.FRONTEND_URL || '').toString().trim().replace(/\/$/, '');
+    if (env && (env.startsWith('http://') || env.startsWith('https://'))) return env;
+    const proto = (req && req.get && req.get('x-forwarded-proto')) || (req && req.protocol) || 'https';
+    const host = (req && req.get && req.get('x-forwarded-host')) || (req && req.get && req.get('host')) || null;
+    if (host) {
+        const base = `${proto}://${host}`;
+        // Em produção (proxy) usar https quando o cliente usa https
+        if (proto === 'https' || /\.onrender\.com$/.test(host)) return base.replace(/^http:\/\//, 'https://');
+        return base;
+    }
+    return '';
+}
+
 router.post('/auth', protectUser, uploadAuthLimiter, asyncHandler(async (req, res) => {
+    const { getR2Config } = require('../utils/r2');
+    const r2Cfg = getR2Config();
+    if (r2Cfg.enabled && r2Cfg.publicBaseUrl) {
+        const base = getApiBaseUrl(req);
+        if (base) {
+            const uploadURL = `${base}/api/upload/receive-one`;
+            logger.debug('[/auth] R2 ativo: devolvendo uploadURL para receive-one');
+            return res.json({
+                success: true,
+                uploadURL,
+                imageId: 'r2',
+                accountHash: 'r2',
+                useResponseUrl: true
+            });
+        }
+    }
+
     const creds = getCloudflareCreds();
     if (!creds) {
         logger.error('Credenciais do Cloudflare não encontradas');
         return res.status(500).json({
             success: false,
-            message: 'Cloudflare não configurado (CF_IMAGES_ACCOUNT_ID / CF_IMAGES_API_TOKEN ou CLOUDFLARE_EMAIL + CLOUDFLARE_API_KEY).'
+            message: 'Cloudflare não configurado. Configure R2 (R2_ACCOUNT_ID, R2_BUCKET, R2_PUBLIC_BASE_URL) ou Cloudflare Images.'
         });
     }
     const out = await enqueueThrottledAuth(creds.accountId, creds.headers);
@@ -207,6 +239,31 @@ router.post('/auth', protectUser, uploadAuthLimiter, asyncHandler(async (req, re
         success: false,
         message: out.message || 'Falha ao obter autorização para upload. Aguarde e tente novamente.',
         retry_after_seconds: retrySec
+    });
+}));
+
+/**
+ * POST /api/upload/receive-one - Recebe um ficheiro (fluxo /auth com R2).
+ * Quando /auth devolve uploadURL = este endpoint, o cliente envia o ficheiro aqui; subimos para R2 e devolvemos a URL.
+ * Resposta: { success: true, url, imageUrl }. O cliente deve usar url/imageUrl como URL final da imagem.
+ */
+const receiveOneFields = upload.fields([{ name: 'file', maxCount: 1 }, { name: 'image', maxCount: 1 }]);
+router.post('/receive-one', protectUser, receiveOneFields, asyncHandler(async (req, res) => {
+    const file = (req.files && req.files.file && req.files.file[0]) || (req.files && req.files.image && req.files.image[0]) || req.file;
+    if (!file || !file.buffer) {
+        return res.status(400).json({
+            success: false,
+            message: 'Nenhuma imagem enviada. Envie o ficheiro no campo "file" ou "image".'
+        });
+    }
+    const r2Url = await uploadImageToR2(file.buffer, file.mimetype, file.originalname || 'image.jpg');
+    if (r2Url) {
+        logger.info('✅ [UPLOAD] Imagem receive-one enviada via R2', { userId: req.user.userId });
+        return res.json({ success: true, url: r2Url, imageUrl: r2Url });
+    }
+    return res.status(503).json({
+        success: false,
+        message: 'Upload temporariamente indisponível. Tente novamente em instantes.'
     });
 }));
 
@@ -249,7 +306,7 @@ router.post('/image', protectUser, upload.single('image'), asyncHandler(async (r
         });
     }
 
-    const { uploadURL, imageId, accountHash } = out.payload;
+    const { uploadURL, imageId, accountHash, useResponseUrl } = out.payload;
 
     const formData = new FormData();
     formData.append('file', req.file.buffer, {
@@ -272,8 +329,21 @@ router.post('/image', protectUser, upload.single('image'), asyncHandler(async (r
         });
     }
 
-    const hash = accountHash || creds.accountId;
-    const imageUrl = `https://imagedelivery.net/${hash}/${imageId}/public`;
+    let imageUrl;
+    if (useResponseUrl || accountHash === 'r2') {
+        const data = await uploadResponse.json().catch(() => ({}));
+        imageUrl = data.url || data.imageUrl || null;
+        if (!imageUrl) {
+            logger.error('Resposta receive-one sem url/imageUrl', data);
+            return res.status(502).json({
+                success: false,
+                message: 'Resposta do servidor de upload inválida. Tente novamente.'
+            });
+        }
+    } else {
+        const hash = accountHash || creds.accountId;
+        imageUrl = `https://imagedelivery.net/${hash}/${imageId}/public`;
+    }
 
     logger.info('✅ [UPLOAD] Imagem enviada com sucesso', { imageId, userId: req.user.userId, imageUrl });
 
@@ -326,7 +396,7 @@ router.post('/images', protectUser, upload.array('images', maxCarouselImages), a
                 uploaded_so_far: urls
             });
         }
-        const { uploadURL, imageId, accountHash } = out.payload;
+        const { uploadURL, imageId, accountHash, useResponseUrl } = out.payload;
         const formData = new FormData();
         formData.append('file', file.buffer, {
             filename: file.originalname || `image-${i + 1}.jpg`,
@@ -346,8 +416,22 @@ router.post('/images', protectUser, upload.array('images', maxCarouselImages), a
                 uploaded_so_far: urls
             });
         }
-        const hash = accountHash || creds.accountId;
-        urls.push(`https://imagedelivery.net/${hash}/${imageId}/public`);
+        if (useResponseUrl || accountHash === 'r2') {
+            const data = await uploadResponse.json().catch(() => ({}));
+            const u = data.url || data.imageUrl;
+            if (u) urls.push(u);
+            else {
+                logger.error('Resposta receive-one sem url/imageUrl (múltiplas)', data);
+                return res.status(502).json({
+                    success: false,
+                    message: `Resposta inválida na imagem ${i + 1}. Tente novamente.`,
+                    uploaded_so_far: urls
+                });
+            }
+        } else {
+            const hash = accountHash || creds.accountId;
+            urls.push(`https://imagedelivery.net/${hash}/${imageId}/public`);
+        }
     }
 
     logger.info('✅ [UPLOAD] Múltiplas imagens enviadas', { count: urls.length, userId: req.user.userId });
