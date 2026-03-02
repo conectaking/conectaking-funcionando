@@ -21,8 +21,9 @@ Usado para guardar as imagens dos comprovantes e a logo no recibo/orçamento.
 Alternativas aceitas pelo código: `CF_IMAGES_ACCOUNT_ID`, `CF_IMAGES_API_TOKEN`, `CF_IMAGES_ACCOUNT_HASH`.
 
 ### 3. Frontend (site)
-- **recibos-orcamentos.html** e **documentos-ver.html** devem estar publicados junto do site (ex.: em `public_html/` no mesmo domínio).
-- O link que o cliente abre (ex.: `https://conectaking.com.br/documentos-ver.html?token=...`) depende do domínio onde o front está hospedado; o painel já monta esse link com a origem atual.
+- **recibos-orcamentos.html** (em `public/`): formulário premium (tema escuro, dourado, sidebar) para criar e editar orçamentos/recibos. Integra com a API: salvar (POST/PUT), importar logomarca (POST /upload-logo), visualizar (abre documentos-preview.html com dados em sessionStorage), exportar PDF (GET /:id/pdf). Acesso: autenticado (cookie/sessão). URL exemplo: `https://seu-dominio/recibos-orcamentos.html` ou `?id=123` para editar.
+- **documentos-preview.html** (em `public/`): preview do documento no estilo da fatura (azul/laranja). Preenche com `fillPreview(doc)`; se aberto a partir de "Visualizar" do formulário, lê o documento do sessionStorage.
+- **documentos-ver.html** (link do cliente): se existir noutro deploy, o cliente abre pelo token; o painel monta o link com a origem atual.
 
 ### 4. Tesseract (OCR)
 - O **tesseract.js** roda em Node e baixa os dados de idioma na primeira vez (idioma `por`).
