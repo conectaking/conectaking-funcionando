@@ -215,21 +215,27 @@
                     <span id="btn-add-item-label" class="text-sm font-semibold uppercase tracking-wider">Adicionar Nova Linha</span>
                 </button>
                 <div id="recibo-tirar-configurar" class="mt-6 pt-6 border-t border-slate-200 dark:border-border-dark" style="display: none;">
-                    <div id="comprovante-sem-id" class="mb-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-sm">
-                        Salve o recibo primeiro para adicionar fotos.
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Envie uma foto ou imagem do comprovante. A câmera ou o arquivo será lido e os valores digitalizados automaticamente.</p>
+                    <div id="comprovante-sem-id" class="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs" style="display: none;">
+                        Se o recibo ainda não foi salvo, ele será criado ao enviar a primeira foto/arquivo.
                     </div>
-                    <div id="comprovante-upload-area" class="flex flex-wrap gap-3 items-center" style="display: none;">
-                        <input type="file" id="file-comprovante" accept="image/*" capture="environment" class="hidden"/>
-                        <button type="button" id="btn-tirar-fotos" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary text-black font-semibold hover:opacity-90 transition-opacity">
-                            <span class="material-icons-outlined">add_a_photo</span>
-                            Tirar fotos
+                    <div id="comprovante-upload-area" class="flex flex-wrap gap-3 items-center">
+                        <input type="file" id="file-comprovante-camera" accept="image/*" capture="environment" class="hidden"/>
+                        <input type="file" id="file-comprovante-arquivo" accept="image/*" class="hidden"/>
+                        <button type="button" id="btn-tirar-foto" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary text-black font-semibold hover:opacity-90 transition-opacity">
+                            <span class="material-icons-outlined">camera_alt</span>
+                            Tirar foto
                         </button>
-                        <button type="button" id="btn-configurar" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/30 text-primary font-semibold hover:bg-primary/20 transition-colors">
+                        <button type="button" id="btn-enviar-arquivo" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/30 text-primary font-semibold hover:bg-primary/20 transition-colors">
+                            <span class="material-icons-outlined">upload_file</span>
+                            Enviar arquivo (digitalizar valores)
+                        </button>
+                        <button type="button" id="btn-configurar" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-card-dark border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:border-primary/50 transition-colors">
                             <span class="material-icons-outlined">tune</span>
                             Configurar
                         </button>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">Ajuste os valores na tabela acima após enviar a foto.</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">Os valores extraídos aparecem na tabela acima; use Configurar para ajustar.</p>
                 </div>
             </section>
 
@@ -294,8 +300,8 @@
         var reciboBlock = document.getElementById('recibo-tirar-configurar');
         reciboBlock.style.display = isRecibo ? 'block' : 'none';
         if (isRecibo) {
+            document.getElementById('comprovante-upload-area').style.display = 'flex';
             document.getElementById('comprovante-sem-id').style.display = docId ? 'none' : 'block';
-            document.getElementById('comprovante-upload-area').style.display = docId ? 'flex' : 'none';
         }
         var navRecibo = document.getElementById('nav-recibo');
         var navOrcamento = document.getElementById('nav-orcamento');
@@ -318,34 +324,57 @@
     document.getElementById('nav-recibo').onclick = function() { applyTipoUI('recibo'); };
     document.getElementById('nav-orcamento').onclick = function() { applyTipoUI('orcamento'); };
 
-    document.getElementById('btn-tirar-fotos').onclick = function() {
-        if (!docId) { document.getElementById('comprovante-sem-id').style.display = 'block'; return; }
-        document.getElementById('file-comprovante').click();
-    };
-    document.getElementById('file-comprovante').onchange = function() {
-        var file = this.files && this.files[0];
-        if (!file || !docId) return;
-        var fd = new FormData();
-        fd.append('image', file);
-        var btn = document.getElementById('btn-tirar-fotos');
-        var origHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="material-icons-outlined">hourglass_empty</span> Processando...';
-        fetch(API + '/' + docId + '/processar-comprovante', { method: 'POST', body: fd, credentials: 'include' })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data && data.data && data.data.documento) {
-                    setFormDoc(data.data.documento);
-                    alert(data.message || 'Comprovante processado. Ajuste os valores na tabela e use Configurar se precisar.');
-                } else { alert(data.message || 'Falha ao processar comprovante.'); }
+    function ensureDocIdThen(callback) {
+        if (docId) return callback();
+        document.querySelector('input[name="tipo"]').value = 'recibo';
+        var body = getFormDoc();
+        fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'include' })
+            .then(function(r) {
+                if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'Erro ao criar recibo'); });
+                return r.json();
             })
-            .catch(function() { alert('Erro ao enviar comprovante. Verifique se está autenticado.'); })
-            .finally(function() {
-                btn.disabled = false;
-                btn.innerHTML = origHtml;
+            .then(function(data) {
+                var id = data.data && data.data.id;
+                if (!id) throw new Error('Recibo não foi criado.');
+                docId = id;
+                var newUrl = location.pathname + '?id=' + docId;
+                history.replaceState(null, '', newUrl);
+                document.getElementById('btn-exportar-pdf').style.display = '';
+                document.getElementById('comprovante-sem-id').style.display = 'none';
+                callback();
+            })
+            .catch(function(err) {
+                alert(err.message || 'Erro ao salvar recibo. Faça login e tente novamente.');
             });
-        this.value = '';
-    };
+    }
+    function enviarComprovante(fileInput) {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        ensureDocIdThen(function() {
+            var fd = new FormData();
+            fd.append('image', file);
+            var btn = document.getElementById('btn-tirar-foto');
+            var origHtml = btn ? btn.innerHTML : '';
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined">hourglass_empty</span> Digitalizando...'; }
+            fetch(API + '/' + docId + '/processar-comprovante', { method: 'POST', body: fd, credentials: 'include' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data && data.data && data.data.documento) {
+                        setFormDoc(data.data.documento);
+                        alert(data.message || 'Valores digitalizados. Ajuste na tabela se precisar.');
+                    } else { alert(data.message || 'Falha ao digitalizar.'); }
+                })
+                .catch(function() { alert('Erro ao enviar. Verifique se está autenticado.'); })
+                .finally(function() {
+                    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+                });
+            fileInput.value = '';
+        });
+    }
+    document.getElementById('btn-tirar-foto').onclick = function() { document.getElementById('file-comprovante-camera').click(); };
+    document.getElementById('btn-enviar-arquivo').onclick = function() { document.getElementById('file-comprovante-arquivo').click(); };
+    document.getElementById('file-comprovante-camera').onchange = function() { enviarComprovante(this); };
+    document.getElementById('file-comprovante-arquivo').onchange = function() { enviarComprovante(this); };
     document.getElementById('btn-configurar').onclick = function() {
         var tbody = document.getElementById('itens-tbody');
         if (tbody && tbody.firstElementChild) {
