@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Preview — Orçamento / Recibo</title>
+    <style>
+        :root {
+            --doc-blue: #1e3a5f;
+            --doc-orange: #e67e22;
+            --doc-white: #fff;
+            --doc-text: #333;
+            --doc-muted: #666;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            color: var(--doc-text);
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 0;
+            background: #f5f5f5;
+        }
+        .doc-preview {
+            background: var(--doc-white);
+            padding: 0;
+            min-height: 297mm;
+        }
+        /* Header azul + laranja */
+        .doc-header {
+            background: var(--doc-blue);
+            color: var(--doc-white);
+            padding: 20px 24px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .doc-header-logo {
+            max-width: 120px;
+            max-height: 48px;
+            object-fit: contain;
+        }
+        .doc-header-right {
+            text-align: right;
+        }
+        .doc-header-titulo {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+        .doc-header-numero {
+            font-size: 12px;
+            opacity: 0.95;
+        }
+        .doc-header-bar {
+            height: 6px;
+            background: var(--doc-orange);
+        }
+        /* Logo abaixo do header (opcional, se não estiver no header) */
+        .doc-logo-block {
+            padding: 16px 24px 8px;
+        }
+        .doc-logo-block img {
+            max-width: 100px;
+            max-height: 44px;
+            object-fit: contain;
+        }
+        /* Colunas Faturado para | Emitido por */
+        .doc-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            padding: 16px 24px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .doc-col h3 {
+            font-size: 12px;
+            color: var(--doc-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            margin: 0 0 8px 0;
+        }
+        .doc-col p {
+            margin: 0 0 4px 0;
+            font-size: 13px;
+        }
+        .doc-col .muted { color: var(--doc-muted); font-size: 12px; }
+        /* Tabela */
+        .doc-table-wrap {
+            padding: 0 24px 20px;
+            overflow-x: auto;
+        }
+        .doc-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .doc-table thead th {
+            background: var(--doc-orange);
+            color: var(--doc-white);
+            font-size: 11px;
+            font-weight: 700;
+            text-align: left;
+            padding: 10px 8px;
+        }
+        .doc-table thead th:last-child,
+        .doc-table td.num { text-align: right; }
+        .doc-table tbody td {
+            padding: 8px;
+            font-size: 13px;
+            border-bottom: 1px solid #eee;
+        }
+        .doc-table tbody tr.detalhe-pacote td {
+            font-size: 11px;
+            color: var(--doc-muted);
+            padding-left: 24px;
+        }
+        .doc-total-box {
+            display: inline-block;
+            background: var(--doc-orange);
+            color: var(--doc-white);
+            padding: 10px 16px;
+            font-weight: 700;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .doc-total-label { margin-right: 8px; }
+        /* Blocos texto */
+        .doc-block {
+            padding: 12px 24px 8px;
+        }
+        .doc-block h4 {
+            font-size: 12px;
+            color: var(--doc-blue);
+            margin: 0 0 6px 0;
+        }
+        .doc-block p {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        .doc-meta {
+            padding: 8px 24px 16px;
+            font-size: 12px;
+            color: var(--doc-muted);
+        }
+        .doc-footer {
+            padding: 20px 24px 24px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--doc-blue);
+        }
+        /* Impressão */
+        @media print {
+            body { background: #fff; }
+            .doc-preview { background: #fff; box-shadow: none; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-preview" id="doc-preview">
+        <header class="doc-header">
+            <div class="doc-header-left">
+                <img id="doc-logo-header" class="doc-header-logo" src="" alt="Logo" style="display: none;">
+                <span id="doc-logo-placeholder" style="font-size: 12px; opacity: 0.9;">Sua logo</span>
+            </div>
+            <div class="doc-header-right">
+                <p class="doc-header-titulo" id="doc-titulo">ORÇAMENTO</p>
+                <p class="doc-header-numero" id="doc-numero">Nº —</p>
+            </div>
+        </header>
+        <div class="doc-header-bar"></div>
+        <div class="doc-logo-block" id="doc-logo-block" style="display: none;">
+            <img id="doc-logo-img" src="" alt="Logo">
+        </div>
+        <div class="doc-columns">
+            <div class="doc-col">
+                <h3>Faturado para</h3>
+                <p class="cliente-nome" id="cliente-nome">—</p>
+                <p class="muted cliente-cpf" id="cliente-cpf">CNPJ/CPF: —</p>
+                <p class="muted cliente-endereco" id="cliente-endereco">—</p>
+                <p class="muted cliente-contato" id="cliente-contato"></p>
+            </div>
+            <div class="doc-col">
+                <h3>Emitido por</h3>
+                <p class="emitente-nome" id="emitente-nome">—</p>
+                <p class="muted emitente-cpf" id="emitente-cpf">CNPJ/CPF: —</p>
+                <p class="muted emitente-endereco" id="emitente-endereco">—</p>
+                <p class="muted emitente-contato" id="emitente-contato">—</p>
+            </div>
+        </div>
+        <div class="doc-table-wrap">
+            <table class="doc-table">
+                <thead>
+                    <tr>
+                        <th>Descrição</th>
+                        <th>Data</th>
+                        <th>Qtd</th>
+                        <th>Valor unit.</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody id="itens-body">
+                    <tr><td colspan="5">—</td></tr>
+                </tbody>
+            </table>
+            <div class="doc-total-box">
+                <span class="doc-total-label">TOTAL:</span>
+                <span id="total-geral">R$ 0,00</span>
+            </div>
+        </div>
+        <div class="doc-block" id="block-condicoes" style="display: none;">
+            <h4>Condições de pagamento</h4>
+            <p id="condicoes-pagamento"></p>
+        </div>
+        <div class="doc-block" id="block-observacoes" style="display: none;">
+            <h4>Observações</h4>
+            <p id="observacoes"></p>
+        </div>
+        <div class="doc-meta">
+            <span id="meta-data"></span>
+            <span id="meta-validade"></span>
+        </div>
+        <div class="doc-footer">Obrigado pela preferência.</div>
+    </div>
+    <div class="no-print" style="padding: 16px 24px; text-align: center;">
+        <p style="font-size: 12px; color: #666;">Use este layout como preview. Preencha os dados via JavaScript (API <code>GET /api/documentos/:id</code> ou <code>/ver/:token</code>) e mostre este HTML. Botão "Exportar PDF" pode chamar <code>GET /api/documentos/:id/pdf</code> para descarregar o PDF gerado no servidor.</p>
+    </div>
+    <script>
+        // Exemplo: preencher a partir de um objeto documento (como devolvido pela API)
+        function fillPreview(doc) {
+            if (!doc) return;
+            var tipo = (doc.tipo || 'orcamento').toLowerCase();
+            var titulo = tipo === 'orcamento' ? 'ORÇAMENTO' : 'RECIBO';
+            var numero = doc.numero_sequencial != null ? '#' + doc.numero_sequencial : (doc.id ? '#' + doc.id : '—');
+            document.getElementById('doc-titulo').textContent = titulo;
+            document.getElementById('doc-numero').textContent = numero ? 'Nº ' + String(numero).replace(/^#/, '') : '—';
+
+            var emitente = doc.emitente_json || {};
+            var cliente = doc.cliente_json || {};
+            if (emitente.logo_url) {
+                var imgHeader = document.getElementById('doc-logo-header');
+                imgHeader.src = emitente.logo_url;
+                imgHeader.style.display = 'block';
+                document.getElementById('doc-logo-placeholder').style.display = 'none';
+            }
+            document.getElementById('emitente-nome').textContent = emitente.nome || '—';
+            document.getElementById('emitente-cpf').textContent = emitente.cpf_cnpj ? 'CNPJ/CPF: ' + emitente.cpf_cnpj : '—';
+            document.getElementById('emitente-endereco').textContent = emitente.endereco || '—';
+            document.getElementById('emitente-contato').textContent = emitente.contato || '—';
+
+            document.getElementById('cliente-nome').textContent = cliente.nome || '—';
+            document.getElementById('cliente-cpf').textContent = cliente.cpf_cnpj ? 'CNPJ/CPF: ' + cliente.cpf_cnpj : '—';
+            document.getElementById('cliente-endereco').textContent = cliente.endereco || '—';
+            document.getElementById('cliente-contato').textContent = cliente.contato || '';
+
+            var itens = Array.isArray(doc.itens_json) ? doc.itens_json : [];
+            var tbody = document.getElementById('itens-body');
+            var totalGeral = 0;
+            function fmtMoney(n) {
+                if (n == null || isNaN(n)) return '—';
+                return 'R$ ' + Number(n).toFixed(2).replace('.', ',');
+            }
+            tbody.innerHTML = '';
+            itens.forEach(function(item) {
+                var qtd = item.quantidade != null ? item.quantidade : 1;
+                var vu = item.valor_unitario != null ? item.valor_unitario : item.valor;
+                var val = item.valor != null ? item.valor : (vu * qtd);
+                totalGeral += val;
+                var tr = '<tr><td>' + (item.descricao || '—') + '</td><td>' + (item.data || '') + '</td><td>' + qtd + '</td><td class="num">' + fmtMoney(vu) + '</td><td class="num">' + fmtMoney(val) + '</td></tr>';
+                tbody.insertAdjacentHTML('beforeend', tr);
+                var detalhe = (item.conteudo_pacote || item.detalhes || '').toString().trim();
+                if (detalhe) {
+                    tbody.insertAdjacentHTML('beforeend', '<tr class="detalhe-pacote"><td colspan="5">• ' + detalhe.replace(/\n/g, '<br>') + '</td></tr>');
+                }
+            });
+            if (itens.length === 0) tbody.innerHTML = '<tr><td colspan="5">—</td></tr>';
+            document.getElementById('total-geral').textContent = fmtMoney(totalGeral);
+
+            if (doc.condicoes_pagamento && String(doc.condicoes_pagamento).trim()) {
+                document.getElementById('block-condicoes').style.display = 'block';
+                document.getElementById('condicoes-pagamento').textContent = doc.condicoes_pagamento;
+            }
+            if (doc.observacoes) {
+                document.getElementById('block-observacoes').style.display = 'block';
+                document.getElementById('observacoes').textContent = doc.observacoes;
+            }
+            if (doc.data_documento) document.getElementById('meta-data').textContent = 'Data: ' + (doc.data_documento || '').slice(0, 10);
+            if (doc.validade_ate && tipo === 'orcamento') document.getElementById('meta-validade').textContent = (doc.data_documento ? '  |  ' : '') + 'Válido até: ' + (doc.validade_ate || '').slice(0, 10);
+        }
+        // Se houver ?token=xxx ou ?id=xxx, pode chamar a API e fillPreview(doc) — exemplo deixado para o front integrar
+    </script>
+</body>
+</html>

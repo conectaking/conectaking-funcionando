@@ -103,3 +103,11 @@ O PDF exportado usa o mesmo estilo da fatura de referência:
    Se a página de edição já tiver o layout de fatura, o utilizador pode usar Ctrl+P e "Guardar como PDF". Não é necessário novo endpoint; basta que o CSS da preview esteja preparado para impressão.
 
 **Resumo:** O layout do PDF no backend já está como na imagem (azul, laranja, logo no topo). Para "ver na página e exportar a página", o melhor é: **criar uma preview em HTML com o mesmo visual** e um botão "Exportar PDF" que descarrega o PDF gerado no servidor; opcionalmente, um botão "Imprimir" que usa a impressão do browser para guardar a própria página como PDF.
+
+### Template de preview (HTML/CSS)
+
+Foi criado o ficheiro **`public/documentos-preview.html`**, que replica o layout da fatura (header azul, faixa laranja, colunas Faturado para / Emitido por, tabela com cabeçalho laranja, total em destaque, condições, observações, rodapé). Serve como base para a pré-visualização na página.
+
+- **Como usar:** Carregue esta página no front (iframe ou rota que a sirva) e preencha os dados com o documento da API. No próprio ficheiro existe a função `fillPreview(doc)` em JavaScript: recebe o objeto documento (como devolvido por `GET /api/documentos/:id` ou `GET /api/documentos/ver/:token`) e preenche todos os campos (título, número, emitente, cliente, itens, total, condições, observações, datas).
+- **Integração:** Na página de listagem/edição de documentos, ao abrir um orçamento/recibo: 1) obter o documento com a API; 2) abrir ou injetar o conteúdo de `documentos-preview.html`; 3) chamar `fillPreview(doc)`; 4) botão "Exportar PDF" que faz download de `GET /api/documentos/:id/pdf` (ou `/ver/:token/pdf`).
+- **Imprimir a página:** A folha de estilo inclui `@media print`; o utilizador pode usar Ctrl+P e "Guardar como PDF" para exportar a própria preview.
