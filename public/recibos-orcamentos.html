@@ -280,9 +280,13 @@
 
 <script>
 (function() {
-    // Se a página for servida pelo Live Server (porta 5500), a API está no Express (porta 5000)
-    var apiOrigin = (window.location.port === '5500') && /^127\.0\.0\.1|localhost$/i.test(window.location.hostname)
-        ? (window.location.protocol + '//' + window.location.hostname + ':5000')
+    // Quando a página é servida por Live Server ou outro (5500, 3000, etc.), a API está no Express (5000)
+    var host = window.location.hostname || '';
+    var port = String(window.location.port || '');
+    var isLocal = /^127\.0\.0\.1|localhost$/i.test(host);
+    var portasEstaticas = ['5500', '3000', '8080', '5173', '4173'];
+    var apiOrigin = isLocal && portasEstaticas.indexOf(port) >= 0
+        ? (window.location.protocol + '//' + host + ':5000')
         : '';
     var API = apiOrigin + '/api/documentos';
     var docId = (function() { var m = /[?&]id=([^&]+)/.exec(location.search); return m ? m[1] : null; })();
@@ -330,6 +334,9 @@
         var body = getFormDoc();
         fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'include' })
             .then(function(r) {
+                if (r.status === 401) {
+                    throw new Error('Faça login primeiro. Abra a página pelo servidor (ex.: http://127.0.0.1:5000) e entre na sua conta.');
+                }
                 if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'Erro ao criar recibo'); });
                 return r.json();
             })
@@ -344,7 +351,9 @@
                 callback();
             })
             .catch(function(err) {
-                alert(err.message || 'Erro ao salvar recibo. Faça login e tente novamente.');
+                var msg = err.message || 'Erro ao salvar recibo.';
+                if (msg.indexOf('login') === -1) msg += ' Faça login na aplicação (pelo servidor, ex.: http://127.0.0.1:5000).';
+                alert(msg);
             });
     }
     function enviarComprovante(fileInput) {
@@ -357,14 +366,19 @@
             var origHtml = btn ? btn.innerHTML : '';
             if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined">hourglass_empty</span> Digitalizando...'; }
             fetch(API + '/' + docId + '/processar-comprovante', { method: 'POST', body: fd, credentials: 'include' })
-                .then(function(r) { return r.json(); })
+                .then(function(r) {
+                    if (r.status === 401) {
+                        return r.json().then(function() { throw new Error('Faça login. Abra a página pelo servidor (http://127.0.0.1:5000) e entre na sua conta.'); });
+                    }
+                    return r.json();
+                })
                 .then(function(data) {
                     if (data && data.data && data.data.documento) {
                         setFormDoc(data.data.documento);
                         alert(data.message || 'Valores digitalizados. Ajuste na tabela se precisar.');
                     } else { alert(data.message || 'Falha ao digitalizar.'); }
                 })
-                .catch(function() { alert('Erro ao enviar. Verifique se está autenticado.'); })
+                .catch(function(err) { alert(err.message || 'Erro ao enviar. Faça login na aplicação.'); })
                 .finally(function() {
                     if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
                 });
@@ -538,6 +552,7 @@
         var url = docId ? API + '/' + docId : API;
         fetch(url, opts)
             .then(function(r) {
+                if (r.status === 401) throw new Error('Faça login primeiro. Abra a página pelo servidor (ex.: http://127.0.0.1:5000) e entre na sua conta.');
                 if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'Erro ao salvar'); });
                 return r.json();
             })
