@@ -277,6 +277,74 @@ router.post('/image', protectUser, upload.single('image'), asyncHandler(async (r
     });
 }));
 
+/**
+ * POST /api/upload/images - Upload de múltiplas imagens (carrossel, etc.)
+ * Recebe FormData com campo 'images' (vários ficheiros). Processa em série pela fila de auth
+ * para evitar 429. Devolve { success: true, urls: [url1, url2, ...] }.
+ */
+const maxCarouselImages = 20;
+router.post('/images', protectUser, upload.array('images', maxCarouselImages), asyncHandler(async (req, res) => {
+    const creds = getCloudflareCreds();
+    if (!creds) {
+        logger.error('Credenciais do Cloudflare não encontradas');
+        return res.status(500).json({
+            success: false,
+            message: 'Erro de configuração do servidor.'
+        });
+    }
+
+    const files = req.files && Array.isArray(req.files) ? req.files : [];
+    if (files.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'Nenhuma imagem enviada. Use o campo "images" com um ou mais ficheiros.'
+        });
+    }
+
+    const urls = [];
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const out = await enqueueThrottledAuth(creds.accountId, creds.headers);
+        if (!out.ok) {
+            const status = out.status || 502;
+            const retrySec = out.retry_after_seconds || (status === 429 ? 60 : undefined);
+            if (retrySec) res.set('Retry-After', String(retrySec));
+            return res.status(status).json({
+                success: false,
+                message: out.message || (i === 0 ? 'Falha ao obter autorização para upload. Aguarde e tente novamente.' : `Falha na imagem ${i + 1}/${files.length}. ${out.message}`),
+                retry_after_seconds: retrySec,
+                uploaded_so_far: urls
+            });
+        }
+
+        const { uploadURL, imageId, accountHash } = out.payload;
+        const formData = new FormData();
+        formData.append('file', file.buffer, {
+            filename: file.originalname || `image-${i + 1}.jpg`,
+            contentType: file.mimetype
+        });
+        const uploadResponse = await fetch(uploadURL, {
+            method: 'POST',
+            body: formData,
+            headers: formData.getHeaders()
+        });
+        if (!uploadResponse.ok) {
+            const errText = await uploadResponse.text();
+            logger.error('Erro no upload para Cloudflare (múltiplas)', { index: i, body: errText?.slice(0, 200) });
+            return res.status(502).json({
+                success: false,
+                message: `Falha ao enviar a imagem ${i + 1}. Tente novamente.`,
+                uploaded_so_far: urls
+            });
+        }
+        const hash = accountHash || creds.accountId;
+        urls.push(`https://imagedelivery.net/${hash}/${imageId}/public`);
+    }
+
+    logger.info('✅ [UPLOAD] Múltiplas imagens enviadas', { count: urls.length, userId: req.user.userId });
+    res.json({ success: true, urls, imageUrl: urls[0] });
+}));
+
 // Endpoint para obter URL completa da imagem após upload
 router.get('/get-url/:imageId', protectUser, asyncHandler(async (req, res) => {
     const { imageId } = req.params;
