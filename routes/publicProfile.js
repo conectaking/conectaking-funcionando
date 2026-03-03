@@ -150,49 +150,17 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         }
         
         // Filtrar e validar itens
-        // NOTA: banner_carousel é tratado como carrossel e incluído (renderizado no EJS como carrossel)
+        // NOTA: Incluímos todos os banners/carrosséis; o EJS só exibe imagem quando há URL válida.
+        // Não excluir banner por image_url vazio no backend (evita bug de filtro e permite debug).
         const validItems = (itemsRes.rows || []).filter(item => {
-            // Para banners, verificar se tem image_url válido (inclui URLs R2 e Cloudflare)
-            if (item.item_type === 'banner') {
-                const imgUrl = (item.image_url && typeof item.image_url === 'string') ? item.image_url.trim() : '';
-                const isValidUrl = imgUrl.length > 0 &&
-                    !imgUrl.includes('placeholder') &&
-                    !imgUrl.startsWith('data:image/svg');
-                logger.debug('Banner sendo avaliado', {
-                    id: item.id,
-                    title: item.title,
-                    hasImageUrl: !!imgUrl,
-                    imageUrl: imgUrl ? imgUrl.substring(0, 100) : 'null',
-                    isActive: item.is_active,
-                    destinationUrl: item.destination_url || 'null'
-                });
-                if (!isValidUrl) {
-                    logger.debug('Banner filtrado - sem imagem válida', {
-                        id: item.id,
-                        title: item.title,
-                        image_url: imgUrl ? imgUrl.substring(0, 50) : 'null'
-                    });
+            const itemType = (item.item_type && String(item.item_type).toLowerCase()) || '';
+            // Só excluir banner se destination_url for JSON de array não vazio (dados de carrossel)
+            if (itemType === 'banner' && item.destination_url) {
+                const destUrl = String(item.destination_url).trim();
+                if (destUrl.startsWith('[') && destUrl.length > 2) {
+                    logger.debug('Banner filtrado - destination_url é JSON de imagens', { id: item.id });
                     return false;
                 }
-                // Só filtrar banner se destination_url for um JSON de array não vazio (dados de carrossel)
-                // destination_url vazio, null ou '[]' é permitido (banner sem link)
-                if (item.destination_url) {
-                    const destUrl = String(item.destination_url).trim();
-                    if (destUrl.startsWith('[') && destUrl.length > 2) {
-                        logger.debug('Banner filtrado - destination_url é JSON de imagens', {
-                            id: item.id,
-                            destination_url: destUrl.substring(0, 50)
-                        });
-                        return false;
-                    }
-                }
-                logger.debug('✅ Banner válido incluído no cartão público', {
-                    id: item.id,
-                    title: item.title,
-                    hasImageUrl: !!item.image_url,
-                    imageUrl: item.image_url ? item.image_url.substring(0, 50) + '...' : 'null',
-                    destinationUrl: item.destination_url || 'null'
-                });
             }
             return true;
         });
@@ -638,8 +606,14 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             }
         }
         // Remover Bíblia da lista de itens (aparece como quadradinho, não como link)
-        const itemsForLinks = itemsFiltered.filter(i => i.item_type !== 'bible');
-        
+        const itemsForLinks = itemsFiltered.filter(i => String((i.item_type || '')).toLowerCase() !== 'bible');
+        // Normalizar item_type para minúsculas (evita falha se o banco retornar 'Banner' ou 'Carousel')
+        itemsForLinks.forEach(i => {
+            if (i.item_type != null && typeof i.item_type === 'string') {
+                i.item_type = i.item_type.toLowerCase();
+            }
+        });
+
         const details = profileRes.rows[0];
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);

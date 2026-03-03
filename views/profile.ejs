@@ -439,24 +439,6 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'banner') { %>
                         <% 
-                            // Debug: verificar se banner tem image_url
-                            if (!item.image_url || item.image_url.trim() === '' || item.image_url.includes('placeholder') || item.image_url.startsWith('data:image/svg')) {
-                                console.log('⚠️ Banner sem imagem válida:', {
-                                    id: item.id,
-                                    title: item.title,
-                                    image_url: item.image_url || 'null/vazio',
-                                    hasImageUrl: !!item.image_url
-                                });
-                            } else {
-                                console.log('✅ Banner com imagem válida:', {
-                                    id: item.id,
-                                    title: item.title,
-                                    image_url: item.image_url.substring(0, 50) + '...',
-                                    hasImageUrl: true
-                                });
-                            }
-                        %>
-                        <% 
                             const bannerImageUrl = (item.image_url && typeof item.image_url === 'string') ? item.image_url.trim() : '';
                             const bannerHasValidImage = bannerImageUrl !== '' && !bannerImageUrl.includes('placeholder') && !bannerImageUrl.startsWith('data:image/svg');
                         %>
