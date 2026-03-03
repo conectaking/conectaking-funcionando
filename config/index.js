@@ -58,12 +58,15 @@ const config = {
             const allowed = new Set([
                 'http://127.0.0.1:5500',
                 'http://127.0.0.1:5000',
+                'http://127.0.0.1:3000',
                 'http://localhost:5500',
                 'http://localhost:5000',
+                'http://localhost:3000',
                 'http://localhost',
                 'https://conectaking.com.br',
                 'https://www.conectaking.com.br',
                 'https://tag.conectaking.com.br',
+                'https://conectaking-api.onrender.com',
                 ...envList
             ]);
             return function(origin, callback) {

@@ -12,6 +12,27 @@ require('dotenv').config();
 
 const router = express.Router();
 
+// CORS explícito para upload: evita "Failed to fetch" quando o front está em 127.0.0.1:5500 ou outro origin.
+// Se o dashboard chamar a API noutro domínio que redireciona, o redirect pode não ter CORS; aqui garantimos.
+const UPLOAD_CORS_ORIGINS = new Set([
+    'http://127.0.0.1:5500', 'http://127.0.0.1:5000', 'http://127.0.0.1:3000',
+    'http://localhost:5500', 'http://localhost:5000', 'http://localhost:3000', 'http://localhost',
+    'https://conectaking.com.br', 'https://www.conectaking.com.br', 'https://tag.conectaking.com.br',
+    ...(process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean)
+]);
+router.use((req, res, next) => {
+    const origin = req.get('Origin');
+    const allow = origin && (UPLOAD_CORS_ORIGINS.has(origin) || /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin));
+    if (allow) {
+        res.set('Access-Control-Allow-Origin', origin);
+        res.set('Access-Control-Allow-Credentials', 'true');
+    }
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept');
+    if (req.method === 'OPTIONS') return res.status(204).end();
+    next();
+});
+
 // Cloudflare Images /direct_upload tem rate-limit agressivo.
 // Se várias pessoas (ou o uploader em paralelo) chamarem /api/upload/auth, isso estoura 429.
 // Aqui nós SERIALIZAMOS as chamadas ao Cloudflare e colocamos um intervalo mínimo entre elas.
