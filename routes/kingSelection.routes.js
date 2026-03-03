@@ -712,16 +712,19 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const hasOpacity = await hasColumn(pgClient, 'king_galleries', 'watermark_opacity');
   const hasScale = await hasColumn(pgClient, 'king_galleries', 'watermark_scale');
   const hasRotate = await hasColumn(pgClient, 'king_galleries', 'watermark_rotate');
-  if (!hasMode && !hasPath && !hasOpacity && !hasScale && !hasRotate) return { mode: 'x', path: null, opacity: 0.12, scale: 1.29, rotate: 0 };
+  // Padrão pré-configurado: transparência 15%, tamanho 119%
+  const DEFAULT_OPACITY = 0.15;
+  const DEFAULT_SCALE = 1.19;
+  if (!hasMode && !hasPath && !hasOpacity && !hasScale && !hasRotate) return { mode: 'x', path: null, opacity: DEFAULT_OPACITY, scale: DEFAULT_SCALE, rotate: 0 };
   const cols = [
     hasMode ? 'watermark_mode' : `'x'::text AS watermark_mode`,
     hasPath ? 'watermark_path' : 'NULL::text AS watermark_path',
-    hasOpacity ? 'watermark_opacity' : '0.12::numeric AS watermark_opacity',
-    hasScale ? 'watermark_scale' : '1.29::numeric AS watermark_scale',
+    hasOpacity ? 'watermark_opacity' : `${DEFAULT_OPACITY}::numeric AS watermark_opacity`,
+    hasScale ? 'watermark_scale' : `${DEFAULT_SCALE}::numeric AS watermark_scale`,
     hasRotate ? 'watermark_rotate' : '0::int AS watermark_rotate'
   ].join(', ');
   const res = await pgClient.query(`SELECT ${cols} FROM king_galleries WHERE id=$1`, [galleryId]);
-  if (!res.rows.length) return { mode: 'x', path: null, opacity: 0.12, scale: 1.29, rotate: 0 };
+  if (!res.rows.length) return { mode: 'x', path: null, opacity: DEFAULT_OPACITY, scale: DEFAULT_SCALE, rotate: 0 };
   const row = res.rows[0] || {};
   const op = parseFloat(row.watermark_opacity);
   const sc = parseFloat(row.watermark_scale);
@@ -734,8 +737,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   return {
     mode,
     path: row.watermark_path || null,
-    opacity: Number.isFinite(op) ? op : 0.12,
-    scale: Number.isFinite(sc) ? sc : 1.29,
+    opacity: Number.isFinite(op) ? op : DEFAULT_OPACITY,
+    scale: Number.isFinite(sc) ? sc : DEFAULT_SCALE,
     rotate
   };
 }
@@ -756,7 +759,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   const clamp = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
   const opDefaultX = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
   if (!watermark || watermark.mode === 'x') {
-    const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
+    const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.15;
     const svg = Buffer.from(
       `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
          <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
@@ -784,7 +787,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
         err.statusCode = 500;
         throw err;
       }
-      const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
+      const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.15;
       const svg = Buffer.from(
         `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
            <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
@@ -805,7 +808,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
         err.statusCode = 500;
         throw err;
       }
-      const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.30;
+      const xOpacity = Number.isFinite(opDefaultX) ? opDefaultX : 0.15;
       const svg = Buffer.from(
         `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
            <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
@@ -851,7 +854,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   const wmBufRaw = (mode === 'tile_dense') ? localDefaultBuf : (wmR2Buf || wmCloudBuf || localDefaultBuf);
   if (!wmBufRaw) {
     // fallback seguro
-    const xOpacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0) || 0.30;
+    const xOpacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0) || 0.15;
     const svg = Buffer.from(
       `<svg width="${outW}" height="${outH}" xmlns="http://www.w3.org/2000/svg">
          <line x1="0" y1="0" x2="${outW}" y2="${outH}" stroke="white" stroke-opacity="${xOpacity}" stroke-width="${Math.max(3, Math.round(Math.min(outW, outH) * 0.01))}"/>
@@ -1136,7 +1139,7 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
     }
 
     // Retorna a senha em plaintext apenas na criação (para o fotógrafo copiar/enviar)
-    // Padrão do sistema: marca d'água completa (tile_dense), opacidade 12%, tamanho 129%
+    // Padrão pré-configurado: marca d'água transparência 15%, tamanho 119%
     const gid = ins.rows[0].id;
     const hasWmMode = await hasColumn(client, 'king_galleries', 'watermark_mode');
     const hasWmOpacity = await hasColumn(client, 'king_galleries', 'watermark_opacity');
@@ -1144,12 +1147,12 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
     try {
       const updates = [];
       if (hasWmMode) updates.push(`watermark_mode=COALESCE(NULLIF(watermark_mode,''),'tile_dense')`);
-      if (hasWmOpacity) updates.push('watermark_opacity=COALESCE(watermark_opacity,0.12)');
-      if (hasWmScale) updates.push('watermark_scale=COALESCE(watermark_scale,1.20)');
+      if (hasWmOpacity) updates.push('watermark_opacity=COALESCE(watermark_opacity,0.15)');
+      if (hasWmScale) updates.push('watermark_scale=COALESCE(watermark_scale,1.19)');
       if (updates.length) {
         await client.query(`UPDATE king_galleries SET ${updates.join(', ')}, updated_at=NOW() WHERE id=$1`, [gid]);
-        if (hasWmOpacity) ins.rows[0].watermark_opacity = 0.12;
-        if (hasWmScale) ins.rows[0].watermark_scale = 1.20;
+        if (hasWmOpacity) ins.rows[0].watermark_opacity = 0.15;
+        if (hasWmScale) ins.rows[0].watermark_scale = 1.19;
       }
     } catch (_) { }
 
@@ -2361,12 +2364,12 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'data_trabalho' && val) val = String(val).slice(0, 10);
       if (key === 'watermark_opacity') {
         const n = parseFloat(val);
-        val = Number.isFinite(n) ? Math.max(0.0, Math.min(1.0, n)) : 0.12;
+        val = Number.isFinite(n) ? Math.max(0.0, Math.min(1.0, n)) : 0.15;
         val = Math.round(val * 100) / 100;
       }
       if (key === 'watermark_scale') {
         const n = parseFloat(val);
-        val = Number.isFinite(n) ? Math.max(0.10, Math.min(5.0, n)) : 1.20;
+        val = Number.isFinite(n) ? Math.max(0.10, Math.min(5.0, n)) : 1.19;
         val = Math.round(val * 100) / 100;
       }
       if (key === 'watermark_rotate') {
