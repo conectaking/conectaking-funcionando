@@ -694,6 +694,38 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
     }
 }));
 
+// GET /api/debug-profile-items/:identifier - Diagnóstico: quantos itens o banco retorna para o perfil (mesma query do cartão público)
+router.get('/api/debug-profile-items/:identifier', asyncHandler(async (req, res) => {
+    const { identifier } = req.params;
+    const client = await db.pool.connect();
+    try {
+        const userRes = await client.query(
+            'SELECT id FROM users WHERE LOWER(profile_slug) = LOWER($1) OR id::text = $1 LIMIT 1',
+            [identifier]
+        );
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ error: 'Perfil não encontrado', count: 0, itemTypes: [] });
+        }
+        const userId = userRes.rows[0].id;
+        const itemsRes = await client.query(
+            'SELECT id, item_type, title, is_active FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC',
+            [userId]
+        );
+        const itemTypes = itemsRes.rows.map(i => i.item_type);
+        res.json({
+            identifier,
+            userId,
+            count: itemsRes.rows.length,
+            itemTypes,
+            message: itemsRes.rows.length <= 5 && itemTypes.every(t => ['banner', 'carousel', 'banner_carousel'].includes((t || '').toLowerCase()))
+                ? 'Só banner/carousel: backend pode estar com query antiga ou faltam outros módulos no banco.'
+                : 'OK'
+        });
+    } finally {
+        client.release();
+    }
+}));
+
 // GET /api/public-profile/:identifier - API pública para buscar dados do perfil (JSON)
 router.get('/api/:identifier', asyncHandler(async (req, res) => {
     const { identifier } = req.params;
