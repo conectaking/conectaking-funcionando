@@ -90,12 +90,40 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Perfil não configurado</h1>');
         }
         
-        // IMPORTANTE: Trazer TODOS os itens ativos (PIX, Loja, Formulário, Instagram, etc.).
-        // NÃO filtrar por is_listed aqui; Formulário King (is_listed) é filtrado só no template EJS.
-        const itemsRes = await client.query(
-            'SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC',
-            [userId]
-        );
+        // Query com verificação segura para is_listed (pode não existir em tabelas antigas)
+        let itemsRes;
+        try {
+            // Tentar primeiro com is_listed
+            itemsRes = await client.query(
+                `SELECT * FROM profile_items 
+                WHERE user_id = $1 
+                AND is_active = true 
+                AND (is_listed IS NULL OR is_listed = true) 
+                ORDER BY display_order ASC`, 
+                [userId]
+            );
+        } catch (error) {
+            // Se is_listed não existir, usar query sem essa coluna
+            if (error.message && (error.message.includes('is_listed') || error.code === '42703')) {
+                logger.warn('Coluna is_listed não existe, usando query sem filtro is_listed', {
+                    error: error.message,
+                    code: error.code
+                });
+                itemsRes = await client.query(
+                    'SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC', 
+                    [userId]
+                );
+            } else {
+                // Log detalhado do erro antes de re-throw
+                logger.error('Erro ao buscar itens do perfil', {
+                    userId,
+                    error: error.message,
+                    code: error.code,
+                    stack: error.stack
+                });
+                throw error; // Re-throw se for outro erro
+            }
+        }
         
         // Log para debug
         logger.debug('Itens encontrados no banco', { 
@@ -122,18 +150,61 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         }
         
         // Filtrar e validar itens
-        // NOTA: Incluímos todos os banners/carrosséis; o EJS só exibe imagem quando há URL válida.
-        // Não excluir banner por image_url vazio no backend (evita bug de filtro e permite debug).
         const validItems = (itemsRes.rows || []).filter(item => {
-            const itemType = (item.item_type && String(item.item_type).toLowerCase()) || '';
-            // Só excluir banner se destination_url for JSON de array não vazio (dados de carrossel)
-            if (itemType === 'banner' && item.destination_url) {
-                const destUrl = String(item.destination_url).trim();
-                if (destUrl.startsWith('[') && destUrl.length > 2) {
-                    logger.debug('Banner filtrado - destination_url é JSON de imagens', { id: item.id });
+            if (item.item_type === 'banner_carousel') {
+                return false;
+            }
+            
+            // Para banners, verificar se tem image_url válido
+            if (item.item_type === 'banner') {
+                // Log detalhado do banner antes de filtrar
+                logger.debug('Banner sendo avaliado', {
+                    id: item.id,
+                    title: item.title,
+                    hasImageUrl: !!item.image_url,
+                    imageUrl: item.image_url ? item.image_url.substring(0, 100) : 'null',
+                    imageUrlLength: item.image_url ? item.image_url.length : 0,
+                    isPlaceholder: item.image_url ? item.image_url.includes('placeholder') : false,
+                    isSvg: item.image_url ? item.image_url.startsWith('data:image/svg') : false,
+                    isActive: item.is_active,
+                    destinationUrl: item.destination_url || 'null'
+                });
+                
+                // Se não tem image_url ou é placeholder, não incluir
+                if (!item.image_url || 
+                    item.image_url.trim() === '' || 
+                    item.image_url.includes('placeholder') || 
+                    item.image_url.startsWith('data:image/svg')) {
+                    logger.debug('Banner filtrado - sem imagem válida', {
+                        id: item.id,
+                        title: item.title,
+                        image_url: item.image_url ? item.image_url.substring(0, 50) : 'null'
+                    });
                     return false;
                 }
+                
+                // Se destination_url é JSON (carrossel antigo), filtrar
+                if (item.destination_url) {
+                    const destUrl = String(item.destination_url).trim();
+                    if (destUrl.startsWith('[') || destUrl === '[]') {
+                        logger.debug('Banner filtrado - destination_url é JSON', {
+                            id: item.id,
+                            destination_url: destUrl
+                        });
+                        return false;
+                    }
+                }
+                
+                // Banner válido - incluir
+                logger.debug('✅ Banner válido incluído no cartão público', {
+                    id: item.id,
+                    title: item.title,
+                    hasImageUrl: !!item.image_url,
+                    imageUrl: item.image_url ? item.image_url.substring(0, 50) + '...' : 'null',
+                    destinationUrl: item.destination_url || 'null'
+                });
             }
+            
             return true;
         });
         
@@ -543,23 +614,6 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 }
             }
 
-            if (item.item_type === 'location') {
-                try {
-                    const locRes = await client.query(
-                        'SELECT address, address_formatted, latitude, longitude, place_name FROM location_items WHERE profile_item_id = $1',
-                        [item.id]
-                    );
-                    if (locRes.rows.length > 0) {
-                        item.location_data = locRes.rows[0];
-                    } else {
-                        item.location_data = null;
-                    }
-                } catch (locError) {
-                    logger.error('Erro ao carregar localização', { itemId: item.id, error: locError.message });
-                    item.location_data = null;
-                }
-            }
-
             return item;
         }));
         
@@ -578,31 +632,8 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             }
         }
         // Remover Bíblia da lista de itens (aparece como quadradinho, não como link)
-        const itemsForLinks = itemsFiltered.filter(i => String((i.item_type || '')).toLowerCase() !== 'bible');
-        // Normalizar item_type para minúsculas (evita falha se o banco retornar 'Banner' ou 'Carousel')
-        itemsForLinks.forEach(i => {
-            if (i.item_type != null && typeof i.item_type === 'string') {
-                i.item_type = i.item_type.toLowerCase();
-            }
-            // Garantir que banner e carrossel tenham image_url/destination_url como string (evita undefined no EJS)
-            if (i.item_type === 'banner') {
-                if (i.image_url == null || typeof i.image_url !== 'string') i.image_url = '';
-                else i.image_url = String(i.image_url).trim();
-            }
-            if (i.item_type === 'carousel' || i.item_type === 'banner_carousel') {
-                if (i.destination_url == null || typeof i.destination_url !== 'string') i.destination_url = '[]';
-                else i.destination_url = String(i.destination_url).trim();
-                if (i.image_url == null || typeof i.image_url !== 'string') i.image_url = '';
-                else i.image_url = String(i.image_url).trim();
-            }
-        });
-
-        // Banner e carrossel primeiro no cartão (mais visíveis), depois o restante na ordem original
-        const isBannerOrCarousel = (i) => ['banner', 'carousel', 'banner_carousel'].includes((i.item_type || '').toLowerCase());
-        const itemsBannerCarousel = itemsForLinks.filter(isBannerOrCarousel);
-        const itemsRest = itemsForLinks.filter(i => !isBannerOrCarousel);
-        const itemsOrdered = [...itemsBannerCarousel, ...itemsRest];
-        // Usar lista ordenada para o template
+        const itemsForLinks = itemsFiltered.filter(i => i.item_type !== 'bible');
+        
         const details = profileRes.rows[0];
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
@@ -662,7 +693,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         const profileData = {
             details: details,
-            items: itemsOrdered,
+            items: itemsForLinks,
             verseOfDay: verseOfDay,
             origin: req.protocol + '://' + req.get('host'),
             ogImageUrl: ogImageUrl,
@@ -673,12 +704,10 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         logger.debug('✅ Renderizando perfil público', {
             identifier,
-            itemsCount: itemsOrdered.length,
-            itemTypes: itemsOrdered.map(i => i.item_type),
+            itemsCount: itemsForLinks.length,
+            itemTypes: itemsForLinks.map(i => i.item_type),
             hasVerseOfDay: !!verseOfDay
         });
-        // Header de debug: no cartão público deve refletir todos os itens (banner, carousel, pix, loja, etc.)
-        res.set('X-Profile-Items-Count', String(itemsOrdered.length));
         res.render('profile', profileData);
 
     } catch (error) {
@@ -689,38 +718,6 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             code: error.code
         });
         throw error; // Re-throw para o errorHandler processar
-    } finally {
-        client.release();
-    }
-}));
-
-// GET /api/debug-profile-items/:identifier - Diagnóstico: quantos itens o banco retorna para o perfil (mesma query do cartão público)
-router.get('/api/debug-profile-items/:identifier', asyncHandler(async (req, res) => {
-    const { identifier } = req.params;
-    const client = await db.pool.connect();
-    try {
-        const userRes = await client.query(
-            'SELECT id FROM users WHERE LOWER(profile_slug) = LOWER($1) OR id::text = $1 LIMIT 1',
-            [identifier]
-        );
-        if (userRes.rows.length === 0) {
-            return res.status(404).json({ error: 'Perfil não encontrado', count: 0, itemTypes: [] });
-        }
-        const userId = userRes.rows[0].id;
-        const itemsRes = await client.query(
-            'SELECT id, item_type, title, is_active FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC',
-            [userId]
-        );
-        const itemTypes = itemsRes.rows.map(i => i.item_type);
-        res.json({
-            identifier,
-            userId,
-            count: itemsRes.rows.length,
-            itemTypes,
-            message: itemsRes.rows.length <= 5 && itemTypes.every(t => ['banner', 'carousel', 'banner_carousel'].includes((t || '').toLowerCase()))
-                ? 'Só banner/carousel: backend pode estar com query antiga ou faltam outros módulos no banco.'
-                : 'OK'
-        });
     } finally {
         client.release();
     }
@@ -766,7 +763,8 @@ router.get('/api/:identifier', asyncHandler(async (req, res) => {
             `SELECT item_type, title, destination_url, image_url 
              FROM profile_items 
              WHERE user_id = $1 AND is_active = true 
-             ORDER BY display_order ASC`,
+             ORDER BY display_order ASC 
+             LIMIT 10`,
             [userId]
         );
 

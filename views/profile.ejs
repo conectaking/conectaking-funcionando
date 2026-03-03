@@ -3,7 +3,6 @@
 if (typeof details === 'undefined' || !details) {
     throw new Error('Variável details não está definida');
 }
-var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type && String(i.item_type).toLowerCase()) === 'location' && i.location_data; });
 %>
 <!DOCTYPE html>
 <html lang="pt-BR" style="background-color: <%= (details && details.background_color) ? details.background_color : '#0D0D0F' %>;">
@@ -23,9 +22,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <link rel="stylesheet" href="/css/profile.css?v=<%= typeof cacheBuster !== 'undefined' ? cacheBuster : Date.now() %>">
-    <% if (hasLocationMap) { %>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-    <% } %>
+    
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
 
@@ -362,9 +359,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
             <%# ========================================================== %>
             <%# SEÇÃO: CONTAINER DE ITENS DO PERFIL %>
             <%# ========================================================== %>
-        <%# Comentário para debug: ao ver código-fonte da página, confira items-count. Se for 5, o backend está antigo; deve ser 11+ com PIX, Loja, Instagram, etc. %>
-        <!-- profile-items-count: <%= (items && items.length) || 0 %> | tipos: <%= (items && items.length) ? items.map(function(i){ return (i && i.item_type) ? String(i.item_type).toLowerCase() : ''; }).join(', ') : 'nenhum' %> -->
-        <section class="profile-items-container" data-items-count="<%= (items && items.length) || 0 %>" data-item-types="<%= (items && items.length) ? items.map(function(i){ return (i && i.item_type) ? String(i.item_type).toLowerCase() : ''; }).join(',') : '' %>">
+        <section class="profile-items-container">
             <% if (items && items.length > 0) { %>
                 <%# Debug: Log de itens (apenas em desenvolvimento) %>
                 <script>
@@ -378,14 +373,12 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                 <% items.forEach(item => { 
                     // Filtrar apenas itens ativos (is_active !== false)
                     if (item.is_active === false) return;
-                    // Normalizar tipo para comparação (banner/carousel podem vir com caixa diferente do banco)
-                    const itemTypeNorm = (item.item_type && String(item.item_type).toLowerCase()) || '';
                 %>
                 
                     <%# ========================================================== %>
                     <%# TIPO: LINK PERSONALIZADO %>
                     <%# ========================================================== %>
-                    <% if (itemTypeNorm === 'link') { %>
+                    <% if (item.item_type === 'link') { %>
                         <% if (item.destination_url) { %>
                         <%
                             // Verificar se tem logo válida
@@ -441,16 +434,26 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPO: BANNER (Imagem com link opcional) %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'banner') { %>
+                    <% } else if (item.item_type === 'banner') { %>
                         <% 
-                            const bannerImageUrl = (item.image_url && typeof item.image_url === 'string') ? item.image_url.trim() : '';
-                            const bannerHasValidImage = bannerImageUrl.length > 0
-                                && !bannerImageUrl.includes('placeholder')
-                                && !bannerImageUrl.startsWith('data:image/svg')
-                                && (bannerImageUrl.startsWith('http://') || bannerImageUrl.startsWith('https://') || bannerImageUrl.startsWith('//'));
+                            // Debug: verificar se banner tem image_url
+                            if (!item.image_url || item.image_url.trim() === '' || item.image_url.includes('placeholder') || item.image_url.startsWith('data:image/svg')) {
+                                console.log('⚠️ Banner sem imagem válida:', {
+                                    id: item.id,
+                                    title: item.title,
+                                    image_url: item.image_url || 'null/vazio',
+                                    hasImageUrl: !!item.image_url
+                                });
+                            } else {
+                                console.log('✅ Banner com imagem válida:', {
+                                    id: item.id,
+                                    title: item.title,
+                                    image_url: item.image_url.substring(0, 50) + '...',
+                                    hasImageUrl: true
+                                });
+                            }
                         %>
-                        <% if (bannerHasValidImage) { %>
-                        <%# Banner COM imagem: exibir normalmente %>
+                        <% if (item.image_url && item.image_url.trim() !== '' && !item.image_url.includes('placeholder') && !item.image_url.startsWith('data:image/svg')) { %>
                         <%
                             const ratioMap = {
                             'auto': '', 
@@ -528,49 +531,39 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                                 // O title será usado como alt text da imagem
                             }
                         %>
-                        <div class="profile-banner-container" <%= containerStyle %> style="width: 100%; margin: 10px 0; display: block !important; visibility: visible !important; background: transparent !important; background-color: transparent !important;">
+                        <div class="profile-banner-container" <%= containerStyle %> style="width: 100%; margin: 10px 0; background: transparent !important; background-color: transparent !important;">
                             <% if (finalUrl && finalUrl !== '#') { %>
                             <a href="<%= finalUrl %>" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>" style="width: 100%; display: block; background: transparent !important; background-color: transparent !important;">
-                                <img src="<%= bannerImageUrl %>" alt="<%= item.title || 'Banner' %>" loading="eager" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important; min-height: 80px;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
+                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
                             </a>
                             <% } else { %>
-                            <img src="<%= bannerImageUrl %>" alt="<%= item.title || 'Banner' %>" loading="eager" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important; min-height: 80px;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
+                            <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
                             <% } %>
-                        </div>
-                        <% } else { %>
-                        <%# Banner SEM imagem válida: placeholder visível (confirma que o módulo existe no cartão) %>
-                        <div class="profile-banner-container" style="width: 100%; margin: 10px 0; display: flex !important; visibility: visible !important; min-height: 100px; background: rgba(255,255,255,0.06); border: 1px dashed rgba(255,255,255,0.15); border-radius: 12px; align-items: center; justify-content: center;">
-                            <p style="margin: 0; padding: 24px; color: rgba(255,255,255,0.5); font-size: 0.9rem; text-align: center;">Banner — adicione uma imagem no painel e clique em Publicar alterações</p>
                         </div>
                         <% } %>
 
                     <%# ========================================================== %>
-                    <%# TIPO: CARROSSEL (Múltiplas imagens com slide horizontal) - inclui banner_carousel %>
+                    <%# TIPO: CARROSSEL (Múltiplas imagens com slide horizontal) %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'carousel' || itemTypeNorm === 'banner_carousel') { %>
+                    <% } else if (item.item_type === 'carousel') { %>
                         <% 
                         // Parsear array de imagens do destination_url
                         let carouselImages = [];
-                        const destUrlRaw = (item.destination_url && typeof item.destination_url === 'string') ? item.destination_url.trim() : '';
                         try {
-                            if (destUrlRaw && destUrlRaw.startsWith('[')) {
-                                const parsed = JSON.parse(destUrlRaw);
-                                if (Array.isArray(parsed) && parsed.length > 0) {
-                                    carouselImages = parsed.filter(img => {
-                                        const url = typeof img === 'string' ? img : (img && (img.image_url || img));
-                                        return url && typeof url === 'string' && !url.includes('placeholder') && !url.startsWith('data:image/svg');
-                                    });
-                                }
+                            const parsed = item.destination_url ? JSON.parse(item.destination_url) : [];
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                // Filtrar placeholders
+                                carouselImages = parsed.filter(img => {
+                                    const url = typeof img === 'string' ? img : (img.image_url || img);
+                                    return url && !url.includes('placeholder') && !url.startsWith('data:image/svg');
+                                });
                             }
                         } catch (e) {
-                            // Se não for JSON válido, seguir para fallback
+                            // Se não for JSON válido, tentar usar image_url
                         }
                         // Fallback: usar image_url se nada veio do destination_url
-                        if (carouselImages.length === 0 && item.image_url && typeof item.image_url === 'string') {
-                            const singleUrl = item.image_url.trim();
-                            if (singleUrl.length > 0 && !singleUrl.includes('placeholder') && !singleUrl.startsWith('data:image/svg')) {
-                                carouselImages = [singleUrl];
-                            }
+                        if (carouselImages.length === 0 && item.image_url && !item.image_url.includes('placeholder')) {
+                            carouselImages = [item.image_url];
                         }
                         
                         const aspectRatio = (item.aspect_ratio && typeof item.aspect_ratio === 'string') ? item.aspect_ratio : 'auto';
@@ -578,7 +571,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                         %>
                         
                         <% if (carouselImages.length > 0) { %>
-                            <div class="carousel-container-public" id="<%= carouselId %>" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; overflow: hidden; display: block !important; visibility: visible !important;">
+                            <div class="carousel-container-public" id="<%= carouselId %>" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
                                 <div class="carousel-wrapper-public" style="display: flex; transition: transform 0.5s ease-in-out; width: <%= carouselImages.length * 100 %>%;">
                                     <% carouselImages.forEach((imgUrl, index) => { 
                                         const url = typeof imgUrl === 'string' ? imgUrl : (imgUrl.image_url || imgUrl);
@@ -1007,7 +1000,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPO: PIX (Chave PIX para copiar) %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'pix') { %>
+                    <% } else if (item.item_type === 'pix') { %>
                         <button class="profile-link profile-button-pix" data-pix-key="<%= item.pix_key || '' %>" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fa-solid fa-qrcode' %>"></i>
                             <span><%= item.title || 'PIX' %></span>
@@ -1016,12 +1009,12 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPO: PDF (Download de arquivo PDF) %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'pdf') { %>
+                    <% } else if (item.item_type === 'pdf') { %>
                         <a href="/download/pdf/<%= item.id %>" class="profile-link" download data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fa-solid fa-file-pdf' %>"></i>
                             <span><%= item.title || 'PDF' %></span>
                         </a>
-                    <% } else if (itemTypeNorm === 'product_catalog') { 
+                    <% } else if (item.item_type === 'product_catalog') { 
                         // Verificar se tem logo para product_catalog
                         const catalogHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
                         const catalogLogoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
@@ -1051,73 +1044,73 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPOS: REDES SOCIAIS E CONTATOS (WhatsApp, Telegram, Email, etc.) %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'whatsapp') { %>
+                    <% } else if (item.item_type === 'whatsapp') { %>
                         <a href="<%= item.destination_url ? 'https://wa.me/' + String(item.destination_url).replace(/\D/g,'') : '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-whatsapp' %>"></i>
                             <span><%= item.title || 'WhatsApp' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'telegram') { %>
+                    <% } else if (item.item_type === 'telegram') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-telegram' %>"></i>
                             <span><%= item.title || 'Telegram' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'email') { %>
+                    <% } else if (item.item_type === 'email') { %>
                         <a href="<%= item.destination_url ? 'mailto:' + item.destination_url : '#' %>" class="profile-link" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fas fa-envelope' %>"></i>
                             <span><%= item.title || 'Email' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'instagram') { %>
+                    <% } else if (item.item_type === 'instagram') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-instagram' %>"></i>
                             <span><%= item.title || 'Instagram' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'facebook') { %>
+                    <% } else if (item.item_type === 'facebook') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-facebook' %>"></i>
                             <span><%= item.title || 'Facebook' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'tiktok') { %>
+                    <% } else if (item.item_type === 'tiktok') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-tiktok' %>"></i>
                             <span><%= item.title || 'TikTok' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'twitter') { %>
+                    <% } else if (item.item_type === 'twitter') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-twitter' %>"></i>
                             <span><%= item.title || 'Twitter' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'youtube') { %>
+                    <% } else if (item.item_type === 'youtube') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-youtube' %>"></i>
                             <span><%= item.title || 'YouTube' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'linkedin') { %>
+                    <% } else if (item.item_type === 'linkedin') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-linkedin' %>"></i>
                             <span><%= item.title || 'LinkedIn' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'portfolio') { %>
+                    <% } else if (item.item_type === 'portfolio') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fas fa-briefcase' %>"></i>
                             <span><%= item.title || 'Portfolio' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'pinterest') { %>
+                    <% } else if (item.item_type === 'pinterest') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-pinterest' %>"></i>
                             <span><%= item.title || 'Pinterest' %></span>
                         </a>
 
-                    <% } else if (itemTypeNorm === 'reddit') { %>
+                    <% } else if (item.item_type === 'reddit') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-reddit' %>"></i>
@@ -1125,7 +1118,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                         </a>
                         <% } %>
 
-                    <% } else if (itemTypeNorm === 'twitch') { %>
+                    <% } else if (item.item_type === 'twitch') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-twitch' %>"></i>
@@ -1133,7 +1126,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                         </a>
                         <% } %>
 
-                    <% } else if (itemTypeNorm === 'spotify') { %>
+                    <% } else if (item.item_type === 'spotify') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-spotify' %>"></i>
@@ -1142,41 +1135,9 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                         <% } %>
 
                     <%# ========================================================== %>
-                    <%# TIPO: LOCALIZAÇÃO (Mapa + Waze / Google Maps) %>
-                    <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'location' && item.location_data) { %>
-                        <%
-                            const loc = item.location_data;
-                            const lat = loc.latitude != null ? parseFloat(loc.latitude) : null;
-                            const lng = loc.longitude != null ? parseFloat(loc.longitude) : null;
-                            const hasCoords = lat != null && lng != null && !isNaN(lat) && !isNaN(lng);
-                            const addr = (loc.address_formatted || loc.address || loc.place_name || '').trim();
-                            const googleUrl = hasCoords ? ('https://www.google.com/maps?q=' + lat + ',' + lng) : (addr ? ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(addr)) : '#');
-                            const wazeUrl = hasCoords ? ('https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes') : (addr ? ('https://waze.com/ul?q=' + encodeURIComponent(addr)) : '#');
-                        %>
-                        <div class="profile-link profile-location-card" data-item-id="<%= item.id %>" data-google="<%= googleUrl %>" data-waze="<%= wazeUrl %>" style="cursor: pointer; flex-direction: column; align-items: stretch; text-align: left; padding: 0; overflow: hidden; border-radius: 16px;">
-                            <div class="location-map-preview" style="height: 200px; background: #e8ecee; position: relative; overflow: hidden; border-radius: 16px 16px 0 0;">
-                                <div id="location-map-<%= item.id %>" class="location-map-leaflet" data-lat="<%= lat != null ? lat : '' %>" data-lng="<%= lng != null ? lng : '' %>" data-address="<%= (addr || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') %>" style="position:absolute;top:0;left:0;width:100%;height:200px;border-radius:16px 16px 0 0;"></div>
-                                <div class="location-map-attribution" style="position: absolute; bottom: 8px; right: 8px; background: rgba(255,255,255,0.95); color: #333; font-size: 0.65rem; padding: 4px 8px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); z-index: 1000; display: none;">© OpenStreetMap © CARTO</div>
-                                <div class="location-map-loading" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(145deg, #2c3e50 0%, #34495e 100%); color: rgba(255,255,255,0.9); padding: 20px; z-index: 2;">
-                                    <i class="fas fa-map-marker-alt" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.9;"></i>
-                                    <span class="location-map-loading-text" style="font-size: 0.9rem;">Carregando mapa...</span>
-                                </div>
-                            </div>
-                            <div style="padding: 14px 16px;">
-                                <div style="font-weight: 700; margin-bottom: 8px; color: inherit;"><%= item.title || 'Localização' %></div>
-                                <% if (addr) { %><div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 12px; line-height: 1.3;"><%= addr %></div><% } %>
-                                <div class="location-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                    <a href="<%= googleUrl %>" target="_blank" rel="noopener noreferrer" class="location-btn location-btn-google" onclick="event.stopPropagation();" style="flex: 1; min-width: 120px; padding: 10px 14px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #4285f4; color: #fff; border: none;"><i class="fas fa-map"></i> Google Maps</a>
-                                    <a href="<%= wazeUrl %>" target="_blank" rel="noopener noreferrer" class="location-btn location-btn-waze" onclick="event.stopPropagation();" style="flex: 1; min-width: 120px; padding: 10px 14px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #33ccff; color: #000; border: none;"><i class="fab fa-waze"></i> Waze</a>
-                                </div>
-                            </div>
-                        </div>
-
-                    <%# ========================================================== %>
                     <%# TIPO: PIX QR CODE (Modal com QR Code PIX) %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'pix_qrcode') { %>
+                    <% } else if (item.item_type === 'pix_qrcode') { %>
                         <button class="profile-link profile-button-pix-qrcode" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fas fa-qrcode' %>"></i>
                             <span><%= item.title || 'PIX QR Code' %></span>
@@ -1185,7 +1146,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPOS: EMBEDS DE REDES SOCIAIS (Instagram, YouTube, TikTok, etc.) %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'instagram_embed') { %>
+                    <% } else if (item.item_type === 'instagram_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item instagram-embed-container" data-item-id="<%= item.id %>" data-embed-type="instagram">
                             <% 
@@ -1401,7 +1362,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                         </div>
                         <% } %>
 
-                    <% } else if (itemTypeNorm === 'youtube_embed') { %>
+                    <% } else if (item.item_type === 'youtube_embed') { %>
                         <%# YOUTUBE EMBED - Implementação Clean %>
                         <div class="profile-embed-item youtube-embed-container" 
                              id="yt-container-<%= item.id %>"
@@ -1766,7 +1727,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                                 <div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>
                             <% } %>
                         </div>
-                    <% } else if (itemTypeNorm === 'tiktok_embed') { %>
+                    <% } else if (item.item_type === 'tiktok_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item tiktok-embed-container" data-item-id="<%= item.id %>" data-embed-type="tiktok">
                             <% 
@@ -1801,7 +1762,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                         </div>
                         <% } %>
 
-                    <% } else if (itemTypeNorm === 'spotify_embed') { %>
+                    <% } else if (item.item_type === 'spotify_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item spotify-embed-container" data-item-id="<%= item.id %>" data-embed-type="spotify">
                             <% 
@@ -1863,7 +1824,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                         </div>
                         <% } %>
 
-                    <% } else if (itemTypeNorm === 'linkedin_embed') { %>
+                    <% } else if (item.item_type === 'linkedin_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item linkedin-embed-container" data-item-id="<%= item.id %>" data-embed-type="linkedin">
                             <% 
@@ -1898,7 +1859,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                         </div>
                         <% } %>
 
-                    <% } else if (itemTypeNorm === 'pinterest_embed') { %>
+                    <% } else if (item.item_type === 'pinterest_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item pinterest-embed-container" data-item-id="<%= item.id %>" data-embed-type="pinterest">
                             <% 
@@ -1934,9 +1895,9 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <% } %>
 
                     <%# ========================================================== %>
-                    <%# TIPO: DIGITAL FORM (Formulário Digital) - Inclui guest_list convertido. Oculto do cartão se is_listed === false %>
+                    <%# TIPO: DIGITAL FORM (Formulário Digital) - Inclui guest_list convertido %>
                     <%# ========================================================== %>
-                    <% } else if ((itemTypeNorm === 'digital_form' && item.is_listed !== false) || (itemTypeNorm === 'guest_list' && item.digital_form_data)) { %>
+                    <% } else if (item.item_type === 'digital_form' || (item.item_type === 'guest_list' && item.digital_form_data)) { %>
                         <%
                             // Buscar digital_form_data do item se existir
                             let formData = {};
@@ -2097,7 +2058,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPO: AGENDA (Agenda Inteligente) %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'agenda') { %>
+                    <% } else if (item.item_type === 'agenda') { %>
                         <% 
                             // Usar configurações da agenda passadas do route handler
                             const isAgendaActive = typeof agendaSettings !== 'undefined' && agendaSettings && agendaSettings.is_active_in_card === true;
@@ -2129,7 +2090,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPO: SALES PAGE (Página de Vendas) %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'sales_page') { %>
+                    <% } else if (item.item_type === 'sales_page') { %>
                         <% 
                             // Verificar se tem logo para sales_page
                             const salesPageHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
@@ -2174,7 +2135,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPO: LISTA DE CONVIDADOS %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'guest_list' && item.guest_list_data) { %>
+                    <% } else if (item.item_type === 'guest_list' && item.guest_list_data) { %>
                         <% 
                             const guestList = item.guest_list_data;
                             const stats = guestList.stats || { total_count: 0, registered_count: 0, confirmed_count: 0, checked_in_count: 0 };
@@ -2203,7 +2164,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPO: CONTRATO DIGITAL %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'contract' && item.contract_data) { %>
+                    <% } else if (item.item_type === 'contract' && item.contract_data) { %>
                         <% 
                             const contract = item.contract_data;
                             const hasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
@@ -2222,7 +2183,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPO: CONVITE DIGITAL %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'convite') { %>
+                    <% } else if (item.item_type === 'convite') { %>
                         <%
                             const conviteSlug = item.slug || profile_slug || details.profile_slug || identifier;
                             const conviteUrl = '/' + conviteSlug + '/convite';
@@ -2235,7 +2196,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
                     <%# ========================================================== %>
                     <%# TIPO: BÍBLIA %>
                     <%# ========================================================== %>
-                    <% } else if (itemTypeNorm === 'bible') { %>
+                    <% } else if (item.item_type === 'bible') { %>
                         <%
                             const bibleSlug = profile_slug || details.profile_slug || identifier;
                             const bibleUrl = '/' + bibleSlug + '/bible';
@@ -2300,7 +2261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. DECLARAÇÃO DE VARIÁVEIS E SELETORES
     // ==========================================================
     const userId = '<%= details.user_id %>';
-    const guestListsData = <%- JSON.stringify((items || []).filter(i => i && (i.item_type && String(i.item_type).toLowerCase()) === 'guest_list')) || '[]' %>;
+    const guestListsData = <%- JSON.stringify((items || []).filter(i => i && i.item_type === 'guest_list')) || '[]' %>;
     const shareButton = document.getElementById('share-btn');
     const saveContactBtn = document.getElementById('save-contact-btn');
     const pixModal = document.getElementById('pix-qrcode-modal');
@@ -3112,58 +3073,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
     </script>
-    <% if (hasLocationMap) { %>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script>
-    (function(){
-        var containers = document.querySelectorAll('.location-map-leaflet');
-        if (!window.L || !containers.length) return;
-        function showMap(el, lat, lng){
-            var wrap = el.closest('.location-map-preview');
-            var loading = wrap ? wrap.querySelector('.location-map-loading') : null;
-            var attribution = wrap ? wrap.querySelector('.location-map-attribution') : null;
-            if (loading) loading.style.display = 'none';
-            if (attribution) attribution.style.display = 'block';
-            var map = window.L.map(el, { center: [lat, lng], zoom: 16, zoomControl: true });
-            window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '',
-                subdomains: 'abcd',
-                maxZoom: 20
-            }).addTo(map);
-            window.L.marker([lat, lng]).addTo(map);
-            setTimeout(function(){ map.invalidateSize(); }, 150);
-        }
-        function showError(el, msg){
-            var wrap = el.closest('.location-map-preview');
-            var loading = wrap ? wrap.querySelector('.location-map-loading') : null;
-            var txt = wrap ? wrap.querySelector('.location-map-loading-text') : null;
-            if (txt) txt.textContent = msg || 'Endereço disponível nos botões abaixo';
-        }
-        containers.forEach(function(el){
-            var lat = parseFloat(el.getAttribute('data-lat'));
-            var lng = parseFloat(el.getAttribute('data-lng'));
-            var addr = (el.getAttribute('data-address') || '').trim();
-            if (!isNaN(lat) && !isNaN(lng)) {
-                showMap(el, lat, lng);
-                return;
-            }
-            if (addr) {
-                fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(addr) + '&format=json&limit=1', { headers: { 'Accept': 'application/json' } })
-                    .then(function(r){ return r.json(); })
-                    .then(function(arr){
-                        if (arr && arr[0]) {
-                            var lat2 = parseFloat(arr[0].lat);
-                            var lng2 = parseFloat(arr[0].lon);
-                            if (!isNaN(lat2) && !isNaN(lng2)) showMap(el, lat2, lng2);
-                            else showError(el);
-                        } else showError(el);
-                    })
-                    .catch(function(){ showError(el); });
-            } else showError(el);
-        });
-    })();
-    </script>
-    <% } %>
     <script async src="//www.instagram.com/embed.js"></script>
     <div id="pix-qrcode-modal" class="pix-modal-overlay">
     <div class="pix-modal-content">
