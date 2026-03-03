@@ -121,6 +121,8 @@ app.use(helmet({
                 "'self'",
                 "data:",
                 "https://imagedelivery.net",
+                "https://r2.conectaking.com.br",
+                "https://*.conectaking.com.br",
                 "https://i.ibb.co",
                 "https://i.pravatar.cc",
                 "https://avatar.iran.liara.run",
