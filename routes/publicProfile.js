@@ -625,6 +625,12 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             }
         });
 
+        // Banner e carrossel primeiro no cartão (mais visíveis), depois o restante na ordem original
+        const isBannerOrCarousel = (i) => ['banner', 'carousel', 'banner_carousel'].includes((i.item_type || '').toLowerCase());
+        const itemsBannerCarousel = itemsForLinks.filter(isBannerOrCarousel);
+        const itemsRest = itemsForLinks.filter(i => !isBannerOrCarousel);
+        const itemsOrdered = [...itemsBannerCarousel, ...itemsRest];
+        // Usar lista ordenada para o template
         const details = profileRes.rows[0];
         details.button_color_rgb = hexToRgb(details.button_color);
         details.card_color_rgb = hexToRgb(details.card_background_color);
@@ -684,7 +690,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         const profileData = {
             details: details,
-            items: itemsForLinks,
+            items: itemsOrdered,
             verseOfDay: verseOfDay,
             origin: req.protocol + '://' + req.get('host'),
             ogImageUrl: ogImageUrl,
@@ -695,8 +701,8 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         
         logger.debug('✅ Renderizando perfil público', {
             identifier,
-            itemsCount: itemsForLinks.length,
-            itemTypes: itemsForLinks.map(i => i.item_type),
+            itemsCount: itemsOrdered.length,
+            itemTypes: itemsOrdered.map(i => i.item_type),
             hasVerseOfDay: !!verseOfDay
         });
         res.render('profile', profileData);
