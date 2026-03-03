@@ -90,7 +90,8 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Perfil não configurado</h1>');
         }
         
-        // Trazer TODOS os itens ativos. Formulário King (is_listed) é filtrado no template.
+        // IMPORTANTE: Trazer TODOS os itens ativos (PIX, Loja, Formulário, Instagram, etc.).
+        // NÃO filtrar por is_listed aqui; Formulário King (is_listed) é filtrado só no template EJS.
         const itemsRes = await client.query(
             'SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC',
             [userId]
@@ -676,6 +677,8 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             itemTypes: itemsOrdered.map(i => i.item_type),
             hasVerseOfDay: !!verseOfDay
         });
+        // Header de debug: no cartão público deve refletir todos os itens (banner, carousel, pix, loja, etc.)
+        res.set('X-Profile-Items-Count', String(itemsOrdered.length));
         res.render('profile', profileData);
 
     } catch (error) {
@@ -731,8 +734,7 @@ router.get('/api/:identifier', asyncHandler(async (req, res) => {
             `SELECT item_type, title, destination_url, image_url 
              FROM profile_items 
              WHERE user_id = $1 AND is_active = true 
-             ORDER BY display_order ASC 
-             LIMIT 10`,
+             ORDER BY display_order ASC`,
             [userId]
         );
 
