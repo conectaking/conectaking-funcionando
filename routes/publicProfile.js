@@ -155,30 +155,26 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                 return false;
             }
             
-            // Para banners, verificar se tem image_url válido
+            // Para banners, verificar se tem image_url válido (inclui URLs R2 e Cloudflare)
             if (item.item_type === 'banner') {
+                const imgUrl = (item.image_url && typeof item.image_url === 'string') ? item.image_url.trim() : '';
+                const isValidUrl = imgUrl.length > 0 &&
+                    !imgUrl.includes('placeholder') &&
+                    !imgUrl.startsWith('data:image/svg');
                 // Log detalhado do banner antes de filtrar
                 logger.debug('Banner sendo avaliado', {
                     id: item.id,
                     title: item.title,
-                    hasImageUrl: !!item.image_url,
-                    imageUrl: item.image_url ? item.image_url.substring(0, 100) : 'null',
-                    imageUrlLength: item.image_url ? item.image_url.length : 0,
-                    isPlaceholder: item.image_url ? item.image_url.includes('placeholder') : false,
-                    isSvg: item.image_url ? item.image_url.startsWith('data:image/svg') : false,
+                    hasImageUrl: !!imgUrl,
+                    imageUrl: imgUrl ? imgUrl.substring(0, 100) : 'null',
                     isActive: item.is_active,
                     destinationUrl: item.destination_url || 'null'
                 });
-                
-                // Se não tem image_url ou é placeholder, não incluir
-                if (!item.image_url || 
-                    item.image_url.trim() === '' || 
-                    item.image_url.includes('placeholder') || 
-                    item.image_url.startsWith('data:image/svg')) {
+                if (!isValidUrl) {
                     logger.debug('Banner filtrado - sem imagem válida', {
                         id: item.id,
                         title: item.title,
-                        image_url: item.image_url ? item.image_url.substring(0, 50) : 'null'
+                        image_url: imgUrl ? imgUrl.substring(0, 50) : 'null'
                     });
                     return false;
                 }

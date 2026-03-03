@@ -456,7 +456,11 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                                 });
                             }
                         %>
-                        <% if (item.image_url && item.image_url.trim() !== '' && !item.image_url.includes('placeholder') && !item.image_url.startsWith('data:image/svg')) { %>
+                        <% 
+                            const bannerImageUrl = (item.image_url && typeof item.image_url === 'string') ? item.image_url.trim() : '';
+                            const bannerHasValidImage = bannerImageUrl !== '' && !bannerImageUrl.includes('placeholder') && !bannerImageUrl.startsWith('data:image/svg');
+                        %>
+                        <% if (bannerHasValidImage) { %>
                         <%
                             const ratioMap = {
                             'auto': '', 
@@ -537,10 +541,10 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         <div class="profile-banner-container" <%= containerStyle %> style="width: 100%; margin: 10px 0; background: transparent !important; background-color: transparent !important;">
                             <% if (finalUrl && finalUrl !== '#') { %>
                             <a href="<%= finalUrl %>" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>" style="width: 100%; display: block; background: transparent !important; background-color: transparent !important;">
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
+                                <img src="<%= bannerImageUrl %>" alt="<%= item.title || 'Banner' %>" loading="eager" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
                             </a>
                             <% } else { %>
-                            <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
+                            <img src="<%= bannerImageUrl %>" alt="<%= item.title || 'Banner' %>" loading="eager" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
                             <% } %>
                         </div>
                         <% } %>
