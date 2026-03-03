@@ -376,12 +376,14 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                 <% items.forEach(item => { 
                     // Filtrar apenas itens ativos (is_active !== false)
                     if (item.is_active === false) return;
+                    // Normalizar tipo para comparação (banner/carousel podem vir com caixa diferente do banco)
+                    const itemTypeNorm = (item.item_type && String(item.item_type).toLowerCase()) || '';
                 %>
                 
                     <%# ========================================================== %>
                     <%# TIPO: LINK PERSONALIZADO %>
                     <%# ========================================================== %>
-                    <% if (item.item_type === 'link') { %>
+                    <% if (itemTypeNorm === 'link') { %>
                         <% if (item.destination_url) { %>
                         <%
                             // Verificar se tem logo válida
@@ -437,7 +439,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: BANNER (Imagem com link opcional) %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'banner') { %>
+                    <% } else if (itemTypeNorm === 'banner') { %>
                         <% 
                             const bannerImageUrl = (item.image_url && typeof item.image_url === 'string') ? item.image_url.trim() : '';
                             const bannerHasValidImage = bannerImageUrl.length > 0
@@ -543,7 +545,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: CARROSSEL (Múltiplas imagens com slide horizontal) - inclui banner_carousel %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'carousel' || item.item_type === 'banner_carousel') { %>
+                    <% } else if (itemTypeNorm === 'carousel' || itemTypeNorm === 'banner_carousel') { %>
                         <% 
                         // Parsear array de imagens do destination_url
                         let carouselImages = [];
