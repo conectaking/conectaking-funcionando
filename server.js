@@ -389,10 +389,33 @@ app.get('/api/public-api-url', (req, res) => {
     res.json({ apiBaseUrl: PUBLIC_API_BASE });
 });
 // Script para o dashboard incluir: <script src="https://conectaking-api.onrender.com/api-config.js"></script>
+// Define API_BASE e intercepta fetch() para enviar pedidos /api/* para a API no Render (evita CORS/404 em conectaking.com.br)
 app.get('/api-config.js', (req, res) => {
     res.set('Content-Type', 'application/javascript; charset=utf-8');
     res.set('Cache-Control', 'public, max-age=300');
-    res.send(`window.CONECTAKING_API_BASE = ${JSON.stringify(PUBLIC_API_BASE)};\n`);
+    const base = JSON.stringify(PUBLIC_API_BASE);
+    res.send(
+`window.CONECTAKING_API_BASE = ${base};
+window.API_BASE = window.API_BASE || ${base};
+(function(){
+  var apiBase = ${base};
+  var nativeFetch = window.fetch;
+  if (!nativeFetch) return;
+  window.fetch = function(input, opts) {
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    var finalUrl = url;
+    if (url && (url.indexOf('/api/') === 0 || url.indexOf('api/') === 0)) {
+      finalUrl = url.indexOf('http') === 0 ? url : apiBase.replace(/\\/$/, '') + (url.indexOf('/') === 0 ? url : '/' + url);
+    } else if (url && url.indexOf('conectaking.com.br') !== -1 && url.indexOf('/api/') !== -1) {
+      finalUrl = url.replace(/^https?:\\/\\/[^\\/]+/, apiBase);
+    }
+    if (finalUrl === url) return nativeFetch.apply(this, arguments);
+    var finalInput = typeof input === 'string' ? finalUrl : (typeof Request !== 'undefined' ? new Request(finalUrl, input) : finalUrl);
+    return nativeFetch.call(this, finalInput, opts);
+  };
+})();
+`
+    );
 });
 
 app.use(securityHeaders); // Headers de segurança
