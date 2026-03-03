@@ -1,0 +1,18 @@
+UPLOAD BANNER / CORS - CORREÇÃO
+================================
+
+O dashboard que usa "Editar Banner" (dashboard.html + dashboard.js) está a dar
+"Failed to fetch" porque as chamadas à API vão para conectaking.com.br (que
+redireciona e não devolve CORS).
+
+SOLUÇÃO: No ficheiro dashboard.html do projeto onde está o painel (o que
+abre em http://127.0.0.1:5500/public/html/dashboard.html), adicione no <head>,
+ANTES de qualquer outro <script>, esta linha:
+
+  <script src="https://conectaking-api.onrender.com/api-config.js"></script>
+
+Assim, todos os fetch('/api/...') passam a ir para a API no Render e o upload
+do banner deixa de falhar.
+
+Se o seu dashboard.html estiver noutra pasta (por exemplo noutro repositório),
+adicione a mesma linha nesse dashboard.html.

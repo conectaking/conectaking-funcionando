@@ -210,19 +210,18 @@ async function enqueueThrottledAuth(accountId, headers) {
     return p;
 }
 
-/** Base URL da API (para devolver uploadURL quando usamos R2 em /auth). Em produção (Render) usar API_URL ou X-Forwarded-*. */
+/** Base URL da API (para devolver uploadURL quando usamos R2 em /auth). Usar sempre a URL pública da API (Render) para evitar CORS quando o dashboard está em 127.0.0.1:5500 ou em conectaking.com.br. */
 function getApiBaseUrl(req) {
-    const env = (process.env.API_URL || process.env.FRONTEND_URL || '').toString().trim().replace(/\/$/, '');
-    if (env && (env.startsWith('http://') || env.startsWith('https://'))) return env;
+    // Preferir explicitamente a URL da API (Render); nunca devolver FRONTEND_URL (conectaking.com.br) para uploadURL, senão o browser bloqueia por CORS.
+    const apiUrl = (process.env.API_URL || process.env.API_PUBLIC_URL || 'https://conectaking-api.onrender.com').toString().trim().replace(/\/$/, '');
+    if (apiUrl && (apiUrl.startsWith('http://') || apiUrl.startsWith('https://'))) return apiUrl;
     const proto = (req && req.get && req.get('x-forwarded-proto')) || (req && req.protocol) || 'https';
     const host = (req && req.get && req.get('x-forwarded-host')) || (req && req.get && req.get('host')) || null;
-    if (host) {
+    if (host && /\.onrender\.com$/.test(host)) {
         const base = `${proto}://${host}`;
-        // Em produção (proxy) usar https quando o cliente usa https
-        if (proto === 'https' || /\.onrender\.com$/.test(host)) return base.replace(/^http:\/\//, 'https://');
-        return base;
+        return base.replace(/^http:\/\//, 'https://');
     }
-    return '';
+    return apiUrl || '';
 }
 
 router.post('/auth', protectUser, uploadAuthLimiter, asyncHandler(async (req, res) => {
