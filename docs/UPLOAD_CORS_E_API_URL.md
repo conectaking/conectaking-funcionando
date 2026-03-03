@@ -6,24 +6,39 @@ Se o dashboard (frontend) estiver em **http://127.0.0.1:5500** (ou outro host lo
 
 - **"Failed to fetch"**
 - **"blocked by CORS policy: No 'Access-Control-Allow-Origin' header"**
+- **"redirected from conectaking.com.br/api/u.."** (redirect quebra CORS)
 - **ERR_BLOCKED_BY_CLIENT** (por vezes causado por extensões do navegador)
 
 faça o seguinte:
 
-### 1. Usar a URL correta da API no frontend
+### 1. Usar a URL correta da API no frontend (obrigatório)
 
-Configure a **base URL da API** no dashboard para apontar **diretamente** para a API, sem redirect:
+O dashboard **tem de chamar a API em** `https://conectaking-api.onrender.com` e **não** em `https://conectaking.com.br`. O domínio conectaking.com.br faz redirect para www e a resposta do redirect não envia CORS, por isso o browser bloqueia.
 
-- **Produção:** `https://conectaking-api.onrender.com`
-- **Evite:** `https://conectaking.com.br` ou `https://www.conectaking.com.br` como base da API se esses domínios fizerem **redirect** (ex.: de `conectaking.com.br` para `www.conectaking.com.br`). O redirect pode devolver a resposta sem cabeçalhos CORS e o browser bloqueia.
+**Opção A – Definir a base no projeto do dashboard**
 
-Ou seja: no painel/dashboard, onde está configurada a variável ou constante da API (tipo `API_BASE_URL` ou `VITE_API_URL`), use:
+Onde estiver definida a base da API (ex.: `API_BASE_URL`, `VITE_API_URL`, `window.API_BASE`), use:
 
 ```text
 https://conectaking-api.onrender.com
 ```
 
-e não apenas `https://conectaking.com.br` (a menos que aí não haja redirect e o CORS esteja configurado nesse host).
+**Opção B – Script automático**
+
+Inclua no HTML do dashboard (antes dos scripts que usam a API):
+
+```html
+<script src="https://conectaking-api.onrender.com/api-config.js"></script>
+```
+
+Depois, no JavaScript do dashboard, use `window.CONECTAKING_API_BASE` para as chamadas à API (ex.: `fetch(window.CONECTAKING_API_BASE + '/api/upload/auth', ...)`).
+
+**Opção C – Obter a URL em tempo de execução**
+
+```js
+const { apiBaseUrl } = await fetch('https://conectaking-api.onrender.com/api/public-api-url').then(r => r.json());
+// usar apiBaseUrl para todas as chamadas à API
+```
 
 ### 2. Bloqueio por extensão (ERR_BLOCKED_BY_CLIENT)
 

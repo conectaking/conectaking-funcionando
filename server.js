@@ -381,6 +381,20 @@ cron.schedule('0 8 * * *', async () => {
 
 app.use(compression());
 app.use(cors(config.cors));
+
+// URL pública da API (para o dashboard em localhost usar este domínio e evitar CORS por redirect em conectaking.com.br)
+const PUBLIC_API_BASE = (process.env.API_URL || 'https://conectaking-api.onrender.com').toString().trim().replace(/\/$/, '');
+app.get('/api/public-api-url', (req, res) => {
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({ apiBaseUrl: PUBLIC_API_BASE });
+});
+// Script para o dashboard incluir: <script src="https://conectaking-api.onrender.com/api-config.js"></script>
+app.get('/api-config.js', (req, res) => {
+    res.set('Content-Type', 'application/javascript; charset=utf-8');
+    res.set('Cache-Control', 'public, max-age=300');
+    res.send(`window.CONECTAKING_API_BASE = ${JSON.stringify(PUBLIC_API_BASE)};\n`);
+});
+
 app.use(securityHeaders); // Headers de segurança
 app.use(validateRequestSize(config.upload.maxFileSize)); // Valida tamanho de requisição
 app.use(express.json({ limit: `${config.upload.maxFileSize / 1024 / 1024}mb` }));
