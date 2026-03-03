@@ -362,6 +362,8 @@ var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type &&
             <%# ========================================================== %>
             <%# SEÇÃO: CONTAINER DE ITENS DO PERFIL %>
             <%# ========================================================== %>
+        <%# Comentário para debug: ao ver código-fonte da página, confira items-count. Se for 5, o backend está antigo; deve ser 11+ com PIX, Loja, Instagram, etc. %>
+        <!-- profile-items-count: <%= (items && items.length) || 0 %> | tipos: <%= (items && items.length) ? items.map(function(i){ return (i && i.item_type) ? String(i.item_type).toLowerCase() : ''; }).join(', ') : 'nenhum' %> -->
         <section class="profile-items-container" data-items-count="<%= (items && items.length) || 0 %>" data-item-types="<%= (items && items.length) ? items.map(function(i){ return (i && i.item_type) ? String(i.item_type).toLowerCase() : ''; }).join(',') : '' %>">
             <% if (items && items.length > 0) { %>
                 <%# Debug: Log de itens (apenas em desenvolvimento) %>
