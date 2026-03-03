@@ -21,7 +21,7 @@
        <span class="url" id="apiBaseUrl">https://conectaking-api.onrender.com</span></p>
     <h2>O que fazer no projeto do dashboard</h2>
     <ol>
-        <li>Abrir o <strong>projeto do dashboard</strong> (onde está <code>dashboard.html</code> e <code>dashboard.js</code>).</li>
+        <li>Abrir o <strong>projeto do dashboard</strong> (onde está <code>dashboard.html</code> e <code>dashboard.js</code>) – tanto o que corre em localhost como o que está em produção em conectaking.com.br.</li>
         <li>Procurar onde está definida a base da API, por exemplo:
             <ul>
                 <li>Variáveis como <code>API_BASE</code>, <code>API_URL</code>, <code>apiUrl</code>, <code>baseURL</code></li>
@@ -34,6 +34,7 @@
             e no JavaScript usar <code>window.CONECTAKING_API_BASE</code> como base das chamadas à API.
         </li>
     </ol>
+    <p><strong>Produção (www.conectaking.com.br):</strong> se o dashboard em produção também dá "Failed to fetch", é porque aí as chamadas usam o mesmo domínio (<code>/api/...</code>) e o site em conectaking.com.br não é a API. Configure a base da API para <code>https://conectaking-api.onrender.com</code> também na build/publicação do dashboard.</p>
     <p><small>Esta página é servida pela API. Guarde a URL acima no seu projeto do dashboard.</small></p>
     <script>
         (function() {
