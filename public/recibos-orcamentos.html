@@ -293,15 +293,16 @@
 
 <script>
 (function() {
-    // Quando a página é servida por Live Server ou outro (5500, 3000, etc.), a API está no Express (5000)
+    // Usar a mesma base da API do dashboard (banner/carrossel). Assim o upload de logo usa o mesmo servidor e CORS.
     var host = window.location.hostname || '';
     var port = String(window.location.port || '');
     var isLocal = /^127\.0\.0\.1|localhost$/i.test(host);
     var portasEstaticas = ['5500', '3000', '8080', '5173', '4173'];
-    var apiOrigin = isLocal && portasEstaticas.indexOf(port) >= 0
-        ? (window.location.protocol + '//' + host + ':5000')
-        : '';
-    var API = apiOrigin + '/api/documentos';
+    var apiOrigin = (typeof window !== 'undefined' && (window.API_BASE || window.CONECTAKING_API_BASE))
+        ? (window.API_BASE || window.CONECTAKING_API_BASE).replace(/\/$/, '')
+        : (isLocal && portasEstaticas.indexOf(port) >= 0 ? (window.location.protocol + '//' + host + ':5000') : '');
+    var API = apiOrigin ? (apiOrigin + '/api/documentos') : '/api/documentos';
+    var UPLOAD_API = apiOrigin ? (apiOrigin + '/api/upload') : '/api/upload';
     var docId = (function() { var m = /[?&]id=([^&]+)/.exec(location.search); return m ? m[1] : null; })();
 
     // Se a página está numa porta "estática" (ex.: 5500 Live Server) e não há token aqui,
@@ -523,16 +524,22 @@
         if (statusMsg) { statusMsg.classList.remove('hidden'); statusMsg.textContent = 'Enviando...'; statusMsg.classList.remove('text-red-500'); statusMsg.classList.add('text-slate-500'); }
         var fd = new FormData();
         fd.append('image', file);
-        fetch(API + '/upload-logo', { method: 'POST', body: fd, credentials: 'include', headers: getAuthHeaders() })
-            .then(function(r) { return handleResponse(r, 'Faça login para importar logomarca.'); })
+        // Usar o mesmo endpoint de upload do banner/carrossel (/api/upload/image) para evitar CORS e "Failed to fetch"
+        var uploadUrl = UPLOAD_API + '/image';
+        fetch(uploadUrl, { method: 'POST', body: fd, credentials: 'include', headers: getAuthHeaders() })
+            .then(function(r) {
+                if (r.status === 401) throw new Error('Faça login para importar logomarca.');
+                return r.json();
+            })
             .then(function(data) {
-                if (data && data.data && data.data.url) {
+                var finalUrl = (data && (data.url || data.imageUrl)) || (data.data && (data.data.url || data.data.imageUrl));
+                if (finalUrl) {
                     URL.revokeObjectURL(urlLocal);
-                    document.getElementById('input-logo-url').value = data.data.url;
-                    img.src = data.data.url;
+                    document.getElementById('input-logo-url').value = finalUrl;
+                    img.src = finalUrl;
                     if (statusMsg) { statusMsg.textContent = 'Logomarca carregada'; statusMsg.classList.add('text-primary'); }
                 } else {
-                    if (statusMsg) { statusMsg.textContent = data.message || 'Falha ao enviar. A logo aparece aqui; salve o documento depois de conectar ao servidor.'; statusMsg.classList.add('text-amber-500'); }
+                    if (statusMsg) { statusMsg.textContent = (data && data.message) || 'Falha ao enviar. A logo aparece acima.'; statusMsg.classList.add('text-amber-500'); }
                     document.getElementById('input-logo-url').value = '';
                 }
             })
