@@ -440,7 +440,10 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <% } else if (item.item_type === 'banner') { %>
                         <% 
                             const bannerImageUrl = (item.image_url && typeof item.image_url === 'string') ? item.image_url.trim() : '';
-                            const bannerHasValidImage = bannerImageUrl !== '' && !bannerImageUrl.includes('placeholder') && !bannerImageUrl.startsWith('data:image/svg');
+                            const bannerHasValidImage = bannerImageUrl.length > 0
+                                && !bannerImageUrl.includes('placeholder')
+                                && !bannerImageUrl.startsWith('data:image/svg')
+                                && (bannerImageUrl.startsWith('http://') || bannerImageUrl.startsWith('https://') || bannerImageUrl.startsWith('//'));
                         %>
                         <% if (bannerHasValidImage) { %>
                         <%
@@ -520,13 +523,13 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                                 // O title será usado como alt text da imagem
                             }
                         %>
-                        <div class="profile-banner-container" <%= containerStyle %> style="width: 100%; margin: 10px 0; background: transparent !important; background-color: transparent !important;">
+                        <div class="profile-banner-container" <%= containerStyle %> style="width: 100%; margin: 10px 0; display: block !important; visibility: visible !important; background: transparent !important; background-color: transparent !important;">
                             <% if (finalUrl && finalUrl !== '#') { %>
                             <a href="<%= finalUrl %>" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>" style="width: 100%; display: block; background: transparent !important; background-color: transparent !important;">
-                                <img src="<%= bannerImageUrl %>" alt="<%= item.title || 'Banner' %>" loading="eager" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
+                                <img src="<%= bannerImageUrl %>" alt="<%= item.title || 'Banner' %>" loading="eager" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important; min-height: 80px;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
                             </a>
                             <% } else { %>
-                            <img src="<%= bannerImageUrl %>" alt="<%= item.title || 'Banner' %>" loading="eager" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
+                            <img src="<%= bannerImageUrl %>" alt="<%= item.title || 'Banner' %>" loading="eager" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important; min-height: 80px;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
                             <% } %>
                         </div>
                         <% } %>
@@ -538,21 +541,26 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         <% 
                         // Parsear array de imagens do destination_url
                         let carouselImages = [];
+                        const destUrlRaw = (item.destination_url && typeof item.destination_url === 'string') ? item.destination_url.trim() : '';
                         try {
-                            const parsed = item.destination_url ? JSON.parse(item.destination_url) : [];
-                            if (Array.isArray(parsed) && parsed.length > 0) {
-                                // Filtrar placeholders
-                                carouselImages = parsed.filter(img => {
-                                    const url = typeof img === 'string' ? img : (img.image_url || img);
-                                    return url && !url.includes('placeholder') && !url.startsWith('data:image/svg');
-                                });
+                            if (destUrlRaw && destUrlRaw.startsWith('[')) {
+                                const parsed = JSON.parse(destUrlRaw);
+                                if (Array.isArray(parsed) && parsed.length > 0) {
+                                    carouselImages = parsed.filter(img => {
+                                        const url = typeof img === 'string' ? img : (img && (img.image_url || img));
+                                        return url && typeof url === 'string' && !url.includes('placeholder') && !url.startsWith('data:image/svg');
+                                    });
+                                }
                             }
                         } catch (e) {
-                            // Se não for JSON válido, tentar usar image_url
+                            // Se não for JSON válido, seguir para fallback
                         }
                         // Fallback: usar image_url se nada veio do destination_url
-                        if (carouselImages.length === 0 && item.image_url && !item.image_url.includes('placeholder')) {
-                            carouselImages = [item.image_url];
+                        if (carouselImages.length === 0 && item.image_url && typeof item.image_url === 'string') {
+                            const singleUrl = item.image_url.trim();
+                            if (singleUrl.length > 0 && !singleUrl.includes('placeholder') && !singleUrl.startsWith('data:image/svg')) {
+                                carouselImages = [singleUrl];
+                            }
                         }
                         
                         const aspectRatio = (item.aspect_ratio && typeof item.aspect_ratio === 'string') ? item.aspect_ratio : 'auto';
@@ -560,7 +568,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         %>
                         
                         <% if (carouselImages.length > 0) { %>
-                            <div class="carousel-container-public" id="<%= carouselId %>" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
+                            <div class="carousel-container-public" id="<%= carouselId %>" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; overflow: hidden; display: block !important; visibility: visible !important;">
                                 <div class="carousel-wrapper-public" style="display: flex; transition: transform 0.5s ease-in-out; width: <%= carouselImages.length * 100 %>%;">
                                     <% carouselImages.forEach((imgUrl, index) => { 
                                         const url = typeof imgUrl === 'string' ? imgUrl : (imgUrl.image_url || imgUrl);
