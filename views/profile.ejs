@@ -3,7 +3,7 @@
 if (typeof details === 'undefined' || !details) {
     throw new Error('Variável details não está definida');
 }
-var hasLocationMap = (items || []).some(function(i){ return i && i.item_type === 'location' && i.location_data; });
+var hasLocationMap = (items || []).some(function(i){ return i && (i.item_type && String(i.item_type).toLowerCase()) === 'location' && i.location_data; });
 %>
 <!DOCTYPE html>
 <html lang="pt-BR" style="background-color: <%= (details && details.background_color) ? details.background_color : '#0D0D0F' %>;">
@@ -362,7 +362,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
             <%# ========================================================== %>
             <%# SEÇÃO: CONTAINER DE ITENS DO PERFIL %>
             <%# ========================================================== %>
-        <section class="profile-items-container">
+        <section class="profile-items-container" data-items-count="<%= (items && items.length) || 0 %>" data-item-types="<%= (items && items.length) ? items.map(function(i){ return (i && i.item_type) ? String(i.item_type).toLowerCase() : ''; }).join(',') : '' %>">
             <% if (items && items.length > 0) { %>
                 <%# Debug: Log de itens (apenas em desenvolvimento) %>
                 <script>
@@ -1005,7 +1005,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: PIX (Chave PIX para copiar) %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'pix') { %>
+                    <% } else if (itemTypeNorm === 'pix') { %>
                         <button class="profile-link profile-button-pix" data-pix-key="<%= item.pix_key || '' %>" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fa-solid fa-qrcode' %>"></i>
                             <span><%= item.title || 'PIX' %></span>
@@ -1014,12 +1014,12 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: PDF (Download de arquivo PDF) %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'pdf') { %>
+                    <% } else if (itemTypeNorm === 'pdf') { %>
                         <a href="/download/pdf/<%= item.id %>" class="profile-link" download data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fa-solid fa-file-pdf' %>"></i>
                             <span><%= item.title || 'PDF' %></span>
                         </a>
-                    <% } else if (item.item_type === 'product_catalog') { 
+                    <% } else if (itemTypeNorm === 'product_catalog') { 
                         // Verificar se tem logo para product_catalog
                         const catalogHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
                         const catalogLogoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
@@ -1049,73 +1049,73 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPOS: REDES SOCIAIS E CONTATOS (WhatsApp, Telegram, Email, etc.) %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'whatsapp') { %>
+                    <% } else if (itemTypeNorm === 'whatsapp') { %>
                         <a href="<%= item.destination_url ? 'https://wa.me/' + String(item.destination_url).replace(/\D/g,'') : '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-whatsapp' %>"></i>
                             <span><%= item.title || 'WhatsApp' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'telegram') { %>
+                    <% } else if (itemTypeNorm === 'telegram') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-telegram' %>"></i>
                             <span><%= item.title || 'Telegram' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'email') { %>
+                    <% } else if (itemTypeNorm === 'email') { %>
                         <a href="<%= item.destination_url ? 'mailto:' + item.destination_url : '#' %>" class="profile-link" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fas fa-envelope' %>"></i>
                             <span><%= item.title || 'Email' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'instagram') { %>
+                    <% } else if (itemTypeNorm === 'instagram') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-instagram' %>"></i>
                             <span><%= item.title || 'Instagram' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'facebook') { %>
+                    <% } else if (itemTypeNorm === 'facebook') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-facebook' %>"></i>
                             <span><%= item.title || 'Facebook' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'tiktok') { %>
+                    <% } else if (itemTypeNorm === 'tiktok') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-tiktok' %>"></i>
                             <span><%= item.title || 'TikTok' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'twitter') { %>
+                    <% } else if (itemTypeNorm === 'twitter') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-twitter' %>"></i>
                             <span><%= item.title || 'Twitter' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'youtube') { %>
+                    <% } else if (itemTypeNorm === 'youtube') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-youtube' %>"></i>
                             <span><%= item.title || 'YouTube' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'linkedin') { %>
+                    <% } else if (itemTypeNorm === 'linkedin') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-linkedin' %>"></i>
                             <span><%= item.title || 'LinkedIn' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'portfolio') { %>
+                    <% } else if (itemTypeNorm === 'portfolio') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fas fa-briefcase' %>"></i>
                             <span><%= item.title || 'Portfolio' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'pinterest') { %>
+                    <% } else if (itemTypeNorm === 'pinterest') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-pinterest' %>"></i>
                             <span><%= item.title || 'Pinterest' %></span>
                         </a>
 
-                    <% } else if (item.item_type === 'reddit') { %>
+                    <% } else if (itemTypeNorm === 'reddit') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-reddit' %>"></i>
@@ -1123,7 +1123,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         </a>
                         <% } %>
 
-                    <% } else if (item.item_type === 'twitch') { %>
+                    <% } else if (itemTypeNorm === 'twitch') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-twitch' %>"></i>
@@ -1131,7 +1131,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         </a>
                         <% } %>
 
-                    <% } else if (item.item_type === 'spotify') { %>
+                    <% } else if (itemTypeNorm === 'spotify') { %>
                         <% if (item.destination_url) { %>
                         <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fab fa-spotify' %>"></i>
@@ -1142,7 +1142,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: LOCALIZAÇÃO (Mapa + Waze / Google Maps) %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'location' && item.location_data) { %>
+                    <% } else if (itemTypeNorm === 'location' && item.location_data) { %>
                         <%
                             const loc = item.location_data;
                             const lat = loc.latitude != null ? parseFloat(loc.latitude) : null;
@@ -1174,7 +1174,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: PIX QR CODE (Modal com QR Code PIX) %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'pix_qrcode') { %>
+                    <% } else if (itemTypeNorm === 'pix_qrcode') { %>
                         <button class="profile-link profile-button-pix-qrcode" data-item-id="<%= item.id %>">
                             <i class="<%= item.icon_class || 'fas fa-qrcode' %>"></i>
                             <span><%= item.title || 'PIX QR Code' %></span>
@@ -1183,7 +1183,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPOS: EMBEDS DE REDES SOCIAIS (Instagram, YouTube, TikTok, etc.) %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'instagram_embed') { %>
+                    <% } else if (itemTypeNorm === 'instagram_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item instagram-embed-container" data-item-id="<%= item.id %>" data-embed-type="instagram">
                             <% 
@@ -1399,7 +1399,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         </div>
                         <% } %>
 
-                    <% } else if (item.item_type === 'youtube_embed') { %>
+                    <% } else if (itemTypeNorm === 'youtube_embed') { %>
                         <%# YOUTUBE EMBED - Implementação Clean %>
                         <div class="profile-embed-item youtube-embed-container" 
                              id="yt-container-<%= item.id %>"
@@ -1764,7 +1764,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                                 <div class="embed-error">URL do YouTube inválida. Verifique o link no painel.</div>
                             <% } %>
                         </div>
-                    <% } else if (item.item_type === 'tiktok_embed') { %>
+                    <% } else if (itemTypeNorm === 'tiktok_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item tiktok-embed-container" data-item-id="<%= item.id %>" data-embed-type="tiktok">
                             <% 
@@ -1799,7 +1799,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         </div>
                         <% } %>
 
-                    <% } else if (item.item_type === 'spotify_embed') { %>
+                    <% } else if (itemTypeNorm === 'spotify_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item spotify-embed-container" data-item-id="<%= item.id %>" data-embed-type="spotify">
                             <% 
@@ -1861,7 +1861,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         </div>
                         <% } %>
 
-                    <% } else if (item.item_type === 'linkedin_embed') { %>
+                    <% } else if (itemTypeNorm === 'linkedin_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item linkedin-embed-container" data-item-id="<%= item.id %>" data-embed-type="linkedin">
                             <% 
@@ -1896,7 +1896,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         </div>
                         <% } %>
 
-                    <% } else if (item.item_type === 'pinterest_embed') { %>
+                    <% } else if (itemTypeNorm === 'pinterest_embed') { %>
                         <% if (item.destination_url) { %>
                         <div class="profile-embed-item pinterest-embed-container" data-item-id="<%= item.id %>" data-embed-type="pinterest">
                             <% 
@@ -1934,7 +1934,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: DIGITAL FORM (Formulário Digital) - Inclui guest_list convertido. Oculto do cartão se is_listed === false %>
                     <%# ========================================================== %>
-                    <% } else if ((item.item_type === 'digital_form' && item.is_listed !== false) || (item.item_type === 'guest_list' && item.digital_form_data)) { %>
+                    <% } else if ((itemTypeNorm === 'digital_form' && item.is_listed !== false) || (itemTypeNorm === 'guest_list' && item.digital_form_data)) { %>
                         <%
                             // Buscar digital_form_data do item se existir
                             let formData = {};
@@ -2095,7 +2095,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: AGENDA (Agenda Inteligente) %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'agenda') { %>
+                    <% } else if (itemTypeNorm === 'agenda') { %>
                         <% 
                             // Usar configurações da agenda passadas do route handler
                             const isAgendaActive = typeof agendaSettings !== 'undefined' && agendaSettings && agendaSettings.is_active_in_card === true;
@@ -2127,7 +2127,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: SALES PAGE (Página de Vendas) %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'sales_page') { %>
+                    <% } else if (itemTypeNorm === 'sales_page') { %>
                         <% 
                             // Verificar se tem logo para sales_page
                             const salesPageHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
@@ -2172,7 +2172,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: LISTA DE CONVIDADOS %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'guest_list' && item.guest_list_data) { %>
+                    <% } else if (itemTypeNorm === 'guest_list' && item.guest_list_data) { %>
                         <% 
                             const guestList = item.guest_list_data;
                             const stats = guestList.stats || { total_count: 0, registered_count: 0, confirmed_count: 0, checked_in_count: 0 };
@@ -2201,7 +2201,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: CONTRATO DIGITAL %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'contract' && item.contract_data) { %>
+                    <% } else if (itemTypeNorm === 'contract' && item.contract_data) { %>
                         <% 
                             const contract = item.contract_data;
                             const hasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
@@ -2220,7 +2220,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: CONVITE DIGITAL %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'convite') { %>
+                    <% } else if (itemTypeNorm === 'convite') { %>
                         <%
                             const conviteSlug = item.slug || profile_slug || details.profile_slug || identifier;
                             const conviteUrl = '/' + conviteSlug + '/convite';
@@ -2233,7 +2233,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <%# ========================================================== %>
                     <%# TIPO: BÍBLIA %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'bible') { %>
+                    <% } else if (itemTypeNorm === 'bible') { %>
                         <%
                             const bibleSlug = profile_slug || details.profile_slug || identifier;
                             const bibleUrl = '/' + bibleSlug + '/bible';
@@ -2298,7 +2298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. DECLARAÇÃO DE VARIÁVEIS E SELETORES
     // ==========================================================
     const userId = '<%= details.user_id %>';
-    const guestListsData = <%- JSON.stringify((items || []).filter(i => i && i.item_type === 'guest_list')) || '[]' %>;
+    const guestListsData = <%- JSON.stringify((items || []).filter(i => i && (i.item_type && String(i.item_type).toLowerCase()) === 'guest_list')) || '[]' %>;
     const shareButton = document.getElementById('share-btn');
     const saveContactBtn = document.getElementById('save-contact-btn');
     const pixModal = document.getElementById('pix-qrcode-modal');
