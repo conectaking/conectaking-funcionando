@@ -1932,9 +1932,9 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                     <% } %>
 
                     <%# ========================================================== %>
-                    <%# TIPO: DIGITAL FORM (Formulário Digital) - Inclui guest_list convertido %>
+                    <%# TIPO: DIGITAL FORM (Formulário Digital) - Inclui guest_list convertido. Oculto do cartão se is_listed === false %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'digital_form' || (item.item_type === 'guest_list' && item.digital_form_data)) { %>
+                    <% } else if ((item.item_type === 'digital_form' && item.is_listed !== false) || (item.item_type === 'guest_list' && item.digital_form_data)) { %>
                         <%
                             // Buscar digital_form_data do item se existir
                             let formData = {};
