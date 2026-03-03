@@ -612,6 +612,17 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             if (i.item_type != null && typeof i.item_type === 'string') {
                 i.item_type = i.item_type.toLowerCase();
             }
+            // Garantir que banner e carrossel tenham image_url/destination_url como string (evita undefined no EJS)
+            if (i.item_type === 'banner') {
+                if (i.image_url == null || typeof i.image_url !== 'string') i.image_url = '';
+                else i.image_url = String(i.image_url).trim();
+            }
+            if (i.item_type === 'carousel' || i.item_type === 'banner_carousel') {
+                if (i.destination_url == null || typeof i.destination_url !== 'string') i.destination_url = '[]';
+                else i.destination_url = String(i.destination_url).trim();
+                if (i.image_url == null || typeof i.image_url !== 'string') i.image_url = '';
+                else i.image_url = String(i.image_url).trim();
+            }
         });
 
         const details = profileRes.rows[0];

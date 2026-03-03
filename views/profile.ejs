@@ -446,6 +446,7 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                                 && (bannerImageUrl.startsWith('http://') || bannerImageUrl.startsWith('https://') || bannerImageUrl.startsWith('//'));
                         %>
                         <% if (bannerHasValidImage) { %>
+                        <%# Banner COM imagem: exibir normalmente %>
                         <%
                             const ratioMap = {
                             'auto': '', 
@@ -531,6 +532,11 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                             <% } else { %>
                             <img src="<%= bannerImageUrl %>" alt="<%= item.title || 'Banner' %>" loading="eager" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important; min-height: 80px;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
                             <% } %>
+                        </div>
+                        <% } else { %>
+                        <%# Banner SEM imagem válida: placeholder visível (confirma que o módulo existe no cartão) %>
+                        <div class="profile-banner-container" style="width: 100%; margin: 10px 0; display: flex !important; visibility: visible !important; min-height: 100px; background: rgba(255,255,255,0.06); border: 1px dashed rgba(255,255,255,0.15); border-radius: 12px; align-items: center; justify-content: center;">
+                            <p style="margin: 0; padding: 24px; color: rgba(255,255,255,0.5); font-size: 0.9rem; text-align: center;">Banner — adicione uma imagem no painel e clique em Publicar alterações</p>
                         </div>
                         <% } %>
 
