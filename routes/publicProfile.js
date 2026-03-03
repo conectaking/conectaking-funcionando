@@ -90,39 +90,11 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Perfil não configurado</h1>');
         }
         
-        // Query: is_listed só afeta digital_form (ocultar do cartão). PIX, Loja, Instagram etc. aparecem sempre se is_active = true.
-        let itemsRes;
-        try {
-            itemsRes = await client.query(
-                `SELECT * FROM profile_items 
-                WHERE user_id = $1 
-                AND is_active = true 
-                AND (item_type <> 'digital_form' OR (is_listed IS NULL OR is_listed = true)) 
-                ORDER BY display_order ASC`, 
-                [userId]
-            );
-        } catch (error) {
-            // Se is_listed não existir, usar query sem essa coluna
-            if (error.message && (error.message.includes('is_listed') || error.code === '42703')) {
-                logger.warn('Coluna is_listed não existe, usando query sem filtro is_listed', {
-                    error: error.message,
-                    code: error.code
-                });
-                itemsRes = await client.query(
-                    'SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC', 
-                    [userId]
-                );
-            } else {
-                // Log detalhado do erro antes de re-throw
-                logger.error('Erro ao buscar itens do perfil', {
-                    userId,
-                    error: error.message,
-                    code: error.code,
-                    stack: error.stack
-                });
-                throw error; // Re-throw se for outro erro
-            }
-        }
+        // Trazer TODOS os itens ativos. Formulário King (is_listed) é filtrado no template.
+        const itemsRes = await client.query(
+            'SELECT * FROM profile_items WHERE user_id = $1 AND is_active = true ORDER BY display_order ASC',
+            [userId]
+        );
         
         // Log para debug
         logger.debug('Itens encontrados no banco', { 
