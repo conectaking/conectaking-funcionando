@@ -90,15 +90,14 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             return res.status(404).send('<h1>404 - Perfil não configurado</h1>');
         }
         
-        // Query com verificação segura para is_listed (pode não existir em tabelas antigas)
+        // Query: is_listed só afeta digital_form (ocultar do cartão). PIX, Loja, Instagram etc. aparecem sempre se is_active = true.
         let itemsRes;
         try {
-            // Tentar primeiro com is_listed
             itemsRes = await client.query(
                 `SELECT * FROM profile_items 
                 WHERE user_id = $1 
                 AND is_active = true 
-                AND (is_listed IS NULL OR is_listed = true) 
+                AND (item_type <> 'digital_form' OR (is_listed IS NULL OR is_listed = true)) 
                 ORDER BY display_order ASC`, 
                 [userId]
             );
