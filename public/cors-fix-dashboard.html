@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Correção CORS – Upload de banner</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+        h1 { font-size: 1.25rem; }
+        code { background: #eee; padding: 0.2em 0.4em; border-radius: 4px; }
+        pre { background: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 8px; }
+        .url { word-break: break-all; color: #0066cc; }
+        .ok { color: #0a0; }
+    </style>
+</head>
+<body>
+    <h1>Correção do erro “Failed to fetch” ao enviar imagens no banner</h1>
+    <p>Se o dashboard em <code>127.0.0.1:5500</code> mostra <strong>“Failed to fetch”</strong> ou <strong>CORS</strong> ao trocar a imagem do banner, é porque as chamadas estão a ir para <code>conectaking.com.br</code>, que redireciona e o browser bloqueia.</p>
+    <p class="ok"><strong>Solução:</strong> o dashboard deve usar sempre a URL da API abaixo (sem redirect):</p>
+    <p><strong>URL da API a usar no dashboard:</strong><br>
+       <span class="url" id="apiBaseUrl">https://conectaking-api.onrender.com</span></p>
+    <h2>O que fazer no projeto do dashboard</h2>
+    <ol>
+        <li>Abrir o <strong>projeto do dashboard</strong> (onde está <code>dashboard.html</code> e <code>dashboard.js</code>).</li>
+        <li>Procurar onde está definida a base da API, por exemplo:
+            <ul>
+                <li>Variáveis como <code>API_BASE</code>, <code>API_URL</code>, <code>apiUrl</code>, <code>baseURL</code></li>
+                <li>Ou o texto <code>conectaking.com.br</code> / <code>www.conectaking.com.br</code> nas chamadas <code>fetch</code></li>
+            </ul>
+        </li>
+        <li>Substituir por: <code id="apiBaseCode">https://conectaking-api.onrender.com</code></li>
+        <li>Ou incluir no HTML do dashboard (antes dos outros scripts):
+            <pre>&lt;script src="https://conectaking-api.onrender.com/api-config.js"&gt;&lt;/script&gt;</pre>
+            e no JavaScript usar <code>window.CONECTAKING_API_BASE</code> como base das chamadas à API.
+        </li>
+    </ol>
+    <p><small>Esta página é servida pela API. Guarde a URL acima no seu projeto do dashboard.</small></p>
+    <script>
+        (function() {
+            fetch('/api/public-api-url').then(function(r) { return r.json(); }).then(function(d) {
+                if (d && d.apiBaseUrl) {
+                    document.getElementById('apiBaseUrl').textContent = d.apiBaseUrl;
+                    var el = document.getElementById('apiBaseCode');
+                    if (el) el.textContent = d.apiBaseUrl;
+                }
+            }).catch(function() {});
+        })();
+    </script>
+</body>
+</html>
