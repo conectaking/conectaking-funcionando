@@ -124,29 +124,21 @@
                         </div>
                         <div>
                             <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Logomarca</label>
-                            <div id="logo-area" class="space-y-3">
-                                <!-- Preview: mostra a logo quando houver URL ou após importar -->
-                                <div id="logo-preview-wrap" class="rounded-xl border-2 border-dashed border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-black/40 p-4 flex flex-col items-center justify-center min-h-[120px]" style="display: none;">
-                                    <img id="logo-preview" src="" alt="Logomarca" class="max-h-20 w-auto object-contain mx-auto"/>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Logomarca carregada</p>
-                                    <button type="button" id="btn-remover-logo" class="mt-2 text-xs text-slate-500 hover:text-red-500 transition-colors">Remover</button>
+                            <!-- Área de upload no estilo link personalizado / banner: clique para importar, preview aparece na hora -->
+                            <div id="logo-upload-area" class="rounded-xl border-2 border-dashed border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-black/40 p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-slate-100 dark:hover:bg-black/60 transition-all min-h-[140px] flex flex-col items-center justify-center">
+                                <input type="file" id="file-logo" accept="image/png,image/jpeg,image/jpg,image/webp" class="hidden"/>
+                                <img id="logo-preview" src="" alt="Logomarca" class="max-h-24 w-auto object-contain mx-auto rounded-lg" style="display: none;"/>
+                                <div id="logo-upload-text" class="logo-upload-placeholder">
+                                    <span class="material-icons-outlined text-4xl text-primary mb-2 block">cloud_upload</span>
+                                    <p class="text-sm font-medium text-slate-700 dark:text-slate-200 m-0">Clique para importar a logomarca</p>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400 mt-1 block">PNG ou JPG (máx. 5MB)</span>
                                 </div>
-                                <!-- Botão principal: Importar arquivo -->
-                                <div id="logo-import-area" class="flex flex-wrap items-center gap-2">
-                                    <button type="button" id="btn-importar-logo" class="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-black font-semibold hover:opacity-90 transition-opacity shrink-0">
-                                        <span class="material-icons-outlined text-lg">upload_file</span>
-                                        Importar logomarca
-                                    </button>
-                                    <input type="file" id="file-logo" accept="image/*" class="hidden"/>
-                                    <span class="text-xs text-slate-500 dark:text-slate-400">ou</span>
-                                    <button type="button" id="btn-mostrar-url" class="text-xs text-primary hover:underline">colar URL</button>
-                                </div>
-                                <!-- Campo URL (opcional, oculto por padrão) -->
-                                <div id="logo-url-wrap" class="relative" style="display: none;">
-                                    <span class="material-icons-outlined absolute left-3 top-2.5 text-slate-400 text-sm">link</span>
-                                    <input name="emitente_logo_url" id="input-logo-url" class="w-full bg-slate-50 dark:bg-black border border-slate-200 dark:border-border-dark rounded-lg pl-10 pr-4 py-2.5 text-sm" placeholder="Cole a URL da imagem da logo" type="text"/>
-                                </div>
+                                <p id="logo-status-msg" class="text-xs mt-2 hidden"></p>
+                                <button type="button" id="btn-remover-logo" class="mt-3 px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 text-sm font-medium transition-colors" style="display: none;">
+                                    <span class="material-icons-outlined align-middle text-sm mr-1">delete</span> Remover logo
+                                </button>
                             </div>
+                            <input type="hidden" name="emitente_logo_url" id="input-logo-url" value=""/>
                         </div>
                     </div>
                 </section>
@@ -493,32 +485,42 @@
     });
 
     function atualizarPreviewLogo(url) {
-        var wrap = document.getElementById('logo-preview-wrap');
         var img = document.getElementById('logo-preview');
-        var importArea = document.getElementById('logo-import-area');
+        var text = document.getElementById('logo-upload-text');
+        var btnRemover = document.getElementById('btn-remover-logo');
+        var statusMsg = document.getElementById('logo-status-msg');
         if (url && url.trim()) {
             img.src = url;
-            img.onerror = function() { wrap.style.display = 'none'; importArea.style.display = 'flex'; };
-            wrap.style.display = 'flex';
-            importArea.style.display = 'none';
+            img.style.display = 'block';
+            if (text) text.style.display = 'none';
+            if (btnRemover) btnRemover.style.display = 'inline-flex';
+            if (statusMsg) { statusMsg.classList.add('hidden'); statusMsg.textContent = ''; }
         } else {
-            wrap.style.display = 'none';
-            importArea.style.display = 'flex';
+            img.src = '';
+            img.style.display = 'none';
+            if (text) text.style.display = 'block';
+            if (btnRemover) btnRemover.style.display = 'none';
+            if (statusMsg) { statusMsg.classList.add('hidden'); statusMsg.textContent = ''; }
         }
     }
-    document.getElementById('btn-importar-logo').onclick = function() { document.getElementById('file-logo').click(); };
+    document.getElementById('logo-upload-area').addEventListener('click', function(e) {
+        if (e.target.id === 'btn-remover-logo' || e.target.closest('#btn-remover-logo')) return;
+        document.getElementById('file-logo').click();
+    });
     document.getElementById('file-logo').onchange = function() {
         var file = this.files && this.files[0];
         if (!file) return;
         var img = document.getElementById('logo-preview');
-        var wrap = document.getElementById('logo-preview-wrap');
-        var importArea = document.getElementById('logo-import-area');
+        var text = document.getElementById('logo-upload-text');
+        var btnRemover = document.getElementById('btn-remover-logo');
+        var statusMsg = document.getElementById('logo-status-msg');
         var urlLocal = URL.createObjectURL(file);
         img.src = urlLocal;
         img.onerror = function() { URL.revokeObjectURL(urlLocal); };
-        wrap.style.display = 'flex';
-        wrap.querySelector('p').textContent = 'Enviando...';
-        importArea.style.display = 'none';
+        img.style.display = 'block';
+        if (text) text.style.display = 'none';
+        if (btnRemover) btnRemover.style.display = 'inline-flex';
+        if (statusMsg) { statusMsg.classList.remove('hidden'); statusMsg.textContent = 'Enviando...'; statusMsg.classList.remove('text-red-500'); statusMsg.classList.add('text-slate-500'); }
         var fd = new FormData();
         fd.append('image', file);
         fetch(API + '/upload-logo', { method: 'POST', body: fd, credentials: 'include', headers: getAuthHeaders() })
@@ -528,32 +530,25 @@
                     URL.revokeObjectURL(urlLocal);
                     document.getElementById('input-logo-url').value = data.data.url;
                     img.src = data.data.url;
-                    wrap.querySelector('p').textContent = 'Logomarca carregada';
-                } else { wrap.querySelector('p').textContent = data.message || 'Falha ao enviar logo.'; }
+                    if (statusMsg) { statusMsg.textContent = 'Logomarca carregada'; statusMsg.classList.add('text-primary'); }
+                } else {
+                    if (statusMsg) { statusMsg.textContent = data.message || 'Falha ao enviar. A logo aparece aqui; salve o documento depois de conectar ao servidor.'; statusMsg.classList.add('text-amber-500'); }
+                    document.getElementById('input-logo-url').value = '';
+                }
             })
             .catch(function(err) {
-                URL.revokeObjectURL(urlLocal);
-                wrap.querySelector('p').textContent = 'Erro. Tente de novo.';
-                alert(err.message || 'Erro ao enviar logo.');
+                if (statusMsg) { statusMsg.textContent = 'Conexão falhou. A logo aparece acima; conecte ao servidor e importe de novo para salvar.'; statusMsg.classList.remove('text-slate-500'); statusMsg.classList.add('text-amber-500'); }
+                document.getElementById('input-logo-url').value = '';
+                alert(err.message || 'Erro ao enviar. A logo já está visível acima.');
             });
         this.value = '';
     };
-    document.getElementById('btn-remover-logo').onclick = function() {
+    document.getElementById('btn-remover-logo').onclick = function(e) {
+        e.stopPropagation();
         document.getElementById('input-logo-url').value = '';
+        document.getElementById('file-logo').value = '';
         atualizarPreviewLogo('');
     };
-    document.getElementById('btn-mostrar-url').onclick = function() {
-        var w = document.getElementById('logo-url-wrap');
-        w.style.display = w.style.display === 'none' ? 'block' : 'none';
-    };
-    document.getElementById('input-logo-url').addEventListener('input', function() {
-        var url = this.value.trim();
-        if (url) atualizarPreviewLogo(url); else document.getElementById('logo-preview-wrap').style.display = 'none';
-    });
-    document.getElementById('input-logo-url').addEventListener('blur', function() {
-        var url = this.value.trim();
-        if (url) atualizarPreviewLogo(url);
-    });
 
     function getFormDoc() {
         var emitente = {
