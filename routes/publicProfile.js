@@ -150,18 +150,14 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         }
         
         // Filtrar e validar itens
+        // NOTA: banner_carousel é tratado como carrossel e incluído (renderizado no EJS como carrossel)
         const validItems = (itemsRes.rows || []).filter(item => {
-            if (item.item_type === 'banner_carousel') {
-                return false;
-            }
-            
             // Para banners, verificar se tem image_url válido (inclui URLs R2 e Cloudflare)
             if (item.item_type === 'banner') {
                 const imgUrl = (item.image_url && typeof item.image_url === 'string') ? item.image_url.trim() : '';
                 const isValidUrl = imgUrl.length > 0 &&
                     !imgUrl.includes('placeholder') &&
                     !imgUrl.startsWith('data:image/svg');
-                // Log detalhado do banner antes de filtrar
                 logger.debug('Banner sendo avaliado', {
                     id: item.id,
                     title: item.title,
@@ -178,20 +174,18 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     });
                     return false;
                 }
-                
-                // Se destination_url é JSON (carrossel antigo), filtrar
+                // Só filtrar banner se destination_url for um JSON de array não vazio (dados de carrossel)
+                // destination_url vazio, null ou '[]' é permitido (banner sem link)
                 if (item.destination_url) {
                     const destUrl = String(item.destination_url).trim();
-                    if (destUrl.startsWith('[') || destUrl === '[]') {
-                        logger.debug('Banner filtrado - destination_url é JSON', {
+                    if (destUrl.startsWith('[') && destUrl.length > 2) {
+                        logger.debug('Banner filtrado - destination_url é JSON de imagens', {
                             id: item.id,
-                            destination_url: destUrl
+                            destination_url: destUrl.substring(0, 50)
                         });
                         return false;
                     }
                 }
-                
-                // Banner válido - incluir
                 logger.debug('✅ Banner válido incluído no cartão público', {
                     id: item.id,
                     title: item.title,
@@ -200,7 +194,6 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     destinationUrl: item.destination_url || 'null'
                 });
             }
-            
             return true;
         });
         

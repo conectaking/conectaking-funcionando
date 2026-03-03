@@ -550,9 +550,9 @@ var hasLocationMap = (items || []).some(function(i){ return i && i.item_type ===
                         <% } %>
 
                     <%# ========================================================== %>
-                    <%# TIPO: CARROSSEL (Múltiplas imagens com slide horizontal) %>
+                    <%# TIPO: CARROSSEL (Múltiplas imagens com slide horizontal) - inclui banner_carousel %>
                     <%# ========================================================== %>
-                    <% } else if (item.item_type === 'carousel') { %>
+                    <% } else if (item.item_type === 'carousel' || item.item_type === 'banner_carousel') { %>
                         <% 
                         // Parsear array de imagens do destination_url
                         let carouselImages = [];
