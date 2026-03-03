@@ -991,6 +991,18 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
                     itemsToDelete = candidateIds.filter(id => !protectedIds.has(id));
                     console.log(`⚠️ [SAVE-ALL] ${protectedIds.size} módulo(s) protegido(s) (${PROTECTED_ITEM_TYPES_SAVE_ALL.join('/')}) NÃO serão deletados.`);
                 }
+                // Evitar exclusão em massa suspeita: se o payload tem poucos itens e vamos deletar vários que NÃO são banner/carousel, não deletar (bug no front).
+                if (itemsToDelete.length > 2) {
+                    const toDeleteRes = await client.query(
+                        'SELECT id, item_type FROM profile_items WHERE id = ANY($1::int[]) AND user_id = $2',
+                        [itemsToDelete, userId]
+                    );
+                    const nonBannerCarousel = toDeleteRes.rows.filter(r => !['banner', 'carousel', 'banner_carousel'].includes((r.item_type || '').toLowerCase()));
+                    if (nonBannerCarousel.length > 0 && (savedItemIds.size <= 6)) {
+                        itemsToDelete = itemsToDelete.filter(id => !nonBannerCarousel.some(r => r.id === id));
+                        console.log(`⚠️ [SAVE-ALL] Payload com poucos itens (${savedItemIds.size}); ${nonBannerCarousel.length} módulo(s) de botão NÃO deletados para não sumir do cartão público.`);
+                    }
+                }
             }
             if (itemsToDelete.length > 0) {
                 console.log(`🗑️ [SAVE-ALL] Deletando ${itemsToDelete.length} itens que não foram incluídos no save-all...`);
