@@ -1,0 +1,13 @@
+# Render Blueprint (opcional). Use se criar serviço via "Blueprint" ou como referência.
+# Se o repositório no GitHub tiver a pasta do app dentro de um subdiretório,
+# descomente e ajuste "rootDir" para o nome dessa pasta (ex.: conectaking-funcionando).
+services:
+  - type: web
+    name: conectaking-api
+    runtime: node
+    # rootDir: conectaking-funcionando   # Só se package.json estiver numa subpasta do repo
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
