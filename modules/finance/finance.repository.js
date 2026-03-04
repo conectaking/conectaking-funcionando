@@ -1217,7 +1217,9 @@ class FinanceRepository {
     }
 
     /**
-     * Soma receitas de trabajos (king sync) - usada em saldo acumulado e meta
+     * Soma receitas de trabajos (king sync) - APENAS o que foi efetivamente recebido
+     * Usado em saldo acumulado, patrimônio e meta.
+     * valor = total do trabalho; valor_recebido = o que já entrou. Não incluir o que falta receber.
      */
     async getIncomeFromTrabalhos(userId, profileId, existingClient = null) {
         const client = existingClient || await db.pool.connect();
@@ -1233,7 +1235,7 @@ class FinanceRepository {
                 const data = syncResult.rows[0].data;
                 const trabalhos = Array.isArray(data.trabalhos) ? data.trabalhos : [];
                 trabalhos.forEach(t => {
-                    const v = parseFloat(t.valor) || parseFloat(t.valor_recebido) || 0;
+                    const v = parseFloat(t.valor_recebido) || 0;
                     if (v > 0) total += v;
                 });
             }

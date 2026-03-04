@@ -61,5 +61,6 @@ O frontend do dashboard financeiro está em outro repositório. Ajustes recomend
 
 ## Estrutura de trabalhos (king sync)
 
-Para que os valores de trabalhos entrem na meta e no saldo, cada item em `data.trabalhos` deve ter:
-- `valor` ou `valor_recebido` (número) – valor recebido
+Para Meta, Patrimônio e Saldo: conta-se **apenas** `valor_recebido` (o que já entrou).
+- `valor` – valor total do trabalho (não entra na meta/patrimônio)
+- `valor_recebido` – valor efetivamente recebido (só isso conta)
