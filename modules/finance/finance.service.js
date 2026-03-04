@@ -419,6 +419,8 @@ class FinanceService {
         
         // Patrimônio = receitas pagas - despesas pagas (stats.accountBalance já vem correto do repositório)
         const finalAccountBalance = stats.accountBalance ?? 0;
+        // Usar patrimônio correto em totalBalance também (frontend pode exibir em "Saldo Total" ou "Patrimônio")
+        const patrimony = finalAccountBalance;
 
         // Buscar orçamentos do mês atual do perfil
         const now = new Date();
@@ -460,8 +462,9 @@ class FinanceService {
 
         return {
             ...stats,
-            accountBalance: finalAccountBalance, // Patrimônio = receitas pagas - despesas pagas
-            totalBalance,
+            accountBalance: patrimony, // Patrimônio = receitas pagas - despesas pagas
+            totalBalance: patrimony,   // Mesmo valor: dinheiro em caixa (não soma de contas dessincronizadas)
+            totalBalanceFromAccounts: totalBalance, // Soma real das contas (para referência/detalhes)
             budgets: budgetsWithSpent
         };
     }
