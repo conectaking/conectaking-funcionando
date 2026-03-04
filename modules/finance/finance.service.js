@@ -418,9 +418,19 @@ class FinanceService {
         const totalBalance = filteredAccounts.reduce((sum, acc) => sum + parseFloat(acc.current_balance || 0), 0);
         
         // Patrimônio = receitas pagas - despesas pagas (stats.accountBalance já vem correto do repositório)
-        const finalAccountBalance = stats.accountBalance ?? 0;
-        // Usar patrimônio correto em totalBalance também (frontend pode exibir em "Saldo Total" ou "Patrimônio")
-        const patrimony = finalAccountBalance;
+        const patrimony = stats.accountBalance ?? 0;
+
+        // Sincronizar saldos das contas quando soma != patrimônio (corrige initial_balance errado)
+        if (filteredAccounts.length > 0 && Math.abs(totalBalance - patrimony) > 0.01) {
+            try {
+                await repository.updateAccountBalance(filteredAccounts[0].id, userId, patrimony);
+                for (let i = 1; i < filteredAccounts.length; i++) {
+                    await repository.updateAccountBalance(filteredAccounts[i].id, userId, 0);
+                }
+            } catch (e) {
+                logger.warn('Finance: falha ao sincronizar saldos:', e.message);
+            }
+        }
 
         // Buscar orçamentos do mês atual do perfil
         const now = new Date();
