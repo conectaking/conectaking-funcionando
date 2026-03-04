@@ -182,17 +182,16 @@ async function gerarPdfBuffer(documento, colors = null) {
 
     y = Math.min(y, yRight) - 20;
 
-    // Tabela de itens — cabeçalho laranja
+    // Tabela de itens — cabeçalho laranja (apenas valor unitário por linha; total geral fica na caixa abaixo)
     const colDesc = colLeft;
     const colData = colDesc + 155;
-    const colQtd = PAGE_WIDTH - MARGIN - 165;
-    const colUnit = PAGE_WIDTH - MARGIN - 110;
-    const colTotal = PAGE_WIDTH - MARGIN - 55;
+    const colQtd = PAGE_WIDTH - MARGIN - 210;
+    const colUnit = PAGE_WIDTH - MARGIN - 115;
 
     page.drawRectangle({
         x: colDesc - 4,
         y: y - LINE_HEIGHT - 6,
-        width: colTotal - colDesc + 12,
+        width: colUnit - colDesc + 60,
         height: LINE_HEIGHT + 10,
         color: cOrange()
     });
@@ -200,7 +199,6 @@ async function gerarPdfBuffer(documento, colors = null) {
     page.drawText('Data', { x: colData, y: y - 14, size: FONT_SIZE, font: boldFont, color: cWhite() });
     page.drawText('Qtd', { x: colQtd, y: y - 14, size: FONT_SIZE, font: boldFont, color: cWhite() });
     page.drawText('Valor unit.', { x: colUnit, y: y - 14, size: FONT_SIZE, font: boldFont, color: cWhite() });
-    page.drawText('Total', { x: colTotal, y: y - 14, size: FONT_SIZE, font: boldFont, color: cWhite() });
     y -= LINE_HEIGHT + 14;
 
     let totalGeral = 0;
@@ -220,7 +218,6 @@ async function gerarPdfBuffer(documento, colors = null) {
         page.drawText(dataStr, { x: colData, y: y - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cText() });
         page.drawText(String(qtd), { x: colQtd, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() });
         page.drawText(formatMoney(valorUnit), { x: colUnit, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() });
-        page.drawText(formatMoney(valor), { x: colTotal, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() });
         y -= LINE_HEIGHT;
         const conteudoPacote = (item.conteudo_pacote || item.detalhes || '').toString().trim();
         if (conteudoPacote) {
@@ -235,9 +232,9 @@ async function gerarPdfBuffer(documento, colors = null) {
     }
 
     y -= 10;
-    // Total em caixa laranja (estilo fatura)
+    // Total geral em caixa laranja (estilo fatura)
     const totalW = 95;
-    const totalX = colTotal - totalW + 8;
+    const totalX = colUnit - totalW + 8;
     page.drawRectangle({
         x: totalX - 4,
         y: y - LINE_HEIGHT - 4,
