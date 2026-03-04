@@ -17,9 +17,19 @@ const FONT_SIZE = 10;
 const FONT_SIZE_TITLE = 18;
 const FONT_SIZE_SMALL = 9;
 
-// Cores estilo fatura (azul + laranja + branco)
-const RGB_BLUE = { r: 30 / 255, g: 58 / 255, b: 95 / 255 };      // #1e3a5f
-const RGB_ORANGE = { r: 230 / 255, g: 126 / 255, b: 34 / 255 };   // #e67e22
+// Cores estilo fatura (azul + laranja + branco) - padrão
+function hexToRgb(hex) {
+    if (!hex || typeof hex !== 'string') return null;
+    const h = hex.replace(/^#/, '');
+    if (!/^[0-9A-Fa-f]{6}$/.test(h)) return null;
+    return {
+        r: parseInt(h.slice(0, 2), 16) / 255,
+        g: parseInt(h.slice(2, 4), 16) / 255,
+        b: parseInt(h.slice(4, 6), 16) / 255
+    };
+}
+const DEFAULT_BLUE = '#1e3a5f';
+const DEFAULT_ORANGE = '#e67e22';
 const RGB_WHITE = { r: 1, g: 1, b: 1 };
 const RGB_TEXT = { r: 0.2, g: 0.2, b: 0.25 };
 const RGB_MUTED = { r: 0.45, g: 0.45, b: 0.5 };
@@ -49,7 +59,7 @@ async function fetchImage(url) {
     return { type, bytes };
 }
 
-function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente) {
+function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlue, rgbOrange) {
     const tipoLabel = (tipo || 'recibo').toLowerCase() === 'orcamento' ? 'ORÇAMENTO' : 'RECIBO';
     // Faixa azul no topo
     page.drawRectangle({
@@ -57,7 +67,7 @@ function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente) {
         y: PAGE_HEIGHT - HEADER_HEIGHT,
         width: PAGE_WIDTH,
         height: HEADER_HEIGHT,
-        color: rgb(RGB_BLUE.r, RGB_BLUE.g, RGB_BLUE.b)
+        color: rgb(rgbBlue.r, rgbBlue.g, rgbBlue.b)
     });
     // Faixa laranja fina abaixo do azul
     page.drawRectangle({
@@ -65,7 +75,7 @@ function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente) {
         y: PAGE_HEIGHT - HEADER_HEIGHT - ORANGE_BAR_HEIGHT,
         width: PAGE_WIDTH,
         height: ORANGE_BAR_HEIGHT,
-        color: rgb(RGB_ORANGE.r, RGB_ORANGE.g, RGB_ORANGE.b)
+        color: rgb(rgbOrange.r, rgbOrange.g, rgbOrange.b)
     });
     // Título e número à direita (sobre o azul)
     const tituloNum = `${tipoLabel}  ${numero}`.trim();
@@ -89,7 +99,10 @@ function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente) {
     return PAGE_HEIGHT - HEADER_HEIGHT - ORANGE_BAR_HEIGHT - 16;
 }
 
-async function gerarPdfBuffer(documento) {
+async function gerarPdfBuffer(documento, colors = null) {
+    const rgbBlue = hexToRgb(colors && colors.headerColor ? '#' + colors.headerColor : DEFAULT_BLUE) || hexToRgb(DEFAULT_BLUE);
+    const rgbOrange = hexToRgb(colors && colors.accentColor ? '#' + colors.accentColor : DEFAULT_ORANGE) || hexToRgb(DEFAULT_ORANGE);
+
     const pdfDoc = await PDFDocument.create();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -104,10 +117,10 @@ async function gerarPdfBuffer(documento) {
     const cText = () => rgb(RGB_TEXT.r, RGB_TEXT.g, RGB_TEXT.b);
     const cMuted = () => rgb(RGB_MUTED.r, RGB_MUTED.g, RGB_MUTED.b);
     const cWhite = () => rgb(RGB_WHITE.r, RGB_WHITE.g, RGB_WHITE.b);
-    const cBlue = () => rgb(RGB_BLUE.r, RGB_BLUE.g, RGB_BLUE.b);
-    const cOrange = () => rgb(RGB_ORANGE.r, RGB_ORANGE.g, RGB_ORANGE.b);
+    const cBlue = () => rgb(rgbBlue.r, rgbBlue.g, rgbBlue.b);
+    const cOrange = () => rgb(rgbOrange.r, rgbOrange.g, rgbOrange.b);
 
-    let y = await drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente);
+    let y = await drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlue, rgbOrange);
 
     // Logo no topo esquerdo (sobre a faixa azul, desenhada depois do header; colocamos logo abaixo da faixa laranja)
     if (emitente.logo_url) {
@@ -158,7 +171,7 @@ async function gerarPdfBuffer(documento) {
         y: y - LINE_HEIGHT - 6,
         width: colTotal - colDesc + 12,
         height: LINE_HEIGHT + 10,
-        color: rgb(RGB_ORANGE.r, RGB_ORANGE.g, RGB_ORANGE.b)
+        color: cOrange()
     });
     page.drawText('Descrição', { x: colDesc, y: y - 14, size: FONT_SIZE, font: boldFont, color: cWhite() });
     page.drawText('Data', { x: colData, y: y - 14, size: FONT_SIZE, font: boldFont, color: cWhite() });
@@ -206,7 +219,7 @@ async function gerarPdfBuffer(documento) {
         y: y - LINE_HEIGHT - 4,
         width: totalW + 8,
         height: LINE_HEIGHT + 10,
-        color: rgb(RGB_ORANGE.r, RGB_ORANGE.g, RGB_ORANGE.b)
+        color: cOrange()
     });
     page.drawText(`TOTAL: ${formatMoney(totalGeral)}`, { x: totalX, y: y - 12, size: FONT_SIZE, font: boldFont, color: cWhite() });
     y -= LINE_HEIGHT + 18;

@@ -105,10 +105,10 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
     return documentosRepository.update(id, userId, { itens_json: itens, anexos_json: anexos });
 }
 
-async function gerarPdf(id, userId) {
+async function gerarPdf(id, userId, colors = null) {
     const doc = await documentosRepository.getById(id, userId);
     if (!doc) return null;
-    return gerarPdfBuffer(doc);
+    return gerarPdfBuffer(doc, colors);
 }
 
 module.exports = {

@@ -190,7 +190,14 @@ async function getPdf(req, res) {
     try {
         const id = parseInt(req.params.id, 10);
         if (!id) return responseFormatter.error(res, 'ID inválido', 400);
-        const buffer = await documentosService.gerarPdf(id, req.user.userId);
+        const colors = {};
+        const h = (req.query.headerColor || '').toString().trim().replace(/^#/, '');
+        const a = (req.query.accentColor || '').toString().trim().replace(/^#/, '');
+        const b = (req.query.bgColor || '').toString().trim().replace(/^#/, '');
+        if (/^[0-9A-Fa-f]{6}$/.test(h)) colors.headerColor = h;
+        if (/^[0-9A-Fa-f]{6}$/.test(a)) colors.accentColor = a;
+        if (/^[0-9A-Fa-f]{6}$/.test(b)) colors.bgColor = b;
+        const buffer = await documentosService.gerarPdf(id, req.user.userId, Object.keys(colors).length ? colors : null);
         if (!buffer) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const doc = await documentosService.getOne(id, req.user.userId);
         const tipo = (doc && doc.tipo) || 'documento';
