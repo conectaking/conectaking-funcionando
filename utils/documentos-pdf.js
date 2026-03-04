@@ -59,7 +59,7 @@ async function fetchImage(url) {
     return { type, bytes };
 }
 
-function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlue, rgbOrange) {
+function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlue, rgbOrange, logoImg) {
     const tipoLabel = (tipo || 'recibo').toLowerCase() === 'orcamento' ? 'ORÇAMENTO' : 'RECIBO';
     // Faixa azul no topo
     page.drawRectangle({
@@ -69,6 +69,13 @@ function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlu
         height: HEADER_HEIGHT,
         color: rgb(rgbBlue.r, rgbBlue.g, rgbBlue.b)
     });
+    // Logo dentro do cabeçalho azul (esquerda) — igual ao preview
+    if (logoImg && logoImg.img) {
+        const w = logoImg.width;
+        const h = logoImg.height;
+        const logoY = PAGE_HEIGHT - HEADER_HEIGHT + (HEADER_HEIGHT - h) / 2;
+        page.drawImage(logoImg.img, { x: MARGIN, y: logoY, width: w, height: h });
+    }
     // Faixa laranja fina abaixo do azul
     page.drawRectangle({
         x: 0,
@@ -120,22 +127,19 @@ async function gerarPdfBuffer(documento, colors = null) {
     const cBlue = () => rgb(rgbBlue.r, rgbBlue.g, rgbBlue.b);
     const cOrange = () => rgb(rgbOrange.r, rgbOrange.g, rgbOrange.b);
 
-    let y = await drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlue, rgbOrange);
-
-    // Logo no topo esquerdo (sobre a faixa azul, desenhada depois do header; colocamos logo abaixo da faixa laranja)
+    // Carregar logo antes do header (para desenhar dentro da barra azul)
+    let logoImg = null;
     if (emitente.logo_url) {
         try {
             const { type, bytes } = await fetchImage(emitente.logo_url);
             const img = type === 'png' ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
             const scale = Math.min(100 / img.width, 44 / img.height, 1);
-            const w = img.width * scale;
-            const h = img.height * scale;
-            page.drawImage(img, { x: MARGIN, y: y - h, width: w, height: h });
-            y -= h + 14;
+            logoImg = { img, width: img.width * scale, height: img.height * scale };
         } catch (e) {
             logger.warn('documentos-pdf: logo não carregada', { url: emitente.logo_url, message: e.message });
         }
     }
+    let y = drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlue, rgbOrange, logoImg);
 
     // Duas colunas: Faturado para (cliente) | Emitido por (emitente) — mesma altura
     const colLeft = MARGIN;
