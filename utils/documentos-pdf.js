@@ -33,6 +33,19 @@ const DEFAULT_ORANGE = '#e67e22';
 const RGB_WHITE = { r: 1, g: 1, b: 1 };
 const RGB_TEXT = { r: 0.2, g: 0.2, b: 0.25 };
 const RGB_MUTED = { r: 0.45, g: 0.45, b: 0.5 };
+const RGB_LIGHT_TEXT = { r: 0.9, g: 0.9, b: 0.92 };
+const RGB_LIGHT_MUTED = { r: 0.65, g: 0.65, b: 0.7 };
+
+function isDarkBg(hex) {
+    if (!hex || typeof hex !== 'string') return false;
+    const h = hex.replace(/^#/, '');
+    if (!/^[0-9A-Fa-f]{6}$/.test(h)) return false;
+    const r = parseInt(h.slice(0, 2), 16) / 255;
+    const g = parseInt(h.slice(2, 4), 16) / 255;
+    const b = parseInt(h.slice(4, 6), 16) / 255;
+    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+    return luminance < 0.5;
+}
 
 const HEADER_HEIGHT = 72;
 const ORANGE_BAR_HEIGHT = 6;
@@ -109,11 +122,17 @@ function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlu
 async function gerarPdfBuffer(documento, colors = null) {
     const rgbBlue = hexToRgb(colors && colors.headerColor ? '#' + colors.headerColor : DEFAULT_BLUE) || hexToRgb(DEFAULT_BLUE);
     const rgbOrange = hexToRgb(colors && colors.accentColor ? '#' + colors.accentColor : DEFAULT_ORANGE) || hexToRgb(DEFAULT_ORANGE);
+    const bgHex = colors && colors.bgColor ? '#' + colors.bgColor.replace('#', '') : '#ffffff';
+    const darkMode = isDarkBg(bgHex);
+    const rgbBg = hexToRgb(bgHex) || { r: 1, g: 1, b: 1 };
 
     const pdfDoc = await PDFDocument.create();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     let page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    if (darkMode) {
+        page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
+    }
     const emitente = documento.emitente_json || {};
     const cliente = documento.cliente_json || {};
     const itens = Array.isArray(documento.itens_json) ? documento.itens_json : [];
@@ -121,8 +140,8 @@ async function gerarPdfBuffer(documento, colors = null) {
     const tipo = (documento.tipo || 'recibo').toLowerCase();
     const numero = documento.numero_sequencial != null ? `#${documento.numero_sequencial}` : (documento.id ? `#${documento.id}` : '');
 
-    const cText = () => rgb(RGB_TEXT.r, RGB_TEXT.g, RGB_TEXT.b);
-    const cMuted = () => rgb(RGB_MUTED.r, RGB_MUTED.g, RGB_MUTED.b);
+    const cText = () => darkMode ? rgb(RGB_LIGHT_TEXT.r, RGB_LIGHT_TEXT.g, RGB_LIGHT_TEXT.b) : rgb(RGB_TEXT.r, RGB_TEXT.g, RGB_TEXT.b);
+    const cMuted = () => darkMode ? rgb(RGB_LIGHT_MUTED.r, RGB_LIGHT_MUTED.g, RGB_LIGHT_MUTED.b) : rgb(RGB_MUTED.r, RGB_MUTED.g, RGB_MUTED.b);
     const cWhite = () => rgb(RGB_WHITE.r, RGB_WHITE.g, RGB_WHITE.b);
     const cBlue = () => rgb(rgbBlue.r, rgbBlue.g, rgbBlue.b);
     const cOrange = () => rgb(rgbOrange.r, rgbOrange.g, rgbOrange.b);
@@ -188,6 +207,7 @@ async function gerarPdfBuffer(documento, colors = null) {
     for (const item of itens) {
         if (y < MARGIN + LINE_HEIGHT) {
             page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+            if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
             y = PAGE_HEIGHT - MARGIN;
         }
         const descricao = (item.descricao || '-').slice(0, 38);
@@ -206,7 +226,7 @@ async function gerarPdfBuffer(documento, colors = null) {
         if (conteudoPacote) {
             const linhas = conteudoPacote.split(/\n/);
             for (const linha of linhas) {
-                if (y < MARGIN + 10) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); y = PAGE_HEIGHT - MARGIN; }
+                if (y < MARGIN + 10) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) }); y = PAGE_HEIGHT - MARGIN; }
                 page.drawText(('  • ' + linha).slice(0, 100), { x: colDesc, y: y - 9, size: FONT_SIZE_SMALL, font, color: cMuted() });
                 y -= 10;
             }
@@ -232,13 +252,14 @@ async function gerarPdfBuffer(documento, colors = null) {
         if (!text || !String(text).trim()) return;
         if (y < MARGIN + 30) {
             page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+            if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
             y = PAGE_HEIGHT - MARGIN;
         }
         page.drawText(title, { x: MARGIN, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cBlue() });
         y -= LINE_HEIGHT;
         const lines = String(text).trim().split(/\n/);
         for (const line of lines) {
-            if (y < MARGIN + 12) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); y = PAGE_HEIGHT - MARGIN; }
+            if (y < MARGIN + 12) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) }); y = PAGE_HEIGHT - MARGIN; }
             page.drawText(line.slice(0, 110), { x: MARGIN, y: y - FONT_SIZE_SMALL, size: FONT_SIZE_SMALL, font, color: cText() });
             y -= 12;
         }
@@ -253,7 +274,7 @@ async function gerarPdfBuffer(documento, colors = null) {
     }
 
     if (documento.data_documento || (documento.validade_ate && tipo === 'orcamento')) {
-        if (y < MARGIN + 20) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); y = PAGE_HEIGHT - MARGIN; }
+        if (y < MARGIN + 20) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) }); y = PAGE_HEIGHT - MARGIN; }
         if (documento.data_documento) {
             page.drawText(`Data: ${formatDate(documento.data_documento)}`, { x: MARGIN, y: y - FONT_SIZE_SMALL, size: FONT_SIZE_SMALL, font, color: cMuted() });
             y -= 12;
@@ -268,6 +289,7 @@ async function gerarPdfBuffer(documento, colors = null) {
     // Rodapé: Obrigado pela preferência
     if (y < MARGIN + 40) {
         page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+        if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
         y = PAGE_HEIGHT - MARGIN;
     }
     page.drawText('Obrigado pela preferência.', { x: MARGIN, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cBlue() });
@@ -291,6 +313,7 @@ async function gerarPdfBuffer(documento, colors = null) {
                 }
                 if (y - h - LINE_HEIGHT < MARGIN) {
                     page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                    if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
                     y = PAGE_HEIGHT - MARGIN;
                 }
                 const caption = (anexo.descricao || `Comprovante - ${anexo.tipo_categoria || ''}`).slice(0, 70);
