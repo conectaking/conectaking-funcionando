@@ -599,23 +599,13 @@ class FinanceRepository {
             const accountBalanceFromAccounts = parseFloat(accountBalanceResult.rows[0]?.total || 0);
             const accountBalanceFromTransactions = totalIncomePaid - totalExpensePaid;
             
-            // Patrimônio Líquido Total = Saldo das contas (que já inclui saldo inicial + transações)
-            // OU se não houver contas, usar o cálculo por transações acumuladas
-            // O saldo das contas já é atualizado pelas transações, então usar ele é mais preciso
-            let accountBalanceAccumulated;
-            if (hasAccounts) {
-                // Se há contas, usar o saldo atual das contas (já inclui saldo inicial + todas as transações)
-                accountBalanceAccumulated = accountBalanceFromAccounts;
-            } else {
-                // Se não há contas, calcular apenas pelas transações
-                accountBalanceAccumulated = totalIncomeAccumulated - totalExpenseAccumulated;
-            }
+            // PATRIMÔNIO (DINHEIRO EM CAIXA) = receitas pagas - despesas pagas (sempre)
+            // Usa transações acumuladas + recibos/trabalhos. Ao pagar, desconta; ao receber, soma.
+            // Não usa saldo das contas pois pode estar dessincronizado (ex: initial_balance errado, transações sem account_id).
+            const accountBalanceAccumulated = totalIncomeAccumulated - totalExpenseAccumulated;
             
             // Para o saldo do mês, usar transações do período
-            let accountBalance = accountBalanceFromTransactions;
-            if (hasAccounts && accountBalanceFromAccounts > accountBalanceFromTransactions) {
-                accountBalance = accountBalanceFromAccounts;
-            }
+            const accountBalance = accountBalanceFromTransactions;
 
             // Calcular variação em relação ao mês anterior
             const currentDate = new Date(dateFrom);

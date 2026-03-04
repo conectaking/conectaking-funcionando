@@ -410,16 +410,15 @@ class FinanceService {
     async getDashboardStats(userId, dateFrom, dateTo, profileId = null) {
         const stats = await repository.getDashboardStats(userId, dateFrom, dateTo, profileId);
 
-        // Buscar saldo total de todas as contas do perfil
+        // Buscar saldo total de todas as contas do perfil (para exibição por conta)
         const accounts = await repository.findAccountsByUserId(userId);
         const filteredAccounts = profileId 
             ? accounts.filter(acc => acc.profile_id === profileId)
             : accounts.filter(acc => !acc.profile_id || acc.profile_id === null);
         const totalBalance = filteredAccounts.reduce((sum, acc) => sum + parseFloat(acc.current_balance || 0), 0);
         
-        // O accountBalance do stats já inclui transações acumuladas, mas precisa incluir também o saldo das contas
-        // Se houver contas com saldo maior que o calculado por transações, usar o maior valor
-        const finalAccountBalance = Math.max(stats.accountBalance || 0, totalBalance);
+        // Patrimônio = receitas pagas - despesas pagas (stats.accountBalance já vem correto do repositório)
+        const finalAccountBalance = stats.accountBalance ?? 0;
 
         // Buscar orçamentos do mês atual do perfil
         const now = new Date();
@@ -461,7 +460,7 @@ class FinanceService {
 
         return {
             ...stats,
-            accountBalance: finalAccountBalance, // Usar o maior valor entre transações e saldo das contas
+            accountBalance: finalAccountBalance, // Patrimônio = receitas pagas - despesas pagas
             totalBalance,
             budgets: budgetsWithSpent
         };
