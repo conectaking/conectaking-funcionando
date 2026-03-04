@@ -567,11 +567,15 @@ class FinanceRepository {
                 params
             );
 
-            const totalIncomePaid = parseFloat(incomePaidResult.rows[0]?.total || 0);
+            let totalIncomePaid = parseFloat(incomePaidResult.rows[0]?.total || 0);
             const totalIncomePending = parseFloat(incomePendingResult.rows[0]?.total || 0);
-            const totalExpensePaid = parseFloat(expensePaidResult.rows[0]?.total || 0);
+            let totalExpensePaid = parseFloat(expensePaidResult.rows[0]?.total || 0);
             const totalExpensePending = parseFloat(expensePendingResult.rows[0]?.total || 0);
             const totalExpensePendingPreviousMonths = parseFloat(expensePendingPreviousResult.rows[0]?.total || 0);
+
+            // Incluir receitas de recibos no período (trabalhos vão só para acumulado e meta)
+            const incomeFromRecibos = await this.getIncomeFromRecibos(userId, dateFrom, dateTo, client);
+            totalIncomePaid += incomeFromRecibos;
             
             // Calcular saldo disponível ACUMULADO (todas as transações pagas, sem filtro de data)
             const accumulatedProfileFilter = profileId != null ? 'AND t.profile_id = $2' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
@@ -586,8 +590,10 @@ class FinanceRepository {
                 accumulatedParams
             );
             
-            const totalIncomeAccumulated = parseFloat(accountBalanceAccumulatedResult.rows[0]?.total_income || 0);
+            let totalIncomeAccumulated = parseFloat(accountBalanceAccumulatedResult.rows[0]?.total_income || 0);
             const totalExpenseAccumulated = parseFloat(accountBalanceAccumulatedResult.rows[0]?.total_expense || 0);
+            const incomeExtrasAccumulated = await this.getIncomeFromRecibosAndTrabalhos(userId, null, null, profileId, client);
+            totalIncomeAccumulated += incomeExtrasAccumulated;
             
             // Calcular saldo disponível do mês (apenas do período filtrado)
             const accountBalanceFromAccounts = parseFloat(accountBalanceResult.rows[0]?.total || 0);
@@ -648,17 +654,136 @@ class FinanceRepository {
             const totalIncomeAll = totalIncomePaid + totalIncomePending;
             const totalExpenseAll = totalExpensePaid + totalExpensePending;
 
+            // Estatísticas gerais: total de transações, receitas e despesas no período
+            const statsCountResult = await client.query(
+                `SELECT 
+                    COUNT(*) FILTER (WHERE t.type = 'INCOME') as receitas_count,
+                    COUNT(*) FILTER (WHERE t.type = 'EXPENSE') as despesas_count,
+                    COUNT(*) as total_count
+                 FROM finance_transactions t
+                 WHERE t.user_id = $1 AND t.transaction_date BETWEEN $2::date AND $3::date ${profileFilter}`,
+                params
+            );
+            const receitasCount = parseInt(statsCountResult.rows[0]?.receitas_count || 0);
+            const despesasCount = parseInt(statsCountResult.rows[0]?.despesas_count || 0);
+            const totalTransactions = parseInt(statsCountResult.rows[0]?.total_count || 0);
+
+            // Evolução mensal: valores por mês (últimos 14 meses para cobrir abr/2025 a mai/2026)
+            const monthsForEvolution = 14;
+            const evolutionFrom = new Date(dateTo);
+            evolutionFrom.setMonth(evolutionFrom.getMonth() - monthsForEvolution);
+            const evolutionFromStr = `${evolutionFrom.getFullYear()}-${String(evolutionFrom.getMonth() + 1).padStart(2, '0')}-01`;
+            const evolutionParams = profileId != null ? [userId, profileId, evolutionFromStr, dateTo] : [userId, evolutionFromStr, dateTo];
+            const evolutionFilter = profileId != null ? 'AND t.profile_id = $2' : 'AND (t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))';
+            const evolutionResult = await client.query(
+                `SELECT 
+                    DATE_TRUNC('month', t.transaction_date)::date as month_date,
+                    COALESCE(SUM(CASE WHEN t.type = 'INCOME' AND t.status = 'PAID' THEN t.amount ELSE 0 END), 0) as income_paid,
+                    COALESCE(SUM(CASE WHEN t.type = 'INCOME' AND t.status = 'PENDING' THEN t.amount ELSE 0 END), 0) as income_pending,
+                    COALESCE(SUM(CASE WHEN t.type = 'EXPENSE' AND t.status = 'PAID' THEN t.amount ELSE 0 END), 0) as expense_paid,
+                    COALESCE(SUM(CASE WHEN t.type = 'EXPENSE' AND t.status = 'PENDING' THEN t.amount ELSE 0 END), 0) as expense_pending
+                 FROM finance_transactions t
+                 WHERE t.user_id = $1 ${evolutionFilter}
+                 AND t.transaction_date BETWEEN ${profileId ? '$3' : '$2'}::date AND ${profileId ? '$4' : '$3'}::date
+                 GROUP BY DATE_TRUNC('month', t.transaction_date)
+                 ORDER BY month_date ASC`,
+                evolutionParams
+            );
+            const monthNames = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+            const evolutionByMonth = {};
+            evolutionResult.rows.forEach(r => {
+                const d = new Date(r.month_date);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const income = parseFloat(r.income_paid || 0) + parseFloat(r.income_pending || 0);
+                const expense = parseFloat(r.expense_paid || 0) + parseFloat(r.expense_pending || 0);
+                evolutionByMonth[key] = {
+                    month: d.getMonth() + 1,
+                    year: d.getFullYear(),
+                    monthLabel: `${monthNames[d.getMonth()]} de ${d.getFullYear()}`,
+                    income,
+                    expense,
+                    balance: income - expense
+                };
+            });
+            // Incluir recibos por mês na evolução
+            try {
+                const docEvolutionResult = await client.query(
+                    `SELECT DATE_TRUNC('month', data_documento)::date as month_date, itens_json
+                     FROM documentos WHERE user_id = $1 AND tipo = 'recibo' AND data_documento IS NOT NULL
+                     AND data_documento BETWEEN $2::date AND $3::date`,
+                    [userId, evolutionFromStr, dateTo]
+                );
+                docEvolutionResult.rows.forEach(row => {
+                    const d = new Date(row.month_date);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    let sum = 0;
+                    const itens = Array.isArray(row.itens_json) ? row.itens_json : [];
+                    itens.forEach(item => {
+                        const v = parseFloat(item.valor) || (parseFloat(item.quantidade || 1) * parseFloat(item.valor_unitario || 0));
+                        if (v > 0) sum += v;
+                    });
+                    if (evolutionByMonth[key]) {
+                        evolutionByMonth[key].income += sum;
+                        evolutionByMonth[key].balance += sum;
+                    } else {
+                        evolutionByMonth[key] = {
+                            month: d.getMonth() + 1,
+                            year: d.getFullYear(),
+                            monthLabel: `${monthNames[d.getMonth()]} de ${d.getFullYear()}`,
+                            income: sum,
+                            expense: 0,
+                            balance: sum
+                        };
+                    }
+                });
+            } catch (e) {
+                if (e.code !== '42P01') logger.warn('getDashboardStats documentos evolução:', e.message);
+            }
+            // Preencher meses sem transações
+            const evolucaoMensal = [];
+            for (let i = 0; i < monthsForEvolution; i++) {
+                const d = new Date(evolutionFrom);
+                d.setMonth(d.getMonth() + i);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const data = evolutionByMonth[key] || {
+                    month: d.getMonth() + 1,
+                    year: d.getFullYear(),
+                    monthLabel: `${monthNames[d.getMonth()]} de ${d.getFullYear()}`,
+                    income: 0,
+                    expense: 0,
+                    balance: 0
+                };
+                evolucaoMensal.push(data);
+            }
+
+            // Média mensal a partir da evolução (inclui transações + recibos)
+            const n = evolucaoMensal.length || 1;
+            const mediaReceitas = evolucaoMensal.reduce((s, m) => s + (m.income || 0), 0) / n;
+            const mediaDespesas = evolucaoMensal.reduce((s, m) => s + (m.expense || 0), 0) / n;
+
             return {
                 totalIncome: totalIncomeAll,
                 totalExpense: totalExpenseAll,
+                totalIncomePaid,
+                totalExpensePaid,
+                totalRecebido: totalIncomePaid,
+                totalPago: totalExpensePaid,
                 pendingExpense: totalExpensePending,
                 pendingExpensePreviousMonths: totalExpensePendingPreviousMonths,
                 pendingIncome: totalIncomePending,
-                accountBalance: accountBalanceAccumulated, // Saldo disponível acumulado (permanente)
-                monthlyBalance: totalIncomeAll - totalExpenseAll, // Saldo total do mês (todas as receitas - todas as despesas)
+                pendenciasReceber: totalIncomePending,
+                pendenciasPagar: totalExpensePending + totalExpensePendingPreviousMonths,
+                accountBalance: accountBalanceAccumulated,
+                saldoDisponivel: accountBalanceAccumulated,
+                monthlyBalance: totalIncomeAll - totalExpenseAll,
                 netProfit: totalIncomePaid - totalExpensePaid,
-                balanceVariation: balanceVariation, // Variação percentual em relação ao mês anterior
-                topCategories: topCategoriesResult.rows
+                balanceVariation,
+                topCategories: topCategoriesResult.rows,
+                totalTransactions,
+                receitasCount,
+                despesasCount,
+                evolucaoMensal,
+                mediaMensal12: { mediaReceitas, mediaDespesas }
             };
         } finally {
             client.release();
@@ -1045,6 +1170,7 @@ class FinanceRepository {
 
     /**
      * Soma de todas as receitas (INCOME PAID) até hoje - para progresso das metas
+     * Inclui receitas de finance_transactions + recibos (documentos) + trabalhos (king sync)
      */
     async getTotalIncomePaidUntilToday(userId, profileId = null) {
         const client = await db.pool.connect();
@@ -1060,10 +1186,83 @@ class FinanceRepository {
                  AND t.transaction_date <= CURRENT_DATE ${profileFilter}`,
                 params
             );
-            return parseFloat(result.rows[0]?.total || 0);
+            const fromTransactions = parseFloat(result.rows[0]?.total || 0);
+            const fromExtras = await this.getIncomeFromRecibosAndTrabalhos(userId, null, new Date().toISOString().split('T')[0], profileId, client);
+            return fromTransactions + fromExtras;
         } finally {
             client.release();
         }
+    }
+
+    /**
+     * Soma receitas de recibos (documentos tipo=recibo) no período
+     */
+    async getIncomeFromRecibos(userId, dateFrom, dateTo, existingClient = null) {
+        const client = existingClient || await db.pool.connect();
+        const shouldRelease = !existingClient;
+        try {
+            let total = 0;
+            const docParams = dateFrom && dateTo ? [userId, dateFrom, dateTo] : [userId];
+            const docWhere = dateFrom && dateTo
+                ? ' AND data_documento BETWEEN $2::date AND $3::date'
+                : ' AND data_documento <= CURRENT_DATE';
+            const docResult = await client.query(
+                `SELECT itens_json FROM documentos WHERE user_id = $1 AND tipo = 'recibo'${docWhere}`,
+                docParams
+            );
+            docResult.rows.forEach(row => {
+                const itens = Array.isArray(row.itens_json) ? row.itens_json : [];
+                itens.forEach(item => {
+                    const v = parseFloat(item.valor) || (parseFloat(item.quantidade || 1) * parseFloat(item.valor_unitario || 0));
+                    if (v > 0) total += v;
+                });
+            });
+            return total;
+        } catch (e) {
+            if (e.code !== '42P01') logger.warn('getIncomeFromRecibos:', e.message);
+            return 0;
+        } finally {
+            if (shouldRelease) client.release();
+        }
+    }
+
+    /**
+     * Soma receitas de trabajos (king sync) - usada em saldo acumulado e meta
+     */
+    async getIncomeFromTrabalhos(userId, profileId, existingClient = null) {
+        const client = existingClient || await db.pool.connect();
+        const shouldRelease = !existingClient;
+        try {
+            let total = 0;
+            const profileKey = (profileId == null || profileId === '') ? '' : String(profileId);
+            const syncResult = await client.query(
+                'SELECT data FROM finance_king_sync WHERE user_id = $1 AND profile_id = $2 LIMIT 1',
+                [userId, profileKey]
+            );
+            if (syncResult.rows.length > 0 && syncResult.rows[0].data) {
+                const data = syncResult.rows[0].data;
+                const trabalhos = Array.isArray(data.trabalhos) ? data.trabalhos : [];
+                trabalhos.forEach(t => {
+                    const v = parseFloat(t.valor) || parseFloat(t.valor_recebido) || 0;
+                    if (v > 0) total += v;
+                });
+            }
+            return total;
+        } catch (e) {
+            if (e.code !== '42P01') logger.warn('getIncomeFromTrabalhos:', e.message);
+            return 0;
+        } finally {
+            if (shouldRelease) client.release();
+        }
+    }
+
+    /**
+     * Soma receitas de recibos + trabalhos (usado para meta e saldo acumulado)
+     */
+    async getIncomeFromRecibosAndTrabalhos(userId, dateFrom, dateTo, profileId, existingClient = null) {
+        const fromRecibos = await this.getIncomeFromRecibos(userId, dateFrom, dateTo, existingClient);
+        const fromTrabalhos = await this.getIncomeFromTrabalhos(userId, profileId, existingClient);
+        return fromRecibos + fromTrabalhos;
     }
 }
 

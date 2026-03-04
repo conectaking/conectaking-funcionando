@@ -254,13 +254,14 @@ class FinanceController {
     async getSummaryReport(req, res) {
         try {
             const userId = req.user.userId;
-            const { dateFrom, dateTo } = req.query;
+            const { dateFrom, dateTo, profile_id } = req.query;
 
             const now = new Date();
             const defaultDateFrom = dateFrom || `${now.getFullYear()}-01-01`;
             const defaultDateTo = dateTo || `${now.getFullYear()}-12-31`;
+            const profileId = parseProfileId(profile_id);
 
-            const stats = await service.getDashboardStats(userId, defaultDateFrom, defaultDateTo);
+            const stats = await service.getDashboardStats(userId, defaultDateFrom, defaultDateTo, profileId);
             return responseFormatter.success(res, stats);
         } catch (error) {
             logger.error('Erro ao obter relatório resumido:', error);
