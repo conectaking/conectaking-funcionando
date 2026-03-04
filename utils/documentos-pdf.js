@@ -8,6 +8,7 @@
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const fetch = require('node-fetch');
 const logger = require('./logger');
+const { QrCodePix } = require('qrcode-pix');
 
 const MARGIN = 40;
 const PAGE_WIDTH = 595;
@@ -281,6 +282,43 @@ async function gerarPdfBuffer(documento, colors = null) {
             y -= 12;
         }
         y -= 8;
+    }
+
+    // Bloco PIX (chave + QR Code)
+    const pixChave = (emitente.pix_chave || '').trim();
+    const pixNome = (emitente.pix_nome || '').trim();
+    const pixCidade = (emitente.pix_cidade || '').trim();
+    if (pixChave && pixNome && pixCidade) {
+        if (y < MARGIN + 100) {
+            page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+            if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
+            y = PAGE_HEIGHT - MARGIN;
+        }
+        page.drawText('Pagamento via PIX', { x: MARGIN, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cBlue() });
+        y -= LINE_HEIGHT + 6;
+        try {
+            const pix = QrCodePix({
+                version: '01',
+                key: pixChave,
+                name: pixNome.substring(0, 25).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+                city: pixCidade.substring(0, 15).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+                value: totalGeral > 0 ? totalGeral : undefined,
+                transactionId: 'DOC' + (documento.id || Date.now()).toString().slice(-8)
+            });
+            const dataUrl = await pix.base64({ width: 120, margin: 1 });
+            const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+            const qrBytes = Buffer.from(base64Data, 'base64');
+            const qrImg = await pdfDoc.embedPng(qrBytes);
+            const qrSize = 70;
+            page.drawImage(qrImg, { x: MARGIN, y: y - qrSize, width: qrSize, height: qrSize });
+            page.drawText('Chave PIX:', { x: MARGIN + qrSize + 12, y: y - 12, size: FONT_SIZE_SMALL, font: boldFont, color: cText() });
+            page.drawText(pixChave, { x: MARGIN + qrSize + 12, y: y - 26, size: FONT_SIZE_SMALL, font, color: cMuted() });
+            y -= qrSize + 16;
+        } catch (e) {
+            logger.warn('documentos-pdf: PIX QR não gerado', { message: e.message });
+            page.drawText('Chave PIX: ' + pixChave, { x: MARGIN, y: y - FONT_SIZE_SMALL, size: FONT_SIZE_SMALL, font, color: cText() });
+            y -= 20;
+        }
     }
 
     // Rodapé: Obrigado pela preferência
