@@ -61,6 +61,7 @@ O frontend do dashboard financeiro está em outro repositório. Ajustes recomend
 
 ## Estrutura de trabalhos (king sync)
 
-Para Meta, Patrimônio e Saldo: conta-se **apenas** `valor_recebido` (o que já entrou).
-- `valor` – valor total do trabalho (não entra na meta/patrimônio)
-- `valor_recebido` – valor efetivamente recebido (só isso conta)
+Para Meta, Patrimônio e Saldo: conta-se **apenas** o que foi recebido (não o total do serviço).
+- `valor` – valor total do trabalho (não entra)
+- `valor_recebido` – valor já recebido (se existir)
+- `pagamentos[]` – array de entradas recebidas: `[{ valor, data }]` — soma dos valores conta como recebido

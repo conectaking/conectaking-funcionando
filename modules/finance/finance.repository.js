@@ -1235,7 +1235,12 @@ class FinanceRepository {
                 const data = syncResult.rows[0].data;
                 const trabalhos = Array.isArray(data.trabalhos) ? data.trabalhos : [];
                 trabalhos.forEach(t => {
-                    const v = parseFloat(t.valor_recebido) || 0;
+                    let v = parseFloat(t.valor_recebido);
+                    if (isNaN(v) || v <= 0) {
+                        v = Array.isArray(t.pagamentos)
+                            ? t.pagamentos.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0)
+                            : 0;
+                    }
                     if (v > 0) total += v;
                 });
             }
