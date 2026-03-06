@@ -58,6 +58,9 @@ router.use(protectFinance);
 // Dashboard
 router.get('/dashboard', controller.getDashboard);
 
+// Detalhamento de receitas (de onde veio - para modal ao clicar em Receitas, Saldo, Metas)
+router.get('/income-breakdown', controller.getIncomeBreakdown);
+
 // Transações
 router.get('/transactions', controller.getTransactions);
 router.get('/transactions/:id', controller.getTransaction);

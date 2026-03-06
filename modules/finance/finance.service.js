@@ -470,13 +470,28 @@ class FinanceService {
             })
         );
 
+        // Detalhamento das receitas (para "De onde veio" ao clicar em Receitas, Saldo, Metas)
+        const [receitasDetalhadas, saldoDetalhado] = await Promise.all([
+            repository.getIncomeBreakdown(userId, dateFrom, dateTo, profileId, 'monthly'),
+            repository.getIncomeBreakdown(userId, null, null, profileId, 'accumulated')
+        ]);
+
         return {
             ...stats,
             accountBalance: patrimony, // Patrimônio = receitas pagas - despesas pagas
             totalBalance: patrimony,   // Mesmo valor: dinheiro em caixa (não soma de contas dessincronizadas)
             totalBalanceFromAccounts: totalBalance, // Soma real das contas (para referência/detalhes)
-            budgets: budgetsWithSpent
+            budgets: budgetsWithSpent,
+            receitasDetalhadas,  // Receitas do mês: transacoes, trabajos, recibos, itens, total
+            saldoDetalhado      // Patrimônio/Metas: origem acumulada do saldo
         };
+    }
+
+    /**
+     * Detalhamento de receitas - de onde veio o dinheiro (para modal ao clicar)
+     */
+    async getIncomeBreakdown(userId, dateFrom, dateTo, profileId, scope = 'monthly') {
+        return repository.getIncomeBreakdown(userId, dateFrom, dateTo, profileId, scope);
     }
 
     /**
@@ -627,7 +642,8 @@ class FinanceService {
     async getGoals(userId, profileId = null) {
         const goals = await repository.findGoalsByUserId(userId, profileId);
         const totalIncomeEarned = await repository.getTotalIncomePaidUntilToday(userId, profileId);
-        return { goals, total_income_earned: totalIncomeEarned };
+        const incomeBreakdown = await repository.getIncomeBreakdown(userId, null, null, profileId, 'accumulated');
+        return { goals, total_income_earned: totalIncomeEarned, income_breakdown: incomeBreakdown };
     }
 
     /** Criar meta */

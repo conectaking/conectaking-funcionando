@@ -27,6 +27,27 @@ class FinanceController {
     }
 
     /**
+     * Detalhamento das receitas - de onde veio o dinheiro (para modal ao clicar em Receitas, Saldo, Metas)
+     * scope: monthly = receitas do mês | accumulated = patrimônio/saldo/metas (tudo até hoje)
+     */
+    async getIncomeBreakdown(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { dateFrom, dateTo, profile_id, scope } = req.query;
+            const profileId = parseProfileId(profile_id);
+            const now = new Date();
+            const defaultDateFrom = dateFrom || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+            const defaultDateTo = dateTo || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`;
+            const scopeVal = scope === 'accumulated' ? 'accumulated' : 'monthly';
+            const result = await service.getIncomeBreakdown(userId, defaultDateFrom, defaultDateTo, profileId, scopeVal);
+            return responseFormatter.success(res, result);
+        } catch (error) {
+            logger.error('Erro ao obter detalhamento de receitas:', error);
+            return responseFormatter.error(res, error.message, 500);
+        }
+    }
+
+    /**
      * Listar transações
      */
     async getTransactions(req, res) {

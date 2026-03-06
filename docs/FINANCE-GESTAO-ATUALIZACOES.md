@@ -54,6 +54,10 @@ O frontend do dashboard financeiro está em outro repositório. Ajustes recomend
 1. **Botão "Pagar"** – alinhar dentro do card (evitar que saia da borda)
 2. **Layout mobile** – padronizar alinhamento de textos e botões
 3. **Balanço Geral** – usar os campos `totalRecebido`, `totalPago`, `saldoDisponivel`, `pendenciasReceber`, `pendenciasPagar`
+4. **Detalhamento "De onde veio"** – ao clicar em Receitas Mensais, Total Recebido, Saldo Disponível ou Metas (Valor já ganho):
+   - O dashboard já retorna `receitasDetalhadas` (mês) e `saldoDetalhado` (acumulado)
+   - Ou chamar `GET /api/finance/income-breakdown?scope=monthly|accumulated&dateFrom=&dateTo=&profile_id=`
+   - Retorno: `{ transacoes, trabajos, recibos, itens, total }` – cada item com `origem`, `descricao`, `cliente`, `valor`, `data`
 4. **Evolução mensal** – exibir `evolucaoMensal` com `income`, `expense`, `balance`
 5. **Média mensal** – exibir `mediaMensal12.mediaReceitas` e `mediaMensal12.mediaDespesas`
 6. **Meta** – usar `total_income_earned` de GET /api/finance/goals para o progresso
