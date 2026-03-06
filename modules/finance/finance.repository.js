@@ -709,7 +709,8 @@ class FinanceRepository {
                     let sum = 0;
                     const itens = Array.isArray(row.itens_json) ? row.itens_json : [];
                     itens.forEach(item => {
-                        const v = parseFloat(item.valor) || (parseFloat(item.quantidade || 1) * parseFloat(item.valor_unitario || 0));
+                        let v = parseFloat(item.valor_recebido);
+                        if (isNaN(v) || v <= 0) v = 0;
                         if (v > 0) sum += v;
                     });
                     if (evolutionByMonth[key]) {
@@ -1186,6 +1187,9 @@ class FinanceRepository {
 
     /**
      * Soma receitas de recibos (documentos tipo=recibo) no período
+     * USA APENAS valor_recebido quando existir - para evitar contar como "recebido" valores que ainda não entraram.
+     * Recibos sem valor_recebido são tratados como documentação (não entram no saldo) para evitar inflar
+     * "Total recebido" e "Patrimônio" com valores que o cliente ainda não pagou.
      */
     async getIncomeFromRecibos(userId, dateFrom, dateTo, existingClient = null) {
         const client = existingClient || await db.pool.connect();
@@ -1203,7 +1207,12 @@ class FinanceRepository {
             docResult.rows.forEach(row => {
                 const itens = Array.isArray(row.itens_json) ? row.itens_json : [];
                 itens.forEach(item => {
-                    const v = parseFloat(item.valor) || (parseFloat(item.quantidade || 1) * parseFloat(item.valor_unitario || 0));
+                    // Usar valor_recebido quando existir (o que já entrou de fato)
+                    let v = parseFloat(item.valor_recebido);
+                    if (isNaN(v) || v <= 0) {
+                        // Fallback: se não tem valor_recebido, NÃO contar - evita incluir "falta receber" em "recebido"
+                        v = 0;
+                    }
                     if (v > 0) total += v;
                 });
             });

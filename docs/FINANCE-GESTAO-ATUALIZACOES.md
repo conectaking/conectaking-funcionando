@@ -11,7 +11,8 @@
 ### 2. Saldo disponível e patrimônio
 - **accountBalance** / **saldoDisponivel** consideram:
   - Saldo das contas (finance_accounts) quando existem
-  - Ou: (receitas pagas acumuladas - despesas pagas) + recibos + trabalhos
+  - Ou: (receitas pagas acumuladas - despesas pagas) + trabajos (valor_recebido)
+- **Recibos**: só entram no patrimônio quando o item tiver `valor_recebido` (o que já entrou de fato). Itens sem `valor_recebido` não são contados, para evitar incluir valores que o cliente ainda não pagou em "Total recebido" e "Patrimônio".
 
 ### 3. Balanço Geral – campos adicionados
 O dashboard e o relatório resumido (GET /api/finance/dashboard, GET /api/finance/reports/summary) retornam:
@@ -65,3 +66,9 @@ Para Meta, Patrimônio e Saldo: conta-se **apenas** o que foi recebido (não o t
 - `valor` – valor total do trabalho (não entra)
 - `valor_recebido` – valor já recebido (se existir)
 - `pagamentos[]` – array de entradas recebidas: `[{ valor, data }]` — soma dos valores conta como recebido
+
+## Recibos (documentos tipo=recibo) – itens_json
+
+Para evitar que "Falta receber" seja contado como "Total recebido" ou "Patrimônio":
+- Só conta como recebido quando o item tiver `valor_recebido` (o que efetivamente entrou).
+- Itens sem `valor_recebido` não são incluídos (não inflam saldo/patrimônio).
