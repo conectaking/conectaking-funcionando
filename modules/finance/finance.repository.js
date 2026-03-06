@@ -1236,14 +1236,16 @@ class FinanceRepository {
             const isMonthly = scope === 'monthly' && dateFrom && dateTo;
             const parseToDate = (d) => {
                 if (!d) return null;
-                const s = String(d).trim();
+                let s = String(d).trim();
+                s = s.split(/\s/)[0] || s;
                 if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
                 const parts = s.split(/[\/\-]/);
                 if (parts.length >= 3) {
-                    const y = parts[2].length === 4 ? parts[2] : parts[0];
+                    const p2 = String(parts[2]).slice(0, 4);
+                    const y = /^\d{4}$/.test(p2) ? p2 : (parts[0].length === 4 ? parts[0] : parts[2]);
                     const m = String(parts[1] && parts[1].length <= 2 ? parts[1] : parts[0]).padStart(2, '0');
-                    const day = String(parts[0] && parts[0].length <= 2 ? parts[0] : parts[2]).padStart(2, '0');
-                    return y + '-' + m + '-' + day;
+                    const day = String(parts[0] && parts[0].length <= 2 ? parts[0] : String(parts[2]).slice(0, 2)).padStart(2, '0');
+                    if (/^\d{4}$/.test(y) && /^\d{1,2}$/.test(m) && /^\d{1,2}$/.test(day)) return y + '-' + m + '-' + day;
                 }
                 return null;
             };
