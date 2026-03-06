@@ -64,7 +64,12 @@ function formatDate(d) {
 }
 
 async function fetchImage(url) {
-    const response = await fetch(url, { redirect: 'follow' });
+    // Headers para evitar bloqueio por Cloudflare/CDN (alguns bloqueiam requests sem User-Agent)
+    const headers = {
+        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    };
+    const response = await fetch(url, { redirect: 'follow', headers });
     if (!response.ok) throw new Error(`Falha ao carregar imagem: ${response.status}`);
     const buf = await response.buffer();
     const bytes = new Uint8Array(buf);
@@ -120,7 +125,7 @@ function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlu
     return PAGE_HEIGHT - HEADER_HEIGHT - ORANGE_BAR_HEIGHT - 16;
 }
 
-async function gerarPdfBuffer(documento, colors = null) {
+async function gerarPdfBuffer(documento, colors = null, options = null) {
     const rgbBlue = hexToRgb(colors && colors.headerColor ? '#' + colors.headerColor : DEFAULT_BLUE) || hexToRgb(DEFAULT_BLUE);
     const rgbOrange = hexToRgb(colors && colors.accentColor ? '#' + colors.accentColor : DEFAULT_ORANGE) || hexToRgb(DEFAULT_ORANGE);
     const bgHex = colors && colors.bgColor ? '#' + colors.bgColor.replace('#', '') : '#ffffff';
@@ -134,7 +139,8 @@ async function gerarPdfBuffer(documento, colors = null) {
     if (darkMode) {
         page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) });
     }
-    const emitente = documento.emitente_json || {};
+    const emitenteRaw = documento.emitente_json;
+    const emitente = (typeof emitenteRaw === 'string' ? (() => { try { return JSON.parse(emitenteRaw); } catch (_) { return {}; } })() : (emitenteRaw || {}));
     const cliente = documento.cliente_json || {};
     const itens = Array.isArray(documento.itens_json) ? documento.itens_json : [];
     const anexos = Array.isArray(documento.anexos_json) ? documento.anexos_json : [];
@@ -148,15 +154,33 @@ async function gerarPdfBuffer(documento, colors = null) {
     const cOrange = () => rgb(rgbOrange.r, rgbOrange.g, rgbOrange.b);
 
     // Carregar logo antes do header (para desenhar dentro da barra azul)
+    // Suporta: emitente.logo_url, emitente.logo, emitente.logomarca; fallback: companyLogoUrl (logo da empresa)
+    const logoUrl = (emitente && (emitente.logo_url || emitente.logo || emitente.logomarca)) ||
+        (options && options.companyLogoUrl) || null;
     let logoImg = null;
-    if (emitente.logo_url) {
+    if (logoUrl && String(logoUrl).trim()) {
         try {
-            const { type, bytes } = await fetchImage(emitente.logo_url);
+            let type, bytes;
+            const urlStr = String(logoUrl).trim();
+            if (urlStr.startsWith('data:image/')) {
+                // Suportar data URL (base64) - ex.: data:image/png;base64,iVBORw0...
+                const match = urlStr.match(/^data:image\/(png|jpe?g|gif|webp);base64,(.+)$/i);
+                if (match) {
+                    type = match[1].toLowerCase() === 'png' ? 'png' : 'jpg';
+                    bytes = new Uint8Array(Buffer.from(match[2], 'base64'));
+                } else {
+                    throw new Error('Formato de data URL inválido');
+                }
+            } else {
+                const result = await fetchImage(urlStr);
+                type = result.type;
+                bytes = result.bytes;
+            }
             const img = type === 'png' ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
             const scale = Math.min(100 / img.width, 44 / img.height, 1);
             logoImg = { img, width: img.width * scale, height: img.height * scale };
         } catch (e) {
-            logger.warn('documentos-pdf: logo não carregada', { url: emitente.logo_url, message: e.message });
+            logger.warn('documentos-pdf: logo não carregada', { url: String(logoUrl).slice(0, 80), message: e.message });
         }
     }
     let y = drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlue, rgbOrange, logoImg);

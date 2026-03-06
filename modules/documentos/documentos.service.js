@@ -1,4 +1,5 @@
 const { nanoid } = require('nanoid');
+const db = require('../../db');
 const documentosRepository = require('./documentos.repository');
 const { gerarPdfBuffer } = require('../../utils/documentos-pdf');
 const logger = require('../../utils/logger');
@@ -108,7 +109,23 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
 async function gerarPdf(id, userId, colors = null) {
     const doc = await documentosRepository.getById(id, userId);
     if (!doc) return null;
-    return gerarPdfBuffer(doc, colors);
+    // Se emitente não tiver logo, usar logo da empresa (company_logo_url) como fallback
+    let companyLogoUrl = null;
+    try {
+        const r = await db.pool.query(
+            `SELECT CASE WHEN u.parent_user_id IS NOT NULL THEN p.company_logo_url ELSE u.company_logo_url END AS company_logo_url
+             FROM users u
+             LEFT JOIN users p ON p.id = u.parent_user_id
+             WHERE u.id = $1`,
+            [userId]
+        );
+        if (r.rows[0] && r.rows[0].company_logo_url) {
+            companyLogoUrl = r.rows[0].company_logo_url;
+        }
+    } catch (e) {
+        logger.warn('documentos gerarPdf: não foi possível obter company_logo_url', { message: e?.message });
+    }
+    return gerarPdfBuffer(doc, colors, { companyLogoUrl });
 }
 
 module.exports = {
