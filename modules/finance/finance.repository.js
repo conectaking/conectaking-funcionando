@@ -1186,6 +1186,125 @@ class FinanceRepository {
     }
 
     /**
+     * Detalhamento das receitas (de onde veio o dinheiro)
+     * Retorna lista por fonte: transações, trabajos, recibos
+     * @param {string} scope - 'monthly' (só do período) ou 'accumulated' (tudo até hoje - Saldo/Patrimônio/Metas)
+     */
+    async getIncomeBreakdown(userId, dateFrom, dateTo, profileId, scope = 'monthly', existingClient = null) {
+        const client = existingClient || await db.pool.connect();
+        const shouldRelease = !existingClient;
+        try {
+            let transQuery;
+            let transParams;
+            if (scope === 'monthly' && dateFrom && dateTo) {
+                transParams = profileId != null ? [userId, dateFrom, dateTo, profileId] : [userId, dateFrom, dateTo];
+                transQuery = `SELECT t.id, t.description, t.client_name, t.amount, t.transaction_date, t.category_id, c.name as category_name
+                 FROM finance_transactions t
+                 LEFT JOIN finance_categories c ON t.category_id = c.id
+                 WHERE t.user_id = $1 AND t.type = 'INCOME' AND t.status = 'PAID'
+                 AND t.transaction_date BETWEEN $2::date AND $3::date
+                 AND ${profileId != null ? 't.profile_id = $4' : '(t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))'}
+                 ORDER BY t.transaction_date DESC`;
+            } else {
+                transParams = profileId != null ? [userId, profileId] : [userId];
+                transQuery = `SELECT t.id, t.description, t.client_name, t.amount, t.transaction_date, t.category_id, c.name as category_name
+                 FROM finance_transactions t
+                 LEFT JOIN finance_categories c ON t.category_id = c.id
+                 WHERE t.user_id = $1 AND t.type = 'INCOME' AND t.status = 'PAID'
+                 AND t.transaction_date <= CURRENT_DATE
+                 AND ${profileId != null ? 't.profile_id = $2' : '(t.profile_id IS NULL OR t.profile_id IN (SELECT id FROM finance_profiles WHERE user_id = $1 AND is_primary = TRUE))'}
+                 ORDER BY t.transaction_date DESC`;
+            }
+
+            const transacoesResult = await client.query(transQuery, transParams);
+
+            const transacoes = transacoesResult.rows.map(r => ({
+                origem: 'transacao',
+                id: r.id,
+                descricao: r.description || r.category_name || 'Receita',
+                cliente: r.client_name || null,
+                valor: parseFloat(r.amount) || 0,
+                data: r.transaction_date
+            }));
+
+            const profileKey = (profileId == null || profileId === '') ? '' : String(profileId);
+            const syncResult = await client.query(
+                'SELECT data FROM finance_king_sync WHERE user_id = $1 AND profile_id = $2 LIMIT 1',
+                [userId, profileKey]
+            );
+            const trabajos = [];
+            if (syncResult.rows.length > 0 && syncResult.rows[0].data?.trabalhos) {
+                const arr = Array.isArray(syncResult.rows[0].data.trabalhos) ? syncResult.rows[0].data.trabalhos : [];
+                arr.forEach(t => {
+                    let v = parseFloat(t.valor_recebido);
+                    if (isNaN(v) || v <= 0) {
+                        v = Array.isArray(t.pagamentos)
+                            ? t.pagamentos.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0)
+                            : 0;
+                    }
+                    if (v > 0) {
+                        trabajos.push({
+                            origem: 'trabalho',
+                            descricao: t.descricao || t.tipo || 'Trabalho',
+                            cliente: t.cliente || t.nome || t.client_name || null,
+                            valor: v,
+                            data: t.data || t.data_trabalho || null
+                        });
+                    }
+                });
+            }
+
+            const docWhere = scope === 'monthly' && dateFrom && dateTo
+                ? ' AND data_documento BETWEEN $2::date AND $3::date'
+                : ' AND data_documento <= CURRENT_DATE';
+            const docParams = scope === 'monthly' && dateFrom && dateTo ? [userId, dateFrom, dateTo] : [userId];
+            const docResult = await client.query(
+                `SELECT id, cliente_json, data_documento, itens_json FROM documentos WHERE user_id = $1 AND tipo = 'recibo'${docWhere}`,
+                docParams
+            );
+            const recibos = [];
+            docResult.rows.forEach(row => {
+                const clienteNome = (row.cliente_json && (row.cliente_json.nome || row.cliente_json.name)) || null;
+                const itens = Array.isArray(row.itens_json) ? row.itens_json : [];
+                itens.forEach(item => {
+                    const v = parseFloat(item.valor_recebido);
+                    if (!isNaN(v) && v > 0) {
+                        recibos.push({
+                            origem: 'recibo',
+                            documento_id: row.id,
+                            descricao: item.descricao || 'Item',
+                            cliente: clienteNome,
+                            valor: v,
+                            data: row.data_documento
+                        });
+                    }
+                });
+            });
+
+            const total = transacoes.reduce((s, x) => s + x.valor, 0)
+                + trabajos.reduce((s, x) => s + x.valor, 0)
+                + recibos.reduce((s, x) => s + x.valor, 0);
+
+            return {
+                transacoes,
+                trabajos,
+                recibos,
+                itens: [...transacoes, ...trabalhos, ...recibos].sort((a, b) => {
+                    const da = a.data ? new Date(a.data) : new Date(0);
+                    const db_ = b.data ? new Date(b.data) : new Date(0);
+                    return db_.getTime() - da.getTime();
+                }),
+                total
+            };
+        } catch (e) {
+            if (e.code !== '42P01') logger.warn('getIncomeBreakdown:', e.message);
+            return { transacoes: [], trabajos: [], recibos: [], itens: [], total: 0 };
+        } finally {
+            if (shouldRelease) client.release();
+        }
+    }
+
+    /**
      * Soma receitas de recibos (documentos tipo=recibo) no período
      * USA APENAS valor_recebido quando existir - para evitar contar como "recebido" valores que ainda não entraram.
      * Recibos sem valor_recebido são tratados como documentação (não entram no saldo) para evitar inflar
