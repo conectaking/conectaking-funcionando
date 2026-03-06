@@ -1228,10 +1228,17 @@ class FinanceRepository {
             }));
 
             const profileKey = (profileId == null || profileId === '') ? '' : String(profileId);
-            const syncResult = await client.query(
+            let syncResult = await client.query(
                 'SELECT data FROM finance_king_sync WHERE user_id = $1 AND profile_id = $2 LIMIT 1',
                 [userId, profileKey]
             );
+            // Fallback: se não achou sync para o perfil, tentar perfil principal (profile_id = '')
+            if (syncResult.rows.length === 0 && profileKey !== '') {
+                syncResult = await client.query(
+                    'SELECT data FROM finance_king_sync WHERE user_id = $1 AND profile_id = $2 LIMIT 1',
+                    [userId, '']
+                );
+            }
             const trabajos = [];
             const isMonthly = scope === 'monthly' && dateFrom && dateTo;
             const parseToDate = (d) => {
@@ -1249,6 +1256,7 @@ class FinanceRepository {
                 }
                 return null;
             };
+            const getPagamentoData = (p, t) => p.data || p.dataPagamento || p.data_pagamento || t.data || t.data_trabalho || t.dataPrevista;
             if (syncResult.rows.length > 0 && syncResult.rows[0].data?.trabalhos) {
                 const arr = Array.isArray(syncResult.rows[0].data.trabalhos) ? syncResult.rows[0].data.trabalhos : [];
                 arr.forEach(t => {
@@ -1257,7 +1265,7 @@ class FinanceRepository {
                         if (totalT <= 0) return;
                         let ultimaData = null;
                         t.pagamentos.forEach(p => {
-                            const dt = parseToDate(p.data || t.data || t.data_trabalho);
+                            const dt = parseToDate(getPagamentoData(p, t));
                             if (dt && (!ultimaData || dt > ultimaData)) ultimaData = dt;
                         });
                         if (ultimaData && ultimaData >= dateFrom && ultimaData <= dateTo) {
