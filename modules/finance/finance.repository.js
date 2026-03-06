@@ -1253,20 +1253,23 @@ class FinanceRepository {
                 const arr = Array.isArray(syncResult.rows[0].data.trabalhos) ? syncResult.rows[0].data.trabalhos : [];
                 arr.forEach(t => {
                     if (isMonthly && Array.isArray(t.pagamentos) && t.pagamentos.length > 0) {
+                        const totalT = t.pagamentos.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0);
+                        if (totalT <= 0) return;
+                        let ultimaData = null;
                         t.pagamentos.forEach(p => {
                             const dt = parseToDate(p.data || t.data || t.data_trabalho);
-                            if (!dt || dt < dateFrom || dt > dateTo) return;
-                            const v = parseFloat(p.valor) || 0;
-                            if (v <= 0) return;
+                            if (dt && (!ultimaData || dt > ultimaData)) ultimaData = dt;
+                        });
+                        if (ultimaData && ultimaData >= dateFrom && ultimaData <= dateTo) {
                             trabajos.push({
                                 origem: 'trabalho',
                                 descricao: t.descricao || t.servico || t.tipo || 'Trabalho',
                                 cliente: t.cliente || t.nome || t.client_name || null,
-                                valor: v,
-                                data: dt
+                                valor: totalT,
+                                data: ultimaData
                             });
-                        });
-                    } else {
+                        }
+                    } else if (!isMonthly) {
                         let v = parseFloat(t.valor_recebido);
                         if (isNaN(v) || v <= 0) {
                             v = Array.isArray(t.pagamentos)
