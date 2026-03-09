@@ -318,11 +318,15 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
         }
         page.drawText(title, { x: MARGIN, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cBlue() });
         y -= LINE_HEIGHT;
-        const lines = String(text).trim().split(/\n/);
-        for (const line of lines) {
-            if (y < MARGIN + 12) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) }); y = PAGE_HEIGHT - MARGIN; }
-            page.drawText(line.slice(0, 110), { x: MARGIN, y: y - FONT_SIZE_SMALL, size: FONT_SIZE_SMALL, font, color: cText() });
-            y -= 12;
+        const rawLines = String(text).trim().split(/\n/);
+        const maxLen = 70;
+        for (const line of rawLines) {
+            const wrapped = wrapText(line, maxLen);
+            for (const ln of wrapped) {
+                if (y < MARGIN + 12) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) }); y = PAGE_HEIGHT - MARGIN; }
+                page.drawText(ln.slice(0, 110), { x: MARGIN, y: y - FONT_SIZE_SMALL, size: FONT_SIZE_SMALL, font, color: cText() });
+                y -= 12;
+            }
         }
         y -= 6;
     }
