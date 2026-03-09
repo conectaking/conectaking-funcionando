@@ -63,6 +63,26 @@ function formatDate(d) {
     return date.toLocaleDateString('pt-BR');
 }
 
+/** Quebra texto em linhas de no máximo maxChars, quebrando em espaços. */
+function wrapText(text, maxChars = 65) {
+    if (!text || !String(text).trim()) return [];
+    const s = String(text).trim();
+    const lines = [];
+    let rest = s;
+    while (rest.length > 0) {
+        if (rest.length <= maxChars) {
+            lines.push(rest);
+            break;
+        }
+        let chunk = rest.slice(0, maxChars);
+        const lastSpace = chunk.lastIndexOf(' ');
+        if (lastSpace > 24) chunk = chunk.slice(0, lastSpace + 1);
+        lines.push(chunk.trim());
+        rest = rest.slice(chunk.length).trim();
+    }
+    return lines;
+}
+
 async function fetchImage(url) {
     // Headers para evitar bloqueio por Cloudflare/CDN (alguns bloqueiam requests sem User-Agent)
     const headers = {
