@@ -166,7 +166,7 @@
     <p class="ks-sub">Projeto: <strong><%= nomeProjeto %></strong></p>
     <p class="ks-hint">
       Personalize a mensagem de obrigado que o cliente vê após confirmar e enviar a seleção.
-      O sistema preenche automaticamente: <code>{{nome}}</code> pelo seu nome (campo abaixo) e <code>{{quantidade}}</code> pelo número de fotos que o cliente selecionou. Você só precisa escrever a mensagem e colocar esses códigos onde quiser.
+      O sistema preenche automaticamente: <code>{{nome_cliente}}</code> pelo nome de quem está selecionando (ex.: Walter), <code>{{nome}}</code> pelo seu nome (retratista) e <code>{{quantidade}}</code> pelo número de fotos selecionadas. Se deixar a mensagem em branco, será usada a mensagem padrão para todos.
     </p>
 
     <div id="msgSucesso" class="ks-msg ok hidden">Mensagem de finalização salva com sucesso.</div>
@@ -177,7 +177,7 @@
         <div class="ks-field">
           <label class="ks-label" for="thank_you_photographer_name">Seu nome (exibido na mensagem de obrigado)</label>
           <input type="text" name="thank_you_photographer_name" id="thank_you_photographer_name" placeholder="Ex.: Rafael Fogo" class="ks-input" />
-          <p class="ks-hint" style="margin-top:6px;margin-bottom:0;">Esse nome substitui <code>{{nome}}</code> na mensagem que o cliente vê.</p>
+          <p class="ks-hint" style="margin-top:6px;margin-bottom:0;">Esse nome substitui <code>{{nome}}</code> na mensagem. Se não preencher, a plataforma usa o nome do seu perfil (cartão virtual).</p>
         </div>
         <div class="ks-field">
           <label class="ks-label" for="thank_you_title">Título</label>
@@ -185,8 +185,8 @@
         </div>
         <div class="ks-field">
           <label class="ks-label" for="thank_you_message">Mensagem (opcional)</label>
-          <textarea name="thank_you_message" id="thank_you_message" placeholder="Ex.: Sua seleção foi recebida com sucesso. Você escolheu {{quantidade}} foto(s). Agora seguiremos com carinho e atenção em cada detalhe para entregar retratos marcantes e profissionais. Obrigado por confiar no olhar de {{nome}}." class="ks-textarea"></textarea>
-          <p class="ks-hint" style="margin-top:6px;margin-bottom:0;">Use <code>{{nome}}</code> e <code>{{quantidade}}</code> onde quiser; serão trocados automaticamente.</p>
+          <textarea name="thank_you_message" id="thank_you_message" placeholder="Obrigado, {{nome_cliente}}! Sua seleção foi recebida com sucesso. Você escolheu {{quantidade}} foto(s). Nosso retratista {{nome}} agradece pela confiança e pelo carinho." class="ks-textarea"></textarea>
+          <p class="ks-hint" style="margin-top:6px;margin-bottom:0;">Use <code>{{nome_cliente}}</code>, <code>{{nome}}</code> e <code>{{quantidade}}</code> onde quiser; serão trocados automaticamente. Em branco = mensagem padrão para todos.</p>
         </div>
         <div class="ks-field">
           <label class="ks-label">Logo / imagem de destaque (opcional)</label>

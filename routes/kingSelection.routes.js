@@ -4170,6 +4170,23 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
     );
     const selectionCount = countRes.rows[0]?.cnt || 0;
 
+    // Nome do cliente (quem selecionou as fotos) — para agradecer pelo nome
+    let clientDisplayName = null;
+    if (cid && hasClientTable) {
+      try {
+        const clientNameRes = await client.query(
+          'SELECT nome FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1',
+          [cid, galleryId]
+        );
+        if (clientNameRes.rows[0]?.nome && String(clientNameRes.rows[0].nome).trim()) {
+          clientDisplayName = String(clientNameRes.rows[0].nome).trim();
+        }
+      } catch (_) { }
+    }
+
+    // Mensagem padrão quando o fotógrafo não personalizou (para todos)
+    const DEFAULT_THANK_YOU_MESSAGE = 'Obrigado, {{nome_cliente}}! Sua seleção foi recebida com sucesso. Você escolheu {{quantidade}} foto(s). Nosso retratista {{nome}} agradece pela confiança e pelo carinho.';
+
     // Nome do fotógrafo e config da página de obrigado
     let photographerDisplayName = 'Fotógrafo';
     let thankYouConfig = { title: 'Obrigado!', message: null, imageUrl: null };
@@ -4199,19 +4216,31 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
           if (nameRes.rows[0]?.name) photographerDisplayName = String(nameRes.rows[0].name).trim();
         }
         if (hasThankYouCol && row.thank_you_title !== undefined) {
+          const customMessage = row.thank_you_message != null && String(row.thank_you_message).trim() ? String(row.thank_you_message).trim() : null;
           thankYouConfig = {
             title: row.thank_you_title || 'Obrigado!',
-            message: row.thank_you_message || null,
+            message: customMessage || DEFAULT_THANK_YOU_MESSAGE,
             imageUrl: row.thank_you_image_url || null
+          };
+        } else {
+          thankYouConfig = {
+            title: 'Obrigado!',
+            message: DEFAULT_THANK_YOU_MESSAGE,
+            imageUrl: null
           };
         }
       }
     } catch (_) { }
 
+    if (!thankYouConfig.message) {
+      thankYouConfig.message = DEFAULT_THANK_YOU_MESSAGE;
+    }
+
     res.json({
       success: true,
       selectionCount,
       photographerDisplayName,
+      clientDisplayName,
       thankYouConfig
     });
   } finally {
