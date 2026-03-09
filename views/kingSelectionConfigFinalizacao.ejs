@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Configurar tela de finalização — King Selection</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between gap-4 mb-6">
+      <h1 class="text-xl font-bold">Página de finalização das fotos</h1>
+      <a href="#" id="btnVoltar" class="text-slate-400 hover:text-white text-sm">← Voltar</a>
+    </div>
+    <p class="text-slate-400 text-sm mb-4">Projeto: <strong class="text-slate-200"><%= nomeProjeto %></strong></p>
+    <p class="text-slate-400 text-sm mb-6">Personalize a mensagem de obrigado que o cliente vê após confirmar e enviar a seleção. Use <code class="bg-slate-800 px-1 rounded text-amber-300">{{nome}}</code> para o seu nome e <code class="bg-slate-800 px-1 rounded text-amber-300">{{quantidade}}</code> para o número de fotos.</p>
+
+    <div id="msgSucesso" class="hidden mb-4 p-4 rounded-xl bg-emerald-900/50 border border-emerald-700 text-emerald-200 text-sm">Mensagem de finalização salva com sucesso.</div>
+    <div id="msgErro" class="hidden mb-4 p-4 rounded-xl bg-red-900/50 border border-red-700 text-red-200 text-sm"></div>
+
+    <form id="formFinalizacao" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-1">Título</label>
+        <input type="text" name="thank_you_title" id="thank_you_title" placeholder="Obrigado!" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:ring-2 focus:ring-amber-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-1">Mensagem (opcional)</label>
+        <textarea name="thank_you_message" id="thank_you_message" rows="4" placeholder="Ex.: Obrigado por selecionar as fotos do {{nome}}. Você escolheu {{quantidade}} foto(s)." class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:ring-2 focus:ring-amber-500"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-1">URL da imagem de destaque (opcional)</label>
+        <input type="url" name="thank_you_image_url" id="thank_you_image_url" placeholder="https://..." class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:ring-2 focus:ring-amber-500" />
+      </div>
+      <button type="submit" id="btnSalvar" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold">Salvar mensagem de finalização</button>
+    </form>
+  </div>
+
+  <script>
+    (function() {
+      const galleryId = <%= galleryId %>;
+      const apiBase = '<%= apiBase %>';
+      const params = new URLSearchParams(window.location.search);
+      let token = params.get('token');
+      if (!token && typeof localStorage !== 'undefined') {
+        token = localStorage.getItem('conectaking_token') || localStorage.getItem('token') || localStorage.getItem('jwt');
+      }
+      if (!token) {
+        document.getElementById('msgErro').textContent = 'Token não encontrado. Abra esta página pelo painel (link com token) ou informe ?token=... na URL.';
+        document.getElementById('msgErro').classList.remove('hidden');
+      }
+
+      function authHeaders() {
+        const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+        if (token) h['Authorization'] = 'Bearer ' + token;
+        return h;
+      }
+
+      document.getElementById('btnVoltar').addEventListener('click', function(e) {
+        e.preventDefault();
+        if (document.referrer && document.referrer.indexOf(window.location.host) >= 0) {
+          window.history.back();
+        } else {
+          window.close();
+        }
+      });
+
+      function hideMessages() {
+        document.getElementById('msgSucesso').classList.add('hidden');
+        document.getElementById('msgErro').classList.add('hidden');
+      }
+
+      async function load() {
+        if (!token) return;
+        try {
+          const r = await fetch(apiBase + '/galleries/' + galleryId, { headers: authHeaders() });
+          if (!r.ok) throw new Error('Falha ao carregar');
+          const data = await r.json();
+          const g = data.gallery || data;
+          document.getElementById('thank_you_title').value = g.thank_you_title || 'Obrigado!';
+          document.getElementById('thank_you_message').value = g.thank_you_message || '';
+          document.getElementById('thank_you_image_url').value = g.thank_you_image_url || '';
+        } catch (e) {
+          document.getElementById('msgErro').textContent = e.message || 'Erro ao carregar dados.';
+          document.getElementById('msgErro').classList.remove('hidden');
+        }
+      }
+
+      document.getElementById('formFinalizacao').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        hideMessages();
+        if (!token) {
+          document.getElementById('msgErro').textContent = 'Token necessário para salvar.';
+          document.getElementById('msgErro').classList.remove('hidden');
+          return;
+        }
+        const btn = document.getElementById('btnSalvar');
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+        try {
+          const body = {
+            thank_you_title: document.getElementById('thank_you_title').value.trim() || null,
+            thank_you_message: document.getElementById('thank_you_message').value.trim() || null,
+            thank_you_image_url: document.getElementById('thank_you_image_url').value.trim() || null
+          };
+          const r = await fetch(apiBase + '/galleries/' + galleryId, {
+            method: 'PUT',
+            headers: authHeaders(),
+            body: JSON.stringify(body)
+          });
+          const data = await r.json().catch(function() { return {}; });
+          if (!r.ok) {
+            throw new Error(data.message || 'Falha ao salvar');
+          }
+          document.getElementById('msgSucesso').classList.remove('hidden');
+          if (params.has('token')) {
+            try { window.history.replaceState({}, '', window.location.pathname); } catch (_) {}
+          }
+        } catch (err) {
+          document.getElementById('msgErro').textContent = err.message || 'Erro ao salvar.';
+          document.getElementById('msgErro').classList.remove('hidden');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Salvar mensagem de finalização';
+      });
+
+      load();
+    })();
+  </script>
+</body>
+</html>

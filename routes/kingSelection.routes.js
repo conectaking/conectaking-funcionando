@@ -1876,6 +1876,31 @@ router.post('/galleries/:id/reset-password', protectUser, asyncHandler(async (re
   }
 }));
 
+// Página HTML para configurar a tela de finalização (obrigado) — lógica atual Node + front
+router.get('/config-finalizacao/:galleryId', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.galleryId, 10);
+  if (!galleryId) return res.status(400).send('galleryId inválido');
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const gRes = await client.query(
+      `SELECT g.id, g.nome_projeto
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (gRes.rows.length === 0) return res.status(404).send('Galeria não encontrada.');
+    res.render('kingSelectionConfigFinalizacao', {
+      galleryId,
+      nomeProjeto: gRes.rows[0].nome_projeto,
+      apiBase: '/api/king-selection'
+    });
+  } finally {
+    client.release();
+  }
+}));
+
 router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
