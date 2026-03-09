@@ -276,7 +276,7 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
         page.drawText(dataStr, { x: colData, y: y - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cText() });
         page.drawText(String(qtd), { x: colQtd, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() });
         page.drawText(formatMoney(valorUnit), { x: colUnit, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() });
-        y -= LINE_HEIGHT;
+        y -= LINE_HEIGHT + 4;
         const conteudoPacote = (item.conteudo_pacote || item.detalhes || '').toString().trim();
         if (conteudoPacote) {
             const linhas = conteudoPacote.split(/\n/);
@@ -288,8 +288,18 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
                     y -= 10;
                 }
             }
-            y -= 2;
+            y -= 6;
         }
+        y -= 4;
+        const lineY = y;
+        const lineColor = darkMode ? rgb(0.35, 0.35, 0.4) : rgb(0.85, 0.85, 0.88);
+        page.drawLine({
+            start: { x: colDesc - 4, y: lineY },
+            end: { x: tableRight, y: lineY },
+            thickness: 0.4,
+            color: lineColor
+        });
+        y -= 6;
     }
 
     y -= 8;
