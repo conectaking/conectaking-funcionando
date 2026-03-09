@@ -291,22 +291,21 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
     }
 
     y -= 8;
-    // Total em caixa laranja — SEMPRE à esquerda (mesma margem do texto), igual à visualização
+    // Total em faixa laranja em largura total (igual ao modelo desejado)
     const totalFontSize = 12;
     const totalLineH = 14;
-    const totalPaddingH = 8;
     const totalPaddingV = 6;
     const totalText = `TOTAL: ${formatMoney(totalGeral)}`;
-    const totalW = 120;
-    const totalX = MARGIN; // fixo: canto esquerdo, como na preview
+    const totalX = MARGIN;
+    const totalBarWidth = PAGE_WIDTH - MARGIN * 2;
     page.drawRectangle({
-        x: totalX - totalPaddingH,
+        x: totalX,
         y: y - totalLineH - totalPaddingV,
-        width: totalW + totalPaddingH * 2,
+        width: totalBarWidth,
         height: totalLineH + totalPaddingV * 2,
         color: cOrange()
     });
-    page.drawText(totalText, { x: totalX, y: y - totalLineH - 2, size: totalFontSize, font: boldFont, color: cWhite() });
+    page.drawText(totalText, { x: totalX + 12, y: y - totalLineH - 2, size: totalFontSize, font: boldFont, color: cWhite() });
     y -= totalLineH + totalPaddingV * 2 + 12;
 
     function drawBlock(title, text) {
