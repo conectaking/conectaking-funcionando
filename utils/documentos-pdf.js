@@ -10,7 +10,7 @@ const fetch = require('node-fetch');
 const logger = require('./logger');
 const { QrCodePix } = require('qrcode-pix');
 
-const MARGIN = 28;
+const MARGIN = 24;
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
 const LINE_HEIGHT = 14;
@@ -257,19 +257,24 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
         }
     }
 
-    y -= 10;
-    // Total geral em caixa laranja — alinhado à esquerda (igual à visualização)
-    const totalW = 115;
+    y -= 8;
+    // Total em caixa laranja — à esquerda, mesmo estilo da visualização (padding 10px 16px, fonte 14px)
+    const totalFontSize = 12;
+    const totalLineH = 14;
+    const totalPaddingH = 8;
+    const totalPaddingV = 6;
+    const totalText = `TOTAL: ${formatMoney(totalGeral)}`;
+    const totalW = 120;
     const totalX = colDesc;
     page.drawRectangle({
-        x: totalX - 4,
-        y: y - LINE_HEIGHT - 4,
-        width: totalW + 8,
-        height: LINE_HEIGHT + 10,
+        x: totalX - totalPaddingH,
+        y: y - totalLineH - totalPaddingV,
+        width: totalW + totalPaddingH * 2,
+        height: totalLineH + totalPaddingV * 2,
         color: cOrange()
     });
-    page.drawText(`TOTAL: ${formatMoney(totalGeral)}`, { x: totalX, y: y - 12, size: FONT_SIZE, font: boldFont, color: cWhite() });
-    y -= LINE_HEIGHT + 18;
+    page.drawText(totalText, { x: totalX, y: y - totalLineH - 2, size: totalFontSize, font: boldFont, color: cWhite() });
+    y -= totalLineH + totalPaddingV * 2 + 12;
 
     function drawBlock(title, text) {
         if (!text || !String(text).trim()) return;
