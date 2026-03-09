@@ -4,7 +4,6 @@ namespace KingSelection\Http\Controllers\Client;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\DB;
 use KingSelection\Models\KingGallery;
 use KingSelection\Models\KingSelection;
 
@@ -62,30 +61,7 @@ class ClientGalleryController extends Controller
             ]);
         }
 
-        $selectionCount = KingSelection::where('gallery_id', $gallery->id)->count();
-        $photographerName = $gallery->nome_projeto;
-        try {
-            $row = DB::table('king_galleries')
-                ->join('profile_items', 'profile_items.id', '=', 'king_galleries.profile_item_id')
-                ->leftJoin('user_profiles', 'user_profiles.user_id', '=', 'profile_items.user_id')
-                ->where('king_galleries.id', $gallery->id)
-                ->selectRaw('COALESCE(user_profiles.display_name, king_galleries.nome_projeto) as name')
-                ->first();
-            if ($row && !empty($row->name)) {
-                $photographerName = trim($row->name);
-            }
-        } catch (\Throwable $e) {
-            // Tabelas do app principal podem não existir neste ambiente
-        }
-
-        $thankYouTitle = $gallery->thank_you_title ?? 'Obrigado!';
-        $thankYouMessage = $gallery->thank_you_message ?? null;
-        $thankYouImageUrl = $gallery->thank_you_image_url ?? null;
-        $thankYouMessageResolved = $thankYouMessage
-            ? str_replace(['{{nome}}', '{{quantidade}}'], [$photographerName, (string) $selectionCount], $thankYouMessage)
-            : 'Obrigado por selecionar as fotos do ' . $photographerName . '. Sua seleção de ' . $selectionCount . ' foto(s) foi enviada com sucesso. O fotógrafo entrará em contato.';
-
-        return view('client.success', compact('gallery', 'selectionCount', 'photographerName', 'thankYouTitle', 'thankYouMessageResolved', 'thankYouImageUrl'));
+        return view('client.success', compact('gallery'));
     }
 
     public function export(Request $request, string $slug)

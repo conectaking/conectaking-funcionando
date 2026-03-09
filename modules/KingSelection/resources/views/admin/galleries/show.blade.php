@@ -38,33 +38,6 @@
         </div>
       </div>
 
-      @if(session('thank_you_saved'))
-        <div class="mt-6 rounded-xl bg-emerald-900/40 border border-emerald-700 text-emerald-200 px-4 py-3">
-          Mensagem de finalização salva com sucesso.
-        </div>
-      @endif
-
-      <div class="mt-10 rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
-        <h2 class="text-lg font-semibold">Página de finalização das fotos</h2>
-        <p class="text-slate-400 text-sm mt-1">Personalize a mensagem de obrigado que o cliente vê após confirmar e enviar a seleção. Use <code class="bg-slate-800 px-1 rounded">{{'{{nome}}'}}</code> para o seu nome e <code class="bg-slate-800 px-1 rounded">{{'{{quantidade}}'}}</code> para o número de fotos.</p>
-        <form method="POST" action="/admin/galleries/{{ $gallery->id }}/thank-you" class="mt-4 space-y-4">
-          @csrf
-          <div>
-            <label class="block text-sm font-medium text-slate-300">Título</label>
-            <input type="text" name="thank_you_title" value="{{ old('thank_you_title', $gallery->thank_you_title ?? 'Obrigado!') }}" placeholder="Obrigado!" class="mt-1 w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-300">Mensagem (opcional)</label>
-            <textarea name="thank_you_message" rows="3" placeholder="Ex.: Obrigado por selecionar as fotos do {{'{{nome}}'}}. Você escolheu {{'{{quantidade}}'}} foto(s)." class="mt-1 w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100">{{ old('thank_you_message', $gallery->thank_you_message ?? '') }}</textarea>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-300">URL da imagem de destaque (opcional)</label>
-            <input type="url" name="thank_you_image_url" value="{{ old('thank_you_image_url', $gallery->thank_you_image_url ?? '') }}" placeholder="https://..." class="mt-1 w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100" />
-          </div>
-          <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-semibold">Salvar mensagem de finalização</button>
-        </form>
-      </div>
-
       <div class="mt-10">
         <h2 class="text-lg font-semibold">Fotos ({{ $gallery->photos->count() }})</h2>
         <p class="text-slate-400 text-sm mt-1">Neste MVP, as fotos são cadastradas no banco e servidas via preview com watermark.</p>

@@ -67,26 +67,5 @@ class GalleryAdminController extends Controller
         $gallery->save();
         return back();
     }
-
-    public function updateThankYou(Request $request, KingGallery $gallery)
-    {
-        $data = $request->validate([
-            'thank_you_title' => ['nullable', 'string', 'max:255'],
-            'thank_you_message' => ['nullable', 'string', 'max:2000'],
-            'thank_you_image_url' => ['nullable', 'string', 'max:2000'],
-        ]);
-        if (!empty($data['thank_you_image_url']) && !filter_var($data['thank_you_image_url'], FILTER_VALIDATE_URL)) {
-            return back()->withErrors(['thank_you_image_url' => 'Informe uma URL válida.']);
-        }
-        try {
-            $gallery->thank_you_title = $data['thank_you_title'] ?: null;
-            $gallery->thank_you_message = $data['thank_you_message'] ?: null;
-            $gallery->thank_you_image_url = $data['thank_you_image_url'] ?: null;
-            $gallery->save();
-            return back()->with('thank_you_saved', true);
-        } catch (\Throwable $e) {
-            return back()->withErrors(['thank_you' => 'Não foi possível salvar. Execute a migração 201 no banco (thank_you_* em king_galleries).']);
-        }
-    }
 }
 
