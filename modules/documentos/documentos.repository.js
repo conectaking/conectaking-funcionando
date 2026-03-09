@@ -165,7 +165,7 @@ async function getSettings(userId) {
     const client = await db.pool.connect();
     try {
         const r = await client.query(
-            'SELECT header_color, accent_color, bg_color, last_document_id, default_logo_url, updated_at FROM documentos_user_settings WHERE user_id = $1',
+            'SELECT header_color, accent_color, bg_color, last_document_id, default_logo_url, extra_settings, updated_at FROM documentos_user_settings WHERE user_id = $1',
             [userId]
         );
         return r.rows[0] || null;
@@ -181,15 +181,18 @@ async function upsertSettings(userId, data) {
             ? (data.default_logo_url == null || data.default_logo_url === '' ? null : String(data.default_logo_url).trim())
             : undefined;
         const updateLogo = defaultLogo !== undefined;
+        const extraSettings = data.extra_settings !== undefined ? (typeof data.extra_settings === 'string' ? data.extra_settings : JSON.stringify(data.extra_settings || {})) : '{}';
+        const updateExtra = data.extra_settings !== undefined;
         const r = await client.query(
-            `INSERT INTO documentos_user_settings (user_id, header_color, accent_color, bg_color, last_document_id, default_logo_url, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, NOW())
+            `INSERT INTO documentos_user_settings (user_id, header_color, accent_color, bg_color, last_document_id, default_logo_url, extra_settings, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $8::jsonb, NOW())
              ON CONFLICT (user_id) DO UPDATE SET
                header_color = COALESCE(EXCLUDED.header_color, documentos_user_settings.header_color),
                accent_color = COALESCE(EXCLUDED.accent_color, documentos_user_settings.accent_color),
                bg_color = COALESCE(EXCLUDED.bg_color, documentos_user_settings.bg_color),
                last_document_id = COALESCE(EXCLUDED.last_document_id, documentos_user_settings.last_document_id),
                default_logo_url = CASE WHEN $7 THEN EXCLUDED.default_logo_url ELSE documentos_user_settings.default_logo_url END,
+               extra_settings = CASE WHEN $9 THEN COALESCE(documentos_user_settings.extra_settings, '{}')::jsonb || COALESCE(EXCLUDED.extra_settings, '{}')::jsonb ELSE COALESCE(documentos_user_settings.extra_settings, '{}') END,
                updated_at = NOW()
              RETURNING *`,
             [
@@ -199,7 +202,9 @@ async function upsertSettings(userId, data) {
                 data.bg_color != null ? String(data.bg_color).replace(/^#/, '').trim() || null : null,
                 data.last_document_id != null ? parseInt(data.last_document_id, 10) || null : null,
                 defaultLogo !== undefined ? defaultLogo : null,
-                updateLogo
+                updateLogo,
+                extraSettings,
+                updateExtra
             ]
         );
         return r.rows[0] || null;

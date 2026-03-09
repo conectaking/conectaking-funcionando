@@ -40,13 +40,19 @@ async function getSettings(req, res) {
             if (r.rows[0] && r.rows[0].company_logo_url) companyLogoUrl = r.rows[0].company_logo_url;
         } catch (_) {}
         const defaultLogoUrl = (settings?.default_logo_url && String(settings.default_logo_url).trim()) || null;
+        const extra = settings?.extra_settings || {};
         const payload = {
             headerColor: settings?.header_color || null,
             accentColor: settings?.accent_color || null,
             bgColor: settings?.bg_color || null,
             lastDocumentId: settings?.last_document_id != null ? settings.last_document_id : null,
             defaultLogoUrl: defaultLogoUrl || null,
-            companyLogoUrl: companyLogoUrl || null
+            companyLogoUrl: companyLogoUrl || null,
+            condicoesPagamentoPadrao: extra.condicoesPagamentoPadrao != null ? String(extra.condicoesPagamentoPadrao) : null,
+            pixChave: extra.pixChave != null ? String(extra.pixChave) : null,
+            pixNome: extra.pixNome != null ? String(extra.pixNome) : null,
+            pixCidade: extra.pixCidade != null ? String(extra.pixCidade) : null,
+            catalogoServicos: Array.isArray(extra.catalogoServicos) ? extra.catalogoServicos : null
         };
         return responseFormatter.success(res, payload);
     } catch (e) {
@@ -64,13 +70,25 @@ async function putSettings(req, res) {
         if (body.bgColor !== undefined) data.bg_color = body.bgColor;
         if (body.lastDocumentId !== undefined) data.last_document_id = body.lastDocumentId;
         if (body.defaultLogoUrl !== undefined) data.default_logo_url = body.defaultLogoUrl;
+        const extraKeys = ['condicoesPagamentoPadrao', 'pixChave', 'pixNome', 'pixCidade', 'catalogoServicos'];
+        const extraSettings = {};
+        for (const k of extraKeys) {
+            if (body[k] !== undefined) extraSettings[k] = body[k];
+        }
+        if (Object.keys(extraSettings).length) data.extra_settings = extraSettings;
         const updated = await documentosService.upsertSettings(req.user.userId, data);
+        const extra = updated?.extra_settings || {};
         const payload = {
             headerColor: updated?.header_color || null,
             accentColor: updated?.accent_color || null,
             bgColor: updated?.bg_color || null,
             lastDocumentId: updated?.last_document_id != null ? updated.last_document_id : null,
-            defaultLogoUrl: (updated?.default_logo_url && String(updated.default_logo_url).trim()) || null
+            defaultLogoUrl: (updated?.default_logo_url && String(updated.default_logo_url).trim()) || null,
+            condicoesPagamentoPadrao: extra.condicoesPagamentoPadrao != null ? String(extra.condicoesPagamentoPadrao) : null,
+            pixChave: extra.pixChave != null ? String(extra.pixChave) : null,
+            pixNome: extra.pixNome != null ? String(extra.pixNome) : null,
+            pixCidade: extra.pixCidade != null ? String(extra.pixCidade) : null,
+            catalogoServicos: Array.isArray(extra.catalogoServicos) ? extra.catalogoServicos : null
         };
         return responseFormatter.success(res, payload, 'Configurações salvas.');
     } catch (e) {
