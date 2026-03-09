@@ -245,9 +245,9 @@ async function getPdfByToken(req, res) {
         if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const buffer = await documentosService.gerarPdf(doc.id, doc.user_id);
         if (!buffer) return responseFormatter.error(res, 'Erro ao gerar PDF', 500);
-        const tipo = doc.tipo || 'documento';
+        const tipo = (doc.tipo || 'documento').toLowerCase();
         const num = doc.numero_sequencial != null ? doc.numero_sequencial : doc.id;
-        const nome = tipo === 'recibo' ? `King-${num}.pdf` : `documento-${tipo}-${doc.id}.pdf`;
+        const nome = tipo === 'recibo' ? `recibo-${num}.pdf` : (tipo === 'orcamento' ? `orcamento-${num}.pdf` : `documento-${num}.pdf`);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${nome}"`);
         res.send(buffer);
@@ -279,9 +279,9 @@ async function getPdf(req, res) {
         const buffer = await documentosService.gerarPdf(id, req.user.userId, Object.keys(colors).length ? colors : null);
         if (!buffer) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const doc = await documentosService.getOne(id, req.user.userId);
-        const tipo = (doc && doc.tipo) || 'documento';
+        const tipo = ((doc && doc.tipo) || 'documento').toLowerCase();
         const num = (doc && doc.numero_sequencial != null) ? doc.numero_sequencial : id;
-        const nome = tipo === 'recibo' ? `King-${num}.pdf` : `documento-${tipo}-${id}.pdf`;
+        const nome = tipo === 'recibo' ? `recibo-${num}.pdf` : (tipo === 'orcamento' ? `orcamento-${num}.pdf` : `documento-${num}.pdf`);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${nome}"`);
         res.send(buffer);
