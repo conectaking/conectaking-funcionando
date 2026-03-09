@@ -4,35 +4,174 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Configurar tela de finalização — King Selection</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ks-primary: #facc15;
+      --ks-black: #0a0a0a;
+      --ks-card: rgba(18, 18, 18, 0.95);
+      --ks-line: rgba(255, 255, 255, 0.12);
+      --ks-muted: rgba(255, 255, 255, 0.5);
+      --ks-text: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--ks-black);
+      color: var(--ks-text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .ks-wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+    .ks-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .ks-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .ks-back {
+      color: var(--ks-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .ks-back:hover { color: var(--ks-primary); }
+    .ks-sub {
+      color: var(--ks-muted);
+      font-size: 0.875rem;
+      margin-bottom: 8px;
+    }
+    .ks-sub strong { color: rgba(255,255,255,0.9); }
+    .ks-hint {
+      color: var(--ks-muted);
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .ks-hint code {
+      background: rgba(250, 204, 21, 0.15);
+      color: var(--ks-primary);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.8em;
+    }
+    .ks-card {
+      background: var(--ks-card);
+      border: 1px solid var(--ks-line);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .ks-msg {
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+    .ks-msg.hidden { display: none !important; }
+    .ks-msg.ok {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      color: #86efac;
+    }
+    .ks-msg.err {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .ks-field { margin-bottom: 20px; }
+    .ks-field:last-of-type { margin-bottom: 0; }
+    .ks-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ks-muted);
+      margin-bottom: 8px;
+    }
+    .ks-input, .ks-textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--ks-line);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.4);
+      color: #fff;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .ks-textarea { min-height: 120px; resize: vertical; }
+    .ks-input::placeholder, .ks-textarea::placeholder { color: var(--ks-muted); }
+    .ks-input:focus, .ks-textarea:focus {
+      outline: none;
+      border-color: rgba(250, 204, 21, 0.5);
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.15);
+    }
+    .ks-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: filter 0.2s, transform 0.1s;
+    }
+    .ks-btn:hover { filter: brightness(1.05); }
+    .ks-btn:active { transform: scale(0.98); }
+    .ks-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .ks-btn-primary {
+      background: var(--ks-primary);
+      color: #000;
+    }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
-  <div class="max-w-2xl mx-auto px-4 py-8">
-    <div class="flex items-center justify-between gap-4 mb-6">
-      <h1 class="text-xl font-bold">Página de finalização das fotos</h1>
-      <a href="#" id="btnVoltar" class="text-slate-400 hover:text-white text-sm">← Voltar</a>
+<body>
+  <div class="ks-wrap">
+    <div class="ks-top">
+      <h1 class="ks-title">Página de finalização das fotos</h1>
+      <a href="#" id="btnVoltar" class="ks-back">← Voltar</a>
     </div>
-    <p class="text-slate-400 text-sm mb-4">Projeto: <strong class="text-slate-200"><%= nomeProjeto %></strong></p>
-    <p class="text-slate-400 text-sm mb-6">Personalize a mensagem de obrigado que o cliente vê após confirmar e enviar a seleção. Use <code class="bg-slate-800 px-1 rounded text-amber-300">{{nome}}</code> para o seu nome e <code class="bg-slate-800 px-1 rounded text-amber-300">{{quantidade}}</code> para o número de fotos.</p>
+    <p class="ks-sub">Projeto: <strong><%= nomeProjeto %></strong></p>
+    <p class="ks-hint">Personalize a mensagem de obrigado que o cliente vê após confirmar e enviar a seleção. Use <code>{{nome}}</code> para o seu nome e <code>{{quantidade}}</code> para o número de fotos.</p>
 
-    <div id="msgSucesso" class="hidden mb-4 p-4 rounded-xl bg-emerald-900/50 border border-emerald-700 text-emerald-200 text-sm">Mensagem de finalização salva com sucesso.</div>
-    <div id="msgErro" class="hidden mb-4 p-4 rounded-xl bg-red-900/50 border border-red-700 text-red-200 text-sm"></div>
+    <div id="msgSucesso" class="ks-msg ok hidden">Mensagem de finalização salva com sucesso.</div>
+    <div id="msgErro" class="ks-msg err hidden"></div>
 
-    <form id="formFinalizacao" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-slate-300 mb-1">Título</label>
-        <input type="text" name="thank_you_title" id="thank_you_title" placeholder="Obrigado!" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:ring-2 focus:ring-amber-500" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-slate-300 mb-1">Mensagem (opcional)</label>
-        <textarea name="thank_you_message" id="thank_you_message" rows="4" placeholder="Ex.: Obrigado por selecionar as fotos do {{nome}}. Você escolheu {{quantidade}} foto(s)." class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:ring-2 focus:ring-amber-500"></textarea>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-slate-300 mb-1">URL da imagem de destaque (opcional)</label>
-        <input type="url" name="thank_you_image_url" id="thank_you_image_url" placeholder="https://..." class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-slate-100 focus:ring-2 focus:ring-amber-500" />
-      </div>
-      <button type="submit" id="btnSalvar" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold">Salvar mensagem de finalização</button>
-    </form>
+    <div class="ks-card">
+      <form id="formFinalizacao">
+        <div class="ks-field">
+          <label class="ks-label" for="thank_you_title">Título</label>
+          <input type="text" name="thank_you_title" id="thank_you_title" placeholder="Obrigado!" class="ks-input" />
+        </div>
+        <div class="ks-field">
+          <label class="ks-label" for="thank_you_message">Mensagem (opcional)</label>
+          <textarea name="thank_you_message" id="thank_you_message" placeholder="Ex.: Obrigado por selecionar as fotos do {{nome}}. Você escolheu {{quantidade}} foto(s)." class="ks-textarea"></textarea>
+        </div>
+        <div class="ks-field">
+          <label class="ks-label" for="thank_you_image_url">URL da imagem de destaque (opcional)</label>
+          <input type="url" name="thank_you_image_url" id="thank_you_image_url" placeholder="https://..." class="ks-input" />
+        </div>
+        <button type="submit" id="btnSalvar" class="ks-btn ks-btn-primary" style="margin-top: 8px;">Salvar mensagem de finalização</button>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -42,7 +181,7 @@
       const params = new URLSearchParams(window.location.search);
       let token = params.get('token');
       if (!token && typeof localStorage !== 'undefined') {
-        token = localStorage.getItem('conectaking_token') || localStorage.getItem('token') || localStorage.getItem('jwt');
+        token = localStorage.getItem('conectaKingToken') || localStorage.getItem('conectaking_token') || localStorage.getItem('token') || localStorage.getItem('jwt');
       }
       if (!token) {
         document.getElementById('msgErro').textContent = 'Token não encontrado. Abra esta página pelo painel (link com token) ou informe ?token=... na URL.';
