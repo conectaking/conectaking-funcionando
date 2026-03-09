@@ -17,7 +17,10 @@ class KingGallery extends Model
         'senha_hash',
         'status',
         'total_fotos_contratadas',
-        'watermark_path'
+        'watermark_path',
+        'thank_you_title',
+        'thank_you_message',
+        'thank_you_image_url'
     ];
 
     public function photos(): HasMany

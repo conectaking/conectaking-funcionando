@@ -8,12 +8,17 @@
   </head>
   <body class="bg-white text-slate-900">
     <div class="max-w-3xl mx-auto px-4 py-10">
-      <div class="flex items-center justify-between gap-4">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-extrabold">Exportação</h1>
           <p class="text-slate-600 mt-1">{{ $gallery->nome_projeto }}</p>
         </div>
-        <a href="/g/{{ $gallery->slug }}/gallery" class="text-slate-600 hover:text-slate-900 font-semibold">Voltar</a>
+        <div class="flex items-center gap-3">
+          <a href="/g/{{ $gallery->slug }}/gallery" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-emerald-500 text-emerald-700 font-semibold hover:bg-emerald-50">
+            <span aria-hidden="true">➕</span> Selecionar mais fotos
+          </a>
+          <a href="/g/{{ $gallery->slug }}/gallery" class="text-slate-600 hover:text-slate-900 font-semibold">Voltar</a>
+        </div>
       </div>
 
       <div class="mt-8 grid grid-cols-1 gap-4">

@@ -2321,7 +2321,10 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'watermark_opacity',
     'watermark_scale',
     'watermark_rotate',
-    'face_recognition_enabled'
+    'face_recognition_enabled',
+    'thank_you_title',
+    'thank_you_message',
+    'thank_you_image_url'
   ];
 
   const body = req.body || {};
@@ -2380,6 +2383,10 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         // normalizar string vazia como NULL
         if (val === '' || val === 'null') val = null;
         newWmPath = val;
+      }
+      if (key === 'thank_you_title' || key === 'thank_you_message' || key === 'thank_you_image_url') {
+        if (val === '' || val === 'null') val = null;
+        else if (val != null) val = String(val).trim().slice(0, 2000);
       }
       sets.push(`${key}=$${idx++}`);
       values.push(val);
@@ -3342,8 +3349,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
     const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
     const hasFaceEnabled = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
+    const hasThankYou = await hasColumn(client, 'king_galleries', 'thank_you_title');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -3397,6 +3405,41 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       }
       return out;
     });
+
+    // Nome do fotógrafo (dono da galeria) para mensagem de obrigado
+    let photographerDisplayName = gallery.nome_projeto || 'Fotógrafo';
+    try {
+      const nameRes = await client.query(
+        `SELECT COALESCE(p.display_name, u.email, '') AS name
+         FROM king_galleries g
+         JOIN profile_items pi ON pi.id = g.profile_item_id
+         JOIN users u ON u.id = pi.user_id
+         LEFT JOIN user_profiles p ON p.user_id = u.id
+         WHERE g.id=$1 LIMIT 1`,
+        [req.ksClient.galleryId]
+      );
+      if (nameRes.rows[0]?.name) photographerDisplayName = String(nameRes.rows[0].name).trim();
+    } catch (_) { }
+
+    // Config da página de finalização (obrigado)
+    const thankYouConfig = hasThankYou ? {
+      title: gallery.thank_you_title || 'Obrigado!',
+      message: gallery.thank_you_message || null,
+      imageUrl: gallery.thank_you_image_url || null
+    } : { title: 'Obrigado!', message: null, imageUrl: null };
+
+    const selectedCount = selectedPhotoIds.length;
+
+    // Mensagem para exibir quando a seleção já foi enviada (página com cadeado)
+    let lockedMessage = null;
+    if (locked) {
+      if (selectedCount > 0) {
+        lockedMessage = `Obrigado! Você selecionou ${selectedCount} foto(s). Se quiser selecionar mais, peça ao fotógrafo para liberar novamente. Se já fez a seleção, entre em contato com ele.`;
+      } else {
+        lockedMessage = 'Nenhuma foto foi selecionada. Se precisar fazer sua seleção, entre em contato com o fotógrafo para reativar.';
+      }
+    }
+
     res.json({
       success: true,
       gallery: {
@@ -3406,7 +3449,11 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         allow_download: hasAllowDownload ? !!gallery.allow_download : false,
         face_recognition_enabled: hasFaceEnabled ? !!gallery.face_recognition_enabled : false
       },
-      selectedPhotoIds
+      selectedPhotoIds,
+      selectedCount,
+      photographerDisplayName,
+      thankYouConfig,
+      lockedMessage
     });
   } finally {
     client.release();
@@ -4025,7 +4072,54 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       });
     } catch (_) { }
 
-    res.json({ success: true });
+    // Contagem de fotos selecionadas (já em revisão, não muda mais)
+    const countRes = await client.query(
+      hasClientTable && cid
+        ? 'SELECT COUNT(*)::int AS cnt FROM king_selections WHERE gallery_id=$1 AND client_id=$2'
+        : 'SELECT COUNT(*)::int AS cnt FROM king_selections WHERE gallery_id=$1',
+      hasClientTable && cid ? [galleryId, cid] : [galleryId]
+    );
+    const selectionCount = countRes.rows[0]?.cnt || 0;
+
+    // Nome do fotógrafo e config da página de obrigado
+    let photographerDisplayName = 'Fotógrafo';
+    let thankYouConfig = { title: 'Obrigado!', message: null, imageUrl: null };
+    try {
+      const hasThankYouCol = await hasColumn(client, 'king_galleries', 'thank_you_title');
+      const g2 = await client.query(
+        `SELECT g.nome_projeto${hasThankYouCol ? ', g.thank_you_title, g.thank_you_message, g.thank_you_image_url' : ''}
+         FROM king_galleries g WHERE g.id=$1`,
+        [galleryId]
+      );
+      if (g2.rows[0]) {
+        const row = g2.rows[0];
+        photographerDisplayName = row.nome_projeto || photographerDisplayName;
+        if (hasThankYouCol && row.thank_you_title !== undefined) {
+          thankYouConfig = {
+            title: row.thank_you_title || 'Obrigado!',
+            message: row.thank_you_message || null,
+            imageUrl: row.thank_you_image_url || null
+          };
+        }
+      }
+      const nameRes = await client.query(
+        `SELECT COALESCE(p.display_name, u.email, '') AS name
+         FROM king_galleries g
+         JOIN profile_items pi ON pi.id = g.profile_item_id
+         JOIN users u ON u.id = pi.user_id
+         LEFT JOIN user_profiles p ON p.user_id = u.id
+         WHERE g.id=$1 LIMIT 1`,
+        [galleryId]
+      );
+      if (nameRes.rows[0]?.name) photographerDisplayName = String(nameRes.rows[0].name).trim();
+    } catch (_) { }
+
+    res.json({
+      success: true,
+      selectionCount,
+      photographerDisplayName,
+      thankYouConfig
+    });
   } finally {
     client.release();
   }

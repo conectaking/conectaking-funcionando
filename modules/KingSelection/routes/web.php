@@ -22,6 +22,7 @@ Route::middleware([VerifyConectaJwt::class])->group(function () {
     Route::post('/admin/galleries', [GalleryAdminController::class, 'store']);
     Route::get('/admin/galleries/{gallery}', [GalleryAdminController::class, 'show']);
     Route::post('/admin/galleries/{gallery}/status', [GalleryAdminController::class, 'updateStatus']);
+    Route::post('/admin/galleries/{gallery}/thank-you', [GalleryAdminController::class, 'updateThankYou']);
 });
 
 // ===== Cliente (login por galeria) =====

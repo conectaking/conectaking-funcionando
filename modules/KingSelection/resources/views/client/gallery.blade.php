@@ -48,6 +48,11 @@
             <div class="p-2 text-xs text-slate-600 font-mono truncate">{{ $p->original_name }}</div>
           </button>
         @endforeach
+        <div class="col-span-full flex justify-center mt-6">
+          <a href="/g/{{ $gallery->slug }}/export" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 border border-slate-200">
+            Revisar e Exportar →
+          </a>
+        </div>
       </div>
     </div>
 
