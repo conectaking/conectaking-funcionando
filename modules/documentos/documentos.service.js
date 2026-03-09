@@ -106,6 +106,14 @@ async function processarComprovante(id, userId, { url, itensSugeridos }) {
     return documentosRepository.update(id, userId, { itens_json: itens, anexos_json: anexos });
 }
 
+async function getSettings(userId) {
+    return documentosRepository.getSettings(userId);
+}
+
+async function upsertSettings(userId, data) {
+    return documentosRepository.upsertSettings(userId, data);
+}
+
 async function gerarPdf(id, userId, colors = null) {
     const doc = await documentosRepository.getById(id, userId);
     if (!doc) return null;
@@ -138,5 +146,7 @@ module.exports = {
     remove,
     addAnexo,
     processarComprovante,
-    gerarPdf
+    gerarPdf,
+    getSettings,
+    upsertSettings
 };

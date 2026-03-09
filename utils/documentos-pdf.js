@@ -155,15 +155,17 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
 
     // Carregar logo antes do header (para desenhar dentro da barra azul)
     // Suporta: emitente.logo_url, emitente.logo, emitente.logomarca; fallback: companyLogoUrl (logo da empresa)
-    const logoUrl = (emitente && (emitente.logo_url || emitente.logo || emitente.logomarca)) ||
-        (options && options.companyLogoUrl) || null;
+    const emitenteLogoUrl = (emitente && (emitente.logo_url || emitente.logo || emitente.logomarca)) ? String(emitente.logo_url || emitente.logo || emitente.logomarca).trim() : null;
+    const companyLogoUrl = (options && options.companyLogoUrl) ? String(options.companyLogoUrl).trim() : null;
+    const logoUrl = emitenteLogoUrl || companyLogoUrl || null;
     let logoImg = null;
-    if (logoUrl && String(logoUrl).trim()) {
+    const urlsToTry = [logoUrl].filter(Boolean);
+    if (emitenteLogoUrl && companyLogoUrl && emitenteLogoUrl !== companyLogoUrl) urlsToTry.push(companyLogoUrl);
+    for (const urlStr of urlsToTry) {
+        if (!urlStr) continue;
         try {
             let type, bytes;
-            const urlStr = String(logoUrl).trim();
             if (urlStr.startsWith('data:image/')) {
-                // Suportar data URL (base64) - ex.: data:image/png;base64,iVBORw0...
                 const match = urlStr.match(/^data:image\/(png|jpe?g|gif|webp);base64,(.+)$/i);
                 if (match) {
                     type = match[1].toLowerCase() === 'png' ? 'png' : 'jpg';
@@ -179,8 +181,9 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
             const img = type === 'png' ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
             const scale = Math.min(100 / img.width, 44 / img.height, 1);
             logoImg = { img, width: img.width * scale, height: img.height * scale };
+            break;
         } catch (e) {
-            logger.warn('documentos-pdf: logo não carregada', { url: String(logoUrl).slice(0, 80), message: e.message });
+            logger.warn('documentos-pdf: logo não carregada, tentando próximo', { url: String(urlStr).slice(0, 80), message: e.message });
         }
     }
     let y = drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlue, rgbOrange, logoImg);

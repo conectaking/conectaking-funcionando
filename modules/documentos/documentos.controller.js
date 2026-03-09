@@ -26,6 +26,55 @@ async function create(req, res) {
     }
 }
 
+async function getSettings(req, res) {
+    try {
+        const settings = await documentosService.getSettings(req.user.userId);
+        const db = require('../../db');
+        let companyLogoUrl = null;
+        try {
+            const r = await db.pool.query(
+                `SELECT CASE WHEN u.parent_user_id IS NOT NULL THEN p.company_logo_url ELSE u.company_logo_url END AS company_logo_url
+                 FROM users u LEFT JOIN users p ON p.id = u.parent_user_id WHERE u.id = $1`,
+                [req.user.userId]
+            );
+            if (r.rows[0] && r.rows[0].company_logo_url) companyLogoUrl = r.rows[0].company_logo_url;
+        } catch (_) {}
+        const payload = {
+            headerColor: settings?.header_color || null,
+            accentColor: settings?.accent_color || null,
+            bgColor: settings?.bg_color || null,
+            lastDocumentId: settings?.last_document_id != null ? settings.last_document_id : null,
+            companyLogoUrl: companyLogoUrl || null
+        };
+        return responseFormatter.success(res, payload);
+    } catch (e) {
+        logger.error('documentos getSettings:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao obter configurações', 500);
+    }
+}
+
+async function putSettings(req, res) {
+    try {
+        const body = req.body || {};
+        const data = {};
+        if (body.headerColor !== undefined) data.header_color = body.headerColor;
+        if (body.accentColor !== undefined) data.accent_color = body.accentColor;
+        if (body.bgColor !== undefined) data.bg_color = body.bgColor;
+        if (body.lastDocumentId !== undefined) data.last_document_id = body.lastDocumentId;
+        const updated = await documentosService.upsertSettings(req.user.userId, data);
+        const payload = {
+            headerColor: updated?.header_color || null,
+            accentColor: updated?.accent_color || null,
+            bgColor: updated?.bg_color || null,
+            lastDocumentId: updated?.last_document_id != null ? updated.last_document_id : null
+        };
+        return responseFormatter.success(res, payload, 'Configurações salvas.');
+    } catch (e) {
+        logger.error('documentos putSettings:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao salvar configurações', 500);
+    }
+}
+
 async function list(req, res) {
     try {
         const tipo = req.query.tipo || null;
@@ -190,13 +239,21 @@ async function getPdf(req, res) {
     try {
         const id = parseInt(req.params.id, 10);
         if (!id) return responseFormatter.error(res, 'ID inválido', 400);
-        const colors = {};
+        let colors = {};
         const h = (req.query.headerColor || '').toString().trim().replace(/^#/, '');
         const a = (req.query.accentColor || '').toString().trim().replace(/^#/, '');
         const b = (req.query.bgColor || '').toString().trim().replace(/^#/, '');
         if (/^[0-9A-Fa-f]{6}$/.test(h)) colors.headerColor = h;
         if (/^[0-9A-Fa-f]{6}$/.test(a)) colors.accentColor = a;
         if (/^[0-9A-Fa-f]{6}$/.test(b)) colors.bgColor = b;
+        if (Object.keys(colors).length === 0) {
+            const settings = await documentosService.getSettings(req.user.userId);
+            if (settings) {
+                if (settings.header_color) colors.headerColor = settings.header_color.replace(/^#/, '');
+                if (settings.accent_color) colors.accentColor = settings.accent_color.replace(/^#/, '');
+                if (settings.bg_color) colors.bgColor = settings.bg_color.replace(/^#/, '');
+            }
+        }
         const buffer = await documentosService.gerarPdf(id, req.user.userId, Object.keys(colors).length ? colors : null);
         if (!buffer) return responseFormatter.error(res, 'Documento não encontrado', 404);
         const doc = await documentosService.getOne(id, req.user.userId);
@@ -268,6 +325,8 @@ module.exports = {
     update,
     updateByToken,
     remove,
+    getSettings,
+    putSettings,
     uploadLogo,
     uploadAnexo,
     getPdf,

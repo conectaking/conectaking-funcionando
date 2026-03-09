@@ -7,6 +7,7 @@ Nada novo precisa ser **instalado** (npm): todas as dependências já estão no 
 ### 1. Banco de dados
 - A migration **189_documentos_recibos_orcamentos.sql** já foi executada (tabela `documentos`).
 - A migration **198_documentos_condicoes_pagamento.sql** adiciona o campo `condicoes_pagamento` (condições de pagamento no PDF).
+- A migration **199_documentos_user_settings.sql** cria a tabela `documentos_user_settings` (cores e último documento por usuário), para as configurações persistirem entre dispositivos e ao voltar da página de Configuração.
 - Se em outro ambiente: rode `npm run migrate-auto` para aplicar migrations pendentes.
 
 ### 2. Cloudflare Images (fotos de comprovantes e logo)
@@ -51,6 +52,10 @@ Se o upload de imagens (ex.: King Selection) já funciona no seu ambiente, o sis
 - **Condições de pagamento**: envie `condicoes_pagamento` (texto) ao criar/atualizar documento. No PDF aparece abaixo dos valores, antes das observações. Ex.: "20% para marcação; 30% um dia antes do evento; 50% no encerramento."
 - **Conteúdo do pacote por item**: em cada elemento de `itens_json` pode enviar `conteudo_pacote` ou `detalhes` (texto). No PDF aparece abaixo da linha do item (ex.: "O que vai no pacote: decoração, som, 4h").
 - **Importar logomarca**: `POST /api/documentos/upload-logo` com multipart `image` (ficheiro). Resposta: `{ url }`. Use essa URL em `emitente_json.logo_url` ao criar/editar o documento (em vez de colar URL manual).
+- **Configurações persistentes (cores e último documento)**:
+  - `GET /api/documentos/settings` — devolve `headerColor`, `accentColor`, `bgColor`, `lastDocumentId`, `companyLogoUrl`. Use no carregamento da página para aplicar o tema e, se não houver `?id=` na URL, redirecionar para `?id=<lastDocumentId>` (assim o orçamento não “some” ao voltar de Configuração).
+  - `PUT /api/documentos/settings` — body: `{ headerColor?, accentColor?, bgColor?, lastDocumentId? }`. Ao abrir um documento, envie `lastDocumentId` com o id do documento atual. Ao salvar cores na página de Configuração, envie `headerColor`, `accentColor`, `bgColor`. Assim as cores e a logo ficam iguais em qualquer computador e ao exportar o PDF.
+- **Exportar PDF com cores e logo**: o endpoint `GET /api/documentos/:id/pdf` aceita opcionalmente `headerColor`, `accentColor`, `bgColor` na query. Se não forem enviados, são usadas as cores salvas em `/api/documentos/settings`. A logo no PDF vem de `emitente_json.logo_url` (do documento) ou, se falhar ou estiver vazio, da logo da empresa (`company_logo_url` do usuário).
 
 ### Ordem no PDF
 
