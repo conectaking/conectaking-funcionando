@@ -123,10 +123,11 @@ function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlu
         height: ORANGE_BAR_HEIGHT,
         color: rgb(rgbOrange.r, rgbOrange.g, rgbOrange.b)
     });
-    // Título e número à direita (sobre o azul)
+    // Título e número à direita (com margem para não cortar)
+    const rightEdge = PAGE_WIDTH - MARGIN;
     const tituloNum = `${tipoLabel}  ${numero}`.trim();
     page.drawText(tituloNum, {
-        x: PAGE_WIDTH - MARGIN - 130,
+        x: rightEdge - 155,
         y: PAGE_HEIGHT - HEADER_HEIGHT / 2 - 6,
         size: FONT_SIZE_TITLE,
         font: boldFont,
@@ -135,7 +136,7 @@ function drawHeader(page, pdfDoc, font, boldFont, tipo, numero, emitente, rgbBlu
     const numLimpo = numero ? String(numero).replace(/^#/, '') : '';
     if (numLimpo) {
         page.drawText(`Nº ${numLimpo}`, {
-            x: PAGE_WIDTH - MARGIN - 80,
+            x: rightEdge - 95,
             y: PAGE_HEIGHT - HEADER_HEIGHT / 2 - 24,
             size: FONT_SIZE_SMALL,
             font,
@@ -238,16 +239,17 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
 
     y = Math.min(y, yRight) - 20;
 
-    // Tabela de itens — cabeçalho laranja (apenas valor unitário por linha; total geral fica na caixa abaixo)
+    // Tabela de itens — Valor unit. colado no canto direito (sem espaço branco)
     const colDesc = colLeft;
     const colData = colDesc + 155;
     const colQtd = PAGE_WIDTH - MARGIN - 210;
-    const colUnit = PAGE_WIDTH - MARGIN - 115;
+    const colUnit = PAGE_WIDTH - MARGIN - 78;
 
+    const tableRight = PAGE_WIDTH - MARGIN;
     page.drawRectangle({
         x: colDesc - 4,
         y: y - LINE_HEIGHT - 6,
-        width: colUnit - colDesc + 60,
+        width: tableRight - (colDesc - 4),
         height: LINE_HEIGHT + 10,
         color: cOrange()
     });
