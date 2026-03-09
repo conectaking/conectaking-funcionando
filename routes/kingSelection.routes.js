@@ -4187,8 +4187,9 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
     // Mensagem padrão quando o fotógrafo não personalizou (para todos)
     const DEFAULT_THANK_YOU_MESSAGE = 'Obrigado, {{nome_cliente}}! Sua seleção foi recebida com sucesso. Você escolheu {{quantidade}} foto(s). Nosso retratista {{nome}} agradece pela confiança e pelo carinho.';
 
-    // Nome do fotógrafo e config da página de obrigado
+    // Nome do fotógrafo, nome do projeto e config da página de obrigado
     let photographerDisplayName = 'Fotógrafo';
+    let projectName = null;
     let thankYouConfig = { title: 'Obrigado!', message: null, imageUrl: null };
     try {
       const hasThankYouCol = await hasColumn(client, 'king_galleries', 'thank_you_title');
@@ -4200,6 +4201,9 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       );
       if (g2.rows[0]) {
         const row = g2.rows[0];
+        if (row.nome_projeto && String(row.nome_projeto).trim()) {
+          projectName = String(row.nome_projeto).trim();
+        }
         if (row.thank_you_photographer_name && String(row.thank_you_photographer_name).trim()) {
           photographerDisplayName = String(row.thank_you_photographer_name).trim();
         } else {
@@ -4241,6 +4245,7 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       selectionCount,
       photographerDisplayName,
       clientDisplayName,
+      projectName,
       thankYouConfig
     });
   } finally {
