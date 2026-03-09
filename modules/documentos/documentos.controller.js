@@ -39,11 +39,13 @@ async function getSettings(req, res) {
             );
             if (r.rows[0] && r.rows[0].company_logo_url) companyLogoUrl = r.rows[0].company_logo_url;
         } catch (_) {}
+        const defaultLogoUrl = (settings?.default_logo_url && String(settings.default_logo_url).trim()) || null;
         const payload = {
             headerColor: settings?.header_color || null,
             accentColor: settings?.accent_color || null,
             bgColor: settings?.bg_color || null,
             lastDocumentId: settings?.last_document_id != null ? settings.last_document_id : null,
+            defaultLogoUrl: defaultLogoUrl || null,
             companyLogoUrl: companyLogoUrl || null
         };
         return responseFormatter.success(res, payload);
@@ -61,12 +63,14 @@ async function putSettings(req, res) {
         if (body.accentColor !== undefined) data.accent_color = body.accentColor;
         if (body.bgColor !== undefined) data.bg_color = body.bgColor;
         if (body.lastDocumentId !== undefined) data.last_document_id = body.lastDocumentId;
+        if (body.defaultLogoUrl !== undefined) data.default_logo_url = body.defaultLogoUrl;
         const updated = await documentosService.upsertSettings(req.user.userId, data);
         const payload = {
             headerColor: updated?.header_color || null,
             accentColor: updated?.accent_color || null,
             bgColor: updated?.bg_color || null,
-            lastDocumentId: updated?.last_document_id != null ? updated.last_document_id : null
+            lastDocumentId: updated?.last_document_id != null ? updated.last_document_id : null,
+            defaultLogoUrl: (updated?.default_logo_url && String(updated.default_logo_url).trim()) || null
         };
         return responseFormatter.success(res, payload, 'Configurações salvas.');
     } catch (e) {

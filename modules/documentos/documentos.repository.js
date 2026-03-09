@@ -180,6 +180,7 @@ async function upsertSettings(userId, data) {
         const defaultLogo = data.default_logo_url !== undefined
             ? (data.default_logo_url == null || data.default_logo_url === '' ? null : String(data.default_logo_url).trim())
             : undefined;
+        const updateLogo = defaultLogo !== undefined;
         const r = await client.query(
             `INSERT INTO documentos_user_settings (user_id, header_color, accent_color, bg_color, last_document_id, default_logo_url, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, NOW())
@@ -188,7 +189,7 @@ async function upsertSettings(userId, data) {
                accent_color = COALESCE(EXCLUDED.accent_color, documentos_user_settings.accent_color),
                bg_color = COALESCE(EXCLUDED.bg_color, documentos_user_settings.bg_color),
                last_document_id = COALESCE(EXCLUDED.last_document_id, documentos_user_settings.last_document_id),
-               default_logo_url = CASE WHEN EXCLUDED.default_logo_url IS NOT NULL THEN EXCLUDED.default_logo_url ELSE documentos_user_settings.default_logo_url END,
+               default_logo_url = CASE WHEN $7 THEN EXCLUDED.default_logo_url ELSE documentos_user_settings.default_logo_url END,
                updated_at = NOW()
              RETURNING *`,
             [
@@ -197,7 +198,8 @@ async function upsertSettings(userId, data) {
                 data.accent_color != null ? String(data.accent_color).replace(/^#/, '').trim() || null : null,
                 data.bg_color != null ? String(data.bg_color).replace(/^#/, '').trim() || null : null,
                 data.last_document_id != null ? parseInt(data.last_document_id, 10) || null : null,
-                defaultLogo !== undefined ? defaultLogo : null
+                defaultLogo !== undefined ? defaultLogo : null,
+                updateLogo
             ]
         );
         return r.rows[0] || null;

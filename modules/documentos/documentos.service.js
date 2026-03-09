@@ -117,8 +117,16 @@ async function upsertSettings(userId, data) {
 async function gerarPdf(id, userId, colors = null) {
     const doc = await documentosRepository.getById(id, userId);
     if (!doc) return null;
-    // Se emitente não tiver logo, usar logo da empresa (company_logo_url) como fallback
+    let defaultLogoUrl = null;
     let companyLogoUrl = null;
+    try {
+        const settings = await documentosRepository.getSettings(userId);
+        if (settings && settings.default_logo_url && String(settings.default_logo_url).trim()) {
+            defaultLogoUrl = String(settings.default_logo_url).trim();
+        }
+    } catch (e) {
+        logger.warn('documentos gerarPdf: não foi possível obter default_logo_url', { message: e?.message });
+    }
     try {
         const r = await db.pool.query(
             `SELECT CASE WHEN u.parent_user_id IS NOT NULL THEN p.company_logo_url ELSE u.company_logo_url END AS company_logo_url
@@ -133,7 +141,7 @@ async function gerarPdf(id, userId, colors = null) {
     } catch (e) {
         logger.warn('documentos gerarPdf: não foi possível obter company_logo_url', { message: e?.message });
     }
-    return gerarPdfBuffer(doc, colors, { companyLogoUrl });
+    return gerarPdfBuffer(doc, colors, { defaultLogoUrl, companyLogoUrl });
 }
 
 module.exports = {

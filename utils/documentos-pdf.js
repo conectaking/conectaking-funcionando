@@ -153,14 +153,12 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
     const cBlue = () => rgb(rgbBlue.r, rgbBlue.g, rgbBlue.b);
     const cOrange = () => rgb(rgbOrange.r, rgbOrange.g, rgbOrange.b);
 
-    // Carregar logo antes do header (para desenhar dentro da barra azul)
-    // Suporta: emitente.logo_url, emitente.logo, emitente.logomarca; fallback: companyLogoUrl (logo da empresa)
+    // Carregar logo: 1) logo do próprio orçamento (emitente), 2) logo de Configuração (default), 3) logo da empresa (company)
     const emitenteLogoUrl = (emitente && (emitente.logo_url || emitente.logo || emitente.logomarca)) ? String(emitente.logo_url || emitente.logo || emitente.logomarca).trim() : null;
+    const defaultLogoUrl = (options && options.defaultLogoUrl) ? String(options.defaultLogoUrl).trim() : null;
     const companyLogoUrl = (options && options.companyLogoUrl) ? String(options.companyLogoUrl).trim() : null;
-    const logoUrl = emitenteLogoUrl || companyLogoUrl || null;
+    const urlsToTry = [emitenteLogoUrl, defaultLogoUrl, companyLogoUrl].filter(Boolean);
     let logoImg = null;
-    const urlsToTry = [logoUrl].filter(Boolean);
-    if (emitenteLogoUrl && companyLogoUrl && emitenteLogoUrl !== companyLogoUrl) urlsToTry.push(companyLogoUrl);
     for (const urlStr of urlsToTry) {
         if (!urlStr) continue;
         try {
