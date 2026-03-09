@@ -141,6 +141,20 @@
       background: var(--ks-primary);
       color: #000;
     }
+    .ks-preview-wrap {
+      margin-top: 8px;
+      padding: 12px;
+      border: 1px solid var(--ks-line);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.3);
+    }
+    .ks-preview-wrap img {
+      max-width: 100%;
+      max-height: 160px;
+      display: block;
+      border-radius: 8px;
+    }
+    .ks-btn-wrap { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -150,7 +164,10 @@
       <a href="#" id="btnVoltar" class="ks-back">← Voltar</a>
     </div>
     <p class="ks-sub">Projeto: <strong><%= nomeProjeto %></strong></p>
-    <p class="ks-hint">Personalize a mensagem de obrigado que o cliente vê após confirmar e enviar a seleção. Use <code>{{nome}}</code> para o seu nome e <code>{{quantidade}}</code> para o número de fotos.</p>
+    <p class="ks-hint">
+      Personalize a mensagem de obrigado que o cliente vê após confirmar e enviar a seleção.
+      O sistema preenche automaticamente: <code>{{nome}}</code> pelo seu nome (campo abaixo) e <code>{{quantidade}}</code> pelo número de fotos que o cliente selecionou. Você só precisa escrever a mensagem e colocar esses códigos onde quiser.
+    </p>
 
     <div id="msgSucesso" class="ks-msg ok hidden">Mensagem de finalização salva com sucesso.</div>
     <div id="msgErro" class="ks-msg err hidden"></div>
@@ -158,16 +175,30 @@
     <div class="ks-card">
       <form id="formFinalizacao">
         <div class="ks-field">
+          <label class="ks-label" for="thank_you_photographer_name">Seu nome (exibido na mensagem de obrigado)</label>
+          <input type="text" name="thank_you_photographer_name" id="thank_you_photographer_name" placeholder="Ex.: Rafael Fogo" class="ks-input" />
+          <p class="ks-hint" style="margin-top:6px;margin-bottom:0;">Esse nome substitui <code>{{nome}}</code> na mensagem que o cliente vê.</p>
+        </div>
+        <div class="ks-field">
           <label class="ks-label" for="thank_you_title">Título</label>
           <input type="text" name="thank_you_title" id="thank_you_title" placeholder="Obrigado!" class="ks-input" />
         </div>
         <div class="ks-field">
           <label class="ks-label" for="thank_you_message">Mensagem (opcional)</label>
-          <textarea name="thank_you_message" id="thank_you_message" placeholder="Ex.: Obrigado por selecionar as fotos do {{nome}}. Você escolheu {{quantidade}} foto(s)." class="ks-textarea"></textarea>
+          <textarea name="thank_you_message" id="thank_you_message" placeholder="Ex.: Sua seleção foi recebida com sucesso. Você escolheu {{quantidade}} foto(s). Agora seguiremos com carinho e atenção em cada detalhe para entregar retratos marcantes e profissionais. Obrigado por confiar no olhar de {{nome}}." class="ks-textarea"></textarea>
+          <p class="ks-hint" style="margin-top:6px;margin-bottom:0;">Use <code>{{nome}}</code> e <code>{{quantidade}}</code> onde quiser; serão trocados automaticamente.</p>
         </div>
         <div class="ks-field">
-          <label class="ks-label" for="thank_you_image_url">URL da imagem de destaque (opcional)</label>
-          <input type="url" name="thank_you_image_url" id="thank_you_image_url" placeholder="https://..." class="ks-input" />
+          <label class="ks-label">Logo / imagem de destaque (opcional)</label>
+          <p class="ks-hint" style="margin-bottom:8px;">Imagem que aparece na tela de obrigado (ex.: sua logo). Envie um arquivo do seu computador.</p>
+          <input type="file" id="thank_you_file" accept="image/*" class="hidden" />
+          <div class="ks-btn-wrap">
+            <button type="button" id="btnEnviarLogo" class="ks-btn ks-btn-primary">Enviar logo</button>
+            <button type="button" id="btnRemoverLogo" class="ks-btn" style="display:none;">Remover logo</button>
+          </div>
+          <div id="thank_you_preview_wrap" class="ks-preview-wrap hidden">
+            <img id="thank_you_preview" src="" alt="Preview logo" />
+          </div>
         </div>
         <button type="submit" id="btnSalvar" class="ks-btn ks-btn-primary" style="margin-top: 8px;">Salvar mensagem de finalização</button>
       </form>
@@ -189,6 +220,12 @@
       }
 
       function authHeaders() {
+        const h = { 'Accept': 'application/json' };
+        if (token) h['Authorization'] = 'Bearer ' + token;
+        return h;
+      }
+
+      function authHeadersJson() {
         const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
         if (token) h['Authorization'] = 'Bearer ' + token;
         return h;
@@ -208,6 +245,21 @@
         document.getElementById('msgErro').classList.add('hidden');
       }
 
+      function showPreview(url) {
+        const wrap = document.getElementById('thank_you_preview_wrap');
+        const img = document.getElementById('thank_you_preview');
+        const btnRemover = document.getElementById('btnRemoverLogo');
+        if (url) {
+          img.src = url;
+          wrap.classList.remove('hidden');
+          btnRemover.style.display = 'inline-flex';
+        } else {
+          img.removeAttribute('src');
+          wrap.classList.add('hidden');
+          btnRemover.style.display = 'none';
+        }
+      }
+
       async function load() {
         if (!token) return;
         try {
@@ -215,14 +267,71 @@
           if (!r.ok) throw new Error('Falha ao carregar');
           const data = await r.json();
           const g = data.gallery || data;
+          document.getElementById('thank_you_photographer_name').value = g.thank_you_photographer_name || '';
           document.getElementById('thank_you_title').value = g.thank_you_title || 'Obrigado!';
           document.getElementById('thank_you_message').value = g.thank_you_message || '';
-          document.getElementById('thank_you_image_url').value = g.thank_you_image_url || '';
+          showPreview(g.thank_you_image_url || null);
         } catch (e) {
           document.getElementById('msgErro').textContent = e.message || 'Erro ao carregar dados.';
           document.getElementById('msgErro').classList.remove('hidden');
         }
       }
+
+      document.getElementById('thank_you_file').addEventListener('change', async function() {
+        const file = this.files && this.files[0];
+        if (!file || !token) return;
+        hideMessages();
+        const btn = document.getElementById('btnEnviarLogo');
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+        try {
+          const form = new FormData();
+          form.append('file', file);
+          const r = await fetch(apiBase + '/galleries/' + galleryId + '/thank-you-image', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: form
+          });
+          const data = await r.json().catch(function() { return {}; });
+          if (!r.ok) throw new Error(data.message || 'Falha ao enviar');
+          showPreview(data.thank_you_image_url || null);
+          document.getElementById('msgSucesso').textContent = 'Logo enviada com sucesso.';
+          document.getElementById('msgSucesso').classList.remove('hidden');
+          document.getElementById('thank_you_file').value = '';
+        } catch (err) {
+          document.getElementById('msgErro').textContent = err.message || 'Erro ao enviar logo.';
+          document.getElementById('msgErro').classList.remove('hidden');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Enviar logo';
+      });
+
+      document.getElementById('btnEnviarLogo').addEventListener('click', function() {
+        document.getElementById('thank_you_file').click();
+      });
+
+      document.getElementById('btnRemoverLogo').addEventListener('click', async function() {
+        if (!token) return;
+        hideMessages();
+        const btn = document.getElementById('btnRemoverLogo');
+        btn.disabled = true;
+        try {
+          const r = await fetch(apiBase + '/galleries/' + galleryId, {
+            method: 'PUT',
+            headers: authHeadersJson(),
+            body: JSON.stringify({ thank_you_image_url: null })
+          });
+          const data = await r.json().catch(function() { return {}; });
+          if (!r.ok) throw new Error(data.message || 'Falha ao remover');
+          showPreview(null);
+          document.getElementById('msgSucesso').textContent = 'Logo removida.';
+          document.getElementById('msgSucesso').classList.remove('hidden');
+        } catch (err) {
+          document.getElementById('msgErro').textContent = err.message || 'Erro ao remover.';
+          document.getElementById('msgErro').classList.remove('hidden');
+        }
+        btn.disabled = false;
+      });
 
       document.getElementById('formFinalizacao').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -237,19 +346,20 @@
         btn.textContent = 'Salvando...';
         try {
           const body = {
+            thank_you_photographer_name: document.getElementById('thank_you_photographer_name').value.trim() || null,
             thank_you_title: document.getElementById('thank_you_title').value.trim() || null,
-            thank_you_message: document.getElementById('thank_you_message').value.trim() || null,
-            thank_you_image_url: document.getElementById('thank_you_image_url').value.trim() || null
+            thank_you_message: document.getElementById('thank_you_message').value.trim() || null
           };
           const r = await fetch(apiBase + '/galleries/' + galleryId, {
             method: 'PUT',
-            headers: authHeaders(),
+            headers: authHeadersJson(),
             body: JSON.stringify(body)
           });
           const data = await r.json().catch(function() { return {}; });
           if (!r.ok) {
             throw new Error(data.message || 'Falha ao salvar');
           }
+          document.getElementById('msgSucesso').textContent = 'Mensagem de finalização salva com sucesso.';
           document.getElementById('msgSucesso').classList.remove('hidden');
           if (params.has('token')) {
             try { window.history.replaceState({}, '', window.location.pathname); } catch (_) {}

@@ -1697,6 +1697,62 @@ router.post('/galleries/:id/watermark', protectUser, (req, res, next) => {
   }
 }));
 
+// ===== Imagem de destaque da página de obrigado (upload de logo)
+router.post('/galleries/:id/thank-you-image', protectUser, (req, res, next) => {
+  uploadMem.single('file')(req, res, (err) => {
+    if (!err) return next();
+    if (err.name === 'MulterError' && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ success: false, message: 'Arquivo muito grande (limite 30MB).' });
+    }
+    return res.status(400).json({ success: false, message: err.message || 'Falha ao processar upload.' });
+  });
+}, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'Arquivo é obrigatório' });
+  if (!KS_WORKER_SECRET) return res.status(501).json({ success: false, message: 'Worker não configurado' });
+
+  const userId = req.user.userId;
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const filename = (req.file.originalname || 'thank-you-image.png').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+    let key;
+    try {
+      const out = await uploadBufferToWorker({
+        buffer: req.file.buffer,
+        filename: `thank-you-${filename}`,
+        mimetype: req.file.mimetype || 'image/png',
+        galleryId,
+        userId
+      });
+      key = out.key;
+    } catch (e) {
+      const msg = (e?.message || 'Falha ao enviar imagem para o R2').toString().slice(0, 250);
+      return res.status(502).json({ success: false, message: msg });
+    }
+
+    const publicUrl = r2PublicUrl(key) || null;
+    const hasThankYou = await hasColumn(client, 'king_galleries', 'thank_you_image_url');
+    if (hasThankYou) {
+      await client.query(
+        'UPDATE king_galleries SET thank_you_image_url=$1, updated_at=NOW() WHERE id=$2',
+        [publicUrl, galleryId]
+      );
+    }
+    res.json({ success: true, thank_you_image_url: publicUrl });
+  } finally {
+    client.release();
+  }
+}));
+
 // ===== Worker: registrar fotos no banco (com recibo assinado pelo Worker) =====
 router.post('/galleries/:id/photos/worker-commit', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
@@ -2349,7 +2405,8 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'face_recognition_enabled',
     'thank_you_title',
     'thank_you_message',
-    'thank_you_image_url'
+    'thank_you_image_url',
+    'thank_you_photographer_name'
   ];
 
   const body = req.body || {};
@@ -2412,6 +2469,10 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'thank_you_title' || key === 'thank_you_message' || key === 'thank_you_image_url') {
         if (val === '' || val === 'null') val = null;
         else if (val != null) val = String(val).trim().slice(0, 2000);
+      }
+      if (key === 'thank_you_photographer_name') {
+        if (val === '' || val === 'null') val = null;
+        else if (val != null) val = String(val).trim().slice(0, 255);
       }
       sets.push(`${key}=$${idx++}`);
       values.push(val);
@@ -3375,8 +3436,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
     const hasFaceEnabled = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
     const hasThankYou = await hasColumn(client, 'king_galleries', 'thank_you_title');
+    const hasThankYouName = await hasColumn(client, 'king_galleries', 'thank_you_photographer_name');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -3431,20 +3493,22 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       return out;
     });
 
-    // Nome do fotógrafo (dono da galeria) para mensagem de obrigado
-    let photographerDisplayName = gallery.nome_projeto || 'Fotógrafo';
-    try {
-      const nameRes = await client.query(
-        `SELECT COALESCE(p.display_name, u.email, '') AS name
-         FROM king_galleries g
-         JOIN profile_items pi ON pi.id = g.profile_item_id
-         JOIN users u ON u.id = pi.user_id
-         LEFT JOIN user_profiles p ON p.user_id = u.id
-         WHERE g.id=$1 LIMIT 1`,
-        [req.ksClient.galleryId]
-      );
-      if (nameRes.rows[0]?.name) photographerDisplayName = String(nameRes.rows[0].name).trim();
-    } catch (_) { }
+    // Nome do fotógrafo (dono da galeria) para mensagem de obrigado — prioridade: thank_you_photographer_name > perfil > nome_projeto
+    let photographerDisplayName = (gallery.thank_you_photographer_name && String(gallery.thank_you_photographer_name).trim()) || gallery.nome_projeto || 'Fotógrafo';
+    if (!gallery.thank_you_photographer_name || !String(gallery.thank_you_photographer_name).trim()) {
+      try {
+        const nameRes = await client.query(
+          `SELECT COALESCE(p.display_name, u.email, '') AS name
+           FROM king_galleries g
+           JOIN profile_items pi ON pi.id = g.profile_item_id
+           JOIN users u ON u.id = pi.user_id
+           LEFT JOIN user_profiles p ON p.user_id = u.id
+           WHERE g.id=$1 LIMIT 1`,
+          [req.ksClient.galleryId]
+        );
+        if (nameRes.rows[0]?.name) photographerDisplayName = String(nameRes.rows[0].name).trim();
+      } catch (_) { }
+    }
 
     // Config da página de finalização (obrigado)
     const thankYouConfig = hasThankYou ? {
@@ -4111,14 +4175,29 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
     let thankYouConfig = { title: 'Obrigado!', message: null, imageUrl: null };
     try {
       const hasThankYouCol = await hasColumn(client, 'king_galleries', 'thank_you_title');
+      const hasThankYouNameCol = await hasColumn(client, 'king_galleries', 'thank_you_photographer_name');
       const g2 = await client.query(
-        `SELECT g.nome_projeto${hasThankYouCol ? ', g.thank_you_title, g.thank_you_message, g.thank_you_image_url' : ''}
+        `SELECT g.nome_projeto${hasThankYouCol ? ', g.thank_you_title, g.thank_you_message, g.thank_you_image_url' : ''}${hasThankYouNameCol ? ', g.thank_you_photographer_name' : ''}
          FROM king_galleries g WHERE g.id=$1`,
         [galleryId]
       );
       if (g2.rows[0]) {
         const row = g2.rows[0];
-        photographerDisplayName = row.nome_projeto || photographerDisplayName;
+        if (row.thank_you_photographer_name && String(row.thank_you_photographer_name).trim()) {
+          photographerDisplayName = String(row.thank_you_photographer_name).trim();
+        } else {
+          photographerDisplayName = row.nome_projeto || photographerDisplayName;
+          const nameRes = await client.query(
+            `SELECT COALESCE(p.display_name, u.email, '') AS name
+             FROM king_galleries g
+             JOIN profile_items pi ON pi.id = g.profile_item_id
+             JOIN users u ON u.id = pi.user_id
+             LEFT JOIN user_profiles p ON p.user_id = u.id
+             WHERE g.id=$1 LIMIT 1`,
+            [galleryId]
+          );
+          if (nameRes.rows[0]?.name) photographerDisplayName = String(nameRes.rows[0].name).trim();
+        }
         if (hasThankYouCol && row.thank_you_title !== undefined) {
           thankYouConfig = {
             title: row.thank_you_title || 'Obrigado!',
@@ -4127,16 +4206,6 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
           };
         }
       }
-      const nameRes = await client.query(
-        `SELECT COALESCE(p.display_name, u.email, '') AS name
-         FROM king_galleries g
-         JOIN profile_items pi ON pi.id = g.profile_item_id
-         JOIN users u ON u.id = pi.user_id
-         LEFT JOIN user_profiles p ON p.user_id = u.id
-         WHERE g.id=$1 LIMIT 1`,
-        [galleryId]
-      );
-      if (nameRes.rows[0]?.name) photographerDisplayName = String(nameRes.rows[0].name).trim();
     } catch (_) { }
 
     res.json({
