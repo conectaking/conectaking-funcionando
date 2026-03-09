@@ -216,14 +216,24 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
     y -= labelH + 4;
     if (cliente.nome) { page.drawText(String(cliente.nome).slice(0, 45), { x: colLeft, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() }); y -= LINE_HEIGHT; }
     if (cliente.cpf_cnpj) { page.drawText(`CNPJ/CPF: ${String(cliente.cpf_cnpj).slice(0, 30)}`, { x: colLeft, y: y - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cMuted() }); y -= LINE_HEIGHT - 2; }
-    if (cliente.endereco) { page.drawText(String(cliente.endereco).slice(0, 45), { x: colLeft, y: y - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cMuted() }); y -= LINE_HEIGHT - 2; }
+    if (cliente.endereco) {
+        for (const line of wrapText(cliente.endereco, 38)) {
+            page.drawText(line.slice(0, 45), { x: colLeft, y: y - FONT_SIZE_SMALL, size: FONT_SIZE_SMALL, font, color: cMuted() });
+            y -= LINE_HEIGHT - 2;
+        }
+    }
     if (cliente.contato) { page.drawText(String(cliente.contato).slice(0, 45), { x: colLeft, y: y - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cMuted() }); y -= LINE_HEIGHT - 2; }
 
     let yRight = yColStart - labelH - 4;
     page.drawText('Emitido por:', { x: colRight, y: yColStart - labelH, size: FONT_SIZE, font: boldFont, color: cBlue() });
     if (emitente.nome) { page.drawText(String(emitente.nome).slice(0, 45), { x: colRight, y: yRight - FONT_SIZE, size: FONT_SIZE, font, color: cText() }); yRight -= LINE_HEIGHT; }
     if (emitente.cpf_cnpj) { page.drawText(`CNPJ/CPF: ${String(emitente.cpf_cnpj).slice(0, 30)}`, { x: colRight, y: yRight - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cMuted() }); yRight -= LINE_HEIGHT - 2; }
-    if (emitente.endereco) { page.drawText(String(emitente.endereco).slice(0, 45), { x: colRight, y: yRight - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cMuted() }); yRight -= LINE_HEIGHT - 2; }
+    if (emitente.endereco) {
+        for (const line of wrapText(emitente.endereco, 38)) {
+            page.drawText(line.slice(0, 45), { x: colRight, y: yRight - FONT_SIZE_SMALL, size: FONT_SIZE_SMALL, font, color: cMuted() });
+            yRight -= LINE_HEIGHT - 2;
+        }
+    }
     if (emitente.contato) { page.drawText(String(emitente.contato).slice(0, 45), { x: colRight, y: yRight - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cMuted() }); yRight -= LINE_HEIGHT - 2; }
 
     y = Math.min(y, yRight) - 20;
@@ -269,9 +279,12 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
         if (conteudoPacote) {
             const linhas = conteudoPacote.split(/\n/);
             for (const linha of linhas) {
-                if (y < MARGIN + 10) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) }); y = PAGE_HEIGHT - MARGIN; }
-                page.drawText(('  • ' + linha).slice(0, 100), { x: colDesc, y: y - 9, size: FONT_SIZE_SMALL, font, color: cMuted() });
-                y -= 10;
+                const wrapped = wrapText('  • ' + linha.trim(), 52);
+                for (let i = 0; i < wrapped.length; i++) {
+                    if (y < MARGIN + 10) { page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]); if (darkMode) page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(rgbBg.r, rgbBg.g, rgbBg.b) }); y = PAGE_HEIGHT - MARGIN; }
+                    page.drawText(wrapped[i].slice(0, 70), { x: colDesc, y: y - 9, size: FONT_SIZE_SMALL, font, color: cMuted() });
+                    y -= 10;
+                }
             }
             y -= 2;
         }
