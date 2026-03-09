@@ -10,7 +10,7 @@ const fetch = require('node-fetch');
 const logger = require('./logger');
 const { QrCodePix } = require('qrcode-pix');
 
-const MARGIN = 40;
+const MARGIN = 28;
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
 const LINE_HEIGHT = 14;
@@ -258,9 +258,9 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
     }
 
     y -= 10;
-    // Total geral em caixa laranja (estilo fatura)
-    const totalW = 95;
-    const totalX = colUnit - totalW + 8;
+    // Total geral em caixa laranja — alinhado à esquerda (igual à visualização)
+    const totalW = 115;
+    const totalX = colDesc;
     page.drawRectangle({
         x: totalX - 4,
         y: y - LINE_HEIGHT - 4,
