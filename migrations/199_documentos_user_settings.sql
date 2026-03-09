@@ -2,7 +2,7 @@
 -- Cores e último documento aberto para persistir entre dispositivos e ao voltar de Config.
 
 CREATE TABLE IF NOT EXISTS documentos_user_settings (
-    user_id INTEGER NOT NULL PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    user_id VARCHAR(255) NOT NULL PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     header_color VARCHAR(7) DEFAULT NULL,
     accent_color VARCHAR(7) DEFAULT NULL,
     bg_color VARCHAR(7) DEFAULT NULL,
