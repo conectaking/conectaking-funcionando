@@ -10,7 +10,7 @@ const fetch = require('node-fetch');
 const logger = require('./logger');
 const { QrCodePix } = require('qrcode-pix');
 
-const MARGIN = 24;
+const MARGIN = 20;
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
 const LINE_HEIGHT = 14;
@@ -258,14 +258,14 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
     }
 
     y -= 8;
-    // Total em caixa laranja — à esquerda, mesmo estilo da visualização (padding 10px 16px, fonte 14px)
+    // Total em caixa laranja — SEMPRE à esquerda (mesma margem do texto), igual à visualização
     const totalFontSize = 12;
     const totalLineH = 14;
     const totalPaddingH = 8;
     const totalPaddingV = 6;
     const totalText = `TOTAL: ${formatMoney(totalGeral)}`;
     const totalW = 120;
-    const totalX = colDesc;
+    const totalX = MARGIN; // fixo: canto esquerdo, como na preview
     page.drawRectangle({
         x: totalX - totalPaddingH,
         y: y - totalLineH - totalPaddingV,
