@@ -79,7 +79,10 @@ class ContractController {
      */
     async sendForSignature(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseInt(req.params.id, 10);
+            if (!id || isNaN(id)) {
+                return responseFormatter.error(res, 'ID do contrato inválido. Importe o PDF novamente no passo 1.', 400);
+            }
             const userId = req.user.userId;
             const { signers, signaturePositions } = req.body;
 
