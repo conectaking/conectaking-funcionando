@@ -2030,11 +2030,7 @@ if (typeof details === 'undefined' || !details) {
                                             <i class="fas fa-image" style="font-size: 3rem; color: rgba(255,255,255,0.2);"></i>
                                         </div>
                                     <% } %>
-                                    <% if (item.title) { %>
-                                        <div class="banner-overlay">
-                                            <h3 class="banner-title"><%= item.title %></h3>
-                                        </div>
-                                    <% } %>
+                                    <%# Modo banner: não exibir título (só no modo botão) %>
                                 </div>
                                 </a>
                             <% } else { %>
