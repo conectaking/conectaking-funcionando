@@ -1956,7 +1956,15 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
             const updateFormFields = [];
             const updateFormValues = [];
             let formParamIndex = 1;
-            
+            const latestFormId = formCheck.rows[0].id;
+            // Buscar valores atuais para display_format e banner (garantir que sempre atualizamos no cartão)
+            const currentFormRow = await client.query(
+                'SELECT display_format, banner_image_url FROM digital_form_items WHERE id = $1',
+                [latestFormId]
+            );
+            const currentDisplayFormat = currentFormRow.rows[0]?.display_format || 'button';
+            const currentBannerUrl = currentFormRow.rows[0]?.banner_image_url || null;
+
             // IMPORTANTE: form_title deve ser sempre atualizado, mesmo que seja string vazia
             // Removido o check de !== undefined para garantir que sempre atualize
             const formTitleToSave = form_title !== undefined && form_title !== null ? (form_title.trim() || 'Formulário King') : 'Formulário King';
@@ -2113,14 +2121,18 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                     console.warn(`⚠️ [DIGITAL_FORM] Coluna button_logo_size não existe na tabela digital_form_items para item ${itemId}`);
                 }
             }
-            if (display_format !== undefined) {
-                updateFormFields.push(`display_format = $${formParamIndex++}`);
-                updateFormValues.push(display_format || 'button');
-            }
-            if (banner_image_url !== undefined) {
-                updateFormFields.push(`banner_image_url = $${formParamIndex++}`);
-                updateFormValues.push(banner_image_url || null);
-            }
+            // Sempre atualizar display_format e banner_image_url (cartão virtual deve refletir modo banner)
+            const displayFormatToSave = (display_format !== undefined && display_format !== null && String(display_format).trim() !== '')
+                ? (String(display_format).trim().toLowerCase() === 'banner' ? 'banner' : 'button')
+                : currentDisplayFormat;
+            const bannerUrlToSave = (banner_image_url !== undefined)
+                ? (banner_image_url && String(banner_image_url).trim() ? String(banner_image_url).trim() : null)
+                : currentBannerUrl;
+            updateFormFields.push(`display_format = $${formParamIndex++}`);
+            updateFormValues.push(displayFormatToSave);
+            updateFormFields.push(`banner_image_url = $${formParamIndex++}`);
+            updateFormValues.push(bannerUrlToSave);
+            console.log(`📝 [DIGITAL_FORM] Salvando display_format e banner para cartão:`, { display_format: displayFormatToSave, banner_image_url: bannerUrlToSave ? bannerUrlToSave.substring(0, 60) + '...' : null });
             // IMPORTANTE: Só atualizar form_fields se for explicitamente enviado
             // Se não for enviado, preservar o valor existente no banco
             if (form_fields !== undefined) {
@@ -2297,8 +2309,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
 
             // IMPORTANTE: Sempre incluir pelo menos form_title no update
             if (updateFormFields.length > 0) {
-                // Usar o ID do registro mais recente ao invés de profile_item_id
-                const latestFormId = formCheck.rows[0].id;
+                // Usar o ID do registro mais recente (já definido acima)
                 updateFormValues.push(latestFormId);
                 // IMPORTANTE: Forçar atualização do updated_at explicitamente
                 // Usar ID específico ao invés de profile_item_id para garantir que atualize o registro correto
