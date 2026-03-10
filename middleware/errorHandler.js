@@ -80,6 +80,14 @@ const errorHandler = (err, req, res, next) => {
         });
     }
 
+    // Upload: arquivo maior que o limite (Multer LIMIT_FILE_SIZE)
+    if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({
+            success: false,
+            message: 'O tamanho máximo permitido é 15 MB. Escolha uma imagem menor ou redimensione antes de enviar.'
+        });
+    }
+
     // Erro genérico do servidor
     res.status(err.status || 500).json({
         success: false,
