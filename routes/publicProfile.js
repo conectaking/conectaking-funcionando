@@ -488,7 +488,11 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                     
                     if (formRes.rows.length > 0) {
                         item.digital_form_data = formRes.rows[0];
-                        
+                        // Garantir formato de exibição no cartão: normalizar para 'button' ou 'banner' (evita modo banner não aparecer)
+                        const rawFormat = (item.digital_form_data.display_format || 'button').toString().trim().toLowerCase();
+                        item.digital_form_data.display_format = (rawFormat === 'banner') ? 'banner' : 'button';
+                        item.digital_form_data.banner_image_url = item.digital_form_data.banner_image_url && String(item.digital_form_data.banner_image_url).trim() ? String(item.digital_form_data.banner_image_url).trim() : null;
+
                         // LOG DETALHADO PARA DEBUG - INCLUINDO LOGO DO BOTÃO
                         logger.info('🔍 [CARD] Dados carregados do banco:', {
                             itemId: item.id,
@@ -498,6 +502,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
                             button_logo_url: item.digital_form_data.button_logo_url,
                             button_logo_size: item.digital_form_data.button_logo_size,
                             display_format: item.digital_form_data.display_format,
+                            banner_image_url: item.digital_form_data.banner_image_url ? (item.digital_form_data.banner_image_url.substring(0, 60) + '...') : null,
                             primary_color: item.digital_form_data.primary_color,
                             secondary_color: item.digital_form_data.secondary_color,
                             enable_whatsapp_raw: item.digital_form_data.enable_whatsapp,
