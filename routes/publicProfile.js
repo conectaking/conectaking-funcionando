@@ -18,6 +18,15 @@ function hexToRgb(hex) {
     } : { r: 20, g: 20, b: 23 };
 }
 
+// Mapeamento account_type -> plan_code (igual ao moduleAvailability) para filtrar itens do cartão pela Separação de Pacotes
+const accountTypeToPlanCode = {
+    'individual': 'basic', 'individual_com_logo': 'premium', 'basic': 'basic', 'king_start': 'basic',
+    'premium': 'premium', 'king_prime': 'premium', 'business_owner': 'king_corporate', 'enterprise': 'king_corporate',
+    'king_base': 'king_base', 'king_essential': 'king_base', 'king_finance': 'king_finance',
+    'king_finance_plus': 'king_finance_plus', 'king_premium_plus': 'king_premium_plus', 'king_corporate': 'king_corporate',
+    'free': 'free', 'adm_principal': 'adm_principal', 'abm': 'adm_principal', 'team_member': 'basic'
+};
+
 router.get('/:identifier', asyncHandler(async (req, res) => {
     const rawIdentifier = req.params.identifier;
     const identifier = String(rawIdentifier || '').trim();
@@ -42,7 +51,7 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
         // Buscar de forma case-insensitive por slug (links podem vir com caixa diferente),
         // e permitir acesso por id sem estourar erro de type cast.
         const userRes = await client.query(
-            `SELECT id, account_type, profile_slug
+            `SELECT id, account_type, profile_slug, subscription_id
              FROM users
              WHERE LOWER(profile_slug) = LOWER($1) OR id::text = $1
              LIMIT 1`,
@@ -149,10 +158,45 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             });
         }
         
+        // Resolver plan_code do dono do perfil (Separação de Pacotes): subscription_id tem prioridade, senão account_type
+        let planCode = null;
+        if (user.subscription_id) {
+            const planRow = await client.query(
+                'SELECT plan_code, is_active FROM subscription_plans WHERE id = $1',
+                [user.subscription_id]
+            );
+            if (planRow.rows.length > 0 && planRow.rows[0].is_active) {
+                planCode = planRow.rows[0].plan_code;
+            }
+        }
+        if (!planCode) {
+            planCode = accountTypeToPlanCode[user.account_type] || user.account_type || 'basic';
+        }
+        // Módulos disponíveis para este plano (is_available = true na Separação de Pacotes)
+        const mpaAvailable = await client.query(
+            'SELECT module_type FROM module_plan_availability WHERE plan_code = $1 AND is_available = true',
+            [planCode]
+        );
+        const allowedModuleTypes = new Set((mpaAvailable.rows || []).map(r => r.module_type));
+        // Tipos que são controlados por module_plan_availability (só exibir se estiver disponível no plano)
+        const mpaAll = await client.query('SELECT DISTINCT module_type FROM module_plan_availability');
+        const controlledModuleTypes = new Set((mpaAll.rows || []).map(r => r.module_type));
+        
         // Filtrar e validar itens
         const validItems = (itemsRes.rows || []).filter(item => {
             if (item.item_type === 'banner_carousel') {
                 return false;
+            }
+            // Separação de Pacotes: não exibir módulo no cartão se não estiver disponível para o plano do usuário
+            if (controlledModuleTypes.has(item.item_type)) {
+                if (!allowedModuleTypes.has(item.item_type)) {
+                    logger.debug('Item ocultado no cartão (módulo não disponível no plano)', {
+                        item_type: item.item_type,
+                        plan_code: planCode,
+                        userId
+                    });
+                    return false;
+                }
             }
             
             // Para banners, verificar se tem image_url válido
@@ -748,7 +792,7 @@ router.get('/api/:identifier', asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     
     try {
-        const userRes = await client.query('SELECT id, profile_slug FROM users WHERE profile_slug = $1 OR id = $1', [identifier]);
+        const userRes = await client.query('SELECT id, profile_slug, account_type, subscription_id FROM users WHERE profile_slug = $1 OR id = $1', [identifier]);
         
         if (userRes.rows.length === 0) {
             return res.status(404).json({ error: 'Perfil não encontrado' });
@@ -756,6 +800,7 @@ router.get('/api/:identifier', asyncHandler(async (req, res) => {
 
         const userId = userRes.rows[0].id;
         const profileSlug = userRes.rows[0].profile_slug;
+        const user = userRes.rows[0];
 
         const profileQuery = `
             SELECT 
@@ -786,11 +831,23 @@ router.get('/api/:identifier', asyncHandler(async (req, res) => {
              LIMIT 10`,
             [userId]
         );
+        // Aplicar Separação de Pacotes: só incluir itens cujo módulo está disponível para o plano do usuário
+        let planCodeApi = null;
+        if (user.subscription_id) {
+            const planRow = await client.query('SELECT plan_code, is_active FROM subscription_plans WHERE id = $1', [user.subscription_id]);
+            if (planRow.rows.length > 0 && planRow.rows[0].is_active) planCodeApi = planRow.rows[0].plan_code;
+        }
+        if (!planCodeApi) planCodeApi = accountTypeToPlanCode[user.account_type] || user.account_type || 'basic';
+        const mpaAv = await client.query('SELECT module_type FROM module_plan_availability WHERE plan_code = $1 AND is_available = true', [planCodeApi]);
+        const allowedSet = new Set((mpaAv.rows || []).map(r => r.module_type));
+        const mpaAllTypes = await client.query('SELECT DISTINCT module_type FROM module_plan_availability');
+        const controlledSet = new Set((mpaAllTypes.rows || []).map(r => r.module_type));
+        const itemsFiltered = (itemsRes.rows || []).filter(it => !controlledSet.has(it.item_type) || allowedSet.has(it.item_type));
 
         res.json({
             success: true,
             profile: profileRes.rows[0],
-            items: itemsRes.rows,
+            items: itemsFiltered,
             profileUrl: `${req.protocol}://${req.get('host')}/${profileSlug || identifier}`
         });
     } catch (error) {
