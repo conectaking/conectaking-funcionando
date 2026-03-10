@@ -9,7 +9,11 @@ class ContractController {
      */
     async create(req, res) {
         try {
-            const contract = await service.create(req.body);
+            const body = { ...req.body };
+            if (!body.user_id && req.user && req.user.userId) {
+                body.user_id = req.user.userId;
+            }
+            const contract = await service.create(body);
             return responseFormatter.success(res, contract, 'Contrato criado com sucesso', 201);
         } catch (error) {
             logger.error('Erro ao criar contrato:', error);
