@@ -152,6 +152,7 @@ router.get('/status', protectUser, async (req, res) => {
         user.hasAgenda = hasModule('agenda');
         user.hasBranding = hasModule('branding');
         user.hasKingBrief = hasModule('kingbrief');
+        user.hasKingSelection = hasModule('king_selection');
         user.hasPhotographerSite = hasModule('photographer_site');
         user.plan_code = planCode; // para debug: qual plano foi usado para calcular os módulos
         
@@ -176,6 +177,7 @@ router.get('/status', protectUser, async (req, res) => {
             hasAgenda: user.hasAgenda,
             hasModoEmpresa: user.hasModoEmpresa,
             hasBranding: user.hasBranding,
+            hasKingSelection: user.hasKingSelection,
             hasPhotographerSite: user.hasPhotographerSite,
             financeInBase: baseSet.has('finance'),
             financeInIndividual: individualSet.has('finance'),

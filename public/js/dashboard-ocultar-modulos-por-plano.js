@@ -37,7 +37,8 @@
             hasContract: user.hasContract,
             hasAgenda: user.hasAgenda,
             hasModoEmpresa: user.hasModoEmpresa,
-            hasBranding: user.hasBranding
+            hasBranding: user.hasBranding,
+            hasKingSelection: user.hasKingSelection
         });
 
         var map = [
@@ -46,7 +47,8 @@
             { key: 'hasAgenda', module: 'agenda', labels: ['Agenda Inteligente', 'Agenda'] },
             { key: 'hasModoEmpresa', module: 'modo_empresa', labels: ['Modo Empresa'] },
             { key: 'hasBranding', module: 'branding', labels: ['Personalização da Marca', 'Personalizacao da Marca'] },
-            { key: 'hasKingBrief', module: 'kingbrief', labels: ['KingBrief'] }
+            { key: 'hasKingBrief', module: 'kingbrief', labels: ['KingBrief'] },
+            { key: 'hasKingSelection', module: 'king_selection', labels: ['King Selection'] }
         ];
 
         map.forEach(function (item) {
