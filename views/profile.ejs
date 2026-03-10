@@ -2232,13 +2232,13 @@ if (typeof details === 'undefined' || !details) {
         <%# SEÇÃO: LOGO DA EMPRESA / BRANDING (rodapé) %>
         <%# ========================================================== %>
         <% if (details.company_logo_url) { %>
-            <% const rawSize = details.company_logo_size || 60; const logoSizePx = Math.min(120, Math.max(20, parseInt(rawSize, 10) || 60)); %>
+            <% const rawSize = details.company_logo_size || 60; const logoSizePx = Math.min(420, Math.max(20, parseInt(rawSize, 10) || 60)); %>
             <% if (details.company_logo_link) { %>
                 <a href="<%= details.company_logo_link %>" target="_blank" rel="noopener noreferrer" class="branding-logo">
-                    <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= logoSizePx %>" style="max-height: <%= logoSizePx %>px; max-width: 120px; height: auto; width: auto; object-fit: contain;">
+                    <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= logoSizePx %>" style="max-height: <%= logoSizePx %>px; max-width: 420px; height: auto; width: auto; object-fit: contain;">
                 </a>
             <% } else { %>
-                <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= logoSizePx %>" style="max-height: <%= logoSizePx %>px; max-width: 120px; height: auto; width: auto; object-fit: contain;">
+                <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= logoSizePx %>" style="max-height: <%= logoSizePx %>px; max-width: 420px; height: auto; width: auto; object-fit: contain;">
             <% } %>
         <% } else { %>
             <a href="https://www.instagram.com/conectaking" target="_blank" rel="noopener noreferrer" class="branding-logo">

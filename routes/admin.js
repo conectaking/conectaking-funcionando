@@ -1344,7 +1344,7 @@ router.put('/default-branding', protectAdmin, async (req, res) => {
     try {
         const { logo_url, logo_size, logo_link } = req.body || {};
         const urlToSave = (logo_url != null && String(logo_url).trim() !== '') ? String(logo_url).trim() : null;
-        const size = Math.min(120, Math.max(20, parseInt(logo_size, 10) || 60));
+        const size = Math.min(420, Math.max(20, parseInt(logo_size, 10) || 60));
         const linkToSave = (logo_link != null && String(logo_link).trim() !== '') ? String(logo_link).trim() : null;
 
         await db.query(
