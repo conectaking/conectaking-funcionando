@@ -2088,7 +2088,9 @@ if (typeof details === 'undefined' || !details) {
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'sales_page') { %>
                         <% 
-                            // Verificar se tem logo para sales_page
+                            const salesPageDisplayFormat = (item.sales_page_display_format != null && String(item.sales_page_display_format).trim().toLowerCase() === 'banner') ? 'banner' : 'button';
+                            const salesPageBannerUrl = (item.sales_page_banner_image_url && String(item.sales_page_banner_image_url).trim()) ? String(item.sales_page_banner_image_url).trim() : (item.image_url && String(item.image_url).trim() && !String(item.image_url).includes('placeholder') ? String(item.image_url).trim() : null);
+                            // Verificar se tem logo para sales_page (modo botão)
                             const salesPageHasLogo = item.image_url && item.image_url.trim() && !item.image_url.includes('placeholder');
                             const salesPageLogoSize = item.logo_size ? parseInt(item.logo_size, 10) : 24;
                             const salesPageIsJpeg = salesPageHasLogo && (item.image_url.includes('.jpg') || item.image_url.includes('.jpeg') || (!item.image_url.includes('.png')));
@@ -2117,7 +2119,23 @@ if (typeof details === 'undefined' || !details) {
                             const salesPageUrl = salesPageSlug && item.sales_page_status === 'PUBLISHED' && profileSlug
                                 ? `/${profileSlug}/${salesPageSlug}` 
                                 : '#';
+                            const salesPageHasActiveLink = salesPageUrl !== '#';
                         %>
+                        <% if (salesPageDisplayFormat === 'banner') { %>
+                            <% if (salesPageHasActiveLink) { %>
+                                <a href="<%= salesPageUrl %>" class="banner-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+                                    <div class="banner-image-wrapper">
+                                    <% if (salesPageBannerUrl) { %>
+                                        <img src="<%= salesPageBannerUrl %>" alt="<%= item.title || 'Página de Vendas' %>" class="banner-image">
+                                    <% } else { %>
+                                        <div class="banner-placeholder" style="width: 100%; min-height: 180px; background: linear-gradient(135deg, #1C1C21 0%, #0D0D0F 100%); display: flex; align-items: center; justify-content: center; border-radius: 16px; border: 2px dashed rgba(255,255,255,0.1);">
+                                            <i class="fas fa-store" style="font-size: 3rem; color: rgba(255,255,255,0.2);"></i>
+                                        </div>
+                                    <% } %>
+                                    </div>
+                                </a>
+                            <% } %>
+                        <% } else { %>
                         <a href="<%= salesPageUrl %>" class="profile-link" <%= salesPageUrl !== '#' ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;" style="opacity: 0.5; cursor: not-allowed;" title="Página não publicada"' %> data-item-id="<%= item.id %>">
                             <% if (salesPageHasLogo) { %>
                                 <img src="<%= item.image_url %>" alt="<%= item.title || 'Página de Vendas' %>" class="profile-link-logo <%= salesPageIsJpeg ? 'logo-circular' : 'logo-png' %>" style="max-width: <%= salesPageLogoSize %>px !important; max-height: <%= salesPageLogoSize %>px !important; width: <%= salesPageLogoSize %>px !important; height: <%= salesPageLogoSize %>px !important; border-radius: <%= salesPageBorderRadius %>; object-fit: <%= salesPageObjectFit %> !important; overflow: hidden;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
@@ -2127,6 +2145,7 @@ if (typeof details === 'undefined' || !details) {
                             <% } %>
                             <span><%= item.title || 'Página de Vendas' %></span>
                         </a>
+                        <% } %>
 
                     <%# ========================================================== %>
                     <%# TIPO: LISTA DE CONVIDADOS %>
