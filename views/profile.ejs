@@ -1922,9 +1922,7 @@ if (typeof details === 'undefined' || !details) {
                             if (!formData || typeof formData !== 'object') {
                                 formData = {};
                             }
-                            // Normalizar formato de exibição (cartão deve respeitar modo banner quando salvo)
-                            const rawDisplayFormat = (formData.display_format != null && formData.display_format !== '') ? String(formData.display_format).trim().toLowerCase() : 'button';
-                            const displayFormat = (rawDisplayFormat === 'banner') ? 'banner' : 'button';
+                            const displayFormat = formData.display_format || 'button';
                             // Para modo botão, usar button_logo_url, senão usar form_logo_url ou image_url
                             // IMPORTANTE: No modo banner, NÃO usar logo de forma alguma
                             
@@ -2023,13 +2021,10 @@ if (typeof details === 'undefined' || !details) {
                         %>
                         <% if (displayFormat === 'banner') { %>
                             <% if (hasActiveLink) { %>
-                                <%
-                                    const bannerImgUrl = (formData.banner_image_url && String(formData.banner_image_url).trim()) ? String(formData.banner_image_url).trim() : (item.image_url && String(item.image_url).trim() && !String(item.image_url).includes('placeholder') ? String(item.image_url).trim() : null);
-                                %>
                                 <a href="<%= formUrl %>" class="banner-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                                     <div class="banner-image-wrapper">
-                                    <% if (bannerImgUrl) { %>
-                                        <img src="<%= bannerImgUrl %>" alt="<%= item.title || 'Formulário Digital' %>" class="banner-image">
+                                    <% if (formData.banner_image_url) { %>
+                                        <img src="<%= formData.banner_image_url %>" alt="<%= item.title || 'Formulário Digital' %>" class="banner-image">
                                     <% } else { %>
                                         <div class="banner-placeholder" style="width: 100%; min-height: 180px; background: linear-gradient(135deg, #1C1C21 0%, #0D0D0F 100%); display: flex; align-items: center; justify-content: center; border-radius: 16px; border: 2px dashed rgba(255,255,255,0.1);">
                                             <i class="fas fa-image" style="font-size: 3rem; color: rgba(255,255,255,0.2);"></i>
@@ -2237,13 +2232,13 @@ if (typeof details === 'undefined' || !details) {
         <%# SEÇÃO: LOGO DA EMPRESA / BRANDING (rodapé) %>
         <%# ========================================================== %>
         <% if (details.company_logo_url) { %>
-            <% const rawSize = details.company_logo_size || 60; const logoSizePx = Math.min(420, Math.max(20, parseInt(rawSize, 10) || 60)); %>
+            <% const rawSize = details.company_logo_size || 60; const logoSizePx = Math.min(120, Math.max(20, parseInt(rawSize, 10) || 60)); %>
             <% if (details.company_logo_link) { %>
                 <a href="<%= details.company_logo_link %>" target="_blank" rel="noopener noreferrer" class="branding-logo">
-                    <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= logoSizePx %>" style="max-height: <%= logoSizePx %>px; max-width: 420px; height: auto; width: auto; object-fit: contain;">
+                    <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= logoSizePx %>" style="max-height: <%= logoSizePx %>px; max-width: 120px; height: auto; width: auto; object-fit: contain;">
                 </a>
             <% } else { %>
-                <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= logoSizePx %>" style="max-height: <%= logoSizePx %>px; max-width: 420px; height: auto; width: auto; object-fit: contain;">
+                <img src="<%= details.company_logo_url %>" alt="Logo da Empresa" class="branding-logo-custom" data-logo-size="<%= logoSizePx %>" style="max-height: <%= logoSizePx %>px; max-width: 120px; height: auto; width: auto; object-fit: contain;">
             <% } %>
         <% } else { %>
             <a href="https://www.instagram.com/conectaking" target="_blank" rel="noopener noreferrer" class="branding-logo">
