@@ -37,40 +37,42 @@
     <meta property="og:title" content="<%= (salesPage.meta_title || salesPage.store_title || 'Loja').replace(/"/g, '&quot;') %>">
     <meta property="og:description" content="<%= (salesPage.meta_description || salesPage.store_description || '').replace(/"/g, '&quot;') %>">
     <% 
-    // Garantir que a URL da imagem seja absoluta para compartilhamento
-    let metaImageUrl = salesPage.meta_image_url || '';
+    // Garantir que a URL da imagem seja absoluta para compartilhamento (WhatsApp/Facebook exigem HTTPS e URL absoluta)
+    let metaImageUrl = (salesPage.meta_image_url || '').trim();
     if (metaImageUrl && !metaImageUrl.startsWith('http://') && !metaImageUrl.startsWith('https://')) {
-        // Se a URL não começa com http, adicionar o domínio completo
         metaImageUrl = `https://tag.conectaking.com.br${metaImageUrl.startsWith('/') ? '' : '/'}${metaImageUrl}`;
     }
     // Se não tiver imagem de compartilhamento, usar a logo do botão ou imagem de fundo
     if (!metaImageUrl) {
         if (salesPage.button_logo_url) {
-            metaImageUrl = salesPage.button_logo_url;
+            metaImageUrl = (salesPage.button_logo_url || '').trim();
         } else if (salesPage.background_image_url) {
-            metaImageUrl = salesPage.background_image_url;
+            metaImageUrl = (salesPage.background_image_url || '').trim();
         }
     }
-    // Garantir que a URL seja absoluta
     if (metaImageUrl && !metaImageUrl.startsWith('http://') && !metaImageUrl.startsWith('https://')) {
         metaImageUrl = `https://tag.conectaking.com.br${metaImageUrl.startsWith('/') ? '' : '/'}${metaImageUrl}`;
     }
+    // Escape para atributo HTML (evita que & ou " quebrem a tag) - necessário para WhatsApp/crawlers
+    const metaImageUrlEscaped = metaImageUrl ? metaImageUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;') : '';
+    // Tipo da imagem: WhatsApp aceita JPG, PNG, WebP - declarar corretamente evita falha na prévia
+    const metaImageType = metaImageUrl && (metaImageUrl.toLowerCase().indexOf('.png') !== -1 || metaImageUrl.toLowerCase().indexOf('png') !== -1) ? 'image/png' : 'image/jpeg';
     %>
-    <% if (metaImageUrl) { %>
-    <meta property="og:image" content="<%= metaImageUrl %>">
+    <% if (metaImageUrlEscaped) { %>
+    <meta property="og:image" content="<%= metaImageUrlEscaped %>">
+    <meta property="og:image:secure_url" content="<%= metaImageUrlEscaped %>">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:type" content="image/jpeg">
-    <meta property="og:image:secure_url" content="<%= metaImageUrl %>">
+    <meta property="og:image:type" content="<%= metaImageType %>">
     <% } %>
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="<%= (salesPage.meta_title || salesPage.store_title || 'Loja').replace(/"/g, '&quot;') %>">
     <meta name="twitter:description" content="<%= (salesPage.meta_description || salesPage.store_description || '').replace(/"/g, '&quot;') %>">
-    <% if (metaImageUrl) { %>
-    <meta name="twitter:image" content="<%= metaImageUrl %>">
-    <meta name="twitter:image:src" content="<%= metaImageUrl %>">
+    <% if (metaImageUrlEscaped) { %>
+    <meta name="twitter:image" content="<%= metaImageUrlEscaped %>">
+    <meta name="twitter:image:src" content="<%= metaImageUrlEscaped %>">
     <% } %>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
