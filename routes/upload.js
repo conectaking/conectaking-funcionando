@@ -334,10 +334,14 @@ router.post('/image', protectUser, upload.single('image'), asyncHandler(async (r
         contentType: req.file.mimetype
     });
 
+    const uploadHeaders = { ...formData.getHeaders() };
+    if (uploadURL.indexOf('receive-one') !== -1 && req.headers.authorization) {
+        uploadHeaders.Authorization = req.headers.authorization;
+    }
     const uploadResponse = await fetch(uploadURL, {
         method: 'POST',
         body: formData,
-        headers: formData.getHeaders()
+        headers: uploadHeaders
     });
 
     if (!uploadResponse.ok) {
@@ -422,10 +426,14 @@ router.post('/images', protectUser, upload.array('images', maxCarouselImages), a
             filename: file.originalname || `image-${i + 1}.jpg`,
             contentType: file.mimetype
         });
+        const uploadHeaders = { ...formData.getHeaders() };
+        if (uploadURL.indexOf('receive-one') !== -1 && req.headers.authorization) {
+            uploadHeaders.Authorization = req.headers.authorization;
+        }
         const uploadResponse = await fetch(uploadURL, {
             method: 'POST',
             body: formData,
-            headers: formData.getHeaders()
+            headers: uploadHeaders
         });
         if (!uploadResponse.ok) {
             const errText = await uploadResponse.text();

@@ -403,13 +403,31 @@ window.API_BASE = window.API_BASE || ${base};
   var apiBase = ${base};
   var nativeFetch = window.fetch;
   if (!nativeFetch) return;
+  function getToken() {
+    try {
+      return (typeof localStorage !== 'undefined' && (localStorage.getItem('token') || localStorage.getItem('conectaKingToken'))) || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('token')) || '';
+    } catch (e) { return ''; }
+  }
   window.fetch = function(input, opts) {
+    opts = opts || {};
     var url = typeof input === 'string' ? input : (input && input.url) || '';
     var finalUrl = url;
     if (url && (url.indexOf('/api/') === 0 || url.indexOf('api/') === 0)) {
       finalUrl = url.indexOf('http') === 0 ? url : apiBase.replace(/\\/$/, '') + (url.indexOf('/') === 0 ? url : '/' + url);
     } else if (url && url.indexOf('conectaking.com.br') !== -1 && url.indexOf('/api/') !== -1) {
       finalUrl = url.replace(/^https?:\\/\\/[^\\/]+/, apiBase);
+    }
+    var isApiUrl = (finalUrl && (finalUrl.indexOf(apiBase) === 0 || finalUrl.indexOf('conectaking-api.onrender.com') !== -1)) || (url && url.indexOf('/api/') === 0);
+    if (isApiUrl) {
+      var headers = opts.headers || (opts.headers = {});
+      if (!(headers.Authorization || (headers.get && headers.get('Authorization')))) {
+        var token = getToken();
+        if (token) {
+          if (typeof headers.set === 'function') headers.set('Authorization', 'Bearer ' + token);
+          else if (Object.prototype.toString.call(headers) === '[object Headers]') headers.set('Authorization', 'Bearer ' + token);
+          else headers.Authorization = 'Bearer ' + token;
+        }
+      }
     }
     if (finalUrl === url) return nativeFetch.apply(this, arguments);
     var finalInput = typeof input === 'string' ? finalUrl : (typeof Request !== 'undefined' ? new Request(finalUrl, input) : finalUrl);
