@@ -1312,4 +1312,55 @@ router.patch('/plans/:id', protectAdmin, async (req, res) => {
     }
 });
 
+/**
+ * @route   GET /api/admin/default-branding
+ * @desc    Retorna a logomarca padrão (usada em contas que não definiram a própria). Só ADM.
+ * @access  Private (Admin)
+ */
+router.get('/default-branding', protectAdmin, async (req, res) => {
+    try {
+        const { rows } = await db.query(
+            `SELECT value FROM app_config WHERE key = 'default_branding' LIMIT 1`
+        );
+        const raw = rows[0]?.value || {};
+        res.json({
+            success: true,
+            logo_url: raw.logo_url ?? null,
+            logo_size: raw.logo_size ?? 60,
+            logo_link: raw.logo_link ?? null,
+        });
+    } catch (err) {
+        console.error('Erro GET /api/admin/default-branding:', err);
+        res.status(500).json({ success: false, message: 'Erro ao buscar logomarca padrão.' });
+    }
+});
+
+/**
+ * @route   PUT /api/admin/default-branding
+ * @desc    Atualiza a logomarca padrão. Afeta todas as contas que ainda não alteraram a logo (modo empresa que já alterou não é afetado). Só ADM.
+ * @access  Private (Admin)
+ */
+router.put('/default-branding', protectAdmin, async (req, res) => {
+    try {
+        const { logo_url, logo_size, logo_link } = req.body || {};
+        const urlToSave = (logo_url != null && String(logo_url).trim() !== '') ? String(logo_url).trim() : null;
+        const size = Math.min(120, Math.max(20, parseInt(logo_size, 10) || 60));
+        const linkToSave = (logo_link != null && String(logo_link).trim() !== '') ? String(logo_link).trim() : null;
+
+        await db.query(
+            `INSERT INTO app_config (key, value, updated_at)
+             VALUES ('default_branding', $1::jsonb, NOW())
+             ON CONFLICT (key) DO UPDATE SET value = $1::jsonb, updated_at = NOW()`,
+            [JSON.stringify({ logo_url: urlToSave, logo_size: size, logo_link: linkToSave })]
+        );
+        res.json({
+            success: true,
+            message: 'Logomarca padrão atualizada. Contas que já definiram a própria logo (modo empresa) não são afetadas.',
+        });
+    } catch (err) {
+        console.error('Erro PUT /api/admin/default-branding:', err);
+        res.status(500).json({ success: false, message: 'Erro ao salvar logomarca padrão.' });
+    }
+});
+
 module.exports = router;

@@ -660,6 +660,25 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             details.button_content_align = 'center';
         }
 
+        // Se a conta não tem logo própria (nem do parent), usar logomarca padrão definida pelo ADM
+        if (!details.company_logo_url || String(details.company_logo_url).trim() === '') {
+            try {
+                const defaultBrandingRes = await client.query(
+                    `SELECT value FROM app_config WHERE key = 'default_branding' LIMIT 1`
+                );
+                if (defaultBrandingRes.rows.length > 0 && defaultBrandingRes.rows[0].value) {
+                    const def = defaultBrandingRes.rows[0].value;
+                    if (def.logo_url && String(def.logo_url).trim() !== '') {
+                        details.company_logo_url = def.logo_url;
+                        details.company_logo_size = def.logo_size != null ? def.logo_size : 60;
+                        details.company_logo_link = def.logo_link || null;
+                    }
+                }
+            } catch (e) {
+                logger.debug('app_config/default_branding não disponível', { error: e.message });
+            }
+        }
+
         // Preparar URL da imagem processada para og:image (se houver imagem)
         // Priorizar share_image_url se existir, senão usar profile_image_url
         // Adicionar cache-busting baseado na URL da imagem para forçar atualização
