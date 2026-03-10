@@ -214,7 +214,7 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
     const yColStart = y;
 
     page.drawText('Faturado para:', { x: colLeft, y: y - labelH, size: FONT_SIZE, font: boldFont, color: cBlue() });
-    y -= labelH + 4;
+    y -= labelH + 10;
     if (cliente.nome) { page.drawText(String(cliente.nome).slice(0, 45), { x: colLeft, y: y - FONT_SIZE, size: FONT_SIZE, font, color: cText() }); y -= LINE_HEIGHT; }
     if (cliente.cpf_cnpj) { page.drawText(`CNPJ/CPF: ${String(cliente.cpf_cnpj).slice(0, 30)}`, { x: colLeft, y: y - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cMuted() }); y -= LINE_HEIGHT - 2; }
     if (cliente.endereco) {
@@ -225,7 +225,7 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
     }
     if (cliente.contato) { page.drawText(String(cliente.contato).slice(0, 45), { x: colLeft, y: y - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cMuted() }); y -= LINE_HEIGHT - 2; }
 
-    let yRight = yColStart - labelH - 4;
+    let yRight = yColStart - labelH - 10;
     page.drawText('Emitido por:', { x: colRight, y: yColStart - labelH, size: FONT_SIZE, font: boldFont, color: cBlue() });
     if (emitente.nome) { page.drawText(String(emitente.nome).slice(0, 45), { x: colRight, y: yRight - FONT_SIZE, size: FONT_SIZE, font, color: cText() }); yRight -= LINE_HEIGHT; }
     if (emitente.cpf_cnpj) { page.drawText(`CNPJ/CPF: ${String(emitente.cpf_cnpj).slice(0, 30)}`, { x: colRight, y: yRight - FONT_SIZE, size: FONT_SIZE_SMALL, font, color: cMuted() }); yRight -= LINE_HEIGHT - 2; }
@@ -328,7 +328,7 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
             y = PAGE_HEIGHT - MARGIN;
         }
         page.drawText(title, { x: MARGIN, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cBlue() });
-        y -= LINE_HEIGHT;
+        y -= LINE_HEIGHT + 8;
         const rawLines = String(text).trim().split(/\n/);
         const maxLen = 70;
         for (const line of rawLines) {
@@ -373,7 +373,7 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
             y = PAGE_HEIGHT - MARGIN;
         }
         page.drawText('Pagamento via PIX', { x: MARGIN, y: y - FONT_SIZE, size: FONT_SIZE, font: boldFont, color: cBlue() });
-        y -= LINE_HEIGHT + 6;
+        y -= LINE_HEIGHT + 10;
         try {
             const pix = QrCodePix({
                 version: '01',
