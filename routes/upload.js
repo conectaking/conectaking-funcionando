@@ -68,10 +68,13 @@ function getCloudflareCreds() {
     return { accountId, headers };
 }
 
-// Configurar multer para upload de imagens em memória
+// Limite máximo por arquivo (15 MB) — exibir mensagem amigável no cliente quando exceder
+const UPLOAD_MAX_MB = 15;
+const UPLOAD_MAX_BYTES = UPLOAD_MAX_MB * 1024 * 1024;
+
 const upload = multer({ 
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    limits: { fileSize: UPLOAD_MAX_BYTES },
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
