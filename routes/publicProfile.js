@@ -519,21 +519,18 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             
             if (item.item_type === 'sales_page') {
                 try {
-                    // Buscar sales_page (slug, status, display_format e card_banner para o cartão)
+                    // Buscar sales_page (slug, status e opcionalmente display_format/card_banner para o cartão)
                     const salesPageRes = await client.query(
-                        `SELECT slug, status,
-                         COALESCE(display_format, 'button') AS display_format,
-                         card_banner_image_url
-                         FROM sales_pages WHERE profile_item_id = $1`,
+                        'SELECT * FROM sales_pages WHERE profile_item_id = $1',
                         [item.id]
                     );
                     if (salesPageRes.rows.length > 0) {
                         const salesPage = salesPageRes.rows[0];
                         item.sales_page_slug = salesPage.slug;
                         item.sales_page_status = salesPage.status;
-                        const rawFormat = (salesPage.display_format || 'button').toString().trim().toLowerCase();
+                        const rawFormat = (salesPage.display_format != null && salesPage.display_format !== '') ? String(salesPage.display_format).trim().toLowerCase() : 'button';
                         item.sales_page_display_format = (rawFormat === 'banner') ? 'banner' : 'button';
-                        item.sales_page_banner_image_url = salesPage.card_banner_image_url && String(salesPage.card_banner_image_url).trim() ? String(salesPage.card_banner_image_url).trim() : null;
+                        item.sales_page_banner_image_url = (salesPage.card_banner_image_url != null && String(salesPage.card_banner_image_url).trim()) ? String(salesPage.card_banner_image_url).trim() : null;
                         // Se não estiver publicada, não definir URL (será '#')
                         if (salesPage.status !== 'PUBLISHED') {
                             item.sales_page_slug = null; // Não permitir acesso público se não estiver publicada
