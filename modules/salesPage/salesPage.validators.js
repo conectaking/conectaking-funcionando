@@ -77,6 +77,10 @@ class SalesPageValidators {
             }
         }
 
+        if (data.display_format !== undefined && data.display_format && !['button', 'banner'].includes(data.display_format)) {
+            errors.push('display_format deve ser "button" ou "banner"');
+        }
+
         return {
             isValid: errors.length === 0,
             errors
@@ -135,6 +139,13 @@ class SalesPageValidators {
         }
         if (data.slug !== undefined) {
             sanitized.slug = data.slug ? data.slug.toLowerCase().trim() : null;
+        }
+
+        if (data.display_format !== undefined) {
+            sanitized.display_format = (data.display_format === 'banner') ? 'banner' : 'button';
+        }
+        if (data.card_banner_image_url !== undefined) {
+            sanitized.card_banner_image_url = data.card_banner_image_url && String(data.card_banner_image_url).trim() ? String(data.card_banner_image_url).trim() : null;
         }
 
         // Copiar outros campos que não precisam sanitização
