@@ -187,6 +187,14 @@ router.get('/:identifier', asyncHandler(async (req, res) => {
             if (item.item_type === 'banner_carousel') {
                 return false;
             }
+            // King Selection: só exibir no cartão se estiver em "Separação de Pacotes" para o plano e o usuário tiver ativado em Módulos
+            if (item.item_type === 'king_selection') {
+                if (!allowedModuleTypes.has('king_selection')) {
+                    logger.debug('King Selection ocultado no cartão (não disponível no plano)', { plan_code: planCode, userId });
+                    return false;
+                }
+                return true;
+            }
             // Separação de Pacotes: não exibir módulo no cartão se não estiver disponível para o plano do usuário
             if (controlledModuleTypes.has(item.item_type)) {
                 if (!allowedModuleTypes.has(item.item_type)) {
