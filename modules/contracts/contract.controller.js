@@ -94,6 +94,27 @@ class ContractController {
     }
 
     /**
+     * Reenviar link de assinatura para um signatário
+     */
+    async resendSignLink(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+            const { signerId } = req.body;
+            if (!signerId) {
+                return responseFormatter.error(res, 'signerId é obrigatório', 400);
+            }
+            const result = await service.resendSignLink(id, userId, signerId);
+            return responseFormatter.success(res, result, 'Link reenviado por e-mail com sucesso');
+        } catch (error) {
+            logger.error('Erro ao reenviar link:', error);
+            const statusCode = error.message.includes('permissão') ? 403 :
+                error.message.includes('não encontrado') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
      * Cancelar contrato
      */
     async cancel(req, res) {

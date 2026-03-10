@@ -275,6 +275,33 @@ class ContractService {
     }
 
     /**
+     * Reenviar link de assinatura para um signatário (apenas se ainda não assinou)
+     */
+    async resendSignLink(contractId, userId, signerId) {
+        const ownsContract = await repository.checkOwnership(contractId, userId);
+        if (!ownsContract) {
+            throw new Error('Você não tem permissão para este contrato');
+        }
+        const contract = await repository.findById(contractId);
+        if (!contract) {
+            throw new Error('Contrato não encontrado');
+        }
+        if (contract.status !== TYPES.STATUS.SENT && contract.status !== TYPES.STATUS.SIGNED) {
+            throw new Error('Só é possível reenviar o link para contratos enviados');
+        }
+        const signer = await repository.findSignerById(signerId);
+        if (!signer || signer.contract_id !== parseInt(contractId, 10)) {
+            throw new Error('Signatário não encontrado');
+        }
+        if (signer.signed_at) {
+            throw new Error('Este signatário já assinou; não é possível reenviar o link');
+        }
+        await this.sendSignEmails(contract, [signer], false);
+        logger.info(`Link de assinatura reenviado para signatário ${signerId} do contrato ${contractId}`);
+        return { sent: true, email: signer.email };
+    }
+
+    /**
      * Função auxiliar para escapar HTML e garantir UTF-8
      */
     escapeHtml(text) {

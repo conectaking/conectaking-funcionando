@@ -72,6 +72,10 @@ router.post('/:id/send', asyncHandler(async (req, res) => {
     await controller.sendForSignature(req, res);
 }));
 
+router.post('/:id/resend-sign-link', asyncHandler(async (req, res) => {
+    await controller.resendSignLink(req, res);
+}));
+
 router.post('/:id/cancel', asyncHandler(async (req, res) => {
     await controller.cancel(req, res);
 }));
