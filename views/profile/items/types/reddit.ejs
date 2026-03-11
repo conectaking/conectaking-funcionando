@@ -1,0 +1,7 @@
+<%# Partial: item tipo reddit. Variável: item %>
+<% if (item.destination_url) { %>
+<a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+    <i class="<%= item.icon_class || 'fab fa-reddit' %>"></i>
+    <span><%= item.title || 'Reddit' %></span>
+</a>
+<% } %>

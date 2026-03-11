@@ -1,0 +1,5 @@
+<%# Partial: item tipo portfolio. Variável: item %>
+<a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+    <i class="<%= item.icon_class || 'fas fa-briefcase' %>"></i>
+    <span><%= item.title || 'Portfolio' %></span>
+</a>

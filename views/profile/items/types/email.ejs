@@ -1,0 +1,5 @@
+<%# Partial: item tipo email. Variável: item %>
+<a href="<%= item.destination_url ? 'mailto:' + item.destination_url : '#' %>" class="profile-link" data-item-id="<%= item.id %>">
+    <i class="<%= item.icon_class || 'fas fa-envelope' %>"></i>
+    <span><%= item.title || 'Email' %></span>
+</a>

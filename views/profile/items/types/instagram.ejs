@@ -1,0 +1,5 @@
+<%# Partial: item tipo instagram (link). Variável: item %>
+<a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+    <i class="<%= item.icon_class || 'fab fa-instagram' %>"></i>
+    <span><%= item.title || 'Instagram' %></span>
+</a>

@@ -1,0 +1,5 @@
+<%# Partial: item tipo pinterest. Variável: item %>
+<a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+    <i class="<%= item.icon_class || 'fab fa-pinterest' %>"></i>
+    <span><%= item.title || 'Pinterest' %></span>
+</a>
