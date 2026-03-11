@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="<%= typeof faviconUrl !== 'undefined' ? faviconUrl : 'https://i.ibb.co/60sW9k75/logo.png' %>">
     <link rel="apple-touch-icon" href="<%= typeof faviconUrl !== 'undefined' ? faviconUrl : 'https://i.ibb.co/60sW9k75/logo.png' %>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -306,6 +307,8 @@
     </style>
 </head>
 <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script src="/js/image-crop-modal.js"></script>
     <div class="header-actions" style="max-width: 1400px; margin: 0 auto 24px;">
         <% 
             // Determinar se está dentro de iframe
@@ -820,7 +823,38 @@
         async function handleImageUpload(type, input) {
             const file = input.files[0];
             if (!file) return;
-            
+            // Enquadramento (crop) para banner e logo — igual ao da troca de foto de perfil
+            if (typeof ImageCropModal !== 'undefined' && (type === 'header_image' || type === 'logo_image')) {
+                var aspectRatio = type === 'header_image' ? 16 / 9 : 1;
+                ImageCropModal.open(file, { aspectRatio: aspectRatio }, function (url, errMsg) {
+                    input.value = '';
+                    if (url) applyUploadedImageUrl(type, url, input); else if (errMsg) alert(errMsg);
+                });
+                return;
+            }
+            await doDirectImageUpload(type, input);
+        }
+        function applyUploadedImageUrl(type, imageUrl, input) {
+            var urlField = type === 'header_image' ? 'header_image_url' : type === 'logo_image' ? 'form_logo_url' : 'background_image_url';
+            var emptyId = type === 'header_image' ? 'header_image_empty' : type === 'logo_image' ? 'logo_image_empty' : 'background_image_empty';
+            var filledId = type === 'header_image' ? 'header_image_filled' : type === 'logo_image' ? 'logo_image_filled' : 'background_image_filled';
+            var areaId = type === 'header_image' ? 'header_image_area' : type === 'logo_image' ? 'logo_image_area' : 'background_image_area';
+            var previewId = type === 'header_image' ? 'header_image_preview' : type === 'logo_image' ? 'logo_image_preview' : 'background_image_preview';
+            document.getElementById(urlField).value = imageUrl;
+            var emptyEl = document.getElementById(emptyId);
+            var filledEl = document.getElementById(filledId);
+            var areaEl = document.getElementById(areaId);
+            var preview = document.getElementById(previewId);
+            if (preview) { preview.src = imageUrl; preview.style.display = ''; }
+            if (emptyEl) emptyEl.style.display = 'none';
+            if (filledEl) filledEl.style.display = 'block';
+            if (areaEl) areaEl.classList.add('has-image');
+            if (input) input.value = '';
+            savePortariaAfterUpload(true);
+        }
+        async function doDirectImageUpload(type, input) {
+            const file = input.files[0];
+            if (!file) return;
             // Verificar se ainda temos o token
             if (!authToken) {
                 const currentUrlParams = new URLSearchParams(window.location.search);
@@ -915,24 +949,9 @@
                 console.log('📥 URL da imagem no response:', imageUrl, 'data:', data);
                 
                 if (response.ok && imageUrl) {
-                    var previewId = type === 'header_image' ? 'header_image_preview' : type === 'logo_image' ? 'logo_image_preview' : 'background_image_preview';
-                    var emptyEl = document.getElementById(emptyId);
-                    var filledEl = document.getElementById(filledId);
-                    document.getElementById(urlField).value = imageUrl;
-                    var preview = document.getElementById(previewId);
-                    if (preview) { preview.src = imageUrl; preview.style.display = ''; preview.removeAttribute('hidden'); }
-                    restoreEmptyBlock();
-                    if (emptyEl) emptyEl.style.display = 'none';
-                    if (filledEl) {
-                        filledEl.style.display = 'block';
-                        var img = filledEl.querySelector('img') || document.getElementById(previewId);
-                        if (img) { img.src = imageUrl; img.alt = type === 'header_image' ? 'Banner' : type === 'logo_image' ? 'Logo' : 'Fundo'; }
-                    }
-                    if (areaEl) areaEl.classList.add('has-image');
-                    input.value = '';
                     setUploadState(false, null);
+                    applyUploadedImageUrl(type, imageUrl, input);
                     console.log('✅ Imagem enviada com sucesso:', imageUrl);
-                    savePortariaAfterUpload(true);
                 } else {
                     var errorMessage = (data && (data.message || data.error)) ? (data.message || data.error) : 'Erro desconhecido';
                     console.error('❌ Erro no upload:', data);

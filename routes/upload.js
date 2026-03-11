@@ -3,6 +3,7 @@ const fetch = require('node-fetch');
 const multer = require('multer');
 const FormData = require('form-data');
 const rateLimit = require('express-rate-limit');
+const sharp = require('sharp');
 const { protectUser } = require('../middleware/protectUser');
 const config = require('../config');
 const logger = require('../utils/logger');
@@ -467,6 +468,63 @@ router.post('/images', protectUser, upload.array('images', maxCarouselImages), a
 
     logger.info('✅ [UPLOAD] Múltiplas imagens enviadas', { count: urls.length, userId: req.user.userId });
     res.json({ success: true, urls, imageUrl: urls[0] });
+}));
+
+/**
+ * POST /api/upload/crop - Enquadramento: recorta a imagem e faz upload.
+ * Body (multipart): image = ficheiro; cropX, cropY, cropWidth, cropHeight = números (em pixels).
+ * Ou em ratios 0–1: cropX, cropY, cropWidth, cropHeight (opcional useRatios=1).
+ * Uso: KingForms (Imagem do Banner, Logo do Formulário), troca de foto de perfil, etc.
+ * Medidas recomendadas: Banner 16:9 (ex. 1200×400); Logo 1:1 (ex. 400×400).
+ */
+const cropFields = upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'file', maxCount: 1 }
+]);
+router.post('/crop', protectUser, cropFields, asyncHandler(async (req, res) => {
+    const file = (req.files && req.files.image && req.files.image[0]) || (req.files && req.files.file && req.files.file[0]);
+    if (!file || !file.buffer) {
+        return res.status(400).json({ success: false, message: 'Nenhuma imagem enviada. Envie no campo "image" ou "file".' });
+    }
+    const useRatios = String(req.body.useRatios || req.body.use_ratios || '').trim() === '1' || req.body.useRatios === true;
+    let x = parseFloat(req.body.cropX ?? req.body.crop_x ?? 0);
+    let y = parseFloat(req.body.cropY ?? req.body.crop_y ?? 0);
+    let w = parseFloat(req.body.cropWidth ?? req.body.crop_width ?? req.body.cropW ?? 1);
+    let h = parseFloat(req.body.cropHeight ?? req.body.crop_height ?? req.body.cropH ?? 1);
+    if (Number.isNaN(x)) x = 0;
+    if (Number.isNaN(y)) y = 0;
+    if (Number.isNaN(w) || w <= 0) w = 1;
+    if (Number.isNaN(h) || h <= 0) h = 1;
+
+    const meta = await sharp(file.buffer).metadata();
+    const imgW = meta.width || 1;
+    const imgH = meta.height || 1;
+
+    if (useRatios) {
+        x = Math.max(0, Math.min(1, x)) * imgW;
+        y = Math.max(0, Math.min(1, y)) * imgH;
+        w = Math.max(1, Math.min(imgW, w * imgW));
+        h = Math.max(1, Math.min(imgH, h * imgH));
+    }
+    const left = Math.floor(Math.max(0, Math.min(imgW - 1, x)));
+    const top = Math.floor(Math.max(0, Math.min(imgH - 1, y)));
+    const width = Math.max(1, Math.min(imgW - left, Math.floor(w)));
+    const height = Math.max(1, Math.min(imgH - top, Math.floor(h)));
+
+    const cropped = await sharp(file.buffer)
+        .extract({ left, top, width, height })
+        .jpeg({ quality: 90 })
+        .toBuffer();
+
+    const r2Url = await uploadImageToR2(cropped, 'image/jpeg', (file.originalname || 'image.jpg').replace(/\.[^.]+$/i, '.jpg'));
+    if (!r2Url) {
+        return res.status(503).json({
+            success: false,
+            message: 'Upload temporariamente indisponível. Tente novamente em instantes.'
+        });
+    }
+    logger.info('✅ [UPLOAD] Imagem recortada e enviada', { userId: req.user.userId });
+    res.json({ success: true, url: r2Url, imageUrl: r2Url });
 }));
 
 // Endpoint para obter URL completa da imagem após upload
