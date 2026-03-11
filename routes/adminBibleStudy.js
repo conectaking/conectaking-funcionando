@@ -170,4 +170,56 @@ router.post('/bible/study/book/:bookId/upload', protectAdmin, (req, res, next) =
     }
 });
 
+// --- Devocionais 365 (só ADM): listar dias com conteúdo, adicionar/editar, remover ---
+
+/** GET /api/admin/bible/devotionals-365/days — Lista dias 1-365 com has_devocional (só ADM). */
+router.get('/bible/devotionals-365/days', protectAdmin, async (req, res) => {
+    try {
+        const daysWithContent = await bibleRepository.getDevotionals365DaysWithContent();
+        const set = new Set(daysWithContent || []);
+        const days = Array.from({ length: 365 }, (_, i) => ({
+            day: i + 1,
+            has_devocional: set.has(i + 1)
+        }));
+        res.json({ success: true, data: { days } });
+    } catch (e) {
+        logger.error('adminBibleStudy getDevotionals365Days:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao listar dias.' });
+    }
+});
+
+/** PUT /api/admin/bible/devotionals-365/:day — Cria ou atualiza devocional do dia (só ADM). Body: titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao */
+router.put('/bible/devotionals-365/:day', protectAdmin, async (req, res) => {
+    const day = parseInt(req.params.day, 10);
+    if (!day || day < 1 || day > 365) {
+        return res.status(400).json({ success: false, message: 'Dia deve ser entre 1 e 365.' });
+    }
+    try {
+        await bibleRepository.upsertDevocional365(day, req.body || {});
+        res.json({ success: true, message: 'Devocional do dia ' + day + ' salvo com sucesso.' });
+    } catch (e) {
+        logger.error('adminBibleStudy upsertDevocional365:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao salvar.' });
+    }
+});
+
+/** DELETE /api/admin/bible/devotionals-365/:day — Remove devocional do dia (só ADM). */
+router.delete('/bible/devotionals-365/:day', protectAdmin, async (req, res) => {
+    const day = parseInt(req.params.day, 10);
+    if (!day || day < 1 || day > 365) {
+        return res.status(400).json({ success: false, message: 'Dia deve ser entre 1 e 365.' });
+    }
+    try {
+        const removed = await bibleRepository.deleteDevocional365(day);
+        if (!removed) {
+            return res.status(404).json({ success: false, message: 'Devocional deste dia não encontrado.' });
+        }
+        logger.info(`Admin: devocional 365 dia ${day} removido.`);
+        res.json({ success: true, message: 'Devocional removido com sucesso.' });
+    } catch (e) {
+        logger.error('adminBibleStudy deleteDevocional365:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao remover.' });
+    }
+});
+
 module.exports = router;

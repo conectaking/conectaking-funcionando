@@ -164,6 +164,60 @@ async function getDevocional365(dayOfYear) {
     }
 }
 
+/** Lista quais dias (1-365) possuem devocional cadastrado. Para uso admin. */
+async function getDevotionals365DaysWithContent() {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            'SELECT day_of_year FROM bible_devotionals_365 ORDER BY day_of_year'
+        );
+        return (r.rows || []).map(row => row.day_of_year);
+    } finally {
+        client.release();
+    }
+}
+
+/** Cria ou atualiza devocional do dia (1-365). Apenas admin. */
+async function upsertDevocional365(dayOfYear, payload) {
+    const client = await db.pool.connect();
+    try {
+        const day = parseInt(dayOfYear, 10);
+        if (day < 1 || day > 365) throw new Error('Dia deve ser entre 1 e 365.');
+        const { titulo = '', versiculo_ref = '', versiculo_texto = '', reflexao = '', aplicacao = '', oracao = '' } = payload || {};
+        await client.query(
+            `INSERT INTO bible_devotionals_365 (day_of_year, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             ON CONFLICT (day_of_year) DO UPDATE SET
+               titulo = EXCLUDED.titulo,
+               versiculo_ref = EXCLUDED.versiculo_ref,
+               versiculo_texto = EXCLUDED.versiculo_texto,
+               reflexao = EXCLUDED.reflexao,
+               aplicacao = EXCLUDED.aplicacao,
+               oracao = EXCLUDED.oracao`,
+            [day, titulo, versiculo_ref, versiculo_texto, reflexao, aplicacao, oracao]
+        );
+        return true;
+    } finally {
+        client.release();
+    }
+}
+
+/** Remove devocional do dia. Apenas admin. */
+async function deleteDevocional365(dayOfYear) {
+    const client = await db.pool.connect();
+    try {
+        const day = parseInt(dayOfYear, 10);
+        if (day < 1 || day > 365) return false;
+        const r = await client.query(
+            'DELETE FROM bible_devotionals_365 WHERE day_of_year = $1 RETURNING 1',
+            [day]
+        );
+        return (r.rowCount || 0) > 0;
+    } finally {
+        client.release();
+    }
+}
+
 async function getStudyThemes() {
     const client = await db.pool.connect();
     try {
@@ -580,6 +634,9 @@ module.exports = {
     markRead,
     resetProgress,
     getDevocional365,
+    getDevotionals365DaysWithContent,
+    upsertDevocional365,
+    deleteDevocional365,
     getStudyThemes,
     getStudies,
     getStudyBySlug,
