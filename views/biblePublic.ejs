@@ -466,7 +466,7 @@
         </div>
     </div>
 
-    <script src="/js/tts.js"></script>
+    <script src="<%= typeof ttsScriptSrc !== 'undefined' && ttsScriptSrc ? ttsScriptSrc : 'https://www.conectaking.com.br/js/tts.js' %>"></script>
     <script>
         (function() {
             const API_URL = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '<%= typeof API_URL !== "undefined" ? API_URL : "" %>';
