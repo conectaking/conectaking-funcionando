@@ -27,10 +27,10 @@ function isLocalFrontend(baseUrl) {
     }
 }
 
-/** URL da página da Bíblia no painel (bible.html). itemId opcional. */
+/** URL da página da Bíblia no painel (bibliaking.html). itemId opcional. */
 function getBiblePanelUrl(itemId) {
     const base = getFrontendBase();
-    const path = isLocalFrontend(base) ? 'public_html/bible.html' : 'bible.html';
+    const path = isLocalFrontend(base) ? 'public_html/bibliaking.html' : 'bibliaking.html';
     const dashPath = isLocalFrontend(base) ? 'public_html/dashboard.html' : 'dashboard.html';
     return itemId ? `${base}/${path}?itemId=${itemId}` : `${base}/${dashPath}`;
 }
