@@ -893,97 +893,46 @@ if (typeof details === 'undefined' || !details) {
                         <%- include('profile/items/types/whatsapp', { item }) %>
 
                     <% } else if (item.item_type === 'telegram') { %>
-                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-telegram' %>"></i>
-                            <span><%= item.title || 'Telegram' %></span>
-                        </a>
+                        <%- include('profile/items/types/telegram', { item }) %>
 
                     <% } else if (item.item_type === 'email') { %>
-                        <a href="<%= item.destination_url ? 'mailto:' + item.destination_url : '#' %>" class="profile-link" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fas fa-envelope' %>"></i>
-                            <span><%= item.title || 'Email' %></span>
-                        </a>
+                        <%- include('profile/items/types/email', { item }) %>
 
                     <% } else if (item.item_type === 'instagram') { %>
-                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-instagram' %>"></i>
-                            <span><%= item.title || 'Instagram' %></span>
-                        </a>
+                        <%- include('profile/items/types/instagram', { item }) %>
 
                     <% } else if (item.item_type === 'facebook') { %>
-                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-facebook' %>"></i>
-                            <span><%= item.title || 'Facebook' %></span>
-                        </a>
+                        <%- include('profile/items/types/facebook', { item }) %>
 
                     <% } else if (item.item_type === 'tiktok') { %>
-                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-tiktok' %>"></i>
-                            <span><%= item.title || 'TikTok' %></span>
-                        </a>
+                        <%- include('profile/items/types/tiktok', { item }) %>
 
                     <% } else if (item.item_type === 'twitter') { %>
-                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-twitter' %>"></i>
-                            <span><%= item.title || 'Twitter' %></span>
-                        </a>
+                        <%- include('profile/items/types/twitter', { item }) %>
 
                     <% } else if (item.item_type === 'youtube') { %>
-                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-youtube' %>"></i>
-                            <span><%= item.title || 'YouTube' %></span>
-                        </a>
+                        <%- include('profile/items/types/youtube', { item }) %>
 
                     <% } else if (item.item_type === 'linkedin') { %>
-                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-linkedin' %>"></i>
-                            <span><%= item.title || 'LinkedIn' %></span>
-                        </a>
+                        <%- include('profile/items/types/linkedin', { item }) %>
 
                     <% } else if (item.item_type === 'portfolio') { %>
-                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fas fa-briefcase' %>"></i>
-                            <span><%= item.title || 'Portfolio' %></span>
-                        </a>
+                        <%- include('profile/items/types/portfolio', { item }) %>
 
                     <% } else if (item.item_type === 'pinterest') { %>
-                        <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-pinterest' %>"></i>
-                            <span><%= item.title || 'Pinterest' %></span>
-                        </a>
+                        <%- include('profile/items/types/pinterest', { item }) %>
 
                     <% } else if (item.item_type === 'reddit') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-reddit' %>"></i>
-                            <span><%= item.title || 'Reddit' %></span>
-                        </a>
-                        <% } %>
+                        <%- include('profile/items/types/reddit', { item }) %>
 
                     <% } else if (item.item_type === 'twitch') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-twitch' %>"></i>
-                            <span><%= item.title || 'Twitch' %></span>
-                        </a>
-                        <% } %>
+                        <%- include('profile/items/types/twitch', { item }) %>
 
                     <% } else if (item.item_type === 'spotify') { %>
-                        <% if (item.destination_url) { %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-spotify' %>"></i>
-                            <span><%= item.title || 'Spotify' %></span>
-                        </a>
-                        <% } %>
+                        <%- include('profile/items/types/spotify', { item }) %>
 
-                    <%# ========================================================== %>
-                    <%# TIPO: PIX QR CODE (Modal com QR Code PIX) %>
-                    <%# ========================================================== %>
                     <% } else if (item.item_type === 'pix_qrcode') { %>
-                        <button class="profile-link profile-button-pix-qrcode" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fas fa-qrcode' %>"></i>
-                            <span><%= item.title || 'PIX QR Code' %></span>
-                        </button>
+                        <%- include('profile/items/types/pix_qrcode', { item }) %>
 
                     <%# ========================================================== %>
                     <%# TIPOS: EMBEDS DE REDES SOCIAIS (Instagram, YouTube, TikTok, etc.) %>
