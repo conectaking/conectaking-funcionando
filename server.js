@@ -35,6 +35,7 @@ const generatorRoutes = require('./routes/generator');
 const accountRoutes = require('./routes/account');
 const profileRoutes = require('./routes/profile');
 const publicProfileRoutes = require('./routes/publicProfile');
+const mainRoutes = require('./modules/main/main.routes');
 const subscriptionRoutes = require('./routes/subscription');
 const moduleAvailabilityRoutes = require('./routes/moduleAvailability');
 const loggerRoutes = require('./routes/logger');
@@ -632,44 +633,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// Rota raiz: se for domínio personalizado (ex: adrianoking.com), mostrar "Meu site"; senão index ou JSON da API
-app.get('/', asyncHandler(async (req, res) => {
-    const host = (req.get('host') || '').replace(/^www\./, '').trim().toLowerCase().split(':')[0];
-    if (host) {
-        try {
-            const site = await sitesService.getPublicByCustomDomain(host);
-            if (site) {
-                if (site.em_manutencao) {
-                    return res.status(503).send(
-                        '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Em manutenção</title></head>' +
-                        '<body style="font-family:sans-serif;text-align:center;padding:3rem;"><h1>Site em manutenção</h1><p>Voltamos em breve.</p></body></html>'
-                    );
-                }
-                const baseUrl = `${req.protocol}://${req.get('host')}`;
-                return res.render('sitePublic', {
-                    site,
-                    slug: '',
-                    formBasePath: '',
-                    baseUrl,
-                    API_URL: process.env.FRONTEND_URL || baseUrl
-                });
-            }
-        } catch (e) {
-            logger.error('GET / custom domain check:', e);
-        }
-    }
-    const indexPath = path.join(publicHtmlDir, 'index.html');
-    if (fs.existsSync(indexPath)) {
-        return res.sendFile(indexPath);
-    }
-    return res.status(200).json({
-        status: 'ok',
-        service: 'Conecta King API',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        message: 'Servidor Conecta King está funcionando corretamente'
-    });
-}));
+// Rota raiz: página principal (domínio personalizado → site público; senão index.html ou JSON da API)
+app.use('/', mainRoutes);
 
 // Bloquear bots e scanners - ANTES de qualquer rota e ANTES do requestLogger
 // Isso evita que requisições de bots sejam processadas ou logadas
@@ -1002,7 +967,6 @@ app.use('/', publicProductRoutes);
 const publicBibleRoutes = require('./routes/publicBible.routes');
 app.use('/', publicBibleRoutes);
 // Meu site público (/:slug/site)
-const sitesService = require('./modules/sites/sites.service');
 const publicSiteRoutes = require('./routes/publicSite.routes');
 app.use('/', publicSiteRoutes);
 
