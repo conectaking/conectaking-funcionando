@@ -1760,7 +1760,7 @@ if (typeof details === 'undefined' || !details) {
                                 // Obter tamanho da logo (padrão: 40px)
                                 if (formData.button_logo_size !== undefined && formData.button_logo_size !== null) {
                                     const parsed = parseInt(formData.button_logo_size, 10);
-                                    if (!isNaN(parsed) && parsed >= 20 && parsed <= 80) {
+                                    if (!isNaN(parsed) && parsed >= 20 && parsed <= 300) {
                                         buttonLogoSize = parsed;
                                         console.log('✅ [PROFILE/CARD] Tamanho da logo definido:', buttonLogoSize);
                                     } else {

@@ -1799,7 +1799,7 @@ router.put('/items/digital_form/:id', protectUser, asyncHandler(async (req, res)
                 `);
                 if (buttonLogoSizeCheck.rows.length > 0) {
                     const parsedSize = parseInt(button_logo_size, 10);
-                    const validSize = (!isNaN(parsedSize) && parsedSize >= 20 && parsedSize <= 80) ? parsedSize : 40;
+                    const validSize = (!isNaN(parsedSize) && parsedSize >= 20 && parsedSize <= 300) ? parsedSize : 40;
                     updateFormFields.push(`button_logo_size = $${formParamIndex++}`);
                     updateFormValues.push(validSize);
                     console.log(`🖼️ [DIGITAL_FORM] Salvando button_logo_size:`, {

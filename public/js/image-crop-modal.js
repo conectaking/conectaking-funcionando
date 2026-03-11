@@ -28,16 +28,16 @@
             '<div id="image-crop-modal" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">' +
             '  <div style="background:#1C1C21; border-radius:16px; padding:20px; max-width:95vw; max-height:95vh; box-shadow:0 20px 60px rgba(0,0,0,0.5);">' +
             '    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">' +
-            '      <h3 style="color:#FFC700; margin:0; font-size:1.25rem;">Enquadrar imagem</h3>' +
+            '      <h3 style="color:#FFC700; margin:0; font-size:1.25rem;">Ajuste sua Imagem</h3>' +
             '      <button type="button" id="image-crop-modal-close" style="background:transparent; border:none; color:#888; font-size:1.5rem; cursor:pointer; padding:0 8px;">&times;</button>' +
             '    </div>' +
-            '    <p style="color:#A1A1A1; font-size:0.9rem; margin:0 0 12px;">Ajuste a área e clique em Aplicar.</p>' +
+            '    <p style="color:#A1A1A1; font-size:0.9rem; margin:0 0 12px;">Ajuste a área e clique em Cortar e Enviar.</p>' +
             '    <div style="max-height:60vh; max-width:90vw; min-height:200px; background:#0D0D0F;">' +
             '      <img id="image-crop-source" style="max-width:100%; max-height:60vh; display:block;">' +
             '    </div>' +
             '    <div style="margin-top:16px; display:flex; gap:12px; justify-content:flex-end;">' +
             '      <button type="button" id="image-crop-cancel" style="padding:10px 20px; background:rgba(255,255,255,0.1); color:#ECECEC; border:1px solid rgba(255,255,255,0.2); border-radius:8px; cursor:pointer;">Cancelar</button>' +
-            '      <button type="button" id="image-crop-apply" style="padding:10px 24px; background:linear-gradient(135deg,#FFC700,#F59E0B); color:#000; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Aplicar</button>' +
+            '      <button type="button" id="image-crop-apply" style="padding:10px 24px; background:linear-gradient(135deg,#FFC700,#F59E0B); color:#000; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Cortar e Enviar</button>' +
             '    </div>' +
             '  </div>' +
             '</div>';
@@ -88,12 +88,12 @@
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 close();
-                if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Aplicar'; }
+                if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Cortar e Enviar'; }
                 if (data && data.success && data.url) currentCallback(data.url); else currentCallback(null, data && data.message ? data.message : 'Falha no upload.');
             })
             .catch(function (err) {
                 close();
-                if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Aplicar'; }
+                if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Cortar e Enviar'; }
                 currentCallback(null, err && err.message ? err.message : 'Erro de conexão.');
             });
     }

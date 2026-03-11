@@ -611,7 +611,7 @@
         let cornerLogoSize = 80; // Tamanho padrão para logo no canto
         if (formData.button_logo_size !== undefined && formData.button_logo_size !== null) {
             const parsed = parseInt(formData.button_logo_size, 10);
-            if (!isNaN(parsed) && parsed >= 20 && parsed <= 120) {
+            if (!isNaN(parsed) && parsed >= 20 && parsed <= 300) {
                 cornerLogoSize = parsed;
             }
         }
@@ -638,7 +638,7 @@
                 let logoSize = 60; // Tamanho padrão
                 if (formData.button_logo_size !== undefined && formData.button_logo_size !== null) {
                     const parsed = parseInt(formData.button_logo_size, 10);
-                    if (!isNaN(parsed) && parsed >= 20 && parsed <= 120) {
+                    if (!isNaN(parsed) && parsed >= 20 && parsed <= 300) {
                         logoSize = parsed;
                     }
                 }

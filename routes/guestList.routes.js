@@ -813,7 +813,7 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
                 `);
                 if (columnCheck.rows.length > 0) {
                     const parsedSize = parseInt(button_logo_size, 10);
-                    const validSize = (!isNaN(parsedSize) && parsedSize >= 20 && parsedSize <= 80) ? parsedSize : 40;
+                    const validSize = (!isNaN(parsedSize) && parsedSize >= 20 && parsedSize <= 300) ? parsedSize : 40;
                     guestListUpdateFields.push(`button_logo_size = $${guestListParamIndex++}`);
                     guestListUpdateValues.push(validSize);
                     logger.info(`🖼️ [GUEST_LIST] Salvando button_logo_size em guest_list_items: ${validSize} (recebido: ${button_logo_size})`);
@@ -1088,7 +1088,7 @@ router.put('/:id', protectUser, asyncHandler(async (req, res) => {
             
             if (button_logo_size !== undefined && hasButtonLogoSize) {
                 const parsedSize = parseInt(button_logo_size, 10);
-                const validSize = (!isNaN(parsedSize) && parsedSize >= 20 && parsedSize <= 80) ? parsedSize : 40;
+                const validSize = (!isNaN(parsedSize) && parsedSize >= 20 && parsedSize <= 300) ? parsedSize : 40;
                 digitalFormUpdateFields.push(`button_logo_size = $${digitalFormParamIndex++}`);
                 digitalFormUpdateValues.push(validSize);
                 logger.info(`🖼️ [GUEST_LIST] Sincronizando button_logo_size em digital_form_items: ${validSize} (recebido: ${button_logo_size})`);

@@ -9,11 +9,14 @@
    - O servidor recorta a imagem com Sharp, faz upload para R2 e devolve `{ success: true, url, imageUrl }`.
 
 2. **Componente reutilizável**  
-   - `public/js/image-crop-modal.js`: modal que usa Cropper.js para o utilizador enquadrar a imagem.  
-   - Requer Cropper.js (CSS + JS) em CDN.  
+   - `public/js/image-crop-modal.js`: modal **"Ajuste sua Imagem"** com botão **"Cortar e Enviar"** (mesma estrutura do ajuste de foto de perfil).  
+   - Usa Cropper.js (CSS + JS) em CDN.  
    - Uso: `ImageCropModal.open(ficheiro, { aspectRatio: 16/9 }, callback(url, errMsg))`.
 
-3. **Exemplo de integração**  
+3. **Tamanho da logo (modo botão)**  
+   - O limite do **Tamanho da Logo** no modo botão foi aumentado de **80 px** para **300 px** (backend e exibição no cartão/formulário).
+
+4. **Exemplo de integração**  
    - Em **Personalizar Portaria** (`views/guestListCustomizePortaria.ejs`): ao adicionar **Banner da portaria** ou **Logo**, abre-se o modal de enquadramento antes do upload (banner 16:9, logo 1:1).
 
 ## Medidas recomendadas
@@ -55,4 +58,4 @@ Na página de **Configurar formulário** do KingForms (onde estão “Formato de
    ImageCropModal.open(file, { aspectRatio: 1 }, function(url, err) { ... });
    ```
 
-Assim, na configuração do KingForms passa a existir o mesmo “enquadramentozinho” que na troca de foto de perfil e no banner da portaria.
+Assim, na configuração do KingForms passa a existir o mesmo “enquadramentozinho” que na troca de foto de perfil e no banner da portaria. O modal usa o título **"Ajuste sua Imagem"** e o botão **"Cortar e Enviar"**. O **Tamanho da Logo** no modo botão aceita agora até **300 px** (antes 80 px).
