@@ -160,7 +160,7 @@ Cada um = módulo ou bloco separado (backend quando houver + front em arquivo/pa
 
 | # | O que separar | Onde está hoje | Ação |
 |---|----------------|----------------|------|
-| 59 | **Página principal** (landing, login, entrada do site) | index.html e rotas de auth/landing | Organizar: rotas e assets da página principal em pasta/módulo dedicado (ex.: `public_html/main/` ou `routes/main/`) para não misturar com dashboard ou cartão. |
+| 59 | **Página principal** (landing, login, entrada do site) | index.html e rotas de auth/landing | **Feito:** lógica de GET / em `modules/main/` (service, controller, routes). Assets continuam em `public_html/`; opcional mover landing para `public_html/main/` depois. |
 
 ---
 
