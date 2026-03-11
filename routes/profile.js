@@ -976,7 +976,6 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             // Deletar apenas itens que existem no banco mas não foram enviados no save-all
             // ========== PROTEÇÃO CRÍTICA: NÃO REMOVER ==========
             // Estes tipos NUNCA podem ser deletados pelo save-all (ficam de fora do payload por plano/ocultação/erro e têm dados críticos: galerias, links, vendas).
-            // bible também fica fora do #items-container (gerenciado separadamente).
             const PROTECTED_ITEM_TYPES_SAVE_ALL = ['sales_page', 'king_selection', 'bible'];
             const candidateIds = Array.from(existingItemIds).filter(id => !savedItemIds.has(id));
             let itemsToDelete = candidateIds;
