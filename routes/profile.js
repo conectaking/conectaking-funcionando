@@ -6,7 +6,7 @@ const fetch = require('node-fetch');
 const config = require('../config');
 const informacoesService = require('../modules/editarCartao/informacoes/informacoes.service');
 const personalizarService = require('../modules/editarCartao/personalizar/personalizar.service');
-const cartaoItensRoutes = require('../modules/cartaoItens/cartaoItens.routes');
+const cartaoItensController = require('../modules/cartaoItens/cartaoItens.controller');
 
 const router = express.Router();
 
@@ -2750,12 +2750,6 @@ router.post('/import-form', protectUser, asyncHandler(async (req, res) => {
     }
 }));
 
-// ===========================================
-// ROTAS PARA GERENCIAR ITENS (ITEMS) - CONTINUAÇÃO
-// GET /items e GET /items/:id delegados ao módulo cartaoItens
-// ===========================================
-router.use('/items', cartaoItensRoutes);
-
 // POST /api/profile/items - Criar novo item
 router.post('/items', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
@@ -3940,6 +3934,10 @@ router.get('/items/digital_form/:id/dashboard', protectUser, asyncHandler(async 
         client.release();
     }
 }));
+
+// GET /items e GET /items/:id (após rotas mais específicas como /items/digital_form/...)
+router.get('/items', protectUser, asyncHandler(cartaoItensController.list));
+router.get('/items/:id', protectUser, asyncHandler(cartaoItensController.getById));
 
 module.exports = router;
 
