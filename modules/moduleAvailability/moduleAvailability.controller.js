@@ -5,7 +5,9 @@ async function getPlanAvailabilityPublic(req, res) {
     const client = await db.pool.connect();
     try {
         const data = await service.getPlanAvailabilityPublic(client);
-        return res.json(data);
+        return res.json({ success: true, ...data });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: 'Erro ao buscar módulos', modules: [] });
     } finally {
         client.release();
     }

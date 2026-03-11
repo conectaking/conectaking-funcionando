@@ -766,62 +766,7 @@ app.use((req, res, next) => {
 // A rota /api/subscription/plans-public está definida em routes/subscription.js
 // ============================================
 
-app.get('/api/modules/plan-availability-public', asyncHandler(async (req, res) => {
-    const client = await db.pool.connect();
-    try {
-        // Usar a mesma lógica do router moduleAvailability.js
-        const availabilityQuery = `
-            SELECT 
-                mpa.id,
-                mpa.module_type,
-                mpa.plan_code,
-                mpa.is_available,
-                mpa.updated_at
-            FROM module_plan_availability mpa
-            WHERE mpa.module_type IN (
-                'whatsapp', 'telegram', 'email', 'pix', 'pix_qrcode',
-                'facebook', 'instagram', 'tiktok', 'twitter', 'youtube', 
-                'spotify', 'linkedin', 'pinterest',
-                'link', 'portfolio', 'banner', 'carousel', 
-                'youtube_embed', 'instagram_embed', 'sales_page', 'digital_form',
-                'finance', 'agenda', 'contract',
-                'king_selection', 'photographer_site', 'bible',
-                'recibos_orcamentos'
-            )
-            ORDER BY mpa.module_type, mpa.plan_code
-        `;
-        const availabilityResult = await client.query(availabilityQuery);
-
-        // Organizar por módulo (mesma estrutura do router)
-        const modulesMap = {};
-        availabilityResult.rows.forEach(row => {
-            if (!modulesMap[row.module_type]) {
-                modulesMap[row.module_type] = {
-                    module_type: row.module_type,
-                    plans: {}
-                };
-            }
-            modulesMap[row.module_type].plans[row.plan_code] = {
-                is_available: row.is_available,
-                id: row.id
-            };
-        });
-
-        res.json({
-            success: true,
-            modules: Object.values(modulesMap)
-        });
-    } catch (error) {
-        logger.error('❌ Erro ao buscar módulos públicos:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Erro ao buscar módulos',
-            modules: []
-        });
-    } finally {
-        client.release();
-    }
-}));
+// GET /api/modules/plan-availability-public está em modules/moduleAvailability (montado em /api/modules)
 
 // ============================================
 // ROTAS PROTEGIDAS COM RATE LIMIT
