@@ -28,8 +28,8 @@ Nome correto do formulário: **King Forms** (no “Adicionar” aparece como “
 
 | # | O que separar | Onde está hoje | Ação |
 |---|----------------|----------------|------|
-| 7 | **Informações** (aba do editor: nome, WhatsApp, @, bio, avatar, etc.) | `#info-editor` em dashboard.html + lógica no dashboard.js | Módulo separado: backend `modules/editarCartao/informacoes/` (ou `modules/profileInfo/`), front `dashboard-info.js` (ou seção carregada só nessa aba). |
-| 8 | **Personalizar** (aba do editor: configurações visuais do cartão) | `#personalizar-editor` em dashboard.html + dashboard.js | Módulo separado: backend `modules/editarCartao/personalizar/` (ou `modules/cartaoPersonalizar/`), front `dashboard-personalizar.js`. |
+| 7 | **Informações** (aba do editor: nome, WhatsApp, @, bio, avatar, etc.) | `#info-editor` em dashboard.html + lógica no dashboard.js | Backend: `modules/editarCartao/informacoes/`. Front: **`js/dashboard-info.js`** criado (stub com `DashboardInfo.init()`); incluir no dashboard.html e migrar lógica do dashboard.js. |
+| 8 | **Personalizar** (aba do editor: configurações visuais do cartão) | `#personalizar-editor` em dashboard.html + dashboard.js | Backend: `modules/editarCartao/personalizar/`. Front: **`js/dashboard-personalizar.js`** criado (stub com `DashboardPersonalizar.init()`); incluir no dashboard.html e migrar lógica. |
 
 ---
 
