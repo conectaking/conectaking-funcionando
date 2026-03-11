@@ -6,6 +6,7 @@ const fetch = require('node-fetch');
 const config = require('../config');
 const informacoesService = require('../modules/editarCartao/informacoes/informacoes.service');
 const personalizarService = require('../modules/editarCartao/personalizar/personalizar.service');
+const cartaoItensRoutes = require('../modules/cartaoItens/cartaoItens.routes');
 
 const router = express.Router();
 
@@ -2751,120 +2752,9 @@ router.post('/import-form', protectUser, asyncHandler(async (req, res) => {
 
 // ===========================================
 // ROTAS PARA GERENCIAR ITENS (ITEMS) - CONTINUAÇÃO
+// GET /items e GET /items/:id delegados ao módulo cartaoItens
 // ===========================================
-
-// GET /api/profile/items - Listar todos os itens do usuário
-router.get('/items', protectUser, asyncHandler(async (req, res) => {
-    const client = await db.pool.connect();
-    try {
-        const userId = req.user.userId;
-        const result = await client.query(
-            'SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order ASC',
-            [userId]
-        );
-        // Evitar cache do navegador
-        res.set({
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-        });
-        res.json(result.rows);
-    } catch (error) {
-        console.error("Erro ao buscar itens:", error);
-        res.status(500).json({ message: 'Erro ao buscar itens.' });
-    } finally {
-        client.release();
-    }
-}));
-
-// GET /api/profile/items/:id - Buscar item específico (DEVE VIR ANTES DO router.use)
-router.get('/items/:id', protectUser, asyncHandler(async (req, res) => {
-    const client = await db.pool.connect();
-    try {
-        const userId = req.user.userId;
-        const itemId = parseInt(req.params.id, 10);
-
-        console.log(`📥 GET /api/profile/items/:id - userId: ${userId}, itemId: ${itemId}`);
-
-        if (!itemId || isNaN(itemId)) {
-            console.log(`❌ ID do item inválido: ${req.params.id}`);
-            return res.status(400).json({ success: false, error: 'ID do item inválido.' });
-        }
-
-        // Primeiro verificar se o item existe (sem filtro de user_id para debug)
-        const checkExists = await client.query(
-            'SELECT id, user_id, item_type FROM profile_items WHERE id = $1',
-            [itemId]
-        );
-
-        if (checkExists.rows.length === 0) {
-            console.log(`❌ Item ${itemId} não existe no banco de dados`);
-            return res.status(404).json({ success: false, error: 'Item não encontrado.' });
-        }
-
-        // Verificar se pertence ao usuário
-        const result = await client.query(
-            'SELECT * FROM profile_items WHERE id = $1 AND user_id = $2',
-            [itemId, userId]
-        );
-
-        console.log(`🔍 Resultado da busca: ${result.rows.length} item(s) encontrado(s)`);
-        console.log(`🔍 Item existe? ${checkExists.rows.length > 0 ? 'Sim' : 'Não'}`);
-        if (checkExists.rows.length > 0) {
-            console.log(`🔍 Item pertence ao usuário ${checkExists.rows[0].user_id}, usuário atual: ${userId}`);
-        }
-
-        if (result.rows.length === 0) {
-            console.log(`❌ Item ${itemId} não encontrado para usuário ${userId}`);
-            // Se o item existe mas não pertence ao usuário, retornar erro de permissão
-            if (checkExists.rows.length > 0 && checkExists.rows[0].user_id !== userId) {
-                return res.status(403).json({ success: false, error: 'Você não tem permissão para acessar este item.' });
-            }
-            return res.status(404).json({ success: false, error: 'Item não encontrado.' });
-        }
-
-        // Buscar profile_id do usuário
-        const userResult = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
-        const profileId = userResult.rows[0]?.id || userId;
-
-        // Formato igual ao item em GET /api/profile (com digital_form_data ou guest_list_data)
-        let responseData = { ...result.rows[0], profile_id: profileId };
-        if (responseData.item_type === 'digital_form') {
-            const formResult = await client.query(
-                `SELECT * FROM digital_form_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
-                [itemId]
-            );
-            if (formResult.rows.length > 0) {
-                responseData.digital_form_data = formResult.rows[0];
-                if (responseData.digital_form_data.form_fields && typeof responseData.digital_form_data.form_fields === 'string') {
-                    try { responseData.digital_form_data.form_fields = JSON.parse(responseData.digital_form_data.form_fields); } catch (_) { responseData.digital_form_data.form_fields = []; }
-                }
-            } else {
-                responseData.digital_form_data = { form_fields: [] };
-            }
-        }
-        if (responseData.item_type === 'guest_list') {
-            const glResult = await client.query(
-                `SELECT * FROM guest_list_items WHERE profile_item_id = $1 ORDER BY COALESCE(updated_at, '1970-01-01'::timestamp) DESC, id DESC LIMIT 1`,
-                [itemId]
-            );
-            responseData.guest_list_data = glResult.rows.length > 0 ? glResult.rows[0] : {};
-        }
-
-        // Evitar cache do navegador
-        res.set({
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-        });
-        res.json({ success: true, data: responseData });
-    } catch (error) {
-        console.error("Erro ao buscar item:", error);
-        res.status(500).json({ success: false, error: 'Erro ao buscar item.' });
-    } finally {
-        client.release();
-    }
-}));
+router.use('/items', cartaoItensRoutes);
 
 // POST /api/profile/items - Criar novo item
 router.post('/items', protectUser, asyncHandler(async (req, res) => {
