@@ -21,6 +21,7 @@ function error(res, message, statusCode = 400, code = null, details = null) {
     return res.status(statusCode).json({
         success: false,
         data: null,
+        message,
         error: {
             code: code || 'ERROR',
             message,

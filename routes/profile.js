@@ -4,6 +4,8 @@ const { protectUser } = require('../middleware/protectUser');
 const { asyncHandler } = require('../middleware/errorHandler');
 const fetch = require('node-fetch');
 const config = require('../config');
+const informacoesService = require('../modules/editarCartao/informacoes/informacoes.service');
+const personalizarService = require('../modules/editarCartao/personalizar/personalizar.service');
 
 const router = express.Router();
 
@@ -154,77 +156,22 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
     const client = await db.pool.connect();
     try {
         const userId = req.user.userId;
-        
+
         if (!userId) {
             return res.status(400).json({ message: 'ID do usuário não encontrado.' });
         }
-        
-        // Verificar quais colunas existem na tabela user_profiles
-        let existingColumns = [];
-        try {
-            const columnsCheck = await client.query(`
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'user_profiles'
-            `);
-            existingColumns = columnsCheck.rows.map(row => row.column_name);
-        } catch (checkError) {
-            console.warn('⚠️ Erro ao verificar colunas da tabela user_profiles:', checkError.message);
-            // Se falhar, usar query mais simples
-        }
-        
-        // Construir query dinamicamente baseada nas colunas existentes
-        const baseFields = [
-            'u.id', 'u.email', 'u.profile_slug',
-            'p.display_name', 'p.bio', 'p.profile_image_url',
-            'p.font_family',
-            'p.background_color', 'p.text_color', 'p.button_color', 'p.button_text_color',
-            'p.button_opacity', 'p.button_border_radius', 'p.button_content_align',
-            'p.background_type', 'p.background_image_url',
-            'p.card_background_color', 'p.card_opacity',
-            'p.button_font_size', 'p.background_image_opacity',
-            'p.show_vcard_button'
-        ];
-        
-        // Adicionar colunas opcionais se existirem
-        if (existingColumns.includes('avatar_format')) {
-            baseFields.splice(3, 0, "COALESCE(p.avatar_format, 'circular') as avatar_format");
-        } else {
-            baseFields.splice(3, 0, "'circular' as avatar_format");
-        }
-        
-        if (existingColumns.includes('logo_spacing')) {
-            baseFields.push("COALESCE(p.logo_spacing, 'center') as logo_spacing");
-        } else {
-            baseFields.push("'center' as logo_spacing");
-        }
-        
-        if (existingColumns.includes('share_image_url')) {
-            baseFields.push('p.share_image_url');
-        }
-        
-        if (existingColumns.includes('whatsapp')) {
-            baseFields.push('p.whatsapp');
-        }
-        
-        if (existingColumns.includes('whatsapp_number')) {
-            baseFields.push('p.whatsapp_number');
-        }
-        
-        const profileQuery = `
-            SELECT 
-                ${baseFields.join(', ')}
-            FROM users u
-            LEFT JOIN user_profiles p ON u.id = p.user_id
-            WHERE u.id = $1;
-        `;
-        
-        const profileRes = await client.query(profileQuery, [userId]);
 
-        if (profileRes.rows.length === 0) {
+        const [info, theme] = await Promise.all([
+            informacoesService.getDetails(userId),
+            personalizarService.getSettings(userId),
+        ]);
+        if (!info) {
             return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
-        
+        const details = { ...info, ...theme };
+        details.button_color_rgb = hexToRgb(details.button_color);
+        details.card_color_rgb = hexToRgb(details.card_background_color);
+
         // Buscar TODOS os itens (ativos e inativos) para o dashboard
         const itemsRes = await client.query('SELECT * FROM profile_items WHERE user_id = $1 ORDER BY display_order ASC', [userId]);
         
@@ -362,13 +309,6 @@ router.get('/', protectUser, asyncHandler(async (req, res) => {
             };
         });
 
-        const details = profileRes.rows[0];
-        details.button_color_rgb = hexToRgb(details.button_color);
-        details.card_color_rgb = hexToRgb(details.card_background_color);
-
-        console.log('📱 [GET /api/profile] WhatsApp retornado:', details.whatsapp);
-        console.log('📱 [GET /api/profile] Coluna whatsapp existe?', existingColumns.includes('whatsapp'));
-
         const fullProfile = {
             details: details,
             items: normalizedItems
@@ -423,261 +363,10 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
             tipo_logoSpacing: typeof details?.logoSpacing
         });
 
-        // Salvar detalhes do perfil
+        // Salvar detalhes do perfil (informações + personalizar via módulos editarCartao)
         if (details) {
-            console.log('📝 [SAVE-ALL] Processando detalhes do perfil...');
-            
-            // Verificar quais colunas existem na tabela user_profiles
-            const columnsCheck = await client.query(`
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'user_profiles'
-                ORDER BY column_name
-            `);
-            const existingColumns = columnsCheck.rows.map(row => row.column_name);
-            console.log(`✅ [SAVE-ALL] ${existingColumns.length} colunas encontradas na tabela user_profiles`);
-            const hasWhatsapp = existingColumns.includes('whatsapp');
-            console.log(`🔍 [SAVE-ALL] Coluna 'whatsapp' existe? ${hasWhatsapp}`);
-            if (!hasWhatsapp) {
-                console.log(`⚠️ [SAVE-ALL] ATENÇÃO: Coluna 'whatsapp' NÃO encontrada!`);
-                console.log(`📋 [SAVE-ALL] Colunas disponíveis:`, existingColumns.join(', '));
-            }
-            
-            // Verificar se o perfil existe (user_id é a chave primária, não precisa selecionar id)
-            console.log('🔍 [SAVE-ALL] Verificando se perfil existe...');
-            const checkStart = Date.now();
-            const checkProfile = await client.query(
-                'SELECT user_id FROM user_profiles WHERE user_id = $1',
-                [userId]
-            );
-            console.log(`✅ [SAVE-ALL] Verificação de perfil concluída em ${Date.now() - checkStart}ms`);
-            console.log(`✅ [SAVE-ALL] Perfil ${checkProfile.rows.length > 0 ? 'existe' : 'não existe'}`);
-
-            if (checkProfile.rows.length === 0) {
-                // Verificar se a coluna avatar_format existe antes de tentar inserir
-                const hasAvatarFormat = existingColumns.includes('avatar_format');
-                const avatarFormatValue = details.avatar_format || details.avatarFormat || 'circular';
-
-                const insertFields = [
-                    'user_id', 'display_name', 'bio', 'profile_image_url', 'font_family',
-                    'background_color', 'text_color', 'button_color', 'button_text_color',
-                    'button_opacity', 'button_border_radius', 'button_content_align',
-                    'background_type', 'background_image_url',
-                    'card_background_color', 'card_opacity',
-                    'button_font_size', 'background_image_opacity',
-                    'show_vcard_button'
-                ];
-                const insertValues = [
-                    userId,
-                    details.display_name || details.displayName || null,
-                    details.bio || null,
-                    details.profile_image_url || details.profileImageUrl || null,
-                    details.font_family || details.fontFamily || null,
-                    details.background_color ?? details.backgroundColor ?? null,
-                    details.text_color || details.textColor || null,
-                    details.button_color || details.buttonColor || null,
-                    details.button_text_color || details.buttonTextColor || null,
-                    (details.button_opacity ?? details.buttonOpacity) !== undefined ? (details.button_opacity ?? details.buttonOpacity) : null,
-                    details.button_border_radius || details.buttonBorderRadius || null,
-                    details.button_content_align || details.buttonContentAlign || null,
-                    details.background_type ?? details.backgroundType ?? null,
-                    (details.background_image_url !== undefined || details.backgroundImageUrl !== undefined) ? (details.background_image_url ?? details.backgroundImageUrl ?? '') : null,
-                    details.card_background_color ?? details.cardBackgroundColor ?? null,
-                    (details.card_opacity ?? details.cardOpacity) !== undefined ? (details.card_opacity ?? details.cardOpacity) : null,
-                    details.button_font_size || details.buttonFontSize || null,
-                    (details.background_image_opacity ?? details.backgroundImageOpacity) !== undefined ? (details.background_image_opacity ?? details.backgroundImageOpacity) : null,
-                    details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : true)
-                ];
-
-                // Adicionar colunas opcionais se existirem
-                if (existingColumns.includes('whatsapp')) {
-                    insertFields.push('whatsapp');
-                    const whatsappValue = details.whatsapp || details.whatsappNumber || null;
-                    insertValues.push(whatsappValue);
-                    console.log(`📱 [SAVE-ALL] INSERT - Valor do WhatsApp que será salvo:`, whatsappValue);
-                } else {
-                    console.log(`⚠️ [SAVE-ALL] INSERT - Coluna 'whatsapp' NÃO existe no banco de dados!`);
-                    console.log(`💡 [SAVE-ALL] Execute a migration 045_add_whatsapp_to_user_profiles.sql no banco de dados do Render`);
-                }
-                
-                if (existingColumns.includes('whatsapp_number')) {
-                    insertFields.push('whatsapp_number');
-                    insertValues.push(details.whatsapp_number || details.whatsappNumber || null);
-                }
-                
-                if (existingColumns.includes('logo_spacing')) {
-                    insertFields.push('logo_spacing');
-                    insertValues.push((details.logo_spacing !== undefined && details.logo_spacing !== null) ? details.logo_spacing : ((details.logoSpacing !== undefined && details.logoSpacing !== null) ? details.logoSpacing : 'center'));
-                }
-
-                if (hasAvatarFormat) {
-                    insertFields.push('avatar_format');
-                    insertValues.push(avatarFormatValue);
-                }
-                
-                // Adicionar share_image_url se existir
-                if (existingColumns.includes('share_image_url')) {
-                    insertFields.push('share_image_url');
-                    insertValues.push(details.share_image_url || null);
-                }
-
-                const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
-                console.log('🔄 [SAVE-ALL] Executando INSERT em user_profiles...');
-                const insertStart = Date.now();
-                await client.query(`
-                    INSERT INTO user_profiles (${insertFields.join(', ')})
-                    VALUES (${placeholders})
-                `, insertValues);
-                console.log(`✅ [SAVE-ALL] INSERT concluído em ${Date.now() - insertStart}ms`);
-            } else {
-                // Atualizar perfil existente
-                const hasAvatarFormat = existingColumns.includes('avatar_format');
-                const avatarFormatValue = details.avatar_format || details.avatarFormat;
-                
-                const updateFields = [
-                    'display_name = COALESCE($1, display_name)',
-                    'bio = COALESCE($2, bio)',
-                    'profile_image_url = COALESCE($3, profile_image_url)',
-                    'font_family = COALESCE($4, font_family)',
-                    'background_color = COALESCE($5, background_color)',
-                    'text_color = COALESCE($6, text_color)',
-                    'button_color = COALESCE($7, button_color)',
-                    'button_text_color = COALESCE($8, button_text_color)',
-                    'button_opacity = COALESCE($9, button_opacity)',
-                    'button_border_radius = COALESCE($10, button_border_radius)',
-                    'button_content_align = COALESCE($11, button_content_align)',
-                    'background_type = COALESCE($12, background_type)',
-                    'background_image_url = COALESCE($13, background_image_url)',
-                    'card_background_color = COALESCE($14, card_background_color)',
-                    'card_opacity = COALESCE($15, card_opacity)',
-                    'button_font_size = COALESCE($16, button_font_size)',
-                    'background_image_opacity = COALESCE($17, background_image_opacity)',
-                    'show_vcard_button = COALESCE($18, show_vcard_button)'
-                ];
-                const updateValues = [
-                    details.display_name || details.displayName || null,
-                    details.bio || null,
-                    details.profile_image_url || details.profileImageUrl || null,
-                    details.font_family || details.fontFamily || null,
-                    details.background_color ?? details.backgroundColor ?? null,
-                    details.text_color || details.textColor || null,
-                    details.button_color || details.buttonColor || null,
-                    details.button_text_color || details.buttonTextColor || null,
-                    (details.button_opacity ?? details.buttonOpacity) !== undefined ? (details.button_opacity ?? details.buttonOpacity) : null,
-                    details.button_border_radius || details.buttonBorderRadius || null,
-                    details.button_content_align || details.buttonContentAlign || null,
-                    details.background_type ?? details.backgroundType ?? null,
-                    (details.background_image_url !== undefined || details.backgroundImageUrl !== undefined)
-                        ? (details.background_image_url ?? details.backgroundImageUrl ?? '')
-                        : null,
-                    details.card_background_color ?? details.cardBackgroundColor ?? null,
-                    (details.card_opacity ?? details.cardOpacity) !== undefined ? (details.card_opacity ?? details.cardOpacity) : null,
-                    details.button_font_size || details.buttonFontSize || null,
-                    (details.background_image_opacity ?? details.backgroundImageOpacity) !== undefined ? (details.background_image_opacity ?? details.backgroundImageOpacity) : null,
-                    details.show_vcard_button !== undefined ? details.show_vcard_button : (details.showVcardButton !== undefined ? details.showVcardButton : undefined)
-                ];
-                
-                let paramIndex = updateValues.length + 1;
-
-                // Adicionar colunas opcionais se existirem
-                if (existingColumns.includes('logo_spacing')) {
-                    updateFields.push(`logo_spacing = CASE WHEN $${paramIndex}::VARCHAR IS NOT NULL THEN $${paramIndex}::VARCHAR ELSE logo_spacing END`);
-                    updateValues.push((details.logo_spacing !== undefined && details.logo_spacing !== null) ? details.logo_spacing : ((details.logoSpacing !== undefined && details.logoSpacing !== null) ? details.logoSpacing : null));
-                    paramIndex++;
-                }
-                
-                if (existingColumns.includes('whatsapp')) {
-                    console.log(`✅ [SAVE-ALL] Adicionando campo 'whatsapp' ao UPDATE`);
-                    console.log(`📱 [SAVE-ALL] Valor do WhatsApp recebido:`, details.whatsapp);
-                    updateFields.push(`whatsapp = COALESCE($${paramIndex}, whatsapp)`);
-                    updateValues.push(details.whatsapp || null);
-                    console.log(`📱 [SAVE-ALL] Valor do WhatsApp que será salvo:`, updateValues[updateValues.length - 1]);
-                    paramIndex++;
-                } else {
-                    console.log(`⚠️ [SAVE-ALL] Coluna 'whatsapp' NÃO existe, pulando...`);
-                    console.log(`📱 [SAVE-ALL] Valor do WhatsApp recebido (mas não será salvo):`, details.whatsapp);
-                }
-                
-                if (existingColumns.includes('whatsapp_number')) {
-                    updateFields.push(`whatsapp_number = COALESCE($${paramIndex}, whatsapp_number)`);
-                    updateValues.push(details.whatsapp_number || details.whatsappNumber || null);
-                    paramIndex++;
-                }
-
-                console.log(`🔍 [DEBUG] logo_spacing no updateValues:`, updateValues.find((v, i) => updateFields[i]?.includes('logo_spacing')));
-
-                if (hasAvatarFormat && avatarFormatValue) {
-                    updateFields.push(`avatar_format = COALESCE($${paramIndex}, avatar_format)`);
-                    updateValues.push(avatarFormatValue);
-                    paramIndex++;
-                }
-                
-                // Adicionar share_image_url se existir
-                if (existingColumns.includes('share_image_url')) {
-                    updateFields.push(`share_image_url = COALESCE($${paramIndex}, share_image_url)`);
-                    updateValues.push(details.share_image_url || null);
-                    paramIndex++;
-                }
-
-                updateValues.push(userId);
-                const userIdParamIndex = updateValues.length;
-
-                console.log(`🔄 [SAVE-ALL] Executando UPDATE em user_profiles (${updateFields.length} campos)...`);
-                console.log(`🔄 [SAVE-ALL] Primeiros 5 campos: ${updateFields.slice(0, 5).join(', ')}${updateFields.length > 5 ? '...' : ''}`);
-                console.log(`🔍 [SAVE-ALL] Todos os campos do UPDATE:`, updateFields);
-                console.log(`🔍 [SAVE-ALL] Verificando se 'whatsapp' está nos campos:`, updateFields.some(f => f.includes('whatsapp')));
-                const updateStart = Date.now();
-                
-                // Verificar locks antes do UPDATE
-                try {
-                    const lockCheck = await client.query(`
-                        SELECT locktype, relation::regclass, mode, granted 
-                        FROM pg_locks 
-                        WHERE relation = 'user_profiles'::regclass::oid
-                        AND NOT granted
-                    `);
-                    if (lockCheck.rows.length > 0) {
-                        console.warn(`⚠️ [SAVE-ALL] Locks detectados na tabela user_profiles:`, lockCheck.rows);
-                    } else {
-                        console.log(`✅ [SAVE-ALL] Nenhum lock detectado na tabela user_profiles`);
-                    }
-                } catch (lockError) {
-                    console.warn(`⚠️ [SAVE-ALL] Erro ao verificar locks:`, lockError.message);
-                }
-                
-                try {
-                    const updateQuery = `
-                        UPDATE user_profiles SET
-                            ${updateFields.join(', ')}
-                        WHERE user_id = $${userIdParamIndex}
-                    `;
-                    console.log(`🔍 [DEBUG] Query UPDATE:`, updateQuery.substring(0, 500));
-                    console.log(`🔍 [DEBUG] Executando UPDATE com ${updateFields.length} campos e ${updateValues.length} valores`);
-                    const updateResult = await client.query(updateQuery, updateValues);
-                    console.log(`✅ [SAVE-ALL] UPDATE concluído em ${Date.now() - updateStart}ms (${updateResult.rowCount} linha(s) atualizada(s))`);
-                    
-                    // Verificar o valor salvo
-                    const verifyRes = await client.query('SELECT logo_spacing FROM user_profiles WHERE user_id = $1', [userId]);
-                    console.log(`🔍 [DEBUG] Valor de logo_spacing após UPDATE:`, verifyRes.rows[0]?.logo_spacing);
-                } catch (updateError) {
-                    console.error(`❌ [SAVE-ALL] Erro no UPDATE após ${Date.now() - updateStart}ms:`, updateError);
-                    console.error(`❌ [SAVE-ALL] Código do erro: ${updateError.code}`);
-                    console.error(`❌ [SAVE-ALL] Mensagem: ${updateError.message}`);
-                    throw updateError;
-                }
-            }
-
-            // Atualizar profile_slug na tabela users se fornecido
-            if (details.profile_slug || details.profileSlug) {
-                console.log('🔄 [SAVE-ALL] Atualizando profile_slug na tabela users...');
-                const slugUpdateStart = Date.now();
-                await client.query(
-                    'UPDATE users SET profile_slug = $1 WHERE id = $2',
-                    [details.profile_slug || details.profileSlug, userId]
-                );
-                console.log(`✅ [SAVE-ALL] profile_slug atualizado em ${Date.now() - slugUpdateStart}ms`);
-            }
-            console.log('✅ [SAVE-ALL] Detalhes do perfil processados com sucesso');
+            await informacoesService.updateDetails(client, userId, details);
+            await personalizarService.updateSettings(client, userId, details);
         }
 
         // Salvar itens do perfil
