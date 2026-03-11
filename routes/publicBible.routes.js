@@ -12,6 +12,29 @@ const db = require('../db');
 const logger = require('../utils/logger');
 const bibleService = require('../modules/bible/bible.service');
 
+/** Base URL do frontend (painel). Em localhost/127.0.0.1 usa /public_html/ para Live Server. */
+function getFrontendBase() {
+    return (process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
+}
+
+/** Retorna true se a base for ambiente local (Live Server, etc.). */
+function isLocalFrontend(baseUrl) {
+    try {
+        const u = new URL(baseUrl);
+        return u.hostname === '127.0.0.1' || u.hostname === 'localhost';
+    } catch (_) {
+        return false;
+    }
+}
+
+/** URL da página da Bíblia no painel (bible.html). itemId opcional. */
+function getBiblePanelUrl(itemId) {
+    const base = getFrontendBase();
+    const path = isLocalFrontend(base) ? 'public_html/bible.html' : 'bible.html';
+    const dashPath = isLocalFrontend(base) ? 'public_html/dashboard.html' : 'dashboard.html';
+    return itemId ? `${base}/${path}?itemId=${itemId}` : `${base}/${dashPath}`;
+}
+
 /** Renderiza a página da Bíblia (biblePublic) com os dados do perfil. */
 async function getBiblePageContext(client, slug) {
     const userRes = await client.query(
@@ -103,7 +126,7 @@ async function renderBookStudy(req, res, slug, bookId) {
         const study = await bibleService.getBookStudy(bookId);
         const frontendUrl = (process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
         const bibleItemId = ctx.bibleItemId || null;
-        const biblePanelUrl = bibleItemId ? `${frontendUrl}/bibliaking.html?itemId=${bibleItemId}` : `${frontendUrl}/dashboard.html`;
+        const biblePanelUrl = bibleItemId ? `${frontendUrl}/bible.html?itemId=${bibleItemId}` : `${frontendUrl}/dashboard.html`;
         const returnTo = base + '/' + slug + '/biblia/estudos-livro/' + encodeURIComponent(bookId || '');
         const contentSafe = study && study.content
             ? prepareStudyContent(study.content, base, slug, bookId, returnTo)
@@ -164,7 +187,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             const tParam = translation !== 'nvi' ? '?translation=' + encodeURIComponent(translation) : '';
             const bibleItemId = itemRes.rows[0]?.id || null;
             const frontendUrl = (process.env.FRONTEND_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
-            const biblePanelUrl = bibleItemId ? `${frontendUrl}/bibliaking.html?itemId=${bibleItemId}` : `${baseUrl}/${slug}/bible/gn/1`;
+            const biblePanelUrl = bibleItemId ? `${frontendUrl}/bible.html?itemId=${bibleItemId}` : `${baseUrl}/${slug}/bible/gn/1`;
             const returnTo = (req.query.returnTo && typeof req.query.returnTo === 'string') ? req.query.returnTo : '';
             const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter);
             res.render('bibleReader', {

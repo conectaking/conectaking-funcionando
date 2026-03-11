@@ -44,7 +44,7 @@ Cada módulo do cartão que hoje está misturado em `routes/profile.js` terá su
 | King Forms        | Rotas em `publicDigitalForm` etc. | `formPageEdit` / kingForms | OK        |
 | Lista de convidados | `guestList*.routes.js`   | Páginas dedicadas     | OK                |
 | Contrato          | `modules/contracts/`      | Fluxo próprio         | OK                |
-| Bíblia            | `modules/bible/`          | Link lateral + bibliaking | OK             |
+| Bíblia            | `modules/bible/`          | Link lateral + bible.html | OK             |
 | Documentos        | `modules/documentos/`     | Recibos/Orçamentos    | OK                |
 | Link Limits       | `modules/linkLimits/`     | Aba Separação de Pacotes | OK             |
 
