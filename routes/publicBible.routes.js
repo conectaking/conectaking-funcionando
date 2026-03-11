@@ -62,8 +62,7 @@ async function getBiblePageContext(client, slug) {
 
 /** URL antiga: redireciona para a URL limpa /biblia/estudos-livro/:bookId */
 router.get('/:slug/bible/estudo-livro', (req, res) => {
-    const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br';
-    const dashboardUrl = frontendUrl.replace(/\/$/, '') + '/dashboard.html';
+    const dashboardUrl = getBiblePanelUrl(null);
     res.status(404).send(`
         <!DOCTYPE html>
         <html><head><meta charset="utf-8"><title>Página não disponível</title></head>
@@ -124,9 +123,8 @@ async function renderBookStudy(req, res, slug, bookId) {
         const book = allBooks.find(b => b && b.id === bookId);
         const bookName = book ? (book.name || bookId) : bookId;
         const study = await bibleService.getBookStudy(bookId);
-        const frontendUrl = (process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
         const bibleItemId = ctx.bibleItemId || null;
-        const biblePanelUrl = bibleItemId ? `${frontendUrl}/bible.html?itemId=${bibleItemId}` : `${frontendUrl}/dashboard.html`;
+        const biblePanelUrl = getBiblePanelUrl(bibleItemId);
         const returnTo = base + '/' + slug + '/biblia/estudos-livro/' + encodeURIComponent(bookId || '');
         const contentSafe = study && study.content
             ? prepareStudyContent(study.content, base, slug, bookId, returnTo)
@@ -146,8 +144,7 @@ async function renderBookStudy(req, res, slug, bookId) {
 }
 
 router.get('/:slug/biblia/estudos-livro', (req, res) => {
-    const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br';
-    res.redirect(302, frontendUrl.replace(/\/$/, '') + '/dashboard.html');
+    res.redirect(302, getBiblePanelUrl(null));
 });
 
 router.get('/:slug/biblia/estudos-livro/:bookId', asyncHandler(async (req, res) => {
@@ -186,8 +183,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             const baseUrl = `${req.protocol}://${req.get('host')}`;
             const tParam = translation !== 'nvi' ? '?translation=' + encodeURIComponent(translation) : '';
             const bibleItemId = itemRes.rows[0]?.id || null;
-            const frontendUrl = (process.env.FRONTEND_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
-            const biblePanelUrl = bibleItemId ? `${frontendUrl}/bible.html?itemId=${bibleItemId}` : `${baseUrl}/${slug}/bible/gn/1`;
+            const biblePanelUrl = bibleItemId ? getBiblePanelUrl(bibleItemId) : `${baseUrl}/${slug}/bible/gn/1`;
             const returnTo = (req.query.returnTo && typeof req.query.returnTo === 'string') ? req.query.returnTo : '';
             const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter);
             res.render('bibleReader', {
