@@ -1,0 +1,5 @@
+<%# Partial: item tipo whatsapp. Variável: item %>
+<a href="<%= item.destination_url ? 'https://wa.me/' + String(item.destination_url).replace(/\D/g,'') : '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+    <i class="<%= item.icon_class || 'fab fa-whatsapp' %>"></i>
+    <span><%= item.title || 'WhatsApp' %></span>
+</a>

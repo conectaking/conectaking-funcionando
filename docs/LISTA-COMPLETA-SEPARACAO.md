@@ -235,7 +235,7 @@ Cada um = módulo ou bloco separado (backend quando houver + front em arquivo/pa
   4. Assinatura e Compartilhar (módulos).
   5. Relatórios e Personalização da Marca.
   6. Cartão virtual (estrutura dedicada).
-  7. Itens do cartão (um por um: link, banner, PIX, redes, King Forms, etc.).
+  7. Itens do cartão (um por um: link, banner, PIX, redes, King Forms, etc.). **Partials:** iniciado em `views/profile/items/types/` (link, banner, whatsapp); os demais tipos podem ser extraídos gradualmente – ver `views/profile/items/README.md`.
   8. Página principal organizada.
 
 Assim tudo fica listado, separado e com uma ordem de execução clara.

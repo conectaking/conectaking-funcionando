@@ -376,171 +376,16 @@ if (typeof details === 'undefined' || !details) {
                 %>
                 
                     <%# ========================================================== %>
-                    <%# TIPO: LINK PERSONALIZADO %>
+                    <%# TIPO: LINK PERSONALIZADO (partial) %>
                     <%# ========================================================== %>
                     <% if (item.item_type === 'link') { %>
-                        <% if (item.destination_url) { %>
-                        <%
-                            // Verificar se tem logo válida
-                            const hasLogo = item.image_url && typeof item.image_url === 'string' && item.image_url.trim() !== '' && !item.image_url.includes('placeholder');
-                            // Garantir que logo_size seja sempre um número válido
-                            let logoSize = 24; // Tamanho padrão: 24px
-                            if (item.logo_size !== undefined && item.logo_size !== null && item.logo_size !== '') {
-                                const parsed = parseInt(item.logo_size, 10);
-                                if (!isNaN(parsed) && parsed > 0) {
-                                    logoSize = parsed;
-                                }
-                            }
-                            
-                            // Detectar se é PNG (logo) ou JPEG (foto) pela URL
-                            // Como URLs do Cloudflare R2 não têm extensão, usamos heurística melhorada
-                            let isJpeg = false;
-                            let isPng = false;
-                            let borderRadius = '50%'; // Padrão: circular (assumindo JPEG/foto se não detectar)
-                            // Usar logo_fit_mode do item se disponível, senão usar 'contain' (completo, sem corte) como padrão
-                            let objectFit = (item.logo_fit_mode && ['contain', 'cover'].includes(item.logo_fit_mode)) ? item.logo_fit_mode : 'contain';
-                            
-                            if (hasLogo) {
-                                const imageUrl = item.image_url.toLowerCase();
-                                
-                                // Tentar detectar por extensão na URL (se houver)
-                                if (imageUrl.includes('.png')) {
-                                    isPng = true;
-                                    borderRadius = '0'; // PNG: sem border-radius (logo)
-                                    // objectFit já definido acima baseado em logo_fit_mode
-                                } else if (imageUrl.includes('.jpg') || imageUrl.includes('.jpeg')) {
-                                    isJpeg = true;
-                                    borderRadius = '50%'; // JPEG: círculo (foto)
-                                    // objectFit já definido acima baseado em logo_fit_mode
-                                } else {
-                                    // URL sem extensão (Cloudflare R2) - assumir PNG (logo) por padrão para links personalizados
-                                    isPng = true; // Assumir PNG (logo) por padrão para links
-                                    borderRadius = '0';
-                                    // objectFit já definido acima baseado em logo_fit_mode
-                                }
-                            }
-                        %>
-                        <a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <% if (hasLogo) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Link Personalizado' %>" class="profile-link-logo <%= isJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= logoSize %>px !important; height: <%= logoSize %>px !important; border-radius: <%= borderRadius %>; object-fit: <%= objectFit %> !important;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
-                                <i class="<%= item.icon_class || 'fas fa-link' %>" style="display: none;"></i>
-                            <% } else { %>
-                            <i class="<%= item.icon_class || 'fas fa-link' %>"></i>
-                            <% } %>
-                            <span><%= item.title || 'Link Personalizado' %></span>
-                        </a>
-                        <% } %>
+                        <%- include('profile/items/types/link', { item }) %>
 
                     <%# ========================================================== %>
-                    <%# TIPO: BANNER (Imagem com link opcional) %>
+                    <%# TIPO: BANNER (partial) %>
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'banner') { %>
-                        <% 
-                            // Debug: verificar se banner tem image_url
-                            if (!item.image_url || item.image_url.trim() === '' || item.image_url.includes('placeholder') || item.image_url.startsWith('data:image/svg')) {
-                                console.log('⚠️ Banner sem imagem válida:', {
-                                    id: item.id,
-                                    title: item.title,
-                                    image_url: item.image_url || 'null/vazio',
-                                    hasImageUrl: !!item.image_url
-                                });
-                            } else {
-                                console.log('✅ Banner com imagem válida:', {
-                                    id: item.id,
-                                    title: item.title,
-                                    image_url: item.image_url.substring(0, 50) + '...',
-                                    hasImageUrl: true
-                                });
-                            }
-                        %>
-                        <% if (item.image_url && item.image_url.trim() !== '' && !item.image_url.includes('placeholder') && !item.image_url.startsWith('data:image/svg')) { %>
-                        <%
-                            const ratioMap = {
-                            'auto': '', 
-                            'tarja': '4 / 1',
-                            '2:1': '2 / 1',   
-                            '4:3': '4 / 3',
-                            '1:1': '1 / 1',
-                            '3:4': '3 / 4',
-                            '10:16': '10 / 16'
-                            };
-                            const aspectRatioCSS = ratioMap[item.aspect_ratio] || '';
-                            let containerStyle = '';
-                            if (aspectRatioCSS) {
-                                containerStyle = 'style="aspect-ratio: ' + aspectRatioCSS + ';"';
-                            }
-                            
-                            // Processar destination_url para adicionar mensagem personalizada
-                            let finalUrl = item.destination_url || '';
-                            // Usar whatsapp_message se existir, senão usar title (compatibilidade)
-                            const mensagemPersonalizada = item.whatsapp_message || item.title || '';
-                            if (finalUrl && finalUrl !== '#' && mensagemPersonalizada) {
-                                const destUrl = String(finalUrl).trim();
-                                const mensagem = String(mensagemPersonalizada).trim();
-                                
-                                // Se for WhatsApp (wa.me ou api.whatsapp.com)
-                                if (destUrl.includes('wa.me') || destUrl.includes('api.whatsapp.com')) {
-                                    try {
-                                        let baseUrl = '';
-                                        
-                                        // Extrair número do wa.me (suporta wa.me/numero e wa.me/qr/codigo)
-                                        if (destUrl.includes('wa.me')) {
-                                            // Se for link de QR code (wa.me/qr/...), não adicionar mensagem (QR codes não suportam)
-                                            if (destUrl.includes('wa.me/qr/')) {
-                                                finalUrl = destUrl; // Manter link original para QR codes
-                                            } else {
-                                                // Link normal do WhatsApp - extrair número
-                                                const match = destUrl.match(/wa\.me\/([^/?]+)/);
-                                                if (match) {
-                                                    // Extrair apenas o número (remover query params se houver)
-                                                    const numero = match[1].split('?')[0];
-                                                    // Verificar se é um número válido (apenas dígitos)
-                                                    if (/^\d+$/.test(numero)) {
-                                                        baseUrl = `https://wa.me/${numero}`;
-                                                        // Adicionar parâmetro text com a mensagem
-                                                        finalUrl = baseUrl + '?text=' + encodeURIComponent(mensagem);
-                                                    } else {
-                                                        // Se não for número válido, manter URL original
-                                                        finalUrl = destUrl;
-                                                    }
-                                                } else {
-                                                    finalUrl = destUrl;
-                                                }
-                                            }
-                                        } else if (destUrl.includes('api.whatsapp.com')) {
-                                            // Para api.whatsapp.com, extrair phone
-                                            const phoneMatch = destUrl.match(/phone=([^&]+)/);
-                                            if (phoneMatch) {
-                                                baseUrl = `https://api.whatsapp.com/send?phone=${phoneMatch[1]}`;
-                                                // Adicionar parâmetro text com a mensagem
-                                                finalUrl = baseUrl + '&text=' + encodeURIComponent(mensagem);
-                                            } else {
-                                                // Se não encontrar phone, tentar adicionar text na URL existente
-                                                const separator = destUrl.includes('?') ? '&' : '?';
-                                                finalUrl = destUrl + separator + 'text=' + encodeURIComponent(mensagem);
-                                            }
-                                        } else {
-                                            finalUrl = destUrl;
-                                        }
-                                    } catch (e) {
-                                        // Se falhar, manter URL original
-                                        finalUrl = destUrl;
-                                    }
-                                }
-                                // Para Instagram, apenas usar o link (mensagem não é suportada diretamente)
-                                // O title será usado como alt text da imagem
-                            }
-                        %>
-                        <div class="profile-banner-container" <%= containerStyle %> style="width: 100%; margin: 10px 0; background: transparent !important; background-color: transparent !important;">
-                            <% if (finalUrl && finalUrl !== '#') { %>
-                            <a href="<%= finalUrl %>" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>" style="width: 100%; display: block; background: transparent !important; background-color: transparent !important;">
-                                <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
-                            </a>
-                            <% } else { %>
-                            <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
-                            <% } %>
-                        </div>
-                        <% } %>
+                        <%- include('profile/items/types/banner', { item }) %>
 
                     <%# ========================================================== %>
                     <%# TIPO: CARROSSEL (Múltiplas imagens com slide horizontal) %>
@@ -1045,10 +890,7 @@ if (typeof details === 'undefined' || !details) {
                     <%# TIPOS: REDES SOCIAIS E CONTATOS (WhatsApp, Telegram, Email, etc.) %>
                     <%# ========================================================== %>
                     <% } else if (item.item_type === 'whatsapp') { %>
-                        <a href="<%= item.destination_url ? 'https://wa.me/' + String(item.destination_url).replace(/\D/g,'') : '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
-                            <i class="<%= item.icon_class || 'fab fa-whatsapp' %>"></i>
-                            <span><%= item.title || 'WhatsApp' %></span>
-                        </a>
+                        <%- include('profile/items/types/whatsapp', { item }) %>
 
                     <% } else if (item.item_type === 'telegram') { %>
                         <a href="<%= item.destination_url || '#' %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">

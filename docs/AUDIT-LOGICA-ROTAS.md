@@ -5,7 +5,7 @@ Arquivos onde a **lógica está na rota** (acesso a banco, regras de negócio di
 | Arquivo | Situação | Correção (no passo) |
 |---------|----------|----------------------|
 | `routes/admin.js` | 26 rotas com `db.pool.connect()`, `client.query()`, `res.json()` inline. Sem controller/service/repository. | Passo 3: `modules/admin/` (overview, users, codes, branding) |
-| `routes/profile.js` | Muitas rotas com lógica e SQL direto no handler. | Passos 5 (editar cartão), 8 (cartão virtual), 9 (26 itens) |
+| `routes/profile.js` | Muitas rotas com lógica e SQL direto no handler (CRUD de profile_items, save-all, itens por tipo). | Passos 5 e 8 feitos. Passo 9: partials em `views/profile/items/types/` iniciados (link, banner, whatsapp); backend dos 26 itens pode ser migrado para `modules/cartaoItens/` ou módulos por tipo depois. |
 | `routes/subscription.js` | Lógica e queries inline. | Passo 6: `modules/assinatura/` |
 | `routes/vcard.js` | Lógica de geração do vCard e queries na rota. | Passo 6: `modules/compartilhar/` |
 | `routes/analytics.js` | Queries e formatação na rota. | Passo 7: `modules/relatorios/` |

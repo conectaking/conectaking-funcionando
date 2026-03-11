@@ -1,0 +1,57 @@
+<%# Partial: item tipo banner. Variável: item %>
+<%
+    if (!item.image_url || item.image_url.trim() === '' || item.image_url.includes('placeholder') || item.image_url.startsWith('data:image/svg')) {
+        console.log('⚠️ Banner sem imagem válida:', { id: item.id, title: item.title, image_url: item.image_url || 'null/vazio', hasImageUrl: !!item.image_url });
+    } else {
+        console.log('✅ Banner com imagem válida:', { id: item.id, title: item.title, image_url: item.image_url.substring(0, 50) + '...', hasImageUrl: true });
+    }
+%>
+<% if (item.image_url && item.image_url.trim() !== '' && !item.image_url.includes('placeholder') && !item.image_url.startsWith('data:image/svg')) { %>
+<%
+    const ratioMap = { 'auto': '', 'tarja': '4 / 1', '2:1': '2 / 1', '4:3': '4 / 3', '1:1': '1 / 1', '3:4': '3 / 4', '10:16': '10 / 16' };
+    const aspectRatioCSS = ratioMap[item.aspect_ratio] || '';
+    let containerStyle = aspectRatioCSS ? 'style="aspect-ratio: ' + aspectRatioCSS + ';"' : '';
+    let finalUrl = item.destination_url || '';
+    const mensagemPersonalizada = item.whatsapp_message || item.title || '';
+    if (finalUrl && finalUrl !== '#' && mensagemPersonalizada) {
+        const destUrl = String(finalUrl).trim();
+        const mensagem = String(mensagemPersonalizada).trim();
+        if (destUrl.includes('wa.me') || destUrl.includes('api.whatsapp.com')) {
+            try {
+                if (destUrl.includes('wa.me')) {
+                    if (destUrl.includes('wa.me/qr/')) {
+                        finalUrl = destUrl;
+                    } else {
+                        const match = destUrl.match(/wa\.me\/([^/?]+)/);
+                        if (match && /^\d+$/.test(match[1].split('?')[0])) {
+                            finalUrl = 'https://wa.me/' + match[1].split('?')[0] + '?text=' + encodeURIComponent(mensagem);
+                        } else {
+                            finalUrl = destUrl;
+                        }
+                    }
+                } else if (destUrl.includes('api.whatsapp.com')) {
+                    const phoneMatch = destUrl.match(/phone=([^&]+)/);
+                    if (phoneMatch) {
+                        finalUrl = 'https://api.whatsapp.com/send?phone=' + phoneMatch[1] + '&text=' + encodeURIComponent(mensagem);
+                    } else {
+                        finalUrl = destUrl + (destUrl.includes('?') ? '&' : '?') + 'text=' + encodeURIComponent(mensagem);
+                    }
+                } else {
+                    finalUrl = destUrl;
+                }
+            } catch (e) {
+                finalUrl = destUrl;
+            }
+        }
+    }
+%>
+<div class="profile-banner-container" <%= containerStyle %> style="width: 100%; margin: 10px 0; background: transparent !important; background-color: transparent !important;">
+    <% if (finalUrl && finalUrl !== '#') { %>
+    <a href="<%= finalUrl %>" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>" style="width: 100%; display: block; background: transparent !important; background-color: transparent !important;">
+        <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
+    </a>
+    <% } else { %>
+    <img src="<%= item.image_url %>" alt="<%= item.title || 'Banner' %>" style="width: 100%; height: auto; display: block; max-width: 100%; border-radius: 12px; background: transparent !important; background-color: transparent !important;" onerror="console.error('Erro ao carregar imagem do banner:', this.src); this.style.display='none';">
+    <% } %>
+</div>
+<% } %>

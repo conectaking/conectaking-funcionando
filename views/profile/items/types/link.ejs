@@ -1,0 +1,37 @@
+<%# Partial: item tipo link (Link Personalizado). Variável: item %>
+<% if (item.destination_url) { %>
+<%
+    const hasLogo = item.image_url && typeof item.image_url === 'string' && item.image_url.trim() !== '' && !item.image_url.includes('placeholder');
+    let logoSize = 24;
+    if (item.logo_size !== undefined && item.logo_size !== null && item.logo_size !== '') {
+        const parsed = parseInt(item.logo_size, 10);
+        if (!isNaN(parsed) && parsed > 0) logoSize = parsed;
+    }
+    let isJpeg = false;
+    let isPng = false;
+    let borderRadius = '50%';
+    let objectFit = (item.logo_fit_mode && ['contain', 'cover'].includes(item.logo_fit_mode)) ? item.logo_fit_mode : 'contain';
+    if (hasLogo) {
+        const imageUrl = item.image_url.toLowerCase();
+        if (imageUrl.includes('.png')) {
+            isPng = true;
+            borderRadius = '0';
+        } else if (imageUrl.includes('.jpg') || imageUrl.includes('.jpeg')) {
+            isJpeg = true;
+            borderRadius = '50%';
+        } else {
+            isPng = true;
+            borderRadius = '0';
+        }
+    }
+%>
+<a href="<%= item.destination_url %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
+    <% if (hasLogo) { %>
+        <img src="<%= item.image_url %>" alt="<%= item.title || 'Link Personalizado' %>" class="profile-link-logo <%= isJpeg ? 'logo-circular' : 'logo-png' %>" style="width: <%= logoSize %>px !important; height: <%= logoSize %>px !important; border-radius: <%= borderRadius %>; object-fit: <%= objectFit %> !important;" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-block';">
+        <i class="<%= item.icon_class || 'fas fa-link' %>" style="display: none;"></i>
+    <% } else { %>
+        <i class="<%= item.icon_class || 'fas fa-link' %>"></i>
+    <% } %>
+    <span><%= item.title || 'Link Personalizado' %></span>
+</a>
+<% } %>
