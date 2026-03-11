@@ -1992,7 +1992,8 @@ if (typeof details === 'undefined' || !details) {
                     <% } else if (item.item_type === 'bible') { %>
                         <%
                             const bibleSlug = profile_slug || details.profile_slug || identifier;
-                            const bibleUrl = '/' + bibleSlug + '/bible';
+                            /* /:slug/bible está desativado; leitor ativo em /:slug/bible/gn/1 */
+                            const bibleUrl = '/' + bibleSlug + '/bible/gn/1';
                         %>
                         <a href="<%= bibleUrl %>" class="profile-link" target="_blank" rel="noopener noreferrer" data-item-id="<%= item.id %>">
                             <i class="fas fa-bible"></i>

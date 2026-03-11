@@ -187,19 +187,13 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
     }
 }));
 
-/** Página pública da Bíblia (dashboard) desativada: usar apenas a página principal no painel. */
+/**
+ * Página principal /:slug/bible desativada como conteúdo único — redireciona para o leitor (Gênesis 1)
+ * para que links antigos e o cartão público abram a Bíblia corretamente.
+ */
 router.get('/:slug/bible', (req, res) => {
-    const frontendUrl = process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br';
-    const dashboardUrl = frontendUrl.replace(/\/$/, '') + '/dashboard.html';
-    res.status(404).send(`
-        <!DOCTYPE html>
-        <html><head><meta charset="utf-8"><title>Página não disponível</title></head>
-        <body style="font-family:sans-serif;text-align:center;padding:3rem;background:#0D0D0F;color:#ECECEC;">
-            <h1>Página não disponível</h1>
-            <p>Esta página da Bíblia foi desativada. Abra o painel e acesse a Bíblia por lá.</p>
-            <p style="margin-top:20px"><a href="${dashboardUrl}" style="color:#FFC700;text-decoration:none;font-weight:600">Abrir painel →</a></p>
-        </body></html>
-    `);
+    const slug = req.params.slug;
+    res.redirect(302, `/${encodeURIComponent(slug)}/bible/gn/1`);
 });
 
 module.exports = router;
