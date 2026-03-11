@@ -186,6 +186,9 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             const biblePanelUrl = bibleItemId ? getBiblePanelUrl(bibleItemId) : `${baseUrl}/${slug}/bible/gn/1`;
             const returnTo = (req.query.returnTo && typeof req.query.returnTo === 'string') ? req.query.returnTo : '';
             const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter);
+            const frontendBase = getFrontendBase();
+            const isLocal = isLocalFrontend(frontendBase);
+            const ttsScriptSrc = frontendBase + (isLocal ? '/public_html/js/tts.js' : '/js/tts.js');
             res.render('bibleReader', {
                 slug,
                 translation,
@@ -195,6 +198,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 biblePanelUrl,
                 returnTo,
                 API_URL: process.env.FRONTEND_URL || baseUrl,
+                ttsScriptSrc,
                 jesusVerseNumbers: jesusVerseNumbers || []
             });
         } finally {

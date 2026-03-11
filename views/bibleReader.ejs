@@ -172,7 +172,7 @@
         </div>
         </div>
     </div>
-    <script src="/js/tts.js"></script>
+    <script src="<%= typeof ttsScriptSrc !== 'undefined' && ttsScriptSrc ? ttsScriptSrc : '/js/tts.js' %>"></script>
     <script>
         (function() {
             const verses = document.querySelectorAll('.verse-block');
