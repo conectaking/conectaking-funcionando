@@ -8,7 +8,7 @@ Nome correto do formulário: **King Forms** (no “Adicionar” aparece como “
 
 | # | O que separar | Onde está hoje | Ação |
 |---|----------------|----------------|------|
-| 1 | **Empresa** (aba/conteúdo da aba Empresa) | Aba “Empresa” no sidebar (data-tab="times") | Módulo ou seção dedicada: estrutura separada para tudo que pertence à “Empresa”. |
+| 1 | **Empresa** (aba/conteúdo da aba Empresa) | Aba “Empresa” no sidebar (data-tab="times") | Front: **`js/dashboard-empresa.js`** criado; **`public_html/dashboard.html`** com scripts incluídos. Backend: `modules/empresa/`. |
 | 2 | **Minha equipe** | Dentro da área Empresa / lógica no dashboard | Módulo separado: `modules/empresa/equipe/` (backend) + front separado (ex.: `empresa-equipe.js` ou pane dedicado). |
 | 3 | **Códigos de convite** (que estão em “Minha empresa”) | Provavelmente ligado a admin (códigos de registro) ou conta/equipe | Módulo separado: `modules/empresa/codigosConvite/` (ou `modules/codigosConvite/`) + front separado. |
 | 4 | **Personalização** (que está em “Minha empresa”) | Pode ser branding, logo, ou configurações da empresa | Módulo separado: `modules/empresa/personalizacao/` + front separado (não misturar com “Personalizar” do cartão). |
@@ -28,8 +28,8 @@ Nome correto do formulário: **King Forms** (no “Adicionar” aparece como “
 
 | # | O que separar | Onde está hoje | Ação |
 |---|----------------|----------------|------|
-| 7 | **Informações** (aba do editor: nome, WhatsApp, @, bio, avatar, etc.) | `#info-editor` em dashboard.html + lógica no dashboard.js | Backend: `modules/editarCartao/informacoes/`. Front: **`js/dashboard-info.js`** criado (stub com `DashboardInfo.init()`); incluir no dashboard.html e migrar lógica do dashboard.js. |
-| 8 | **Personalizar** (aba do editor: configurações visuais do cartão) | `#personalizar-editor` em dashboard.html + dashboard.js | Backend: `modules/editarCartao/personalizar/`. Front: **`js/dashboard-personalizar.js`** criado (stub com `DashboardPersonalizar.init()`); incluir no dashboard.html e migrar lógica. |
+| 7 | **Informações** (aba do editor: nome, WhatsApp, @, bio, avatar, etc.) | `#info-editor` em dashboard.html + lógica no dashboard.js | Backend: `modules/editarCartao/informacoes/`. Front: **`js/dashboard-info.js`** criado; **`public_html/dashboard.html`** já inclui o script. Migrar lógica do dashboard.js para o módulo. |
+| 8 | **Personalizar** (aba do editor: configurações visuais do cartão) | `#personalizar-editor` em dashboard.html + dashboard.js | Backend: `modules/editarCartao/personalizar/`. Front: **`js/dashboard-personalizar.js`** criado; **`public_html/dashboard.html`** já inclui o script. Migrar lógica do dashboard.js para o módulo. |
 
 ---
 

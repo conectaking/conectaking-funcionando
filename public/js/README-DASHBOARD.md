@@ -23,3 +23,5 @@ Incluir após o `dashboard.js`:
 ```
 
 Detalhes e ordem de carregamento: **`docs/DASHBOARD-FRONT-SPLIT.md`**.
+
+**Nota:** Existe cópia em **`public_html/js/`** para uso por **`public_html/dashboard.html`** (quando o servidor usa `public_html` como raiz). Ao alterar a lógica, atualize aqui em `public/js/` e copie para `public_html/js/` se necessário.

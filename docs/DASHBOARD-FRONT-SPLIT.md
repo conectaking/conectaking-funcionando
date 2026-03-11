@@ -13,7 +13,7 @@ O `dashboard.js` concentra a lógica de todas as abas. Para manter o plano de se
 | `js/dashboard-assinatura.js` | Assinatura / planos | A extrair de dashboard.js quando for conveniente. |
 | `js/relatorios.js` | Relatórios | Pane de analytics. |
 
-Os arquivos de dashboard ficam em **`public/js/`** (junto a `dashboard-ocultar-modulos-por-plano.js`). O `dashboard.html` deve referenciar esse mesmo diretório (ex.: se o HTML estiver em `public_html/`, use `../public/js/` ou o path correto para onde os scripts são servidos).
+Os arquivos de dashboard ficam em **`public/js/`** (cópia canônica). Para uso com raiz em `public_html/`, existem cópias em **`public_html/js/`** e **`public_html/dashboard.html`** já foi criado com os quatro scripts incluídos (dashboard-info, dashboard-empresa, dashboard-personalizar, dashboard-ocultar-modulos-por-plano) e chamadas a `init()` no `DOMContentLoaded`.
 
 ## Como ativar no dashboard.html
 
