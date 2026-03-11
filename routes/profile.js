@@ -763,16 +763,20 @@ router.put('/save-all', protectUser, asyncHandler(async (req, res) => {
         );
         
         // Evitar cache do navegador e retornar dados atualizados
+        const now = Date.now();
         res.set({
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
             'Expires': '0',
-            'Last-Modified': new Date().toUTCString()
+            'Last-Modified': new Date().toUTCString(),
+            'X-Profile-Updated-At': String(now) // Frontend pode usar para recarregar preview (ex.: iframe.src = url + '?t=' + now)
         });
         res.json({ 
+            success: true,
             message: 'Alterações salvas com sucesso!',
             items: updatedItemsRes.rows,
-            timestamp: Date.now() // Timestamp para forçar atualização no frontend
+            timestamp: now,
+            refreshHint: true // Indica que o frontend deve recarregar o preview do perfil (ex.: iframe ou nova aba)
         });
         console.log('✅ Resposta enviada com sucesso');
 

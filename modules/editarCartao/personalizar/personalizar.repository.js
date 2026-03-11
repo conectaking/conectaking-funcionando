@@ -34,7 +34,18 @@ async function getSettings(userId) {
 }
 
 /**
+ * Verifica se details tem valor explícito para a chave (ou alternativa camelCase).
+ * Só atualizamos campos que foram realmente enviados, para evitar que um único
+ * controle no front (ex.: um slider) altere vários campos por engano.
+ */
+function hasKey(details, key, alt) {
+    return details[key] !== undefined || details[alt] !== undefined;
+}
+
+/**
  * Atualiza apenas campos de personalização em user_profiles.
+ * Só inclui no UPDATE os campos que estão presentes em details, evitando
+ * que opacidade do card, do botão ou da imagem de fundo se misturem.
  * @param {object} client - cliente pg (transação)
  */
 async function updateSettings(client, userId, details) {
@@ -46,23 +57,25 @@ async function updateSettings(client, userId, details) {
         return v !== undefined && v !== null ? v : undefined;
     };
 
-    const themeValues = [
-        getVal('font_family', 'fontFamily'),
-        getVal('background_color', 'backgroundColor'),
-        getVal('text_color', 'textColor'),
-        getVal('button_color', 'buttonColor'),
-        getVal('button_text_color', 'buttonTextColor'),
-        getVal('button_opacity', 'buttonOpacity'),
-        getVal('button_border_radius', 'buttonBorderRadius'),
-        getVal('button_content_align', 'buttonContentAlign'),
-        getVal('background_type', 'backgroundType'),
-        getVal('background_image_url', 'backgroundImageUrl'),
-        getVal('card_background_color', 'cardBackgroundColor'),
-        getVal('card_opacity', 'cardOpacity'),
-        getVal('button_font_size', 'buttonFontSize'),
-        getVal('background_image_opacity', 'backgroundImageOpacity'),
-        getVal('show_vcard_button', 'showVcardButton'),
+    const fieldDefs = [
+        ['font_family', 'fontFamily'],
+        ['background_color', 'backgroundColor'],
+        ['text_color', 'textColor'],
+        ['button_color', 'buttonColor'],
+        ['button_text_color', 'buttonTextColor'],
+        ['button_opacity', 'buttonOpacity'],
+        ['button_border_radius', 'buttonBorderRadius'],
+        ['button_content_align', 'buttonContentAlign'],
+        ['background_type', 'backgroundType'],
+        ['background_image_url', 'backgroundImageUrl'],
+        ['card_background_color', 'cardBackgroundColor'],
+        ['card_opacity', 'cardOpacity'],
+        ['button_font_size', 'buttonFontSize'],
+        ['background_image_opacity', 'backgroundImageOpacity'],
+        ['show_vcard_button', 'showVcardButton'],
     ];
+
+    const themeValues = fieldDefs.map(([key, alt]) => getVal(key, alt));
 
     if (checkProfile.rows.length === 0) {
         const insertFields = [
@@ -83,36 +96,37 @@ async function updateSettings(client, userId, details) {
             insertValues
         );
     } else {
-        const updateParts = [
-            'font_family = COALESCE($1, font_family)',
-            'background_color = COALESCE($2, background_color)',
-            'text_color = COALESCE($3, text_color)',
-            'button_color = COALESCE($4, button_color)',
-            'button_text_color = COALESCE($5, button_text_color)',
-            'button_opacity = COALESCE($6, button_opacity)',
-            'button_border_radius = COALESCE($7, button_border_radius)',
-            'button_content_align = COALESCE($8, button_content_align)',
-            'background_type = COALESCE($9, background_type)',
-            'background_image_url = COALESCE($10, background_image_url)',
-            'card_background_color = COALESCE($11, card_background_color)',
-            'card_opacity = COALESCE($12, card_opacity)',
-            'button_font_size = COALESCE($13, button_font_size)',
-            'background_image_opacity = COALESCE($14, background_image_opacity)',
-            'show_vcard_button = COALESCE($15, show_vcard_button)',
+        const updateParts = [];
+        const updateValues = [];
+        let paramIndex = 1;
+        const dbColumns = [
+            'font_family', 'background_color', 'text_color', 'button_color', 'button_text_color',
+            'button_opacity', 'button_border_radius', 'button_content_align',
+            'background_type', 'background_image_url',
+            'card_background_color', 'card_opacity',
+            'button_font_size', 'background_image_opacity', 'show_vcard_button',
         ];
-        const updateValues = themeValues.map((v) => v ?? null);
-        let idx = 16;
-        if (existingColumns.includes('logo_spacing')) {
+        fieldDefs.forEach(([key, alt], i) => {
+            if (hasKey(details, key, alt)) {
+                const val = getVal(key, alt);
+                updateParts.push(`${dbColumns[i]} = $${paramIndex}`);
+                updateValues.push(val !== undefined && val !== null ? val : null);
+                paramIndex++;
+            }
+        });
+        if (existingColumns.includes('logo_spacing') && hasKey(details, 'logo_spacing', 'logoSpacing')) {
             const logoSpacing = getVal('logo_spacing', 'logoSpacing');
-            updateParts.push(`logo_spacing = CASE WHEN $${idx}::VARCHAR IS NOT NULL THEN $${idx}::VARCHAR ELSE logo_spacing END`);
+            updateParts.push(`logo_spacing = $${paramIndex}`);
             updateValues.push(logoSpacing !== undefined && logoSpacing !== null ? logoSpacing : null);
-            idx++;
+            paramIndex++;
         }
-        updateValues.push(userId);
-        await client.query(
-            `UPDATE user_profiles SET ${updateParts.join(', ')} WHERE user_id = $${idx}`,
-            updateValues
-        );
+        if (updateParts.length > 0) {
+            updateValues.push(userId);
+            await client.query(
+                `UPDATE user_profiles SET ${updateParts.join(', ')} WHERE user_id = $${paramIndex}`,
+                updateValues
+            );
+        }
     }
 }
 

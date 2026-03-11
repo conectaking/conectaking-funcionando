@@ -35,6 +35,27 @@
             if (!form) return;
         },
 
+        /**
+         * Recarrega o preview do perfil após Publicar alterações (evita ter que atualizar a página).
+         * Chamar após save-all com sucesso, ex.:
+         *   fetch('/api/profile/save-all', {...}).then(r=>r.json()).then(function(data){
+         *     if (data.success && data.timestamp && window.DashboardPersonalizar && DashboardPersonalizar.reloadPreview) {
+         *       DashboardPersonalizar.reloadPreview(data.timestamp);
+         *     }
+         *   });
+         * @param {number} [timestamp] - data.timestamp da resposta do save-all (evita cache)
+         */
+        reloadPreview: function (timestamp) {
+            var ts = timestamp || Date.now();
+            var iframes = document.querySelectorAll('iframe[id*="preview"], iframe[data-profile-preview="true"], iframe.preview-iframe, iframe[title*="Preview"]');
+            for (var i = 0; i < iframes.length; i++) {
+                var src = (iframes[i].src || '').trim();
+                if (src) {
+                    iframes[i].src = src.split('?')[0] + (src.indexOf('?') >= 0 ? '&' : '?') + 't=' + ts;
+                }
+            }
+        },
+
         reset: function () {
             this._initialized = false;
         }
