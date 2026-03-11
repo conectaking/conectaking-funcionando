@@ -19,10 +19,7 @@
         init: function () {
             if (this._initialized) return;
             var container = document.getElementById('info-editor') || document.querySelector('[data-pane="info"]');
-            if (!container) {
-                console.warn('[DashboardInfo] Aba #info-editor não encontrada.');
-                return;
-            }
+            if (!container) return;
             this._bindForm(container);
             this._initialized = true;
         },

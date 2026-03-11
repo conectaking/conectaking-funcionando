@@ -104,48 +104,27 @@
      * Chame após o DOM estar pronto (ex.: no load do dashboard).
      */
     function initModulesByPlan() {
-        var url = (API_BASE || (typeof window !== 'undefined' && window.API_URL)) + '/api/account/status';
-        console.log('[initModulesByPlan] Buscando status do usuário em:', url);
+        var base = API_BASE || (typeof window !== 'undefined' && window.API_URL) || '';
+        if (!base || String(base).trim() === '') return;
+        var url = String(base).replace(/\/$/, '') + '/api/account/status';
         fetch(url, { credentials: 'include', headers: getAuthHeaders() })
-            .then(function (r) {
-                if (!r.ok) {
-                    console.warn('[initModulesByPlan] Resposta não OK:', r.status);
-                    return Promise.reject(new Error('Não autenticado'));
-                }
-                return r.json();
-            })
-            .then(function (user) {
-                console.log('[initModulesByPlan] Status recebido:', {
-                    email: user.email,
-                    hasFinance: user.hasFinance,
-                    hasContract: user.hasContract,
-                    hasAgenda: user.hasAgenda
-                });
-                applyModulesVisibility(user);
-            })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(r); })
+            .then(applyModulesVisibility)
             .catch(function (err) {
-                console.warn('[initModulesByPlan] Erro ao buscar status:', err);
+                if (err && err.status === 404) return;
+                console.warn('[initModulesByPlan] API indisponível ou não autenticado.');
             });
     }
 
     // Executar quando DOM estiver pronto
     if (typeof document !== 'undefined') {
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('[dashboard-ocultar-modulos] DOM carregado, inicializando...');
-                setTimeout(initModulesByPlan, 100); // Pequeno delay para garantir que outros scripts carregaram
-            });
+            document.addEventListener('DOMContentLoaded', function() { setTimeout(initModulesByPlan, 100); });
         } else {
-            console.log('[dashboard-ocultar-modulos] DOM já carregado, inicializando...');
             setTimeout(initModulesByPlan, 100);
         }
-        
-        // Também executar quando a página estiver completamente carregada
         if (typeof window !== 'undefined') {
-            window.addEventListener('load', function() {
-                console.log('[dashboard-ocultar-modulos] Página completamente carregada, verificando novamente...');
-                setTimeout(initModulesByPlan, 500);
-            });
+            window.addEventListener('load', function() { setTimeout(initModulesByPlan, 500); });
         }
     }
 

@@ -33,11 +33,7 @@
         init: function () {
             if (this._initialized) return;
             var pane = document.querySelector('[data-tab="times"], #times-pane, #empresa-pane, .empresa-pane');
-            if (!pane) {
-                console.warn('[DashboardEmpresa] Pane Empresa não encontrada.');
-            } else {
-                this._bindEmpresaPane(pane);
-            }
+            if (pane) this._bindEmpresaPane(pane);
             this._bindBrandingPane();
             this._bindHashForMobile();
             this._initialized = true;

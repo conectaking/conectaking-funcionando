@@ -20,10 +20,7 @@
         init: function () {
             if (this._initialized) return;
             var container = document.getElementById('personalizar-editor') || document.querySelector('[data-pane="personalizar"]');
-            if (!container) {
-                console.warn('[DashboardPersonalizar] Aba #personalizar-editor não encontrada.');
-                return;
-            }
+            if (!container) return;
             this._bindThemeAndColors(container);
             this._initialized = true;
         },
