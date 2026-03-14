@@ -21,8 +21,8 @@
       @php
         $cols = [
           'preparacao' => 'Preparação',
-          'andamento' => 'Andamento',
-          'revisao' => 'Revisão',
+          'andamento' => 'Cliente selecionando',
+          'revisao' => 'Edição',
           'finalizado' => 'Finalizado'
         ];
       @endphp

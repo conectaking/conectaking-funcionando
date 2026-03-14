@@ -25,7 +25,7 @@
           <form method="POST" action="/admin/galleries/{{ $gallery->id }}/status" class="mt-3 flex gap-2">
             @csrf
             <select name="status" class="flex-1 rounded-lg bg-slate-950 border border-slate-700 px-3 py-2">
-              @foreach(['preparacao'=>'Preparação','andamento'=>'Andamento','revisao'=>'Revisão','finalizado'=>'Finalizado'] as $k=>$l)
+              @foreach(['preparacao'=>'Preparação','andamento'=>'Cliente selecionando','revisao'=>'Edição','finalizado'=>'Finalizado'] as $k=>$l)
                 <option value="{{ $k }}" @if($gallery->status===$k) selected @endif>{{ $l }}</option>
               @endforeach
             </select>
