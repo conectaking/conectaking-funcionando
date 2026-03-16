@@ -47,18 +47,15 @@ async function sendEmail(to, subject, html, text = null, attachments = []) {
             return { success: false, error: 'Email não configurado' };
         }
 
+        const plainText = text !== undefined ? text : (html ? html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 5000) : '');
         const mailOptions = {
             from: process.env.SMTP_FROM || 'noreply@conectaking.com.br',
             to,
             subject,
             html,
-            text: text || html.replace(/<[^>]*>/g, ''), // Remove HTML se text não fornecido
+            text: plainText || undefined,
             attachments: attachments.length > 0 ? attachments : undefined,
-            encoding: 'UTF-8',
-            headers: {
-                'Content-Type': 'text/html; charset=UTF-8',
-                'Content-Transfer-Encoding': 'quoted-printable'
-            }
+            encoding: 'UTF-8'
         };
 
         const info = await emailTransporter.sendMail(mailOptions);

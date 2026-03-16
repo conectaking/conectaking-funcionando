@@ -88,9 +88,9 @@ class ContractController {
                 return responseFormatter.error(res, 'ID do contrato inválido. Importe o PDF novamente no passo 1.', 400);
             }
             const userId = req.user.userId;
-            const { signers, signaturePositions } = req.body;
+            const { signers, signaturePositions, sendEmail } = req.body;
 
-            const result = await service.sendForSignature(id, userId, signers, signaturePositions);
+            const result = await service.sendForSignature(id, userId, signers, signaturePositions, sendEmail === true);
             return responseFormatter.success(res, result, 'Contrato enviado para assinatura com sucesso');
         } catch (error) {
             logger.error('Erro ao enviar contrato para assinatura:', error);

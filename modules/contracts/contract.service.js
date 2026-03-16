@@ -157,7 +157,7 @@ class ContractService {
     /**
      * Enviar contrato para assinatura
      */
-    async sendForSignature(id, userId, signers, signaturePositions = null) {
+    async sendForSignature(id, userId, signers, signaturePositions = null, sendEmail = false) {
         // Verificar ownership
         const ownsContract = await repository.checkOwnership(id, userId);
         if (!ownsContract) {
@@ -259,17 +259,23 @@ class ContractService {
             // Buscar contrato atualizado
             const updatedContract = await repository.findById(id);
 
-            // Gerar links de assinatura (sem enviar e-mails)
-            const frontendUrl = config.urls.frontend || 'https://conectaking.com.br';
+            // Gerar links de assinatura (página de assinar fica na API para não dar 404)
+            const apiUrl = (config.urls.api || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
             const signLinks = createdSigners.map(signer => ({
                 id: signer.id,
                 name: signer.name,
                 email: signer.email,
                 sign_token: signer.sign_token,
-                url: `${frontendUrl}/contract/sign/${signer.sign_token}`
+                url: `${apiUrl}/contract/sign/${signer.sign_token}`
             }));
 
-            logger.info(`Contrato enviado para assinatura (links gerados sem e-mail): ${id} com ${createdSigners.length} signatários`);
+            const sendEmailOption = Boolean(sendEmail);
+            if (sendEmailOption) {
+                await this.sendSignEmails(updatedContract, createdSigners, false);
+                logger.info(`Contrato enviado para assinatura (com e-mail): ${id} com ${createdSigners.length} signatários`);
+            } else {
+                logger.info(`Contrato enviado para assinatura (apenas links): ${id} com ${createdSigners.length} signatários`);
+            }
             
             return {
                 contract: updatedContract,
@@ -307,8 +313,8 @@ class ContractService {
             throw new Error('Este signatário já assinou; não é possível reenviar o link');
         }
 
-        const frontendUrl = config.urls.frontend || 'https://conectaking.com.br';
-        const signUrl = `${frontendUrl}/contract/sign/${signer.sign_token}`;
+        const apiUrl = (config.urls.api || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
+        const signUrl = `${apiUrl}/contract/sign/${signer.sign_token}`;
 
         logger.info(`Link de assinatura gerado (sem e-mail) para signatário ${signerId} do contrato ${contractId}`);
         return { sent: false, email: signer.email, url: signUrl };
@@ -334,10 +340,10 @@ class ContractService {
      * @param {Boolean} includeVerificationCode - Se deve incluir código de verificação no email
      */
     async sendSignEmails(contract, signers, includeVerificationCode = false) {
-        const frontendUrl = config.urls.frontend || 'https://conectaking.com.br';
+        const apiUrl = (config.urls.api || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
         
         for (const signer of signers) {
-            const signUrl = `${frontendUrl}/contract/sign/${signer.sign_token}`;
+            const signUrl = `${apiUrl}/contract/sign/${signer.sign_token}`;
             const expiryDate = new Date();
             expiryDate.setDate(expiryDate.getDate() + TYPES.DEFAULT_TOKEN_EXPIRY_DAYS);
             
@@ -362,7 +368,10 @@ class ContractService {
             const contractTitle = this.escapeHtml(contract.title);
             const signerName = this.escapeHtml(signer.name);
             
-            const subject = `📄 Contrato para Assinatura: ${contractTitle}`;
+            const subject = `Contrato para assinatura: ${contract.title || 'Documento'}`;
+            
+            const expiryStr = expiryDate.toLocaleDateString('pt-BR');
+            const plainText = `Olá, ${signer.name}!\n\nVocê foi convidado a assinar o documento "${contract.title || 'Contrato'}" de forma digital.\n\nAcesse o link abaixo para ler o documento e assinar:\n${signUrl}\n\nEste link expira em ${TYPES.DEFAULT_TOKEN_EXPIRY_DAYS} dias (${expiryStr}).\n\nPassos: 1) Abra o link 2) Revise o conteúdo 3) Escolha como assinar (desenhar, enviar imagem ou digitar nome) 4) Confirme.\n\nEnviado pelo Conecta King.`;
             
             // Seção de código de verificação (se necessário)
             let verificationSection = '';
@@ -419,7 +428,7 @@ class ContractService {
                                             </p>
                                             
                                             <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
-                                                Você recebeu um contrato para assinatura digital:
+                                                Você foi convidado a assinar o documento abaixo de forma digital. Trata-se do serviço/contrato descrito no título. Basta abrir o link, revisar o conteúdo e concluir a assinatura.
                                             </p>
                                             
                                             <div style="background-color: #f9f9f9; border-left: 4px solid #991B1B; padding: 20px; margin: 25px 0; border-radius: 4px;">
@@ -471,7 +480,7 @@ class ContractService {
                 </html>
             `;
 
-            await sendEmail(signer.email, subject, html);
+            await sendEmail(signer.email, subject, html, plainText);
             
             if (includeVerificationCode && verificationCode) {
                 logger.info(`Email unificado enviado para ${signer.email} (inclui código: ${verificationCode})`);
