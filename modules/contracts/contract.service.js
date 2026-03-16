@@ -256,15 +256,25 @@ class ContractService {
 
             await client.query('COMMIT');
 
-            // Enviar emails (sem código de verificação por padrão - pode ser habilitado se necessário)
+            // Buscar contrato atualizado
             const updatedContract = await repository.findById(id);
-            await this.sendSignEmails(updatedContract, createdSigners, false); // false = sem código de verificação
 
-            logger.info(`Contrato enviado para assinatura: ${id} com ${createdSigners.length} signatários`);
+            // Gerar links de assinatura (sem enviar e-mails)
+            const frontendUrl = config.urls.frontend || 'https://conectaking.com.br';
+            const signLinks = createdSigners.map(signer => ({
+                id: signer.id,
+                name: signer.name,
+                email: signer.email,
+                sign_token: signer.sign_token,
+                url: `${frontendUrl}/contract/sign/${signer.sign_token}`
+            }));
+
+            logger.info(`Contrato enviado para assinatura (links gerados sem e-mail): ${id} com ${createdSigners.length} signatários`);
             
             return {
                 contract: updatedContract,
-                signers: createdSigners
+                signers: createdSigners,
+                signLinks
             };
         } catch (error) {
             await client.query('ROLLBACK');
@@ -296,9 +306,12 @@ class ContractService {
         if (signer.signed_at) {
             throw new Error('Este signatário já assinou; não é possível reenviar o link');
         }
-        await this.sendSignEmails(contract, [signer], false);
-        logger.info(`Link de assinatura reenviado para signatário ${signerId} do contrato ${contractId}`);
-        return { sent: true, email: signer.email };
+
+        const frontendUrl = config.urls.frontend || 'https://conectaking.com.br';
+        const signUrl = `${frontendUrl}/contract/sign/${signer.sign_token}`;
+
+        logger.info(`Link de assinatura gerado (sem e-mail) para signatário ${signerId} do contrato ${contractId}`);
+        return { sent: false, email: signer.email, url: signUrl };
     }
 
     /**
