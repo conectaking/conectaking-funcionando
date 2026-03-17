@@ -1606,32 +1606,32 @@ class ContractService {
                 });
             }
 
-            // ---------- TÍTULO E CABEÇALHO ----------
+            // ---------- TÍTULO E CABEÇALHO (compacto = logo + QR + 2 assinaturas em 1 página, igual ZapSign) ----------
             reportPage.drawText('Relatório de Assinaturas', {
-                x: marginLeft, y, size: 20, font: boldFont, color: rgb(0, 0, 0),
+                x: marginLeft, y, size: 18, font: boldFont, color: rgb(0, 0, 0),
             });
-            y -= 28;
+            y -= 22;
             drawHLine(reportPage, y);
-            y -= 16;
+            y -= 12;
 
             const timestampStr = `Datas e horários em UTC-0300 (America/Sao_Paulo). Última atualização em ${new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })} (UTC-0300).`;
             reportPage.drawText(truncate(timestampStr, 95), {
-                x: marginLeft, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
+                x: marginLeft, y, size: 7, font: font, color: rgb(0.4, 0.4, 0.4),
             });
-            y -= 24;
+            y -= 18;
 
             reportPage.drawText('Status: Assinado', {
-                x: marginLeft, y, size: 12, font: boldFont, color: rgb(0, 0.45, 0),
+                x: marginLeft, y, size: 11, font: boldFont, color: rgb(0, 0.45, 0),
             });
-            y -= 26;
-            drawHLine(reportPage, y);
             y -= 20;
+            drawHLine(reportPage, y);
+            y -= 14;
 
             // ---------- INFORMAÇÕES DO DOCUMENTO (esquerda) ----------
             reportPage.drawText('Informações do documento', {
-                x: marginLeft, y, size: 12, font: boldFont, color: rgb(0, 0, 0),
+                x: marginLeft, y, size: 11, font: boldFont, color: rgb(0, 0, 0),
             });
-            y -= 18;
+            y -= 14;
             reportPage.drawText(truncate(`Documento: ${contract.title || 'Contrato'}`, maxCharsLine9), {
                 x: marginLeft, y, size: 9, font: font, color: rgb(0, 0, 0),
             });
