@@ -1525,6 +1525,32 @@ class ContractService {
             reportPage.drawText('ConectaKing', {
                 x: 50, y, size: 10, font: font, color: rgb(0.5, 0.5, 0.5),
             });
+            // QR Code para página de verificação de autenticidade (igual ZapSign)
+            const baseUrl = (config.urls && config.urls.api) ? String(config.urls.api).replace(/\/$/, '') : '';
+            if (baseUrl) {
+                try {
+                    const QRCode = require('qrcode');
+                    const verifyUrl = `${baseUrl}/contract/verify/${contractId}`;
+                    const dataUrl = await QRCode.toDataURL(verifyUrl, { type: 'image/png', margin: 1, width: 160 });
+                    const base64 = (dataUrl && dataUrl.indexOf('base64,') > -1) ? dataUrl.split('base64,')[1] : null;
+                    if (base64) {
+                        const qrPng = Buffer.from(base64, 'base64');
+                        const qrImg = await pdfDoc.embedPng(qrPng);
+                        const qrSize = 72;
+                        reportPage.drawImage(qrImg, {
+                            x: 595 - 50 - qrSize,
+                            y: 820 - qrSize,
+                            width: qrSize,
+                            height: qrSize,
+                        });
+                        reportPage.drawText('Escanear para verificar autenticidade', {
+                            x: 595 - 50 - qrSize, y: 820 - qrSize - 12, size: 6, font: font, color: rgb(0.4, 0.4, 0.4),
+                        });
+                    }
+                } catch (qrErr) {
+                    logger.warn('QR Code no relatório não gerado:', qrErr.message);
+                }
+            }
             y -= 18;
             reportPage.drawText(`Datas e horários em UTC-0300 (America/Sao_Paulo). Última atualização em ${new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })}.`, {
                 x: 50, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
