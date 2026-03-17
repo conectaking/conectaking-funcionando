@@ -1552,7 +1552,7 @@ class ContractService {
                 }
             }
             y -= 18;
-            reportPage.drawText(`Datas e horários em UTC-0300 (America/Sao_Paulo). Última atualização em ${new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })}.`, {
+            reportPage.drawText(`Datas e horários em UTC-0300 (America/Sao_Paulo). Última atualização em ${new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })} (UTC-0300).`, {
                 x: 50, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
             });
             y -= 28;
@@ -1701,26 +1701,61 @@ class ContractService {
                 y -= 18;
             }
 
-            y -= 10;
-            if (y < 80) {
+            y -= 16;
+            if (y < 120) {
                 reportPage = pdfDoc.addPage([595, 842]);
                 y = 820;
             }
+            if (baseUrl && y > 100) {
+                try {
+                    const QRCode2 = require('qrcode');
+                    const verifyUrl2 = `${baseUrl}/contract/verify/${contractId}`;
+                    const dataUrl2 = await QRCode2.toDataURL(verifyUrl2, { type: 'image/png', margin: 1, width: 120 });
+                    const base64_2 = (dataUrl2 && dataUrl2.indexOf('base64,') > -1) ? dataUrl2.split('base64,')[1] : null;
+                    if (base64_2) {
+                        const qrPng2 = Buffer.from(base64_2, 'base64');
+                        const qrImg2 = await pdfDoc.embedPng(qrPng2);
+                        const qrSize2 = 56;
+                        reportPage.drawImage(qrImg2, { x: 595 - 50 - qrSize2, y: y - qrSize2, width: qrSize2, height: qrSize2 });
+                        reportPage.drawText('Escanear para verificar', { x: 595 - 50 - qrSize2, y: y - qrSize2 - 10, size: 6, font: font, color: rgb(0.4, 0.4, 0.4) });
+                    }
+                } catch (_) {}
+            }
+            y -= 70;
+            if (y < 80) { reportPage = pdfDoc.addPage([595, 842]); y = 820; }
+            let hashInsertY = null;
+            const lastReportPageIndex = pdfDoc.getPageCount() - 1;
             reportPage.drawText('Este documento foi gerado automaticamente pelo sistema ConectaKing.', {
                 x: 50, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
             });
             y -= 12;
-            reportPage.drawText('As assinaturas eletrônicas são válidas de acordo com a legislação brasileira (Lei nº 14.063/2020).', {
+            reportPage.drawText('Conforme MP 2.200-2/2001 e Lei nº 14.063/2020. As assinaturas eletrônicas têm validade jurídica.', {
                 x: 50, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
             });
             y -= 12;
-            reportPage.drawText(`Data de geração: ${new Date().toLocaleString('pt-BR')}`, {
+            hashInsertY = y;
+            y -= 12;
+            reportPage.drawText(`Data de geração do relatório: ${new Date().toLocaleString('pt-BR')} (UTC-0300)`, {
                 x: 50, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
             });
 
             // Salvar PDF final
-            const pdfBytes = await pdfDoc.save();
+            let pdfBytes = await pdfDoc.save();
             const finalPdfHash = this.generateSHA256Hash(Buffer.from(pdfBytes));
+            if (hashInsertY != null && lastReportPageIndex >= 0) {
+                try {
+                    const pdfDoc2 = await PDFDocument.load(pdfBytes);
+                    const font2 = await pdfDoc2.embedFont(StandardFonts.Helvetica);
+                    const lastP = pdfDoc2.getPage(lastReportPageIndex);
+                    lastP.drawRectangle({ x: 50, y: hashInsertY - 2, width: 500, height: 14, color: rgb(1, 1, 1) });
+                    lastP.drawText(`Hash do documento assinado (SHA256): ${finalPdfHash}`, {
+                        x: 50, y: hashInsertY, size: 7, font: font2, color: rgb(0.2, 0.2, 0.2),
+                    });
+                    pdfBytes = await pdfDoc2.save();
+                } catch (hashErr) {
+                    logger.warn('Não foi possível inserir hash final no PDF:', hashErr.message);
+                }
+            }
             
             const fileName = `contract_${contractId}_signed_${Date.now()}.pdf`;
             const uploadsDir = path.join(__dirname, '../../public/uploads/contracts');
