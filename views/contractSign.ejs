@@ -441,9 +441,12 @@
                         </div>
                     </div>
                 </div>
-                <div id="pdf-canvas-container" style="background: #2C2C2F; border-radius: 8px; padding: 20px; overflow: auto; max-height: 600px; text-align: center;">
+                <div id="pdf-canvas-container" style="background: #2C2C2F; border-radius: 8px; padding: 20px; overflow: auto; max-height: 600px; min-height: 400px; text-align: center;">
                     <canvas id="pdf-canvas" style="max-width: 100%; height: auto; border-radius: 4px;"></canvas>
                 </div>
+                <p id="pdf-first-page-hint" style="display: none; margin-top: 10px; color: #94a3b8; font-size: 0.85rem;">
+                    <i class="fas fa-info-circle"></i> Se a primeira página estiver em branco, use as setas para ver as demais.
+                </p>
             </div>
             <% } else { %>
             <!-- Contrato sem PDF (template): mostrar texto -->
@@ -502,12 +505,15 @@
         <div class="signature-section" id="signature-section">
             <h3><i class="fas fa-signature"></i> Assinatura Eletrônica</h3>
             
+            <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 20px;">
+                Escolha como deseja assinar: desenhar sua assinatura na tela ou enviar uma foto da assinatura feita no papel.
+            </p>
             <div class="signature-methods">
-                <!-- Método 1: Desenhar no Canvas -->
+                <!-- Opção 1: Desenhar -->
                 <div class="signature-method active" id="canvas-method">
-                    <h4><i class="fas fa-pencil-alt"></i> Assinar Desenhando</h4>
+                    <h4><i class="fas fa-pencil-alt"></i> Assinar desenhando</h4>
                     <p style="color: #888888; font-size: 0.9rem; margin-bottom: 15px;">
-                        <i class="fas fa-info-circle"></i> Desenhe sua assinatura usando o mouse ou o dedo (em dispositivos touch)
+                        Desenhe sua assinatura com o mouse (no computador) ou com o dedo (no celular ou tablet). É rápido e fica igual à sua assinatura de próprio punho.
                     </p>
                     <div class="signature-canvas-container">
                         <canvas id="signature-canvas" class="signature-canvas"></canvas>
@@ -524,11 +530,11 @@
                     </div>
                 </div>
                 
-                <!-- Método 2: Upload de Imagem -->
+                <!-- Opção 2: Enviar foto da assinatura -->
                 <div class="signature-method" id="upload-method">
-                    <h4><i class="fas fa-upload"></i> Enviar Imagem da Assinatura</h4>
+                    <h4><i class="fas fa-camera"></i> Enviar foto da assinatura</h4>
                     <p style="color: #888888; font-size: 0.9rem; margin-bottom: 15px;">
-                        <i class="fas fa-info-circle"></i> Envie uma foto ou imagem da sua assinatura (PNG, JPG - máx. 5MB)
+                        Assine em um papel com caneta, tire uma foto ou escaneie e envie a imagem aqui. Use PNG ou JPG (máx. 5MB). Ideal para quem prefere assinar no papel e enviar o documento.
                     </p>
                     <div class="signature-upload-container">
                         <input type="file" id="signature-upload" accept="image/png,image/jpeg,image/jpg" class="form-control">
@@ -536,27 +542,13 @@
                             <img id="uploaded-signature" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid #FFC700;">
                             <div id="image-validation" style="margin-top: 10px; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: none;">
                                 <small style="color: #22C55E;">
-                                    <i class="fas fa-check-circle"></i> Imagem válida detectada
+                                    <i class="fas fa-check-circle"></i> Imagem válida
                                 </small>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Método 3: Digitar Nome -->
-                <div class="signature-method" id="typed-method">
-                    <h4><i class="fas fa-keyboard"></i> Digitar Nome</h4>
-                    <p style="color: #888888; font-size: 0.9rem; margin-bottom: 15px;">
-                        <i class="fas fa-info-circle"></i> Digite seu nome completo como assinatura
-                    </p>
-                    <input type="text" id="signature-typed" class="signature-typed-input" placeholder="Digite seu nome completo">
-                    <div id="typed-validation" style="margin-top: 10px; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: none;">
-                        <small style="color: #22C55E;">
-                            <i class="fas fa-check-circle"></i> Nome válido
-                        </small>
-                    </div>
-                    </div>
-                </div>
+            </div>
             
             <div class="checkbox-group">
                 <input type="checkbox" id="accept-terms" required>
@@ -639,9 +631,12 @@
                     if (!pdfDoc || pdfDoc.numPages === 0) {
                         throw new Error('O documento não possui páginas.');
                     }
-                    currentPdfPage = 1;
-                    await renderPdfPage();
-                    updatePdfControls();
+                    currentPdfPage = (pdfDoc.numPages >= 2) ? 2 : 1;
+                    var hint = document.getElementById('pdf-first-page-hint');
+                    if (hint) hint.style.display = (pdfDoc.numPages >= 2) ? 'block' : 'none';
+                    requestAnimationFrame(function() {
+                        renderPdfPage().then(function() { updatePdfControls(); });
+                    });
                 } catch (error) {
                     console.error('Erro ao carregar PDF:', error);
                     const container = document.getElementById('pdf-canvas-container');
@@ -815,20 +810,6 @@
             }
             });
             
-            // Digitar nome com validação
-            document.getElementById('signature-typed')?.addEventListener('input', function() {
-                const value = this.value.trim();
-                if (value.length >= 3) { // Mínimo 3 caracteres
-                    currentSignatureMethod = 'typed';
-                    // Ativar método digitado visualmente
-                    document.querySelectorAll('.signature-method').forEach(m => m.classList.remove('active'));
-                    document.getElementById('typed-method').classList.add('active');
-                    document.getElementById('typed-validation').style.display = 'block';
-                } else {
-                    document.getElementById('typed-validation').style.display = 'none';
-                }
-            });
-            
             // Ativar método canvas quando desenhar
             if (signaturePad) {
                 signaturePad.addEventListener('beginStroke', function() {
@@ -838,16 +819,14 @@
                 });
             }
             
-            // Trocar método de assinatura
+            // Trocar método de assinatura (apenas desenhar ou enviar foto)
             document.querySelectorAll('.signature-method').forEach(method => {
                 method.addEventListener('click', function(e) {
                     if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
                     document.querySelectorAll('.signature-method').forEach(m => m.classList.remove('active'));
                     this.classList.add('active');
-                    
                     if (this.id === 'canvas-method') currentSignatureMethod = 'canvas';
                     else if (this.id === 'upload-method') currentSignatureMethod = 'upload';
-                    else if (this.id === 'typed-method') currentSignatureMethod = 'typed';
                 });
             });
             
@@ -878,14 +857,9 @@
                     }
                     signatureData = uploadedSignatureData;
                     signatureImageUrl = uploadedSignatureData;
-                } else if (currentSignatureMethod === 'typed') {
-                    const typedName = document.getElementById('signature-typed').value.trim();
-                    if (!typedName) {
-                        alert('⚠️ Por favor, digite seu nome completo antes de continuar.');
-                        document.getElementById('typed-method').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
-            }
-                    signatureData = typedName;
+                } else {
+                    alert('⚠️ Escolha uma opção: desenhar sua assinatura ou enviar uma foto.');
+                    return;
                 }
                 
                 this.disabled = true;
