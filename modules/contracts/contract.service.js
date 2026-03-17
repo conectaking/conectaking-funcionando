@@ -1533,6 +1533,10 @@ class ContractService {
             const marginRight = 50;
             const rightColStart = 370;
             const contentWidth = rightColStart - marginLeft - 20;
+            const maxCharsLine9 = 68;
+            const maxCharsLine8 = 78;
+            const maxCharsLine7 = 88;
+            const truncate = (s, max) => (s && s.length > max) ? s.substring(0, max) + '...' : (s || '');
             const drawHLine = (page, yPos, fromX = marginLeft, toX = pageWidth - marginRight) => {
                 page.drawRectangle({
                     x: fromX, y: yPos, width: toX - fromX, height: 1.5,
@@ -1610,7 +1614,8 @@ class ContractService {
             drawHLine(reportPage, y);
             y -= 16;
 
-            reportPage.drawText(`Datas e horários em UTC-0300 (America/Sao_Paulo). Última atualização em ${new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })} (UTC-0300).`, {
+            const timestampStr = `Datas e horários em UTC-0300 (America/Sao_Paulo). Última atualização em ${new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })} (UTC-0300).`;
+            reportPage.drawText(truncate(timestampStr, 95), {
                 x: marginLeft, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
             });
             y -= 24;
@@ -1627,7 +1632,7 @@ class ContractService {
                 x: marginLeft, y, size: 12, font: boldFont, color: rgb(0, 0, 0),
             });
             y -= 18;
-            reportPage.drawText(`Documento: ${(contract.title || 'Contrato').substring(0, 70)}`, {
+            reportPage.drawText(truncate(`Documento: ${contract.title || 'Contrato'}`, maxCharsLine9), {
                 x: marginLeft, y, size: 9, font: font, color: rgb(0, 0, 0),
             });
             y -= 14;
@@ -1644,9 +1649,14 @@ class ContractService {
             });
             y -= 14;
             const hashY = y;
-            reportPage.drawText(`Hash do documento original (SHA256): ${contract.original_pdf_hash || 'N/A'}`, {
+            reportPage.drawText('Hash do documento original (SHA256):', {
                 x: marginLeft, y, size: 7, font: font, color: rgb(0.35, 0.35, 0.35),
             });
+            y -= 10;
+            reportPage.drawText(contract.original_pdf_hash || 'N/A', {
+                x: marginLeft + 4, y, size: 6, font: font, color: rgb(0.35, 0.35, 0.35),
+            });
+            y -= 4;
 
             // ---------- QR CODE logo abaixo do hash (igual ZapSign) ----------
             let qrImgEmbed = null;
@@ -1664,7 +1674,7 @@ class ContractService {
             }
             const qrSize = 80;
             const qrX = rightColStart;
-            const qrY = hashY - qrSize - 24;
+            const qrY = y - qrSize - 20;
             if (qrImgEmbed) {
                 reportPage.drawRectangle({
                     x: qrX - 4, y: qrY - 4, width: qrSize + 8, height: qrSize + 18,
@@ -1718,10 +1728,10 @@ class ContractService {
                     color: rgb(0.99, 0.99, 0.99),
                 });
 
-                const leftColW = contentWidth - 195;
-                const sigBoxX = marginLeft + leftColW + 16;
-                const sigBoxW = 175;
+                const sigBoxW = 195;
                 const sigBoxH = 74;
+                const sigBoxX = pageWidth - marginRight - sigBoxW - 10;
+                const leftTextMaxX = sigBoxX - 20;
 
                 reportPage.drawRectangle({
                     x: sigBoxX - 2, y: y - sigBoxH - 12, width: sigBoxW + 4, height: sigBoxH + 24,
@@ -1769,7 +1779,7 @@ class ContractService {
                 });
 
                 let textY = y;
-                reportPage.drawText(displayName, {
+                reportPage.drawText(truncate(displayName, 42), {
                     x: marginLeft, y: textY, size: 12, font: boldFont, color: rgb(0, 0, 0),
                 });
                 textY -= 20;
@@ -1785,11 +1795,12 @@ class ContractService {
                 });
                 textY -= 28;
 
-                reportPage.drawText(`Data e hora da assinatura: ${new Date(sig.signed_at).toLocaleString('pt-BR')} (UTC-0300)`, {
+                const dateStr = `Data e hora da assinatura: ${new Date(sig.signed_at).toLocaleString('pt-BR')} (UTC-0300)`;
+                reportPage.drawText(truncate(dateStr, maxCharsLine9), {
                     x: marginLeft, y: textY, size: 9, font: font, color: rgb(0, 0, 0),
                 });
                 textY -= 14;
-                reportPage.drawText('Nível de segurança: Validado por código único enviado por e-mail', {
+                reportPage.drawText(truncate('Nível de segurança: Validado por código único enviado por e-mail', maxCharsLine8), {
                     x: marginLeft, y: textY, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
                 });
                 textY -= 20;
@@ -1798,18 +1809,18 @@ class ContractService {
                     x: marginLeft, y: textY, size: 9, font: boldFont, color: rgb(0, 0, 0),
                 });
                 textY -= 12;
-                reportPage.drawText(`E-mail: ${sig.signer_email || '-'}`, {
+                reportPage.drawText(truncate(`E-mail: ${sig.signer_email || '-'}`, maxCharsLine8), {
                     x: marginLeft + 4, y: textY, size: 8, font: font, color: rgb(0.2, 0.2, 0.2),
                 });
                 textY -= 11;
                 if (sig.ip_address) {
-                    reportPage.drawText(`IP: ${sig.ip_address}`, {
+                    reportPage.drawText(truncate(`IP: ${sig.ip_address}`, maxCharsLine8), {
                         x: marginLeft + 4, y: textY, size: 8, font: font, color: rgb(0.2, 0.2, 0.2),
                     });
                     textY -= 11;
                 }
                 if (sig.user_agent) {
-                    const ua = String(sig.user_agent).substring(0, 65);
+                    const ua = truncate(String(sig.user_agent), 58);
                     reportPage.drawText(`Dispositivo: ${ua}`, {
                         x: marginLeft + 4, y: textY, size: 7, font: font, color: rgb(0.4, 0.4, 0.4),
                     });
