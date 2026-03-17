@@ -1765,6 +1765,46 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
     }
 
     /**
+     * Obter PDF do contrato para rota pública (link de assinatura). Sem checagem de ownership.
+     * Retorna { filePath, fileName } ou { redirectUrl, fileName }.
+     */
+    async getPdfForSigner(contractId) {
+        const contract = await repository.findById(contractId);
+        if (!contract) throw new Error('Contrato não encontrado');
+        if (contract.contract_type !== 'imported' || !contract.pdf_url) throw new Error('PDF não disponível para este contrato');
+        const path = require('path');
+        const fs = require('fs').promises;
+        const url = (contract.pdf_url || '').trim();
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            const fileName = `${(contract.title || 'documento').replace(/[^a-z0-9]/gi, '_')}_original.pdf`;
+            return { redirectUrl: url, fileName };
+        }
+        const baseDir = path.join(__dirname, '../../');
+        const cwd = process.cwd && process.cwd();
+        const fileName = `${(contract.title || 'documento').replace(/[^a-z0-9]/gi, '_')}_original.pdf`;
+        const basename = path.basename(contract.pdf_url);
+        const candidates = [
+            path.join(baseDir, 'uploads', 'contracts', basename),
+            path.join(__dirname, '../../uploads/contracts', basename),
+            path.join(baseDir, 'public', contract.pdf_url.replace(/^\//, '')),
+            path.join(__dirname, '../../public', contract.pdf_url)
+        ];
+        if (cwd) {
+            candidates.push(path.join(cwd, 'uploads', 'contracts', basename));
+            candidates.push(path.join(cwd, 'public', contract.pdf_url.replace(/^\//, '')));
+        }
+        for (const candidate of candidates) {
+            try {
+                await fs.access(candidate);
+                return { filePath: candidate, fileName };
+            } catch {
+                continue;
+            }
+        }
+        throw new Error('Arquivo PDF não encontrado no servidor');
+    }
+
+    /**
      * Salvar posições de assinaturas para um contrato
      */
     async saveSignaturePositions(contractId, positions) {
