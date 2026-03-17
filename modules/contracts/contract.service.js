@@ -1410,119 +1410,112 @@ class ContractService {
                 }
             }
 
-            // Aplicar assinaturas nas posições corretas (se tiverem coordenadas)
-            for (const signature of signatures) {
-                if (signature.signature_image_url && signature.signature_page && signature.signature_x !== null && signature.signature_y !== null) {
+            // Helper: obter bytes da imagem da assinatura (base64, URL local ou HTTP)
+            const getSignatureImageBytes = async (sig) => {
+                const src = sig.signature_image_url || (sig.signature_data && sig.signature_data.startsWith('data:image') ? sig.signature_data : null);
+                if (!src) return null;
+                if (src.startsWith('data:image')) {
+                    const base64Data = src.replace(/^data:image\/\w+;base64,/, '');
+                    return Buffer.from(base64Data, 'base64');
+                }
+                if (src.startsWith('http://') || src.startsWith('https://')) {
+                    const fetchFn = typeof globalThis.fetch === 'function' ? globalThis.fetch : require('node-fetch');
+                    const res = await fetchFn(src);
+                    if (res.ok) return Buffer.from(await res.arrayBuffer());
+                    return null;
+                }
+                try {
+                    const imagePath = path.join(__dirname, '../../public', src);
+                    return await fs.readFile(imagePath);
+                } catch {
                     try {
-                        // Carregar imagem da assinatura
-                        let imageBytes;
-                        
-                        if (signature.signature_image_url.startsWith('data:image')) {
-                            // Base64
-                            const base64Data = signature.signature_image_url.replace(/^data:image\/\w+;base64,/, '');
-                            imageBytes = Buffer.from(base64Data, 'base64');
-                        } else {
-                            // URL de arquivo
-                            try {
-                                const imagePath = path.join(__dirname, '../../public', signature.signature_image_url);
-                                imageBytes = await fs.readFile(imagePath);
-                            } catch {
-                                // Tentar em uploads
-                                const altPath = path.join(__dirname, '../../uploads/contracts', path.basename(signature.signature_image_url));
-                                imageBytes = await fs.readFile(altPath);
-                            }
-                        }
-                        
-                        // Converter para PNG se necessário usando sharp
-                        let signatureImage;
-                        try {
-                            const sharp = require('sharp');
-                            const pngBuffer = await sharp(imageBytes).png().toBuffer();
-                            signatureImage = await pdfDoc.embedPng(pngBuffer);
-                        } catch {
-                            // Tentar embed direto
-                            signatureImage = await pdfDoc.embedPng(imageBytes);
-                        }
-
-                        // Obter página correta (1-indexed para 0-indexed)
-                        const pageIndex = Math.max(0, Math.min(signature.signature_page - 1, pdfDoc.getPageCount() - 1));
-                        const targetPage = pdfDoc.getPage(pageIndex);
-
-                        // Aplicar assinatura na posição especificada
-                        const sigWidth = signature.signature_width || 200;
-                        const sigHeight = signature.signature_height || 80;
-                        
-                        // Converter coordenadas (Y invertido no PDF)
-                        const pageHeight = targetPage.getHeight();
-                        const x = signature.signature_x || 50;
-                        const y = pageHeight - (signature.signature_y || 100) - sigHeight;
-
-                        // Desenhar fundo do carimbo (retângulo com borda dourada)
-                        const stampPadding = 5;
-                        const stampX = x - stampPadding;
-                        const stampY = y - stampPadding;
-                        const stampWidth = sigWidth + (stampPadding * 2);
-                        const stampHeight = sigHeight + (stampPadding * 2) + 25; // Espaço extra para texto
-                        
-                        // Fundo branco do carimbo
-                        targetPage.drawRectangle({
-                            x: stampX,
-                            y: stampY - 25,
-                            width: stampWidth,
-                            height: stampHeight,
-                            color: rgb(1, 1, 1), // Branco
-                            borderColor: rgb(0.8, 0.65, 0), // Dourado (#FFC700)
-                            borderWidth: 2,
-                        });
-                        
-                        // Desenhar assinatura
-                        targetPage.drawImage(signatureImage, {
-                            x: x,
-                            y: y,
-                            width: sigWidth,
-                            height: sigHeight
-                        });
-
-                        // Adicionar texto abaixo da assinatura com estilo de carimbo
-                        const signerName = signature.signer_name || 'Assinante';
-                        targetPage.drawText(signerName, {
-                            x: x,
-                            y: y - 15,
-                            size: 9,
-                            font: boldFont,
-                            color: rgb(0, 0, 0),
-                        });
-                        
-                        // Adicionar data/hora da assinatura
-                        const signedDate = new Date(signature.signed_at || new Date()).toLocaleString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        });
-                        targetPage.drawText(signedDate, {
-                            x: x,
-                            y: y - 28,
-                            size: 7,
-                            font: font,
-                            color: rgb(0.5, 0.5, 0.5),
-                        });
-                        
-                        // Adicionar marca "Assinado via ConectaKing"
-                        const stampText = 'Assinado via ConectaKing';
-                        const stampTextWidth = boldFont.widthOfTextAtSize(stampText, 6);
-                        targetPage.drawText(stampText, {
-                            x: stampX + (stampWidth / 2) - (stampTextWidth / 2),
-                            y: stampY - 38,
-                            size: 6,
-                            font: boldFont,
-                            color: rgb(0.8, 0.65, 0), // Dourado
-                        });
-                    } catch (err) {
-                        logger.warn(`Erro ao aplicar assinatura na posição: ${err.message}`);
-                        // Continuar sem aplicar esta assinatura
+                        const altPath = path.join(__dirname, '../../uploads/contracts', path.basename(src));
+                        return await fs.readFile(altPath);
+                    } catch {
+                        return null;
                     }
+                }
+            };
+
+            const pageCount = pdfDoc.getPageCount();
+            const defaultSignPage = Math.min(3, Math.max(1, pageCount)); // página 3 ou última
+            const defaultYFromTop = 200;
+            const defaultStepY = 110;
+
+            // Aplicar assinaturas no contrato (com coordenadas ou posição padrão)
+            for (let sigIndex = 0; sigIndex < signatures.length; sigIndex++) {
+                const signature = signatures[sigIndex];
+                const hasImage = !!(signature.signature_image_url || (signature.signature_data && signature.signature_data.startsWith('data:image')));
+                if (!hasImage) continue;
+
+                try {
+                    const imageBytes = await getSignatureImageBytes(signature);
+                    if (!imageBytes) continue;
+
+                    let signatureImage;
+                    try {
+                        const sharp = require('sharp');
+                        const pngBuffer = await sharp(imageBytes).png().toBuffer();
+                        signatureImage = await pdfDoc.embedPng(pngBuffer);
+                    } catch {
+                        signatureImage = await pdfDoc.embedPng(imageBytes);
+                    }
+
+                    const sigWidth = signature.signature_width || 200;
+                    const sigHeight = signature.signature_height || 80;
+                    const useDefaultPos = signature.signature_x == null || signature.signature_y == null;
+                    const pageNum = useDefaultPos ? defaultSignPage : (signature.signature_page || 1);
+                    const pageIndex = Math.max(0, Math.min(pageNum - 1, pageCount - 1));
+                    const targetPage = pdfDoc.getPage(pageIndex);
+                    const pageHeight = targetPage.getHeight();
+
+                    let x, y;
+                    if (useDefaultPos) {
+                        x = 80;
+                        const yFromTop = defaultYFromTop + sigIndex * defaultStepY;
+                        y = pageHeight - yFromTop - sigHeight;
+                    } else {
+                        x = signature.signature_x || 50;
+                        y = pageHeight - (signature.signature_y || 100) - sigHeight;
+                    }
+
+                    const stampPadding = 5;
+                    const stampX = x - stampPadding;
+                    const stampY = y - stampPadding;
+                    const stampWidth = sigWidth + (stampPadding * 2);
+                    const stampHeight = sigHeight + (stampPadding * 2) + 25;
+
+                    targetPage.drawRectangle({
+                        x: stampX,
+                        y: stampY - 25,
+                        width: stampWidth,
+                        height: stampHeight,
+                        color: rgb(1, 1, 1),
+                        borderColor: rgb(0.8, 0.65, 0),
+                        borderWidth: 2,
+                    });
+
+                    targetPage.drawImage(signatureImage, { x, y, width: sigWidth, height: sigHeight });
+
+                    const signerName = signature.signer_name || 'Assinante';
+                    targetPage.drawText(signerName, {
+                        x, y: y - 15, size: 9, font: boldFont, color: rgb(0, 0, 0),
+                    });
+                    const signedDate = new Date(signature.signed_at || new Date()).toLocaleString('pt-BR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                    targetPage.drawText(signedDate, {
+                        x, y: y - 28, size: 7, font: font, color: rgb(0.5, 0.5, 0.5),
+                    });
+                    const stampText = 'Assinado via ConectaKing';
+                    const stampTextWidth = boldFont.widthOfTextAtSize(stampText, 6);
+                    targetPage.drawText(stampText, {
+                        x: stampX + (stampWidth / 2) - (stampTextWidth / 2),
+                        y: stampY - 38,
+                        size: 6, font: boldFont, color: rgb(0.8, 0.65, 0),
+                    });
+                } catch (err) {
+                    logger.warn(`Erro ao aplicar assinatura no contrato: ${err.message}`);
                 }
             }
 
