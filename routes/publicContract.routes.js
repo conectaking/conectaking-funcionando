@@ -48,6 +48,7 @@ router.get('/sign/:token/pdf', asyncHandler(async (req, res) => {
 
 /**
  * Download do PDF final (assinado) — rota pública, sem JWT
+ * Se o PDF final ainda não existir, tenta gerar sob demanda (contrato já completo).
  * GET /contract/sign/:token/download
  */
 router.get('/sign/:token/download', asyncHandler(async (req, res) => {
@@ -58,7 +59,25 @@ router.get('/sign/:token/download', asyncHandler(async (req, res) => {
         const signer = await contractService.findSignerByToken(token, true);
         if (!signer) return res.status(404).json({ error: 'Link de assinatura inválido' });
 
-        const result = await contractService.getFinalPdfForSigner(signer.contract_id);
+        let result;
+        try {
+            result = await contractService.getFinalPdfForSigner(signer.contract_id);
+        } catch (err) {
+            const msg = (err && err.message) ? err.message : '';
+            const needGenerate = msg.indexOf('ainda não está disponível') !== -1 || msg.indexOf('não encontrado') !== -1 || msg.indexOf('não encontrado no servidor') !== -1;
+            if (needGenerate) {
+                try {
+                    await contractService.generateFinalPdf(signer.contract_id);
+                    result = await contractService.getFinalPdfForSigner(signer.contract_id);
+                } catch (genErr) {
+                    logger.error('Erro ao gerar PDF final sob demanda:', genErr);
+                    return res.status(503).json({ error: 'Não foi possível gerar o PDF assinado. Tente novamente em instantes.' });
+                }
+            } else {
+                throw err;
+            }
+        }
+
         const fileName = (result.fileName || 'contrato_assinado').replace(/[^a-z0-9._-]/gi, '_') + '.pdf';
 
         if (result.redirectUrl) {
