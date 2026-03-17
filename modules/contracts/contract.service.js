@@ -1668,7 +1668,7 @@ class ContractService {
             for (let idx = 0; idx < signatures.length; idx++) {
                 const sig = signatures[idx];
                 const boxPadding = 16;
-                const signerBoxH = 200;
+                const signerBoxH = 220;
                 if (y < signerBoxH + 80) {
                     reportPage = pdfDoc.addPage([595, 842]);
                     y = 820;
