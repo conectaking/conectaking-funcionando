@@ -1642,15 +1642,20 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
         // Se for PDF importado, retornar o PDF original
         if (contract.contract_type === 'imported' && contract.pdf_url) {
             const baseDir = path.join(__dirname, '../../');
+            const cwd = process.cwd && process.cwd();
             const fileName = `${(contract.title || 'documento').replace(/[^a-z0-9]/gi, '_')}_original.pdf`;
             const basename = path.basename(contract.pdf_url);
-            // Tentar, por ordem: uploads/contracts, public + pdf_url
+            // Tentar vários caminhos (local, Render, etc.)
             const candidates = [
                 path.join(baseDir, 'uploads', 'contracts', basename),
-                path.join(baseDir, 'public', contract.pdf_url.replace(/^\//, '')),
                 path.join(__dirname, '../../uploads/contracts', basename),
+                path.join(baseDir, 'public', contract.pdf_url.replace(/^\//, '')),
                 path.join(__dirname, '../../public', contract.pdf_url)
             ];
+            if (cwd) {
+                candidates.push(path.join(cwd, 'uploads', 'contracts', basename));
+                candidates.push(path.join(cwd, 'public', contract.pdf_url.replace(/^\//, '')));
+            }
             for (const candidate of candidates) {
                 try {
                     await fs.access(candidate);
