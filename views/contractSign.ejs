@@ -629,6 +629,10 @@
                     const arrayBuffer = await blob.arrayBuffer();
                     const loadingTask = pdfjsLib.getDocument(arrayBuffer);
                     pdfDoc = await loadingTask.promise;
+                    if (!pdfDoc || pdfDoc.numPages === 0) {
+                        throw new Error('O documento não possui páginas.');
+                    }
+                    currentPdfPage = 1;
                     await renderPdfPage();
                     updatePdfControls();
                 } catch (error) {
@@ -650,6 +654,8 @@
                 const errorDiv = document.getElementById('pdf-error');
                 
                 if (!canvas) return;
+                const pageNum = Math.max(1, Math.min(currentPdfPage, pdfDoc.numPages));
+                currentPdfPage = pageNum;
                 
                 try {
                     // Mostrar loading
