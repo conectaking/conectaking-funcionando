@@ -1785,60 +1785,60 @@ class ContractService {
                     });
                 }
                 reportPage.drawText(displayName.substring(0, 35), {
-                    x: sigBoxX, y: sigBoxInnerY - 8, size: 7, font: font, color: rgb(0.3, 0.3, 0.3),
+                    x: sigBoxX, y: sigBoxInnerY - 10, size: 7, font: font, color: rgb(0.3, 0.3, 0.3),
                 });
 
-                let textY = y;
+                let textY = y - 6;
                 reportPage.drawText(truncate(displayName, 42), {
-                    x: marginLeft, y: textY, size: 12, font: boldFont, color: rgb(0, 0, 0),
+                    x: leftContentX, y: textY, size: 13, font: boldFont, color: rgb(0, 0, 0),
                 });
-                textY -= 20;
+                textY -= 22;
 
                 reportPage.drawRectangle({
-                    x: marginLeft, y: textY - 16, width: 240, height: 20, color: rgb(0.92, 0.97, 0.92), borderColor: rgb(0.4, 0.7, 0.4), borderWidth: 1.2,
+                    x: leftContentX, y: textY - 18, width: 250, height: 22, color: rgb(0.9, 0.97, 0.9), borderColor: rgb(0.35, 0.65, 0.35), borderWidth: 1.5,
                 });
                 reportPage.drawText('Assinado', {
-                    x: marginLeft + 8, y: textY - 10, size: 9, font: boldFont, color: rgb(0, 0.5, 0),
+                    x: leftContentX + 10, y: textY - 11, size: 10, font: boldFont, color: rgb(0, 0.45, 0),
                 });
                 reportPage.drawText('via Conecta King', {
-                    x: marginLeft + 58, y: textY - 10, size: 8, font: font, color: rgb(0.35, 0.5, 0.35),
+                    x: leftContentX + 65, y: textY - 11, size: 9, font: font, color: rgb(0.3, 0.5, 0.3),
                 });
-                textY -= 28;
+                textY -= 30;
 
                 const dateStr = `Data e hora da assinatura: ${new Date(sig.signed_at).toLocaleString('pt-BR')} (UTC-0300)`;
                 reportPage.drawText(truncate(dateStr, maxCharsLine9), {
-                    x: marginLeft, y: textY, size: 9, font: font, color: rgb(0, 0, 0),
+                    x: leftContentX, y: textY, size: 9, font: font, color: rgb(0, 0, 0),
                 });
-                textY -= 14;
+                textY -= 15;
                 reportPage.drawText(truncate('Nível de segurança: Validado por código único enviado por e-mail', maxCharsLine8), {
-                    x: marginLeft, y: textY, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
+                    x: leftContentX, y: textY, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
                 });
-                textY -= 20;
+                textY -= 22;
 
                 reportPage.drawText('Pontos de autenticação', {
-                    x: marginLeft, y: textY, size: 9, font: boldFont, color: rgb(0, 0, 0),
+                    x: leftContentX, y: textY, size: 9, font: boldFont, color: rgb(0, 0, 0),
+                });
+                textY -= 13;
+                reportPage.drawText(truncate(`E-mail: ${sig.signer_email || '-'}`, maxCharsLine8), {
+                    x: leftContentX + 6, y: textY, size: 8, font: font, color: rgb(0.2, 0.2, 0.2),
                 });
                 textY -= 12;
-                reportPage.drawText(truncate(`E-mail: ${sig.signer_email || '-'}`, maxCharsLine8), {
-                    x: marginLeft + 4, y: textY, size: 8, font: font, color: rgb(0.2, 0.2, 0.2),
-                });
-                textY -= 11;
                 if (sig.ip_address) {
                     reportPage.drawText(truncate(`IP: ${sig.ip_address}`, maxCharsLine8), {
-                        x: marginLeft + 4, y: textY, size: 8, font: font, color: rgb(0.2, 0.2, 0.2),
+                        x: leftContentX + 6, y: textY, size: 8, font: font, color: rgb(0.2, 0.2, 0.2),
                     });
-                    textY -= 11;
+                    textY -= 12;
                 }
                 if (sig.user_agent) {
-                    const ua = truncate(String(sig.user_agent), 58);
+                    const ua = truncate(String(sig.user_agent), 55);
                     reportPage.drawText(`Dispositivo: ${ua}`, {
-                        x: marginLeft + 4, y: textY, size: 7, font: font, color: rgb(0.4, 0.4, 0.4),
+                        x: leftContentX + 6, y: textY, size: 7, font: font, color: rgb(0.4, 0.4, 0.4),
                     });
                     textY -= 10;
                 }
 
-                y = boxY - boxPadding - 8;
-                y -= 14;
+                y = boxY - boxPadding - 12;
+                y -= 18;
             }
 
             y -= 16;
