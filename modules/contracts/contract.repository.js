@@ -591,7 +591,8 @@ class ContractRepository {
         const client = await db.pool.connect();
         try {
             const result = await client.query(
-                `SELECT a.*, u.name as user_name, u.email as user_email
+                `SELECT a.*, u.email as user_email,
+                 COALESCE(u.name, u.email) as user_name
                  FROM ck_contracts_audit_logs a
                  LEFT JOIN users u ON a.user_id = u.id
                  WHERE a.contract_id = $1
