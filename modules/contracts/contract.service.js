@@ -1336,7 +1336,9 @@ class ContractService {
 
         const signers = await repository.findSignersByContractId(contractId);
         const allSigned = signers.length > 0 && signers.every(s => s.signed_at != null);
-        if (contract.status !== TYPES.STATUS.COMPLETED && !allSigned) {
+        const atLeastOneSigned = signers.some(s => s.signed_at != null);
+        const canGenerate = contract.status === TYPES.STATUS.COMPLETED || allSigned || atLeastOneSigned;
+        if (!canGenerate) {
             throw new Error('Apenas contratos completos podem ter PDF final gerado');
         }
 
