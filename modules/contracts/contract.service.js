@@ -72,6 +72,14 @@ class ContractService {
             const fromContent = validators.sanitize({ pdf_content: data.content }).pdf_content;
             sanitized.pdf_content = fromContent != null ? fromContent : (typeof data.content === 'string' ? data.content : '');
         }
+        // Usar a primeira linha do conteúdo como título quando for documento a partir de texto
+        if (data.source === 'paste' && data.content && typeof data.content === 'string') {
+            const firstLine = data.content.trim().split(/\r?\n/)[0];
+            const lineTitle = firstLine ? firstLine.trim() : '';
+            if (lineTitle.length > 0) {
+                sanitized.title = lineTitle.length > 255 ? lineTitle.substring(0, 252) + '...' : lineTitle;
+            }
+        }
 
         // Se for template, copiar conteúdo do template
         if (sanitized.template_id) {
