@@ -140,8 +140,8 @@ router.post('/sign/:token/start', asyncHandler(async (req, res) => {
     try {
         const token = req.params.token;
         
-        // Buscar signatário
-        const signer = await contractService.findSignerByToken(token);
+        // Buscar signatário (allowSigned: true para registrar visualização mesmo se já assinou)
+        const signer = await contractService.findSignerByToken(token, true);
         
         // Registrar IP e User-Agent (atualizar signatário)
         await contractRepository.updateSigner(signer.id, {

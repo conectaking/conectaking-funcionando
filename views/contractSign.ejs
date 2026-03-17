@@ -624,9 +624,16 @@
                     }
                     const pdfUrl = '/contract/sign/<%= signToken %>/pdf';
                     const response = await fetch(pdfUrl);
-                    if (!response.ok) throw new Error('Não foi possível carregar o PDF.');
+                    if (!response.ok) {
+                        var errText = await response.text();
+                        try { var j = JSON.parse(errText); errText = j.error || j.message || errText; } catch (_) {}
+                        throw new Error(errText || 'Não foi possível carregar o PDF.');
+                    }
                     const blob = await response.blob();
                     const arrayBuffer = await blob.arrayBuffer();
+                    if (arrayBuffer.byteLength < 100) throw new Error('O PDF recebido está vazio ou inválido.');
+                    var firstByte = new Uint8Array(arrayBuffer)[0];
+                    if (firstByte === 0x7B) throw new Error('O servidor retornou um erro. Tente recarregar a página.');
                     const loadingTask = pdfjsLib.getDocument(arrayBuffer);
                     pdfDoc = await loadingTask.promise;
                     if (!pdfDoc || pdfDoc.numPages === 0) {
