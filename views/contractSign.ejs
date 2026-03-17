@@ -422,12 +422,12 @@
                 <div style="background: #0B0B0B; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <button id="pdf-prev-page" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
-                                <i class="fas fa-chevron-left"></i>
+                            <button id="pdf-prev-page" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" title="Página anterior" aria-label="Página anterior">
+                                <i class="fas fa-chevron-left"></i> <span style="margin-left: 4px;">Anterior</span>
                             </button>
                             <span id="pdf-page-info" style="color: #ECECEC; font-size: 0.9rem; min-width: 100px; text-align: center;">Página 1</span>
-                            <button id="pdf-next-page" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
-                                <i class="fas fa-chevron-right"></i>
+                            <button id="pdf-next-page" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" title="Próxima página" aria-label="Próxima página">
+                                <span style="margin-right: 4px;">Próxima</span> <i class="fas fa-chevron-right"></i>
                             </button>
                         </div>
                         <div style="display: flex; gap: 10px; align-items: center;">
@@ -445,7 +445,7 @@
                     <canvas id="pdf-canvas" style="max-width: 100%; height: auto; border-radius: 4px;"></canvas>
                 </div>
                 <p id="pdf-first-page-hint" style="display: none; margin-top: 10px; color: #94a3b8; font-size: 0.85rem;">
-                    <i class="fas fa-info-circle"></i> Se a primeira página estiver em branco, use as setas para ver as demais.
+                    <i class="fas fa-info-circle"></i> A primeira página pode ser capa ou estar em branco. Use as setas para navegar por todo o conteúdo do contrato.
                 </p>
             </div>
             <% } else { %>
@@ -506,7 +506,7 @@
             <h3><i class="fas fa-signature"></i> Assinatura Eletrônica</h3>
             
             <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 20px;">
-                Escolha como deseja assinar: desenhar sua assinatura na tela ou enviar uma foto da assinatura feita no papel.
+                Escolha como deseja assinar: <strong>desenhe</strong> sua assinatura na tela (mouse ou dedo) ou <strong>envie uma foto</strong> da assinatura feita no papel.
             </p>
             <div class="signature-methods">
                 <!-- Opção 1: Desenhar -->
@@ -515,8 +515,11 @@
                     <p style="color: #888888; font-size: 0.9rem; margin-bottom: 15px;">
                         Desenhe sua assinatura com o mouse (no computador) ou com o dedo (no celular ou tablet). É rápido e fica igual à sua assinatura de próprio punho.
                     </p>
-                    <div class="signature-canvas-container">
-                        <canvas id="signature-canvas" class="signature-canvas"></canvas>
+                    <div class="signature-canvas-container" style="position: relative;">
+                        <canvas id="signature-canvas" class="signature-canvas" aria-label="Área para desenhar sua assinatura"></canvas>
+                        <p id="signature-canvas-hint" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; color: #64748b; font-size: 0.95rem; pointer-events: none;">
+                            Clique aqui para desenhar sua assinatura
+                        </p>
                     </div>
                     <div class="canvas-controls" style="display: flex; gap: 10px; margin-top: 15px; align-items: center;">
                         <button type="button" class="btn btn-secondary" id="clear-canvas">
@@ -534,7 +537,7 @@
                 <div class="signature-method" id="upload-method">
                     <h4><i class="fas fa-camera"></i> Enviar foto da assinatura</h4>
                     <p style="color: #888888; font-size: 0.9rem; margin-bottom: 15px;">
-                        Assine em um papel com caneta, tire uma foto ou escaneie e envie a imagem aqui. Use PNG ou JPG (máx. 5MB). Ideal para quem prefere assinar no papel e enviar o documento.
+                        Assine em um papel em branco com caneta, tire uma foto ou escaneie e envie a imagem aqui. Use PNG ou JPG (máx. 5MB). Ideal para quem prefere assinar no papel.
                     </p>
                     <div class="signature-upload-container">
                         <input type="file" id="signature-upload" accept="image/png,image/jpeg,image/jpg" class="form-control">
@@ -569,7 +572,7 @@
             <div style="margin-top: 20px; padding: 15px; background: rgba(255, 199, 0, 0.1); border-left: 4px solid #FFC700; border-radius: 6px;">
                 <p style="color: #ECECEC; font-size: 0.9rem; margin: 0;">
                     <i class="fas fa-shield-alt" style="color: #FFC700;"></i> 
-                    <strong>Segurança:</strong> Sua assinatura será registrada com data, hora e informações de segurança. Esta ação é irreversível.
+                    <strong>Segurança:</strong> Sua assinatura será registrada com seu nome, data, hora e dados de segurança. Esta ação é irreversível.
                 </p>
                     </div>
                 </div>
