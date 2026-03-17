@@ -60,10 +60,8 @@ router.get('/sign/:token/pdf', asyncHandler(async (req, res) => {
 router.get('/sign/:token/status', asyncHandler(async (req, res) => {
     try {
         const token = req.params.token;
-        
-        // Buscar signatário
-        const signer = await contractRepository.findSignerByToken(token);
-        
+        let signer = await contractRepository.findSignerByToken(token);
+        if (!signer) signer = await contractRepository.findSignerBySlug(token);
         if (!signer) {
             return responseFormatter.error(res, 'Token inválido', 404);
         }
