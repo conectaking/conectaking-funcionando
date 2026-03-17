@@ -1204,6 +1204,52 @@ class ContractService {
     }
 
     /**
+     * Reenviar/substituir o PDF de um contrato existente (ex.: arquivo perdido no servidor).
+     * Envia para R2 se configurado, senão disco. Atualiza pdf_url do contrato.
+     */
+    async reuploadContractPdf(contractId, userId, file) {
+        if (!file || file.mimetype !== 'application/pdf') {
+            throw new Error('Arquivo PDF inválido');
+        }
+        const ownsContract = await repository.checkOwnership(contractId, userId);
+        if (!ownsContract) {
+            throw new Error('Você não tem permissão para alterar este contrato');
+        }
+        const contract = await repository.findById(contractId);
+        if (!contract) {
+            throw new Error('Contrato não encontrado');
+        }
+        if (contract.contract_type !== 'imported') {
+            throw new Error('Apenas contratos importados (PDF) podem ter o arquivo substituído');
+        }
+        const fs = require('fs').promises;
+        const path = require('path');
+        const uploadsDir = path.join(__dirname, '../../uploads/contracts');
+        try {
+            await fs.mkdir(uploadsDir, { recursive: true });
+        } catch (err) {}
+        const pdfBuffer = await fs.readFile(file.path);
+        await fs.unlink(file.path).catch(() => {});
+        let pdfUrlToStore = null;
+        const { uploadContractPdfToR2 } = require('../../utils/contractPdfStorage');
+        const r2Result = await uploadContractPdfToR2(pdfBuffer, userId, file.originalname || 'documento.pdf');
+        if (r2Result && r2Result.publicUrl) {
+            pdfUrlToStore = r2Result.publicUrl;
+            logger.info('Reupload contrato PDF para R2: ' + r2Result.key);
+        }
+        if (!pdfUrlToStore) {
+            const pdfFileName = `contract_${Date.now()}_${file.originalname}`;
+            const pdfPath = path.join(uploadsDir, pdfFileName);
+            await fs.writeFile(pdfPath, pdfBuffer);
+            pdfUrlToStore = `/uploads/contracts/${pdfFileName}`;
+        }
+        await repository.update(contractId, { pdf_url: pdfUrlToStore });
+        const updated = await repository.findById(contractId);
+        logger.info('PDF do contrato atualizado: ' + contractId);
+        return updated;
+    }
+
+    /**
      * Gerar PDF final com assinaturas e relatório de auditoria
      */
     async generateFinalPdf(contractId) {

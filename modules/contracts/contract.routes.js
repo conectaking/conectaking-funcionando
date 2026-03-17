@@ -59,6 +59,11 @@ router.get('/:id/pdf', asyncHandler(async (req, res) => {
     await controller.viewPdf(req, res);
 }));
 
+// Reenviar PDF de contrato existente (quando o arquivo foi perdido no servidor)
+router.post('/:id/reupload-pdf', upload.single('pdfFile'), asyncHandler(async (req, res) => {
+    await controller.reuploadPdf(req, res);
+}));
+
 // Rota para download do PDF final (deve vir ANTES de outras rotas /:id/*)
 router.get('/:id/download', asyncHandler(async (req, res) => {
     await controller.downloadFinalPdf(req, res);

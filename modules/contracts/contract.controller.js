@@ -284,6 +284,30 @@ class ContractController {
     }
 
     /**
+     * Reenviar PDF de um contrato existente (substitui o arquivo quando foi perdido no servidor)
+     */
+    async reuploadPdf(req, res) {
+        try {
+            const id = parseInt(req.params.id, 10);
+            if (isNaN(id) || id < 1) {
+                return responseFormatter.error(res, 'ID do contrato inválido', 400);
+            }
+            const userId = req.user.userId;
+            const file = req.file;
+            if (!file) {
+                return responseFormatter.error(res, 'Envie um arquivo PDF', 400);
+            }
+            const contract = await service.reuploadContractPdf(id, userId, file);
+            return responseFormatter.success(res, contract, 'PDF atualizado. Você já pode visualizar o documento.');
+        } catch (error) {
+            logger.error('Erro ao reenviar PDF:', error);
+            const statusCode = error.message.includes('permissão') ? 403 :
+                              error.message.includes('não encontrado') ? 404 : 400;
+            return responseFormatter.error(res, error.message, statusCode);
+        }
+    }
+
+    /**
      * Download do PDF final do contrato
      */
     async downloadFinalPdf(req, res) {
