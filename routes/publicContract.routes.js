@@ -7,6 +7,25 @@ const responseFormatter = require('../utils/responseFormatter');
 const logger = require('../utils/logger');
 
 /**
+ * Verificador de autenticidade (página pública – escanear QR Code do PDF)
+ * GET /contract/verify/:id
+ */
+router.get('/verify/:id', asyncHandler(async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (!id) return res.status(404).send('Documento não encontrado.');
+    const contract = await contractRepository.findById(id);
+    if (!contract) return res.status(404).send('Documento não encontrado.');
+    const signatures = await contractRepository.findSignaturesByContractId(id);
+    const signers = await contractRepository.findSignersByContractId(id);
+    res.render('contractVerify', {
+        contract,
+        signatures,
+        signers,
+        baseUrl: (req.protocol + '://' + req.get('host')).replace(/\/$/, '')
+    });
+}));
+
+/**
  * Visualizar PDF do contrato (rota pública usando token ou slug)
  * GET /contract/sign/:token/pdf
  */
