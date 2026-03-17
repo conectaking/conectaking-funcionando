@@ -1641,20 +1641,26 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
 
         // Se for PDF importado, retornar o PDF original
         if (contract.contract_type === 'imported' && contract.pdf_url) {
-            // pdf_url pode ser /uploads/contracts/... ou caminho completo
-            let pdfPath = contract.pdf_url;
-            if (!path.isAbsolute(pdfPath)) {
-                // Se for caminho relativo, tentar em uploads/contracts primeiro
-                pdfPath = path.join(__dirname, '../../uploads/contracts', path.basename(pdfPath));
-                // Se não existir, tentar em public
+            const baseDir = path.join(__dirname, '../../');
+            const fileName = `${(contract.title || 'documento').replace(/[^a-z0-9]/gi, '_')}_original.pdf`;
+            const basename = path.basename(contract.pdf_url);
+            // Tentar, por ordem: uploads/contracts, public + pdf_url
+            const candidates = [
+                path.join(baseDir, 'uploads', 'contracts', basename),
+                path.join(baseDir, 'public', contract.pdf_url.replace(/^\//, '')),
+                path.join(__dirname, '../../uploads/contracts', basename),
+                path.join(__dirname, '../../public', contract.pdf_url)
+            ];
+            for (const candidate of candidates) {
                 try {
-                    await fs.access(pdfPath);
+                    await fs.access(candidate);
+                    return { filePath: candidate, fileName };
                 } catch {
-                    pdfPath = path.join(__dirname, '../../public', contract.pdf_url);
+                    continue;
                 }
             }
-            const fileName = `${contract.title.replace(/[^a-z0-9]/gi, '_')}_original.pdf`;
-            return { filePath: pdfPath, fileName };
+            logger.warn('viewPdf: arquivo não encontrado em nenhum caminho', { contractId, pdf_url: contract.pdf_url, candidates });
+            throw new Error('Arquivo PDF não encontrado no servidor. Tente importar o PDF novamente.');
         }
 
         // Se não for importado ou não tiver PDF URL, gerar preview do conteúdo

@@ -321,9 +321,12 @@ class ContractController {
      */
     async viewPdf(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseInt(req.params.id, 10);
+            if (isNaN(id) || id < 1) {
+                return responseFormatter.error(res, 'ID do contrato inválido', 400);
+            }
             const userId = req.user.userId;
-            const { filePath, fileName } = await service.viewPdf(id, userId);
+            const { filePath, fileName } = await service.viewPdf(String(id), userId);
             
             const fs = require('fs');
             
