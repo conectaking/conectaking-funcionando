@@ -26,6 +26,38 @@ router.get('/verify/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * Download do PDF assinado (público – para link da página de verificação)
+ * GET /contract/download/:id
+ */
+router.get('/download/:id', asyncHandler(async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (!id) return res.status(404).json({ error: 'Documento não encontrado.' });
+    const contract = await contractRepository.findById(id);
+    if (!contract || contract.status !== 'completed') return res.status(404).json({ error: 'Documento não encontrado ou ainda não assinado.' });
+    try {
+        const result = await contractService.getFinalPdfForSigner(id);
+        if (result.redirectUrl) {
+            const fetch = (typeof globalThis.fetch === 'function') ? globalThis.fetch : require('node-fetch');
+            const pdfRes = await fetch(result.redirectUrl);
+            if (!pdfRes.ok) return res.status(502).json({ error: 'Não foi possível carregar o PDF.' });
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${(result.fileName || 'documento-assinado').replace(/[^a-z0-9._-]/gi, '_')}.pdf"`);
+            const ab = await pdfRes.arrayBuffer();
+            return res.send(Buffer.from(ab));
+        }
+        const fs = require('fs');
+        if (!fs.existsSync(result.filePath)) return res.status(404).json({ error: 'Arquivo PDF não encontrado.' });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${(result.fileName || 'documento-assinado').replace(/[^a-z0-9._-]/gi, '_')}.pdf"`);
+        const fileStream = fs.createReadStream(result.filePath);
+        fileStream.pipe(res);
+    } catch (err) {
+        logger.error('Erro ao baixar PDF público:', err);
+        res.status(404).json({ error: err.message || 'Não foi possível baixar o PDF.' });
+    }
+}));
+
+/**
  * Visualizar PDF do contrato (rota pública usando token ou slug)
  * GET /contract/sign/:token/pdf
  */
