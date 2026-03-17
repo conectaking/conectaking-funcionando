@@ -648,10 +648,15 @@ class ContractService {
     }
 
     /**
-     * Estatísticas do usuário
+     * Estatísticas do usuário (completed inclui contratos com todos assinados mesmo que status seja sent/signed)
      */
     async getStats(userId) {
-        return await repository.getStats(userId);
+        const stats = await repository.getStats(userId);
+        const extraCompleted = await repository.countContractsAllSignedButNotCompleted(userId);
+        if (extraCompleted > 0) {
+            stats.completed = parseInt(stats.completed || 0, 10) + extraCompleted;
+        }
+        return stats;
     }
 
     /**
@@ -1351,26 +1356,35 @@ class ContractService {
 
             // Se o contrato foi importado de PDF, carregar o PDF original
             if (contract.contract_type === 'imported' && contract.pdf_url) {
-                const originalPdfPath = path.join(__dirname, '../../public', contract.pdf_url);
-                try {
-                    const originalPdfBytes = await fs.readFile(originalPdfPath);
-                    const originalPdf = await PDFDocument.load(originalPdfBytes);
-                    const pages = await pdfDoc.copyPages(originalPdf, originalPdf.getPageIndices());
-                    pages.forEach(page => pdfDoc.addPage(page));
-                } catch (err) {
-                    // Tentar em uploads/contracts
+                const url = (contract.pdf_url || '').trim();
+                let originalPdfBytes = null;
+                if (url.startsWith('http://') || url.startsWith('https://')) {
+                    const fetch = (typeof globalThis.fetch === 'function') ? globalThis.fetch : require('node-fetch');
+                    const res = await fetch(url);
+                    if (res.ok) originalPdfBytes = Buffer.from(await res.arrayBuffer());
+                }
+                if (!originalPdfBytes) {
                     try {
-                        const altPath = path.join(__dirname, '../../uploads/contracts', path.basename(contract.pdf_url));
-                        const originalPdfBytes = await fs.readFile(altPath);
+                        originalPdfBytes = await fs.readFile(path.join(__dirname, '../../public', contract.pdf_url));
+                    } catch (err) {
+                        try {
+                            originalPdfBytes = await fs.readFile(path.join(__dirname, '../../uploads/contracts', path.basename(contract.pdf_url)));
+                        } catch (err2) {
+                            logger.warn(`Não foi possível carregar PDF original: ${err2.message}`);
+                        }
+                    }
+                }
+                if (originalPdfBytes) {
+                    try {
                         const originalPdf = await PDFDocument.load(originalPdfBytes);
                         const pages = await pdfDoc.copyPages(originalPdf, originalPdf.getPageIndices());
                         pages.forEach(page => pdfDoc.addPage(page));
-                    } catch (err2) {
-                        logger.warn(`Não foi possível carregar PDF original: ${err2.message}`);
-                        // Continuar sem PDF original
+                    } catch (loadErr) {
+                        logger.warn('Erro ao carregar PDF no pdf-lib:', loadErr.message);
                     }
                 }
-            } else {
+            }
+            if (pdfDoc.getPageCount() === 0) {
                 // Se foi criado de template, gerar PDF a partir do conteúdo
                 const page = pdfDoc.addPage([595, 842]); // A4
 

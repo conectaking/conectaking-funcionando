@@ -92,11 +92,20 @@ class ContractRepository {
                 paramCount++;
             }
 
-            // Filtro por status único
+            // Filtro por status único (completed inclui contratos com todos assinados mesmo que status seja sent/signed)
             if (filters.status) {
-                query += ` AND c.status = $${paramCount}`;
-                params.push(filters.status);
-                paramCount++;
+                if (filters.status === 'completed') {
+                    query += ` AND (c.status = $${paramCount} OR (
+                        c.status IN ('sent', 'signed') AND (SELECT COUNT(*) FROM ck_contracts_signers s WHERE s.contract_id = c.id) > 0
+                        AND (SELECT COUNT(*) FROM ck_contracts_signers s WHERE s.contract_id = c.id) = (SELECT COUNT(*) FROM ck_contracts_signers s WHERE s.contract_id = c.id AND s.signed_at IS NOT NULL)
+                    ))`;
+                    params.push(filters.status);
+                    paramCount++;
+                } else {
+                    query += ` AND c.status = $${paramCount}`;
+                    params.push(filters.status);
+                    paramCount++;
+                }
             }
 
             // Filtro por múltiplos status
@@ -613,6 +622,26 @@ class ContractRepository {
                 [userId]
             );
             return result.rows[0] || { total: 0, drafts: 0, sent: 0, completed: 0, cancelled: 0 };
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Contar contratos que têm todos os signatários assinados mas status ainda é sent/signed (para estatísticas)
+     */
+    async countContractsAllSignedButNotCompleted(userId) {
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                `SELECT COUNT(*) as n FROM ck_contracts c
+                 WHERE c.user_id = $1 AND c.status IN ('sent', 'signed')
+                 AND EXISTS (SELECT 1 FROM ck_contracts_signers s WHERE s.contract_id = c.id)
+                 AND (SELECT COUNT(*) FROM ck_contracts_signers s WHERE s.contract_id = c.id) =
+                     (SELECT COUNT(*) FROM ck_contracts_signers s WHERE s.contract_id = c.id AND s.signed_at IS NOT NULL)`,
+                [userId]
+            );
+            return parseInt(result.rows[0]?.n || 0, 10);
         } finally {
             client.release();
         }
