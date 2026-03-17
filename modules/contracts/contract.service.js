@@ -13,10 +13,25 @@ class ContractService {
      */
     generateSignToken() {
         const { customAlphabet } = require('nanoid');
-        // Usar apenas caracteres seguros para URL (sem hífens, underscores, etc)
         const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
         const nanoid = customAlphabet(alphabet, 21);
         return nanoid();
+    }
+
+    /**
+     * Slug legível para URL de assinatura: nome-do-contrato-nome-pessoa-xxxxxx
+     */
+    generateSignSlug(contractTitle, signerName) {
+        const { customAlphabet } = require('nanoid');
+        const slugify = (s) => String(s || '')
+            .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '') || 'contrato';
+        const titlePart = slugify(contractTitle).slice(0, 50);
+        const namePart = slugify(signerName).slice(0, 30) || 'signatario';
+        const shortId = customAlphabet('0123456789abcdef', 6)();
+        return [titlePart, namePart, shortId].filter(Boolean).join('-');
     }
 
     /**
@@ -213,11 +228,14 @@ class ContractService {
 
                 const sanitized = validators.sanitizeSigner(signerData);
                 const signToken = this.generateSignToken();
+                const contractForSlug = await repository.findById(id);
+                const signSlug = this.generateSignSlug(contractForSlug?.title, sanitized.name);
 
                 const signer = await repository.createSigner({
                     contract_id: id,
                     ...sanitized,
                     sign_token: signToken,
+                    sign_slug: signSlug,
                     token_expires_at: tokenExpiryDate,
                     ip_address: null,
                     user_agent: null
@@ -266,7 +284,7 @@ class ContractService {
                 name: signer.name,
                 email: signer.email,
                 sign_token: signer.sign_token,
-                url: `${apiUrl}/contract/sign/${signer.sign_token}`
+                url: `${apiUrl}/contract/sign/${signer.sign_slug || signer.sign_token}`
             }));
 
             const sendEmailOption = Boolean(sendEmail);
@@ -314,7 +332,7 @@ class ContractService {
         }
 
         const apiUrl = (config.urls.api || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
-        const signUrl = `${apiUrl}/contract/sign/${signer.sign_token}`;
+        const signUrl = `${apiUrl}/contract/sign/${signer.sign_slug || signer.sign_token}`;
 
         logger.info(`Link de assinatura gerado (sem e-mail) para signatário ${signerId} do contrato ${contractId}`);
         return { sent: false, email: signer.email, url: signUrl };
@@ -343,7 +361,7 @@ class ContractService {
         const apiUrl = (config.urls.api || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
         
         for (const signer of signers) {
-            const signUrl = `${apiUrl}/contract/sign/${signer.sign_token}`;
+            const signUrl = `${apiUrl}/contract/sign/${signer.sign_slug || signer.sign_token}`;
             const expiryDate = new Date();
             expiryDate.setDate(expiryDate.getDate() + TYPES.DEFAULT_TOKEN_EXPIRY_DAYS);
             
@@ -597,24 +615,37 @@ class ContractService {
     }
 
     /**
+     * Buscar signatário por token ou por slug (público)
+     */
+    async findSignerByTokenOrSlug(tokenOrSlug, allowSigned = false) {
+        let signer = await repository.findSignerByToken(tokenOrSlug);
+        if (!signer) signer = await repository.findSignerBySlug(tokenOrSlug);
+        if (!signer) return null;
+        if (new Date(signer.token_expires_at) < new Date()) return null;
+        if (!allowSigned && signer.signed_at) return null;
+        return signer;
+    }
+
+    /**
      * Buscar signatário por token (público)
      */
     async findSignerByToken(token, allowSigned = false) {
         const signer = await repository.findSignerByToken(token);
         if (!signer) {
+            const bySlug = await repository.findSignerBySlug(token);
+            if (bySlug) return this._validateSignerForPage(bySlug, allowSigned);
             throw new Error('Token de assinatura inválido');
         }
+        return this._validateSignerForPage(signer, allowSigned);
+    }
 
-        // Verificar expiração
+    _validateSignerForPage(signer, allowSigned) {
         if (new Date(signer.token_expires_at) < new Date()) {
             throw new Error('Token de assinatura expirado');
         }
-
-        // Verificar se já assinou (só lançar erro se não permitir assinados)
         if (!allowSigned && signer.signed_at) {
             throw new Error('Este contrato já foi assinado');
         }
-
         return signer;
     }
 
@@ -643,7 +674,7 @@ class ContractService {
 
         // Enviar email
         const frontendUrl = config.urls.frontend || 'https://conectaking.com.br';
-        const signUrl = `${frontendUrl}/contract/sign/${signer.sign_token}`;
+        const signUrl = `${frontendUrl}/contract/sign/${signer.sign_slug || signer.sign_token}`;
         
         const subject = `🔐 Código de Verificação - Contrato: ${contract.title}`;
         const html = `
