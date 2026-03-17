@@ -326,17 +326,25 @@ class ContractController {
                 return responseFormatter.error(res, 'ID do contrato inválido', 400);
             }
             const userId = req.user.userId;
-            const { filePath, fileName } = await service.viewPdf(String(id), userId);
-            
+            const result = await service.viewPdf(String(id), userId);
+            if (result.redirectUrl) {
+                const fetch = (typeof globalThis.fetch === 'function') ? globalThis.fetch : require('node-fetch');
+                const pdfRes = await fetch(result.redirectUrl);
+                if (!pdfRes.ok) {
+                    return responseFormatter.error(res, 'Não foi possível carregar o PDF no momento.', 502);
+                }
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `inline; filename="${(result.fileName || 'documento').replace(/[^a-z0-9._-]/gi, '_')}.pdf"`);
+                const ab = await pdfRes.arrayBuffer();
+                return res.send(Buffer.from(ab));
+            }
+            const { filePath, fileName } = result;
             const fs = require('fs');
-            
             if (!fs.existsSync(filePath)) {
                 return responseFormatter.error(res, 'Arquivo PDF não encontrado', 404);
             }
-
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-            
             const fileStream = fs.createReadStream(filePath);
             fileStream.pipe(res);
         } catch (error) {

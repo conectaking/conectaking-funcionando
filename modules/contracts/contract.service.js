@@ -1158,10 +1158,20 @@ class ContractService {
             extractedText = ''; // Se não conseguir extrair, permite edição manual
         }
 
-        // Salvar PDF no diretório de uploads
-        const pdfFileName = `contract_${Date.now()}_${file.originalname}`;
-        const pdfPath = path.join(uploadsDir, pdfFileName);
-        await fs.writeFile(pdfPath, pdfBuffer);
+        let pdfUrlToStore = null;
+        const { uploadContractPdfToR2 } = require('../../utils/contractPdfStorage');
+        const r2Result = await uploadContractPdfToR2(pdfBuffer, userId, file.originalname || 'documento.pdf');
+        if (r2Result && r2Result.publicUrl) {
+            pdfUrlToStore = r2Result.publicUrl;
+            logger.info('PDF do contrato enviado para R2 (persistente): ' + r2Result.key);
+        }
+        if (!pdfUrlToStore) {
+            // Fallback: salvar em disco (pode ser perdido após reinício no Render)
+            const pdfFileName = `contract_${Date.now()}_${file.originalname}`;
+            const pdfPath = path.join(uploadsDir, pdfFileName);
+            await fs.writeFile(pdfPath, pdfBuffer);
+            pdfUrlToStore = `/uploads/contracts/${pdfFileName}`;
+        }
 
         // Remover arquivo temporário do multer
         await fs.unlink(file.path).catch(() => {});
@@ -1173,7 +1183,7 @@ class ContractService {
             title: title || file.originalname.replace('.pdf', ''),
             status: TYPES.STATUS.DRAFT,
             contract_type: 'imported',
-            pdf_url: `/uploads/contracts/${pdfFileName}`,
+            pdf_url: pdfUrlToStore,
             pdf_content: extractedText, // Conteúdo extraído do PDF - agora editável!
             variables: {},
             original_pdf_hash: pdfHash
@@ -1641,6 +1651,11 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
 
         // Se for PDF importado, retornar o PDF original
         if (contract.contract_type === 'imported' && contract.pdf_url) {
+            const url = (contract.pdf_url || '').trim();
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                const fileName = `${(contract.title || 'documento').replace(/[^a-z0-9]/gi, '_')}_original.pdf`;
+                return { redirectUrl: url, fileName };
+            }
             const baseDir = path.join(__dirname, '../../');
             const cwd = process.cwd && process.cwd();
             const fileName = `${(contract.title || 'documento').replace(/[^a-z0-9]/gi, '_')}_original.pdf`;
