@@ -122,15 +122,13 @@ class ContractController {
     }
 
     /**
-     * Cancelar contrato
+     * Cancelar contrato (links de assinatura deixam de funcionar)
      */
     async cancel(req, res) {
         try {
             const { id } = req.params;
             const userId = req.user.userId;
-
-            // Atualizar status para cancelled
-            const contract = await service.update(id, userId, { status: 'cancelled' });
+            const contract = await service.cancel(id, userId);
             return responseFormatter.success(res, contract, 'Contrato cancelado com sucesso');
         } catch (error) {
             logger.error('Erro ao cancelar contrato:', error);

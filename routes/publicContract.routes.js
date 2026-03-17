@@ -461,6 +461,28 @@ router.get('/sign/:token', asyncHandler(async (req, res) => {
             `);
         }
 
+        if (contract.status === 'cancelled') {
+            return res.status(410).send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Contrato Cancelado</title>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #1a1a1a; color: #fff; }
+                        h1 { color: #F59E0B; }
+                        p { color: #ccc; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Contrato cancelado</h1>
+                    <p>Este contrato foi cancelado pelo responsável. O link de assinatura não é mais válido.</p>
+                </body>
+                </html>
+            `);
+        }
+
         // Se o contrato não tiver conteúdo e for de template, buscar do template
         if (!contract.pdf_content && contract.template_id) {
             try {

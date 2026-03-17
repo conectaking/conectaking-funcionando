@@ -581,6 +581,35 @@ class ContractService {
     }
 
     /**
+     * Cancelar contrato (invalidar links de assinatura; contrato continua na lista como cancelado)
+     */
+    async cancel(contractId, userId) {
+        const ownsContract = await repository.checkOwnership(contractId, userId);
+        if (!ownsContract) throw new Error('Você não tem permissão para cancelar este contrato');
+        const contract = await repository.findById(contractId);
+        if (!contract) throw new Error('Contrato não encontrado');
+        if (contract.status === TYPES.STATUS.CANCELLED) {
+            return contract;
+        }
+        await repository.update(contractId, { status: TYPES.STATUS.CANCELLED });
+        const signers = await repository.findSignersByContractId(contractId);
+        const now = new Date();
+        for (const s of signers) {
+            await repository.updateSigner(s.id, { token_expires_at: now });
+        }
+        await repository.createAuditLog({
+            contract_id: contractId,
+            user_id: userId,
+            action: TYPES.AUDIT_ACTIONS.CANCELLED,
+            details: { cancelled_by_owner: true },
+            ip_address: null,
+            user_agent: null
+        });
+        logger.info(`Contrato cancelado: ${contractId}`);
+        return await repository.findById(contractId);
+    }
+
+    /**
      * Excluir contrato
      */
     async delete(id, userId) {
