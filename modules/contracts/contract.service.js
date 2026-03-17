@@ -1289,7 +1289,9 @@ class ContractService {
             throw new Error('Contrato não encontrado');
         }
 
-        if (contract.status !== TYPES.STATUS.COMPLETED) {
+        const signers = await repository.findSignersByContractId(contractId);
+        const allSigned = signers.length > 0 && signers.every(s => s.signed_at != null);
+        if (contract.status !== TYPES.STATUS.COMPLETED && !allSigned) {
             throw new Error('Apenas contratos completos podem ter PDF final gerado');
         }
 
@@ -1301,7 +1303,6 @@ class ContractService {
             // Buscar assinaturas e logs de auditoria
             const signatures = await repository.findSignaturesByContractId(contractId);
             const auditLogs = await repository.findAuditLogsByContractId(contractId);
-            const signers = await repository.findSignersByContractId(contractId);
 
             // Criar novo documento PDF
             const pdfDoc = await PDFDocument.create();
