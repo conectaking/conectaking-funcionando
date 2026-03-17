@@ -1570,20 +1570,7 @@ class ContractService {
                     y = 820;
                 }
 
-                reportPage.drawText(`${sig.signer_name || 'Signatário'} (${idx + 1}/${totalSigs})`, {
-                    x: 50, y, size: 11, font: boldFont, color: rgb(0, 0, 0),
-                });
-                y -= 16;
-                reportPage.drawText('Assinado via ConectaKing', {
-                    x: 50, y, size: 9, font: font, color: rgb(0, 0.6, 0),
-                });
-                y -= 14;
-                reportPage.drawText(`Data e hora da assinatura: ${new Date(sig.signed_at).toLocaleString('pt-BR')}`, {
-                    x: 50, y, size: 9, font: font, color: rgb(0, 0, 0),
-                });
-                y -= 18;
-
-                // Caixa com a imagem da assinatura
+                // Estilo ZapSign: primeiro a assinatura (em cima), depois o nome (embaixo)
                 const boxW = 220;
                 const boxH = 70;
                 reportPage.drawRectangle({
@@ -1620,7 +1607,22 @@ class ContractService {
                         x: 55, y: y - boxH / 2 - 4, size: 8, font: font, color: rgb(0.5, 0.5, 0.5),
                     });
                 }
-                y -= boxH + 12;
+                y -= boxH + 8;
+
+                // Nome do signatário logo abaixo da assinatura (igual ZapSign)
+                const displayName = (sig.signer_name || 'Signatário').trim() || 'Signatário';
+                reportPage.drawText(displayName, {
+                    x: 50, y, size: 11, font: boldFont, color: rgb(0, 0, 0),
+                });
+                y -= 16;
+                reportPage.drawText('Assinado via ConectaKing', {
+                    x: 50, y, size: 9, font: font, color: rgb(0, 0.6, 0),
+                });
+                y -= 14;
+                reportPage.drawText(`Data e hora da assinatura: ${new Date(sig.signed_at).toLocaleString('pt-BR')}`, {
+                    x: 50, y, size: 9, font: font, color: rgb(0, 0, 0),
+                });
+                y -= 18;
 
                 reportPage.drawText('Pontos de autenticação:', {
                     x: 50, y, size: 9, font: boldFont, color: rgb(0, 0, 0),
