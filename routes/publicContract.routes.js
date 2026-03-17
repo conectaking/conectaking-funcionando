@@ -18,7 +18,11 @@ router.get('/sign/:token/pdf', asyncHandler(async (req, res) => {
         const signer = await contractService.findSignerByToken(token, true);
         if (!signer) return res.status(404).json({ error: 'Link de assinatura inválido' });
 
-        const result = await contractService.getPdfForSigner(signer.contract_id);
+        const contract = await contractRepository.findById(signer.contract_id);
+        const useFinal = contract && contract.status === 'completed' && contract.final_pdf_url;
+        const result = useFinal
+            ? await contractService.getFinalPdfForSigner(signer.contract_id)
+            : await contractService.getPdfForSigner(signer.contract_id);
 
         if (result.redirectUrl) {
             const fetch = (typeof globalThis.fetch === 'function') ? globalThis.fetch : require('node-fetch');
@@ -39,6 +43,43 @@ router.get('/sign/:token/pdf', asyncHandler(async (req, res) => {
     } catch (error) {
         logger.error('Erro ao visualizar PDF público:', error);
         res.status(404).json({ error: error.message || 'Não foi possível carregar o PDF' });
+    }
+}));
+
+/**
+ * Download do PDF final (assinado) — rota pública, sem JWT
+ * GET /contract/sign/:token/download
+ */
+router.get('/sign/:token/download', asyncHandler(async (req, res) => {
+    try {
+        const token = (req.params.token || '').trim();
+        if (!token) return res.status(404).json({ error: 'Token inválido' });
+
+        const signer = await contractService.findSignerByToken(token, true);
+        if (!signer) return res.status(404).json({ error: 'Link de assinatura inválido' });
+
+        const result = await contractService.getFinalPdfForSigner(signer.contract_id);
+        const fileName = (result.fileName || 'contrato_assinado').replace(/[^a-z0-9._-]/gi, '_') + '.pdf';
+
+        if (result.redirectUrl) {
+            const fetch = (typeof globalThis.fetch === 'function') ? globalThis.fetch : require('node-fetch');
+            const pdfRes = await fetch(result.redirectUrl);
+            if (!pdfRes.ok) return res.status(502).json({ error: 'Não foi possível baixar o PDF.' });
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+            const ab = await pdfRes.arrayBuffer();
+            return res.send(Buffer.from(ab));
+        }
+
+        const fs = require('fs');
+        if (!fs.existsSync(result.filePath)) return res.status(404).json({ error: 'Arquivo não encontrado' });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        const fileStream = fs.createReadStream(result.filePath);
+        fileStream.pipe(res);
+    } catch (error) {
+        logger.error('Erro ao download público do contrato:', error);
+        res.status(404).json({ error: error.message || 'Não foi possível baixar o contrato' });
     }
 }));
 

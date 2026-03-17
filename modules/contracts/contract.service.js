@@ -1805,6 +1805,45 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
     }
 
     /**
+     * Obter PDF final (assinado) do contrato para rota pública. Sem checagem de ownership.
+     * Retorna { filePath, fileName } ou { redirectUrl, fileName }. Falha se não houver final_pdf_url.
+     */
+    async getFinalPdfForSigner(contractId) {
+        const contract = await repository.findById(contractId);
+        if (!contract) throw new Error('Contrato não encontrado');
+        if (!contract.final_pdf_url) throw new Error('PDF assinado ainda não está disponível');
+        const path = require('path');
+        const fs = require('fs').promises;
+        const url = (contract.final_pdf_url || '').trim();
+        const fileName = `${(contract.title || 'contrato').replace(/[^a-z0-9]/gi, '_')}_assinado.pdf`;
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            return { redirectUrl: url, fileName };
+        }
+        const baseDir = path.join(__dirname, '../../');
+        const cwd = process.cwd && process.cwd();
+        const basename = path.basename(contract.final_pdf_url);
+        const candidates = [
+            path.join(baseDir, 'public', contract.final_pdf_url.replace(/^\//, '')),
+            path.join(__dirname, '../../public', contract.final_pdf_url),
+            path.join(baseDir, 'uploads', 'contracts', basename),
+            path.join(__dirname, '../../uploads/contracts', basename)
+        ];
+        if (cwd) {
+            candidates.push(path.join(cwd, 'public', contract.final_pdf_url.replace(/^\//, '')));
+            candidates.push(path.join(cwd, 'uploads', 'contracts', basename));
+        }
+        for (const candidate of candidates) {
+            try {
+                await fs.access(candidate);
+                return { filePath: candidate, fileName };
+            } catch {
+                continue;
+            }
+        }
+        throw new Error('Arquivo do contrato assinado não encontrado no servidor');
+    }
+
+    /**
      * Salvar posições de assinaturas para um contrato
      */
     async saveSignaturePositions(contractId, positions) {
