@@ -15,8 +15,7 @@ router.get('/sign/:token/pdf', asyncHandler(async (req, res) => {
         const token = (req.params.token || '').trim();
         if (!token) return res.status(404).json({ error: 'Token inválido' });
 
-        let signer = await contractRepository.findSignerByToken(token);
-        if (!signer) signer = await contractRepository.findSignerBySlug(token);
+        const signer = await contractService.findSignerByToken(token, true);
         if (!signer) return res.status(404).json({ error: 'Link de assinatura inválido' });
 
         const result = await contractService.getPdfForSigner(signer.contract_id);
