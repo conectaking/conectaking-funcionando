@@ -608,52 +608,39 @@
                 document.head.appendChild(script);
             }
             
-            // Carregar PDF se disponível
+            // Carregar PDF automaticamente (apenas visualização em PDF)
             <% if (contract.pdf_url && contract.contract_type === 'imported') { %>
             let pdfDoc = null;
             let currentPdfPage = 1;
             let pdfScale = 1.0;
             
-            // Toggle entre texto e PDF
-            document.getElementById('view-text-btn')?.addEventListener('click', function() {
-                document.getElementById('contract-text-view').style.display = 'block';
-                document.getElementById('contract-pdf-view').style.display = 'none';
-                this.classList.add('active');
-                document.getElementById('view-pdf-btn').classList.remove('active');
-            });
-            
-            document.getElementById('view-pdf-btn')?.addEventListener('click', async function() {
-                document.getElementById('contract-text-view').style.display = 'none';
-                document.getElementById('contract-pdf-view').style.display = 'block';
-                this.classList.add('active');
-                document.getElementById('view-text-btn').classList.remove('active');
-                
-                // Carregar PDF se ainda não foi carregado
-                if (!pdfDoc) {
-                    try {
-                        // Verificar se pdfjsLib está disponível
-                        if (typeof pdfjsLib === 'undefined') {
-                            throw new Error('PDF.js não está carregado. Aguarde alguns segundos e tente novamente.');
-                        }
-                        
-                        // Usar a rota pública do contrato para obter o PDF
-                        const pdfUrl = `/contract/sign/${signToken}/pdf`;
-                        
-                        // Configurar worker se ainda não foi configurado
-                        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-                            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                        }
-                        
-                        const loadingTask = pdfjsLib.getDocument(pdfUrl);
-                        pdfDoc = await loadingTask.promise;
-                        await renderPdfPage();
-                        updatePdfControls();
-                    } catch (error) {
-                        console.error('Erro ao carregar PDF:', error);
-                        alert('Erro ao carregar PDF: ' + (error.message || 'Tente novamente.'));
+            async function loadPdf() {
+                try {
+                    if (typeof pdfjsLib === 'undefined') {
+                        throw new Error('PDF.js não está carregado. Aguarde alguns segundos e recarregue a página.');
+                    }
+                    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    }
+                    const pdfUrl = '/contract/sign/<%= signToken %>/pdf';
+                    const response = await fetch(pdfUrl);
+                    if (!response.ok) throw new Error('Não foi possível carregar o PDF.');
+                    const blob = await response.blob();
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const loadingTask = pdfjsLib.getDocument(arrayBuffer);
+                    pdfDoc = await loadingTask.promise;
+                    await renderPdfPage();
+                    updatePdfControls();
+                } catch (error) {
+                    console.error('Erro ao carregar PDF:', error);
+                    const container = document.getElementById('pdf-canvas-container');
+                    if (container) {
+                        container.innerHTML = '<p style="color: #ef4444; padding: 20px;">Erro ao carregar o PDF. ' + (error.message || 'Tente recarregar a página.') + '</p>';
                     }
                 }
-            });
+            }
+            
+            loadPdf();
             
             // Função para renderizar página do PDF
             async function renderPdfPage() {
