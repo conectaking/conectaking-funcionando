@@ -625,11 +625,6 @@ class ContractService {
             throw new Error('Contrato não encontrado');
         }
 
-        // Se já assinado, avisar
-        if (contract.status === TYPES.STATUS.COMPLETED || contract.status === TYPES.STATUS.SIGNED) {
-            throw new Error('Contratos já assinados não podem ser excluídos. Recomendamos arquivá-los.');
-        }
-
         // Log de auditoria antes de excluir
         await repository.createAuditLog({
             contract_id: id,
