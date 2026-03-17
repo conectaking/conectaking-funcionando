@@ -95,6 +95,7 @@ app.use(helmet({
                 "'unsafe-inline'",
                 "'unsafe-eval'",
                 "https://cdn.jsdelivr.net",
+                "https://cdnjs.cloudflare.com",
                 "https://www.instagram.com",
                 "https://*.instagram.com",
                 "https://snapwidget.com",
@@ -174,6 +175,8 @@ app.use(helmet({
             ],
             connectSrc: [
                 "'self'",
+                "https://cdn.jsdelivr.net",
+                "https://cdnjs.cloudflare.com",
                 "https://conectaking-api.onrender.com",
                 "https://bio.conectaking.com.br",
                 "https://www.instagram.com",
