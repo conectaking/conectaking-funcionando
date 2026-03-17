@@ -341,7 +341,7 @@ class ContractController {
     }
 
     /**
-     * Visualizar PDF original do contrato
+     * Visualizar PDF do contrato: se estiver completo/assinado, mostra o PDF final; senão, o original.
      */
     async viewPdf(req, res) {
         try {
@@ -350,7 +350,24 @@ class ContractController {
                 return responseFormatter.error(res, 'ID do contrato inválido', 400);
             }
             const userId = req.user.userId;
-            const result = await service.viewPdf(String(id), userId);
+            let result;
+            const contract = await repository.findById(id);
+            const ownsContract = contract && await repository.checkOwnership(id, userId);
+            if (!ownsContract || !contract) {
+                return responseFormatter.error(res, 'Contrato não encontrado ou sem permissão', 404);
+            }
+            const signers = await repository.findSignersByContractId(id);
+            const allSigned = signers.length > 0 && signers.every(s => s.signed_at != null);
+            const useFinal = contract.status === 'completed' || allSigned;
+            if (useFinal) {
+                try {
+                    result = await service.downloadFinalPdf(id, userId);
+                } catch (e) {
+                    result = await service.viewPdf(String(id), userId);
+                }
+            } else {
+                result = await service.viewPdf(String(id), userId);
+            }
             if (result.redirectUrl) {
                 const fetch = (typeof globalThis.fetch === 'function') ? globalThis.fetch : require('node-fetch');
                 const pdfRes = await fetch(result.redirectUrl);

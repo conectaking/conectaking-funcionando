@@ -117,9 +117,20 @@ class ContractService {
 
     /**
      * Buscar contratos do usuário (com filtros e busca)
+     * Normaliza status: se todos os signatários assinaram mas status está sent/signed, retorna como 'completed'.
      */
     async findByUserId(userId, filters = {}) {
-        return await repository.findByUserId(userId, filters);
+        const result = await repository.findByUserId(userId, filters);
+        if (!result.data || result.data.length === 0) return result;
+        const ids = result.data.map(c => c.id);
+        const counts = await repository.getSignersSignedCountByContractIds(ids);
+        result.data.forEach(c => {
+            const k = counts[c.id];
+            if (k && k.total > 0 && k.signed === k.total && (c.status === TYPES.STATUS.SENT || c.status === TYPES.STATUS.SIGNED)) {
+                c.status = TYPES.STATUS.COMPLETED;
+            }
+        });
+        return result;
     }
 
     /**

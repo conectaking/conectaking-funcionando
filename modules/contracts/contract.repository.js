@@ -189,6 +189,29 @@ class ContractRepository {
     }
 
     /**
+     * Contar signatários e quantos já assinaram por contrato (para normalizar status na lista)
+     */
+    async getSignersSignedCountByContractIds(contractIds) {
+        if (!contractIds || contractIds.length === 0) return {};
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                `SELECT contract_id, COUNT(*) as total, COUNT(signed_at) as signed
+                 FROM ck_contracts_signers WHERE contract_id = ANY($1::int[])
+                 GROUP BY contract_id`,
+                [contractIds]
+            );
+            const map = {};
+            result.rows.forEach(r => {
+                map[r.contract_id] = { total: parseInt(r.total, 10), signed: parseInt(r.signed, 10) };
+            });
+            return map;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
      * Atualizar contrato
      * @param {Object} existingClient - Cliente de banco existente (opcional, para usar em transações)
      */
