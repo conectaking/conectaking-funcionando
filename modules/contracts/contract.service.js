@@ -1633,39 +1633,39 @@ class ContractService {
             });
             y -= 14;
             reportPage.drawText(truncate(`Documento: ${contract.title || 'Contrato'}`, maxCharsLine9), {
-                x: marginLeft, y, size: 9, font: font, color: rgb(0, 0, 0),
+                x: marginLeft, y, size: 8, font: font, color: rgb(0, 0, 0),
             });
-            y -= 14;
+            y -= 11;
             reportPage.drawText(`Número: ${contract.id}`, {
-                x: marginLeft, y, size: 9, font: font, color: rgb(0, 0, 0),
+                x: marginLeft, y, size: 8, font: font, color: rgb(0, 0, 0),
             });
-            y -= 14;
+            y -= 11;
             reportPage.drawText(`ID de verificação: CK-${contractId}`, {
-                x: marginLeft, y, size: 9, font: font, color: rgb(0.35, 0.35, 0.35),
+                x: marginLeft, y, size: 8, font: font, color: rgb(0.35, 0.35, 0.35),
             });
-            y -= 14;
+            y -= 11;
             reportPage.drawText(`Data da criação: ${new Date(contract.created_at).toLocaleString('pt-BR')} (UTC-0300)`, {
-                x: marginLeft, y, size: 9, font: font, color: rgb(0, 0, 0),
+                x: marginLeft, y, size: 8, font: font, color: rgb(0, 0, 0),
             });
-            y -= 14;
+            y -= 11;
             const hashLine1Y = y;
             reportPage.drawText('Hash do documento original (SHA256):', {
-                x: marginLeft, y, size: 7, font: font, color: rgb(0.35, 0.35, 0.35),
+                x: marginLeft, y, size: 6, font: font, color: rgb(0.35, 0.35, 0.35),
             });
-            y -= 10;
+            y -= 8;
             const fullHash = (contract.original_pdf_hash || 'N/A').toString();
             const hashPart1 = fullHash.length > 32 ? fullHash.substring(0, 32) : fullHash;
             const hashPart2 = fullHash.length > 32 ? fullHash.substring(32, 64) : '';
             reportPage.drawText(hashPart1, {
-                x: marginLeft + 4, y, size: 6, font: font, color: rgb(0.35, 0.35, 0.35),
+                x: marginLeft + 4, y, size: 5, font: font, color: rgb(0.35, 0.35, 0.35),
             });
             if (hashPart2) {
-                y -= 9;
+                y -= 7;
                 reportPage.drawText(hashPart2, {
-                    x: marginLeft + 4, y, size: 6, font: font, color: rgb(0.35, 0.35, 0.35),
+                    x: marginLeft + 4, y, size: 5, font: font, color: rgb(0.35, 0.35, 0.35),
                 });
             }
-            y -= 14;
+            y -= 10;
 
             // ---------- QR CODE na seção do documento (direita do hash, igual ZapSign) ----------
             let qrImgEmbed = null;
