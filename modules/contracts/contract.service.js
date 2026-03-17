@@ -1574,7 +1574,11 @@ class ContractService {
                 x: 50, y, size: 9, font: font, color: rgb(0, 0, 0),
             });
             y -= 14;
-            reportPage.drawText(`Data da criação: ${new Date(contract.created_at).toLocaleString('pt-BR')}`, {
+            reportPage.drawText(`ID de verificação: CK-${contractId}`, {
+                x: 50, y, size: 9, font: font, color: rgb(0.3, 0.3, 0.3),
+            });
+            y -= 14;
+            reportPage.drawText(`Data da criação: ${new Date(contract.created_at).toLocaleString('pt-BR')} (UTC-0300)`, {
                 x: 50, y, size: 9, font: font, color: rgb(0, 0, 0),
             });
             y -= 14;
@@ -1584,19 +1588,32 @@ class ContractService {
             y -= 22;
 
             const totalSigs = signatures.length;
-            reportPage.drawText(`${totalSigs} de ${totalSigs} Assinaturas`, {
-                x: 50, y, size: 12, font: boldFont, color: rgb(0, 0, 0),
+            reportPage.drawText('Assinaturas', {
+                x: 50, y, size: 14, font: boldFont, color: rgb(0, 0, 0),
+            });
+            y -= 18;
+            reportPage.drawText(`${totalSigs} de ${totalSigs} assinaturas`, {
+                x: 50, y, size: 11, font: font, color: rgb(0, 0, 0),
             });
             y -= 28;
 
             for (let idx = 0; idx < signatures.length; idx++) {
                 const sig = signatures[idx];
-                if (y < 220) {
+                if (y < 260) {
                     reportPage = pdfDoc.addPage([595, 842]);
                     y = 820;
                 }
 
-                // Estilo ZapSign: primeiro a assinatura (em cima), depois o nome (embaixo)
+                reportPage.drawText(`Signatário ${idx + 1} de ${totalSigs}`, {
+                    x: 50, y, size: 10, font: boldFont, color: rgb(0.4, 0.4, 0.4),
+                });
+                y -= 14;
+
+                reportPage.drawText('Assinatura', {
+                    x: 50, y, size: 9, font: boldFont, color: rgb(0, 0, 0),
+                });
+                y -= 12;
+
                 const boxW = 220;
                 const boxH = 70;
                 reportPage.drawRectangle({
@@ -1635,22 +1652,32 @@ class ContractService {
                 }
                 y -= boxH + 8;
 
-                // Nome do signatário logo abaixo da assinatura (igual ZapSign)
                 const displayName = (sig.signer_name || 'Signatário').trim() || 'Signatário';
                 reportPage.drawText(displayName, {
                     x: 50, y, size: 11, font: boldFont, color: rgb(0, 0, 0),
                 });
                 y -= 16;
+                reportPage.drawRectangle({
+                    x: 48, y: y - 2, width: 200, height: 20, color: rgb(0.95, 1, 0.9), borderColor: rgb(0.6, 0.8, 0.4), borderWidth: 1,
+                });
+                reportPage.drawText('Assinado eletronicamente – ConectaKing', {
+                    x: 52, y: y + 2, size: 8, font: boldFont, color: rgb(0, 0.5, 0),
+                });
+                y -= 22;
                 reportPage.drawText('Assinado via ConectaKing', {
                     x: 50, y, size: 9, font: font, color: rgb(0, 0.6, 0),
                 });
-                y -= 14;
-                reportPage.drawText(`Data e hora da assinatura: ${new Date(sig.signed_at).toLocaleString('pt-BR')}`, {
+                y -= 12;
+                reportPage.drawText(`Data e hora da assinatura: ${new Date(sig.signed_at).toLocaleString('pt-BR')} (UTC-0300)`, {
                     x: 50, y, size: 9, font: font, color: rgb(0, 0, 0),
+                });
+                y -= 12;
+                reportPage.drawText('Nível de segurança: validado por e-mail', {
+                    x: 50, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
                 });
                 y -= 18;
 
-                reportPage.drawText('Pontos de autenticação:', {
+                reportPage.drawText('Dados de autenticação:', {
                     x: 50, y, size: 9, font: boldFont, color: rgb(0, 0, 0),
                 });
                 y -= 12;
