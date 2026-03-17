@@ -1733,35 +1733,39 @@ Data de geração: ${new Date().toLocaleString('pt-BR')}`;
     }
 
     /**
-     * Obter caminho do PDF final para download
+     * Obter caminho do PDF final para download (ou regenerar se arquivo foi perdido, ex.: Render)
      */
     async downloadFinalPdf(contractId, userId) {
-        // Verificar ownership
         const ownsContract = await repository.checkOwnership(contractId, userId);
-        if (!ownsContract) {
-            throw new Error('Você não tem permissão para baixar este contrato');
-        }
-
+        if (!ownsContract) throw new Error('Você não tem permissão para baixar este contrato');
         const contract = await repository.findById(contractId);
-        if (!contract) {
-            throw new Error('Contrato não encontrado');
-        }
+        if (!contract) throw new Error('Contrato não encontrado');
 
         const path = require('path');
         const fs = require('fs').promises;
+        const fileName = `${(contract.title || 'contrato').replace(/[^a-z0-9]/gi, '_')}_assinado.pdf`;
 
-        // Se houver PDF final, retornar ele
         if (contract.final_pdf_url) {
-            const filePath = path.join(__dirname, '../../public', contract.final_pdf_url);
-            const fileName = `${contract.title.replace(/[^a-z0-9]/gi, '_')}_assinado.pdf`;
-            return { filePath, fileName };
+            const url = (contract.final_pdf_url || '').trim();
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                return { redirectUrl: url, fileName };
+            }
+            const filePath = path.join(__dirname, '../../public', contract.final_pdf_url.replace(/^\//, ''));
+            try {
+                await fs.access(filePath);
+                return { filePath, fileName };
+            } catch {
+                logger.warn('PDF final não encontrado em disco, regenerando', { contractId, final_pdf_url: contract.final_pdf_url });
+            }
         }
 
-        // Senão, gerar PDF final
         const pdfData = await this.generateFinalPdf(contractId);
-        const filePath = path.join(__dirname, '../../public', pdfData.pdf_url);
-        const fileName = `${contract.title.replace(/[^a-z0-9]/gi, '_')}_assinado.pdf`;
-        
+        const filePath = path.join(__dirname, '../../public', (pdfData.pdf_url || '').replace(/^\//, ''));
+        try {
+            await fs.access(filePath);
+        } catch (e) {
+            throw new Error('O PDF foi gerado mas não foi possível acessá-lo. Tente novamente.');
+        }
         return { filePath, fileName };
     }
 

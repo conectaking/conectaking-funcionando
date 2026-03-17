@@ -312,22 +312,29 @@ class ContractController {
         try {
             const { id } = req.params;
             const userId = req.user.userId;
-            
-            const { filePath, fileName } = await service.downloadFinalPdf(id, userId);
-            
-            const fs = require('fs');
-            const path = require('path');
-            
-            if (!fs.existsSync(filePath)) {
-                return responseFormatter.error(res, 'Arquivo PDF não encontrado', 404);
+            const result = await service.downloadFinalPdf(id, userId);
+
+            if (result.redirectUrl) {
+                const fetch = (typeof globalThis.fetch === 'function') ? globalThis.fetch : require('node-fetch');
+                const pdfRes = await fetch(result.redirectUrl);
+                if (!pdfRes.ok) return responseFormatter.error(res, 'Não foi possível baixar o PDF.', 502);
+                const safeName = (result.fileName || 'contrato_assinado').replace(/[^a-z0-9._-]/gi, '_') + '.pdf';
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+                const buf = Buffer.from(await pdfRes.arrayBuffer());
+                return res.send(buf);
             }
 
-            res.download(filePath, fileName, (err) => {
+            const fs = require('fs');
+            const { filePath, fileName } = result;
+            if (!fs.existsSync(filePath)) {
+                return responseFormatter.error(res, 'Arquivo PDF não encontrado. Tente novamente em instantes.', 404);
+            }
+            const safeName = (fileName || 'contrato_assinado').replace(/[^a-z0-9._-]/gi, '_');
+            res.download(filePath, safeName.endsWith('.pdf') ? safeName : safeName + '.pdf', (err) => {
                 if (err) {
                     logger.error('Erro ao baixar PDF:', err);
-                    if (!res.headersSent) {
-                        responseFormatter.error(res, 'Erro ao baixar PDF', 500);
-                    }
+                    if (!res.headersSent) responseFormatter.error(res, 'Erro ao baixar PDF', 500);
                 }
             });
         } catch (error) {
