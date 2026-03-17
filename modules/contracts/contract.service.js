@@ -1648,17 +1648,26 @@ class ContractService {
                 x: marginLeft, y, size: 9, font: font, color: rgb(0, 0, 0),
             });
             y -= 14;
-            const hashY = y;
+            const hashLine1Y = y;
             reportPage.drawText('Hash do documento original (SHA256):', {
                 x: marginLeft, y, size: 7, font: font, color: rgb(0.35, 0.35, 0.35),
             });
             y -= 10;
-            reportPage.drawText(contract.original_pdf_hash || 'N/A', {
+            const fullHash = (contract.original_pdf_hash || 'N/A').toString();
+            const hashPart1 = fullHash.length > 32 ? fullHash.substring(0, 32) : fullHash;
+            const hashPart2 = fullHash.length > 32 ? fullHash.substring(32, 64) : '';
+            reportPage.drawText(hashPart1, {
                 x: marginLeft + 4, y, size: 6, font: font, color: rgb(0.35, 0.35, 0.35),
             });
-            y -= 4;
+            if (hashPart2) {
+                y -= 9;
+                reportPage.drawText(hashPart2, {
+                    x: marginLeft + 4, y, size: 6, font: font, color: rgb(0.35, 0.35, 0.35),
+                });
+            }
+            y -= 14;
 
-            // ---------- QR CODE logo abaixo do hash (igual ZapSign) ----------
+            // ---------- QR CODE na seção do documento (direita do hash, igual ZapSign) ----------
             let qrImgEmbed = null;
             try {
                 const QRCode = require('qrcode');
@@ -1672,23 +1681,23 @@ class ContractService {
             } catch (qrErr) {
                 logger.warn('QR Code no relatório não gerado:', qrErr.message);
             }
-            const qrSize = 80;
+            const qrSize = 72;
             const qrX = rightColStart;
-            const qrY = y - qrSize - 20;
+            const qrY = hashLine1Y - qrSize - 8;
             if (qrImgEmbed) {
                 reportPage.drawRectangle({
-                    x: qrX - 4, y: qrY - 4, width: qrSize + 8, height: qrSize + 18,
-                    borderColor: rgb(0.75, 0.75, 0.75), borderWidth: 1, color: rgb(1, 1, 1),
+                    x: qrX - 6, y: qrY - 6, width: qrSize + 12, height: qrSize + 22,
+                    borderColor: rgb(0.7, 0.7, 0.7), borderWidth: 1.2, color: rgb(1, 1, 1),
                 });
-                reportPage.drawImage(qrImgEmbed, { x: qrX, y: qrY + 6, width: qrSize, height: qrSize });
-                reportPage.drawText('Escanear para verificar autenticidade', {
-                    x: qrX + 2, y: qrY - 2, size: 6, font: font, color: rgb(0.4, 0.4, 0.4),
+                reportPage.drawImage(qrImgEmbed, { x: qrX, y: qrY + 8, width: qrSize, height: qrSize });
+                reportPage.drawText('Escanear para verificar', {
+                    x: qrX + 4, y: qrY - 2, size: 6, font: font, color: rgb(0.4, 0.4, 0.4),
                 });
             }
 
-            y -= 20;
+            y -= 24;
             drawHLine(reportPage, y);
-            y -= 22;
+            y -= 26;
 
             // ---------- ASSINATURAS (título à esquerda, "X de X assinaturas" à direita igual ZapSign) ----------
             const totalSigs = signatures.length;
@@ -1703,46 +1712,48 @@ class ContractService {
             drawHLine(reportPage, y);
             y -= 24;
 
+            const innerPad = 14;
             for (let idx = 0; idx < signatures.length; idx++) {
                 const sig = signatures[idx];
-                const boxPadding = 20;
-                const signerBoxH = 230;
-                if (y < signerBoxH + 100) {
+                const boxPadding = 24;
+                const signerBoxH = 240;
+                if (y < signerBoxH + 120) {
                     reportPage = pdfDoc.addPage([595, 842]);
                     y = 820;
                 }
 
                 if (idx > 0) {
-                    drawHLine(reportPage, y + 10);
-                    y -= 18;
+                    drawHLine(reportPage, y + 14);
+                    y -= 22;
                 }
 
                 const boxY = y - signerBoxH;
                 reportPage.drawRectangle({
-                    x: marginLeft - 3,
-                    y: boxY - 12,
-                    width: pageWidth - marginLeft - marginRight + 6,
-                    height: signerBoxH + boxPadding + 12,
-                    borderColor: rgb(0.5, 0.5, 0.5),
-                    borderWidth: 1.5,
-                    color: rgb(0.99, 0.99, 0.99),
+                    x: marginLeft - 4,
+                    y: boxY - 16,
+                    width: pageWidth - marginLeft - marginRight + 8,
+                    height: signerBoxH + boxPadding + 16,
+                    borderColor: rgb(0.45, 0.45, 0.45),
+                    borderWidth: 2,
+                    color: rgb(0.995, 0.995, 0.995),
                 });
 
-                const sigBoxW = 195;
-                const sigBoxH = 74;
-                const sigBoxX = pageWidth - marginRight - sigBoxW - 10;
+                const sigBoxW = 190;
+                const sigBoxH = 76;
+                const sigBoxX = pageWidth - marginRight - sigBoxW - 14;
+                const leftContentX = marginLeft + innerPad;
 
                 reportPage.drawRectangle({
-                    x: sigBoxX - 2, y: y - sigBoxH - 12, width: sigBoxW + 4, height: sigBoxH + 24,
-                    borderColor: rgb(0.55, 0.55, 0.55),
-                    borderWidth: 1,
+                    x: sigBoxX - 3, y: y - sigBoxH - innerPad, width: sigBoxW + 6, height: sigBoxH + 28,
+                    borderColor: rgb(0.5, 0.5, 0.5),
+                    borderWidth: 1.2,
                     color: rgb(1, 1, 1),
                 });
                 const imgBytes = await getSignatureImageBytes(sig);
-                const sigBoxInnerY = y - sigBoxH - 12;
+                const sigBoxInnerY = y - sigBoxH - innerPad;
                 const displayName = (sig.signer_name || 'Signatário').trim() || 'Signatário';
                 reportPage.drawText('Assinatura', {
-                    x: sigBoxX, y: sigBoxInnerY + sigBoxH + 6, size: 9, font: boldFont, color: rgb(0.2, 0.2, 0.2),
+                    x: sigBoxX, y: sigBoxInnerY + sigBoxH + 8, size: 9, font: boldFont, color: rgb(0.2, 0.2, 0.2),
                 });
                 if (imgBytes) {
                     try {
