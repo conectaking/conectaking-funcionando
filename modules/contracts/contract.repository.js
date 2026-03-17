@@ -335,6 +335,23 @@ class ContractRepository {
     }
 
     /**
+     * Buscar signatário por slug (URL legível: nome-contrato-nome-pessoa-xxx)
+     */
+    async findSignerBySlug(slug) {
+        if (!slug || typeof slug !== 'string' || !slug.trim()) return null;
+        const client = await db.pool.connect();
+        try {
+            const result = await client.query(
+                'SELECT * FROM ck_contracts_signers WHERE sign_slug = $1',
+                [slug.trim()]
+            );
+            return result.rows[0] || null;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
      * Buscar signatário por ID
      */
     async findSignerById(id) {
@@ -361,6 +378,7 @@ class ContractRepository {
             role = 'signer',
             sign_order = 0,
             sign_token,
+            sign_slug = null,
             token_expires_at,
             ip_address,
             user_agent
@@ -373,12 +391,12 @@ class ContractRepository {
             const result = await client.query(
                 `INSERT INTO ck_contracts_signers (
                     contract_id, name, email, role, sign_order,
-                    sign_token, token_expires_at, ip_address, user_agent
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    sign_token, sign_slug, token_expires_at, ip_address, user_agent
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 RETURNING *`,
                 [
                     contract_id, name, email, role, sign_order,
-                    sign_token, token_expires_at, ip_address, user_agent
+                    sign_token, sign_slug || null, token_expires_at, ip_address, user_agent
                 ]
             );
             return result.rows[0];
