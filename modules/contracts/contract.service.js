@@ -67,6 +67,11 @@ class ContractService {
 
         // Sanitizar dados
         const sanitized = validators.sanitize(data);
+        // Garantir conteúdo ao criar a partir de texto colado (front envia "content", não "pdf_content")
+        if (!sanitized.pdf_content && data.content) {
+            const fromContent = validators.sanitize({ pdf_content: data.content }).pdf_content;
+            sanitized.pdf_content = fromContent != null ? fromContent : (typeof data.content === 'string' ? data.content : '');
+        }
 
         // Se for template, copiar conteúdo do template
         if (sanitized.template_id) {
