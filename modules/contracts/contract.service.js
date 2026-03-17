@@ -1519,175 +1519,154 @@ class ContractService {
                 }
             }
 
-            // Adicionar página de assinaturas (resumo)
-            const signaturePage = pdfDoc.addPage([595, 842]);
-            let y = 800;
-            signaturePage.drawText('ASSINATURAS ELETRÔNICAS', {
-                x: 50,
-                y: y,
-                size: 16,
-                font: boldFont,
-                color: rgb(0, 0, 0),
-            });
-            y -= 40;
+            // Uma única página: Relatório de Assinaturas (estilo ZapSign – com imagem da assinatura e dados de autenticação)
+            let reportPage = pdfDoc.addPage([595, 842]);
+            let y = 820;
 
-            for (const signature of signatures) {
-                signaturePage.drawText(`${signature.signer_name} (${signature.signer_email})`, {
-                    x: 50,
-                    y: y,
-                    size: 12,
-                    font: font,
-                    color: rgb(0, 0, 0),
+            reportPage.drawText('Relatório de Assinaturas', {
+                x: 50, y, size: 18, font: boldFont, color: rgb(0, 0, 0),
+            });
+            y -= 22;
+            reportPage.drawText('ConectaKing', {
+                x: 50, y, size: 10, font: font, color: rgb(0.5, 0.5, 0.5),
+            });
+            y -= 18;
+            reportPage.drawText(`Datas e horários em UTC-0300 (America/Sao_Paulo). Última atualização em ${new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })}.`, {
+                x: 50, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
+            });
+            y -= 28;
+
+            reportPage.drawText('Status: Assinado', {
+                x: 50, y, size: 12, font: boldFont, color: rgb(0, 0.6, 0),
+            });
+            y -= 24;
+
+            reportPage.drawText('Informações do documento', {
+                x: 50, y, size: 11, font: boldFont, color: rgb(0, 0, 0),
+            });
+            y -= 16;
+            reportPage.drawText(`Documento: ${(contract.title || 'Contrato').substring(0, 80)}`, {
+                x: 50, y, size: 9, font: font, color: rgb(0, 0, 0),
+            });
+            y -= 14;
+            reportPage.drawText(`Número: ${contract.id}`, {
+                x: 50, y, size: 9, font: font, color: rgb(0, 0, 0),
+            });
+            y -= 14;
+            reportPage.drawText(`Data da criação: ${new Date(contract.created_at).toLocaleString('pt-BR')}`, {
+                x: 50, y, size: 9, font: font, color: rgb(0, 0, 0),
+            });
+            y -= 14;
+            reportPage.drawText(`Hash do documento original (SHA256): ${contract.original_pdf_hash || 'N/A'}`, {
+                x: 50, y, size: 8, font: font, color: rgb(0.3, 0.3, 0.3),
+            });
+            y -= 22;
+
+            const totalSigs = signatures.length;
+            reportPage.drawText(`${totalSigs} de ${totalSigs} Assinaturas`, {
+                x: 50, y, size: 12, font: boldFont, color: rgb(0, 0, 0),
+            });
+            y -= 28;
+
+            for (let idx = 0; idx < signatures.length; idx++) {
+                const sig = signatures[idx];
+                if (y < 220) {
+                    reportPage = pdfDoc.addPage([595, 842]);
+                    y = 820;
+                }
+
+                reportPage.drawText(`${sig.signer_name || 'Signatário'} (${idx + 1}/${totalSigs})`, {
+                    x: 50, y, size: 11, font: boldFont, color: rgb(0, 0, 0),
                 });
-                y -= 20;
-                signaturePage.drawText(`Assinado em: ${new Date(signature.signed_at).toLocaleString('pt-BR')}`, {
-                    x: 50,
-                    y: y,
-                    size: 10,
-                    font: font,
-                    color: rgb(0.5, 0.5, 0.5),
+                y -= 16;
+                reportPage.drawText('Assinado via ConectaKing', {
+                    x: 50, y, size: 9, font: font, color: rgb(0, 0.6, 0),
                 });
-                y -= 20;
-                signaturePage.drawText(`Tipo: ${signature.signature_type}`, {
-                    x: 50,
-                    y: y,
-                    size: 10,
-                    font: font,
-                    color: rgb(0.5, 0.5, 0.5),
+                y -= 14;
+                reportPage.drawText(`Data e hora da assinatura: ${new Date(sig.signed_at).toLocaleString('pt-BR')}`, {
+                    x: 50, y, size: 9, font: font, color: rgb(0, 0, 0),
                 });
-                if (signature.signature_page && signature.signature_x !== null) {
-                    signaturePage.drawText(`Posição: Página ${signature.signature_page}, X: ${signature.signature_x}, Y: ${signature.signature_y}`, {
-                        x: 50,
-                        y: y - 15,
-                        size: 9,
-                        font: font,
-                        color: rgb(0.3, 0.3, 0.3),
+                y -= 18;
+
+                // Caixa com a imagem da assinatura
+                const boxW = 220;
+                const boxH = 70;
+                reportPage.drawRectangle({
+                    x: 50, y: y - boxH, width: boxW, height: boxH,
+                    borderColor: rgb(0.7, 0.7, 0.7), borderWidth: 1, color: rgb(0.98, 0.98, 0.98),
+                });
+                const imgBytes = await getSignatureImageBytes(sig);
+                if (imgBytes) {
+                    try {
+                        let img;
+                        try {
+                            const sharp = require('sharp');
+                            const pngBuffer = await sharp(imgBytes).png().toBuffer();
+                            img = await pdfDoc.embedPng(pngBuffer);
+                        } catch {
+                            img = await pdfDoc.embedPng(imgBytes);
+                        }
+                        const scale = Math.min(boxW / img.width, (boxH - 8) / img.height, 1);
+                        const iw = img.width * scale;
+                        const ih = img.height * scale;
+                        reportPage.drawImage(img, {
+                            x: 50 + (boxW - iw) / 2,
+                            y: y - boxH + (boxH - ih) / 2,
+                            width: iw,
+                            height: ih,
+                        });
+                    } catch (e) {
+                        reportPage.drawText('(imagem da assinatura)', {
+                            x: 55, y: y - boxH / 2 - 4, size: 8, font: font, color: rgb(0.5, 0.5, 0.5),
+                        });
+                    }
+                } else {
+                    reportPage.drawText('(assinatura não disponível como imagem)', {
+                        x: 55, y: y - boxH / 2 - 4, size: 8, font: font, color: rgb(0.5, 0.5, 0.5),
                     });
-                    y -= 15;
                 }
-                y -= 15;
+                y -= boxH + 12;
 
-                if (y < 200) {
-                    const newPage = pdfDoc.addPage([595, 842]);
-                    y = 800;
-                }
-            }
-
-            // Adicionar página de Relatório de Assinaturas (Auditoria)
-            const auditPage = pdfDoc.addPage([595, 842]);
-            y = 800;
-
-            auditPage.drawText('RELATÓRIO DE ASSINATURAS E AUDITORIA', {
-                x: 50,
-                y: y,
-                size: 16,
-                font: boldFont,
-                color: rgb(0, 0, 0),
-            });
-            y -= 40;
-
-            auditPage.drawText('Este documento foi assinado eletronicamente usando o sistema ConectaKing.', {
-                x: 50,
-                y: y,
-                size: 10,
-                font: font,
-                color: rgb(0, 0, 0),
-            });
-            y -= 30;
-
-            auditPage.drawText('Hashes SHA-256:', {
-                x: 50,
-                y: y,
-                size: 12,
-                font: boldFont,
-                color: rgb(0, 0, 0),
-            });
-            y -= 20;
-
-            auditPage.drawText(`Hash Original: ${contract.original_pdf_hash || 'N/A'}`, {
-                x: 50,
-                y: y,
-                size: 9,
-                font: font,
-                color: rgb(0, 0, 0),
-            });
-            y -= 15;
-
-            // NOTA: O hash final será calculado após salvar o PDF
-            // Por enquanto, usaremos um placeholder
-            auditPage.drawText(`Hash Final: [Será calculado após geração do PDF]`, {
-                x: 50,
-                y: y,
-                size: 9,
-                font: font,
-                color: rgb(0.5, 0.5, 0.5),
-            });
-            y -= 30;
-
-            auditPage.drawText('Log de Auditoria:', {
-                x: 50,
-                y: y,
-                size: 12,
-                font: boldFont,
-                color: rgb(0, 0, 0),
-            });
-            y -= 20;
-
-            for (const log of auditLogs) {
-                if (y < 100) {
-                    const newPage = pdfDoc.addPage([595, 842]);
-                    y = 800;
-                }
-
-                const logDate = new Date(log.created_at).toLocaleString('pt-BR');
-                auditPage.drawText(`${logDate} - ${log.action}`, {
-                    x: 50,
-                    y: y,
-                    size: 9,
-                    font: font,
-                    color: rgb(0, 0, 0),
-                });
-                y -= 15;
-
-                if (log.ip_address) {
-                    auditPage.drawText(`IP: ${log.ip_address}`, {
-                        x: 70,
-                        y: y,
-                        size: 8,
-                        font: font,
-                        color: rgb(0.5, 0.5, 0.5),
-                    });
-                    y -= 12;
-                }
-            }
-
-            y -= 30;
-            if (y < 200) {
-                const newPage = pdfDoc.addPage([595, 842]);
-                y = 800;
-            }
-
-            // Adicionar texto legal fixo
-            const legalText = `Este documento foi gerado automaticamente pelo sistema ConectaKing. 
-As assinaturas eletrônicas são válidas de acordo com a legislação brasileira (Lei nº 14.063/2020).
-O hash SHA-256 garante a integridade do documento.
-Data de geração: ${new Date().toLocaleString('pt-BR')}`;
-
-            const legalLines = legalText.split('\n');
-            for (const line of legalLines) {
-                if (y < 50) {
-                    const newPage = pdfDoc.addPage([595, 842]);
-                    y = 800;
-                }
-                auditPage.drawText(line, {
-                    x: 50,
-                    y: y,
-                    size: 8,
-                    font: font,
-                    color: rgb(0.3, 0.3, 0.3),
+                reportPage.drawText('Pontos de autenticação:', {
+                    x: 50, y, size: 9, font: boldFont, color: rgb(0, 0, 0),
                 });
                 y -= 12;
+                reportPage.drawText(`E-mail: ${sig.signer_email || '-'}`, {
+                    x: 55, y, size: 8, font: font, color: rgb(0.2, 0.2, 0.2),
+                });
+                y -= 11;
+                if (sig.ip_address) {
+                    reportPage.drawText(`IP: ${sig.ip_address}`, {
+                        x: 55, y, size: 8, font: font, color: rgb(0.2, 0.2, 0.2),
+                    });
+                    y -= 11;
+                }
+                if (sig.user_agent) {
+                    const ua = String(sig.user_agent).substring(0, 70);
+                    reportPage.drawText(`Dispositivo: ${ua}`, {
+                        x: 55, y, size: 7, font: font, color: rgb(0.4, 0.4, 0.4),
+                    });
+                    y -= 10;
+                }
+                y -= 18;
             }
+
+            y -= 10;
+            if (y < 80) {
+                reportPage = pdfDoc.addPage([595, 842]);
+                y = 820;
+            }
+            reportPage.drawText('Este documento foi gerado automaticamente pelo sistema ConectaKing.', {
+                x: 50, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
+            });
+            y -= 12;
+            reportPage.drawText('As assinaturas eletrônicas são válidas de acordo com a legislação brasileira (Lei nº 14.063/2020).', {
+                x: 50, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
+            });
+            y -= 12;
+            reportPage.drawText(`Data de geração: ${new Date().toLocaleString('pt-BR')}`, {
+                x: 50, y, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
+            });
 
             // Salvar PDF final
             const pdfBytes = await pdfDoc.save();
