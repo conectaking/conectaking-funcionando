@@ -253,7 +253,7 @@ router.post('/sign/:token/submit', asyncHandler(async (req, res) => {
             return responseFormatter.success(res, {
                 success: true,
                 completed: allSigned,
-                downloadUrl: allSigned ? `/api/contracts/${signer.contract_id}/download` : null
+                downloadUrl: allSigned ? `/contract/sign/${req.params.token}/download` : null
             }, 'Assinatura realizada com sucesso');
         } catch (error) {
             await client.query('ROLLBACK');
