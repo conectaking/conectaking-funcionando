@@ -1545,16 +1545,46 @@ class ContractService {
             };
 
             let reportPage = pdfDoc.addPage([595, 842]);
-            let y = 830;
+            const topMargin = 28;
+            let y = 842 - topMargin - 18;
 
             const baseUrl = (config.urls && config.urls.api) ? String(config.urls.api).replace(/\/$/, '') : (process.env.API_URL || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
 
-            // ---------- CANTO SUPERIOR DIREITO: LOGOMARCA (compacta, igual ZapSign) ----------
-            const logoBoxX = rightColStart;
-            const logoBoxY = 808;
-            const logoBoxW = pageWidth - marginRight - logoBoxX;
+            // ---------- QR CODE no canto superior direito ----------
+            let qrImgEmbed = null;
+            try {
+                const QRCode = require('qrcode');
+                const verifyUrl = `${baseUrl}/contract/verify/${contractId}`;
+                const dataUrl = await QRCode.toDataURL(verifyUrl, { type: 'image/png', margin: 2, width: 200 });
+                const base64 = (dataUrl && dataUrl.indexOf('base64,') > -1) ? dataUrl.split('base64,')[1] : null;
+                if (base64) {
+                    const qrPng = Buffer.from(base64, 'base64');
+                    qrImgEmbed = await pdfDoc.embedPng(qrPng);
+                }
+            } catch (qrErr) {
+                logger.warn('QR Code no relatório não gerado:', qrErr.message);
+            }
+            const qrSize = 58;
+            const cornerPad = 12;
+            const qrX = pageWidth - marginRight - qrSize - cornerPad;
+            const qrY = 842 - topMargin - qrSize - 8;
+            if (qrImgEmbed) {
+                reportPage.drawRectangle({
+                    x: qrX - 3, y: qrY - 2, width: qrSize + 6, height: qrSize + 14,
+                    borderColor: rgb(0.7, 0.7, 0.7), borderWidth: 1, color: rgb(1, 1, 1),
+                });
+                reportPage.drawImage(qrImgEmbed, { x: qrX, y: qrY + 6, width: qrSize, height: qrSize });
+                reportPage.drawText('Escanear para verificar', {
+                    x: qrX + 2, y: qrY - 2, size: 5, font: font, color: rgb(0.4, 0.4, 0.4),
+                });
+            }
+
+            // ---------- LOGOMARCA no canto superior direito (abaixo do QR) ----------
+            const logoW = 70;
+            const logoBoxX = pageWidth - marginRight - logoW - cornerPad;
+            const logoBoxY = qrY - 50;
             reportPage.drawRectangle({
-                x: logoBoxX - 4, y: logoBoxY - 42, width: logoBoxW + 8, height: 46,
+                x: logoBoxX - 2, y: logoBoxY - 38, width: logoW + 4, height: 42,
                 color: rgb(0.98, 0.98, 0.98),
                 borderColor: rgb(0.8, 0.8, 0.8),
                 borderWidth: 1,
@@ -1577,19 +1607,16 @@ class ContractService {
                         }
                     }
                     if (logoImg) {
-                        const logoW = Math.min(62, logoImg.width);
-                        const logoH = (logoImg.height / logoImg.width) * logoW;
+                        const lw = Math.min(56, logoImg.width);
+                        const lh = (logoImg.height / logoImg.width) * lw;
                         reportPage.drawImage(logoImg, {
-                            x: logoBoxX,
-                            y: logoBoxY - logoH,
-                            width: logoW,
-                            height: logoH,
+                            x: logoBoxX + (logoW - lw) / 2,
+                            y: logoBoxY - lh - 4,
+                            width: lw,
+                            height: lh,
                         });
                         reportPage.drawText('CONECTA KING', {
-                            x: logoBoxX + logoW + 4, y: logoBoxY - 10, size: 9, font: boldFont, color: rgb(0.1, 0.1, 0.1),
-                        });
-                        reportPage.drawText('Assinaturas digitais', {
-                            x: logoBoxX + logoW + 4, y: logoBoxY - 20, size: 6, font: font, color: rgb(0.45, 0.45, 0.45),
+                            x: logoBoxX + 2, y: logoBoxY - lh - 10, size: 8, font: boldFont, color: rgb(0.1, 0.1, 0.1),
                         });
                         logoDrawn = true;
                     }
@@ -1599,14 +1626,11 @@ class ContractService {
             }
             if (!logoDrawn) {
                 reportPage.drawText('CONECTA KING', {
-                    x: logoBoxX + 2, y: logoBoxY - 12, size: 11, font: boldFont, color: rgb(0.85, 0.7, 0),
-                });
-                reportPage.drawText('Assinaturas digitais', {
-                    x: logoBoxX + 2, y: logoBoxY - 22, size: 6, font: font, color: rgb(0.5, 0.5, 0.5),
+                    x: logoBoxX + 2, y: logoBoxY - 14, size: 10, font: boldFont, color: rgb(0.85, 0.7, 0),
                 });
             }
 
-            // ---------- TÍTULO E CABEÇALHO (compacto = logo + QR + 2 assinaturas em 1 página, igual ZapSign) ----------
+            // ---------- TÍTULO (mais abaixo para não cortar) ----------
             reportPage.drawText('Relatório de Assinaturas', {
                 x: marginLeft, y, size: 18, font: boldFont, color: rgb(0, 0, 0),
             });
@@ -1614,11 +1638,15 @@ class ContractService {
             drawHLine(reportPage, y);
             y -= 12;
 
-            const timestampStr = `Datas e horários em UTC-0300 (America/Sao_Paulo). Última atualização em ${new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })} (UTC-0300).`;
-            reportPage.drawText(truncate(timestampStr, 95), {
-                x: marginLeft, y, size: 7, font: font, color: rgb(0.4, 0.4, 0.4),
+            const updStr = new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' });
+            reportPage.drawText('Datas e horários em UTC-0300 (America/Sao_Paulo).', {
+                x: marginLeft, y, size: 6, font: font, color: rgb(0.4, 0.4, 0.4),
             });
-            y -= 18;
+            y -= 10;
+            reportPage.drawText(`Última atualização em ${updStr} (UTC-0300).`, {
+                x: marginLeft, y, size: 6, font: font, color: rgb(0.4, 0.4, 0.4),
+            });
+            y -= 14;
 
             reportPage.drawText('Status: Assinado', {
                 x: marginLeft, y, size: 11, font: boldFont, color: rgb(0, 0.45, 0),
@@ -1667,35 +1695,7 @@ class ContractService {
             }
             y -= 10;
 
-            // ---------- QR CODE na seção do documento (direita do hash, igual ZapSign) ----------
-            let qrImgEmbed = null;
-            try {
-                const QRCode = require('qrcode');
-                const verifyUrl = `${baseUrl}/contract/verify/${contractId}`;
-                const dataUrl = await QRCode.toDataURL(verifyUrl, { type: 'image/png', margin: 2, width: 200 });
-                const base64 = (dataUrl && dataUrl.indexOf('base64,') > -1) ? dataUrl.split('base64,')[1] : null;
-                if (base64) {
-                    const qrPng = Buffer.from(base64, 'base64');
-                    qrImgEmbed = await pdfDoc.embedPng(qrPng);
-                }
-            } catch (qrErr) {
-                logger.warn('QR Code no relatório não gerado:', qrErr.message);
-            }
-            const qrSize = 64;
-            const qrX = rightColStart;
-            const qrY = hashLine1Y - qrSize - 4;
-            if (qrImgEmbed) {
-                reportPage.drawRectangle({
-                    x: qrX - 4, y: qrY - 4, width: qrSize + 8, height: qrSize + 16,
-                    borderColor: rgb(0.7, 0.7, 0.7), borderWidth: 1, color: rgb(1, 1, 1),
-                });
-                reportPage.drawImage(qrImgEmbed, { x: qrX, y: qrY + 6, width: qrSize, height: qrSize });
-                reportPage.drawText('Escanear para verificar', {
-                    x: qrX + 2, y: qrY - 2, size: 5, font: font, color: rgb(0.4, 0.4, 0.4),
-                });
-            }
-
-            y -= 18;
+            y -= 14;
             drawHLine(reportPage, y);
             y -= 18;
 
@@ -1722,37 +1722,41 @@ class ContractService {
                 }
 
                 if (idx > 0) {
-                    drawHLine(reportPage, y + 6);
-                    y -= 10;
+                    drawHLine(reportPage, y + 4);
+                    y -= 6;
                 }
 
                 const boxY = y - signerBoxH;
                 reportPage.drawRectangle({
                     x: marginLeft - 2,
-                    y: boxY - 6,
+                    y: boxY - 4,
                     width: pageWidth - marginLeft - marginRight + 4,
-                    height: signerBoxH + boxPadding + 6,
+                    height: signerBoxH + boxPadding + 4,
                     borderColor: rgb(0.6, 0.6, 0.6),
                     borderWidth: 1,
                     color: rgb(0.998, 0.998, 0.998),
                 });
 
-                const sigBoxW = 165;
-                const sigBoxH = 58;
+                const sigBoxW = 162;
+                const sigBoxH = 52;
+                const sigBoxLabelH = 10;
+                const sigBoxNameH = 12;
+                const sigBoxTotalH = sigBoxLabelH + sigBoxH + sigBoxNameH + 8;
                 const sigBoxX = pageWidth - marginRight - sigBoxW - 10;
+                const sigBoxBottom = y - sigBoxH - innerPad - sigBoxNameH - 6;
                 const leftContentX = marginLeft + innerPad;
 
                 reportPage.drawRectangle({
-                    x: sigBoxX - 2, y: y - sigBoxH - innerPad, width: sigBoxW + 4, height: sigBoxH + 20,
+                    x: sigBoxX - 2, y: sigBoxBottom - 4, width: sigBoxW + 4, height: sigBoxTotalH + 4,
                     borderColor: rgb(0.65, 0.65, 0.65),
                     borderWidth: 1,
                     color: rgb(1, 1, 1),
                 });
                 const imgBytes = await getSignatureImageBytes(sig);
-                const sigBoxInnerY = y - sigBoxH - innerPad;
+                const sigBoxInnerY = sigBoxBottom + sigBoxNameH + 4;
                 const displayName = (sig.signer_name || 'Signatário').trim() || 'Signatário';
                 reportPage.drawText('Assinatura', {
-                    x: sigBoxX, y: sigBoxInnerY + sigBoxH + 5, size: 7, font: boldFont, color: rgb(0.25, 0.25, 0.25),
+                    x: sigBoxX, y: sigBoxInnerY + sigBoxH + 4, size: 7, font: boldFont, color: rgb(0.25, 0.25, 0.25),
                 });
                 if (imgBytes) {
                     try {
@@ -1764,7 +1768,7 @@ class ContractService {
                         } catch {
                             img = await pdfDoc.embedPng(imgBytes);
                         }
-                        const scale = Math.min((sigBoxW - 12) / img.width, (sigBoxH - 10) / img.height, 1);
+                        const scale = Math.min((sigBoxW - 10) / img.width, (sigBoxH - 8) / img.height, 1);
                         const iw = img.width * scale;
                         const ih = img.height * scale;
                         reportPage.drawImage(img, {
@@ -1775,16 +1779,16 @@ class ContractService {
                         });
                     } catch (e) {
                         reportPage.drawText('(imagem da assinatura)', {
-                            x: sigBoxX + 6, y: sigBoxInnerY + sigBoxH / 2 - 6, size: 7, font: font, color: rgb(0.5, 0.5, 0.5),
+                            x: sigBoxX + 4, y: sigBoxInnerY + sigBoxH / 2 - 5, size: 6, font: font, color: rgb(0.5, 0.5, 0.5),
                         });
                     }
                 } else {
                     reportPage.drawText('(assinatura não disponível)', {
-                        x: sigBoxX + 6, y: sigBoxInnerY + sigBoxH / 2 - 6, size: 7, font: font, color: rgb(0.5, 0.5, 0.5),
+                        x: sigBoxX + 4, y: sigBoxInnerY + sigBoxH / 2 - 5, size: 6, font: font, color: rgb(0.5, 0.5, 0.5),
                     });
                 }
-                reportPage.drawText(displayName.substring(0, 28), {
-                    x: sigBoxX, y: sigBoxInnerY - 6, size: 6, font: font, color: rgb(0.35, 0.35, 0.35),
+                reportPage.drawText(truncate(displayName, 26), {
+                    x: sigBoxX + 4, y: sigBoxBottom + 2, size: 6, font: font, color: rgb(0.35, 0.35, 0.35),
                 });
 
                 let textY = y - 4;
@@ -1833,8 +1837,8 @@ class ContractService {
                     textY -= 7;
                 }
 
-                y = boxY - boxPadding - 4;
-                y -= 8;
+                y = boxY - boxPadding - 2;
+                y -= 4;
             }
 
             y -= 16;
