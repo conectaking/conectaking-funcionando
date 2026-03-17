@@ -758,6 +758,8 @@
                     signaturePad.clear();
                     document.getElementById('signature-validation').style.display = 'none';
                 }
+                var hint = document.getElementById('signature-canvas-hint');
+                if (hint) hint.style.display = 'block';
             });
             
             // Validação de assinatura no canvas (detectar se há traços)
@@ -813,15 +815,16 @@
             }
             });
             
-            // Ativar método canvas quando desenhar
+            // Ativar método canvas quando desenhar e esconder a dica
             if (signaturePad) {
                 signaturePad.addEventListener('beginStroke', function() {
+                    var hint = document.getElementById('signature-canvas-hint');
+                    if (hint) hint.style.display = 'none';
                     document.querySelectorAll('.signature-method').forEach(m => m.classList.remove('active'));
                     document.getElementById('canvas-method').classList.add('active');
                     currentSignatureMethod = 'canvas';
                 });
             }
-            
             // Trocar método de assinatura (apenas desenhar ou enviar foto)
             document.querySelectorAll('.signature-method').forEach(method => {
                 method.addEventListener('click', function(e) {
