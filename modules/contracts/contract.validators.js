@@ -219,6 +219,10 @@ class ContractValidators {
         if (data.pdf_content !== undefined) {
             sanitized.pdf_content = data.pdf_content ? sanitizeString(data.pdf_content) : null;
         }
+        // Documento a partir de texto envia "content"; mapear para pdf_content
+        if (data.content !== undefined && !sanitized.pdf_content) {
+            sanitized.pdf_content = data.content ? sanitizeString(data.content) : null;
+        }
 
         // Copiar campos que não precisam sanitização
         const fieldsToCopy = [
