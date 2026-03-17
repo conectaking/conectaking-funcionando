@@ -1549,14 +1549,14 @@ class ContractService {
 
             const baseUrl = (config.urls && config.urls.api) ? String(config.urls.api).replace(/\/$/, '') : (process.env.API_URL || 'https://conectaking-api.onrender.com').replace(/\/$/, '');
 
-            // ---------- CANTO SUPERIOR DIREITO: LOGOMARCA (igual ZapSign) ----------
+            // ---------- CANTO SUPERIOR DIREITO: LOGOMARCA (compacta, igual ZapSign) ----------
             const logoBoxX = rightColStart;
-            const logoBoxY = 810;
+            const logoBoxY = 808;
             const logoBoxW = pageWidth - marginRight - logoBoxX;
             reportPage.drawRectangle({
-                x: logoBoxX - 6, y: logoBoxY - 50, width: logoBoxW + 12, height: 58,
+                x: logoBoxX - 4, y: logoBoxY - 42, width: logoBoxW + 8, height: 46,
                 color: rgb(0.98, 0.98, 0.98),
-                borderColor: rgb(0.85, 0.85, 0.85),
+                borderColor: rgb(0.8, 0.8, 0.8),
                 borderWidth: 1,
             });
             let logoDrawn = false;
@@ -1577,7 +1577,7 @@ class ContractService {
                         }
                     }
                     if (logoImg) {
-                        const logoW = Math.min(80, logoImg.width);
+                        const logoW = Math.min(62, logoImg.width);
                         const logoH = (logoImg.height / logoImg.width) * logoW;
                         reportPage.drawImage(logoImg, {
                             x: logoBoxX,
@@ -1586,10 +1586,10 @@ class ContractService {
                             height: logoH,
                         });
                         reportPage.drawText('CONECTA KING', {
-                            x: logoBoxX + logoW + 6, y: logoBoxY - 12, size: 11, font: boldFont, color: rgb(0.1, 0.1, 0.1),
+                            x: logoBoxX + logoW + 4, y: logoBoxY - 10, size: 9, font: boldFont, color: rgb(0.1, 0.1, 0.1),
                         });
                         reportPage.drawText('Assinaturas digitais', {
-                            x: logoBoxX + logoW + 6, y: logoBoxY - 24, size: 7, font: font, color: rgb(0.45, 0.45, 0.45),
+                            x: logoBoxX + logoW + 4, y: logoBoxY - 20, size: 6, font: font, color: rgb(0.45, 0.45, 0.45),
                         });
                         logoDrawn = true;
                     }
@@ -1599,10 +1599,10 @@ class ContractService {
             }
             if (!logoDrawn) {
                 reportPage.drawText('CONECTA KING', {
-                    x: logoBoxX + 4, y: logoBoxY - 14, size: 14, font: boldFont, color: rgb(0.85, 0.7, 0),
+                    x: logoBoxX + 2, y: logoBoxY - 12, size: 11, font: boldFont, color: rgb(0.85, 0.7, 0),
                 });
                 reportPage.drawText('Assinaturas digitais', {
-                    x: logoBoxX + 4, y: logoBoxY - 28, size: 8, font: font, color: rgb(0.5, 0.5, 0.5),
+                    x: logoBoxX + 2, y: logoBoxY - 22, size: 6, font: font, color: rgb(0.5, 0.5, 0.5),
                 });
             }
 
@@ -1681,79 +1681,78 @@ class ContractService {
             } catch (qrErr) {
                 logger.warn('QR Code no relatório não gerado:', qrErr.message);
             }
-            const qrSize = 72;
+            const qrSize = 64;
             const qrX = rightColStart;
-            const qrY = hashLine1Y - qrSize - 8;
+            const qrY = hashLine1Y - qrSize - 4;
             if (qrImgEmbed) {
                 reportPage.drawRectangle({
-                    x: qrX - 6, y: qrY - 6, width: qrSize + 12, height: qrSize + 22,
-                    borderColor: rgb(0.7, 0.7, 0.7), borderWidth: 1.2, color: rgb(1, 1, 1),
+                    x: qrX - 4, y: qrY - 4, width: qrSize + 8, height: qrSize + 16,
+                    borderColor: rgb(0.7, 0.7, 0.7), borderWidth: 1, color: rgb(1, 1, 1),
                 });
-                reportPage.drawImage(qrImgEmbed, { x: qrX, y: qrY + 8, width: qrSize, height: qrSize });
+                reportPage.drawImage(qrImgEmbed, { x: qrX, y: qrY + 6, width: qrSize, height: qrSize });
                 reportPage.drawText('Escanear para verificar', {
-                    x: qrX + 4, y: qrY - 2, size: 6, font: font, color: rgb(0.4, 0.4, 0.4),
+                    x: qrX + 2, y: qrY - 2, size: 5, font: font, color: rgb(0.4, 0.4, 0.4),
                 });
             }
 
-            y -= 24;
+            y -= 18;
             drawHLine(reportPage, y);
-            y -= 26;
+            y -= 18;
 
-            // ---------- ASSINATURAS (título à esquerda, "X de X assinaturas" à direita igual ZapSign) ----------
+            // ---------- ASSINATURAS (compacto: 2 blocos na mesma página, igual ZapSign) ----------
             const totalSigs = signatures.length;
-            const yAssinaturasTitle = y;
             reportPage.drawText('Assinaturas', {
-                x: marginLeft, y, size: 14, font: boldFont, color: rgb(0, 0, 0),
+                x: marginLeft, y, size: 12, font: boldFont, color: rgb(0, 0, 0),
             });
             reportPage.drawText(`${totalSigs} de ${totalSigs} Assinaturas`, {
-                x: rightColStart, y, size: 10, font: font, color: rgb(0.4, 0.4, 0.4),
+                x: rightColStart, y, size: 9, font: font, color: rgb(0.4, 0.4, 0.4),
             });
-            y -= 22;
+            y -= 16;
             drawHLine(reportPage, y);
-            y -= 24;
+            y -= 14;
 
-            const innerPad = 14;
+            const innerPad = 8;
+            const signerBoxH = 168;
+            const boxPadding = 8;
             for (let idx = 0; idx < signatures.length; idx++) {
                 const sig = signatures[idx];
-                const boxPadding = 24;
-                const signerBoxH = 240;
-                if (y < signerBoxH + 120) {
+                if (y < signerBoxH + 80 && idx > 0) {
                     reportPage = pdfDoc.addPage([595, 842]);
                     y = 820;
                 }
 
                 if (idx > 0) {
-                    drawHLine(reportPage, y + 14);
-                    y -= 22;
+                    drawHLine(reportPage, y + 6);
+                    y -= 10;
                 }
 
                 const boxY = y - signerBoxH;
                 reportPage.drawRectangle({
-                    x: marginLeft - 4,
-                    y: boxY - 16,
-                    width: pageWidth - marginLeft - marginRight + 8,
-                    height: signerBoxH + boxPadding + 16,
-                    borderColor: rgb(0.45, 0.45, 0.45),
-                    borderWidth: 2,
-                    color: rgb(0.995, 0.995, 0.995),
+                    x: marginLeft - 2,
+                    y: boxY - 6,
+                    width: pageWidth - marginLeft - marginRight + 4,
+                    height: signerBoxH + boxPadding + 6,
+                    borderColor: rgb(0.6, 0.6, 0.6),
+                    borderWidth: 1,
+                    color: rgb(0.998, 0.998, 0.998),
                 });
 
-                const sigBoxW = 190;
-                const sigBoxH = 76;
-                const sigBoxX = pageWidth - marginRight - sigBoxW - 14;
+                const sigBoxW = 165;
+                const sigBoxH = 58;
+                const sigBoxX = pageWidth - marginRight - sigBoxW - 10;
                 const leftContentX = marginLeft + innerPad;
 
                 reportPage.drawRectangle({
-                    x: sigBoxX - 3, y: y - sigBoxH - innerPad, width: sigBoxW + 6, height: sigBoxH + 28,
-                    borderColor: rgb(0.5, 0.5, 0.5),
-                    borderWidth: 1.2,
+                    x: sigBoxX - 2, y: y - sigBoxH - innerPad, width: sigBoxW + 4, height: sigBoxH + 20,
+                    borderColor: rgb(0.65, 0.65, 0.65),
+                    borderWidth: 1,
                     color: rgb(1, 1, 1),
                 });
                 const imgBytes = await getSignatureImageBytes(sig);
                 const sigBoxInnerY = y - sigBoxH - innerPad;
                 const displayName = (sig.signer_name || 'Signatário').trim() || 'Signatário';
                 reportPage.drawText('Assinatura', {
-                    x: sigBoxX, y: sigBoxInnerY + sigBoxH + 8, size: 9, font: boldFont, color: rgb(0.2, 0.2, 0.2),
+                    x: sigBoxX, y: sigBoxInnerY + sigBoxH + 5, size: 7, font: boldFont, color: rgb(0.25, 0.25, 0.25),
                 });
                 if (imgBytes) {
                     try {
@@ -1784,61 +1783,58 @@ class ContractService {
                         x: sigBoxX + 6, y: sigBoxInnerY + sigBoxH / 2 - 6, size: 7, font: font, color: rgb(0.5, 0.5, 0.5),
                     });
                 }
-                reportPage.drawText(displayName.substring(0, 35), {
-                    x: sigBoxX, y: sigBoxInnerY - 10, size: 7, font: font, color: rgb(0.3, 0.3, 0.3),
+                reportPage.drawText(displayName.substring(0, 28), {
+                    x: sigBoxX, y: sigBoxInnerY - 6, size: 6, font: font, color: rgb(0.35, 0.35, 0.35),
                 });
 
-                let textY = y - 6;
+                let textY = y - 4;
                 reportPage.drawText(truncate(displayName, 42), {
-                    x: leftContentX, y: textY, size: 13, font: boldFont, color: rgb(0, 0, 0),
+                    x: leftContentX, y: textY, size: 11, font: boldFont, color: rgb(0, 0, 0),
                 });
-                textY -= 22;
+                textY -= 14;
 
                 reportPage.drawRectangle({
-                    x: leftContentX, y: textY - 18, width: 250, height: 22, color: rgb(0.9, 0.97, 0.9), borderColor: rgb(0.35, 0.65, 0.35), borderWidth: 1.5,
+                    x: leftContentX, y: textY - 12, width: 220, height: 14, color: rgb(0.92, 0.97, 0.92), borderColor: rgb(0.4, 0.65, 0.4), borderWidth: 1,
                 });
-                reportPage.drawText('Assinado', {
-                    x: leftContentX + 10, y: textY - 11, size: 10, font: boldFont, color: rgb(0, 0.45, 0),
+                reportPage.drawText('Assinado via Conecta King', {
+                    x: leftContentX + 6, y: textY - 8, size: 7, font: boldFont, color: rgb(0, 0.45, 0),
                 });
-                reportPage.drawText('via Conecta King', {
-                    x: leftContentX + 65, y: textY - 11, size: 9, font: font, color: rgb(0.3, 0.5, 0.3),
-                });
-                textY -= 30;
+                textY -= 18;
 
                 const dateStr = `Data e hora da assinatura: ${new Date(sig.signed_at).toLocaleString('pt-BR')} (UTC-0300)`;
                 reportPage.drawText(truncate(dateStr, maxCharsLine9), {
-                    x: leftContentX, y: textY, size: 9, font: font, color: rgb(0, 0, 0),
+                    x: leftContentX, y: textY, size: 8, font: font, color: rgb(0, 0, 0),
                 });
-                textY -= 15;
+                textY -= 11;
                 reportPage.drawText(truncate('Nível de segurança: Validado por código único enviado por e-mail', maxCharsLine8), {
-                    x: leftContentX, y: textY, size: 8, font: font, color: rgb(0.4, 0.4, 0.4),
+                    x: leftContentX, y: textY, size: 7, font: font, color: rgb(0.4, 0.4, 0.4),
                 });
-                textY -= 22;
+                textY -= 14;
 
                 reportPage.drawText('Pontos de autenticação', {
-                    x: leftContentX, y: textY, size: 9, font: boldFont, color: rgb(0, 0, 0),
+                    x: leftContentX, y: textY, size: 8, font: boldFont, color: rgb(0, 0, 0),
                 });
-                textY -= 13;
+                textY -= 10;
                 reportPage.drawText(truncate(`E-mail: ${sig.signer_email || '-'}`, maxCharsLine8), {
-                    x: leftContentX + 6, y: textY, size: 8, font: font, color: rgb(0.2, 0.2, 0.2),
+                    x: leftContentX + 4, y: textY, size: 7, font: font, color: rgb(0.2, 0.2, 0.2),
                 });
-                textY -= 12;
+                textY -= 9;
                 if (sig.ip_address) {
                     reportPage.drawText(truncate(`IP: ${sig.ip_address}`, maxCharsLine8), {
-                        x: leftContentX + 6, y: textY, size: 8, font: font, color: rgb(0.2, 0.2, 0.2),
+                        x: leftContentX + 4, y: textY, size: 7, font: font, color: rgb(0.2, 0.2, 0.2),
                     });
-                    textY -= 12;
+                    textY -= 9;
                 }
                 if (sig.user_agent) {
-                    const ua = truncate(String(sig.user_agent), 55);
+                    const ua = truncate(String(sig.user_agent), 50);
                     reportPage.drawText(`Dispositivo: ${ua}`, {
-                        x: leftContentX + 6, y: textY, size: 7, font: font, color: rgb(0.4, 0.4, 0.4),
+                        x: leftContentX + 4, y: textY, size: 6, font: font, color: rgb(0.4, 0.4, 0.4),
                     });
-                    textY -= 10;
+                    textY -= 7;
                 }
 
-                y = boxY - boxPadding - 12;
-                y -= 18;
+                y = boxY - boxPadding - 4;
+                y -= 8;
             }
 
             y -= 16;
