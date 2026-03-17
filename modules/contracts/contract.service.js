@@ -1731,7 +1731,6 @@ class ContractService {
                 const sigBoxW = 195;
                 const sigBoxH = 74;
                 const sigBoxX = pageWidth - marginRight - sigBoxW - 10;
-                const leftTextMaxX = sigBoxX - 20;
 
                 reportPage.drawRectangle({
                     x: sigBoxX - 2, y: y - sigBoxH - 12, width: sigBoxW + 4, height: sigBoxH + 24,
