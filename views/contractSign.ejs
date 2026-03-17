@@ -413,26 +413,12 @@
         </div>
         
         <div class="contract-preview">
+            <% if (contract.pdf_url && contract.contract_type === 'imported') { %>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                 <h2 style="margin: 0;"><i class="fas fa-file-contract"></i> Visualização do Contrato</h2>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <% if (contract.pdf_url && contract.contract_type === 'imported') { %>
-                    <button id="view-pdf-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9rem;">
-                        <i class="fas fa-file-pdf"></i> Ver PDF
-                    </button>
-                    <% } %>
-                    <button id="view-text-btn" class="btn btn-secondary active" style="padding: 8px 16px; font-size: 0.9rem;">
-                        <i class="fas fa-file-alt"></i> Ver Texto
-                    </button>
             </div>
-        </div>
-        
-            <!-- Visualização de Texto -->
-            <div id="contract-text-view" class="contract-content"><%= (contract.pdf_content || contract.content || 'Conteúdo do contrato não disponível').replace(/\n/g, '<br>') %></div>
-            
-            <!-- Visualização de PDF (oculta por padrão) -->
-            <% if (contract.pdf_url && contract.contract_type === 'imported') { %>
-            <div id="contract-pdf-view" style="display: none;">
+            <!-- Apenas PDF (sem opção de texto) -->
+            <div id="contract-pdf-view">
                 <div style="background: #0B0B0B; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div style="display: flex; gap: 10px; align-items: center;">
@@ -459,6 +445,10 @@
                     <canvas id="pdf-canvas" style="max-width: 100%; height: auto; border-radius: 4px;"></canvas>
                 </div>
             </div>
+            <% } else { %>
+            <!-- Contrato sem PDF (template): mostrar texto -->
+            <h2 style="margin: 0 0 20px 0;"><i class="fas fa-file-alt"></i> Conteúdo do Contrato</h2>
+            <div id="contract-text-view" class="contract-content"><%= (contract.pdf_content || contract.content || 'Conteúdo do contrato não disponível').replace(/\n/g, '<br>') %></div>
             <% } %>
                 </div>
                 
