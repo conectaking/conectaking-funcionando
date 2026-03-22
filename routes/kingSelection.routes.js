@@ -605,6 +605,19 @@ function ksNormClientPhoneDigits(s) {
   return String(s || '').replace(/\D/g, '');
 }
 
+/** Cadastros antigos sem telefone útil: não exige bater dígitos; novo envio pode preencher o campo. */
+function ksClientPhoneMatchesStored(storedTel, inputTel) {
+  const stored = ksNormClientPhoneDigits(storedTel || '');
+  if (!stored || stored.length < 8) return true;
+  return stored === ksNormClientPhoneDigits(inputTel || '');
+}
+
+function ksShouldBackfillClientPhone(storedTel, inputTel) {
+  const stored = ksNormClientPhoneDigits(storedTel || '');
+  const input = ksNormClientPhoneDigits(inputTel || '');
+  return stored.length < 8 && input.length >= 8;
+}
+
 /** Travamento da galeria para o cliente: em revisão com fluxo “cadastro ao enviar”, permite editar se tyh=false. */
 async function ksResolveClientSelectionLocked(pgClient, req, galleryId, galleryRow) {
   const stGallery = normKsStatus(galleryRow?.status);
@@ -3996,8 +4009,10 @@ router.post('/client/login', asyncHandler(async (req, res) => {
 /** Visitante (cadastro ao enviar): reentrar só com nome + e-mail + telefone (sem senha). */
 router.post('/client/login-by-details', asyncHandler(async (req, res) => {
   const { slug, nome, email, telefone } = req.body || {};
-  if (!slug || !nome || !email || !telefone) {
-    return res.status(400).json({ message: 'Informe slug, nome, e-mail e telefone.' });
+  if (!slug || !nome || !email) {
+    return res.status(400).json({
+      message: 'Informe slug, nome e e-mail. O telefone é obrigatório apenas se já estiver salvo no seu cadastro.'
+    });
   }
 
   const client = await db.pool.connect();
@@ -4026,10 +4041,7 @@ router.post('/client/login-by-details', asyncHandler(async (req, res) => {
 
     const emailNorm = String(email).toLowerCase().trim();
     const nomeNorm = ksNormClientNameMatch(nome);
-    const telDigits = ksNormClientPhoneDigits(telefone);
-    if (!telDigits || telDigits.length < 8) {
-      return res.status(400).json({ message: 'Informe um telefone válido (com DDD).' });
-    }
+    const telDigits = ksNormClientPhoneDigits(telefone || '');
 
     const cRes = await client.query(
       `SELECT id, nome, telefone, enabled, status
