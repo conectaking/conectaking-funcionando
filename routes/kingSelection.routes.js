@@ -4588,7 +4588,7 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
         );
       }
     }
-    res.json({ success: true, selected: true });
+    res.json(hasSelBatch ? { success: true, selected: true, selection_batch: round } : { success: true, selected: true });
   } finally {
     client.release();
   }
