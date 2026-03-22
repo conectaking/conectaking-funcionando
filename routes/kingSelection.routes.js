@@ -418,6 +418,40 @@ async function hasTable(pgClient, tableName) {
   return ok;
 }
 
+/** Evita cache “falso” se o servidor subiu antes da migration da coluna. */
+function invalidateSchemaColumnCache(tableName, columnName) {
+  _schemaCache.columns.delete(`${tableName}.${columnName}`);
+}
+
+/** JWT com clientId ou galeria com exatamente um visitante ativo (legado). */
+async function resolveFaceClientIdForSession(pgClient, galleryId, jwtCid) {
+  const cid = parseInt(jwtCid, 10);
+  if (Number.isFinite(cid) && cid > 0) return cid;
+  if (!(await hasTable(pgClient, 'king_gallery_clients'))) return null;
+  const cr = await pgClient.query(
+    `SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND (enabled IS DISTINCT FROM false) ORDER BY id ASC`,
+    [galleryId]
+  );
+  if (cr.rows.length === 1) return parseInt(cr.rows[0].id, 10);
+  return null;
+}
+
+function normalizeClientImageQuality(raw) {
+  const s = String(raw || 'low').toLowerCase();
+  if (s === 'hd' || s === 'high') return 'hd';
+  if (s === 'max' || s === 'maximum' || s === 'full') return 'max';
+  return 'low';
+}
+
+/** Preview/download cliente: thumb fixo; resto conforme qualidade da galeria. */
+function getClientPreviewOutputSpec(quality, useThumb) {
+  if (useThumb) return { max: 400, jpegQuality: 76 };
+  const q = normalizeClientImageQuality(quality);
+  if (q === 'max') return { max: 5000, jpegQuality: 92 };
+  if (q === 'hd') return { max: 2400, jpegQuality: 88 };
+  return { max: 1200, jpegQuality: 80 };
+}
+
 const KS_GALLERY_STATUS_ORDER = Object.freeze({
   preparacao: 0,
   andamento: 1,
@@ -2816,6 +2850,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'watermark_scale',
     'watermark_rotate',
     'face_recognition_enabled',
+    'client_image_quality',
     'thank_you_title',
     'thank_you_message',
     'thank_you_image_url',
@@ -2834,6 +2869,9 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       [galleryId, userId]
     );
     if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+
+    invalidateSchemaColumnCache('king_galleries', 'face_recognition_enabled');
+    invalidateSchemaColumnCache('king_galleries', 'client_image_quality');
 
     // Se o watermark_path for alterado/removido, deletar o antigo no Cloudflare (evita órfãos).
     const hasWmPathCol = await hasColumn(client, 'king_galleries', 'watermark_path');
@@ -2857,7 +2895,8 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
 
       let val = body[key];
       if (key === 'total_fotos_contratadas' || key === 'min_selections') val = parseInt(val || 0, 10) || 0;
-      if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing' || key === 'allow_self_signup' || key === 'client_enabled') val = !!val;
+      if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing' || key === 'allow_self_signup' || key === 'client_enabled' || key === 'face_recognition_enabled') val = !!val;
+      if (key === 'client_image_quality') val = normalizeClientImageQuality(val);
       if (key === 'cliente_email') val = String(val || '').toLowerCase().trim();
       if (key === 'data_trabalho' && val) val = String(val).slice(0, 10);
       if (key === 'watermark_opacity') {
@@ -3942,10 +3981,11 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
     const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
     const hasFaceEnabled = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
+    const hasClientImgQ = await hasColumn(client, 'king_galleries', 'client_image_quality');
     const hasThankYou = await hasColumn(client, 'king_galleries', 'thank_you_title');
     const hasThankYouName = await hasColumn(client, 'king_galleries', 'thank_you_photographer_name');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
