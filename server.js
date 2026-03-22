@@ -546,6 +546,11 @@ function proxyKingSelection(req, res, next) {
     }
 }
 
+// /kingSelection sem slug → mesmo fluxo do dashboard (painel do fotógrafo)
+app.get(['/kingSelection', '/kingSelection/', '/kingselection', '/kingselection/'], (req, res) => {
+    res.redirect(302, '/dashboard.html?open=kingSelection');
+});
+
 // Galeria cliente (Node) ANTES do proxy: em produção o link costuma ser /kingselection/<slug> (minúsculo)
 app.get('/kingselection/:slug', serveKingSelectionClienteGallery);
 app.get('/kingSelection/:slug', serveKingSelectionClienteGallery);
