@@ -4663,10 +4663,14 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
           total: photoIds.length
         });
       }
-      return res.status(400).json({
-        success: false,
+      // 200 (não 400): evita “failed fetch” no DevTools e falhas se o body JSON falhar parcialmente;
+      // o cliente trata code FACE_USE_CHUNKED e segue para pedidos com chunked=1.
+      return res.status(200).json({
+        success: true,
         code: 'FACE_USE_CHUNKED',
-        message: 'Atualize a página da galeria (Ctrl+F5) para o filtro por rosto funcionar com proxies curtos (ex.: hospedagem Render).'
+        photoIds: [],
+        total: null,
+        message: 'Use análise em etapas (chunked). Atualize a página (Ctrl+F5) se a galeria estiver em cache antigo.'
       });
     }
 
