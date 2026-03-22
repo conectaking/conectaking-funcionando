@@ -530,6 +530,12 @@ app.use('/kingselection', proxyKingSelection);
 // Serve public_html/ como origem do domínio
 // ============================================
 const publicHtmlDir = path.join(__dirname, 'public_html');
+// Galeria do cliente (API Node /api/king-selection) — URL amigável /kingSelection/:slug
+const kingSelectionClienteHtml = path.join(publicHtmlDir, 'kingSelectionCliente.html');
+app.get(/^\/kingSelection\/([^/]+)\/?$/i, (req, res, next) => {
+    if (!fs.existsSync(kingSelectionClienteHtml)) return next();
+    res.sendFile(kingSelectionClienteHtml);
+});
 // Rota explícita para tts.js: garante Content-Type application/javascript (evita MIME text/html em 404)
 app.get('/js/tts.js', (req, res) => {
     const ttsPath = path.join(publicHtmlDir, 'js', 'tts.js');
