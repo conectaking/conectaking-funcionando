@@ -1071,11 +1071,34 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
   const client = await db.pool.connect();
   try {
     const userId = req.user.userId;
-    const { profileItemId, nome_projeto, cliente_email, senha, total_fotos_contratadas, min_selections } = req.body || {};
+    const body = req.body || {};
+    const {
+      profileItemId,
+      nome_projeto,
+      cliente_email,
+      senha,
+      cliente_nome,
+      categoria,
+      total_fotos_contratadas,
+      min_selections
+    } = body;
     const pid = parseInt(profileItemId, 10);
-    if (!pid || !nome_projeto || !cliente_email || !senha) {
-      return res.status(400).json({ message: 'Campos obrigatórios: profileItemId, nome_projeto, cliente_email, senha' });
+    if (!pid || !String(nome_projeto || '').trim()) {
+      return res.status(400).json({ message: 'Campos obrigatórios: profileItemId e nome do projeto.' });
     }
+
+    let accessType = String(body.access_type || body.tipo_acesso || body.access_mode || 'private')
+      .toLowerCase()
+      .trim();
+    if (!['private', 'signup', 'public'].includes(accessType)) accessType = 'private';
+
+    const useWatermark = !(
+      body.use_watermark === false ||
+      body.use_watermark === 'false' ||
+      body.com_marca_dagua === false ||
+      body.com_marca_dagua === 'false'
+    );
+
     const own = await client.query('SELECT id FROM profile_items WHERE id=$1 AND user_id=$2', [pid, userId]);
     if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão para este módulo.' });
 
@@ -1088,7 +1111,6 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
 
     let slug = baseSlug;
     let i = 2;
-    // garantir unicidade
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const exists = await client.query('SELECT 1 FROM king_galleries WHERE slug=$1', [slug]);
@@ -1096,9 +1118,34 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
       slug = `${baseSlug}-${i++}`;
     }
 
-    // hash bcrypt via pgcrypt? Para manter simples, guardar hash bcrypt gerado no Node (bcryptjs já existe)
-    const bcrypt = require('bcryptjs');
-    const senha_hash = await bcrypt.hash(String(senha), 10);
+    const randomPass = () => crypto.randomBytes(24).toString('base64url');
+
+    let emailToStore;
+    let plainPassword;
+    let clientPasswordResponse = null;
+
+    if (accessType === 'private') {
+      const em = String(cliente_email || '').toLowerCase().trim();
+      const pw = String(senha || '');
+      if (!em || !pw || pw.length < 6) {
+        return res.status(400).json({
+          message: 'Acesso privado: informe e-mail do cliente e senha (mínimo 6 caracteres).'
+        });
+      }
+      emailToStore = em;
+      plainPassword = pw;
+      clientPasswordResponse = pw;
+    } else if (accessType === 'signup') {
+      plainPassword = randomPass();
+      const localPart = `visitante+${slug}`.slice(0, 200);
+      emailToStore = `${localPart}@cadastro.kingselection.invalid`.slice(0, 255);
+    } else {
+      plainPassword = randomPass();
+      const localPart = `publico+${slug}`.slice(0, 200);
+      emailToStore = `${localPart}@publico.kingselection.invalid`.slice(0, 255);
+    }
+
+    const senha_hash = await bcrypt.hash(String(plainPassword), 10);
 
     const hasMin = await hasColumn(client, 'king_galleries', 'min_selections');
     const hasEnc = await hasColumn(client, 'king_galleries', 'senha_enc');
@@ -1107,56 +1154,116 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
 
     let ins;
     if (hasMin && hasEnc) {
-      const senha_enc = encryptPassword(String(senha));
+      const senha_enc = encryptPassword(String(plainPassword));
       ins = await client.query(
         `INSERT INTO king_galleries (profile_item_id, nome_projeto, slug, cliente_email, senha_hash, senha_enc, status, total_fotos_contratadas, min_selections)
          VALUES ($1,$2,$3,$4,$5,$6,'preparacao',$7,$8)
          RETURNING *`,
-        [pid, nome_projeto, slug, String(cliente_email).toLowerCase(), senha_hash, senha_enc, total, minSel]
+        [pid, String(nome_projeto).trim(), slug, emailToStore, senha_hash, senha_enc, total, minSel]
       );
     } else if (hasEnc) {
-      const senha_enc = encryptPassword(String(senha));
+      const senha_enc = encryptPassword(String(plainPassword));
       ins = await client.query(
         `INSERT INTO king_galleries (profile_item_id, nome_projeto, slug, cliente_email, senha_hash, senha_enc, status, total_fotos_contratadas)
          VALUES ($1,$2,$3,$4,$5,$6,'preparacao',$7)
          RETURNING *`,
-        [pid, nome_projeto, slug, String(cliente_email).toLowerCase(), senha_hash, senha_enc, total]
+        [pid, String(nome_projeto).trim(), slug, emailToStore, senha_hash, senha_enc, total]
       );
     } else if (hasMin) {
       ins = await client.query(
         `INSERT INTO king_galleries (profile_item_id, nome_projeto, slug, cliente_email, senha_hash, status, total_fotos_contratadas, min_selections)
          VALUES ($1,$2,$3,$4,$5,'preparacao',$6,$7)
          RETURNING *`,
-        [pid, nome_projeto, slug, String(cliente_email).toLowerCase(), senha_hash, total, minSel]
+        [pid, String(nome_projeto).trim(), slug, emailToStore, senha_hash, total, minSel]
       );
     } else {
       ins = await client.query(
         `INSERT INTO king_galleries (profile_item_id, nome_projeto, slug, cliente_email, senha_hash, status, total_fotos_contratadas)
          VALUES ($1,$2,$3,$4,$5,'preparacao',$6)
          RETURNING *`,
-        [pid, nome_projeto, slug, String(cliente_email).toLowerCase(), senha_hash, total]
+        [pid, String(nome_projeto).trim(), slug, emailToStore, senha_hash, total]
       );
     }
 
-    // Retorna a senha em plaintext apenas na criação (para o fotógrafo copiar/enviar)
-    // Padrão pré-configurado: marca d'água transparência 15%, tamanho 119%
     const gid = ins.rows[0].id;
+
+    const now = new Date();
+    const dataTrabalho = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const nomeCliente = String(cliente_nome || '').trim().slice(0, 255) || null;
+    const cat = String(categoria || '').trim().slice(0, 255) || null;
+
+    const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+    const hasClienteNome = await hasColumn(client, 'king_galleries', 'cliente_nome');
+    const hasCategoria = await hasColumn(client, 'king_galleries', 'categoria');
+    const hasDataTrabalho = await hasColumn(client, 'king_galleries', 'data_trabalho');
     const hasWmMode = await hasColumn(client, 'king_galleries', 'watermark_mode');
     const hasWmOpacity = await hasColumn(client, 'king_galleries', 'watermark_opacity');
     const hasWmScale = await hasColumn(client, 'king_galleries', 'watermark_scale');
-    try {
-      const updates = [];
-      if (hasWmMode) updates.push(`watermark_mode=COALESCE(NULLIF(watermark_mode,''),'tile_dense')`);
-      if (hasWmOpacity) updates.push('watermark_opacity=COALESCE(watermark_opacity,0.15)');
-      if (hasWmScale) updates.push('watermark_scale=COALESCE(watermark_scale,1.19)');
-      if (updates.length) {
-        await client.query(`UPDATE king_galleries SET ${updates.join(', ')}, updated_at=NOW() WHERE id=$1`, [gid]);
-        if (hasWmOpacity) ins.rows[0].watermark_opacity = 0.15;
-        if (hasWmScale) ins.rows[0].watermark_scale = 1.19;
-      }
-    } catch (_) { }
 
-    res.status(201).json({ success: true, gallery: ins.rows[0], client_password: String(senha) });
+    const metaSets = [];
+    const metaVals = [];
+    let p = 1;
+    if (hasAccessMode) {
+      const mode = accessType === 'public' ? 'public' : (accessType === 'signup' ? 'signup' : 'private');
+      metaSets.push(`access_mode=$${p++}`);
+      metaVals.push(mode);
+    }
+    if (hasSelf) {
+      metaSets.push(`allow_self_signup=$${p++}`);
+      metaVals.push(accessType === 'signup');
+    }
+    if (hasClienteNome && nomeCliente) {
+      metaSets.push(`cliente_nome=$${p++}`);
+      metaVals.push(nomeCliente);
+    }
+    if (hasCategoria && cat) {
+      metaSets.push(`categoria=$${p++}`);
+      metaVals.push(cat);
+    }
+    if (hasDataTrabalho) {
+      metaSets.push(`data_trabalho=$${p++}`);
+      metaVals.push(dataTrabalho);
+    }
+
+    if (useWatermark) {
+      if (hasWmMode) {
+        metaSets.push(`watermark_mode=COALESCE(NULLIF(watermark_mode,''),'tile_dense')`);
+      }
+      if (hasWmOpacity) metaSets.push('watermark_opacity=COALESCE(watermark_opacity,0.15)');
+      if (hasWmScale) metaSets.push('watermark_scale=COALESCE(watermark_scale,1.19)');
+    } else if (hasWmMode) {
+      metaSets.push(`watermark_mode=$${p++}`);
+      metaVals.push('none');
+    }
+
+    if (metaSets.length) {
+      metaVals.push(gid);
+      try {
+        await client.query(
+          `UPDATE king_galleries SET ${metaSets.join(', ')}, updated_at=NOW() WHERE id=$${p}`,
+          metaVals
+        );
+        if (useWatermark && hasWmOpacity) ins.rows[0].watermark_opacity = 0.15;
+        if (useWatermark && hasWmScale) ins.rows[0].watermark_scale = 1.19;
+        if (hasAccessMode) {
+          ins.rows[0].access_mode = accessType === 'public' ? 'public' : (accessType === 'signup' ? 'signup' : 'private');
+        }
+        if (hasSelf) ins.rows[0].allow_self_signup = accessType === 'signup';
+        if (hasClienteNome && nomeCliente) ins.rows[0].cliente_nome = nomeCliente;
+        if (hasCategoria && cat) ins.rows[0].categoria = cat;
+        if (hasDataTrabalho) ins.rows[0].data_trabalho = dataTrabalho;
+        if (hasWmMode) ins.rows[0].watermark_mode = useWatermark ? 'tile_dense' : 'none';
+      } catch (_) { /* colunas opcionais */ }
+    }
+
+    res.status(201).json({
+      success: true,
+      gallery: ins.rows[0],
+      client_password: clientPasswordResponse,
+      access_type: accessType,
+      data_trabalho: hasDataTrabalho ? dataTrabalho : undefined
+    });
   } finally {
     client.release();
   }

@@ -99,6 +99,90 @@
     .card-trash:hover { opacity: 1; }
     .empty-msg { font-size: 0.85rem; color: var(--ks-muted); padding: 12px 0; }
     .err-msg { padding: 16px; background: rgba(239,68,68,0.15); border-radius: 12px; color: #fca5a5; margin: 24px; }
+    .ks-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(0,0,0,0.72);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .ks-modal-overlay.open { display: flex; }
+    .ks-modal {
+      width: 100%;
+      max-width: 520px;
+      background: var(--ks-card);
+      border: 1px solid var(--ks-border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.55);
+    }
+    .ks-modal h2 {
+      margin: 0 0 20px;
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+    .ks-field { margin-bottom: 16px; }
+    .ks-field label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ks-muted);
+      margin-bottom: 6px;
+    }
+    .ks-field input, .ks-field select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--ks-border);
+      background: rgba(18,18,22,0.9);
+      color: var(--ks-text);
+      font-size: 0.9rem;
+    }
+    .ks-field input:focus, .ks-field select:focus {
+      outline: none;
+      border-color: rgba(250, 204, 21, 0.45);
+    }
+    .ks-row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 520px) { .ks-row2 { grid-template-columns: 1fr; } }
+    .ks-hint-small {
+      font-size: 0.75rem;
+      color: var(--ks-muted);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+    .ks-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .ks-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.875rem;
+      color: var(--ks-text);
+    }
+    .ks-check input { width: auto; }
+    .ks-data-readonly {
+      font-size: 0.85rem;
+      color: var(--ks-muted);
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px dashed var(--ks-border);
+      background: rgba(0,0,0,0.25);
+    }
   </style>
 </head>
 <body>
@@ -114,6 +198,71 @@
   </div>
   <div id="errMsg" class="err-msg" style="display:none;"></div>
   <div class="kanban" id="kanban"></div>
+
+  <div id="modalNova" class="ks-modal-overlay" aria-hidden="true">
+    <div class="ks-modal" role="dialog" aria-labelledby="modalNovaTitulo">
+      <h2 id="modalNovaTitulo">Nova galeria</h2>
+      <form id="formNovaGaleria">
+        <div class="ks-field">
+          <label for="ng_nome_projeto">Nome do projeto</label>
+          <input id="ng_nome_projeto" name="nome_projeto" required autocomplete="off" placeholder="Ex.: Casamento Ana e Bruno" />
+        </div>
+        <div class="ks-field">
+          <label for="ng_categoria">Categoria</label>
+          <input id="ng_categoria" name="categoria" autocomplete="off" placeholder="Ex.: Casamento, Evento corporativo…" />
+        </div>
+        <div class="ks-field">
+          <label for="ng_cliente_nome">Nome do cliente / contato</label>
+          <input id="ng_cliente_nome" name="cliente_nome" autocomplete="name" placeholder="Nome da pessoa" />
+        </div>
+        <div class="ks-field">
+          <label>Data do trabalho</label>
+          <div id="ng_data_trabalho" class="ks-data-readonly"></div>
+          <p class="ks-hint-small">Preenchida automaticamente com a data de hoje ao criar.</p>
+        </div>
+        <div class="ks-field">
+          <label for="ng_access_type">Tipo de acesso</label>
+          <select id="ng_access_type" name="access_type">
+            <option value="private">Privado (e-mail e senha do cliente)</option>
+            <option value="signup">Visitante pode se cadastrar</option>
+            <option value="public">Público (sem login)</option>
+          </select>
+          <p class="ks-hint-small" id="ng_access_hint"></p>
+        </div>
+        <div class="ks-row2" id="ng_cred_wrap">
+          <div class="ks-field">
+            <label for="ng_cliente_email">E-mail do cliente</label>
+            <input id="ng_cliente_email" type="email" name="cliente_email" autocomplete="email" placeholder="cliente@email.com" />
+          </div>
+          <div class="ks-field">
+            <label for="ng_senha">Senha do cliente</label>
+            <input id="ng_senha" type="password" name="senha" autocomplete="new-password" placeholder="Crie uma senha" />
+          </div>
+        </div>
+        <div class="ks-row2">
+          <div class="ks-field">
+            <label for="ng_limite">Limite de seleção (0 = livre)</label>
+            <input id="ng_limite" type="number" name="total_fotos_contratadas" min="0" value="0" />
+          </div>
+          <div class="ks-field">
+            <label for="ng_min_sel">Seleção mínima (0 = livre)</label>
+            <input id="ng_min_sel" type="number" name="min_selections" min="0" value="0" />
+          </div>
+        </div>
+        <p class="ks-hint-small" style="margin-top:-8px;margin-bottom:12px;">Se o mínimo ainda não existir no banco, o sistema trata como livre.</p>
+        <div class="ks-field">
+          <label class="ks-check">
+            <input type="checkbox" id="ng_watermark" name="use_watermark" checked />
+            Aplicar marca d’água nas fotos desta galeria
+          </label>
+        </div>
+        <div class="ks-modal-actions">
+          <button type="button" class="btn btn-secondary" id="ng_cancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Criar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script>
     (function() {
@@ -153,8 +302,19 @@
         return galleries.filter(function(g) {
           return (g.nome_projeto && g.nome_projeto.toLowerCase().indexOf(q) >= 0) ||
                  (g.slug && g.slug.toLowerCase().indexOf(q) >= 0) ||
-                 (g.cliente_email && g.cliente_email.toLowerCase().indexOf(q) >= 0);
+                 (g.cliente_email && g.cliente_email.toLowerCase().indexOf(q) >= 0) ||
+                 (g.cliente_nome && String(g.cliente_nome).toLowerCase().indexOf(q) >= 0) ||
+                 (g.categoria && String(g.categoria).toLowerCase().indexOf(q) >= 0);
         });
+      }
+
+      function accessLabel(g) {
+        var m = (g.access_mode || 'private').toLowerCase();
+        if (m === 'password') m = 'signup';
+        var self = g.allow_self_signup;
+        if (m === 'public') return 'Público';
+        if (self || m === 'signup') return 'Cadastro visitante';
+        return 'Privado';
       }
 
       function render(galleries) {
@@ -184,7 +344,12 @@
               html += '<span class="card-trash" data-gallery-id="' + g.id + '" title="Excluir"><i class="fas fa-trash-alt"></i></span>';
               html += '<div class="card-name">' + (g.nome_projeto || 'Sem nome') + '</div>';
               html += '<div class="card-meta">slug: ' + (g.slug || '-') + '</div>';
-              html += '<div class="card-meta">cliente: ' + (g.cliente_email || '-') + '</div>';
+              if (g.categoria) html += '<div class="card-meta">categoria: ' + String(g.categoria).replace(/</g, '&lt;') + '</div>';
+              if (g.data_trabalho) html += '<div class="card-meta">trabalho: ' + String(g.data_trabalho) + '</div>';
+              html += '<div class="card-meta">acesso: ' + accessLabel(g) + '</div>';
+              var nomeC = g.cliente_nome ? String(g.cliente_nome).replace(/</g, '&lt;') : '';
+              if (nomeC) html += '<div class="card-meta">nome: ' + nomeC + '</div>';
+              html += '<div class="card-meta">e-mail: ' + (g.cliente_email || '-') + '</div>';
               html += '<div class="card-stats">' + selected + ' selecionadas · ' + photos + ' fotos</div>';
               html += '</div>';
             });
@@ -243,6 +408,117 @@
       document.getElementById('search').addEventListener('keyup', function() {
         if (window._lastGalleries) render(window._lastGalleries);
       });
+
+      function formatTodayBR() {
+        var d = new Date();
+        var dd = String(d.getDate()).padStart(2, '0');
+        var mm = String(d.getMonth() + 1).padStart(2, '0');
+        var yyyy = d.getFullYear();
+        return dd + '/' + mm + '/' + yyyy + ' (gravada no servidor ao criar)';
+      }
+
+      function setAccessUi() {
+        var sel = document.getElementById('ng_access_type');
+        var wrap = document.getElementById('ng_cred_wrap');
+        var em = document.getElementById('ng_cliente_email');
+        var pw = document.getElementById('ng_senha');
+        var hint = document.getElementById('ng_access_hint');
+        if (!sel || !wrap) return;
+        var v = sel.value;
+        if (v === 'private') {
+          wrap.style.display = '';
+          em.required = true;
+          pw.required = true;
+          hint.textContent = 'Somente quem tiver e-mail e senha acessa a seleção.';
+        } else {
+          wrap.style.display = 'none';
+          em.required = false;
+          pw.required = false;
+          em.value = '';
+          pw.value = '';
+          hint.textContent = v === 'public'
+            ? 'Qualquer pessoa com o link vê a galeria pública; não é necessário cadastro.'
+            : 'Visitantes criam o próprio acesso na tela de login da galeria.';
+        }
+      }
+
+      (function modalNova() {
+        var overlay = document.getElementById('modalNova');
+        var form = document.getElementById('formNovaGaleria');
+        var dataEl = document.getElementById('ng_data_trabalho');
+        var btnCancel = document.getElementById('ng_cancel');
+        var accessSel = document.getElementById('ng_access_type');
+        document.getElementById('btnVoltar').addEventListener('click', function(e) {
+          e.preventDefault();
+          if (window.history.length > 1) window.history.back();
+          else window.close();
+        });
+        document.getElementById('btnNova').addEventListener('click', function(e) {
+          e.preventDefault();
+          if (!profileItemId || !token) {
+            showErr(!token ? 'Faça login ou informe token na URL.' : 'Informe itemid na URL.');
+            return;
+          }
+          if (dataEl) dataEl.textContent = formatTodayBR();
+          if (form) form.reset();
+          if (document.getElementById('ng_watermark')) document.getElementById('ng_watermark').checked = true;
+          if (document.getElementById('ng_limite')) document.getElementById('ng_limite').value = '0';
+          if (document.getElementById('ng_min_sel')) document.getElementById('ng_min_sel').value = '0';
+          if (accessSel) accessSel.value = 'private';
+          setAccessUi();
+          overlay.classList.add('open');
+          overlay.setAttribute('aria-hidden', 'false');
+        });
+        function fechar() {
+          overlay.classList.remove('open');
+          overlay.setAttribute('aria-hidden', 'true');
+        }
+        btnCancel.addEventListener('click', fechar);
+        overlay.addEventListener('click', function(ev) { if (ev.target === overlay) fechar(); });
+        if (accessSel) accessSel.addEventListener('change', setAccessUi);
+        form.addEventListener('submit', function(ev) {
+          ev.preventDefault();
+          if (!token || !profileItemId) return;
+          var fd = new FormData(form);
+          var accessType = fd.get('access_type') || 'private';
+          var payload = {
+            profileItemId: parseInt(profileItemId, 10),
+            nome_projeto: (fd.get('nome_projeto') || '').toString().trim(),
+            access_type: accessType,
+            categoria: (fd.get('categoria') || '').toString().trim() || undefined,
+            cliente_nome: (fd.get('cliente_nome') || '').toString().trim() || undefined,
+            total_fotos_contratadas: parseInt(fd.get('total_fotos_contratadas') || '0', 10) || 0,
+            min_selections: parseInt(fd.get('min_selections') || '0', 10) || 0,
+            use_watermark: document.getElementById('ng_watermark').checked
+          };
+          if (accessType === 'private') {
+            payload.cliente_email = (fd.get('cliente_email') || '').toString().trim();
+            payload.senha = (fd.get('senha') || '').toString();
+          }
+          fetch(apiBase + '/galleries', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify(payload)
+          })
+            .then(function(r) {
+              return r.json().then(function(data) {
+                if (!r.ok) throw new Error(data.message || 'Erro ao criar galeria');
+                return data;
+              });
+            })
+            .then(function(data) {
+              fechar();
+              var msg = 'Galeria criada.';
+              if (data.client_password) msg += ' Senha do cliente: ' + data.client_password;
+              if (data.access_type === 'public') msg += ' Modo público — sem e-mail/senha de cliente.';
+              if (data.access_type === 'signup') msg += ' Modo cadastro de visitante habilitado.';
+              showErr('');
+              alert(msg);
+              load();
+            })
+            .catch(function(e) { showErr(e.message || 'Erro ao criar.'); });
+        });
+      })();
 
       load();
     })();
