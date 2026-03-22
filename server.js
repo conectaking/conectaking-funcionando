@@ -84,11 +84,11 @@ const app = express();
 // Configurar trust proxy para funcionar corretamente atrás do proxy do Render
 app.set('trust proxy', true);
 
-// Health check na raiz (ANTES de qualquer outro middleware/rota, para nunca devolver 404 de perfil)
-app.get('/health', (req, res, next) => Promise.resolve(healthHandler(req, res)).catch(next));
-
-// CORS antes do Helmet: garante preflight OPTIONS com Access-Control-* (evita falha no browser em conectaking.com.br → API Render)
+// CORS antes de /health: Live Server (5500) → API local (5000) precisa de Access-Control-Allow-Origin no warm-up
 app.use(cors(config.cors));
+
+// Health check na raiz (após CORS; mantém resposta simples para load balancers)
+app.get('/health', (req, res, next) => Promise.resolve(healthHandler(req, res)).catch(next));
 
 app.use(helmet({
     contentSecurityPolicy: {
@@ -402,7 +402,11 @@ app.get('/api/public-api-url', (req, res) => {
 app.get('/api-config.js', (req, res) => {
     res.set('Content-Type', 'application/javascript; charset=utf-8');
     res.set('Cache-Control', 'public, max-age=300');
-    const base = JSON.stringify(PUBLIC_API_BASE);
+    // Base desta instância (ex.: http://127.0.0.1:5000) para o fetch patch não forçar Render em dev
+    const proto = (req.get('x-forwarded-proto') || req.protocol || 'http').toString().split(',')[0].trim();
+    const host = (req.get('x-forwarded-host') || req.get('host') || `localhost:${config.port}`).toString().split(',')[0].trim();
+    const selfBase = `${proto}://${host}`.replace(/\/$/, '');
+    const base = JSON.stringify(selfBase);
     res.send(
 `window.CONECTAKING_API_BASE = ${base};
 window.API_BASE = window.API_BASE || ${base};
