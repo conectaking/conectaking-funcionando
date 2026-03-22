@@ -4493,7 +4493,12 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
 }));
 
 // ----- Modo sob demanda: CompareFaces + cache (não processar 2k fotos; cobra só quando o cliente envia a foto) -----
-// Ativo por padrão. Use REKOG_ON_DEMAND=0 ou false para voltar ao fluxo antigo (processar todas as fotos + collection).
+/**
+ * true  (padrão): não indexa a galeria na collection; na hora da busca usa CompareFaces foto a foto → demora em galerias grandes.
+ * false: modo “tipo Album”: selfie do cliente vai para a collection (IndexFaces); cada foto da galeria é processada uma vez
+ * (DetectFaces + SearchFaces na collection); o visitante só lê matches no Postgres — busca rápida.
+ * Em produção, para UX como outras plataformas: REKOG_ON_DEMAND=0 no Render (e S3 staging + credenciais AWS).
+ */
 function useRekogOnDemand() {
   const v = String(process.env.REKOG_ON_DEMAND || '1').toLowerCase();
   return v !== '0' && v !== 'false';
@@ -4972,9 +4977,12 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
       );
     }
 
+    scheduleFullGalleryReprocessAfterClientEnroll(galleryId);
+
     res.json({
       success: true,
-      message: 'Rosto cadastrado com sucesso! Suas fotos serão identificadas em breve.',
+      message:
+        'Rosto cadastrado com sucesso! Estamos atualizando as fotos da galeria em segundo plano — em alguns minutos use “Só filtrar (cache)” ou atualize a página.',
       faceCount: faceRecords.length
     });
   } finally {
@@ -6084,6 +6092,99 @@ async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }
 }
 
 /**
+ * Processa uma lista de fotos (Rekognition + DB). Usado em process-all-faces e após novo enroll na collection.
+ */
+async function runGalleryPhotosThroughRekognition(galleryId, photos, concurrency) {
+  const conc = Math.min(5, Math.max(1, concurrency || 3));
+  let processed = 0;
+  let errors = 0;
+  const totalPhotos = photos.length;
+  for (let i = 0; i < photos.length; i += conc) {
+    const batch = photos.slice(i, i + conc);
+    const results = await Promise.allSettled(
+      batch.map(async (photo) => {
+        const r2Key = extractR2Key(photo.file_path);
+        const batchClient = await db.pool.connect();
+        try {
+          if (!r2Key || !r2Key.startsWith('galleries/')) {
+            await batchClient.query(
+              `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status, processed_at, error_message)
+               VALUES ($1, $2, '', 'error', NOW(), $3)
+               ON CONFLICT (gallery_id, photo_id) DO UPDATE SET
+                 process_status = 'error', processed_at = NOW(), error_message = $3`,
+              [galleryId, photo.id, 'file_path sem chave R2 válida (galleries/...).']
+            );
+            return;
+          }
+          try {
+            await _processPhotoFaces({ pgClient: batchClient, galleryId, photoId: photo.id, r2Key, photo });
+          } catch (err) {
+            await batchClient.query(
+              `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status, processed_at, error_message)
+               VALUES ($1, $2, $3, 'error', NOW(), $4)
+               ON CONFLICT (gallery_id, photo_id) DO UPDATE SET
+                 process_status = 'error', processed_at = NOW(), error_message = $4`,
+              [galleryId, photo.id, r2Key, String(err?.message || err).slice(0, 500)]
+            );
+            throw err;
+          }
+        } finally {
+          batchClient.release();
+        }
+      })
+    );
+    for (const r of results) {
+      if (r.status === 'fulfilled') processed += 1;
+      else errors += 1;
+    }
+    if (i % (conc * 10) === 0) {
+      console.log(`[FACIAL-BATCH] Galeria ${galleryId}: ${processed}/${totalPhotos} processadas.`);
+    }
+  }
+  return { processed, errors, totalPhotos };
+}
+
+/**
+ * Novo rosto entrou na collection → revarrer todas as fotos para popular rekognition_face_matches (busca instantânea para o cliente).
+ * Só faz sentido com REKOG_ON_DEMAND=0 (IndexFaces no enroll).
+ */
+function scheduleFullGalleryReprocessAfterClientEnroll(galleryId) {
+  if (!galleryId) return;
+  setImmediate(async () => {
+    try {
+      const stagingCfg = getStagingConfig();
+      const rekogCfg = getRekogConfig();
+      if (!stagingCfg.enabled || !rekogCfg.enabled) return;
+
+      const client = await db.pool.connect();
+      let photos;
+      try {
+        photos = (
+          await client.query('SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id', [galleryId])
+        ).rows;
+      } finally {
+        client.release();
+      }
+      if (!photos.length) return;
+
+      const concurrency = Math.min(
+        5,
+        Math.max(1, parseInt(process.env.REKOG_GALLERY_REPROCESS_CONCURRENCY || '3', 10) || 3)
+      );
+      console.log(
+        `[FACIAL-AFTER-ENROLL] Reprocessando ${photos.length} foto(s) da galeria ${galleryId} (novo rosto na collection).`
+      );
+      const out = await runGalleryPhotosThroughRekognition(galleryId, photos, concurrency);
+      console.log(
+        `[FACIAL-AFTER-ENROLL] Fim galeria ${galleryId}. Ciclos OK: ${out.processed}, falhas: ${out.errors}.`
+      );
+    } catch (e) {
+      console.error('[FACIAL-AFTER-ENROLL]', e?.message || e);
+    }
+  });
+}
+
+/**
  * Agenda processamento facial em segundo plano para fotos recém-adicionadas.
  * Só roda se a galeria tiver face_recognition_enabled e Rekognition/S3 staging estiverem configurados.
  * Não bloqueia a resposta HTTP.
@@ -6510,44 +6611,11 @@ router.post('/galleries/:galleryId/process-all-faces', protectUser, asyncHandler
     // Processar em background (evita timeout HTTP)
     (async () => {
       console.log(`[FACIAL-BATCH] Iniciando processamento de ${totalPhotos} fotos para galeria ${galleryId}...`);
-      let processed = 0, errors = 0;
-      for (let i = 0; i < photos.length; i += concurrency) {
-        const batch = photos.slice(i, i + concurrency);
-        const results = await Promise.allSettled(
-          batch.map(async (photo) => {
-            const r2Key = extractR2Key(photo.file_path);
-            const batchClient = await db.pool.connect();
-            try {
-              if (!r2Key || !r2Key.startsWith('galleries/')) {
-                await batchClient.query(
-                  `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status, processed_at, error_message)
-                   VALUES ($1, $2, '', 'error', NOW(), $3)
-                   ON CONFLICT (gallery_id, photo_id) DO UPDATE SET
-                     process_status = 'error', processed_at = NOW(), error_message = $3`,
-                  [galleryId, photo.id, 'file_path sem chave R2 válida (galleries/...).']
-                );
-                return;
-              }
-              try {
-                await _processPhotoFaces({ pgClient: batchClient, galleryId, photoId: photo.id, r2Key, photo });
-              } catch (err) {
-                await batchClient.query(
-                  `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status, processed_at, error_message)
-                   VALUES ($1, $2, $3, 'error', NOW(), $4)
-                   ON CONFLICT (gallery_id, photo_id) DO UPDATE SET
-                     process_status = 'error', processed_at = NOW(), error_message = $4`,
-                  [galleryId, photo.id, r2Key, String(err?.message || err).slice(0, 500)]
-                );
-                throw err;
-              }
-            } finally { batchClient.release(); }
-          })
-        );
-        for (const r of results) { if (r.status === 'fulfilled') processed++; else errors++; }
-        if (i % (concurrency * 10) === 0) console.log(`[FACIAL-BATCH] Galeria ${galleryId}: ${processed}/${totalPhotos} processadas.`);
-      }
-      console.log(`[FACIAL-BATCH] Fim galeria ${galleryId}. Processadas: ${processed}, Erros: ${errors}.`);
-    })().catch(err => console.error(`[FACIAL-BATCH-ERR] Galeria ${galleryId}:`, err));
+      const out = await runGalleryPhotosThroughRekognition(galleryId, photos, concurrency);
+      console.log(
+        `[FACIAL-BATCH] Fim galeria ${galleryId}. Ciclos OK: ${out.processed}, falhas: ${out.errors}.`
+      );
+    })().catch((err) => console.error(`[FACIAL-BATCH-ERR] Galeria ${galleryId}:`, err));
 
     return res.json({
       success: true,
