@@ -423,16 +423,58 @@ function invalidateSchemaColumnCache(tableName, columnName) {
   _schemaCache.columns.delete(`${tableName}.${columnName}`);
 }
 
-/** JWT com clientId ou galeria com exatamente um visitante ativo (legado). */
+/**
+ * Galeria sem nenhum king_gallery_clients (ex.: sem cliente_email no backfill 153):
+ * cria uma ficha interna só para amarrar enroll/cache de rosto (FK em rekognition_*).
+ */
+async function ensureDefaultKingGalleryClientForFace(pgClient, galleryId) {
+  const email = `__ks_face_default_${galleryId}@internal.king`;
+  const existing = await pgClient.query(
+    'SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND lower(email)=lower($2) LIMIT 1',
+    [galleryId, email]
+  );
+  if (existing.rows.length) return parseInt(existing.rows[0].id, 10);
+  const ph = crypto.randomBytes(16).toString('hex');
+  try {
+    const ins = await pgClient.query(
+      `INSERT INTO king_gallery_clients (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, created_at, updated_at)
+       VALUES ($1, $2, $3, NULL, $4, NULL, TRUE, NOW(), NOW()) RETURNING id`,
+      [galleryId, 'Acesso galeria (reconhecimento)', email, ph]
+    );
+    return parseInt(ins.rows[0].id, 10);
+  } catch (e) {
+    if (e.code === '23505') {
+      const again = await pgClient.query(
+        'SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND lower(email)=lower($2) LIMIT 1',
+        [galleryId, email]
+      );
+      if (again.rows.length) return parseInt(again.rows[0].id, 10);
+    }
+    throw e;
+  }
+}
+
+function isTechnicalFaceGalleryClientEmail(email) {
+  return String(email || '').toLowerCase().startsWith('__ks_face_default_');
+}
+
+/** JWT com clientId, ou um único visitante “real”, ou só ficha técnica de rosto / galeria vazia. Várias fichas reais sem JWT → null. */
 async function resolveFaceClientIdForSession(pgClient, galleryId, jwtCid) {
   const cid = parseInt(jwtCid, 10);
   if (Number.isFinite(cid) && cid > 0) return cid;
   if (!(await hasTable(pgClient, 'king_gallery_clients'))) return null;
   const cr = await pgClient.query(
-    `SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND (enabled IS DISTINCT FROM false) ORDER BY id ASC`,
+    `SELECT id, email FROM king_gallery_clients WHERE gallery_id=$1 AND (enabled IS DISTINCT FROM false) ORDER BY id ASC`,
     [galleryId]
   );
-  if (cr.rows.length === 1) return parseInt(cr.rows[0].id, 10);
+  const realRows = cr.rows.filter((r) => !isTechnicalFaceGalleryClientEmail(r.email));
+  if (realRows.length === 1) return parseInt(realRows[0].id, 10);
+  if (realRows.length === 0 && cr.rows.length === 1 && isTechnicalFaceGalleryClientEmail(cr.rows[0].email)) {
+    return parseInt(cr.rows[0].id, 10);
+  }
+  if (realRows.length === 0 && cr.rows.length === 0) {
+    return await ensureDefaultKingGalleryClientForFace(pgClient, galleryId);
+  }
   return null;
 }
 
@@ -2872,6 +2914,23 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
 
     invalidateSchemaColumnCache('king_galleries', 'face_recognition_enabled');
     invalidateSchemaColumnCache('king_galleries', 'client_image_quality');
+
+    if (Object.prototype.hasOwnProperty.call(body, 'face_recognition_enabled')) {
+      const ok = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
+      if (!ok) {
+        return res.status(503).json({
+          message: 'O banco não tem a coluna face_recognition_enabled. Execute a migration 182 no Postgres (rekognition).'
+        });
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'client_image_quality')) {
+      const ok = await hasColumn(client, 'king_galleries', 'client_image_quality');
+      if (!ok) {
+        return res.status(503).json({
+          message: 'O banco não tem client_image_quality. Execute a migration 205 no Postgres.'
+        });
+      }
+    }
 
     // Se o watermark_path for alterado/removido, deletar o antigo no Cloudflare (evita órfãos).
     const hasWmPathCol = await hasColumn(client, 'king_galleries', 'watermark_path');
@@ -6209,7 +6268,8 @@ facialRouter.get('/status', protectUser, asyncHandler(async (req, res) => {
       errorPhotos,
       pendingPhotos,
       totalFaces,
-      enrolledClients
+      enrolledClients,
+      rekogOnDemand: useRekogOnDemand()
     });
   } finally { client.release(); }
 }));
