@@ -91,6 +91,18 @@ function defaultOgImageUrl() {
   return ensureHttpsUrl(process.env.FAVICON_URL || 'https://i.ibb.co/60sW9k75/logo.png');
 }
 
+/**
+ * Imagem OG servida pela própria API (JPEG 1200×630, capa do projeto).
+ * WhatsApp/Facebook conseguem ir buscar ao Render mesmo quando R2/imagedelivery falham no crawler.
+ */
+function ogImageUrlForGallerySlug(slug) {
+  const s = String(slug || '').trim();
+  if (!s) return null;
+  const base = String(process.env.API_URL || config.urls?.api || '').replace(/\/$/, '');
+  if (!base) return null;
+  return `${base}/api/king-selection/public/og-image?slug=${encodeURIComponent(s)}`;
+}
+
 function normalizeShareHost(h) {
   if (!h) return '';
   const s = String(h).trim().replace(/^https?:\/\//i, '');
@@ -113,11 +125,12 @@ function buildShareMetaPayload(ogRow, hostnameForCanonical, slugRequested) {
       canonicalUrl: canonical
     };
   }
+  const ogFromApi = ogImageUrlForGallerySlug(ogRow.slug);
   return {
     success: true,
     ogTitle: `${ogRow.title} — King Selection`,
     ogDescription: `Galeria de fotos: ${ogRow.title}. Entre para ver e selecionar as imagens.`,
-    ogImage: ogRow.imageUrl || defaultImg,
+    ogImage: ogFromApi || ensureHttpsUrl(ogRow.imageUrl) || defaultImg,
     slug: ogRow.slug,
     canonicalUrl: canonical
   };
@@ -128,5 +141,6 @@ module.exports = {
   kingPhotoFilePathToPublicUrl,
   ensureHttpsUrl,
   defaultOgImageUrl,
+  ogImageUrlForGallerySlug,
   buildShareMetaPayload
 };

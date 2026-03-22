@@ -25,7 +25,7 @@ const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const config = require('./config');
-const { fetchKingSelectionOgData, ensureHttpsUrl, defaultOgImageUrl } = require('./utils/kingSelectionOg');
+const { fetchKingSelectionOgData, ensureHttpsUrl, defaultOgImageUrl, ogImageUrlForGallerySlug } = require('./utils/kingSelectionOg');
 const logger = require('./utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
 const { spawn } = require('child_process');
@@ -503,7 +503,7 @@ async function serveKingSelectionClienteGallery(req, res, next) {
             ogTitle = `${og.title} — King Selection`;
             pageTitle = ogTitle;
             ogDesc = `Galeria de fotos: ${og.title}. Entre para ver e selecionar as imagens.`;
-            if (og.imageUrl) ogImage = og.imageUrl;
+            ogImage = ogImageUrlForGallerySlug(og.slug) || ensureHttpsUrl(og.imageUrl) || defaultOgImage;
         }
         const protoHdr = (req.headers['x-forwarded-proto'] || req.protocol || 'https').toString();
         const proto = protoHdr.split(',')[0].trim().split(/\s+/)[0] || 'https';

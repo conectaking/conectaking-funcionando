@@ -4569,8 +4569,8 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows) {
   );
   const photos = photoRows;
   const concurrency = Math.min(
-    72,
-    Math.max(6, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '48'), 10) || 48)
+    96,
+    Math.max(8, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '64'), 10) || 64)
   );
   const threshold = getRekogConfig().faceMatchThreshold || 80;
   const matchedIds = [];
@@ -4657,7 +4657,7 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
        */
       const chunked = String(req.query.chunked || '') === '1' || String(req.query.chunked || '').toLowerCase() === 'true';
       if (chunked) {
-        const batch = Math.min(100, Math.max(8, parseInt(req.query.photoBatch || '22', 10) || 22));
+        const batch = Math.min(120, Math.max(12, parseInt(req.query.photoBatch || '96', 10) || 96));
         const skip = Math.max(0, parseInt(req.query.photoSkip || '0', 10) || 0);
         const cntRes = await client.query('SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id=$1', [galleryId]);
         const totalGallery = parseInt(cntRes.rows[0]?.c, 10) || 0;
