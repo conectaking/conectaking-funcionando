@@ -23,10 +23,11 @@ RewriteCond %{THE_REQUEST} \s/+(.+?)\.html[\s?] [NC]
 RewriteRule ^ %1 [R=301,L]
 
 # 2. King Selection (evitar que /kingSelection vire kingSelection.html inexistente → 404)
-#    Com slug: galeria do cliente. Sem slug: painel fotógrafo (kingSelectionEdit.html).
+#    Com slug: PHP injeta Open Graph (capa WhatsApp) e envia o mesmo HTML que kingSelectionCliente.html.
+#    Requer PHP. Sem PHP, volte a kingSelectionCliente.html
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^kingSelection/([^/]+)/?$ kingSelectionCliente.html [L,NC,QSA]
+RewriteRule ^kingSelection/([^/]+)/?$ kingSelectionGallery.php?ks_slug=$1 [L,NC,QSA]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^kingSelection/?$ kingSelectionEdit.html [L,QSA,NC]
