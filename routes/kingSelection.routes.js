@@ -4535,53 +4535,63 @@ async function getReferenceImageBytes(pgClient, galleryId, clientId) {
   return null;
 }
 
+/**
+ * Pool contínuo: mantém N comparações em voo (R2 + Sharp + Rekognition em paralelo),
+ * em vez de lotes que só avançam quando os N terminam todos.
+ */
 async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient) {
   let sourceNorm;
   try {
-    sourceNorm = await normalizeImageForRekognition(sourceImageBytes);
+    sourceNorm = await normalizeImageForRekognition(sourceImageBytes, 2048, { fast: true, quality: 82 });
   } catch (_) {
     sourceNorm = sourceImageBytes;
   }
-  /** Lado longo máx. da foto da galeria enviada ao CompareFaces — menor = menos bytes e menos tempo na AWS (default 1024). */
+  /** Lado longo máx. na galeria para CompareFaces — menor = mais rápido (default 720). */
   const compareMaxPx = Math.min(
     2048,
-    Math.max(480, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_MAX_PX || '1024'), 10) || 1024)
+    Math.max(400, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_MAX_PX || '720'), 10) || 720)
   );
   const photosRes = await pgClient.query(
     'SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id',
     [galleryId]
   );
   const photos = photosRes.rows;
-  const matchedIds = [];
   const concurrency = Math.min(
-    40,
-    Math.max(4, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '24'), 10) || 24)
+    72,
+    Math.max(6, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '48'), 10) || 48)
   );
   const threshold = getRekogConfig().faceMatchThreshold || 80;
-  for (let i = 0; i < photos.length; i += concurrency) {
-    const batch = photos.slice(i, i + concurrency);
-    const results = await Promise.allSettled(
-      batch.map(async (p) => {
+  const matchedIds = [];
+  let pi = 0;
+  function nextPhoto() {
+    if (pi >= photos.length) return null;
+    return photos[pi++];
+  }
+  async function worker() {
+    for (;;) {
+      const p = nextPhoto();
+      if (!p) return;
+      try {
         const buf = await fetchPhotoFileBufferFromFilePath(p.file_path);
-        if (!buf || buf.length === 0) return null;
+        if (!buf || buf.length === 0) continue;
         let targetBuf;
         try {
-          targetBuf = await normalizeImageForRekognition(buf, compareMaxPx);
+          targetBuf = await normalizeImageForRekognition(buf, compareMaxPx, { fast: true, quality: 74 });
         } catch (_) {
           targetBuf = buf;
         }
         const out = await compareFaces(sourceNorm, targetBuf);
         const matches = out.FaceMatches || [];
         if (matches.length > 0 && (matches[0].Similarity || 0) >= threshold) {
-          return p.id;
+          matchedIds.push(p.id);
         }
-        return null;
-      })
-    );
-    for (const r of results) {
-      if (r.status === 'fulfilled' && r.value) matchedIds.push(r.value);
+      } catch (_) {
+        /* foto inválida / Rekognition / rede — ignora e continua */
+      }
     }
   }
+  const nWorkers = Math.min(concurrency, Math.max(1, photos.length));
+  await Promise.all(Array.from({ length: nWorkers }, () => worker()));
   return matchedIds;
 }
 

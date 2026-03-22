@@ -43,15 +43,31 @@ async function cropFace(imageBuffer, boundingBox, margin = 0.05) {
 /**
  * Redimensiona imagem para tamanho máximo (para não exceder limite do Rekognition).
  * Rekognition aceita até 15MB e 4096px. Opcional antes de subir para staging.
+ * @param {Buffer} imageBuffer
+ * @param {number} [maxDimension=2048]
+ * @param {{ fast?: boolean, quality?: number }} [opts] — fast: JPEG mais leve + fastShrinkOnLoad (CompareFaces em massa).
  */
-async function normalizeImageForRekognition(imageBuffer, maxDimension = 2048) {
-  const meta = await sharp(imageBuffer).metadata();
+async function normalizeImageForRekognition(imageBuffer, maxDimension = 2048, opts = {}) {
+  const fast = !!opts.fast;
+  const quality = opts.quality != null ? opts.quality : fast ? 76 : 88;
+  const meta = await sharp(imageBuffer, { failOn: 'none' }).metadata();
   const w = meta.width || 0;
   const h = meta.height || 0;
-  if (w <= maxDimension && h <= maxDimension) return imageBuffer;
-  return sharp(imageBuffer)
-    .resize(maxDimension, maxDimension, { fit: 'inside', withoutEnlargement: true })
-    .jpeg({ quality: 88 })
+  if (w <= maxDimension && h <= maxDimension && !fast) return imageBuffer;
+  if (w <= maxDimension && h <= maxDimension && fast) {
+    return sharp(imageBuffer, { failOn: 'none' })
+      .rotate()
+      .jpeg({ quality, mozjpeg: true })
+      .toBuffer();
+  }
+  return sharp(imageBuffer, { failOn: 'none' })
+    .rotate()
+    .resize(maxDimension, maxDimension, {
+      fit: 'inside',
+      withoutEnlargement: true,
+      fastShrinkOnLoad: fast
+    })
+    .jpeg({ quality, mozjpeg: fast })
     .toBuffer();
 }
 
