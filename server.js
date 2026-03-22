@@ -25,7 +25,7 @@ const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const config = require('./config');
-const { r2PublicUrl } = require('./utils/r2');
+const { fetchKingSelectionOgData, ensureHttpsUrl, defaultOgImageUrl } = require('./utils/kingSelectionOg');
 const logger = require('./utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
 const { spawn } = require('child_process');
@@ -482,88 +482,6 @@ function escHtmlAttr(s) {
         .replace(/</g, '&lt;');
 }
 
-function getCfAccountHashForOg() {
-    const h =
-        (config.cloudflare && String(config.cloudflare.accountHash || '').trim()) ||
-        String(process.env.CF_IMAGES_ACCOUNT_HASH || '').trim() ||
-        String(process.env.CLOUDFLARE_ACCOUNT_HASH || '').trim();
-    return h || null;
-}
-
-function kingPhotoFilePathToPublicUrl(filePath) {
-    const fp = String(filePath || '').trim();
-    if (!fp) return null;
-    const low = fp.toLowerCase();
-    if (low.startsWith('cfimage:')) {
-        const id = fp.slice('cfimage:'.length).trim();
-        const hash = getCfAccountHashForOg();
-        if (!id || !hash) return null;
-        return `https://imagedelivery.net/${hash}/${id}/public`;
-    }
-    if (low.startsWith('r2:')) {
-        const key = fp.slice(3).trim().replace(/^\/+/, '');
-        return r2PublicUrl(key);
-    }
-    if (low.startsWith('http://') || low.startsWith('https://')) return fp;
-    const galleriesPath = fp.replace(/^\/+/, '');
-    if (galleriesPath.startsWith('galleries/')) return r2PublicUrl(galleriesPath);
-    const m = fp.match(/galleries\/[^\s"']+/i);
-    if (m) return r2PublicUrl(m[0]);
-    return null;
-}
-
-function ensureHttpsUrl(u) {
-    if (!u) return u;
-    return String(u).replace(/^http:\/\//i, 'https://');
-}
-
-async function fetchKingSelectionOgData(slug) {
-    const pool = db.pool;
-    if (!pool) return null;
-    const client = await pool.connect();
-    try {
-        const gRes = await client.query(
-            'SELECT id, nome_projeto, slug FROM king_galleries WHERE lower(trim(slug)) = lower(trim($1)) LIMIT 1',
-            [String(slug).trim()]
-        );
-        if (!gRes.rows.length) return null;
-        const g = gRes.rows[0];
-        let pRow = null;
-        const qCover = `
-      SELECT id, file_path FROM king_photos
-      WHERE gallery_id = $1 AND file_path IS NOT NULL AND trim(file_path) <> ''
-      ORDER BY is_cover DESC NULLS LAST, "order" ASC, id ASC
-      LIMIT 1`;
-        try {
-            const pRes = await client.query(qCover, [g.id]);
-            pRow = pRes.rows[0] || null;
-        } catch (e) {
-            if (e.code !== '42703') throw e;
-            const pRes = await client.query(
-                `SELECT id, file_path FROM king_photos
-         WHERE gallery_id = $1 AND file_path IS NOT NULL AND trim(file_path) <> ''
-         ORDER BY "order" ASC, id ASC
-         LIMIT 1`,
-                [g.id]
-            );
-            pRow = pRes.rows[0] || null;
-        }
-        let imageUrl = pRow ? kingPhotoFilePathToPublicUrl(pRow.file_path) : null;
-        if (imageUrl && pRow && pRow.id) {
-            const sep = imageUrl.includes('?') ? '&' : '?';
-            imageUrl = `${imageUrl}${sep}v=${encodeURIComponent(String(pRow.id))}`;
-        }
-        imageUrl = ensureHttpsUrl(imageUrl);
-        return {
-            title: String(g.nome_projeto || g.slug || 'Galeria').trim() || 'Galeria',
-            slug: g.slug,
-            imageUrl
-        };
-    } finally {
-        client.release();
-    }
-}
-
 async function serveKingSelectionClienteGallery(req, res, next) {
     const slug = req.params.slug;
     if (!slug || KING_SELECTION_CLIENTE_RESERVED_SLUGS.has(String(slug).toLowerCase())) {
@@ -572,15 +490,15 @@ async function serveKingSelectionClienteGallery(req, res, next) {
     const tpl = loadKingSelectionClienteHtmlTemplate();
     if (!tpl) return next();
 
-    const defaultOgImage = process.env.FAVICON_URL || 'https://i.ibb.co/60sW9k75/logo.png';
+    const defaultOgImage = defaultOgImageUrl();
     let pageTitle = 'King Selection — Galeria';
     let ogTitle = pageTitle;
     let ogDesc = 'Aceda à sua galeria King Selection e selecione as suas fotografias.';
-    let ogImage = ensureHttpsUrl(defaultOgImage);
+    let ogImage = defaultOgImage;
     let canonical = '';
 
     try {
-        const og = await fetchKingSelectionOgData(slug);
+        const og = await fetchKingSelectionOgData(db.pool, slug);
         if (og) {
             ogTitle = `${og.title} — King Selection`;
             pageTitle = ogTitle;

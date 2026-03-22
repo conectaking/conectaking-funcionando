@@ -16,6 +16,7 @@ const { getR2Config, r2PublicUrl, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2
 const { getStagingConfig, buildStagingKey, putStagingObject, getStagingObject, deleteStagingObject } = require('../utils/rekognition/s3StagingService');
 const { getRekogConfig, indexFacesFromS3, detectFacesFromS3, searchFacesByImageBytes, compareFaces } = require('../utils/rekognition/rekognitionService');
 const { normalizeImageForRekognition, cropFace } = require('../utils/rekognition/imageService');
+const { fetchKingSelectionOgData, buildShareMetaPayload } = require('../utils/kingSelectionOg');
 
 const router = express.Router();
 
@@ -53,6 +54,21 @@ router.get('/public/aws-ping', asyncHandler(async (req, res) => {
     bucket: s3Cfg.bucket ? '***' + s3Cfg.bucket.slice(-4) : null,
     collection: rekogCfg.collectionId
   });
+}));
+
+/** Meta Open Graph para WhatsApp/Facebook (Hostinger serve HTML estático; PHP injeta usando este JSON). */
+router.get('/public/gallery-share-meta/:slug', asyncHandler(async (req, res) => {
+  const slug = String(req.params.slug || '').trim();
+  if (!slug || slug.length > 200) {
+    return res.status(400).json({ success: false, message: 'Slug inválido.' });
+  }
+  const hostHdr = (req.headers['x-forwarded-host'] || req.headers.host || '').toString();
+  const fromQuery = String(req.query.siteHost || '').trim();
+  const hostForOg = fromQuery || hostHdr.split(',')[0].trim();
+  const og = await fetchKingSelectionOgData(db.pool, slug);
+  const payload = buildShareMetaPayload(og, hostForOg, slug);
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.json(payload);
 }));
 
 // Enrollment anônimo para galeria pública - MOVIDO PARA O TOPO
