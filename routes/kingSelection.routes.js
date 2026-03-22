@@ -5279,6 +5279,8 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       const senha_hash = await bcrypt.hash(pass, 10);
       const senha_enc = encryptPassword(pass);
 
+      const hasCliTelCol = await hasColumn(client, 'king_gallery_clients', 'telefone');
+      let mergeBackfillPhone = null;
       let newClientId;
       await client.query('BEGIN');
       try {
@@ -5301,12 +5303,15 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
                 'Este e-mail já está cadastrado com outro nome. Use os mesmos dados de quando você enviou ou entre com e-mail e senha.'
             });
           }
-          if (ksNormClientPhoneDigits(ex.telefone || '') !== ksNormClientPhoneDigits(telefone)) {
+          if (!ksClientPhoneMatchesStored(ex.telefone, telefone)) {
             await client.query('ROLLBACK');
             return res.status(409).json({
               message:
                 'O telefone não confere com o cadastro deste e-mail. Confira o número ou entre com e-mail e senha.'
             });
+          }
+          if (ksShouldBackfillClientPhone(ex.telefone, telefone)) {
+            mergeBackfillPhone = String(telefone).trim().slice(0, 120);
           }
           newClientId = ex.id;
         } else {
@@ -5348,6 +5353,10 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
           if (hasCliRound) {
             parts.push(`selection_round=$${i++}`);
             vals.push(maxRound);
+          }
+          if (mergeBackfillPhone && hasCliTelCol) {
+            parts.push(`telefone=$${i++}`);
+            vals.push(mergeBackfillPhone);
           }
           parts.push('updated_at=NOW()');
           vals.push(galleryId, newClientId);
