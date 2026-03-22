@@ -40,7 +40,7 @@ Cada módulo do cartão que hoje está misturado em `routes/profile.js` terá su
 |-------------------|----------------------------|------------------------|-------------------|
 | Página de vendas  | `modules/salesPage/`       | `salesPageEdit.html/js`| OK                |
 | Agenda            | `modules/agenda/`         | Lógica no dashboard   | OK                |
-| King Selection    | `routes/kingSelection.routes.js` | `kingSelectionEdit.html` | OK           |
+| King Selection    | `routes/kingSelection.routes.js` | `public_html/kingSelectionEdit.html` | OK           |
 | King Forms        | Rotas em `publicDigitalForm` etc. | `formPageEdit` / kingForms | OK        |
 | Lista de convidados | `guestList*.routes.js`   | Páginas dedicadas     | OK                |
 | Contrato          | `modules/contracts/`      | Fluxo próprio         | OK                |
