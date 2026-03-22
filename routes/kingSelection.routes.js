@@ -1301,7 +1301,7 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
 
 router.post('/galleries/:id/status', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
-  const { status } = req.body || {};
+  const { status, clientId: rawClientId } = req.body || {};
   if (!galleryId || !status) return res.status(400).json({ message: 'Parâmetros inválidos' });
   if (!['preparacao', 'andamento', 'revisao', 'finalizado'].includes(status)) return res.status(400).json({ message: 'Status inválido' });
 
@@ -1316,9 +1316,37 @@ router.post('/galleries/:id/status', protectUser, asyncHandler(async (req, res) 
     );
     if (g.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
 
+    const hasClients = await hasTable(client, 'king_gallery_clients');
+    const hasCliStatus = hasClients && (await hasColumn(client, 'king_gallery_clients', 'status'));
+    const enRes = hasCliStatus
+      ? await client.query(
+        `SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND enabled=TRUE ORDER BY id ASC`,
+        [galleryId]
+      )
+      : { rows: [] };
+    const enabledRows = enRes.rows || [];
+    const bodyCid = rawClientId != null && String(rawClientId).trim() !== '' ? parseInt(rawClientId, 10) : null;
+
+    // Vários visitantes ativos: só altera o status desse cliente (não mexe em king_galleries).
+    if (hasCliStatus && enabledRows.length > 1) {
+      if (!bodyCid || !Number.isFinite(bodyCid) || bodyCid < 1) {
+        return res.status(400).json({ message: 'Esta galeria tem vários clientes. Informe clientId no corpo da requisição.' });
+      }
+      const ok = enabledRows.some((r) => parseInt(r.id, 10) === bodyCid);
+      if (!ok) return res.status(404).json({ message: 'Cliente não encontrado nesta galeria.' });
+      await client.query(
+        `UPDATE king_gallery_clients SET status=$1, updated_at=NOW() WHERE gallery_id=$2 AND id=$3`,
+        [status, galleryId, bodyCid]
+      );
+      return res.json({ success: true, clientId: bodyCid });
+    }
+
     await client.query('UPDATE king_galleries SET status=$1, updated_at=NOW() WHERE id=$2', [status, galleryId]);
-    if (status === 'andamento' && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
-      await client.query('UPDATE king_gallery_clients SET status=$1, updated_at=NOW() WHERE gallery_id=$2', ['andamento', galleryId]);
+    if (hasCliStatus && enabledRows.length === 1) {
+      await client.query(
+        `UPDATE king_gallery_clients SET status=$1, updated_at=NOW() WHERE gallery_id=$2 AND id=$3`,
+        [status, galleryId, parseInt(enabledRows[0].id, 10)]
+      );
     }
     res.json({ success: true });
   } finally {
