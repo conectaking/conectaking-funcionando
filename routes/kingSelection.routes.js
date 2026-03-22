@@ -418,6 +418,41 @@ async function hasTable(pgClient, tableName) {
   return ok;
 }
 
+const KS_GALLERY_STATUS_ORDER = Object.freeze({
+  preparacao: 0,
+  andamento: 1,
+  revisao: 2,
+  finalizado: 3
+});
+
+const KS_RANK_TO_STATUS = ['preparacao', 'andamento', 'revisao', 'finalizado'];
+
+function ksGalleryStatusRank(raw) {
+  const k = String(raw || '').toLowerCase().trim();
+  if (Object.prototype.hasOwnProperty.call(KS_GALLERY_STATUS_ORDER, k)) {
+    return KS_GALLERY_STATUS_ORDER[k];
+  }
+  return null;
+}
+
+/**
+ * Multi-cliente: resumo = menor progresso entre visitantes ativos (pior caso).
+ * Ex.: um em preparação e outro finalizado → preparacao. Só com 2+ ativos; caso contrário null (usa king_galleries.status).
+ */
+function aggregateGalleryStatusFromClientRows(clientRows) {
+  if (!Array.isArray(clientRows) || clientRows.length === 0) return null;
+  const active = clientRows.filter(c => c && c.enabled !== false);
+  if (active.length < 2) return null;
+  let minR = null;
+  for (const c of active) {
+    const r = ksGalleryStatusRank(c.status);
+    if (r == null) continue;
+    if (minR === null || r < minR) minR = r;
+  }
+  if (minR === null) return null;
+  return KS_RANK_TO_STATUS[minR] || null;
+}
+
 /** Rodada atual de seleção (multi-client: king_gallery_clients; legado: king_galleries). */
 async function ksGetCurrentSelectionRound(pgClient, galleryId, cid) {
   const hasCliRound = (await hasTable(pgClient, 'king_gallery_clients')) &&
@@ -1083,9 +1118,38 @@ router.get('/galleries', protectUser, asyncHandler(async (req, res) => {
         };
       });
     }
+    let statusAggByGalleryId = {};
+    if (ids.length && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
+      const hasEnabledCol = await hasColumn(client, 'king_gallery_clients', 'enabled');
+      const enabledSql = hasEnabledCol ? 'AND (gc.enabled IS DISTINCT FROM false)' : '';
+      const aggRes = await client.query(
+        `SELECT gc.gallery_id,
+          MIN(
+            CASE LOWER(TRIM(COALESCE(gc.status::text, '')))
+              WHEN 'preparacao' THEN 0
+              WHEN 'andamento' THEN 1
+              WHEN 'revisao' THEN 2
+              WHEN 'finalizado' THEN 3
+              ELSE 999
+            END
+          ) AS min_rank
+         FROM king_gallery_clients gc
+         WHERE gc.gallery_id = ANY($1::int[]) ${enabledSql}
+         GROUP BY gc.gallery_id
+         HAVING COUNT(*) >= 2`,
+        [ids]
+      );
+      for (const row of aggRes.rows) {
+        const mr = parseInt(row.min_rank, 10);
+        if (Number.isFinite(mr) && mr >= 0 && mr <= 3) {
+          statusAggByGalleryId[row.gallery_id] = KS_RANK_TO_STATUS[mr];
+        }
+      }
+    }
     const payload = galleries.map(g => ({ ...g, photos: photosByGallery[g.id] || [] }));
     const payloadWithStats = payload.map(g => ({
       ...g,
+      status: statusAggByGalleryId[g.id] != null ? statusAggByGalleryId[g.id] : g.status,
       selected_count: selectionStats[g.id]?.selected_count || 0,
       feedback_cliente: selectionStats[g.id]?.feedback_cliente || null,
       photos_count: (g.photos || []).length
@@ -2308,12 +2372,14 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       selectionRoundsSummary[key] = (selectionRoundsSummary[key] || 0) + 1;
     }
     const shareBaseUrl = (config.urls && config.urls.shareBase) ? config.urls.shareBase.toString().trim().replace(/\/$/, '') : null;
+    const statusSummary = aggregateGalleryStatusFromClientRows(clients);
     res.json({
       success: true,
       share_base_url: shareBaseUrl || undefined,
       focus_client_id: focusCid || undefined,
       gallery: {
         ...g,
+        status: statusSummary != null ? statusSummary : g.status,
         photos: pRes.rows,
         selectedPhotoIds,
         feedback_cliente: feedback,
