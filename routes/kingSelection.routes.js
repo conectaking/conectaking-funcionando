@@ -3644,6 +3644,7 @@ function requireClient(req, res, next) {
   const payload = verifyClientToken(token);
   if (!payload) return res.status(401).json({ message: 'Não autorizado.' });
   req.ksClient = payload;
+  req.ksCtx = parseKsClientContext(payload);
   next();
 }
 
@@ -3781,6 +3782,40 @@ router.post('/client/public-enter', asyncHandler(async (req, res) => {
 
     const token = jwt.sign(
       { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: null },
+      config.jwt.secret,
+      { expiresIn: '14d' }
+    );
+    res.json({ success: true, token });
+  } finally {
+    client.release();
+  }
+}));
+
+/** Visitante: sessão anónima com chave (cadastro só ao enviar). Só para galeria signup + autocadastro. */
+router.post('/client/signup-enter', asyncHandler(async (req, res) => {
+  const slug = String((req.body || {}).slug || '').trim();
+  if (!slug) return res.status(400).json({ message: 'Informe o slug da galeria.' });
+
+  const client = await db.pool.connect();
+  try {
+    const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+    const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const gRes = await client.query(
+      `SELECT id, slug${hasSelf ? ', allow_self_signup' : ''}${hasAccessMode ? ', access_mode' : ''} FROM king_galleries WHERE slug=$1`,
+      [slug]
+    );
+    if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const g = gRes.rows[0];
+    let accessMode = hasAccessMode ? String(g.access_mode || 'private').toLowerCase() : 'private';
+    if (accessMode === 'password') accessMode = 'signup';
+    const allowSelf = hasSelf ? !!g.allow_self_signup : accessMode === 'signup';
+    if (accessMode !== 'signup' || !allowSelf) {
+      return res.status(403).json({ message: 'Esta galeria não usa o fluxo de cadastro ao enviar.' });
+    }
+
+    const sk = crypto.randomUUID().replace(/-/g, '').slice(0, 32);
+    const token = jwt.sign(
+      { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: null, sk },
       config.jwt.secret,
       { expiresIn: '14d' }
     );
