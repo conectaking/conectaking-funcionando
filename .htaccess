@@ -23,13 +23,13 @@ RewriteCond %{THE_REQUEST} \s/+(.+?)\.html[\s?] [NC]
 RewriteRule ^ %1 [R=301,L]
 
 # 2. King Selection (evitar que /kingSelection vire kingSelection.html inexistente → 404)
-#    Com slug: galeria do cliente. Sem slug: abre dashboard e redireciona para o painel (query open=kingSelection).
+#    Com slug: galeria do cliente. Sem slug: painel fotógrafo (kingSelectionEdit.html).
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^kingSelection/([^/]+)/?$ kingSelectionCliente.html [L,NC,QSA]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^kingSelection/?$ dashboard.html?open=kingSelection [L,QSA,NC]
+RewriteRule ^kingSelection/?$ kingSelectionEdit.html [L,QSA,NC]
 
 # 3. Pega uma URL limpa e entrega o arquivo .html correspondente (COM CORREÇÃO)
 RewriteCond %{REQUEST_FILENAME} !-d

@@ -450,6 +450,7 @@ app.use(requestLogger);
 // public_html (KingSelection cliente + express.static)
 const publicHtmlDir = path.join(__dirname, 'public_html');
 const kingSelectionClienteHtml = path.join(publicHtmlDir, 'kingSelectionCliente.html');
+const kingSelectionEditHtml = path.join(publicHtmlDir, 'kingSelectionEdit.html');
 const KING_SELECTION_CLIENTE_RESERVED_SLUGS = new Set([
     'admin',
     'api',
@@ -546,9 +547,10 @@ function proxyKingSelection(req, res, next) {
     }
 }
 
-// /kingSelection sem slug → mesmo fluxo do dashboard (painel do fotógrafo)
-app.get(['/kingSelection', '/kingSelection/', '/kingselection', '/kingselection/'], (req, res) => {
-    res.redirect(302, '/dashboard.html?open=kingSelection');
+// /kingSelection sem slug → painel do fotógrafo (mesmo ficheiro que kingSelectionEdit.html)
+app.get(['/kingSelection', '/kingSelection/', '/kingselection', '/kingselection/'], (req, res, next) => {
+    if (!fs.existsSync(kingSelectionEditHtml)) return next();
+    res.sendFile(kingSelectionEditHtml);
 });
 
 // Galeria cliente (Node) ANTES do proxy: em produção o link costuma ser /kingselection/<slug> (minúsculo)
