@@ -4536,26 +4536,22 @@ async function getReferenceImageBytes(pgClient, galleryId, clientId) {
 }
 
 /**
- * Pool contínuo: mantém N comparações em voo (R2 + Sharp + Rekognition em paralelo),
- * em vez de lotes que só avançam quando os N terminam todos.
+ * Compara referência do cliente contra um subconjunto de linhas king_photos (pool contínuo).
+ * Usado em chunks para caber no timeout do proxy (ex.: Render ~30s).
  */
-async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient) {
+async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows) {
+  if (!Array.isArray(photoRows) || photoRows.length === 0) return [];
   let sourceNorm;
   try {
     sourceNorm = await normalizeImageForRekognition(sourceImageBytes, 2048, { fast: true, quality: 82 });
   } catch (_) {
     sourceNorm = sourceImageBytes;
   }
-  /** Lado longo máx. na galeria para CompareFaces — menor = mais rápido (default 720). */
   const compareMaxPx = Math.min(
     2048,
     Math.max(400, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_MAX_PX || '720'), 10) || 720)
   );
-  const photosRes = await pgClient.query(
-    'SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id',
-    [galleryId]
-  );
-  const photos = photosRes.rows;
+  const photos = photoRows;
   const concurrency = Math.min(
     72,
     Math.max(6, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '48'), 10) || 48)
@@ -4595,6 +4591,14 @@ async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient)
   return matchedIds;
 }
 
+async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient) {
+  const photosRes = await pgClient.query(
+    'SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id',
+    [galleryId]
+  );
+  return compareFacesAgainstPhotoRows(sourceImageBytes, photosRes.rows || []);
+}
+
 // ===== Rekognition CLIENTE: Buscar fotos do meu rosto =====
 router.get('/client/face-results', requireClient, (req, res, next) => {
   try {
@@ -4625,17 +4629,45 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
       if (cached !== null) {
         const total = cached.length;
         const photoIds = cached.slice(offset, offset + limit);
-        return res.json({ success: true, total, photoIds });
+        return res.json({ success: true, total, photoIds, fromCache: true });
       }
       const refBytes = await getReferenceImageBytes(client, galleryId, clientId);
       if (!refBytes || refBytes.length === 0) {
         return res.json({ success: true, total: 0, photoIds: [], message: 'Nenhuma foto de referência. Cadastre seu rosto primeiro.' });
       }
-      const photoIds = await compareFacesAgainstGallery(refBytes, galleryId, client);
-      await setSearchCache(client, galleryId, clientId, 'enroll', photoIds);
-      const total = photoIds.length;
-      const pageIds = photoIds.slice(offset, offset + limit);
-      return res.json({ success: true, total, photoIds: pageIds });
+      /**
+       * Scan completo num único pedido estoura o timeout do proxy (ex.: Render ~30s) → 502 e “CORS” no browser.
+       * O cliente deve usar chunked=1 em vários GET curtos e depois POST /client/face-enroll-cache.
+       */
+      const chunked = String(req.query.chunked || '') === '1' || String(req.query.chunked || '').toLowerCase() === 'true';
+      if (chunked) {
+        const batch = Math.min(100, Math.max(8, parseInt(req.query.photoBatch || '22', 10) || 22));
+        const skip = Math.max(0, parseInt(req.query.photoSkip || '0', 10) || 0);
+        const cntRes = await client.query('SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id=$1', [galleryId]);
+        const totalGallery = parseInt(cntRes.rows[0]?.c, 10) || 0;
+        const sliceRes = await client.query(
+          `SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id LIMIT $2 OFFSET $3`,
+          [galleryId, batch, skip]
+        );
+        const rows = sliceRes.rows || [];
+        const photoIds = await compareFacesAgainstPhotoRows(refBytes, rows);
+        const hasMore = skip + rows.length < totalGallery;
+        return res.json({
+          success: true,
+          faceChunk: true,
+          photoIds,
+          galleryPhotoTotal: totalGallery,
+          photoSkip: skip,
+          photoBatchReturned: rows.length,
+          hasMore,
+          total: photoIds.length
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        code: 'FACE_USE_CHUNKED',
+        message: 'Atualize a página da galeria (Ctrl+F5) para o filtro por rosto funcionar com proxies curtos (ex.: hospedagem Render).'
+      });
     }
 
     const countRes = await client.query(
@@ -4665,6 +4697,39 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
       total,
       photoIds: dataRes.rows.map(r => r.photo_id)
     });
+  } finally {
+    client.release();
+  }
+}));
+
+/** Grava cache do resultado do scan por rosto (após o cliente completar todos os chunks). */
+router.post('/client/face-enroll-cache', requireClient, asyncHandler(async (req, res) => {
+  if (!useRekogOnDemand()) {
+    return res.status(400).json({ success: false, message: 'Modo não suportado.' });
+  }
+  const galleryId = req.ksClient.galleryId;
+  let ids = (req.body && req.body.photoIds) || [];
+  if (!Array.isArray(ids)) {
+    return res.status(400).json({ success: false, message: 'photoIds deve ser um array.' });
+  }
+  ids = ids.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0);
+  if (ids.length > 25000) {
+    return res.status(400).json({ success: false, message: 'Lista demasiado grande.' });
+  }
+  const client = await db.pool.connect();
+  try {
+    const clientId = await resolveFaceClientIdForSession(client, galleryId, req.ksCtx.cid, req.ksCtx.sk);
+    if (!clientId) {
+      return res.status(400).json({ message: 'Sem sessão válida para reconhecimento facial.' });
+    }
+    if (await hasColumn(client, 'king_galleries', 'face_recognition_enabled')) {
+      const ge = await client.query('SELECT face_recognition_enabled FROM king_galleries WHERE id=$1', [galleryId]);
+      if (!ge.rows[0]?.face_recognition_enabled) {
+        return res.status(403).json({ message: 'Reconhecimento facial desativado nesta galeria.' });
+      }
+    }
+    await setSearchCache(client, galleryId, clientId, 'enroll', ids);
+    res.json({ success: true, saved: ids.length });
   } finally {
     client.release();
   }
