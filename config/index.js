@@ -102,7 +102,7 @@ const config = {
         })(),
         credentials: true,
         methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'Cache-Control'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'Cache-Control', 'Pragma', 'Expires'],
         exposedHeaders: ['Content-Disposition', 'Retry-After'],
         optionsSuccessStatus: 204,
         maxAge: 86400
