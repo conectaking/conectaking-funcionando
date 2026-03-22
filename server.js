@@ -447,6 +447,30 @@ app.use(validateRequestSize(config.upload.maxFileSize)); // Valida tamanho de re
 app.use(express.json({ limit: `${config.upload.maxFileSize / 1024 / 1024}mb` }));
 app.use(requestLogger);
 
+// public_html (KingSelection cliente + express.static)
+const publicHtmlDir = path.join(__dirname, 'public_html');
+const kingSelectionClienteHtml = path.join(publicHtmlDir, 'kingSelectionCliente.html');
+const KING_SELECTION_CLIENTE_RESERVED_SLUGS = new Set([
+    'admin',
+    'api',
+    'assets',
+    'static',
+    'login',
+    'build',
+    'vendor',
+    'storage',
+    'public'
+]);
+
+function serveKingSelectionClienteGallery(req, res, next) {
+    const slug = req.params.slug;
+    if (!slug || KING_SELECTION_CLIENTE_RESERVED_SLUGS.has(String(slug).toLowerCase())) {
+        return next();
+    }
+    if (!fs.existsSync(kingSelectionClienteHtml)) return next();
+    res.sendFile(kingSelectionClienteHtml);
+}
+
 // ============================================
 // KingSelection (Laravel) - Proxy por caminho
 // Mantém o mesmo domínio: /kingselection/*
@@ -522,20 +546,16 @@ function proxyKingSelection(req, res, next) {
     }
 }
 
-// Proxy deve vir ANTES do static, para não colidir com arquivos
+// Galeria cliente (Node) ANTES do proxy: em produção o link costuma ser /kingselection/<slug> (minúsculo)
+app.get('/kingselection/:slug', serveKingSelectionClienteGallery);
+app.get('/kingSelection/:slug', serveKingSelectionClienteGallery);
+// Proxy Laravel: /kingselection/admin e demais rotas reservadas/subcaminhos
 app.use('/kingselection', proxyKingSelection);
 
 // ============================================
 // Frontend estático (Hostinger → Render/Node)
 // Serve public_html/ como origem do domínio
 // ============================================
-const publicHtmlDir = path.join(__dirname, 'public_html');
-// Galeria do cliente (API Node /api/king-selection) — URL amigável /kingSelection/:slug
-const kingSelectionClienteHtml = path.join(publicHtmlDir, 'kingSelectionCliente.html');
-app.get(/^\/kingSelection\/([^/]+)\/?$/i, (req, res, next) => {
-    if (!fs.existsSync(kingSelectionClienteHtml)) return next();
-    res.sendFile(kingSelectionClienteHtml);
-});
 // Rota explícita para tts.js: garante Content-Type application/javascript (evita MIME text/html em 404)
 app.get('/js/tts.js', (req, res) => {
     const ttsPath = path.join(publicHtmlDir, 'js', 'tts.js');
