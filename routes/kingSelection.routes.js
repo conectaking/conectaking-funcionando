@@ -427,6 +427,41 @@ function invalidateSchemaColumnCache(tableName, columnName) {
  * Galeria sem nenhum king_gallery_clients (ex.: sem cliente_email no backfill 153):
  * cria uma ficha interna só para amarrar enroll/cache de rosto (FK em rekognition_*).
  */
+/**
+ * Galeria com vários visitantes reais + JWT sem clientId (signup-enter / public-enter com sk):
+ * uma ficha interna por sessão para enroll/cache de rosto, sem misturar dados entre browsers.
+ */
+async function ensureSessionKingGalleryClientForFace(pgClient, galleryId, sessionKeyRaw) {
+  const sessionKey = String(sessionKeyRaw || '').trim();
+  if (!sessionKey || sessionKey.length < 8) return null;
+  if (!(await hasTable(pgClient, 'king_gallery_clients'))) return null;
+  const h = crypto.createHash('sha256').update(`${galleryId}|${sessionKey}`).digest('hex').slice(0, 32);
+  const email = `__ks_face_sess_${h}@internal.king`;
+  const existing = await pgClient.query(
+    'SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND lower(email)=lower($2) LIMIT 1',
+    [galleryId, email]
+  );
+  if (existing.rows.length) return parseInt(existing.rows[0].id, 10);
+  const ph = crypto.randomBytes(16).toString('hex');
+  try {
+    const ins = await pgClient.query(
+      `INSERT INTO king_gallery_clients (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, created_at, updated_at)
+       VALUES ($1, $2, $3, NULL, $4, NULL, TRUE, NOW(), NOW()) RETURNING id`,
+      [galleryId, 'Sessão (reconhecimento facial)', email, ph]
+    );
+    return parseInt(ins.rows[0].id, 10);
+  } catch (e) {
+    if (e.code === '23505') {
+      const again = await pgClient.query(
+        'SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND lower(email)=lower($2) LIMIT 1',
+        [galleryId, email]
+      );
+      if (again.rows.length) return parseInt(again.rows[0].id, 10);
+    }
+    throw e;
+  }
+}
+
 async function ensureDefaultKingGalleryClientForFace(pgClient, galleryId) {
   const email = `__ks_face_default_${galleryId}@internal.king`;
   const existing = await pgClient.query(
@@ -458,8 +493,11 @@ function isTechnicalFaceGalleryClientEmail(email) {
   return String(email || '').toLowerCase().startsWith('__ks_face_default_');
 }
 
-/** JWT com clientId, ou um único visitante “real”, ou só ficha técnica de rosto / galeria vazia. Várias fichas reais sem JWT → null. */
-async function resolveFaceClientIdForSession(pgClient, galleryId, jwtCid) {
+/**
+ * JWT com clientId, ou um único visitante “real”, ou ficha técnica / sessão (sk) / galeria vazia.
+ * Várias fichas reais sem clientId e sem sk → null.
+ */
+async function resolveFaceClientIdForSession(pgClient, galleryId, jwtCid, sessionKey) {
   const cid = parseInt(jwtCid, 10);
   if (Number.isFinite(cid) && cid > 0) return cid;
   if (!(await hasTable(pgClient, 'king_gallery_clients'))) return null;
@@ -474,6 +512,11 @@ async function resolveFaceClientIdForSession(pgClient, galleryId, jwtCid) {
   }
   if (realRows.length === 0 && cr.rows.length === 0) {
     return await ensureDefaultKingGalleryClientForFace(pgClient, galleryId);
+  }
+  const sk = sessionKey && String(sessionKey).trim() ? String(sessionKey).trim().slice(0, 40) : null;
+  if (realRows.length > 1 && sk) {
+    const sid = await ensureSessionKingGalleryClientForFace(pgClient, galleryId, sk);
+    if (sid) return sid;
   }
   return null;
 }
