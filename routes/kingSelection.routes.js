@@ -2181,6 +2181,8 @@ router.get('/config-finalizacao/:galleryId', protectUser, asyncHandler(async (re
 router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  const focusClientId = parseInt(req.query.focusClientId || req.query.clientId || '', 10);
+  const focusCid = Number.isFinite(focusClientId) && focusClientId > 0 ? focusClientId : null;
   const client = await db.pool.connect();
   try {
     const userId = req.user.userId;
@@ -2246,7 +2248,12 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     const onlyClient = clients.length === 1 ? clients[0] : null;
     const onlyClientId = onlyClient ? parseInt(onlyClient.id, 10) : null;
     let filteredSelRows = rowsAll;
-    if (onlyClientId && hasSelClientId) {
+    if (focusCid && hasSelClientId) {
+      const allowed = new Set((clients || []).map(c => parseInt(c.id, 10)).filter(Boolean));
+      if (allowed.has(focusCid)) {
+        filteredSelRows = rowsAll.filter(r => parseInt(r.client_id, 10) === focusCid);
+      }
+    } else if (onlyClientId && hasSelClientId) {
       filteredSelRows = rowsAll.filter(r => r.client_id == null || parseInt(r.client_id, 10) === onlyClientId);
     }
     const selectedPhotoIds = filteredSelRows.map(r => r.photo_id);
@@ -2300,14 +2307,60 @@ router.get('/galleries/:id/clients', protectUser, asyncHandler(async (req, res) 
       return res.json({ success: true, clients: [] });
     }
 
+    const hasSt = await hasColumn(client, 'king_gallery_clients', 'status');
+    const hasSr = await hasColumn(client, 'king_gallery_clients', 'selection_round');
+    const cols = ['id', 'nome', 'email', 'telefone', 'enabled', 'note', 'created_at']
+      .concat(hasSt ? ['status'] : [])
+      .concat(hasSr ? ['selection_round'] : []);
     const cRes = await client.query(
-      `SELECT id, nome, email, telefone, enabled, note, created_at
+      `SELECT ${cols.join(', ')}
        FROM king_gallery_clients
        WHERE gallery_id=$1
        ORDER BY created_at ASC, id ASC`,
       [galleryId]
     );
     res.json({ success: true, clients: cRes.rows || [] });
+  } finally {
+    client.release();
+  }
+}));
+
+/** Fotógrafo: remove todas as fotos de uma rodada (selection_batch) de um cliente — útil para apagar testes ou envio errado. */
+router.post('/galleries/:id/clients/:clientId/delete-selection-batch', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const batch = parseInt((req.body || {}).batch, 10);
+  if (!galleryId || !clientId || !Number.isFinite(batch) || batch < 1) {
+    return res.status(400).json({ message: 'galleryId, clientId e batch (número >= 1) são obrigatórios.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão.' });
+
+    const ck = await client.query(
+      'SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2 AND enabled=TRUE',
+      [galleryId, clientId]
+    );
+    if (ck.rows.length === 0) return res.status(404).json({ message: 'Cliente não encontrado.' });
+
+    const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
+    if (!hasSelBatch) {
+      return res.status(400).json({ message: 'Esta base não tem rodadas de seleção (migration pendente?).' });
+    }
+
+    const del = await client.query(
+      'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3',
+      [galleryId, clientId, batch]
+    );
+    res.json({ success: true, deleted: del.rowCount || 0 });
   } finally {
     client.release();
   }
