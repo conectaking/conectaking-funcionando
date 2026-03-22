@@ -438,6 +438,16 @@ async function ksGetCurrentSelectionRound(pgClient, galleryId, cid) {
   return 1;
 }
 
+function parseKsClientContext(payload) {
+  const rawId = payload && payload.clientId;
+  const cid = rawId != null && rawId !== '' ? parseInt(rawId, 10) : null;
+  const sk = payload && payload.sk && String(payload.sk).trim() ? String(payload.sk).trim().slice(0, 40) : null;
+  return {
+    cid: Number.isFinite(cid) && cid > 0 ? cid : null,
+    sk: sk || null
+  };
+}
+
 function getPwCryptoKey() {
   // Chave para criptografar a senha do cliente (para o fotógrafo conseguir reenviar via WhatsApp)
   // Preferir variável específica; fallback para o jwt.secret.
@@ -2976,6 +2986,7 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
     const totalPhotosRes = await client.query('SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id=$1', [g.id]);
     const totalPhotos = totalPhotosRes.rows[0]?.c || 0;
 
+    const deferredSignupFlow = accessMode === 'signup' && allowSelfSignup;
     res.json({
       success: true,
       gallery: {
@@ -2989,7 +3000,8 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
         client_enabled: hasEnabled ? !!g.client_enabled : true,
         access_mode: accessMode,
         total_photos: totalPhotos,
-        cover_photo_id: coverPhotoId
+        cover_photo_id: coverPhotoId,
+        deferred_signup_flow: deferredSignupFlow
       }
     });
   } finally {
