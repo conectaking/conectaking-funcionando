@@ -559,6 +559,19 @@ function parseKsClientContext(payload) {
   };
 }
 
+/** Status vindo do PG às vezes com acento (ex.: revisão) — normalizar para chaves internas. */
+function normKsStatus(raw) {
+  return String(raw || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function isKsClientLockedStatus(statusNorm) {
+  return statusNorm === 'revisao' || statusNorm === 'finalizado';
+}
+
 function getPwCryptoKey() {
   // Chave para criptografar a senha do cliente (para o fotógrafo conseguir reenviar via WhatsApp)
   // Preferir variável específica; fallback para o jwt.secret.
@@ -4123,11 +4136,11 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const faceRecognitionUsable = !!(faceOn && resolvedClientId);
 
     // Lock por cliente (multi-client) — fallback para status global (legacy)
-    let locked = ['revisao', 'finalizado'].includes(String(gallery.status || '').toLowerCase());
+    let locked = isKsClientLockedStatus(normKsStatus(gallery.status));
     if (cid && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
       const stRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, gallery.id]);
-      const st = String(stRes.rows?.[0]?.status || '').toLowerCase();
-      if (st) locked = ['revisao', 'finalizado'].includes(st);
+      const st = normKsStatus(stRes.rows?.[0]?.status);
+      if (st) locked = isKsClientLockedStatus(st);
     }
 
     const frozenSelectionPhotoIds = hasSelBatch
@@ -4268,6 +4281,11 @@ async function setSearchCache(pgClient, galleryId, clientId, key, photoIds, ttlD
   );
 }
 
+async function deleteSearchCacheForClientSession(pgClient, galleryId, clientId) {
+  const prefix = `search:${galleryId}:${clientId}:`;
+  await pgClient.query('DELETE FROM rekognition_processing_cache WHERE cache_key LIKE $1', [`${prefix}%`]);
+}
+
 async function getReferenceImageBytes(pgClient, galleryId, clientId) {
   const r = await pgClient.query(
     `SELECT reference_r2_key FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2 LIMIT 1`,
@@ -4290,7 +4308,10 @@ async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient)
   );
   const photos = photosRes.rows;
   const matchedIds = [];
-  const concurrency = 5;
+  const concurrency = Math.min(
+    32,
+    Math.max(4, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '16'), 10) || 16)
+  );
   for (let i = 0; i < photos.length; i += concurrency) {
     const batch = photos.slice(i, i + concurrency);
     const results = await Promise.allSettled(
@@ -4319,10 +4340,15 @@ async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient)
 }
 
 // ===== Rekognition CLIENTE: Buscar fotos do meu rosto =====
-router.get('/client/face-results', requireClient, asyncHandler(async (req, res) => {
+router.get('/client/face-results', requireClient, (req, res, next) => {
+  try {
+    if (req.socket) req.socket.setTimeout(12 * 60 * 1000);
+  } catch (_) { }
+  next();
+}, asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
   const page = Math.max(1, parseInt(req.query.page || '1', 10));
-  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '50', 10)));
+  const limit = Math.min(8000, Math.max(1, parseInt(req.query.limit || '500', 10)));
   const offset = (page - 1) * limit;
 
   const client = await db.pool.connect();
@@ -4518,6 +4544,7 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
     if (useRekogOnDemand()) {
       const refStagingKey = `staging/enroll/g${galleryId}/c${clientId}.jpg`;
       await putStagingObject(refStagingKey, buffer, 'image/jpeg');
+      await deleteSearchCacheForClientSession(client, galleryId, clientId);
       await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
       await client.query(
         `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
@@ -4526,7 +4553,7 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
       );
       return res.json({
         success: true,
-        message: 'Rosto cadastrado. Ao filtrar ou buscar por rosto, a busca será feita sob demanda (resultado fica em cache).',
+        message: 'Rosto cadastrado. A galeria será filtrada automaticamente; buscas repetidas usam cache no servidor.',
         faceCount: 1
       });
     }
