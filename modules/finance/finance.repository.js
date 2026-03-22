@@ -1332,7 +1332,7 @@ class FinanceRepository {
                 transacoes,
                 trabajos,
                 recibos,
-                itens: [...transacoes, ...trabalhos, ...recibos].sort((a, b) => {
+                itens: [...transacoes, ...trabajos, ...recibos].sort((a, b) => {
                     const da = a.data ? new Date(a.data) : new Date(0);
                     const db_ = b.data ? new Date(b.data) : new Date(0);
                     return db_.getTime() - da.getTime();
