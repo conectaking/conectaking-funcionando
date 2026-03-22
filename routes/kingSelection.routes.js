@@ -490,7 +490,8 @@ async function ensureDefaultKingGalleryClientForFace(pgClient, galleryId) {
 }
 
 function isTechnicalFaceGalleryClientEmail(email) {
-  return String(email || '').toLowerCase().startsWith('__ks_face_default_');
+  const e = String(email || '').toLowerCase();
+  return e.startsWith('__ks_face_default_') || e.startsWith('__ks_face_sess_');
 }
 
 /**
@@ -514,7 +515,8 @@ async function resolveFaceClientIdForSession(pgClient, galleryId, jwtCid, sessio
     return await ensureDefaultKingGalleryClientForFace(pgClient, galleryId);
   }
   const sk = sessionKey && String(sessionKey).trim() ? String(sessionKey).trim().slice(0, 40) : null;
-  if (realRows.length > 1 && sk) {
+  /* Sem clientId no JWT: vários convidados reais, ou só fichas técnicas — amarra rosto à sessão (sk). */
+  if (sk && (realRows.length === 0 || realRows.length > 1)) {
     const sid = await ensureSessionKingGalleryClientForFace(pgClient, galleryId, sk);
     if (sid) return sid;
   }
