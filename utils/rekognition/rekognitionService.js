@@ -20,9 +20,35 @@ function getRekogConfig() {
     100,
     Math.max(50, parseInt(process.env.REKOG_COMPARE_SIMILARITY_THRESHOLD || '78', 10) || 78)
   );
+  /**
+   * SearchFacesByImage (recorte da foto do evento vs collection): por defeito o mínimo entre faceMatch e compare,
+   * para alinhar com fotos de evento (antes 85 só aqui perdia matches que CompareFaces já aceitava).
+   */
+  const searchFaceMatchThreshold = Math.min(
+    100,
+    Math.max(
+      50,
+      (() => {
+        const e = process.env.REKOG_SEARCH_FACE_MATCH_THRESHOLD;
+        if (e != null && String(e).trim() !== '') {
+          const n = parseInt(String(e), 10);
+          return Number.isFinite(n) ? n : Math.min(faceMatchThreshold, compareSimilarityThreshold);
+        }
+        return Math.min(faceMatchThreshold, compareSimilarityThreshold);
+      })()
+    )
+  );
   const maxFacesPerImage = Math.min(50, Math.max(1, parseInt(process.env.REKOG_MAX_FACES_PER_IMAGE || '10', 10)));
   const enabled = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
-  return { enabled, region, collectionId, faceMatchThreshold, compareSimilarityThreshold, maxFacesPerImage };
+  return {
+    enabled,
+    region,
+    collectionId,
+    faceMatchThreshold,
+    compareSimilarityThreshold,
+    searchFaceMatchThreshold,
+    maxFacesPerImage
+  };
 }
 
 function sleep(ms) {
@@ -124,7 +150,7 @@ async function searchFacesByImageBytes(imageBytes) {
   const cmd = new SearchFacesByImageCommand({
     CollectionId: cfg.collectionId,
     Image: { Bytes: imageBytes },
-    FaceMatchThreshold: cfg.faceMatchThreshold,
+    FaceMatchThreshold: cfg.searchFaceMatchThreshold ?? cfg.faceMatchThreshold,
     MaxFaces: 10
   });
   const out = await client.send(cmd);
@@ -141,7 +167,7 @@ async function searchFacesByImageS3(bucket, name) {
   const cmd = new SearchFacesByImageCommand({
     CollectionId: cfg.collectionId,
     Image: { S3Object: { Bucket: bucket, Name: name } },
-    FaceMatchThreshold: cfg.faceMatchThreshold,
+    FaceMatchThreshold: cfg.searchFaceMatchThreshold ?? cfg.faceMatchThreshold,
     MaxFaces: cfg.maxFacesPerImage
   });
   const out = await client.send(cmd);

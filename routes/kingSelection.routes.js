@@ -5961,7 +5961,8 @@ async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }
 
   // 2. Montar cacheKey
   const cfg = getRekogConfig();
-  const cacheKey = `match:${galleryId}:${r2Key}:${etag}:t${cfg.faceMatchThreshold}:m${cfg.maxFacesPerImage}`;
+  const searchT = cfg.searchFaceMatchThreshold ?? cfg.faceMatchThreshold;
+  const cacheKey = `match:${galleryId}:${r2Key}:${etag}:t${searchT}:m${cfg.maxFacesPerImage}`;
 
   // 3. Checar cache
   const cacheRes = await pgClient.query(
