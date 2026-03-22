@@ -15,9 +15,18 @@ function getRekogConfig() {
   const region = (process.env.AWS_REGION || 'us-east-1').toString().trim();
   const collectionId = (process.env.REKOG_COLLECTION_ID || 'kingselection').toString().trim();
   const faceMatchThreshold = Math.min(100, Math.max(0, parseInt(process.env.REKOG_FACE_MATCH_THRESHOLD || '85', 10)));
+  /** CompareFaces (galeria sob demanda): padrão 78 — eventos reais costumam ficar abaixo de 85. */
+  const compareSimilarityThreshold = Math.min(
+    100,
+    Math.max(50, parseInt(process.env.REKOG_COMPARE_SIMILARITY_THRESHOLD || '78', 10) || 78)
+  );
   const maxFacesPerImage = Math.min(50, Math.max(1, parseInt(process.env.REKOG_MAX_FACES_PER_IMAGE || '10', 10)));
   const enabled = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
-  return { enabled, region, collectionId, faceMatchThreshold, maxFacesPerImage };
+  return { enabled, region, collectionId, faceMatchThreshold, compareSimilarityThreshold, maxFacesPerImage };
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 let _client = null;
@@ -91,6 +100,19 @@ async function detectFacesFromS3(bucket, name) {
 }
 
 /**
+ * Detecta rostos em imagem em memória (selfie / referência antes de CompareFaces).
+ */
+async function detectFacesFromBytes(imageBytes) {
+  const client = getRekogClient();
+  if (!client) throw new Error('Rekognition não configurado');
+  const cmd = new DetectFacesCommand({
+    Image: { Bytes: imageBytes },
+    Attributes: ['DEFAULT']
+  });
+  return client.send(cmd);
+}
+
+/**
  * Busca na collection por imagem (bytes do recorte do rosto). Para match.
  * @param {Buffer} imageBytes
  * @returns {Promise<{ FaceMatches: Array<{ Face: { FaceId }, Similarity }, FaceModelVersion }>}
@@ -137,19 +159,40 @@ async function compareFaces(sourceImageBytes, targetImageBytes) {
   const client = getRekogClient();
   const cfg = getRekogConfig();
   if (!client || !cfg.enabled) throw new Error('Rekognition não configurado');
-  const cmd = new CompareFacesCommand({
+  const threshold = cfg.compareSimilarityThreshold ?? cfg.faceMatchThreshold;
+  const maxAttempts = Math.min(6, Math.max(2, parseInt(String(process.env.REKOG_COMPARE_MAX_ATTEMPTS || '4'), 10) || 4));
+  const cmdBase = {
     SourceImage: { Bytes: sourceImageBytes },
     TargetImage: { Bytes: targetImageBytes },
-    SimilarityThreshold: cfg.faceMatchThreshold
-  });
-  const out = await client.send(cmd);
-  return out;
+    SimilarityThreshold: threshold
+  };
+  let lastErr;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const out = await client.send(new CompareFacesCommand(cmdBase));
+      return out;
+    } catch (err) {
+      lastErr = err;
+      const name = err.name || err.Code || '';
+      const retryable =
+        name === 'ThrottlingException' ||
+        name === 'ProvisionedThroughputExceededException' ||
+        name === 'ServiceUnavailableException' ||
+        name === 'InternalServerError' ||
+        (String(err.message || '').toLowerCase().includes('throttl'));
+      if (!retryable || attempt >= maxAttempts - 1) throw err;
+      const backoff = 280 * Math.pow(2, attempt) + Math.floor(Math.random() * 220);
+      await sleep(backoff);
+    }
+  }
+  throw lastErr || new Error('CompareFaces falhou');
 }
 
 module.exports = {
   getRekogConfig,
   indexFacesFromS3,
   detectFacesFromS3,
+  detectFacesFromBytes,
   searchFacesByImageBytes,
   searchFacesByImageS3,
   compareFaces

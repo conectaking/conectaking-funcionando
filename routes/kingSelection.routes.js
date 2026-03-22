@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const { getR2Config, r2PublicUrl, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer, r2HeadObject } = require('../utils/r2');
 const { getStagingConfig, buildStagingKey, putStagingObject, getStagingObject, deleteStagingObject } = require('../utils/rekognition/s3StagingService');
-const { getRekogConfig, indexFacesFromS3, detectFacesFromS3, searchFacesByImageBytes, compareFaces } = require('../utils/rekognition/rekognitionService');
+const { getRekogConfig, indexFacesFromS3, detectFacesFromS3, detectFacesFromBytes, searchFacesByImageBytes, compareFaces } = require('../utils/rekognition/rekognitionService');
 const { normalizeImageForRekognition, cropFace } = require('../utils/rekognition/imageService');
 const { fetchKingSelectionOgData, buildShareMetaPayload } = require('../utils/kingSelectionOg');
 
@@ -4554,26 +4554,41 @@ async function getReferenceImageBytes(pgClient, galleryId, clientId) {
 /**
  * Compara referência do cliente contra um subconjunto de linhas king_photos (pool contínuo).
  * Usado em chunks para caber no timeout do proxy (ex.: Render ~30s).
+ * @param {{ verifySourceFace?: boolean }} [opts] — se true, exige pelo menos um rosto na referência (primeiro chunk).
  */
-async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows) {
+async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = {}) {
   if (!Array.isArray(photoRows) || photoRows.length === 0) return [];
   let sourceNorm;
   try {
-    sourceNorm = await normalizeImageForRekognition(sourceImageBytes, 2048, { fast: true, quality: 82 });
+    sourceNorm = await normalizeImageForRekognition(sourceImageBytes, 2048, { fast: true, quality: 84 });
   } catch (_) {
     sourceNorm = sourceImageBytes;
   }
+  if (opts.verifySourceFace) {
+    try {
+      const rekogCfg = getRekogConfig();
+      if (rekogCfg.enabled) {
+        const det = await detectFacesFromBytes(sourceNorm);
+        const minConf = Math.min(99, Math.max(70, parseInt(String(process.env.REKOG_ENROLL_MIN_CONFIDENCE || '82'), 10) || 82));
+        const facesOk = (det.FaceDetails || []).filter((f) => (f.Confidence || 0) >= minConf);
+        if (facesOk.length === 0) return [];
+      }
+    } catch (_) {
+      /* segue: CompareFaces pode ainda funcionar em alguns casos */
+    }
+  }
   const compareMaxPx = Math.min(
     2048,
-    Math.max(400, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_MAX_PX || '720'), 10) || 720)
+    Math.max(400, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_MAX_PX || '960'), 10) || 960)
   );
   const photos = photoRows;
+  /** Muita concorrência → ThrottlingException na AWS; o catch antigo engolia tudo e zerava resultados. */
   const concurrency = Math.min(
-    96,
-    Math.max(8, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '64'), 10) || 64)
+    24,
+    Math.max(2, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '8'), 10) || 8)
   );
-  const threshold = getRekogConfig().faceMatchThreshold || 80;
-  const matchedIds = [];
+  const threshold = getRekogConfig().compareSimilarityThreshold ?? getRekogConfig().faceMatchThreshold ?? 78;
+  const matchedSet = new Set();
   let pi = 0;
   function nextPhoto() {
     if (pi >= photos.length) return null;
@@ -4588,14 +4603,14 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows) {
         if (!buf || buf.length === 0) continue;
         let targetBuf;
         try {
-          targetBuf = await normalizeImageForRekognition(buf, compareMaxPx, { fast: true, quality: 74 });
+          targetBuf = await normalizeImageForRekognition(buf, compareMaxPx, { fast: true, quality: 80 });
         } catch (_) {
           targetBuf = buf;
         }
         const out = await compareFaces(sourceNorm, targetBuf);
         const matches = out.FaceMatches || [];
         if (matches.length > 0 && (matches[0].Similarity || 0) >= threshold) {
-          matchedIds.push(p.id);
+          matchedSet.add(p.id);
         }
       } catch (_) {
         /* foto inválida / Rekognition / rede — ignora e continua */
@@ -4604,15 +4619,25 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows) {
   }
   const nWorkers = Math.min(concurrency, Math.max(1, photos.length));
   await Promise.all(Array.from({ length: nWorkers }, () => worker()));
-  return matchedIds;
+  return Array.from(matchedSet);
 }
 
 async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient) {
-  const photosRes = await pgClient.query(
-    'SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id',
-    [galleryId]
-  );
-  return compareFacesAgainstPhotoRows(sourceImageBytes, photosRes.rows || []);
+  const cntRes = await pgClient.query('SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id=$1', [galleryId]);
+  const total = parseInt(cntRes.rows[0]?.c, 10) || 0;
+  const batch = Math.min(96, Math.max(8, parseInt(String(process.env.KINGSELECTION_FACE_GALLERY_BATCH || '40'), 10) || 40));
+  const matched = new Set();
+  for (let skip = 0; skip < total; skip += batch) {
+    const sliceRes = await pgClient.query(
+      `SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id LIMIT $2 OFFSET $3`,
+      [galleryId, batch, skip]
+    );
+    const rows = sliceRes.rows || [];
+    if (!rows.length) break;
+    const part = await compareFacesAgainstPhotoRows(sourceImageBytes, rows, { verifySourceFace: skip === 0 });
+    part.forEach((id) => matched.add(id));
+  }
+  return Array.from(matched);
 }
 
 // ===== Rekognition CLIENTE: Buscar fotos do meu rosto =====
@@ -4657,7 +4682,7 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
        */
       const chunked = String(req.query.chunked || '') === '1' || String(req.query.chunked || '').toLowerCase() === 'true';
       if (chunked) {
-        const batch = Math.min(120, Math.max(12, parseInt(req.query.photoBatch || '96', 10) || 96));
+        const batch = Math.min(96, Math.max(8, parseInt(req.query.photoBatch || '40', 10) || 40));
         const skip = Math.max(0, parseInt(req.query.photoSkip || '0', 10) || 0);
         const cntRes = await client.query('SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id=$1', [galleryId]);
         const totalGallery = parseInt(cntRes.rows[0]?.c, 10) || 0;
@@ -4666,7 +4691,7 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
           [galleryId, batch, skip]
         );
         const rows = sliceRes.rows || [];
-        const photoIds = await compareFacesAgainstPhotoRows(refBytes, rows);
+        const photoIds = await compareFacesAgainstPhotoRows(refBytes, rows, { verifySourceFace: skip === 0 });
         const hasMore = skip + rows.length < totalGallery;
         return res.json({
           success: true,
@@ -4885,6 +4910,20 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
     }
 
     let buffer = await normalizeImageForRekognition(req.file.buffer);
+
+    try {
+      const det = await detectFacesFromBytes(buffer);
+      const minConf = Math.min(99, Math.max(70, parseInt(String(process.env.REKOG_ENROLL_MIN_CONFIDENCE || '82'), 10) || 82));
+      const facesOk = (det.FaceDetails || []).filter((f) => (f.Confidence || 0) >= minConf);
+      if (facesOk.length === 0) {
+        return res.status(400).json({
+          message:
+            'Não encontramos um rosto nítido nesta imagem. Tire uma selfie com boa luz, rosto de frente e sem óculos escuros ou boné.'
+        });
+      }
+    } catch (detErr) {
+      console.warn('[enroll-face-image] DetectFaces (referência):', detErr && detErr.message ? detErr.message : detErr);
+    }
 
     // Modo sob demanda: salva imagem de referência no staging (não deleta); não chama IndexFaces (evita custo)
     if (useRekogOnDemand()) {
