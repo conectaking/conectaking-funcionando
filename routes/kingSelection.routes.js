@@ -4536,6 +4536,17 @@ async function getReferenceImageBytes(pgClient, galleryId, clientId) {
 }
 
 async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient) {
+  let sourceNorm;
+  try {
+    sourceNorm = await normalizeImageForRekognition(sourceImageBytes);
+  } catch (_) {
+    sourceNorm = sourceImageBytes;
+  }
+  /** Lado longo máx. da foto da galeria enviada ao CompareFaces — menor = menos bytes e menos tempo na AWS (default 1024). */
+  const compareMaxPx = Math.min(
+    2048,
+    Math.max(480, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_MAX_PX || '1024'), 10) || 1024)
+  );
   const photosRes = await pgClient.query(
     'SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id',
     [galleryId]
@@ -4543,9 +4554,10 @@ async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient)
   const photos = photosRes.rows;
   const matchedIds = [];
   const concurrency = Math.min(
-    32,
-    Math.max(4, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '16'), 10) || 16)
+    40,
+    Math.max(4, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '24'), 10) || 24)
   );
+  const threshold = getRekogConfig().faceMatchThreshold || 80;
   for (let i = 0; i < photos.length; i += concurrency) {
     const batch = photos.slice(i, i + concurrency);
     const results = await Promise.allSettled(
@@ -4554,13 +4566,13 @@ async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient)
         if (!buf || buf.length === 0) return null;
         let targetBuf;
         try {
-          targetBuf = await normalizeImageForRekognition(buf);
+          targetBuf = await normalizeImageForRekognition(buf, compareMaxPx);
         } catch (_) {
           targetBuf = buf;
         }
-        const out = await compareFaces(sourceImageBytes, targetBuf);
+        const out = await compareFaces(sourceNorm, targetBuf);
         const matches = out.FaceMatches || [];
-        if (matches.length > 0 && (matches[0].Similarity || 0) >= (getRekogConfig().faceMatchThreshold || 80)) {
+        if (matches.length > 0 && (matches[0].Similarity || 0) >= threshold) {
           return p.id;
         }
         return null;
