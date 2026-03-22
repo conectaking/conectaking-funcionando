@@ -4741,11 +4741,63 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
        LIMIT $3 OFFSET $4`,
       [galleryId, clientId, limit, offset]
     );
+    const sqlPhotoIds = dataRes.rows.map((r) => r.photo_id);
 
-    res.json({
+    if (total > 0) {
+      return res.json({
+        success: true,
+        total,
+        photoIds: sqlPhotoIds
+      });
+    }
+
+    const cachedFallback = await getSearchCache(client, galleryId, clientId, 'enroll');
+    if (cachedFallback !== null && cachedFallback.length > 0) {
+      const tot = cachedFallback.length;
+      const slice = cachedFallback.slice(offset, offset + limit);
+      return res.json({ success: true, total: tot, photoIds: slice, fromCache: true });
+    }
+
+    const refBytesIndexed = await getReferenceImageBytes(client, galleryId, clientId);
+    if (refBytesIndexed && refBytesIndexed.length > 0) {
+      const chunked = String(req.query.chunked || '') === '1' || String(req.query.chunked || '').toLowerCase() === 'true';
+      if (chunked) {
+        const batch = Math.min(96, Math.max(8, parseInt(req.query.photoBatch || '40', 10) || 40));
+        const skip = Math.max(0, parseInt(req.query.photoSkip || '0', 10) || 0);
+        const cntG = await client.query('SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id=$1', [galleryId]);
+        const totalGallery = parseInt(cntG.rows[0]?.c, 10) || 0;
+        const sliceRes = await client.query(
+          `SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id LIMIT $2 OFFSET $3`,
+          [galleryId, batch, skip]
+        );
+        const rows = sliceRes.rows || [];
+        const chunkMatched = await compareFacesAgainstPhotoRows(refBytesIndexed, rows, { verifySourceFace: skip === 0 });
+        const hasMore = skip + rows.length < totalGallery;
+        return res.json({
+          success: true,
+          faceChunk: true,
+          photoIds: chunkMatched,
+          galleryPhotoTotal: totalGallery,
+          photoSkip: skip,
+          photoBatchReturned: rows.length,
+          hasMore,
+          total: chunkMatched.length,
+          compareFallback: true
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        code: 'FACE_USE_CHUNKED',
+        photoIds: [],
+        total: null,
+        message: 'A procurar fotos com a sua selfie (fallback).'
+      });
+    }
+
+    return res.json({
       success: true,
-      total,
-      photoIds: dataRes.rows.map(r => r.photo_id)
+      total: 0,
+      photoIds: []
     });
   } finally {
     client.release();
@@ -4754,9 +4806,6 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
 
 /** Grava cache do resultado do scan por rosto (após o cliente completar todos os chunks). */
 router.post('/client/face-enroll-cache', requireClient, asyncHandler(async (req, res) => {
-  if (!useRekogOnDemand()) {
-    return res.status(400).json({ success: false, message: 'Modo não suportado.' });
-  }
   const galleryId = req.ksClient.galleryId;
   let ids = (req.body && req.body.photoIds) || [];
   if (!Array.isArray(ids)) {
@@ -4948,19 +4997,26 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
       });
     }
 
-    const stagingKey = `staging/enroll/g${galleryId}/c${clientId}_${Date.now()}.jpg`;
-    await putStagingObject(stagingKey, buffer, 'image/jpeg');
+    /** Mesma chave para IndexFaces e para CompareFaces fallback (getReferenceImageBytes). Antes: só 'upload-manual' → bytes nulos → sem fallback. */
+    const refStagingKey = `staging/enroll/g${galleryId}/c${clientId}.jpg`;
+    await putStagingObject(refStagingKey, buffer, 'image/jpeg');
     const externalImageId = `g${galleryId}_c${clientId}`;
 
     let indexResult;
     try {
-      indexResult = await indexFacesFromS3(stagingCfg.bucket, stagingKey, externalImageId);
-    } finally {
-      await deleteStagingObject(stagingKey);
+      indexResult = await indexFacesFromS3(stagingCfg.bucket, refStagingKey, externalImageId);
+    } catch (idxErr) {
+      try {
+        await deleteStagingObject(refStagingKey);
+      } catch (_) { /* ignore */ }
+      throw idxErr;
     }
 
     const faceRecords = indexResult.FaceRecords || [];
     if (faceRecords.length === 0) {
+      try {
+        await deleteStagingObject(refStagingKey);
+      } catch (_) { /* ignore */ }
       return res.status(400).json({ message: 'Nenhum rosto detectado na foto. Tente uma selfie mais nítida.' });
     }
 
@@ -4973,7 +5029,7 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
       await client.query(
         `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
          VALUES ($1, $2, $3, $4, $5)`,
-        [galleryId, clientId, faceId, rec.Face?.ImageId || null, 'upload-manual']
+        [galleryId, clientId, faceId, rec.Face?.ImageId || null, refStagingKey]
       );
     }
 
