@@ -4415,7 +4415,12 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
 }));
 
 // ===== Rekognition CLIENTE: Buscar minhas fotos por OUTRA foto (sem cadastrar de novo) =====
-router.post('/client/search-face-by-photo', requireClient, uploadMem.single('image'), asyncHandler(async (req, res) => {
+router.post('/client/search-face-by-photo', requireClient, uploadMem.single('image'), (req, res, next) => {
+  try {
+    if (req.socket) req.socket.setTimeout(12 * 60 * 1000);
+  } catch (_) { }
+  next();
+}, asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
   if (!req.file) return res.status(400).json({ message: 'Envie uma foto.' });
 
@@ -4574,6 +4579,7 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
       return res.status(400).json({ message: 'Nenhum rosto detectado na foto. Tente uma selfie mais nítida.' });
     }
 
+    await deleteSearchCacheForClientSession(client, galleryId, clientId);
     await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
 
     for (const rec of faceRecords) {
@@ -4608,16 +4614,16 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
   try {
     const gRes = await client.query('SELECT id, status FROM king_galleries WHERE id=$1', [req.ksClient.galleryId]);
     const galleryId = gRes.rows?.[0]?.id;
-    const stGallery = String(gRes.rows?.[0]?.status || '').toLowerCase();
+    const stGallery = normKsStatus(gRes.rows?.[0]?.status);
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
     // Lock por cliente (multi-client) — fallback para status global (legacy)
     const { cid, sk } = req.ksCtx;
-    let locked = ['revisao', 'finalizado'].includes(stGallery);
+    let locked = isKsClientLockedStatus(stGallery);
     if (cid && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
       const stRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, galleryId]);
-      const st = String(stRes.rows?.[0]?.status || '').toLowerCase();
-      if (st) locked = ['revisao', 'finalizado'].includes(st);
+      const st = normKsStatus(stRes.rows?.[0]?.status);
+      if (st) locked = isKsClientLockedStatus(st);
     }
     if (locked) {
       return res.status(409).json({ message: 'Sua seleção já foi enviada e está em revisão. Aguarde ou peça reativação ao fotógrafo.' });
@@ -4760,15 +4766,15 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
   try {
     const gRes = await client.query('SELECT id, status FROM king_galleries WHERE id=$1', [req.ksClient.galleryId]);
     const galleryId = gRes.rows?.[0]?.id;
-    const stGallery = String(gRes.rows?.[0]?.status || '').toLowerCase();
+    const stGallery = normKsStatus(gRes.rows?.[0]?.status);
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
     const { cid, sk } = req.ksCtx;
-    let locked = ['revisao', 'finalizado'].includes(stGallery);
+    let locked = isKsClientLockedStatus(stGallery);
     if (cid && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
       const stRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, galleryId]);
-      const st = String(stRes.rows?.[0]?.status || '').toLowerCase();
-      if (st) locked = ['revisao', 'finalizado'].includes(st);
+      const st = normKsStatus(stRes.rows?.[0]?.status);
+      if (st) locked = isKsClientLockedStatus(st);
     }
     if (locked) {
       return res.status(409).json({ message: 'Sua seleção já foi enviada e está em revisão. Aguarde ou peça reativação ao fotógrafo.' });
@@ -5031,7 +5037,7 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
   try {
     const gRes = await client.query('SELECT id, status FROM king_galleries WHERE id=$1', [req.ksClient.galleryId]);
     const galleryId = gRes.rows?.[0]?.id;
-    const stGallery = String(gRes.rows?.[0]?.status || '').toLowerCase();
+    const stGallery = normKsStatus(gRes.rows?.[0]?.status);
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
     const hasClientTable = await hasTable(client, 'king_gallery_clients');
@@ -5041,11 +5047,11 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
     let cid = ctxCid;
 
     // Lock por cliente (multi-client) — fallback para status global (legacy)
-    let locked = ['revisao', 'finalizado'].includes(stGallery);
+    let locked = isKsClientLockedStatus(stGallery);
     if (cid && hasClientStatus) {
       const stRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, galleryId]);
-      const st = String(stRes.rows?.[0]?.status || '').toLowerCase();
-      if (st) locked = ['revisao', 'finalizado'].includes(st);
+      const st = normKsStatus(stRes.rows?.[0]?.status);
+      if (st) locked = isKsClientLockedStatus(st);
     }
     if (locked) {
       return res.status(409).json({ message: 'Sua seleção já foi enviada. Aguarde a revisão ou solicite reativação ao fotógrafo.' });
