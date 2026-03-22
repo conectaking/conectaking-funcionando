@@ -2182,7 +2182,7 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
   const focusClientId = parseInt(req.query.focusClientId || req.query.clientId || '', 10);
-  const focusCid = Number.isFinite(focusClientId) && focusClientId > 0 ? focusClientId : null;
+  let focusCid = Number.isFinite(focusClientId) && focusClientId > 0 ? focusClientId : null;
   const client = await db.pool.connect();
   try {
     const userId = req.user.userId;
@@ -2201,9 +2201,11 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     if (await hasTable(client, 'king_gallery_clients')) {
       const hasClientStatus = await hasColumn(client, 'king_gallery_clients', 'status');
       const hasClientRound = await hasColumn(client, 'king_gallery_clients', 'selection_round');
+      const hasClientFb = await hasColumn(client, 'king_gallery_clients', 'feedback_cliente');
       const clientCols = ['id', 'nome', 'email', 'telefone', 'enabled', 'note', 'created_at']
         .concat(hasClientStatus ? ['status'] : [])
-        .concat(hasClientRound ? ['selection_round'] : []);
+        .concat(hasClientRound ? ['selection_round'] : [])
+        .concat(hasClientFb ? ['feedback_cliente'] : []);
       const cRes = await client.query(
         `SELECT ${clientCols.join(', ')}
          FROM king_gallery_clients
@@ -2212,6 +2214,12 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         [galleryId]
       );
       clients = cRes.rows || [];
+    }
+
+    const hasSelClientIdEarly = await hasColumn(client, 'king_selections', 'client_id');
+    if (!focusCid && clients.length > 1 && hasSelClientIdEarly) {
+      const firstId = parseInt(clients[0].id, 10);
+      if (Number.isFinite(firstId) && firstId > 0) focusCid = firstId;
     }
 
     const hasFav = await hasColumn(client, 'king_photos', 'is_favorite');
@@ -2257,7 +2265,11 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       filteredSelRows = rowsAll.filter(r => r.client_id == null || parseInt(r.client_id, 10) === onlyClientId);
     }
     const selectedPhotoIds = filteredSelRows.map(r => r.photo_id);
-    const feedback = filteredSelRows.find(r => r.feedback_cliente)?.feedback_cliente || null;
+    let feedback = filteredSelRows.find(r => r.feedback_cliente)?.feedback_cliente || null;
+    const focusRow = focusCid ? clients.find(c => parseInt(c.id, 10) === focusCid) : onlyClient;
+    if (focusRow && focusRow.feedback_cliente != null && String(focusRow.feedback_cliente).trim()) {
+      feedback = focusRow.feedback_cliente;
+    }
     const selectionBatchByPhotoId = {};
     const selectionRoundsSummary = {};
     for (const r of filteredSelRows) {
@@ -2271,6 +2283,7 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     res.json({
       success: true,
       share_base_url: shareBaseUrl || undefined,
+      focus_client_id: focusCid || undefined,
       gallery: {
         ...g,
         photos: pRes.rows,
@@ -3854,7 +3867,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
 
     const hasSelClientId = await hasColumn(client, 'king_selections', 'client_id');
     const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
-    const cid = req.ksClient.clientId ? parseInt(req.ksClient.clientId, 10) : null;
+    const hasSessionKey = await hasColumn(client, 'king_selections', 'session_key');
+    const cid = req.ksCtx.cid;
+    const sk = req.ksCtx.sk;
 
     const selCols = ['photo_id'].concat(hasSelBatch ? ['selection_batch'] : []);
     let selectedPhotoIds = [];
@@ -3871,9 +3886,20 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
             sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
           );
         }
+      } else if (sk && hasSessionKey) {
+        const sRes = await client.query(
+          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2`,
+          [gallery.id, sk]
+        );
+        selectedPhotoIds = sRes.rows.map(r => r.photo_id);
+        if (hasSelBatch) {
+          selectionBatchByPhotoId = Object.fromEntries(
+            sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
+          );
+        }
       } else {
         const sRes = await client.query(
-          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL`,
+          `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL${hasSessionKey ? ' AND (session_key IS NULL OR session_key = \'\')' : ''}`,
           [gallery.id]
         );
         selectedPhotoIds = sRes.rows.map(r => r.photo_id);
@@ -3950,6 +3976,24 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
 
     const selectedCount = selectedPhotoIds.length;
 
+    let deferredSignupActive = false;
+    if (!cid && sk && hasSessionKey) {
+      const hasSelfG = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+      const hasAmG = await hasColumn(client, 'king_galleries', 'access_mode');
+      const gCols = ([]).concat(hasAmG ? ['access_mode'] : []).concat(hasSelfG ? ['allow_self_signup'] : []);
+      if (gCols.length) {
+        const gr = await client.query(
+          `SELECT ${gCols.join(', ')} FROM king_galleries WHERE id=$1`,
+          [gallery.id]
+        );
+        const row = gr.rows[0] || {};
+        let am = hasAmG ? String(row.access_mode || 'private').toLowerCase() : 'private';
+        if (am === 'password') am = 'signup';
+        const allow = hasSelfG ? !!row.allow_self_signup : am === 'signup';
+        deferredSignupActive = am === 'signup' && allow;
+      }
+    }
+
     // Mensagem para exibir quando a seleção já foi enviada (página com cadeado)
     let lockedMessage = null;
     if (locked) {
@@ -3977,7 +4021,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       currentSelectionRound,
       selectionBatchByPhotoId: hasSelBatch ? selectionBatchByPhotoId : undefined,
       frozenSelectionPhotoIds: hasSelBatch && frozenSelectionPhotoIds.length ? frozenSelectionPhotoIds : undefined,
-      immutableSelectionNotice: immutableSelectionNotice || undefined
+      immutableSelectionNotice: immutableSelectionNotice || undefined,
+      deferredSignupActive: deferredSignupActive || undefined
     });
   } finally {
     client.release();
@@ -4319,7 +4364,7 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
     // Lock por cliente (multi-client) — fallback para status global (legacy)
-    const cid = req.ksClient.clientId ? parseInt(req.ksClient.clientId, 10) : null;
+    const { cid, sk } = req.ksCtx;
     let locked = ['revisao', 'finalizado'].includes(stGallery);
     if (cid && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
       const stRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, galleryId]);
@@ -4336,7 +4381,9 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
 
     const hasSelClientId = await hasColumn(client, 'king_selections', 'client_id');
     const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
+    const hasSessionKey = await hasColumn(client, 'king_selections', 'session_key');
     const round = await ksGetCurrentSelectionRound(client, galleryId, cid);
+    const anonSk = sk && hasSessionKey ? sk : null;
 
     if (hasSelClientId) {
       if (cid) {
@@ -4370,11 +4417,15 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
           );
         }
       } else {
+        const anonWhere = anonSk
+          ? 'gallery_id=$1 AND photo_id=$2 AND client_id IS NULL AND session_key=$3'
+          : `gallery_id=$1 AND photo_id=$2 AND client_id IS NULL${hasSessionKey ? ' AND (session_key IS NULL OR session_key = \'\')' : ''}`;
+        const anonParams = anonSk ? [galleryId, photoId, anonSk] : [galleryId, photoId];
         const exists = await client.query(
           hasSelBatch
-            ? 'SELECT id, selection_batch FROM king_selections WHERE gallery_id=$1 AND photo_id=$2 AND client_id IS NULL'
-            : 'SELECT id FROM king_selections WHERE gallery_id=$1 AND photo_id=$2 AND client_id IS NULL',
-          [galleryId, photoId]
+            ? `SELECT id, selection_batch FROM king_selections WHERE ${anonWhere}`
+            : `SELECT id FROM king_selections WHERE ${anonWhere}`,
+          anonParams
         );
         if (exists.rows.length) {
           if (hasSelBatch) {
@@ -4385,13 +4436,25 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
               });
             }
           }
-          await client.query('DELETE FROM king_selections WHERE gallery_id=$1 AND photo_id=$2 AND client_id IS NULL', [galleryId, photoId]);
+          await client.query(`DELETE FROM king_selections WHERE ${anonWhere}`, anonParams);
           return res.json({ success: true, selected: false });
         }
-        if (hasSelBatch) {
+        if (hasSelBatch && hasSessionKey) {
+          await client.query(
+            anonSk
+              ? 'INSERT INTO king_selections (gallery_id, photo_id, client_id, feedback_cliente, selection_batch, session_key) VALUES ($1,$2,NULL,NULL,$3,$4) ON CONFLICT DO NOTHING'
+              : 'INSERT INTO king_selections (gallery_id, photo_id, client_id, feedback_cliente, selection_batch, session_key) VALUES ($1,$2,NULL,NULL,$3,NULL) ON CONFLICT DO NOTHING',
+            anonSk ? [galleryId, photoId, round, anonSk] : [galleryId, photoId, round]
+          );
+        } else if (hasSelBatch) {
           await client.query(
             'INSERT INTO king_selections (gallery_id, photo_id, client_id, feedback_cliente, selection_batch) VALUES ($1,$2,NULL,NULL,$3) ON CONFLICT DO NOTHING',
             [galleryId, photoId, round]
+          );
+        } else if (hasSessionKey && anonSk) {
+          await client.query(
+            'INSERT INTO king_selections (gallery_id, photo_id, client_id, feedback_cliente, session_key) VALUES ($1,$2,NULL,NULL,$3) ON CONFLICT DO NOTHING',
+            [galleryId, photoId, anonSk]
           );
         } else {
           await client.query(
@@ -4452,7 +4515,7 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
     const stGallery = String(gRes.rows?.[0]?.status || '').toLowerCase();
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
-    const cid = req.ksClient.clientId ? parseInt(req.ksClient.clientId, 10) : null;
+    const { cid, sk } = req.ksCtx;
     let locked = ['revisao', 'finalizado'].includes(stGallery);
     if (cid && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
       const stRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, galleryId]);
@@ -4465,7 +4528,10 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
 
     const hasSelClientId = await hasColumn(client, 'king_selections', 'client_id');
     const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
+    const hasSessionKey = await hasColumn(client, 'king_selections', 'session_key');
     const round = await ksGetCurrentSelectionRound(client, galleryId, cid);
+    const anonSk = sk && hasSessionKey ? sk : null;
+    const legacyAnonNullSk = hasSessionKey ? ' AND (session_key IS NULL OR session_key = \'\')' : '';
 
     if (String(mode) === 'unselect') {
       if (hasSelClientId) {
@@ -4492,23 +4558,50 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
           }
         } else if (ids.length) {
           if (hasSelBatch) {
+            if (anonSk) {
+              await client.query(
+                'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2 AND photo_id = ANY($3::int[]) AND selection_batch = $4',
+                [galleryId, anonSk, ids, round]
+              );
+            } else {
+              await client.query(
+                `DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND photo_id = ANY($2::int[]) AND selection_batch = $3${legacyAnonNullSk}`,
+                [galleryId, ids, round]
+              );
+            }
+          } else if (anonSk) {
             await client.query(
-              'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND photo_id = ANY($2::int[]) AND selection_batch = $3',
-              [galleryId, ids, round]
+              'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2 AND photo_id = ANY($3::int[])',
+              [galleryId, anonSk, ids]
             );
           } else {
             await client.query(
-              'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND photo_id = ANY($2::int[])',
+              `DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND photo_id = ANY($2::int[])${legacyAnonNullSk}`,
               [galleryId, ids]
             );
           }
         } else if (hasSelBatch) {
+          if (anonSk) {
+            await client.query(
+              'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2 AND selection_batch = $3',
+              [galleryId, anonSk, round]
+            );
+          } else {
+            await client.query(
+              `DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND selection_batch = $2${legacyAnonNullSk}`,
+              [galleryId, round]
+            );
+          }
+        } else if (anonSk) {
           await client.query(
-            'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND selection_batch = $2',
-            [galleryId, round]
+            'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2',
+            [galleryId, anonSk]
           );
         } else {
-          await client.query('DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL', [galleryId]);
+          await client.query(
+            `DELETE FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL${legacyAnonNullSk}`,
+            [galleryId]
+          );
         }
       } else if (ids.length) {
         if (hasSelBatch) {
@@ -4552,11 +4645,35 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
           );
         }
       } else if (hasSelBatch) {
+        if (hasSessionKey && anonSk) {
+          await client.query(
+            `INSERT INTO king_selections (gallery_id, client_id, photo_id, feedback_cliente, selection_batch, session_key)
+             SELECT $1, NULL, x, NULL, $2, $3 FROM UNNEST($4::int[]) AS x
+             ON CONFLICT DO NOTHING`,
+            [galleryId, round, anonSk, validIds]
+          );
+        } else if (hasSessionKey) {
+          await client.query(
+            `INSERT INTO king_selections (gallery_id, client_id, photo_id, feedback_cliente, selection_batch, session_key)
+             SELECT $1, NULL, x, NULL, $2, NULL FROM UNNEST($3::int[]) AS x
+             ON CONFLICT DO NOTHING`,
+            [galleryId, round, validIds]
+          );
+        } else {
+          await client.query(
+            `INSERT INTO king_selections (gallery_id, client_id, photo_id, feedback_cliente, selection_batch)
+             SELECT $1, NULL, x, NULL, $2 FROM UNNEST($3::int[]) AS x
+             ON CONFLICT DO NOTHING`,
+            [galleryId, round, validIds]
+          );
+        }
+      } else if (hasSessionKey && anonSk) {
+        const values = validIds.map((pid, idx) => `($1,NULL,$${idx + 2},NULL,$${validIds.length + 2})`).join(',');
         await client.query(
-          `INSERT INTO king_selections (gallery_id, client_id, photo_id, feedback_cliente, selection_batch)
-           SELECT $1, NULL, x, NULL, $2 FROM UNNEST($3::int[]) AS x
+          `INSERT INTO king_selections (gallery_id, client_id, photo_id, feedback_cliente, session_key)
+           VALUES ${values}
            ON CONFLICT DO NOTHING`,
-          [galleryId, round, validIds]
+          [galleryId, ...validIds, anonSk]
         );
       } else {
         const values = validIds.map((pid, idx) => `($1,NULL,$${idx + 2},NULL)`).join(',');
@@ -4601,7 +4718,9 @@ router.get('/client/export', requireClient, asyncHandler(async (req, res) => {
     const gallery = gRes.rows[0];
 
     const hasSelClientId = await hasColumn(client, 'king_selections', 'client_id');
-    const cid = req.ksClient.clientId ? parseInt(req.ksClient.clientId, 10) : null;
+    const hasSessionKey = await hasColumn(client, 'king_selections', 'session_key');
+    const { cid, sk } = req.ksCtx;
+    const anonSk = sk && hasSessionKey ? sk : null;
     const sRes = hasSelClientId
       ? (cid
         ? await client.query(
@@ -4612,14 +4731,23 @@ router.get('/client/export', requireClient, asyncHandler(async (req, res) => {
            ORDER BY p."order" ASC, p.id ASC`,
           [gallery.id, cid]
         )
-        : await client.query(
-          `SELECT p.original_name
-           FROM king_selections s
-           JOIN king_photos p ON p.id = s.photo_id
-           WHERE s.gallery_id=$1 AND s.client_id IS NULL
-           ORDER BY p."order" ASC, p.id ASC`,
-          [gallery.id]
-        ))
+        : anonSk
+          ? await client.query(
+            `SELECT p.original_name
+             FROM king_selections s
+             JOIN king_photos p ON p.id = s.photo_id
+             WHERE s.gallery_id=$1 AND s.client_id IS NULL AND s.session_key=$2
+             ORDER BY p."order" ASC, p.id ASC`,
+            [gallery.id, anonSk]
+          )
+          : await client.query(
+            `SELECT p.original_name
+             FROM king_selections s
+             JOIN king_photos p ON p.id = s.photo_id
+             WHERE s.gallery_id=$1 AND s.client_id IS NULL${hasSessionKey ? ' AND (s.session_key IS NULL OR s.session_key = \'\')' : ''}
+             ORDER BY p."order" ASC, p.id ASC`,
+            [gallery.id]
+          ))
       : await client.query(
         `SELECT p.original_name
          FROM king_selections s
@@ -4658,10 +4786,11 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
     const stGallery = String(gRes.rows?.[0]?.status || '').toLowerCase();
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
-    const cid = req.ksClient.clientId ? parseInt(req.ksClient.clientId, 10) : null;
     const hasClientTable = await hasTable(client, 'king_gallery_clients');
     const hasClientStatus = hasClientTable && (await hasColumn(client, 'king_gallery_clients', 'status'));
     const hasClientFeedback = hasClientTable && (await hasColumn(client, 'king_gallery_clients', 'feedback_cliente'));
+    const { cid: ctxCid, sk } = req.ksCtx;
+    let cid = ctxCid;
 
     // Lock por cliente (multi-client) — fallback para status global (legacy)
     let locked = ['revisao', 'finalizado'].includes(stGallery);
@@ -4672,6 +4801,194 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
     }
     if (locked) {
       return res.status(409).json({ message: 'Sua seleção já foi enviada. Aguarde a revisão ou solicite reativação ao fotógrafo.' });
+    }
+
+    const hasSessionKeyCol = await hasColumn(client, 'king_selections', 'session_key');
+
+    // Cadastro ao enviar: cria cliente, liga seleções anónimas e devolve novo JWT (sem pedir senha ao visitante).
+    if (!cid && sk && hasSessionKeyCol) {
+      const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+      const hasAm = await hasColumn(client, 'king_galleries', 'access_mode');
+      const gMetaCols = ['id'].concat(hasAm ? ['access_mode'] : []).concat(hasSelf ? ['allow_self_signup'] : []);
+      const gx = await client.query(`SELECT ${gMetaCols.join(', ')} FROM king_galleries WHERE id=$1`, [galleryId]);
+      let am = hasAm ? String(gx.rows[0]?.access_mode || 'private').toLowerCase() : 'private';
+      if (am === 'password') am = 'signup';
+      const allow = hasSelf ? !!gx.rows[0]?.allow_self_signup : am === 'signup';
+      if (am !== 'signup' || !allow) {
+        return res.status(403).json({ message: 'Este envio não está disponível para esta galeria.' });
+      }
+
+      const nome = String((req.body || {}).nome || '').trim().slice(0, 255);
+      const email = String((req.body || {}).email || '').trim();
+      const telefone = String((req.body || {}).telefone || '').trim();
+      if (!nome || !email || !telefone) {
+        return res.status(400).json({ message: 'Informe nome, e-mail e telefone para enviar sua seleção.' });
+      }
+      const emailNorm = email.toLowerCase();
+
+      const preCnt = await client.query(
+        'SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2',
+        [galleryId, sk]
+      );
+      if ((preCnt.rows[0]?.c || 0) === 0) {
+        return res.status(409).json({ message: 'Nada para enviar. Sua sessão pode ter expirado — atualize a página e selecione novamente.' });
+      }
+
+      if (!hasClientTable) {
+        return res.status(500).json({ message: 'Cadastro de clientes indisponível neste servidor.' });
+      }
+
+      const pass = String(Math.floor(100000 + Math.random() * 900000));
+      const senha_hash = await bcrypt.hash(pass, 10);
+      const senha_enc = encryptPassword(pass);
+
+      let newClientId;
+      await client.query('BEGIN');
+      try {
+        let insC;
+        try {
+          insC = await client.query(
+            `INSERT INTO king_gallery_clients (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, created_at, updated_at)
+             VALUES ($1,$2,$3,$4,$5,$6,TRUE,NOW(),NOW())
+             RETURNING id`,
+            [galleryId, nome, emailNorm, telefone, senha_hash, senha_enc]
+          );
+        } catch (e) {
+          if (String(e.message || '').toLowerCase().includes('uniq_king_gallery_clients_gallery_email')) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+              message: 'Já existe um cadastro com este e-mail nesta galeria. Use “Entrar” com e-mail e senha ou outro e-mail.'
+            });
+          }
+          throw e;
+        }
+        newClientId = insC.rows[0].id;
+
+        await client.query(
+          'UPDATE king_selections SET client_id=$1, session_key=NULL WHERE gallery_id=$2 AND client_id IS NULL AND session_key=$3',
+          [newClientId, galleryId, sk]
+        );
+
+        const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
+        let maxRound = 1;
+        if (hasSelBatch) {
+          const mr = await client.query(
+            'SELECT COALESCE(MAX(selection_batch),1)::int AS m FROM king_selections WHERE gallery_id=$1 AND client_id=$2',
+            [galleryId, newClientId]
+          );
+          maxRound = mr.rows[0]?.m || 1;
+        }
+
+        const hasCliRound = await hasColumn(client, 'king_gallery_clients', 'selection_round');
+        if (hasClientStatus) {
+          const parts = [];
+          const vals = [];
+          let i = 1;
+          parts.push(`status=$${i++}`);
+          vals.push('revisao');
+          if (hasClientFeedback && feedback && String(feedback).trim()) {
+            parts.push(`feedback_cliente=$${i++}`);
+            vals.push(String(feedback).trim().slice(0, 2000));
+          }
+          if (hasCliRound) {
+            parts.push(`selection_round=$${i++}`);
+            vals.push(maxRound);
+          }
+          parts.push('updated_at=NOW()');
+          vals.push(galleryId, newClientId);
+          await client.query(
+            `UPDATE king_gallery_clients SET ${parts.join(', ')} WHERE gallery_id=$${i++} AND id=$${i}`,
+            vals
+          );
+        }
+
+        await client.query('COMMIT');
+      } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+      }
+
+      try {
+        await notifyWhatsAppSelectionFinalized({
+          pgClient: client,
+          galleryId,
+          clientId: newClientId,
+          feedback
+        });
+      } catch (_) { }
+
+      const countRes = await client.query(
+        'SELECT COUNT(*)::int AS cnt FROM king_selections WHERE gallery_id=$1 AND client_id=$2',
+        [galleryId, newClientId]
+      );
+      const selectionCount = countRes.rows[0]?.cnt || 0;
+      const clientDisplayName = nome;
+
+      const DEFAULT_THANK_YOU_MESSAGE = 'Obrigado, {{nome_cliente}}! Sua seleção foi recebida com sucesso. Você escolheu {{quantidade}} foto(s). Nosso retratista {{nome}} agradece pela confiança e pelo carinho.';
+      let photographerDisplayName = 'Fotógrafo';
+      let projectName = null;
+      let thankYouConfig = { title: 'Obrigado!', message: null, imageUrl: null };
+      try {
+        const hasThankYouCol = await hasColumn(client, 'king_galleries', 'thank_you_title');
+        const hasThankYouNameCol = await hasColumn(client, 'king_galleries', 'thank_you_photographer_name');
+        const g2 = await client.query(
+          `SELECT g.nome_projeto${hasThankYouCol ? ', g.thank_you_title, g.thank_you_message, g.thank_you_image_url' : ''}${hasThankYouNameCol ? ', g.thank_you_photographer_name' : ''}
+           FROM king_galleries g WHERE g.id=$1`,
+          [galleryId]
+        );
+        if (g2.rows[0]) {
+          const row = g2.rows[0];
+          if (row.nome_projeto && String(row.nome_projeto).trim()) {
+            projectName = String(row.nome_projeto).trim();
+          }
+          if (row.thank_you_photographer_name && String(row.thank_you_photographer_name).trim()) {
+            photographerDisplayName = String(row.thank_you_photographer_name).trim();
+          } else {
+            photographerDisplayName = row.nome_projeto || photographerDisplayName;
+            const nameRes = await client.query(
+              `SELECT COALESCE(p.display_name, u.email, '') AS name
+               FROM king_galleries g
+               JOIN profile_items pi ON pi.id = g.profile_item_id
+               JOIN users u ON u.id = pi.user_id
+               LEFT JOIN user_profiles p ON p.user_id = u.id
+               WHERE g.id=$1 LIMIT 1`,
+              [galleryId]
+            );
+            if (nameRes.rows[0]?.name) photographerDisplayName = String(nameRes.rows[0].name).trim();
+          }
+          if (hasThankYouCol && row.thank_you_title !== undefined) {
+            const customMessage = row.thank_you_message != null && String(row.thank_you_message).trim() ? String(row.thank_you_message).trim() : null;
+            thankYouConfig = {
+              title: row.thank_you_title || 'Obrigado!',
+              message: customMessage || DEFAULT_THANK_YOU_MESSAGE,
+              imageUrl: row.thank_you_image_url || null
+            };
+          } else {
+            thankYouConfig = {
+              title: 'Obrigado!',
+              message: DEFAULT_THANK_YOU_MESSAGE,
+              imageUrl: null
+            };
+          }
+        }
+      } catch (_) { }
+      if (!thankYouConfig.message) thankYouConfig.message = DEFAULT_THANK_YOU_MESSAGE;
+
+      const token = jwt.sign(
+        { type: 'kingselection_client', galleryId, slug: req.ksClient.slug, clientId: newClientId },
+        config.jwt.secret,
+        { expiresIn: '14d' }
+      );
+
+      return res.json({
+        success: true,
+        token,
+        selectionCount,
+        photographerDisplayName,
+        clientDisplayName,
+        projectName,
+        thankYouConfig
+      });
     }
 
     // Multi-client: status/feedback por cliente (não trava a galeria inteira)
