@@ -48,7 +48,7 @@ const config = {
         refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d'
     },
     
-    // CORS: com credentials: true o origin não pode ser '*'; refletir a origem quando permitida.
+    // CORS: com credentials: true o origin não pode ser '*'; devolver o Origin exato no preflight.
     cors: {
         origin: (function() {
             const envList = (process.env.CORS_ORIGIN || '')
@@ -69,14 +69,43 @@ const config = {
                 'https://conectaking-api.onrender.com',
                 ...envList
             ]);
-            return function(origin, callback) {
+            function isConectakingSiteOrigin(origin) {
+                try {
+                    const u = new URL(origin);
+                    const host = u.hostname.toLowerCase();
+                    return (
+                        host === 'conectaking.com.br' ||
+                        host === 'www.conectaking.com.br' ||
+                        host.endsWith('.conectaking.com.br')
+                    );
+                } catch (e) {
+                    return false;
+                }
+            }
+            function isLocalDevOrigin(origin) {
+                try {
+                    const u = new URL(origin);
+                    const h = u.hostname.toLowerCase();
+                    return h === '127.0.0.1' || h === 'localhost';
+                } catch (e) {
+                    return false;
+                }
+            }
+            return function corsOriginCallback(origin, callback) {
                 if (!origin) return callback(null, true);
                 if (allowed.has(origin)) return callback(null, origin);
+                if (isConectakingSiteOrigin(origin)) return callback(null, origin);
+                if (isLocalDevOrigin(origin)) return callback(null, origin);
                 if (allowed.has('*')) return callback(null, origin);
                 callback(null, false);
             };
         })(),
-        credentials: true
+        credentials: true,
+        methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'Cache-Control'],
+        exposedHeaders: ['Content-Disposition', 'Retry-After'],
+        optionsSuccessStatus: 204,
+        maxAge: 86400
     },
     
     // Rate Limiting (aumentado para evitar problemas com usuários normais)

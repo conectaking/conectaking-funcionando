@@ -86,6 +86,9 @@ app.set('trust proxy', true);
 // Health check na raiz (ANTES de qualquer outro middleware/rota, para nunca devolver 404 de perfil)
 app.get('/health', (req, res, next) => Promise.resolve(healthHandler(req, res)).catch(next));
 
+// CORS antes do Helmet: garante preflight OPTIONS com Access-Control-* (evita falha no browser em conectaking.com.br → API Render)
+app.use(cors(config.cors));
+
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -386,7 +389,6 @@ cron.schedule('0 8 * * *', async () => {
 });
 
 app.use(compression());
-app.use(cors(config.cors));
 
 // URL pública da API (para o dashboard em localhost usar este domínio e evitar CORS por redirect em conectaking.com.br)
 const PUBLIC_API_BASE = (process.env.API_URL || 'https://conectaking-api.onrender.com').toString().trim().replace(/\/$/, '');
