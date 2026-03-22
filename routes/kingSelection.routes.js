@@ -4059,6 +4059,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     }
     const currentSelectionRound = await ksGetCurrentSelectionRound(client, gallery.id, cid);
 
+    const resolvedClientId = await resolveFaceClientIdForSession(client, gallery.id, cid);
+    const faceOn = hasFaceEnabled && !!gallery.face_recognition_enabled;
+    const faceRecognitionUsable = !!(faceOn && resolvedClientId);
+
     // Lock por cliente (multi-client) — fallback para status global (legacy)
     let locked = ['revisao', 'finalizado'].includes(String(gallery.status || '').toLowerCase());
     if (cid && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
@@ -4145,8 +4149,11 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         photos,
         locked,
         allow_download: hasAllowDownload ? !!gallery.allow_download : false,
-        face_recognition_enabled: hasFaceEnabled ? !!gallery.face_recognition_enabled : false
+        face_recognition_enabled: hasFaceEnabled ? !!gallery.face_recognition_enabled : false,
+        client_image_quality: hasClientImgQ ? normalizeClientImageQuality(gallery.client_image_quality) : 'low'
       },
+      resolvedClientId: resolvedClientId || undefined,
+      faceRecognitionUsable: faceRecognitionUsable || undefined,
       selectedPhotoIds,
       selectedCount,
       photographerDisplayName,
@@ -4255,18 +4262,22 @@ async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient)
 // ===== Rekognition CLIENTE: Buscar fotos do meu rosto =====
 router.get('/client/face-results', requireClient, asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
-  const clientId = req.ksClient.clientId; // pode ser null se for o cliente principal da galeria (legado)
-
-  if (!clientId) {
-    return res.status(400).json({ message: 'Seu perfil de acesso não suporta reconhecimento facial. Solicite um acesso individual ao fotógrafo.' });
-  }
-
   const page = Math.max(1, parseInt(req.query.page || '1', 10));
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '50', 10)));
   const offset = (page - 1) * limit;
 
   const client = await db.pool.connect();
   try {
+    const clientId = await resolveFaceClientIdForSession(client, galleryId, req.ksCtx.cid);
+    if (!clientId) {
+      return res.status(400).json({ message: 'Reconhecimento facial requer acesso individual ou uma única ficha de visitante nesta galeria. Peça ao fotógrafo.' });
+    }
+    if (await hasColumn(client, 'king_galleries', 'face_recognition_enabled')) {
+      const ge = await client.query('SELECT face_recognition_enabled FROM king_galleries WHERE id=$1', [galleryId]);
+      if (!ge.rows[0]?.face_recognition_enabled) {
+        return res.status(403).json({ message: 'Reconhecimento facial está desativado nesta galeria.' });
+      }
+    }
     // Modo sob demanda: CompareFaces + cache (não precisa ter processado as fotos da galeria)
     if (useRekogOnDemand()) {
       const cached = await getSearchCache(client, galleryId, clientId, 'enroll');
@@ -4321,8 +4332,6 @@ router.get('/client/face-results', requireClient, asyncHandler(async (req, res) 
 // ===== Rekognition CLIENTE: Buscar minhas fotos por OUTRA foto (sem cadastrar de novo) =====
 router.post('/client/search-face-by-photo', requireClient, uploadMem.single('image'), asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
-  const clientId = req.ksClient.clientId;
-  if (!clientId) return res.status(400).json({ message: 'Seu perfil não suporta busca por rosto.' });
   if (!req.file) return res.status(400).json({ message: 'Envie uma foto.' });
 
   const rekogCfg = getRekogConfig();
@@ -4337,6 +4346,16 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
 
   const pgClient = await db.pool.connect();
   try {
+    const clientId = await resolveFaceClientIdForSession(pgClient, galleryId, req.ksCtx.cid);
+    if (!clientId) {
+      return res.status(400).json({ message: 'Busca por rosto requer acesso individual ou uma única ficha nesta galeria.' });
+    }
+    if (await hasColumn(pgClient, 'king_galleries', 'face_recognition_enabled')) {
+      const ge = await pgClient.query('SELECT face_recognition_enabled FROM king_galleries WHERE id=$1', [galleryId]);
+      if (!ge.rows[0]?.face_recognition_enabled) {
+        return res.status(403).json({ message: 'Reconhecimento facial está desativado nesta galeria.' });
+      }
+    }
     // Modo sob demanda: CompareFaces + cache (não cobra de novo se a mesma foto já foi buscada)
     if (useRekogOnDemand()) {
       const imageHash = crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 32);
@@ -4412,8 +4431,6 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
 // ===== Rekognition CLIENTE: Upload de foto para cadastro de rosto =====
 router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'), asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
-  const clientId = req.ksClient.clientId;
-  if (!clientId) return res.status(403).json({ message: 'Apenas acessos individuais podem cadastrar rosto.' });
 
   if (!req.file) return res.status(400).json({ message: 'Nenhuma imagem enviada.' });
 
@@ -4425,6 +4442,17 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
 
   const client = await db.pool.connect();
   try {
+    const clientId = await resolveFaceClientIdForSession(client, galleryId, req.ksCtx.cid);
+    if (!clientId) {
+      return res.status(403).json({ message: 'Cadastro de rosto requer acesso individual ou uma única ficha de visitante nesta galeria.' });
+    }
+    if (await hasColumn(client, 'king_galleries', 'face_recognition_enabled')) {
+      const ge = await client.query('SELECT face_recognition_enabled FROM king_galleries WHERE id=$1', [galleryId]);
+      if (!ge.rows[0]?.face_recognition_enabled) {
+        return res.status(403).json({ message: 'Reconhecimento facial está desativado nesta galeria.' });
+      }
+    }
+
     let buffer = await normalizeImageForRekognition(req.file.buffer);
 
     // Modo sob demanda: salva imagem de referência no staging (não deleta); não chama IndexFaces (evita custo)
