@@ -3767,6 +3767,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const frozenSelectionPhotoIds = hasSelBatch
       ? selectedPhotoIds.filter((pid) => (selectionBatchByPhotoId[String(pid)] || 1) < currentSelectionRound)
       : [];
+    const immutableSelectionNotice =
+      !locked && hasSelBatch && frozenSelectionPhotoIds.length
+        ? 'Parte da sua seleção já foi enviada em uma rodada anterior: essas fotos continuam escolhidas e não podem ser desmarcadas. Você pode apenas acrescentar novas fotos (e desmarcar só o que escolher nesta rodada).'
+        : null;
 
     // Lock por cliente (multi-client) — fallback para status global (legacy)
     let locked = ['revisao', 'finalizado'].includes(String(gallery.status || '').toLowerCase());
@@ -3837,7 +3841,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       lockedMessage,
       currentSelectionRound,
       selectionBatchByPhotoId: hasSelBatch ? selectionBatchByPhotoId : undefined,
-      frozenSelectionPhotoIds: hasSelBatch && frozenSelectionPhotoIds.length ? frozenSelectionPhotoIds : undefined
+      frozenSelectionPhotoIds: hasSelBatch && frozenSelectionPhotoIds.length ? frozenSelectionPhotoIds : undefined,
+      immutableSelectionNotice: immutableSelectionNotice || undefined
     });
   } finally {
     client.release();
