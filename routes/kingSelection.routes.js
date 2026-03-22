@@ -5304,6 +5304,12 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
     const useThumb = ['1', 'true', 'thumb', 's'].includes(String(req.query.thumb || req.query.size || '').toLowerCase());
+    let galleryQuality = 'low';
+    if (await hasColumn(client, 'king_galleries', 'client_image_quality')) {
+      const gq = await client.query('SELECT client_image_quality FROM king_galleries WHERE id=$1', [payload.galleryId]);
+      galleryQuality = normalizeClientImageQuality(gq.rows[0]?.client_image_quality);
+    }
+    const spec = getClientPreviewOutputSpec(galleryQuality, useThumb);
     const [buf, wm] = await Promise.all([
       fetchPhotoFileBufferFromFilePath(photo.file_path),
       loadWatermarkForGallery(client, payload.galleryId)
@@ -5312,8 +5318,8 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
 
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
-    const { width, height } = getDisplayDimensions(meta, 1200, 1200);
-    const max = useThumb ? 400 : 1200;
+    const { width, height } = getDisplayDimensions(meta, spec.max, spec.max);
+    const max = spec.max;
     const scale = Math.min(max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
@@ -5323,7 +5329,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       outW,
       outH,
       watermark: wm,
-      jpegOpts: { quality: useThumb ? 76 : 80, progressive: true }
+      jpegOpts: { quality: spec.jpegQuality, progressive: true }
     });
 
     res.set('Content-Type', 'image/jpeg');
