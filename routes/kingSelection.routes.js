@@ -3666,12 +3666,15 @@ router.post('/client/register', asyncHandler(async (req, res) => {
     const telNorm = String(telefone || '').trim();
     const nomeNorm = String(nome || '').trim().slice(0, 255);
 
+    let newClientId;
     try {
-      await client.query(
+      const insC = await client.query(
         `INSERT INTO king_gallery_clients (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,TRUE,NOW(),NOW())`,
+         VALUES ($1,$2,$3,$4,$5,$6,TRUE,NOW(),NOW())
+         RETURNING id`,
         [g.id, nomeNorm, emailNorm, telNorm || null, senha_hash, senha_enc]
       );
+      newClientId = insC.rows[0].id;
     } catch (e) {
       if (String(e.message || '').toLowerCase().includes('uniq_king_gallery_clients_gallery_email')) {
         return res.status(409).json({ message: 'Já existe um cliente com este e-mail nesta galeria.' });
@@ -3680,12 +3683,43 @@ router.post('/client/register', asyncHandler(async (req, res) => {
     }
 
     const token = jwt.sign(
-      { type: 'kingselection_client', galleryId: g.id, slug: g.slug },
+      { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: newClientId },
       config.jwt.secret,
       { expiresIn: '14d' }
     );
 
     res.json({ success: true, token, client_password: pass });
+  } finally {
+    client.release();
+  }
+}));
+
+// Galeria pública: sessão anónima (mesmo modelo que seleções com client_id NULL)
+router.post('/client/public-enter', asyncHandler(async (req, res) => {
+  const slug = String((req.body || {}).slug || '').trim();
+  if (!slug) return res.status(400).json({ message: 'Informe o slug da galeria.' });
+
+  const client = await db.pool.connect();
+  try {
+    const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const gRes = await client.query(
+      `SELECT id, slug${hasAccessMode ? ', access_mode' : ''} FROM king_galleries WHERE slug=$1`,
+      [slug]
+    );
+    if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const g = gRes.rows[0];
+    let accessMode = hasAccessMode ? String(g.access_mode || 'private').toLowerCase() : 'private';
+    if (accessMode === 'password') accessMode = 'signup';
+    if (accessMode !== 'public') {
+      return res.status(403).json({ message: 'Esta galeria exige login ou cadastro.' });
+    }
+
+    const token = jwt.sign(
+      { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: null },
+      config.jwt.secret,
+      { expiresIn: '14d' }
+    );
+    res.json({ success: true, token });
   } finally {
     client.release();
   }
