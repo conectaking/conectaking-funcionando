@@ -4053,7 +4053,8 @@ router.post('/client/login-by-details', asyncHandler(async (req, res) => {
     );
     if (!cRes.rows.length) {
       return res.status(401).json({
-        message: 'Não encontramos cadastro com estes dados. Confira nome, e-mail e telefone ou envie a seleção primeiro pela galeria.'
+        message:
+          'Não encontramos cadastro com este e-mail nesta galeria. Verifique o e-mail ou envie a seleção primeiro; se já enviou, use o mesmo e-mail de antes.'
       });
     }
     const row = cRes.rows[0];
@@ -4067,10 +4068,27 @@ router.post('/client/login-by-details', asyncHandler(async (req, res) => {
     }
 
     if (ksNormClientNameMatch(row.nome) !== nomeNorm) {
-      return res.status(401).json({ message: 'Nome ou telefone não conferem com o cadastro deste e-mail.' });
+      return res.status(401).json({
+        message:
+          'O nome não confere com o cadastro deste e-mail. Use exatamente o mesmo nome de quando você enviou a seleção.'
+      });
     }
-    if (ksNormClientPhoneDigits(row.telefone || '') !== telDigits) {
-      return res.status(401).json({ message: 'Nome ou telefone não conferem com o cadastro deste e-mail.' });
+
+    const rowTelDigits = ksNormClientPhoneDigits(row.telefone || '');
+    if (rowTelDigits.length >= 8) {
+      if (telDigits.length < 8) {
+        return res.status(400).json({ message: 'Informe o telefone cadastrado (com DDD ou código do país).' });
+      }
+      if (telDigits !== rowTelDigits) {
+        return res.status(401).json({
+          message:
+            'O telefone não confere com o cadastro deste e-mail. Use o mesmo número de quando você enviou ou entre com e-mail e senha.'
+        });
+      }
+    } else if (String(telefone || '').trim() && telDigits.length > 0 && telDigits.length < 8) {
+      return res.status(400).json({
+        message: 'Telefone incompleto. Deixe em branco se seu cadastro ainda não tinha telefone, ou informe o número completo com DDD.'
+      });
     }
 
     const token = jwt.sign(
