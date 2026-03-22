@@ -169,7 +169,7 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
     }
 
     const token = jwt.sign(
-      { type: 'kingselection_client', galleryId: g.id, clientId, slug: g.slug },
+      { type: 'kingselection_client', galleryId: g.id, clientId, slug: g.slug, tyh: false },
       config.jwt.secret,
       { expiresIn: '14d' }
     );
@@ -3967,7 +3967,7 @@ router.post('/client/login', asyncHandler(async (req, res) => {
         const ok = await bcrypt.compare(String(senha), String(c.senha_hash));
         if (!ok) return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
         const token = jwt.sign(
-          { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: c.id },
+          { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: c.id, tyh: false },
           config.jwt.secret,
           { expiresIn: '14d' }
         );
@@ -3983,7 +3983,86 @@ router.post('/client/login', asyncHandler(async (req, res) => {
     if (!okLegacy) return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
 
     const token = jwt.sign(
-      { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: null },
+      { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: null, tyh: false },
+      config.jwt.secret,
+      { expiresIn: '14d' }
+    );
+    res.json({ success: true, token });
+  } finally {
+    client.release();
+  }
+}));
+
+/** Visitante (cadastro ao enviar): reentrar só com nome + e-mail + telefone (sem senha). */
+router.post('/client/login-by-details', asyncHandler(async (req, res) => {
+  const { slug, nome, email, telefone } = req.body || {};
+  if (!slug || !nome || !email || !telefone) {
+    return res.status(400).json({ message: 'Informe slug, nome, e-mail e telefone.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const gRes = await client.query('SELECT id, slug FROM king_galleries WHERE slug=$1', [String(slug).trim()]);
+    if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const g = gRes.rows[0];
+
+    if (!(await hasTable(client, 'king_gallery_clients'))) {
+      return res.status(503).json({ message: 'Cadastro de clientes indisponível neste servidor.' });
+    }
+
+    const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+    const hasAm = await hasColumn(client, 'king_galleries', 'access_mode');
+    const cols = ['id'].concat(hasAm ? ['access_mode'] : []).concat(hasSelf ? ['allow_self_signup'] : []);
+    const gx = await client.query(`SELECT ${cols.join(', ')} FROM king_galleries WHERE id=$1`, [g.id]);
+    const grow = gx.rows[0] || {};
+    let am = hasAm ? String(grow.access_mode || 'private').toLowerCase() : 'private';
+    if (am === 'password') am = 'signup';
+    const allow = hasSelf ? !!grow.allow_self_signup : am === 'signup';
+    if (am !== 'signup' || !allow) {
+      return res.status(403).json({
+        message: 'Nesta galeria use e-mail e senha. O acesso só com nome e telefone é para o fluxo de cadastro ao enviar.'
+      });
+    }
+
+    const emailNorm = String(email).toLowerCase().trim();
+    const nomeNorm = ksNormClientNameMatch(nome);
+    const telDigits = ksNormClientPhoneDigits(telefone);
+    if (!telDigits || telDigits.length < 8) {
+      return res.status(400).json({ message: 'Informe um telefone válido (com DDD).' });
+    }
+
+    const cRes = await client.query(
+      `SELECT id, nome, telefone, enabled, status
+       FROM king_gallery_clients
+       WHERE gallery_id=$1 AND lower(email)=lower($2)
+       ORDER BY id DESC
+       LIMIT 1`,
+      [g.id, emailNorm]
+    );
+    if (!cRes.rows.length) {
+      return res.status(401).json({
+        message: 'Não encontramos cadastro com estes dados. Confira nome, e-mail e telefone ou envie a seleção primeiro pela galeria.'
+      });
+    }
+    const row = cRes.rows[0];
+    if (row.enabled === false) {
+      return res.status(401).json({ message: 'Acesso desativado. Solicite um novo acesso ao fotógrafo.' });
+    }
+
+    const st = normKsStatus(row.status);
+    if (st === 'finalizado') {
+      return res.status(403).json({ message: 'Esta seleção já foi finalizada. Fale com o fotógrafo.' });
+    }
+
+    if (ksNormClientNameMatch(row.nome) !== nomeNorm) {
+      return res.status(401).json({ message: 'Nome ou telefone não conferem com o cadastro deste e-mail.' });
+    }
+    if (ksNormClientPhoneDigits(row.telefone || '') !== telDigits) {
+      return res.status(401).json({ message: 'Nome ou telefone não conferem com o cadastro deste e-mail.' });
+    }
+
+    const token = jwt.sign(
+      { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: row.id, tyh: false },
       config.jwt.secret,
       { expiresIn: '14d' }
     );
@@ -4040,7 +4119,7 @@ router.post('/client/register', asyncHandler(async (req, res) => {
     }
 
     const token = jwt.sign(
-      { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: newClientId },
+      { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: newClientId, tyh: false },
       config.jwt.secret,
       { expiresIn: '14d' }
     );
