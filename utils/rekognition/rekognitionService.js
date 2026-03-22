@@ -30,7 +30,8 @@ function getRekogClient() {
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    }
+    },
+    maxAttempts: Math.min(8, Math.max(3, parseInt(String(process.env.REKOG_MAX_ATTEMPTS || '5'), 10) || 5))
   });
   return _client;
 }
