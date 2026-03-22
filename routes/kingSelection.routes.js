@@ -572,6 +572,79 @@ function isKsClientLockedStatus(statusNorm) {
   return statusNorm === 'revisao' || statusNorm === 'finalizado';
 }
 
+/** Galeria em modo visitante (cadastro ao enviar / signup + autocadastro). */
+function ksGalleryRowIsDeferredSignup(row, hasAccessModeCol, hasAllowSelfCol) {
+  if (!row) return false;
+  let am = hasAccessModeCol ? String(row.access_mode || 'private').toLowerCase() : 'private';
+  if (am === 'password') am = 'signup';
+  const allowSelf = hasAllowSelfCol ? !!row.allow_self_signup : am === 'signup';
+  return am === 'signup' && allowSelf;
+}
+
+/**
+ * tyh (thank-you hold): true = acabou de enviar (só ecrã obrigado até sair); false = reentrou com nome/e-mail/telefone.
+ * Omitido em JWT legado: revisão continua bloqueada como antes.
+ */
+function ksClientJwtThankYouHold(jwtPayload, clientStatusNorm) {
+  if (!jwtPayload || typeof jwtPayload !== 'object') return isKsClientLockedStatus(clientStatusNorm);
+  if (jwtPayload.tyh === false) return false;
+  if (jwtPayload.tyh === true) return true;
+  return isKsClientLockedStatus(clientStatusNorm);
+}
+
+function ksNormClientNameMatch(s) {
+  return String(s || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function ksNormClientPhoneDigits(s) {
+  return String(s || '').replace(/\D/g, '');
+}
+
+/** Travamento da galeria para o cliente: em revisão com fluxo “cadastro ao enviar”, permite editar se tyh=false. */
+async function ksResolveClientSelectionLocked(pgClient, req, galleryId, galleryRow) {
+  const stGallery = normKsStatus(galleryRow?.status);
+  let locked = isKsClientLockedStatus(stGallery);
+  const { cid } = req.ksCtx || {};
+  const jwtPayload = req.ksClient;
+
+  const hasClientTable = await hasTable(pgClient, 'king_gallery_clients');
+  const hasClientStatus = hasClientTable && (await hasColumn(pgClient, 'king_gallery_clients', 'status'));
+  let clientStNorm = null;
+
+  if (cid && hasClientStatus) {
+    const stRes = await pgClient.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, galleryId]);
+    clientStNorm = normKsStatus(stRes.rows?.[0]?.status);
+    if (clientStNorm) locked = isKsClientLockedStatus(clientStNorm);
+  }
+
+  if (clientStNorm === 'finalizado') return true;
+
+  if (cid && clientStNorm === 'revisao') {
+    const hasAm = await hasColumn(pgClient, 'king_galleries', 'access_mode');
+    const hasSelf = await hasColumn(pgClient, 'king_galleries', 'allow_self_signup');
+    const row = { ...galleryRow };
+    if ((hasAm && row.access_mode === undefined) || (hasSelf && row.allow_self_signup === undefined)) {
+      const cols = ['id'];
+      if (hasAm) cols.push('access_mode');
+      if (hasSelf) cols.push('allow_self_signup');
+      const gr = await pgClient.query(`SELECT ${cols.join(', ')} FROM king_galleries WHERE id=$1`, [galleryId]);
+      Object.assign(row, gr.rows[0] || {});
+    }
+    const deferred = ksGalleryRowIsDeferredSignup(row, hasAm, hasSelf);
+    if (deferred) {
+      const thankYouHold = ksClientJwtThankYouHold(jwtPayload, clientStNorm);
+      locked = thankYouHold;
+    }
+  }
+
+  return locked;
+}
+
 function getPwCryptoKey() {
   // Chave para criptografar a senha do cliente (para o fotógrafo conseguir reenviar via WhatsApp)
   // Preferir variável específica; fallback para o jwt.secret.
@@ -4056,8 +4129,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasClientImgQ = await hasColumn(client, 'king_galleries', 'client_image_quality');
     const hasThankYou = await hasColumn(client, 'king_galleries', 'thank_you_title');
     const hasThankYouName = await hasColumn(client, 'king_galleries', 'thank_you_photographer_name');
+    const hasAccessModeG = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasAllowSelfG = await hasColumn(client, 'king_galleries', 'allow_self_signup');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -4135,13 +4210,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const faceOn = hasFaceEnabled && !!gallery.face_recognition_enabled;
     const faceRecognitionUsable = !!(faceOn && resolvedClientId);
 
-    // Lock por cliente (multi-client) — fallback para status global (legacy)
-    let locked = isKsClientLockedStatus(normKsStatus(gallery.status));
-    if (cid && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
-      const stRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, gallery.id]);
-      const st = normKsStatus(stRes.rows?.[0]?.status);
-      if (st) locked = isKsClientLockedStatus(st);
-    }
+    const locked = await ksResolveClientSelectionLocked(client, req, gallery.id, gallery);
 
     const frozenSelectionPhotoIds = hasSelBatch
       ? selectedPhotoIds.filter((pid) => (selectionBatchByPhotoId[String(pid)] || 1) < currentSelectionRound)
@@ -4207,10 +4276,20 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     // Mensagem para exibir quando a seleção já foi enviada (página com cadeado)
     let lockedMessage = null;
     if (locked) {
+      let revisaoSelfHint = '';
+      if (cid && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
+        const stMsgRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, gallery.id]);
+        const stc = normKsStatus(stMsgRes.rows?.[0]?.status);
+        const defMsg = ksGalleryRowIsDeferredSignup(gallery, hasAccessModeG, hasAllowSelfG);
+        if (stc === 'revisao' && defMsg && ksClientJwtThankYouHold(req.ksClient, stc)) {
+          revisaoSelfHint =
+            ' Para alterar sua seleção, clique em Sair e use “Entrar na minha seleção” com o mesmo nome, e-mail e telefone.';
+        }
+      }
       if (selectedCount > 0) {
-        lockedMessage = `Obrigado! Você selecionou ${selectedCount} foto(s). Se quiser selecionar mais, peça ao fotógrafo para liberar novamente. Se já fez a seleção, entre em contato com ele.`;
+        lockedMessage = `Obrigado! Você selecionou ${selectedCount} foto(s). Se quiser selecionar mais, peça ao fotógrafo para liberar novamente. Se já fez a seleção, entre em contato com ele.${revisaoSelfHint}`;
       } else {
-        lockedMessage = 'Nenhuma foto foi selecionada. Se precisar fazer sua seleção, entre em contato com o fotógrafo para reativar.';
+        lockedMessage = `Nenhuma foto foi selecionada. Se precisar fazer sua seleção, entre em contato com o fotógrafo para reativar.${revisaoSelfHint}`;
       }
     }
 
@@ -4612,19 +4691,15 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
 
   const client = await db.pool.connect();
   try {
-    const gRes = await client.query('SELECT id, status FROM king_galleries WHERE id=$1', [req.ksClient.galleryId]);
+    const hasAm = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+    const gCols = ['id', 'status'].concat(hasAm ? ['access_mode'] : []).concat(hasSelf ? ['allow_self_signup'] : []);
+    const gRes = await client.query(`SELECT ${gCols.join(', ')} FROM king_galleries WHERE id=$1`, [req.ksClient.galleryId]);
     const galleryId = gRes.rows?.[0]?.id;
-    const stGallery = normKsStatus(gRes.rows?.[0]?.status);
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
-    // Lock por cliente (multi-client) — fallback para status global (legacy)
     const { cid, sk } = req.ksCtx;
-    let locked = isKsClientLockedStatus(stGallery);
-    if (cid && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
-      const stRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, galleryId]);
-      const st = normKsStatus(stRes.rows?.[0]?.status);
-      if (st) locked = isKsClientLockedStatus(st);
-    }
+    const locked = await ksResolveClientSelectionLocked(client, req, galleryId, gRes.rows[0]);
     if (locked) {
       return res.status(409).json({ message: 'Sua seleção já foi enviada e está em revisão. Aguarde ou peça reativação ao fotógrafo.' });
     }
@@ -4764,18 +4839,15 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
   const ids = Array.isArray(photo_ids) ? photo_ids.map(x => parseInt(x, 10)).filter(Boolean) : [];
   const client = await db.pool.connect();
   try {
-    const gRes = await client.query('SELECT id, status FROM king_galleries WHERE id=$1', [req.ksClient.galleryId]);
+    const hasAm = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasSelf = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+    const gCols = ['id', 'status'].concat(hasAm ? ['access_mode'] : []).concat(hasSelf ? ['allow_self_signup'] : []);
+    const gRes = await client.query(`SELECT ${gCols.join(', ')} FROM king_galleries WHERE id=$1`, [req.ksClient.galleryId]);
     const galleryId = gRes.rows?.[0]?.id;
-    const stGallery = normKsStatus(gRes.rows?.[0]?.status);
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
     const { cid, sk } = req.ksCtx;
-    let locked = isKsClientLockedStatus(stGallery);
-    if (cid && (await hasTable(client, 'king_gallery_clients')) && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
-      const stRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, galleryId]);
-      const st = normKsStatus(stRes.rows?.[0]?.status);
-      if (st) locked = isKsClientLockedStatus(st);
-    }
+    const locked = await ksResolveClientSelectionLocked(client, req, galleryId, gRes.rows[0]);
     if (locked) {
       return res.status(409).json({ message: 'Sua seleção já foi enviada e está em revisão. Aguarde ou peça reativação ao fotógrafo.' });
     }
@@ -5035,9 +5107,11 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
 
   const client = await db.pool.connect();
   try {
-    const gRes = await client.query('SELECT id, status FROM king_galleries WHERE id=$1', [req.ksClient.galleryId]);
+    const hasAmF = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasSelfF = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+    const gColsF = ['id', 'status'].concat(hasAmF ? ['access_mode'] : []).concat(hasSelfF ? ['allow_self_signup'] : []);
+    const gRes = await client.query(`SELECT ${gColsF.join(', ')} FROM king_galleries WHERE id=$1`, [req.ksClient.galleryId]);
     const galleryId = gRes.rows?.[0]?.id;
-    const stGallery = normKsStatus(gRes.rows?.[0]?.status);
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
 
     const hasClientTable = await hasTable(client, 'king_gallery_clients');
@@ -5046,13 +5120,7 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
     const { cid: ctxCid, sk } = req.ksCtx;
     let cid = ctxCid;
 
-    // Lock por cliente (multi-client) — fallback para status global (legacy)
-    let locked = isKsClientLockedStatus(stGallery);
-    if (cid && hasClientStatus) {
-      const stRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, galleryId]);
-      const st = normKsStatus(stRes.rows?.[0]?.status);
-      if (st) locked = isKsClientLockedStatus(st);
-    }
+    const locked = await ksResolveClientSelectionLocked(client, req, galleryId, gRes.rows[0]);
     if (locked) {
       return res.status(409).json({ message: 'Sua seleção já foi enviada. Aguarde a revisão ou solicite reativação ao fotógrafo.' });
     }
@@ -5092,6 +5160,12 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
         return res.status(500).json({ message: 'Cadastro de clientes indisponível neste servidor.' });
       }
 
+      const existingByEmail = await client.query(
+        `SELECT id, nome, telefone, status, enabled FROM king_gallery_clients
+         WHERE gallery_id=$1 AND lower(email)=lower($2) LIMIT 1`,
+        [galleryId, emailNorm]
+      );
+
       const pass = String(Math.floor(100000 + Math.random() * 900000));
       const senha_hash = await bcrypt.hash(pass, 10);
       const senha_enc = encryptPassword(pass);
@@ -5099,24 +5173,42 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       let newClientId;
       await client.query('BEGIN');
       try {
-        let insC;
-        try {
-          insC = await client.query(
+        if (existingByEmail.rows.length) {
+          const ex = existingByEmail.rows[0];
+          if (ex.enabled === false) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+              message: 'Já existe cadastro com este e-mail, mas o acesso está desativado. Fale com o fotógrafo.'
+            });
+          }
+          if (normKsStatus(ex.status) === 'finalizado') {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ message: 'Esta seleção já foi finalizada. Fale com o fotógrafo.' });
+          }
+          if (ksNormClientNameMatch(ex.nome) !== ksNormClientNameMatch(nome)) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+              message:
+                'Este e-mail já está cadastrado com outro nome. Use os mesmos dados de quando você enviou ou entre com e-mail e senha.'
+            });
+          }
+          if (ksNormClientPhoneDigits(ex.telefone || '') !== ksNormClientPhoneDigits(telefone)) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+              message:
+                'O telefone não confere com o cadastro deste e-mail. Confira o número ou entre com e-mail e senha.'
+            });
+          }
+          newClientId = ex.id;
+        } else {
+          const insC = await client.query(
             `INSERT INTO king_gallery_clients (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, created_at, updated_at)
              VALUES ($1,$2,$3,$4,$5,$6,TRUE,NOW(),NOW())
              RETURNING id`,
             [galleryId, nome, emailNorm, telefone, senha_hash, senha_enc]
           );
-        } catch (e) {
-          if (String(e.message || '').toLowerCase().includes('uniq_king_gallery_clients_gallery_email')) {
-            await client.query('ROLLBACK');
-            return res.status(409).json({
-              message: 'Já existe um cadastro com este e-mail nesta galeria. Use “Entrar” com e-mail e senha ou outro e-mail.'
-            });
-          }
-          throw e;
+          newClientId = insC.rows[0].id;
         }
-        newClientId = insC.rows[0].id;
 
         await client.query(
           'UPDATE king_selections SET client_id=$1, session_key=NULL WHERE gallery_id=$2 AND client_id IS NULL AND session_key=$3',
@@ -5229,7 +5321,7 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       if (!thankYouConfig.message) thankYouConfig.message = DEFAULT_THANK_YOU_MESSAGE;
 
       const token = jwt.sign(
-        { type: 'kingselection_client', galleryId, slug: req.ksClient.slug, clientId: newClientId },
+        { type: 'kingselection_client', galleryId, slug: req.ksClient.slug, clientId: newClientId, tyh: true },
         config.jwt.secret,
         { expiresIn: '14d' }
       );
@@ -5363,14 +5455,22 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       thankYouConfig.message = DEFAULT_THANK_YOU_MESSAGE;
     }
 
-    res.json({
+    const out = {
       success: true,
       selectionCount,
       photographerDisplayName,
       clientDisplayName,
       projectName,
       thankYouConfig
-    });
+    };
+    if (cid) {
+      out.token = jwt.sign(
+        { type: 'kingselection_client', galleryId, slug: req.ksClient.slug, clientId: cid, tyh: true },
+        config.jwt.secret,
+        { expiresIn: '14d' }
+      );
+    }
+    res.json(out);
   } finally {
     client.release();
   }
