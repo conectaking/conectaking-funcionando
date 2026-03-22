@@ -4223,8 +4223,9 @@ router.post('/client/public-enter', asyncHandler(async (req, res) => {
       return res.status(403).json({ message: 'Esta galeria exige login ou cadastro.' });
     }
 
+    const sk = crypto.randomUUID().replace(/-/g, '').slice(0, 32);
     const token = jwt.sign(
-      { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: null },
+      { type: 'kingselection_client', galleryId: g.id, slug: g.slug, clientId: null, sk },
       config.jwt.secret,
       { expiresIn: '14d' }
     );
@@ -4358,7 +4359,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     }
     const currentSelectionRound = await ksGetCurrentSelectionRound(client, gallery.id, cid);
 
-    const resolvedClientId = await resolveFaceClientIdForSession(client, gallery.id, cid);
+    const resolvedClientId = await resolveFaceClientIdForSession(client, gallery.id, cid, sk);
     const faceOn = hasFaceEnabled && !!gallery.face_recognition_enabled;
     const faceRecognitionUsable = !!(faceOn && resolvedClientId);
 
@@ -4584,7 +4585,7 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
 
   const client = await db.pool.connect();
   try {
-    const clientId = await resolveFaceClientIdForSession(client, galleryId, req.ksCtx.cid);
+    const clientId = await resolveFaceClientIdForSession(client, galleryId, req.ksCtx.cid, req.ksCtx.sk);
     if (!clientId) {
       return res.status(400).json({ message: 'Reconhecimento facial requer acesso individual ou uma única ficha de visitante nesta galeria. Peça ao fotógrafo.' });
     }
@@ -4667,7 +4668,7 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
 
   const pgClient = await db.pool.connect();
   try {
-    const clientId = await resolveFaceClientIdForSession(pgClient, galleryId, req.ksCtx.cid);
+    const clientId = await resolveFaceClientIdForSession(pgClient, galleryId, req.ksCtx.cid, req.ksCtx.sk);
     if (!clientId) {
       return res.status(400).json({ message: 'Busca por rosto requer acesso individual ou uma única ficha nesta galeria.' });
     }
@@ -4763,7 +4764,7 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
 
   const client = await db.pool.connect();
   try {
-    const clientId = await resolveFaceClientIdForSession(client, galleryId, req.ksCtx.cid);
+    const clientId = await resolveFaceClientIdForSession(client, galleryId, req.ksCtx.cid, req.ksCtx.sk);
     if (!clientId) {
       return res.status(403).json({ message: 'Cadastro de rosto requer acesso individual ou uma única ficha de visitante nesta galeria.' });
     }
