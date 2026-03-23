@@ -142,3 +142,6 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 #
 # No modo indexado, usar fallback CompareFaces quando não houver match no SQL (0/1)
 # REKOG_INDEXED_COMPARE_FALLBACK=0
+#
+# Filtro final de qualidade no retorno (reduz falso positivo sem deixar lento)
+# REKOG_RESULT_MIN_SIMILARITY=72

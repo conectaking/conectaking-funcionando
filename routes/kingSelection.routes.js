@@ -4522,6 +4522,14 @@ function useIndexedCompareFallback() {
   return v === '1' || v === 'true';
 }
 
+function getFaceResultMinSimilarity() {
+  const searchT = Math.min(100, Math.max(50, parseInt(String(process.env.REKOG_SEARCH_FACE_MATCH_THRESHOLD || '72'), 10) || 72));
+  const envValue = parseInt(String(process.env.REKOG_RESULT_MIN_SIMILARITY || ''), 10);
+  const fallback = Math.min(100, Math.max(65, searchT));
+  if (!Number.isFinite(envValue)) return fallback;
+  return Math.min(100, Math.max(50, envValue));
+}
+
 function searchCacheKey(galleryId, clientId, key) {
   return `search:${galleryId}:${clientId}:${key}`;
 }
@@ -4825,13 +4833,14 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
       });
     }
 
+    const resultMinSimilarity = getFaceResultMinSimilarity();
     const countRes = await client.query(
       `SELECT COUNT(DISTINCT kp.id)::int AS cnt
        FROM king_photos kp
        JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
        JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
-       WHERE kp.gallery_id=$1 AND rfm.client_id=$2`,
-      [galleryId, clientId]
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3`,
+      [galleryId, clientId, resultMinSimilarity]
     );
     const total = countRes.rows[0]?.cnt || 0;
 
@@ -4840,11 +4849,11 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
        FROM king_photos kp
        JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
        JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
-       WHERE kp.gallery_id=$1 AND rfm.client_id=$2
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3
        GROUP BY kp.id
        ORDER BY MAX(rfm.similarity) DESC, kp.id
-       LIMIT $3 OFFSET $4`,
-      [galleryId, clientId, limit, offset]
+       LIMIT $4 OFFSET $5`,
+      [galleryId, clientId, resultMinSimilarity, limit, offset]
     );
     const sqlPhotoIds = dataRes.rows.map((r) => r.photo_id);
 
@@ -5025,13 +5034,14 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
       return res.json({ success: true, total: 0, photoIds: [], message: 'Esta foto não corresponde ao rosto cadastrado. Tente outra ou use "Filtrar minhas fotos".' });
     }
 
+    const resultMinSimilarity = getFaceResultMinSimilarity();
     const countRes = await pgClient.query(
       `SELECT COUNT(DISTINCT kp.id)::int AS cnt
        FROM king_photos kp
        JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
        JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
-       WHERE kp.gallery_id=$1 AND rfm.client_id=$2`,
-      [galleryId, clientId]
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3`,
+      [galleryId, clientId, resultMinSimilarity]
     );
     const total = countRes.rows[0]?.cnt || 0;
 
@@ -5040,11 +5050,11 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
        FROM king_photos kp
        JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
        JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
-       WHERE kp.gallery_id=$1 AND rfm.client_id=$2
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3
        GROUP BY kp.id
        ORDER BY MAX(rfm.similarity) DESC, kp.id
        LIMIT 500`,
-      [galleryId, clientId]
+      [galleryId, clientId, resultMinSimilarity]
     );
 
     res.json({
@@ -6927,13 +6937,14 @@ router.get('/public/galleries/:slug/my-photos', asyncHandler(async (req, res) =>
     if (cRes.rows.length === 0) return res.status(403).json({ message: 'Acesso negado.' });
 
     // Fotos onde este cliente foi reconhecido
+    const resultMinSimilarity = getFaceResultMinSimilarity();
     const countRes = await client.query(
       `SELECT COUNT(DISTINCT kp.id)::int AS cnt
        FROM king_photos kp
        JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
        JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
-       WHERE kp.gallery_id=$1 AND rfm.client_id=$2`,
-      [galleryId, clientId]
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3`,
+      [galleryId, clientId, resultMinSimilarity]
     );
     const total = countRes.rows[0]?.cnt || 0;
 
@@ -6943,11 +6954,11 @@ router.get('/public/galleries/:slug/my-photos', asyncHandler(async (req, res) =>
        FROM king_photos kp
        JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
        JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
-       WHERE kp.gallery_id=$1 AND rfm.client_id=$2
+       WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3
        GROUP BY kp.id, kp.file_path, kp.original_name
        ORDER BY max_similarity DESC, kp.id
-       LIMIT $3 OFFSET $4`,
-      [galleryId, clientId, limit, offset]
+       LIMIT $4 OFFSET $5`,
+      [galleryId, clientId, resultMinSimilarity, limit, offset]
     );
 
     const photos = dataRes.rows.map(r => ({
