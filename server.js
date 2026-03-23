@@ -623,9 +623,18 @@ app.get(['/kingSelection', '/kingSelection/', '/kingselection', '/kingselection/
     res.sendFile(kingSelectionEditHtml);
 });
 
-// Galeria cliente (Node) ANTES do proxy: em produção o link costuma ser /kingselection/<slug> (minúsculo)
-app.get('/kingselection/:slug', asyncHandler(serveKingSelectionClienteGallery));
-app.get('/kingSelection/:slug', asyncHandler(serveKingSelectionClienteGallery));
+// Galeria cliente (Node) ANTES do proxy.
+// Aceita aliases para manter compatibilidade com links antigos/variantes enviados por WhatsApp.
+app.get([
+    '/kingselection/:slug',
+    '/kingSelection/:slug',
+    '/ringselection/:slug',
+    '/ringsselection/:slug',
+    '/mr/kingselection/:slug',
+    '/mr/kingSelection/:slug',
+    '/mr/ringselection/:slug',
+    '/mr/ringsselection/:slug'
+], asyncHandler(serveKingSelectionClienteGallery));
 // Proxy Laravel: /kingselection/admin e demais rotas reservadas/subcaminhos
 app.use('/kingselection', proxyKingSelection);
 
