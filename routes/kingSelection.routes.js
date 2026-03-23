@@ -4518,7 +4518,7 @@ function useRekogOnDemand() {
 }
 
 function useIndexedCompareFallback() {
-  const v = String(process.env.REKOG_INDEXED_COMPARE_FALLBACK || '0').toLowerCase();
+  const v = String(process.env.REKOG_INDEXED_COMPARE_FALLBACK || '1').toLowerCase();
   return v === '1' || v === 'true';
 }
 

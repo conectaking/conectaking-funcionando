@@ -696,6 +696,11 @@ app.get('/favicon.ico', (req, res) => {
     });
 });
 
+// Compatibilidade: alguns clientes pedem /favico.ico (sem "n").
+app.get('/favico.ico', (req, res) => {
+    res.redirect(302, '/favicon.ico');
+});
+
 // Rota /logo.png para o painel e landing usarem como favicon (mesma origem ou API)
 const rootLogoPath = path.join(__dirname, 'logo.png');
 app.get('/logo.png', (req, res) => {
