@@ -117,3 +117,20 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 # CACHE_ENABLED=false
 # CACHE_TTL=3600
 # CACHE_MAX_SIZE=100
+
+# ============================================
+# REKOGNITION (King Selection) - PERFORMANCE
+# ============================================
+# Modo recomendado para busca rápida (estilo "pré-indexado")
+# REKOG_ON_DEMAND=false
+#
+# Concorrência do processamento em lote (process-all-faces e reprocess pós-enroll)
+# REKOG_GALLERY_REPROCESS_CONCURRENCY=5
+#
+# Tenta novamente buscas na collection em caso de throttling/instabilidade AWS
+# REKOG_SEARCH_MAX_ATTEMPTS=4
+#
+# Fast mode: processa apenas os rostos mais relevantes por foto para reduzir tempo total
+# REKOG_FAST_MAX_FACES_PER_PHOTO=3
+# REKOG_FAST_MIN_FACE_AREA_RATIO=0.02
+# REKOG_FAST_MIN_FACE_CONFIDENCE=75

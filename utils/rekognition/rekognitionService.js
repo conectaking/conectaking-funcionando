@@ -55,6 +55,17 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function isRetryableRekogError(err) {
+  const name = err?.name || err?.Code || '';
+  return (
+    name === 'ThrottlingException' ||
+    name === 'ProvisionedThroughputExceededException' ||
+    name === 'ServiceUnavailableException' ||
+    name === 'InternalServerError' ||
+    String(err?.message || '').toLowerCase().includes('throttl')
+  );
+}
+
 let _client = null;
 function getRekogClient() {
   const cfg = getRekogConfig();
@@ -147,14 +158,25 @@ async function searchFacesByImageBytes(imageBytes) {
   const client = getRekogClient();
   const cfg = getRekogConfig();
   if (!client || !cfg.enabled) throw new Error('Rekognition não configurado');
-  const cmd = new SearchFacesByImageCommand({
-    CollectionId: cfg.collectionId,
-    Image: { Bytes: imageBytes },
-    FaceMatchThreshold: cfg.searchFaceMatchThreshold ?? cfg.faceMatchThreshold,
-    MaxFaces: 10
-  });
-  const out = await client.send(cmd);
-  return out;
+  const maxAttempts = Math.min(6, Math.max(2, parseInt(String(process.env.REKOG_SEARCH_MAX_ATTEMPTS || '4'), 10) || 4));
+  let lastErr;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const cmd = new SearchFacesByImageCommand({
+        CollectionId: cfg.collectionId,
+        Image: { Bytes: imageBytes },
+        FaceMatchThreshold: cfg.searchFaceMatchThreshold ?? cfg.faceMatchThreshold,
+        MaxFaces: 10
+      });
+      return await client.send(cmd);
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryableRekogError(err) || attempt >= maxAttempts - 1) throw err;
+      const backoff = 260 * Math.pow(2, attempt) + Math.floor(Math.random() * 180);
+      await sleep(backoff);
+    }
+  }
+  throw lastErr || new Error('SearchFacesByImage (bytes) falhou');
 }
 
 /**
@@ -164,14 +186,25 @@ async function searchFacesByImageS3(bucket, name) {
   const client = getRekogClient();
   const cfg = getRekogConfig();
   if (!client || !cfg.enabled) throw new Error('Rekognition não configurado');
-  const cmd = new SearchFacesByImageCommand({
-    CollectionId: cfg.collectionId,
-    Image: { S3Object: { Bucket: bucket, Name: name } },
-    FaceMatchThreshold: cfg.searchFaceMatchThreshold ?? cfg.faceMatchThreshold,
-    MaxFaces: cfg.maxFacesPerImage
-  });
-  const out = await client.send(cmd);
-  return out;
+  const maxAttempts = Math.min(6, Math.max(2, parseInt(String(process.env.REKOG_SEARCH_MAX_ATTEMPTS || '4'), 10) || 4));
+  let lastErr;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const cmd = new SearchFacesByImageCommand({
+        CollectionId: cfg.collectionId,
+        Image: { S3Object: { Bucket: bucket, Name: name } },
+        FaceMatchThreshold: cfg.searchFaceMatchThreshold ?? cfg.faceMatchThreshold,
+        MaxFaces: cfg.maxFacesPerImage
+      });
+      return await client.send(cmd);
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryableRekogError(err) || attempt >= maxAttempts - 1) throw err;
+      const backoff = 260 * Math.pow(2, attempt) + Math.floor(Math.random() * 180);
+      await sleep(backoff);
+    }
+  }
+  throw lastErr || new Error('SearchFacesByImage (s3) falhou');
 }
 
 /**
@@ -199,14 +232,7 @@ async function compareFaces(sourceImageBytes, targetImageBytes) {
       return out;
     } catch (err) {
       lastErr = err;
-      const name = err.name || err.Code || '';
-      const retryable =
-        name === 'ThrottlingException' ||
-        name === 'ProvisionedThroughputExceededException' ||
-        name === 'ServiceUnavailableException' ||
-        name === 'InternalServerError' ||
-        (String(err.message || '').toLowerCase().includes('throttl'));
-      if (!retryable || attempt >= maxAttempts - 1) throw err;
+      if (!isRetryableRekogError(err) || attempt >= maxAttempts - 1) throw err;
       const backoff = 280 * Math.pow(2, attempt) + Math.floor(Math.random() * 220);
       await sleep(backoff);
     }

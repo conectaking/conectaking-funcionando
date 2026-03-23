@@ -6019,6 +6019,18 @@ async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }
   const cfg = getRekogConfig();
   const searchT = cfg.searchFaceMatchThreshold ?? cfg.faceMatchThreshold;
   const cacheKey = `match:${galleryId}:${r2Key}:${etag}:t${searchT}:m${cfg.maxFacesPerImage}`;
+  const maxFacesToProcess = Math.min(
+    10,
+    Math.max(1, parseInt(String(process.env.REKOG_FAST_MAX_FACES_PER_PHOTO || '3'), 10) || 3)
+  );
+  const minFaceAreaRatio = Math.min(
+    0.2,
+    Math.max(0, parseFloat(String(process.env.REKOG_FAST_MIN_FACE_AREA_RATIO || '0.02')) || 0.02)
+  );
+  const minFaceConfidence = Math.min(
+    100,
+    Math.max(0, parseFloat(String(process.env.REKOG_FAST_MIN_FACE_CONFIDENCE || '75')) || 75)
+  );
 
   // 3. Checar cache
   const cacheRes = await pgClient.query(
@@ -6051,7 +6063,21 @@ async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }
   try {
     // 7. Detectar rostos
     const detect = await detectFacesFromS3(stagingCfg.bucket, stagingKey);
-    const faces = detect.FaceDetails || [];
+    const rawFaces = detect.FaceDetails || [];
+    const faces = rawFaces
+      .map((face, idx) => {
+        const box = face?.BoundingBox || {};
+        const w = Number(box.Width || 0);
+        const h = Number(box.Height || 0);
+        return {
+          ...face,
+          _originalIndex: idx,
+          _area: w > 0 && h > 0 ? (w * h) : 0
+        };
+      })
+      .filter((face) => (face._area || 0) >= minFaceAreaRatio && (face.Confidence || 0) >= minFaceConfidence)
+      .sort((a, b) => (b._area || 0) - (a._area || 0))
+      .slice(0, maxFacesToProcess);
 
     // 8. Limpar dados antigos dessa foto
     await pgClient.query(
@@ -6069,12 +6095,13 @@ async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }
       const face = faces[i];
       const box = face.BoundingBox;
       const confidence = face.Confidence || 0;
+      const faceIndex = Number.isInteger(face?._originalIndex) ? face._originalIndex : i;
 
       // Inserir rosto detectado
       const pfRes = await pgClient.query(
         `INSERT INTO rekognition_photo_faces (photo_id, face_index, bounding_box_json, confidence)
          VALUES ($1, $2, $3, $4) RETURNING id`,
-        [photoId, i, JSON.stringify(box), confidence]
+        [photoId, faceIndex, JSON.stringify(box), confidence]
       );
       const photoFaceId = pfRes.rows[0].id;
 
@@ -6107,7 +6134,7 @@ async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }
       }
 
       resultFaces.push({
-        index: i,
+        index: faceIndex,
         boundingBox: box,
         confidence,
         matches
@@ -6152,7 +6179,7 @@ async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }
  * Processa uma lista de fotos (Rekognition + DB). Usado em process-all-faces e após novo enroll na collection.
  */
 async function runGalleryPhotosThroughRekognition(galleryId, photos, concurrency) {
-  const conc = Math.min(5, Math.max(1, concurrency || 3));
+  const conc = Math.min(8, Math.max(1, concurrency || 5));
   let processed = 0;
   let errors = 0;
   const totalPhotos = photos.length;
@@ -6225,8 +6252,8 @@ function scheduleFullGalleryReprocessAfterClientEnroll(galleryId) {
       if (!photos.length) return;
 
       const concurrency = Math.min(
-        5,
-        Math.max(1, parseInt(process.env.REKOG_GALLERY_REPROCESS_CONCURRENCY || '3', 10) || 3)
+        8,
+        Math.max(1, parseInt(process.env.REKOG_GALLERY_REPROCESS_CONCURRENCY || '5', 10) || 5)
       );
       console.log(
         `[FACIAL-AFTER-ENROLL] Reprocessando ${photos.length} foto(s) da galeria ${galleryId} (novo rosto na collection).`
@@ -6617,7 +6644,7 @@ router.post('/galleries/:galleryId/process-all-faces', protectUser, asyncHandler
 
   // Opções (body pode vir como JSON ou vazio se Content-Type não for application/json)
   const forceReprocess = req.body?.forceReprocess === true || req.query?.forceReprocess === 'true';
-  const concurrency = Math.min(5, Math.max(1, parseInt(req.body?.concurrency || req.query?.concurrency || '3', 10) || 3));
+  const concurrency = Math.min(8, Math.max(1, parseInt(req.body?.concurrency || req.query?.concurrency || '5', 10) || 5));
 
   const client = await db.pool.connect();
   try {
