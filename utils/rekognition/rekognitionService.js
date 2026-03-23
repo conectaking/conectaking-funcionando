@@ -8,6 +8,7 @@ const {
   DetectFacesCommand,
   SearchFacesByImageCommand,
   CompareFacesCommand,
+  DeleteFacesCommand,
   CreateCollectionCommand
 } = require('@aws-sdk/client-rekognition');
 
@@ -240,6 +241,42 @@ async function compareFaces(sourceImageBytes, targetImageBytes) {
   throw lastErr || new Error('CompareFaces falhou');
 }
 
+/**
+ * Remove faceIds antigos da collection (útil ao recadastrar rosto do mesmo cliente).
+ * @param {string[]} faceIds
+ * @returns {Promise<{ deleted: string[], failed: string[] }>}
+ */
+async function deleteFacesFromCollection(faceIds) {
+  const client = getRekogClient();
+  const cfg = getRekogConfig();
+  if (!client || !cfg.enabled) throw new Error('Rekognition não configurado');
+  const ids = Array.from(new Set((Array.isArray(faceIds) ? faceIds : []).map((x) => String(x || '').trim()).filter(Boolean)));
+  if (!ids.length) return { deleted: [], failed: [] };
+
+  const deleted = [];
+  const failed = [];
+  const chunkSize = 100;
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    const cmd = new DeleteFacesCommand({
+      CollectionId: cfg.collectionId,
+      FaceIds: chunk
+    });
+    try {
+      const out = await client.send(cmd);
+      const ok = Array.isArray(out?.DeletedFaces) ? out.DeletedFaces : [];
+      deleted.push(...ok);
+      const okSet = new Set(ok);
+      for (const id of chunk) {
+        if (!okSet.has(id)) failed.push(id);
+      }
+    } catch (_) {
+      failed.push(...chunk);
+    }
+  }
+  return { deleted, failed };
+}
+
 module.exports = {
   getRekogConfig,
   indexFacesFromS3,
@@ -247,5 +284,6 @@ module.exports = {
   detectFacesFromBytes,
   searchFacesByImageBytes,
   searchFacesByImageS3,
-  compareFaces
+  compareFaces,
+  deleteFacesFromCollection
 };

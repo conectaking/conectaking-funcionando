@@ -14,7 +14,15 @@ const fs = require('fs');
 const path = require('path');
 const { getR2Config, r2PublicUrl, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer, r2HeadObject } = require('../utils/r2');
 const { getStagingConfig, buildStagingKey, putStagingObject, getStagingObject, deleteStagingObject } = require('../utils/rekognition/s3StagingService');
-const { getRekogConfig, indexFacesFromS3, detectFacesFromS3, detectFacesFromBytes, searchFacesByImageBytes, compareFaces } = require('../utils/rekognition/rekognitionService');
+const {
+  getRekogConfig,
+  indexFacesFromS3,
+  detectFacesFromS3,
+  detectFacesFromBytes,
+  searchFacesByImageBytes,
+  compareFaces,
+  deleteFacesFromCollection
+} = require('../utils/rekognition/rekognitionService');
 const { normalizeImageForRekognition, cropFace } = require('../utils/rekognition/imageService');
 const { fetchKingSelectionOgData, buildShareMetaPayload } = require('../utils/kingSelectionOg');
 
@@ -138,7 +146,9 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
           message: 'Serviço de reconhecimento facial temporariamente indisponível. Verifique no servidor: bucket S3 staging e permissões AWS.'
         });
       }
+      await deleteSearchCacheForClientSession(client, g.id, clientId);
       await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [g.id, clientId]);
+      await clearClientFaceMatchesForGallery(client, g.id, clientId);
       await client.query(
         `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
          VALUES ($1, $2, $3, NULL, $4)`,
@@ -172,7 +182,10 @@ router.post('/public/enroll-face-anonymous', uploadMem.single('image'), asyncHan
       const faceRecords = indexResult.FaceRecords || [];
       if (faceRecords.length === 0) return res.status(400).json({ message: 'Rosto não detectado na imagem. Tente uma foto mais clara.' });
 
+      await removeOldClientFacesFromCollection(client, g.id, clientId);
+      await deleteSearchCacheForClientSession(client, g.id, clientId);
       await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [g.id, clientId]);
+      await clearClientFaceMatchesForGallery(client, g.id, clientId);
       for (const rec of faceRecords) {
         const faceId = rec.Face?.FaceId;
         if (!faceId) continue;
@@ -4541,6 +4554,42 @@ async function deleteSearchCacheForClientSession(pgClient, galleryId, clientId) 
   await pgClient.query('DELETE FROM rekognition_processing_cache WHERE cache_key LIKE $1', [`${prefix}%`]);
 }
 
+async function clearClientFaceMatchesForGallery(pgClient, galleryId, clientId) {
+  await pgClient.query(
+    `DELETE FROM rekognition_face_matches rfm
+     USING rekognition_photo_faces rpf
+     JOIN king_photos kp ON kp.id = rpf.photo_id
+     WHERE rfm.photo_face_id = rpf.id
+       AND kp.gallery_id = $1
+       AND rfm.client_id = $2`,
+    [galleryId, clientId]
+  );
+}
+
+async function removeOldClientFacesFromCollection(pgClient, galleryId, clientId) {
+  try {
+    const oldRows = await pgClient.query(
+      `SELECT face_id
+       FROM rekognition_client_faces
+       WHERE gallery_id=$1 AND client_id=$2`,
+      [galleryId, clientId]
+    );
+    const oldFaceIds = (oldRows.rows || [])
+      .map((r) => String(r.face_id || '').trim())
+      .filter((id) => id && !id.startsWith('on_demand_'));
+    if (!oldFaceIds.length) return;
+    const out = await deleteFacesFromCollection(oldFaceIds);
+    if (out.failed.length) {
+      console.warn(
+        `[enroll-face-image] Nem todos os faceIds antigos foram removidos da collection (g${galleryId}/c${clientId}):`,
+        out.failed.length
+      );
+    }
+  } catch (err) {
+    console.warn('[enroll-face-image] deleteFacesFromCollection:', err?.message || err);
+  }
+}
+
 async function getReferenceImageBytes(pgClient, galleryId, clientId) {
   const r = await pgClient.query(
     `SELECT reference_r2_key FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2 LIMIT 1`,
@@ -4985,6 +5034,7 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
       await putStagingObject(refStagingKey, buffer, 'image/jpeg');
       await deleteSearchCacheForClientSession(client, galleryId, clientId);
       await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
+      await clearClientFaceMatchesForGallery(client, galleryId, clientId);
       await client.query(
         `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
          VALUES ($1, $2, $3, NULL, $4)`,
@@ -5020,8 +5070,10 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
       return res.status(400).json({ message: 'Nenhum rosto detectado na foto. Tente uma selfie mais nítida.' });
     }
 
+    await removeOldClientFacesFromCollection(client, galleryId, clientId);
     await deleteSearchCacheForClientSession(client, galleryId, clientId);
     await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
+    await clearClientFaceMatchesForGallery(client, galleryId, clientId);
 
     for (const rec of faceRecords) {
       const faceId = rec.Face?.FaceId;
