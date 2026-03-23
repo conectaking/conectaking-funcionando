@@ -4595,6 +4595,57 @@ async function removeOldClientFacesFromCollection(pgClient, galleryId, clientId)
   }
 }
 
+async function tryPromoteLegacyOnDemandFace(pgClient, galleryId, clientId) {
+  if (useRekogOnDemand()) return false;
+  const stagingCfg = getStagingConfig();
+  const rekogCfg = getRekogConfig();
+  if (!stagingCfg.enabled || !rekogCfg.enabled) return false;
+
+  const rows = (
+    await pgClient.query(
+      `SELECT face_id, reference_r2_key
+       FROM rekognition_client_faces
+       WHERE gallery_id=$1 AND client_id=$2`,
+      [galleryId, clientId]
+    )
+  ).rows || [];
+  const hasIndexedFace = rows.some((r) => String(r.face_id || '').trim() && !String(r.face_id || '').startsWith('on_demand_'));
+  if (hasIndexedFace) return false;
+
+  const ref = rows
+    .map((r) => String(r.reference_r2_key || '').trim())
+    .find((k) => k.toLowerCase().startsWith('staging/'));
+  if (!ref) return false;
+
+  const externalImageId = `g${galleryId}_c${clientId}`;
+  let indexResult;
+  try {
+    indexResult = await indexFacesFromS3(stagingCfg.bucket, ref, externalImageId);
+  } catch (e) {
+    console.warn('[face-results] promoção on_demand -> indexed falhou:', e?.message || e);
+    return false;
+  }
+
+  const faceRecords = indexResult?.FaceRecords || [];
+  if (!faceRecords.length) return false;
+
+  await deleteSearchCacheForClientSession(pgClient, galleryId, clientId);
+  await pgClient.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
+  await clearClientFaceMatchesForGallery(pgClient, galleryId, clientId);
+  for (const rec of faceRecords) {
+    const faceId = rec?.Face?.FaceId;
+    if (!faceId) continue;
+    await pgClient.query(
+      `INSERT INTO rekognition_client_faces (gallery_id, client_id, face_id, image_id, reference_r2_key)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [galleryId, clientId, faceId, rec?.Face?.ImageId || null, ref]
+    );
+  }
+
+  scheduleFullGalleryReprocessAfterClientEnroll(galleryId);
+  return true;
+}
+
 async function getReferenceImageBytes(pgClient, galleryId, clientId) {
   const r = await pgClient.query(
     `SELECT reference_r2_key FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2 LIMIT 1`,
@@ -4802,6 +4853,17 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
         success: true,
         total,
         photoIds: sqlPhotoIds
+      });
+    }
+
+    const promoted = await tryPromoteLegacyOnDemandFace(client, galleryId, clientId);
+    if (promoted) {
+      return res.status(200).json({
+        success: true,
+        code: 'FACE_INDEXING_IN_PROGRESS',
+        total: 0,
+        photoIds: [],
+        message: 'Estamos a preparar o reconhecimento desta selfie no modo rápido. Tente novamente em alguns segundos.'
       });
     }
 
