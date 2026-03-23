@@ -6006,8 +6006,34 @@ function parseExternalImageId(externalImageId, expectedGalleryId) {
   }
 }
 
+function resolveFaceProcessingSpeedSettings(inputMode, totalPhotos) {
+  const rawMode = String(inputMode || process.env.REKOG_SPEED_MODE_DEFAULT || 'auto').trim().toLowerCase();
+  const requestedMode = ['auto', 'balanced', 'fast', 'ultra'].includes(rawMode) ? rawMode : 'auto';
+  const photoCount = Math.max(0, parseInt(String(totalPhotos || 0), 10) || 0);
+  const fastMinPhotos = Math.max(1, parseInt(String(process.env.REKOG_FAST_AUTO_MIN_PHOTOS || '70'), 10) || 70);
+  const ultraMinPhotos = Math.max(fastMinPhotos + 1, parseInt(String(process.env.REKOG_ULTRA_AUTO_MIN_PHOTOS || '180'), 10) || 180);
+
+  let effectiveMode = requestedMode;
+  if (requestedMode === 'auto') {
+    if (photoCount >= ultraMinPhotos) effectiveMode = 'ultra';
+    else if (photoCount >= fastMinPhotos) effectiveMode = 'fast';
+    else effectiveMode = 'balanced';
+  }
+
+  const presets = {
+    balanced: { maxFacesToProcess: 3, minFaceAreaRatio: 0.02, minFaceConfidence: 75 },
+    fast: { maxFacesToProcess: 2, minFaceAreaRatio: 0.03, minFaceConfidence: 78 },
+    ultra: { maxFacesToProcess: 1, minFaceAreaRatio: 0.04, minFaceConfidence: 80 }
+  };
+  return {
+    requestedMode,
+    effectiveMode,
+    ...presets[effectiveMode]
+  };
+}
+
 // Helper interno: processa rostos de UMA foto (reutilizado no process-all)
-async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }) {
+async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo, speedSettings }) {
   // 1. Obter ETag do R2
   let etag = 'noetag';
   try {
@@ -6018,19 +6044,32 @@ async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }
   // 2. Montar cacheKey
   const cfg = getRekogConfig();
   const searchT = cfg.searchFaceMatchThreshold ?? cfg.faceMatchThreshold;
-  const cacheKey = `match:${galleryId}:${r2Key}:${etag}:t${searchT}:m${cfg.maxFacesPerImage}`;
-  const maxFacesToProcess = Math.min(
+  const fallbackMaxFaces = Math.min(
     10,
     Math.max(1, parseInt(String(process.env.REKOG_FAST_MAX_FACES_PER_PHOTO || '3'), 10) || 3)
   );
-  const minFaceAreaRatio = Math.min(
+  const fallbackMinArea = Math.min(
     0.2,
     Math.max(0, parseFloat(String(process.env.REKOG_FAST_MIN_FACE_AREA_RATIO || '0.02')) || 0.02)
   );
-  const minFaceConfidence = Math.min(
+  const fallbackMinConfidence = Math.min(
     100,
     Math.max(0, parseFloat(String(process.env.REKOG_FAST_MIN_FACE_CONFIDENCE || '75')) || 75)
   );
+  const maxFacesToProcess = Math.min(
+    10,
+    Math.max(1, parseInt(String(speedSettings?.maxFacesToProcess ?? fallbackMaxFaces), 10) || fallbackMaxFaces)
+  );
+  const minFaceAreaRatio = Math.min(
+    0.2,
+    Math.max(0, Number(speedSettings?.minFaceAreaRatio ?? fallbackMinArea) || fallbackMinArea)
+  );
+  const minFaceConfidence = Math.min(
+    100,
+    Math.max(0, Number(speedSettings?.minFaceConfidence ?? fallbackMinConfidence) || fallbackMinConfidence)
+  );
+  const speedSuffix = `ff${maxFacesToProcess}:a${minFaceAreaRatio.toFixed(3)}:c${minFaceConfidence.toFixed(1)}`;
+  const cacheKey = `match:${galleryId}:${r2Key}:${etag}:t${searchT}:m${cfg.maxFacesPerImage}:${speedSuffix}`;
 
   // 3. Checar cache
   const cacheRes = await pgClient.query(
@@ -6178,8 +6217,9 @@ async function _processPhotoFaces({ pgClient, galleryId, photoId, r2Key, photo }
 /**
  * Processa uma lista de fotos (Rekognition + DB). Usado em process-all-faces e após novo enroll na collection.
  */
-async function runGalleryPhotosThroughRekognition(galleryId, photos, concurrency) {
+async function runGalleryPhotosThroughRekognition(galleryId, photos, concurrency, options = {}) {
   const conc = Math.min(8, Math.max(1, concurrency || 5));
+  const speedSettings = resolveFaceProcessingSpeedSettings(options.speedMode, photos.length);
   let processed = 0;
   let errors = 0;
   const totalPhotos = photos.length;
@@ -6201,7 +6241,7 @@ async function runGalleryPhotosThroughRekognition(galleryId, photos, concurrency
             return;
           }
           try {
-            await _processPhotoFaces({ pgClient: batchClient, galleryId, photoId: photo.id, r2Key, photo });
+            await _processPhotoFaces({ pgClient: batchClient, galleryId, photoId: photo.id, r2Key, photo, speedSettings });
           } catch (err) {
             await batchClient.query(
               `INSERT INTO rekognition_photo_jobs (gallery_id, photo_id, r2_key, process_status, processed_at, error_message)
@@ -6225,7 +6265,7 @@ async function runGalleryPhotosThroughRekognition(galleryId, photos, concurrency
       console.log(`[FACIAL-BATCH] Galeria ${galleryId}: ${processed}/${totalPhotos} processadas.`);
     }
   }
-  return { processed, errors, totalPhotos };
+  return { processed, errors, totalPhotos, speedMode: speedSettings.effectiveMode };
 }
 
 /**
@@ -6258,7 +6298,9 @@ function scheduleFullGalleryReprocessAfterClientEnroll(galleryId) {
       console.log(
         `[FACIAL-AFTER-ENROLL] Reprocessando ${photos.length} foto(s) da galeria ${galleryId} (novo rosto na collection).`
       );
-      const out = await runGalleryPhotosThroughRekognition(galleryId, photos, concurrency);
+      const out = await runGalleryPhotosThroughRekognition(galleryId, photos, concurrency, {
+        speedMode: process.env.REKOG_SPEED_MODE_DEFAULT || 'auto'
+      });
       console.log(
         `[FACIAL-AFTER-ENROLL] Fim galeria ${galleryId}. Ciclos OK: ${out.processed}, falhas: ${out.errors}.`
       );
@@ -6296,12 +6338,13 @@ function scheduleFaceProcessingForNewPhotos(galleryId, photos) {
       }
       if (!faceEnabled) return;
 
+      const speedSettings = resolveFaceProcessingSpeedSettings(process.env.REKOG_SPEED_MODE_DEFAULT || 'auto', list.length);
       for (const photo of list) {
         const r2Key = extractR2Key(photo.file_path);
         if (!r2Key || !r2Key.startsWith('galleries/')) continue;
         const pgClient = await db.pool.connect();
         try {
-          await _processPhotoFaces({ pgClient, galleryId, photoId: photo.id, r2Key, photo });
+          await _processPhotoFaces({ pgClient, galleryId, photoId: photo.id, r2Key, photo, speedSettings });
           console.log('[FACIAL-AUTO] Foto', photo.id, 'processada (galeria', galleryId + ')');
         } catch (err) {
           console.error('[FACIAL-AUTO] Erro ao processar foto', photo.id, ':', err?.message || err);
@@ -6645,6 +6688,7 @@ router.post('/galleries/:galleryId/process-all-faces', protectUser, asyncHandler
   // Opções (body pode vir como JSON ou vazio se Content-Type não for application/json)
   const forceReprocess = req.body?.forceReprocess === true || req.query?.forceReprocess === 'true';
   const concurrency = Math.min(8, Math.max(1, parseInt(req.body?.concurrency || req.query?.concurrency || '5', 10) || 5));
+  const speedMode = String(req.body?.speedMode || req.query?.speedMode || process.env.REKOG_SPEED_MODE_DEFAULT || 'auto').trim().toLowerCase();
 
   const client = await db.pool.connect();
   try {
@@ -6695,16 +6739,17 @@ router.post('/galleries/:galleryId/process-all-faces', protectUser, asyncHandler
     // Processar em background (evita timeout HTTP)
     (async () => {
       console.log(`[FACIAL-BATCH] Iniciando processamento de ${totalPhotos} fotos para galeria ${galleryId}...`);
-      const out = await runGalleryPhotosThroughRekognition(galleryId, photos, concurrency);
+      const out = await runGalleryPhotosThroughRekognition(galleryId, photos, concurrency, { speedMode });
       console.log(
-        `[FACIAL-BATCH] Fim galeria ${galleryId}. Ciclos OK: ${out.processed}, falhas: ${out.errors}.`
+        `[FACIAL-BATCH] Fim galeria ${galleryId}. Ciclos OK: ${out.processed}, falhas: ${out.errors}. Modo: ${out.speedMode}.`
       );
     })().catch((err) => console.error(`[FACIAL-BATCH-ERR] Galeria ${galleryId}:`, err));
 
     return res.json({
       success: true,
-      message: `Processamento de ${totalPhotos} fotos iniciado em segundo plano. Acompanhe o progresso na seção "Processadas" (atualize a página ou aguarde).`,
+      message: `Processamento de ${totalPhotos} fotos iniciado em segundo plano (modo: ${speedMode}). Acompanhe o progresso na seção "Processadas" (atualize a página ou aguarde).`,
       totalPhotos,
+      speedMode,
       processed: 0,
       errors: 0
     });
