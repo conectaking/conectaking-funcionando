@@ -4656,8 +4656,8 @@ async function tryPromoteLegacyOnDemandFace(pgClient, galleryId, clientId) {
 
 async function findSimilarSessionClientWithMatches(pgClient, galleryId, clientId, refBytes) {
   if (!refBytes || refBytes.length === 0) return null;
-  const linkThreshold = Math.min(100, Math.max(75, parseInt(String(process.env.REKOG_SESSION_LINK_SIMILARITY || '85'), 10) || 85));
-  const minPhotos = Math.max(1, parseInt(String(process.env.REKOG_SESSION_LINK_MIN_PHOTOS || '1'), 10) || 1);
+  const linkThreshold = Math.min(100, Math.max(95, parseInt(String(process.env.REKOG_SESSION_LINK_SIMILARITY || '98'), 10) || 98));
+  const minPhotos = Math.max(10, parseInt(String(process.env.REKOG_SESSION_LINK_MIN_PHOTOS || '20'), 10) || 20);
   const candidates = (
     await pgClient.query(
       `SELECT c.id AS client_id, c.email, c.created_at,
