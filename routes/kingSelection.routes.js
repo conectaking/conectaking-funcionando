@@ -4517,6 +4517,11 @@ function useRekogOnDemand() {
   return v !== '0' && v !== 'false';
 }
 
+function useIndexedCompareFallback() {
+  const v = String(process.env.REKOG_INDEXED_COMPARE_FALLBACK || '0').toLowerCase();
+  return v === '1' || v === 'true';
+}
+
 function searchCacheKey(galleryId, clientId, key) {
   return `search:${galleryId}:${clientId}:${key}`;
 }
@@ -4808,7 +4813,7 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
     }
 
     const refBytesIndexed = await getReferenceImageBytes(client, galleryId, clientId);
-    if (refBytesIndexed && refBytesIndexed.length > 0) {
+    if (refBytesIndexed && refBytesIndexed.length > 0 && useIndexedCompareFallback()) {
       const chunked = String(req.query.chunked || '') === '1' || String(req.query.chunked || '').toLowerCase() === 'true';
       if (chunked) {
         const batch = Math.min(96, Math.max(8, parseInt(req.query.photoBatch || '40', 10) || 40));
@@ -4846,7 +4851,10 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
     return res.json({
       success: true,
       total: 0,
-      photoIds: []
+      photoIds: [],
+      message: useIndexedCompareFallback()
+        ? 'Ainda sem resultados. Se necessário, ative o fallback por comparação.'
+        : 'Ainda sem resultados indexados. Aguarde a indexação da galeria e tente novamente em instantes.'
     });
   } finally {
     client.release();
@@ -6062,8 +6070,8 @@ function resolveFaceProcessingSpeedSettings(inputMode, totalPhotos) {
   const rawMode = String(inputMode || process.env.REKOG_SPEED_MODE_DEFAULT || 'auto').trim().toLowerCase();
   const requestedMode = ['auto', 'balanced', 'fast', 'ultra'].includes(rawMode) ? rawMode : 'auto';
   const photoCount = Math.max(0, parseInt(String(totalPhotos || 0), 10) || 0);
-  const fastMinPhotos = Math.max(1, parseInt(String(process.env.REKOG_FAST_AUTO_MIN_PHOTOS || '70'), 10) || 70);
-  const ultraMinPhotos = Math.max(fastMinPhotos + 1, parseInt(String(process.env.REKOG_ULTRA_AUTO_MIN_PHOTOS || '180'), 10) || 180);
+  const fastMinPhotos = Math.max(1, parseInt(String(process.env.REKOG_FAST_AUTO_MIN_PHOTOS || '1200'), 10) || 1200);
+  const ultraMinPhotos = Math.max(fastMinPhotos + 1, parseInt(String(process.env.REKOG_ULTRA_AUTO_MIN_PHOTOS || '3000'), 10) || 3000);
 
   let effectiveMode = requestedMode;
   if (requestedMode === 'auto') {
@@ -6073,9 +6081,9 @@ function resolveFaceProcessingSpeedSettings(inputMode, totalPhotos) {
   }
 
   const presets = {
-    balanced: { maxFacesToProcess: 3, minFaceAreaRatio: 0.02, minFaceConfidence: 75 },
-    fast: { maxFacesToProcess: 2, minFaceAreaRatio: 0.03, minFaceConfidence: 78 },
-    ultra: { maxFacesToProcess: 1, minFaceAreaRatio: 0.04, minFaceConfidence: 80 }
+    balanced: { maxFacesToProcess: 6, minFaceAreaRatio: 0.008, minFaceConfidence: 65 },
+    fast: { maxFacesToProcess: 4, minFaceAreaRatio: 0.012, minFaceConfidence: 70 },
+    ultra: { maxFacesToProcess: 2, minFaceAreaRatio: 0.02, minFaceConfidence: 75 }
   };
   return {
     requestedMode,

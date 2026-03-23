@@ -137,5 +137,8 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 #
 # Perfil de velocidade no processamento em lote: auto|balanced|fast|ultra
 # REKOG_SPEED_MODE_DEFAULT=auto
-# REKOG_FAST_AUTO_MIN_PHOTOS=70
-# REKOG_ULTRA_AUTO_MIN_PHOTOS=180
+# REKOG_FAST_AUTO_MIN_PHOTOS=1200
+# REKOG_ULTRA_AUTO_MIN_PHOTOS=3000
+#
+# No modo indexado, usar fallback CompareFaces quando não houver match no SQL (0/1)
+# REKOG_INDEXED_COMPARE_FALLBACK=0
