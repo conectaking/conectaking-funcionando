@@ -4530,6 +4530,11 @@ function getFaceResultMinSimilarity() {
   return Math.min(100, Math.max(50, envValue));
 }
 
+function useSessionAutoLink() {
+  const raw = String(process.env.REKOG_SESSION_AUTO_LINK || '0').trim().toLowerCase();
+  return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on';
+}
+
 function searchCacheKey(galleryId, clientId, key) {
   return `search:${galleryId}:${clientId}:${key}`;
 }
@@ -4961,7 +4966,9 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
     }
 
     const refBytesIndexed = await getReferenceImageBytes(client, galleryId, clientId);
-    const linkedClientId = await findSimilarSessionClientWithMatches(client, galleryId, clientId, refBytesIndexed);
+    const linkedClientId = useSessionAutoLink()
+      ? await findSimilarSessionClientWithMatches(client, galleryId, clientId, refBytesIndexed)
+      : null;
     if (linkedClientId) {
       const relink = await copyMatchesAndWarmCacheFromSourceClient(
         client,
@@ -5287,7 +5294,7 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
         [clientId, galleryId]
       );
       const email = cMeta.rows[0]?.email || '';
-      if (isTechnicalFaceGalleryClientEmail(email)) {
+      if (useSessionAutoLink() && isTechnicalFaceGalleryClientEmail(email)) {
         const linkedClientId = await findSimilarSessionClientWithMatches(client, galleryId, clientId, buffer);
         if (linkedClientId) {
           await copyMatchesAndWarmCacheFromSourceClient(client, galleryId, linkedClientId, clientId, 500, 0);
