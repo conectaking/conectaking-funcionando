@@ -145,3 +145,7 @@ PUBLIC_PROFILE_URL=http://localhost:5000
 #
 # Filtro final de qualidade no retorno (reduz falso positivo sem deixar lento)
 # REKOG_RESULT_MIN_SIMILARITY=72
+#
+# Reuso de sessão técnica (quando reset gera novo clientId sem matches ainda)
+# REKOG_SESSION_LINK_SIMILARITY=85
+# REKOG_SESSION_LINK_MIN_PHOTOS=1
