@@ -5317,6 +5317,28 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
   }
 }));
 
+router.post('/client/reset-face-session', requireClient, asyncHandler(async (req, res) => {
+  const galleryId = req.ksClient.galleryId;
+  const client = await db.pool.connect();
+  try {
+    const clientId = await resolveFaceClientIdForSession(client, galleryId, req.ksCtx.cid, req.ksCtx.sk);
+    if (!clientId) {
+      return res.status(403).json({ message: 'Sessão facial não encontrada para este acesso.' });
+    }
+    await removeOldClientFacesFromCollection(client, galleryId, clientId);
+    await deleteSearchCacheForClientSession(client, galleryId, clientId);
+    await client.query('DELETE FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2', [galleryId, clientId]);
+    await clearClientFaceMatchesForGallery(client, galleryId, clientId);
+    return res.json({
+      success: true,
+      clientId,
+      message: 'Sessão facial limpa com sucesso.'
+    });
+  } finally {
+    client.release();
+  }
+}));
+
 router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
   const { slug, photo_id } = req.body || {};
   if (!slug || !photo_id) return res.status(400).json({ message: 'slug e photo_id são obrigatórios.' });
