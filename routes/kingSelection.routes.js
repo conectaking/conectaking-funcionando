@@ -4700,6 +4700,55 @@ async function findSimilarSessionClientWithMatches(pgClient, galleryId, clientId
   return bestClientId;
 }
 
+async function copyMatchesAndWarmCacheFromSourceClient(pgClient, galleryId, sourceClientId, targetClientId, limit, offset) {
+  if (!sourceClientId || !targetClientId || sourceClientId === targetClientId) {
+    return { total: 0, photoIds: [], copiedRows: 0 };
+  }
+  const copied = await pgClient.query(
+    `INSERT INTO rekognition_face_matches (photo_face_id, client_id, similarity, rekognition_face_id)
+     SELECT rfm.photo_face_id, $2 AS client_id, rfm.similarity, rfm.rekognition_face_id
+     FROM rekognition_face_matches rfm
+     JOIN rekognition_photo_faces rpf ON rpf.id = rfm.photo_face_id
+     JOIN king_photos kp ON kp.id = rpf.photo_id
+     WHERE kp.gallery_id = $1
+       AND rfm.client_id = $3
+       AND NOT EXISTS (
+         SELECT 1
+         FROM rekognition_face_matches x
+         WHERE x.photo_face_id = rfm.photo_face_id
+           AND x.client_id = $2
+       )`,
+    [galleryId, targetClientId, sourceClientId]
+  );
+
+  const resultMinSimilarity = getFaceResultMinSimilarity();
+  const countRes = await pgClient.query(
+    `SELECT COUNT(DISTINCT kp.id)::int AS cnt
+     FROM king_photos kp
+     JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+     JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+     WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3`,
+    [galleryId, targetClientId, resultMinSimilarity]
+  );
+  const total = countRes.rows[0]?.cnt || 0;
+  const dataRes = await pgClient.query(
+    `SELECT kp.id AS photo_id
+     FROM king_photos kp
+     JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+     JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+     WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3
+     GROUP BY kp.id
+     ORDER BY MAX(rfm.similarity) DESC, kp.id
+     LIMIT $4 OFFSET $5`,
+    [galleryId, targetClientId, resultMinSimilarity, limit, offset]
+  );
+  const photoIds = dataRes.rows.map((r) => r.photo_id);
+  if (photoIds.length > 0) {
+    await setSearchCache(pgClient, galleryId, targetClientId, 'enroll', photoIds);
+  }
+  return { total, photoIds, copiedRows: copied.rowCount || 0 };
+}
+
 async function getReferenceImageBytes(pgClient, galleryId, clientId) {
   const r = await pgClient.query(
     `SELECT reference_r2_key FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2 LIMIT 1`,
@@ -4914,34 +4963,21 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
     const refBytesIndexed = await getReferenceImageBytes(client, galleryId, clientId);
     const linkedClientId = await findSimilarSessionClientWithMatches(client, galleryId, clientId, refBytesIndexed);
     if (linkedClientId) {
-      const aliasCountRes = await client.query(
-        `SELECT COUNT(DISTINCT kp.id)::int AS cnt
-         FROM king_photos kp
-         JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
-         JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
-         WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3`,
-        [galleryId, linkedClientId, resultMinSimilarity]
+      const relink = await copyMatchesAndWarmCacheFromSourceClient(
+        client,
+        galleryId,
+        linkedClientId,
+        clientId,
+        limit,
+        offset
       );
-      const aliasTotal = aliasCountRes.rows[0]?.cnt || 0;
-      if (aliasTotal > 0) {
-        const aliasDataRes = await client.query(
-          `SELECT kp.id AS photo_id
-           FROM king_photos kp
-           JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
-           JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
-           WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3
-           GROUP BY kp.id
-           ORDER BY MAX(rfm.similarity) DESC, kp.id
-           LIMIT $4 OFFSET $5`,
-          [galleryId, linkedClientId, resultMinSimilarity, limit, offset]
-        );
-        const aliasIds = aliasDataRes.rows.map((r) => r.photo_id);
-        await setSearchCache(client, galleryId, clientId, 'enroll', aliasIds);
+      if (relink.total > 0) {
         return res.json({
           success: true,
-          total: aliasTotal,
-          photoIds: aliasIds,
-          relinkedFromClientId: linkedClientId
+          total: relink.total,
+          photoIds: relink.photoIds,
+          relinkedFromClientId: linkedClientId,
+          relinkCopiedRows: relink.copiedRows
         });
       }
     }
@@ -5243,6 +5279,22 @@ router.post('/client/enroll-face-image', requireClient, uploadMem.single('image'
          VALUES ($1, $2, $3, $4, $5)`,
         [galleryId, clientId, faceId, rec.Face?.ImageId || null, refStagingKey]
       );
+    }
+
+    try {
+      const cMeta = await client.query(
+        `SELECT email FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1`,
+        [clientId, galleryId]
+      );
+      const email = cMeta.rows[0]?.email || '';
+      if (isTechnicalFaceGalleryClientEmail(email)) {
+        const linkedClientId = await findSimilarSessionClientWithMatches(client, galleryId, clientId, buffer);
+        if (linkedClientId) {
+          await copyMatchesAndWarmCacheFromSourceClient(client, galleryId, linkedClientId, clientId, 500, 0);
+        }
+      }
+    } catch (relinkErr) {
+      console.warn('[enroll-face-image] relink imediato:', relinkErr?.message || relinkErr);
     }
 
     scheduleFullGalleryReprocessAfterClientEnroll(galleryId);
