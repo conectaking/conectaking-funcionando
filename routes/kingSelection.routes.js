@@ -4654,6 +4654,52 @@ async function tryPromoteLegacyOnDemandFace(pgClient, galleryId, clientId) {
   return true;
 }
 
+async function findSimilarSessionClientWithMatches(pgClient, galleryId, clientId, refBytes) {
+  if (!refBytes || refBytes.length === 0) return null;
+  const linkThreshold = Math.min(100, Math.max(80, parseInt(String(process.env.REKOG_SESSION_LINK_SIMILARITY || '92'), 10) || 92));
+  const minPhotos = Math.max(1, parseInt(String(process.env.REKOG_SESSION_LINK_MIN_PHOTOS || '3'), 10) || 3);
+  const candidates = (
+    await pgClient.query(
+      `SELECT c.id AS client_id, c.email, c.created_at,
+              COALESCE(m.photos, 0)::int AS photos
+       FROM king_gallery_clients c
+       LEFT JOIN (
+         SELECT rfm.client_id, COUNT(DISTINCT rpf.photo_id)::int AS photos
+         FROM rekognition_face_matches rfm
+         JOIN rekognition_photo_faces rpf ON rpf.id = rfm.photo_face_id
+         JOIN king_photos kp ON kp.id = rpf.photo_id
+         WHERE kp.gallery_id=$1
+         GROUP BY rfm.client_id
+       ) m ON m.client_id = c.id
+       WHERE c.gallery_id=$1 AND c.id <> $2
+       ORDER BY c.created_at DESC
+       LIMIT 12`,
+      [galleryId, clientId]
+    )
+  ).rows || [];
+
+  let bestClientId = null;
+  let bestSimilarity = 0;
+  for (const cand of candidates) {
+    if (!isTechnicalFaceGalleryClientEmail(cand.email)) continue;
+    const photos = parseInt(cand.photos, 10) || 0;
+    if (photos < minPhotos) continue;
+    const candRef = await getReferenceImageBytes(pgClient, galleryId, cand.client_id);
+    if (!candRef || candRef.length === 0) continue;
+    try {
+      const cmp = await compareFaces(refBytes, candRef);
+      const sim = Number(cmp?.FaceMatches?.[0]?.Similarity || 0);
+      if (sim >= linkThreshold && sim > bestSimilarity) {
+        bestSimilarity = sim;
+        bestClientId = parseInt(cand.client_id, 10);
+      }
+    } catch (_) {
+      // ignora candidato e segue
+    }
+  }
+  return bestClientId;
+}
+
 async function getReferenceImageBytes(pgClient, galleryId, clientId) {
   const r = await pgClient.query(
     `SELECT reference_r2_key FROM rekognition_client_faces WHERE gallery_id=$1 AND client_id=$2 LIMIT 1`,
@@ -4865,6 +4911,41 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
       });
     }
 
+    const refBytesIndexed = await getReferenceImageBytes(client, galleryId, clientId);
+    const linkedClientId = await findSimilarSessionClientWithMatches(client, galleryId, clientId, refBytesIndexed);
+    if (linkedClientId) {
+      const aliasCountRes = await client.query(
+        `SELECT COUNT(DISTINCT kp.id)::int AS cnt
+         FROM king_photos kp
+         JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+         JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+         WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3`,
+        [galleryId, linkedClientId, resultMinSimilarity]
+      );
+      const aliasTotal = aliasCountRes.rows[0]?.cnt || 0;
+      if (aliasTotal > 0) {
+        const aliasDataRes = await client.query(
+          `SELECT kp.id AS photo_id
+           FROM king_photos kp
+           JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+           JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+           WHERE kp.gallery_id=$1 AND rfm.client_id=$2 AND rfm.similarity >= $3
+           GROUP BY kp.id
+           ORDER BY MAX(rfm.similarity) DESC, kp.id
+           LIMIT $4 OFFSET $5`,
+          [galleryId, linkedClientId, resultMinSimilarity, limit, offset]
+        );
+        const aliasIds = aliasDataRes.rows.map((r) => r.photo_id);
+        await setSearchCache(client, galleryId, clientId, 'enroll', aliasIds);
+        return res.json({
+          success: true,
+          total: aliasTotal,
+          photoIds: aliasIds,
+          relinkedFromClientId: linkedClientId
+        });
+      }
+    }
+
     const promoted = await tryPromoteLegacyOnDemandFace(client, galleryId, clientId);
     if (promoted) {
       return res.status(200).json({
@@ -4883,7 +4964,6 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
       return res.json({ success: true, total: tot, photoIds: slice, fromCache: true });
     }
 
-    const refBytesIndexed = await getReferenceImageBytes(client, galleryId, clientId);
     if (refBytesIndexed && refBytesIndexed.length > 0 && useIndexedCompareFallback()) {
       const chunked = String(req.query.chunked || '') === '1' || String(req.query.chunked || '').toLowerCase() === 'true';
       if (chunked) {
