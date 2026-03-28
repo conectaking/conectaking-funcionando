@@ -4825,15 +4825,30 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
       /* segue: CompareFaces pode ainda funcionar em alguns casos */
     }
   }
+  const reqSpeedMode = String(opts.speedMode || process.env.REKOG_SPEED_MODE_DEFAULT || 'auto').trim().toLowerCase();
+  const isFastMode = reqSpeedMode === 'fast' || reqSpeedMode === 'turbo' || reqSpeedMode === 'rapid';
+
   const compareMaxPx = Math.min(
     2048,
-    Math.max(400, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_MAX_PX || '960'), 10) || 960)
+    Math.max(
+      400,
+      parseInt(
+        String(process.env.KINGSELECTION_FACE_COMPARE_MAX_PX || (isFastMode ? '720' : '960')),
+        10
+      ) || (isFastMode ? 720 : 960)
+    )
   );
   const photos = photoRows;
   /** Muita concorrência → ThrottlingException na AWS; o catch antigo engolia tudo e zerava resultados. */
   const concurrency = Math.min(
     24,
-    Math.max(2, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '8'), 10) || 8)
+    Math.max(
+      2,
+      parseInt(
+        String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || (isFastMode ? '10' : '8')),
+        10
+      ) || (isFastMode ? 10 : 8)
+    )
   );
   const threshold = getRekogConfig().compareSimilarityThreshold ?? getRekogConfig().faceMatchThreshold ?? 78;
   const minRelaxedThreshold = Math.min(
@@ -4848,7 +4863,13 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
   const faceCropFallbackEnabled = String(process.env.KINGSELECTION_FACE_CROP_FALLBACK || '1').trim() !== '0';
   const faceCropMaxFaces = Math.min(
     12,
-    Math.max(1, parseInt(String(process.env.KINGSELECTION_FACE_CROP_MAX_FACES || '8'), 10) || 8)
+    Math.max(
+      1,
+      parseInt(
+        String(process.env.KINGSELECTION_FACE_CROP_MAX_FACES || (isFastMode ? '4' : '8')),
+        10
+      ) || (isFastMode ? 4 : 8)
+    )
   );
   const faceCropMinConfidence = Math.min(
     100,
@@ -4919,11 +4940,24 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
   if (faceCropFallbackEnabled) {
     const shouldRunFallback = !deferCropFallback || matchedSet.size === 0;
     if (shouldRunFallback && directMisses.length > 0) {
+      const fallbackMaxCandidates = Math.min(
+        500,
+        Math.max(
+          1,
+          parseInt(
+            String(process.env.KINGSELECTION_FACE_FAST_FALLBACK_MAX_CANDIDATES || (isFastMode ? '120' : String(directMisses.length))),
+            10
+          ) || (isFastMode ? 120 : directMisses.length)
+        )
+      );
+      const fallbackMisses = isFastMode && directMisses.length > fallbackMaxCandidates
+        ? directMisses.slice(0, fallbackMaxCandidates)
+        : directMisses;
       let mi = 0;
       const fallbackConcurrency = Math.min(Math.max(1, Math.floor(concurrency / 2)), 8);
       function nextMiss() {
-        if (mi >= directMisses.length) return null;
-        return directMisses[mi++];
+        if (mi >= fallbackMisses.length) return null;
+        return fallbackMisses[mi++];
       }
       async function workerFallback() {
         for (;;) {
@@ -4965,7 +4999,7 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
           }
         }
       }
-      const nFallbackWorkers = Math.min(fallbackConcurrency, Math.max(1, directMisses.length));
+      const nFallbackWorkers = Math.min(fallbackConcurrency, Math.max(1, fallbackMisses.length));
       await Promise.all(Array.from({ length: nFallbackWorkers }, () => workerFallback()));
     }
   }
@@ -5002,6 +5036,7 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
   next();
 }, asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
+  const speedMode = String(req.query.speedMode || process.env.REKOG_SPEED_MODE_DEFAULT || 'auto').trim().toLowerCase();
   const page = Math.max(1, parseInt(req.query.page || '1', 10));
   const limit = Math.min(8000, Math.max(1, parseInt(req.query.limit || '500', 10)));
   const offset = (page - 1) * limit;
@@ -5047,7 +5082,7 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
           [galleryId, batch, skip]
         );
         const rows = sliceRes.rows || [];
-        const chunkRes = await compareFacesAgainstPhotoRows(refBytes, rows, { verifySourceFace: skip === 0 });
+        const chunkRes = await compareFacesAgainstPhotoRows(refBytes, rows, { verifySourceFace: skip === 0, speedMode });
         const photoIds = chunkRes.photoIds || [];
         const hasMore = skip + rows.length < totalGallery;
         return res.json({
@@ -5159,7 +5194,7 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
           [galleryId, batch, skip]
         );
         const rows = sliceRes.rows || [];
-        const chunkRes = await compareFacesAgainstPhotoRows(refBytesIndexed, rows, { verifySourceFace: skip === 0 });
+        const chunkRes = await compareFacesAgainstPhotoRows(refBytesIndexed, rows, { verifySourceFace: skip === 0, speedMode });
         const chunkMatched = chunkRes.photoIds || [];
         const hasMore = skip + rows.length < totalGallery;
         return res.json({
