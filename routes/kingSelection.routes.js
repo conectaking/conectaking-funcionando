@@ -6102,7 +6102,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       } : undefined,
       paymentState: salesModeActive ? paymentState : undefined,
       approvalsState: salesModeActive ? approvalsState : undefined,
-      approvedPhotoIds: salesModeActive ? approvedPhotoIds : undefined
+      approvedPhotoIds: salesModeActive ? approvedPhotoIds : undefined,
+      clientAuthenticated: !!cid
     });
   } finally {
     client.release();
