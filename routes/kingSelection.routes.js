@@ -4551,6 +4551,11 @@ function searchCacheKey(galleryId, clientId, key) {
 
 const SEARCH_CACHE_TTL_DAYS = 7;
 
+function useFaceSearchCache() {
+  const raw = String(process.env.REKOG_FACE_USE_CACHE || '0').trim().toLowerCase();
+  return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on';
+}
+
 async function getSearchCache(pgClient, galleryId, clientId, key) {
   const ck = searchCacheKey(galleryId, clientId, key);
   const r = await pgClient.query(
@@ -4894,11 +4899,13 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
     }
     // Modo sob demanda: CompareFaces + cache (não precisa ter processado as fotos da galeria)
     if (useRekogOnDemand()) {
-      const cached = await getSearchCache(client, galleryId, clientId, 'enroll');
-      if (Array.isArray(cached) && cached.length > 0) {
-        const total = cached.length;
-        const photoIds = cached.slice(offset, offset + limit);
-        return res.json({ success: true, total, photoIds, fromCache: true });
+      if (useFaceSearchCache()) {
+        const cached = await getSearchCache(client, galleryId, clientId, 'enroll');
+        if (Array.isArray(cached) && cached.length > 0) {
+          const total = cached.length;
+          const photoIds = cached.slice(offset, offset + limit);
+          return res.json({ success: true, total, photoIds, fromCache: true });
+        }
       }
       const refBytes = await getReferenceImageBytes(client, galleryId, clientId);
       if (!refBytes || refBytes.length === 0) {
@@ -5092,6 +5099,10 @@ router.post('/client/face-enroll-cache', requireClient, asyncHandler(async (req,
       await deleteSearchCacheForClientSession(client, galleryId, clientId);
       return res.json({ success: true, saved: 0, message: 'Cache facial vazio descartado.' });
     }
+    if (!useFaceSearchCache()) {
+      await deleteSearchCacheForClientSession(client, galleryId, clientId);
+      return res.json({ success: true, saved: 0, message: 'Cache facial desativado.' });
+    }
     await setSearchCache(client, galleryId, clientId, 'enroll', ids);
     res.json({ success: true, saved: ids.length });
   } finally {
@@ -5134,12 +5145,16 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
     // Modo sob demanda: CompareFaces + cache (não cobra de novo se a mesma foto já foi buscada)
     if (useRekogOnDemand()) {
       const imageHash = crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 32);
-      const cached = await getSearchCache(pgClient, galleryId, clientId, imageHash);
-      if (Array.isArray(cached) && cached.length > 0) {
-        return res.json({ success: true, total: cached.length, photoIds: cached });
+      if (useFaceSearchCache()) {
+        const cached = await getSearchCache(pgClient, galleryId, clientId, imageHash);
+        if (Array.isArray(cached) && cached.length > 0) {
+          return res.json({ success: true, total: cached.length, photoIds: cached });
+        }
       }
       const photoIds = await compareFacesAgainstGallery(buffer, galleryId, pgClient);
-      await setSearchCache(pgClient, galleryId, clientId, imageHash, photoIds);
+      if (useFaceSearchCache()) {
+        await setSearchCache(pgClient, galleryId, clientId, imageHash, photoIds);
+      }
       return res.json({
         success: true,
         total: photoIds.length,
