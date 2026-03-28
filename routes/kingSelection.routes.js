@@ -4807,6 +4807,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'allow_download',
     'allow_comments',
     'allow_social_sharing',
+    'client_card_height_px',
     'watermark_mode',
     'watermark_path',
     'watermark_opacity',
@@ -4913,6 +4914,10 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
 
       let val = body[key];
       if (key === 'total_fotos_contratadas' || key === 'min_selections') val = parseInt(val || 0, 10) || 0;
+      if (key === 'client_card_height_px') {
+        const n = parseInt(val || 0, 10) || 0;
+        val = Math.max(160, Math.min(420, n || 220));
+      }
       if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing' || key === 'allow_self_signup' || key === 'client_enabled' || key === 'face_recognition_enabled' || key === 'pix_enabled') val = !!val;
       if (key === 'client_image_quality') val = normalizeClientImageQuality(val);
       if (key === 'access_mode') val = ksNormAccessMode(val);
@@ -6273,6 +6278,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
     const hasFaceEnabled = await hasColumn(client, 'king_galleries', 'face_recognition_enabled');
     const hasClientImgQ = await hasColumn(client, 'king_galleries', 'client_image_quality');
+    const hasClientCardH = await hasColumn(client, 'king_galleries', 'client_card_height_px');
     const hasThankYou = await hasColumn(client, 'king_galleries', 'thank_you_title');
     const hasThankYouName = await hasColumn(client, 'king_galleries', 'thank_you_photographer_name');
     const hasSupportWhats = await hasColumn(client, 'king_galleries', 'support_whatsapp_number');
@@ -6281,7 +6287,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasAccessModeG = await hasColumn(client, 'king_galleries', 'access_mode');
     const hasAllowSelfG = await hasColumn(client, 'king_galleries', 'allow_self_signup');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -6480,6 +6486,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         allow_download: salesModeActive ? false : (hasAllowDownload ? !!gallery.allow_download : false),
         face_recognition_enabled: hasFaceEnabled ? !!gallery.face_recognition_enabled : false,
         client_image_quality: hasClientImgQ ? normalizeClientImageQuality(gallery.client_image_quality) : 'low',
+        client_card_height_px: hasClientCardH ? Math.max(160, Math.min(420, parseInt(gallery.client_card_height_px, 10) || 220)) : 220,
         access_mode: galleryAccessMode
       },
       resolvedClientId: resolvedClientId || undefined,
