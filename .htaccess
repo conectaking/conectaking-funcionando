@@ -35,6 +35,8 @@ RewriteRule ^(?:ring|rings|king)selectionproject(?:\.html)?/?$ /kingSelection [R
 # Compatibilidade com prefixo legado /mr/
 RewriteRule ^mr/kingSelectionEdit(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
 RewriteRule ^mr/(?:ring|rings|king)selectionproject(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
+# Compatibilidade ampla: qualquer variante legacy selection(edit|project)
+RewriteRule ^(?:mr/)?(?:ring|rings|king)selection(?:edit|project)(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^kingSelection/?$ kingSelectionEdit.html [L,QSA,NC]

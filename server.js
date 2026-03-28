@@ -635,17 +635,35 @@ app.get(
         '/kingselectionproject',
         '/kingselectionproject/',
         '/kingselectionproject.html',
+        '/mr/kingselectionproject',
+        '/mr/kingselectionproject/',
+        '/mr/kingselectionproject.html',
         '/ringselectionproject',
         '/ringselectionproject/',
         '/ringselectionproject.html',
+        '/mr/ringselectionproject',
+        '/mr/ringselectionproject/',
+        '/mr/ringselectionproject.html',
         '/ringsselectionproject',
         '/ringsselectionproject/',
-        '/ringsselectionproject.html'
+        '/ringsselectionproject.html',
+        '/mr/ringsselectionproject',
+        '/mr/ringsselectionproject/',
+        '/mr/ringsselectionproject.html'
     ],
     (req, res) => {
         res.redirect(302, '/kingSelection');
     }
 );
+app.get(
+    ['/mr/kingSelectionEdit', '/mr/kingSelectionEdit/', '/mr/kingSelectionEdit.html', '/mr/kingselectionedit', '/mr/kingselectionedit/', '/mr/kingselectionedit.html'],
+    (req, res) => {
+        res.redirect(302, '/kingSelection');
+    }
+);
+app.get(/^\/(?:mr\/)?(?:ring|rings|king)selection(?:edit|project)(?:\.html)?\/?$/i, (req, res) => {
+    res.redirect(302, '/kingSelection');
+});
 
 // Galeria cliente (Node) ANTES do proxy.
 // Aceita aliases para manter compatibilidade com links antigos/variantes enviados por WhatsApp.
