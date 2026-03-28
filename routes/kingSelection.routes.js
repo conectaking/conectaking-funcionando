@@ -751,7 +751,9 @@ async function ensureDefaultKingGalleryClientForFace(pgClient, galleryId) {
 
 function isTechnicalFaceGalleryClientEmail(email) {
   const e = String(email || '').toLowerCase();
-  return e.startsWith('__ks_face_default_') || e.startsWith('__ks_face_sess_');
+  if (e.startsWith('__ks_face_default_') || e.startsWith('__ks_face_sess_')) return true;
+  if (e.endsWith('@cadastro.kingselection.invalid') || e.endsWith('@publico.kingselection.invalid')) return true;
+  return false;
 }
 
 /**
@@ -3210,7 +3212,9 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         filteredSelRows = rowsAll.filter(r => parseInt(r.client_id, 10) === focusCid);
       }
     } else if (onlyClientId && hasSelClientId) {
-      filteredSelRows = rowsAll.filter(r => r.client_id == null || parseInt(r.client_id, 10) === onlyClientId);
+      // Com cliente real único na galeria, mostrar apenas as seleções dele.
+      // Evita "sobras" anônimas/técnicas aparecerem após excluir cadastro.
+      filteredSelRows = rowsAll.filter(r => parseInt(r.client_id, 10) === onlyClientId);
     }
     const selectedPhotoIds = filteredSelRows.map(r => r.photo_id);
     let feedback = filteredSelRows.find(r => r.feedback_cliente)?.feedback_cliente || null;
@@ -8244,6 +8248,141 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
     }
 
     const hasSessionKeyCol = await hasColumn(client, 'king_selections', 'session_key');
+
+    // Quando a sessão caiu num cadastro técnico (visitante+...invalid), converte para cadastro real
+    // usando os dados informados no envio, para não "misturar" clientes no mesmo link.
+    if (cid && hasClientTable) {
+      const cInfo = await client.query(
+        `SELECT id, nome, email, telefone, enabled, status
+         FROM king_gallery_clients
+         WHERE gallery_id=$1 AND id=$2
+         LIMIT 1`,
+        [galleryId, cid]
+      );
+      const currentClient = cInfo.rows[0] || null;
+      if (currentClient && isTechnicalFaceGalleryClientEmail(currentClient.email)) {
+        const nome = String((req.body || {}).nome || '').trim().slice(0, 255);
+        const email = String((req.body || {}).email || '').trim();
+        const telefone = String((req.body || {}).telefone || '').trim();
+        if (!nome || !email || !telefone) {
+          return res.status(400).json({ message: 'Preencha nome, e-mail e WhatsApp para enviar sua seleção.' });
+        }
+        const emailNorm = email.toLowerCase();
+        const hasCliTelCol = await hasColumn(client, 'king_gallery_clients', 'telefone');
+
+        await client.query('BEGIN');
+        try {
+          let targetClientId = cid;
+          const existingByEmail = await client.query(
+            `SELECT id, nome, telefone, status, enabled
+             FROM king_gallery_clients
+             WHERE gallery_id=$1 AND lower(email)=lower($2)
+             LIMIT 1`,
+            [galleryId, emailNorm]
+          );
+          if (existingByEmail.rows.length) {
+            const ex = existingByEmail.rows[0];
+            const exId = parseInt(ex.id, 10) || 0;
+            if (exId > 0 && exId !== cid) {
+              if (ex.enabled !== false) {
+                if (normKsStatus(ex.status) === 'finalizado') {
+                  await client.query('ROLLBACK');
+                  return res.status(409).json({ message: 'Esta seleção já foi finalizada. Fale com o fotógrafo.' });
+                }
+                if (ksNormClientNameMatch(ex.nome) !== ksNormClientNameMatch(nome)) {
+                  await client.query('ROLLBACK');
+                  return res.status(409).json({
+                    message:
+                      'Este e-mail já está cadastrado com outro nome. Use os mesmos dados de quando você enviou ou entre com e-mail e senha.'
+                  });
+                }
+                if (!ksClientPhoneMatchesStored(ex.telefone, telefone)) {
+                  await client.query('ROLLBACK');
+                  return res.status(409).json({
+                    message:
+                      'O WhatsApp não confere com o cadastro deste e-mail. Confira o número ou entre com e-mail e senha.'
+                  });
+                }
+              }
+
+              await client.query(
+                'UPDATE king_selections SET client_id=$1, session_key=NULL WHERE gallery_id=$2 AND client_id=$3',
+                [exId, galleryId, cid]
+              );
+              if (sk && hasSessionKeyCol) {
+                await client.query(
+                  'UPDATE king_selections SET client_id=$1, session_key=NULL WHERE gallery_id=$2 AND client_id IS NULL AND session_key=$3',
+                  [exId, galleryId, sk]
+                );
+              }
+              if (hasCliTelCol) {
+                await client.query(
+                  `UPDATE king_gallery_clients
+                   SET enabled=TRUE, nome=$1, telefone=$2, updated_at=NOW()
+                   WHERE gallery_id=$3 AND id=$4`,
+                  [nome, telefone.slice(0, 120), galleryId, exId]
+                );
+              } else {
+                await client.query(
+                  `UPDATE king_gallery_clients
+                   SET enabled=TRUE, nome=$1, updated_at=NOW()
+                   WHERE gallery_id=$2 AND id=$3`,
+                  [nome, galleryId, exId]
+                );
+              }
+              await client.query(
+                'DELETE FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2',
+                [galleryId, cid]
+              );
+              targetClientId = exId;
+            } else {
+              if (hasCliTelCol) {
+                await client.query(
+                  `UPDATE king_gallery_clients
+                   SET nome=$1, email=$2, telefone=$3, enabled=TRUE, updated_at=NOW()
+                   WHERE gallery_id=$4 AND id=$5`,
+                  [nome, emailNorm, telefone.slice(0, 120), galleryId, cid]
+                );
+              } else {
+                await client.query(
+                  `UPDATE king_gallery_clients
+                   SET nome=$1, email=$2, enabled=TRUE, updated_at=NOW()
+                   WHERE gallery_id=$3 AND id=$4`,
+                  [nome, emailNorm, galleryId, cid]
+                );
+              }
+            }
+          } else {
+            if (hasCliTelCol) {
+              await client.query(
+                `UPDATE king_gallery_clients
+                 SET nome=$1, email=$2, telefone=$3, enabled=TRUE, updated_at=NOW()
+                 WHERE gallery_id=$4 AND id=$5`,
+                [nome, emailNorm, telefone.slice(0, 120), galleryId, cid]
+              );
+            } else {
+              await client.query(
+                `UPDATE king_gallery_clients
+                 SET nome=$1, email=$2, enabled=TRUE, updated_at=NOW()
+                 WHERE gallery_id=$3 AND id=$4`,
+                [nome, emailNorm, galleryId, cid]
+              );
+            }
+            if (sk && hasSessionKeyCol) {
+              await client.query(
+                'UPDATE king_selections SET client_id=$1, session_key=NULL WHERE gallery_id=$2 AND client_id IS NULL AND session_key=$3',
+                [cid, galleryId, sk]
+              );
+            }
+          }
+          await client.query('COMMIT');
+          cid = targetClientId;
+        } catch (e) {
+          await client.query('ROLLBACK');
+          throw e;
+        }
+      }
+    }
 
     // Cadastro ao enviar: cria cliente, liga seleções anónimas e devolve novo JWT (sem pedir senha ao visitante).
     if (!cid && sk && hasSessionKeyCol) {
