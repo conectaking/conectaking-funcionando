@@ -1046,12 +1046,11 @@ function ksShouldBackfillClientPhone(storedTel, inputTel) {
   return stored.length < 8 && input.length >= 8;
 }
 
-/** Travamento da galeria para o cliente: em revisão com fluxo “cadastro ao enviar”, permite editar se tyh=false. */
+/** Travamento da galeria para o cliente: revisão/finalizado sempre bloqueiam até o fotógrafo reativar/abrir nova rodada. */
 async function ksResolveClientSelectionLocked(pgClient, req, galleryId, galleryRow) {
   const stGallery = normKsStatus(galleryRow?.status);
   let locked = isKsClientLockedStatus(stGallery);
   const { cid } = req.ksCtx || {};
-  const jwtPayload = req.ksClient;
 
   const hasClientTable = await hasTable(pgClient, 'king_gallery_clients');
   const hasClientStatus = hasClientTable && (await hasColumn(pgClient, 'king_gallery_clients', 'status'));
@@ -1065,25 +1064,30 @@ async function ksResolveClientSelectionLocked(pgClient, req, galleryId, galleryR
 
   if (clientStNorm === 'finalizado') return true;
 
-  if (cid && clientStNorm === 'revisao') {
-    const hasAm = await hasColumn(pgClient, 'king_galleries', 'access_mode');
-    const hasSelf = await hasColumn(pgClient, 'king_galleries', 'allow_self_signup');
-    const row = { ...galleryRow };
-    if ((hasAm && row.access_mode === undefined) || (hasSelf && row.allow_self_signup === undefined)) {
-      const cols = ['id'];
-      if (hasAm) cols.push('access_mode');
-      if (hasSelf) cols.push('allow_self_signup');
-      const gr = await pgClient.query(`SELECT ${cols.join(', ')} FROM king_galleries WHERE id=$1`, [galleryId]);
-      Object.assign(row, gr.rows[0] || {});
-    }
-    const deferred = ksGalleryRowIsDeferredSignup(row, hasAm, hasSelf);
-    if (deferred) {
-      const thankYouHold = ksClientJwtThankYouHold(jwtPayload, clientStNorm);
-      locked = thankYouHold;
-    }
-  }
-
   return locked;
+}
+
+/** Rodada comercial (pagamento/aprovação): prioriza a última rodada com fotos selecionadas. */
+async function ksGetSalesSelectionRound(pgClient, galleryId, cid) {
+  const clientId = parseInt(cid, 10) || 0;
+  if (!clientId) return 1;
+  const hasSelBatch = await hasColumn(pgClient, 'king_selections', 'selection_batch');
+  if (hasSelBatch) {
+    const r = await pgClient.query(
+      'SELECT COALESCE(MAX(selection_batch), 0)::int AS m FROM king_selections WHERE gallery_id=$1 AND client_id=$2',
+      [galleryId, clientId]
+    );
+    const maxWithPhotos = parseInt(r.rows?.[0]?.m, 10) || 0;
+    if (maxWithPhotos > 0) return maxWithPhotos;
+  } else {
+    const r = await pgClient.query(
+      'SELECT COUNT(*)::int AS c FROM king_selections WHERE gallery_id=$1 AND client_id=$2',
+      [galleryId, clientId]
+    );
+    const count = parseInt(r.rows?.[0]?.c, 10) || 0;
+    if (count > 0) return 1;
+  }
+  return ksGetCurrentSelectionRound(pgClient, galleryId, clientId);
 }
 
 function getPwCryptoKey() {
@@ -6011,11 +6015,14 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       && salesConfig?.sales_over_limit_policy === 'allow_and_warn'
       && maxPackageQty > 0
       && selectedCountForPricing > maxPackageQty);
+    const salesSelectionRound = (salesModeActive && cid)
+      ? await ksGetSalesSelectionRound(client, gallery.id, parseInt(cid, 10))
+      : currentSelectionRound;
     const paymentState = (salesModeActive && cid)
-      ? await ksGetPaymentByClientRound(client, gallery.id, parseInt(cid, 10), currentSelectionRound)
+      ? await ksGetPaymentByClientRound(client, gallery.id, parseInt(cid, 10), salesSelectionRound)
       : null;
     const approvalsState = (salesModeActive && cid)
-      ? await ksListApprovalsByClientRound(client, gallery.id, parseInt(cid, 10), currentSelectionRound)
+      ? await ksListApprovalsByClientRound(client, gallery.id, parseInt(cid, 10), salesSelectionRound)
       : [];
     const approvedPhotoIds = approvalsState
       .filter((a) => String(a.status || '').toLowerCase() === 'approved')
@@ -6093,20 +6100,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     // Mensagem para exibir quando a seleção já foi enviada (página com cadeado)
     let lockedMessage = null;
     if (locked) {
-      let revisaoSelfHint = '';
-      if (cid && (await hasColumn(client, 'king_gallery_clients', 'status'))) {
-        const stMsgRes = await client.query('SELECT status FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2', [cid, gallery.id]);
-        const stc = normKsStatus(stMsgRes.rows?.[0]?.status);
-        const defMsg = ksGalleryRowIsDeferredSignup(gallery, hasAccessModeG, hasAllowSelfG);
-        if (stc === 'revisao' && defMsg && ksClientJwtThankYouHold(req.ksClient, stc)) {
-          revisaoSelfHint =
-            ' Para alterar sua seleção, clique em Sair e use “Entrar na minha seleção” com o mesmo nome, e-mail e telefone.';
-        }
-      }
       if (selectedCount > 0) {
-        lockedMessage = `Obrigado! Você selecionou ${selectedCount} foto(s). Se quiser selecionar mais, peça ao fotógrafo para liberar novamente. Se já fez a seleção, entre em contato com ele.${revisaoSelfHint}`;
+        lockedMessage = `Obrigado! Você selecionou ${selectedCount} foto(s). Sua seleção está bloqueada. Se quiser selecionar mais, peça ao fotógrafo para liberar novamente (reativar ou abrir nova seleção).`;
       } else {
-        lockedMessage = `Nenhuma foto foi selecionada. Se precisar fazer sua seleção, entre em contato com o fotógrafo para reativar.${revisaoSelfHint}`;
+        lockedMessage = 'Nenhuma foto foi selecionada. Se precisar fazer sua seleção, peça ao fotógrafo para reativar ou abrir nova seleção.';
       }
     }
 
@@ -6186,7 +6183,7 @@ router.post('/client/payment-proof', requireClient, uploadMem.single('proof'), a
 
     const clientId = req.ksCtx.cid ? parseInt(req.ksCtx.cid, 10) : 0;
     if (!clientId) return res.status(403).json({ message: 'Entre com sua conta antes de enviar comprovante.' });
-    const round = await ksGetCurrentSelectionRound(client, req.ksClient.galleryId, clientId);
+    const round = await ksGetSalesSelectionRound(client, req.ksClient.galleryId, clientId);
     const filePath = await ksStorePaymentProofImage(req.file, req.ksClient.galleryId, clientId, round);
 
     await client.query(
