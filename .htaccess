@@ -32,6 +32,9 @@ RewriteRule ^kingSelection/([^/]+)/?$ kingSelectionGallery.php?ks_slug=$1 [L,NC,
 RewriteRule ^kingSelectionEdit(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
 # Compatibilidade: páginas legadas do projeto (layout antigo) -> painel oficial
 RewriteRule ^(?:ring|rings|king)selectionproject(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
+# Compatibilidade com prefixo legado /mr/
+RewriteRule ^mr/kingSelectionEdit(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
+RewriteRule ^mr/(?:ring|rings|king)selectionproject(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^kingSelection/?$ kingSelectionEdit.html [L,QSA,NC]
