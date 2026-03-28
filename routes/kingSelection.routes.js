@@ -7695,7 +7695,9 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
         [galleryId, sk]
       );
       if ((preCnt.rows[0]?.c || 0) === 0) {
-        return res.status(409).json({ message: 'Nada para enviar. Sua sessão pode ter expirado — atualize a página e selecione novamente.' });
+        return res.status(409).json({
+          message: 'Sua seleção neste cadastro já foi enviada. Peça ao fotógrafo para abrir nova seleção ou reativar seu cadastro.'
+        });
       }
 
       if (!hasClientTable) {
