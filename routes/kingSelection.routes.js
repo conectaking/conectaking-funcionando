@@ -6214,21 +6214,24 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       && salesConfig?.sales_over_limit_policy === 'allow_and_warn'
       && maxPackageQty > 0
       && selectedCountForPricing > maxPackageQty);
-    const salesSelectionRound = (salesModeActive && cid)
-      ? await ksGetSalesSelectionRound(client, gallery.id, parseInt(cid, 10))
+    const resolvedClientId = await resolveFaceClientIdForSession(client, gallery.id, cid, sk);
+    const salesClientId = (salesModeActive && (parseInt(cid, 10) || 0))
+      ? (parseInt(cid, 10) || 0)
+      : (salesModeActive ? (parseInt(resolvedClientId || 0, 10) || 0) : 0);
+    const salesSelectionRound = (salesModeActive && salesClientId)
+      ? await ksGetSalesSelectionRound(client, gallery.id, salesClientId)
       : currentSelectionRound;
-    const paymentState = (salesModeActive && cid)
-      ? await ksGetPaymentByClientRound(client, gallery.id, parseInt(cid, 10), salesSelectionRound)
+    const paymentState = (salesModeActive && salesClientId)
+      ? await ksGetPaymentByClientRound(client, gallery.id, salesClientId, salesSelectionRound)
       : null;
-    const approvalsState = (salesModeActive && cid)
-      ? await ksListApprovalsByClientRound(client, gallery.id, parseInt(cid, 10), salesSelectionRound)
+    const approvalsState = (salesModeActive && salesClientId)
+      ? await ksListApprovalsByClientRound(client, gallery.id, salesClientId, salesSelectionRound)
       : [];
     const approvedPhotoIds = approvalsState
       .filter((a) => String(a.status || '').toLowerCase() === 'approved')
       .map((a) => parseInt(a.photo_id, 10))
       .filter(Boolean);
 
-    const resolvedClientId = await resolveFaceClientIdForSession(client, gallery.id, cid, sk);
     const faceOn = hasFaceEnabled && !!gallery.face_recognition_enabled;
     const faceRecognitionUsable = !!(faceOn && resolvedClientId);
 
@@ -6349,7 +6352,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       paymentState: salesModeActive ? paymentState : undefined,
       approvalsState: salesModeActive ? approvalsState : undefined,
       approvedPhotoIds: salesModeActive ? approvedPhotoIds : undefined,
-      clientAuthenticated: !!cid
+      clientAuthenticated: !!salesClientId
     });
   } finally {
     client.release();
@@ -8291,7 +8294,10 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     }
 
     if (isDownload && isPaidEventMode) {
-      const cid = parseInt(payload.clientId || 0, 10) || 0;
+      let cid = parseInt(payload.clientId || 0, 10) || 0;
+      if (!cid) {
+        cid = await resolveFaceClientIdForSession(client, payload.galleryId, payload.clientId, payload.sk);
+      }
       if (!cid) return res.status(403).send('Faça login para baixar as fotos aprovadas.');
       if (!ksEnforceDownloadRateLimit(payload.galleryId, cid, req.ip)) {
         return res.status(429).send('Muitas tentativas de download. Tente novamente em instantes.');
