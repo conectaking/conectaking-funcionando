@@ -3801,18 +3801,23 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
     };
 
     const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
+    const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
     const pRes = await client.query(
-      `SELECT id, original_name, "order"${hasFilePath ? ', file_path' : ''} FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC`,
+      `SELECT id, original_name, "order"${hasFilePath ? ', file_path' : ''}${hasFolderId ? ', folder_id' : ', NULL::INTEGER AS folder_id'}
+       FROM king_photos
+       WHERE gallery_id=$1
+       ORDER BY "order" ASC, id ASC`,
       [gallery.id]
     );
     const photos = (pRes.rows || []).map(p => {
-      const out = { id: p.id, original_name: p.original_name, order: p.order };
+      const out = { id: p.id, original_name: p.original_name, order: p.order, folder_id: p.folder_id ? parseInt(p.folder_id, 10) : null };
       if (hasFilePath && p.file_path && String(p.file_path).toLowerCase().startsWith('r2:')) {
         const objectKey = String(p.file_path).slice(3).trim().replace(/^\/+/, '');
         if (objectKey) out.url = r2PublicUrl(objectKey) || undefined;
       }
       return out;
     });
+    const folders = await listFoldersForGallery(client, gallery.id);
     res.json({
       success: true,
       gallery: { ...gallery, photos, locked: true, allow_download: !!gallery.allow_download, face_recognition_enabled: !!gallery.face_recognition_enabled },
@@ -4813,6 +4818,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       gallery: {
         ...gallery,
         photos,
+        folders,
         locked,
         allow_download: hasAllowDownload ? !!gallery.allow_download : false,
         face_recognition_enabled: hasFaceEnabled ? !!gallery.face_recognition_enabled : false,
