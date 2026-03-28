@@ -4346,11 +4346,36 @@ router.post('/galleries/:id/clients/:clientId/delete-selection-batch', protectUs
       return res.status(400).json({ message: 'Esta base não tem rodadas de seleção (migration pendente?).' });
     }
 
-    const del = await client.query(
-      'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3',
-      [galleryId, clientId, batch]
-    );
-    res.json({ success: true, deleted: del.rowCount || 0 });
+    await client.query('BEGIN');
+    try {
+      const del = await client.query(
+        'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3',
+        [galleryId, clientId, batch]
+      );
+      if (await hasTable(client, 'king_selection_photo_approvals')) {
+        await client.query(
+          'DELETE FROM king_selection_photo_approvals WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3',
+          [galleryId, clientId, batch]
+        );
+      }
+      if (await hasTable(client, 'king_client_payment_requests')) {
+        await client.query(
+          'DELETE FROM king_client_payment_requests WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3',
+          [galleryId, clientId, batch]
+        );
+      }
+      if (await hasTable(client, 'king_download_audit')) {
+        await client.query(
+          'DELETE FROM king_download_audit WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3',
+          [galleryId, clientId, batch]
+        );
+      }
+      await client.query('COMMIT');
+      return res.json({ success: true, deleted: del.rowCount || 0 });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    }
   } finally {
     client.release();
   }
@@ -4451,6 +4476,24 @@ router.post('/galleries/:id/clients/:clientId/clear-review', protectUser, asyncH
         'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id=$2',
         [galleryId, clientId]
       );
+      if (await hasTable(client, 'king_selection_photo_approvals')) {
+        await client.query(
+          'DELETE FROM king_selection_photo_approvals WHERE gallery_id=$1 AND client_id=$2',
+          [galleryId, clientId]
+        );
+      }
+      if (await hasTable(client, 'king_client_payment_requests')) {
+        await client.query(
+          'DELETE FROM king_client_payment_requests WHERE gallery_id=$1 AND client_id=$2',
+          [galleryId, clientId]
+        );
+      }
+      if (await hasTable(client, 'king_download_audit')) {
+        await client.query(
+          'DELETE FROM king_download_audit WHERE gallery_id=$1 AND client_id=$2',
+          [galleryId, clientId]
+        );
+      }
       if (await hasColumn(client, 'king_gallery_clients', 'status')) {
         await client.query(
           `UPDATE king_gallery_clients
@@ -4588,12 +4631,40 @@ router.delete('/galleries/:id/clients/:clientId', protectUser, asyncHandler(asyn
       return res.status(500).json({ message: 'Tabela de clientes não disponível (migração pendente).' });
     }
 
-    // desativa ao invés de deletar (mais seguro)
-    await client.query(
-      'UPDATE king_gallery_clients SET enabled=FALSE, updated_at=NOW() WHERE gallery_id=$1 AND id=$2',
-      [galleryId, clientId]
-    );
-    res.json({ success: true });
+    await client.query('BEGIN');
+    try {
+      await client.query(
+        'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id=$2',
+        [galleryId, clientId]
+      );
+      if (await hasTable(client, 'king_selection_photo_approvals')) {
+        await client.query(
+          'DELETE FROM king_selection_photo_approvals WHERE gallery_id=$1 AND client_id=$2',
+          [galleryId, clientId]
+        );
+      }
+      if (await hasTable(client, 'king_client_payment_requests')) {
+        await client.query(
+          'DELETE FROM king_client_payment_requests WHERE gallery_id=$1 AND client_id=$2',
+          [galleryId, clientId]
+        );
+      }
+      if (await hasTable(client, 'king_download_audit')) {
+        await client.query(
+          'DELETE FROM king_download_audit WHERE gallery_id=$1 AND client_id=$2',
+          [galleryId, clientId]
+        );
+      }
+      const delClient = await client.query(
+        'DELETE FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2',
+        [galleryId, clientId]
+      );
+      await client.query('COMMIT');
+      return res.json({ success: true, deleted_client: delClient.rowCount || 0 });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    }
   } finally {
     client.release();
   }
@@ -5528,8 +5599,8 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
   }
 }));
 
-// Imagem OG (WhatsApp/Instagram): usar a foto de CAPA do projeto, sem logo do site.
-// Retorna JPEG 1200x630 (SEM cortar a foto): usa "contain" com fundo desfocado.
+// Imagem OG (WhatsApp/Instagram): usa a capa do projeto sem cortar o assunto principal.
+// Ajusta proporção final conforme orientação da capa (horizontal ou vertical).
 router.get('/public/og-image', asyncHandler(async (req, res) => {
   const slug = (req.query.slug || '').toString().trim();
   if (!slug) return res.status(400).send('slug é obrigatório');
@@ -5545,10 +5616,15 @@ router.get('/public/og-image', asyncHandler(async (req, res) => {
     const buf = await fetchPhotoFileBufferFromFilePath(coverPath);
     if (!buf) return res.status(500).send('Não foi possível carregar a capa (Cloudflare/R2 não configurado).');
 
-    // Fundo desfocado (preenche 1200x630) + foto inteira por cima (contain)
+    const meta = await sharp(buf).rotate().metadata();
+    const isPortrait = Number(meta?.height || 0) > Number(meta?.width || 0);
+    const outW = isPortrait ? 1080 : 1200;
+    const outH = isPortrait ? 1350 : 630;
+
+    // Fundo desfocado (preenche canvas) + foto inteira por cima (contain)
     const bg = await sharp(buf)
       .rotate()
-      .resize(1200, 630, { fit: 'cover', position: 'entropy' })
+      .resize(outW, outH, { fit: 'cover', position: 'entropy' })
       .blur(18)
       .modulate({ brightness: 0.78, saturation: 0.95 })
       .jpeg({ quality: 78 })
@@ -5556,7 +5632,7 @@ router.get('/public/og-image', asyncHandler(async (req, res) => {
 
     const fg = await sharp(buf)
       .rotate()
-      .resize(1200, 630, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .resize(outW, outH, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .jpeg({ quality: 88 })
       .toBuffer();
 
