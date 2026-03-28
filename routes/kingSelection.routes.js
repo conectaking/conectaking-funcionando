@@ -519,6 +519,147 @@ async function listFoldersForGallery(pgClient, galleryId) {
   });
 }
 
+async function runAutoSeparateByFaceInternal(pgClient, galleryId, minSimilarity) {
+  const needed = ['king_photo_folders', 'rekognition_photo_faces', 'rekognition_face_matches', 'king_gallery_clients'];
+  for (const t of needed) {
+    // eslint-disable-next-line no-await-in-loop
+    if (!(await hasTable(pgClient, t))) {
+      return {
+        updated: 0,
+        assignments: [],
+        folders: await listFoldersForGallery(pgClient, galleryId),
+        message: `Tabela ${t} não encontrada. Execute as migrations faciais e de pastas.`
+      };
+    }
+  }
+  if (!(await hasColumn(pgClient, 'king_photos', 'folder_id'))) {
+    return {
+      updated: 0,
+      assignments: [],
+      folders: await listFoldersForGallery(pgClient, galleryId),
+      message: 'Coluna king_photos.folder_id não encontrada. Execute a migration 206.'
+    };
+  }
+
+  const matchRes = await pgClient.query(
+    `WITH ranked AS (
+       SELECT
+         kp.id AS photo_id,
+         kgc.id AS client_id,
+         COALESCE(NULLIF(BTRIM(kgc.nome), ''), CONCAT('Pessoa ', kgc.id::text)) AS folder_name,
+         MAX(rfm.similarity)::float8 AS best_similarity
+       FROM king_photos kp
+       JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+       JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+       JOIN king_gallery_clients kgc ON kgc.id = rfm.client_id AND kgc.gallery_id = kp.gallery_id
+       WHERE kp.gallery_id = $1
+         AND (kgc.email IS NULL OR lower(kgc.email) NOT LIKE '__ks_face_%@internal.king')
+       GROUP BY kp.id, kgc.id, COALESCE(NULLIF(BTRIM(kgc.nome), ''), CONCAT('Pessoa ', kgc.id::text))
+     ),
+     picked AS (
+       SELECT DISTINCT ON (photo_id)
+         photo_id, client_id, folder_name, best_similarity
+       FROM ranked
+       WHERE best_similarity >= $2
+       ORDER BY photo_id, best_similarity DESC, client_id ASC
+     )
+     SELECT * FROM picked`,
+    [galleryId, minSimilarity]
+  );
+  const picked = matchRes.rows || [];
+  if (!picked.length) {
+    return {
+      updated: 0,
+      assignments: [],
+      folders: await listFoldersForGallery(pgClient, galleryId),
+      message: 'Não encontrei correspondências faciais suficientes. Rode "Processar reconhecimento em todas as fotos" e tente novamente.'
+    };
+  }
+
+  const folderNames = Array.from(new Set(picked.map((r) => String(r.folder_name || '').trim()).filter(Boolean)));
+  const foldersBefore = await listFoldersForGallery(pgClient, galleryId);
+  const folderIdByName = new Map(
+    foldersBefore.map((f) => [String(f.name || '').trim().toLowerCase(), parseInt(f.id, 10)]).filter((x) => x[1])
+  );
+  let sortBase = 10;
+  if (foldersBefore.length) {
+    sortBase = Math.max(...foldersBefore.map((f) => parseInt(f.sort_order, 10) || 0)) + 10;
+  }
+  for (const name of folderNames) {
+    const key = name.toLowerCase();
+    if (folderIdByName.has(key)) continue;
+    // eslint-disable-next-line no-await-in-loop
+    const ins = await pgClient.query(
+      `INSERT INTO king_photo_folders (gallery_id, name, sort_order)
+       VALUES ($1,$2,$3)
+       RETURNING id`,
+      [galleryId, name.slice(0, 120), sortBase]
+    );
+    sortBase += 10;
+    const id = parseInt(ins.rows?.[0]?.id, 10);
+    if (id) folderIdByName.set(key, id);
+  }
+
+  const assignments = [];
+  for (const row of picked) {
+    const photoId = parseInt(row.photo_id, 10);
+    const folderId = folderIdByName.get(String(row.folder_name || '').trim().toLowerCase()) || null;
+    if (!photoId || !folderId) continue;
+    assignments.push({ photoId, folderId });
+  }
+  if (!assignments.length) {
+    return {
+      updated: 0,
+      assignments: [],
+      folders: await listFoldersForGallery(pgClient, galleryId),
+      message: 'Nenhuma atribuição válida foi gerada.'
+    };
+  }
+
+  await pgClient.query('BEGIN');
+  try {
+    for (const a of assignments) {
+      // eslint-disable-next-line no-await-in-loop
+      await pgClient.query(
+        'UPDATE king_photos SET folder_id=$1 WHERE id=$2 AND gallery_id=$3',
+        [a.folderId, a.photoId, galleryId]
+      );
+    }
+
+    const folderIds = Array.from(new Set(assignments.map((a) => a.folderId)));
+    for (const fid of folderIds) {
+      // eslint-disable-next-line no-await-in-loop
+      await pgClient.query(
+        `UPDATE king_photo_folders f
+         SET cover_photo_id = COALESCE(
+           f.cover_photo_id,
+           (
+             SELECT p.id
+             FROM king_photos p
+             WHERE p.gallery_id = $1 AND p.folder_id = $2
+             ORDER BY p."order" ASC, p.id ASC
+             LIMIT 1
+           )
+         ),
+         updated_at = NOW()
+         WHERE f.gallery_id = $1 AND f.id = $2`,
+        [galleryId, fid]
+      );
+    }
+    await pgClient.query('COMMIT');
+  } catch (e) {
+    await pgClient.query('ROLLBACK');
+    throw e;
+  }
+
+  return {
+    updated: assignments.length,
+    assignments,
+    folders: await listFoldersForGallery(pgClient, galleryId),
+    message: null
+  };
+}
+
 /**
  * Galeria sem nenhum king_gallery_clients (ex.: sem cliente_email no backfill 153):
  * cria uma ficha interna só para amarrar enroll/cache de rosto (FK em rekognition_*).
@@ -2974,130 +3115,201 @@ router.post('/galleries/:id/folders/auto-separate-by-face', protectUser, asyncHa
       [galleryId, req.user.userId]
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
-
-    const needed = ['king_photo_folders', 'rekognition_photo_faces', 'rekognition_face_matches', 'king_gallery_clients'];
-    for (const t of needed) {
-      // eslint-disable-next-line no-await-in-loop
-      if (!(await hasTable(client, t))) {
-        return res.status(412).json({ message: `Tabela ${t} não encontrada. Execute as migrations faciais e de pastas.` });
-      }
-    }
-    if (!(await hasColumn(client, 'king_photos', 'folder_id'))) {
-      return res.status(412).json({ message: 'Coluna king_photos.folder_id não encontrada. Execute a migration 206.' });
-    }
-
-    const matchRes = await client.query(
-      `WITH ranked AS (
-         SELECT
-           kp.id AS photo_id,
-           kgc.id AS client_id,
-           COALESCE(NULLIF(BTRIM(kgc.nome), ''), CONCAT('Pessoa ', kgc.id::text)) AS folder_name,
-           MAX(rfm.similarity)::float8 AS best_similarity
-         FROM king_photos kp
-         JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
-         JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
-         JOIN king_gallery_clients kgc ON kgc.id = rfm.client_id AND kgc.gallery_id = kp.gallery_id
-         WHERE kp.gallery_id = $1
-           AND (kgc.email IS NULL OR lower(kgc.email) NOT LIKE '__ks_face_%@internal.king')
-         GROUP BY kp.id, kgc.id, COALESCE(NULLIF(BTRIM(kgc.nome), ''), CONCAT('Pessoa ', kgc.id::text))
-       ),
-       picked AS (
-         SELECT DISTINCT ON (photo_id)
-           photo_id, client_id, folder_name, best_similarity
-         FROM ranked
-         WHERE best_similarity >= $2
-         ORDER BY photo_id, best_similarity DESC, client_id ASC
-       )
-       SELECT * FROM picked`,
-      [galleryId, minSimilarity]
-    );
-    const picked = matchRes.rows || [];
-    if (!picked.length) {
-      return res.json({
-        success: true,
-        updated: 0,
-        message: 'Não encontrei correspondências faciais suficientes. Rode "Processar reconhecimento em todas as fotos" e tente novamente.'
-      });
-    }
-
-    const folderNames = Array.from(new Set(picked.map((r) => String(r.folder_name || '').trim()).filter(Boolean)));
-    const foldersBefore = await listFoldersForGallery(client, galleryId);
-    const folderIdByName = new Map(
-      foldersBefore.map((f) => [String(f.name || '').trim().toLowerCase(), parseInt(f.id, 10)]).filter((x) => x[1])
-    );
-    let sortBase = 10;
-    if (foldersBefore.length) {
-      sortBase = Math.max(...foldersBefore.map((f) => parseInt(f.sort_order, 10) || 0)) + 10;
-    }
-    for (const name of folderNames) {
-      const key = name.toLowerCase();
-      if (folderIdByName.has(key)) continue;
-      // eslint-disable-next-line no-await-in-loop
-      const ins = await client.query(
-        `INSERT INTO king_photo_folders (gallery_id, name, sort_order)
-         VALUES ($1,$2,$3)
-         RETURNING id`,
-        [galleryId, name.slice(0, 120), sortBase]
-      );
-      sortBase += 10;
-      const id = parseInt(ins.rows?.[0]?.id, 10);
-      if (id) folderIdByName.set(key, id);
-    }
-
-    const assignments = [];
-    for (const row of picked) {
-      const photoId = parseInt(row.photo_id, 10);
-      const folderId = folderIdByName.get(String(row.folder_name || '').trim().toLowerCase()) || null;
-      if (!photoId || !folderId) continue;
-      assignments.push({ photoId, folderId });
-    }
-    if (!assignments.length) {
-      return res.json({ success: true, updated: 0, message: 'Nenhuma atribuição válida foi gerada.' });
-    }
-
-    await client.query('BEGIN');
-    try {
-      for (const a of assignments) {
-        // eslint-disable-next-line no-await-in-loop
-        await client.query(
-          'UPDATE king_photos SET folder_id=$1 WHERE id=$2 AND gallery_id=$3',
-          [a.folderId, a.photoId, galleryId]
-        );
-      }
-
-      const folderIds = Array.from(new Set(assignments.map((a) => a.folderId)));
-      for (const fid of folderIds) {
-        // eslint-disable-next-line no-await-in-loop
-        await client.query(
-          `UPDATE king_photo_folders f
-           SET cover_photo_id = COALESCE(
-             f.cover_photo_id,
-             (
-               SELECT p.id
-               FROM king_photos p
-               WHERE p.gallery_id = $1 AND p.folder_id = $2
-               ORDER BY p."order" ASC, p.id ASC
-               LIMIT 1
-             )
-           ),
-           updated_at = NOW()
-           WHERE f.gallery_id = $1 AND f.id = $2`,
-          [galleryId, fid]
-        );
-      }
-      await client.query('COMMIT');
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    }
-
-    const folders = await listFoldersForGallery(client, galleryId);
+    const out = await runAutoSeparateByFaceInternal(client, galleryId, minSimilarity);
     res.json({
       success: true,
-      updated: assignments.length,
-      folders,
-      assignments
+      updated: out.updated || 0,
+      folders: out.folders || [],
+      assignments: out.assignments || [],
+      message: out.message || undefined
     });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/galleries/:id/folders/auto-separate-job/start', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const minSimilarity = Math.max(45, Math.min(99, parseFloat(req.body?.minSimilarity ?? 72) || 72));
+  const forceReprocess = req.body?.forceReprocess === true;
+  const concurrency = Math.min(8, Math.max(1, parseInt(req.body?.concurrency || '5', 10) || 5));
+  const speedMode = String(req.body?.speedMode || process.env.REKOG_SPEED_MODE_DEFAULT || 'auto').trim().toLowerCase();
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_folder_auto_jobs'))) {
+      return res.status(412).json({ message: 'Tabela king_folder_auto_jobs não encontrada. Execute a migration 207.' });
+    }
+
+    const ins = await client.query(
+      `INSERT INTO king_folder_auto_jobs
+         (gallery_id, status, stage, message, min_similarity, force_reprocess, options_json)
+       VALUES
+         ($1,'pending','queued',$2,$3,$4,$5::jsonb)
+       RETURNING id, gallery_id, status, stage, message, min_similarity, force_reprocess, total_photos, processed_photos, error_photos, assigned_photos, created_at, started_at, finished_at, updated_at`,
+      [
+        galleryId,
+        'Job enfileirado.',
+        minSimilarity,
+        forceReprocess,
+        JSON.stringify({ speedMode, concurrency })
+      ]
+    );
+    const job = ins.rows[0];
+
+    const updateJob = async (jobId, patch) => {
+      const c = await db.pool.connect();
+      try {
+        const sets = [];
+        const vals = [];
+        let i = 1;
+        const push = (col, val) => { sets.push(`${col}=$${i++}`); vals.push(val); };
+        if (Object.prototype.hasOwnProperty.call(patch, 'status')) push('status', patch.status);
+        if (Object.prototype.hasOwnProperty.call(patch, 'stage')) push('stage', patch.stage);
+        if (Object.prototype.hasOwnProperty.call(patch, 'message')) push('message', patch.message);
+        if (Object.prototype.hasOwnProperty.call(patch, 'total_photos')) push('total_photos', patch.total_photos);
+        if (Object.prototype.hasOwnProperty.call(patch, 'processed_photos')) push('processed_photos', patch.processed_photos);
+        if (Object.prototype.hasOwnProperty.call(patch, 'error_photos')) push('error_photos', patch.error_photos);
+        if (Object.prototype.hasOwnProperty.call(patch, 'assigned_photos')) push('assigned_photos', patch.assigned_photos);
+        if (Object.prototype.hasOwnProperty.call(patch, 'error_message')) push('error_message', patch.error_message);
+        if (Object.prototype.hasOwnProperty.call(patch, 'started_at')) sets.push(`started_at=${patch.started_at ? 'NOW()' : 'NULL'}`);
+        if (Object.prototype.hasOwnProperty.call(patch, 'finished_at')) sets.push(`finished_at=${patch.finished_at ? 'NOW()' : 'NULL'}`);
+        if (!sets.length) return;
+        vals.push(jobId);
+        await c.query(`UPDATE king_folder_auto_jobs SET ${sets.join(', ')}, updated_at=NOW() WHERE id=$${i}`, vals);
+      } finally {
+        c.release();
+      }
+    };
+
+    setImmediate(async () => {
+      try {
+        await updateJob(job.id, {
+          status: 'processing',
+          stage: 'processing_faces',
+          message: 'Processando reconhecimento facial em segundo plano...',
+          started_at: true
+        });
+
+        const cList = await db.pool.connect();
+        let photos = [];
+        try {
+          if (forceReprocess) {
+            const q = await cList.query(
+              'SELECT id, file_path FROM king_photos WHERE gallery_id=$1 ORDER BY id',
+              [galleryId]
+            );
+            photos = q.rows || [];
+          } else {
+            const q = await cList.query(
+              `SELECT kp.id, kp.file_path
+               FROM king_photos kp
+               LEFT JOIN rekognition_photo_jobs rpj ON rpj.photo_id = kp.id AND rpj.gallery_id = kp.gallery_id
+               WHERE kp.gallery_id=$1
+                 AND (rpj.process_status IS NULL OR rpj.process_status NOT IN ('done'))
+               ORDER BY kp.id`,
+              [galleryId]
+            );
+            photos = q.rows || [];
+          }
+        } finally {
+          cList.release();
+        }
+
+        await updateJob(job.id, {
+          total_photos: photos.length,
+          message: photos.length
+            ? `Reconhecimento em andamento (${photos.length} foto(s) na fila).`
+            : 'Nenhuma foto pendente de processamento facial. Indo para separação por pastas.'
+        });
+
+        let faceOut = { processed: 0, errors: 0 };
+        if (photos.length) {
+          faceOut = await runGalleryPhotosThroughRekognition(galleryId, photos, concurrency, { speedMode });
+        }
+
+        await updateJob(job.id, {
+          processed_photos: parseInt(faceOut.processed, 10) || 0,
+          error_photos: parseInt(faceOut.errors, 10) || 0,
+          stage: 'separating_folders',
+          message: 'Separando fotos por pastas automaticamente...'
+        });
+
+        const cSep = await db.pool.connect();
+        let sepOut = null;
+        try {
+          sepOut = await runAutoSeparateByFaceInternal(cSep, galleryId, minSimilarity);
+        } finally {
+          cSep.release();
+        }
+
+        await updateJob(job.id, {
+          status: 'done',
+          stage: 'done',
+          assigned_photos: parseInt(sepOut?.updated, 10) || 0,
+          message: sepOut?.message || `Concluído. ${parseInt(sepOut?.updated, 10) || 0} foto(s) separadas em pastas.`,
+          finished_at: true
+        });
+      } catch (err) {
+        const msg = (err?.message || 'Falha no processamento do job').toString().slice(0, 500);
+        try {
+          await updateJob(job.id, {
+            status: 'error',
+            stage: 'error',
+            error_message: msg,
+            message: msg,
+            finished_at: true
+          });
+        } catch (_) { }
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Job de separação por pastas iniciado em segundo plano.',
+      job
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+router.get('/galleries/:id/folders/auto-separate-job', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_folder_auto_jobs'))) {
+      return res.json({ success: true, job: null });
+    }
+    const jr = await client.query(
+      `SELECT id, gallery_id, status, stage, message, min_similarity, force_reprocess,
+              total_photos, processed_photos, error_photos, assigned_photos,
+              error_message, created_at, started_at, finished_at, updated_at
+       FROM king_folder_auto_jobs
+       WHERE gallery_id=$1
+       ORDER BY created_at DESC, id DESC
+       LIMIT 1`,
+      [galleryId]
+    );
+    return res.json({ success: true, job: jr.rows?.[0] || null });
   } finally {
     client.release();
   }
