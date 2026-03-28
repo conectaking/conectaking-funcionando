@@ -480,11 +480,11 @@ async function listFoldersForGallery(pgClient, galleryId) {
        f.gallery_id,
        f.name,
        f.sort_order,
-       f.cover_photo_id,
+       COALESCE(f.cover_photo_id, fpick.id) AS cover_photo_id,
        f.created_at,
        COALESCE(pc.photo_count, 0)::INTEGER AS photo_count,
-       cp.original_name AS cover_photo_name,
-       cp.file_path AS cover_file_path
+       COALESCE(cp.original_name, fpick.original_name) AS cover_photo_name,
+       COALESCE(cp.file_path, fpick.file_path) AS cover_file_path
      FROM king_photo_folders f
      LEFT JOIN (
        SELECT folder_id, COUNT(*)::INTEGER AS photo_count
@@ -492,6 +492,14 @@ async function listFoldersForGallery(pgClient, galleryId) {
        WHERE gallery_id=$1 AND folder_id IS NOT NULL
        GROUP BY folder_id
      ) pc ON pc.folder_id = f.id
+     LEFT JOIN LATERAL (
+       SELECT p.id, p.original_name, p.file_path
+       FROM king_photos p
+       WHERE p.gallery_id = f.gallery_id
+         AND p.folder_id = f.id
+       ORDER BY p."order" ASC, p.id ASC
+       LIMIT 1
+     ) fpick ON TRUE
      LEFT JOIN king_photos cp
        ON cp.id = f.cover_photo_id
       AND cp.gallery_id = f.gallery_id
