@@ -4288,6 +4288,70 @@ router.post('/galleries/:id/clients/:clientId/delete-selection-batch', protectUs
   }
 }));
 
+/** Fotógrafo: reativa uma rodada específica para o cliente voltar a selecionar na mesma rodada. */
+router.post('/galleries/:id/clients/:clientId/reactivate-selection-batch', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const batch = parseInt((req.body || {}).batch, 10);
+  if (!galleryId || !clientId || !Number.isFinite(batch) || batch < 1) {
+    return res.status(400).json({ message: 'galleryId, clientId e batch (número >= 1) são obrigatórios.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão.' });
+
+    const ck = await client.query(
+      'SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2 AND enabled=TRUE',
+      [galleryId, clientId]
+    );
+    if (ck.rows.length === 0) return res.status(404).json({ message: 'Cliente não encontrado.' });
+
+    const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
+    if (!hasSelBatch) {
+      return res.status(400).json({ message: 'Esta base não tem rodadas de seleção (migration pendente?).' });
+    }
+    const existsBatch = await client.query(
+      `SELECT 1
+       FROM king_selections
+       WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3
+       LIMIT 1`,
+      [galleryId, clientId, batch]
+    );
+    if (!existsBatch.rows.length) {
+      return res.status(404).json({ message: 'Rodada não encontrada para este cliente.' });
+    }
+
+    const hasCliRound = await hasColumn(client, 'king_gallery_clients', 'selection_round');
+    if (hasCliRound) {
+      await client.query(
+        `UPDATE king_gallery_clients
+         SET status='andamento', selection_round=$3, updated_at=NOW()
+         WHERE gallery_id=$1 AND id=$2`,
+        [galleryId, clientId, batch]
+      );
+    } else {
+      await client.query(
+        `UPDATE king_gallery_clients
+         SET status='andamento', updated_at=NOW()
+         WHERE gallery_id=$1 AND id=$2`,
+        [galleryId, clientId]
+      );
+    }
+
+    return res.json({ success: true, selection_round: batch, clientId, batch });
+  } finally {
+    client.release();
+  }
+}));
+
 /** Fotógrafo: limpa tudo que está em revisão do cliente (todas as rodadas da seleção). */
 router.post('/galleries/:id/clients/:clientId/clear-review', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
