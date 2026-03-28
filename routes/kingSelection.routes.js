@@ -8296,22 +8296,17 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
       if (!ksEnforceDownloadRateLimit(payload.galleryId, cid, req.ip)) {
         return res.status(429).send('Muitas tentativas de download. Tente novamente em instantes.');
       }
-      if (!(await hasTable(client, 'king_selection_photo_approvals')) || !(await hasTable(client, 'king_client_payment_requests'))) {
+      if (!(await hasTable(client, 'king_selection_photo_approvals'))) {
         return res.status(503).send('Aprovação de download indisponível no servidor.');
       }
 
       const approvalRes = await client.query(
         `SELECT a.selection_batch, a.delivery_mode
          FROM king_selection_photo_approvals a
-         JOIN king_client_payment_requests pr
-           ON pr.gallery_id=a.gallery_id
-          AND pr.client_id=a.client_id
-          AND pr.selection_batch=a.selection_batch
          WHERE a.gallery_id=$1
            AND a.client_id=$2
            AND a.photo_id=$3
            AND lower(a.status)='approved'
-           AND lower(pr.status)='confirmed'
          ORDER BY a.selection_batch DESC
          LIMIT 1`,
         [payload.galleryId, cid, photoId]
