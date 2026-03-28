@@ -4791,6 +4791,16 @@ async function getReferenceImageBytes(pgClient, galleryId, clientId) {
  */
 async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = {}) {
   if (!Array.isArray(photoRows) || photoRows.length === 0) return [];
+  const diag = {
+    totalRows: photoRows.length,
+    compareAttempts: 0,
+    compareMatches: 0,
+    cropFaceCandidates: 0,
+    cropCompareAttempts: 0,
+    cropCompareMatches: 0,
+    fetchErrors: 0,
+    compareErrors: 0
+  };
   let sourceNorm;
   try {
     sourceNorm = await normalizeImageForRekognition(sourceImageBytes, 2048, { fast: true, quality: 84 });
@@ -4802,7 +4812,8 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
       const rekogCfg = getRekogConfig();
       if (rekogCfg.enabled) {
         const det = await detectFacesFromBytes(sourceNorm);
-        const minConf = Math.min(99, Math.max(70, parseInt(String(process.env.REKOG_ENROLL_MIN_CONFIDENCE || '82'), 10) || 82));
+        // Menos rígido no primeiro chunk para evitar falso "zero resultado" com selfie real de celular.
+        const minConf = Math.min(99, Math.max(45, parseInt(String(process.env.REKOG_SOURCE_VERIFY_MIN_CONFIDENCE || '55'), 10) || 55));
         const facesOk = (det.FaceDetails || []).filter((f) => (f.Confidence || 0) >= minConf);
         if (facesOk.length === 0) return [];
       }
@@ -4821,14 +4832,23 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
     Math.max(2, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '8'), 10) || 8)
   );
   const threshold = getRekogConfig().compareSimilarityThreshold ?? getRekogConfig().faceMatchThreshold ?? 78;
+  const minRelaxedThreshold = Math.min(
+    95,
+    Math.max(50, parseInt(String(process.env.KINGSELECTION_FACE_RELAXED_THRESHOLD || '62'), 10) || 62)
+  );
+  const thresholdMain = Math.max(minRelaxedThreshold, threshold);
+  const thresholdFallback = Math.max(
+    50,
+    Math.min(thresholdMain, parseInt(String(process.env.KINGSELECTION_FACE_FALLBACK_THRESHOLD || String(Math.max(58, thresholdMain - 8))), 10) || Math.max(58, thresholdMain - 8))
+  );
   const faceCropFallbackEnabled = String(process.env.KINGSELECTION_FACE_CROP_FALLBACK || '1').trim() !== '0';
   const faceCropMaxFaces = Math.min(
-    8,
-    Math.max(1, parseInt(String(process.env.KINGSELECTION_FACE_CROP_MAX_FACES || '4'), 10) || 4)
+    12,
+    Math.max(1, parseInt(String(process.env.KINGSELECTION_FACE_CROP_MAX_FACES || '8'), 10) || 8)
   );
   const faceCropMinConfidence = Math.min(
     100,
-    Math.max(0, parseInt(String(process.env.KINGSELECTION_FACE_CROP_MIN_CONFIDENCE || '70'), 10) || 70)
+    Math.max(0, parseInt(String(process.env.KINGSELECTION_FACE_CROP_MIN_CONFIDENCE || '45'), 10) || 45)
   );
   const matchedSet = new Set();
 
@@ -4869,10 +4889,12 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
         } catch (_) {
           targetBuf = buf;
         }
+        diag.compareAttempts += 1;
         const out = await compareFaces(sourceCmp, targetBuf);
         const matches = out.FaceMatches || [];
-        if (matches.length > 0 && (matches[0].Similarity || 0) >= threshold) {
+        if (matches.length > 0 && (matches[0].Similarity || 0) >= thresholdMain) {
           matchedSet.add(p.id);
+          diag.compareMatches += 1;
           continue;
         }
 
@@ -4889,6 +4911,7 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
               return bb - aa;
             })
             .slice(0, faceCropMaxFaces);
+          diag.cropFaceCandidates += faceDetails.length;
         } catch (_) {
           faceDetails = [];
         }
@@ -4897,24 +4920,28 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
           try {
             const faceCrop = await cropFace(targetBuf, fd.BoundingBox, 0.12);
             const faceCropNorm = await normalizeImageForRekognition(faceCrop, 1024, { fast: true, quality: 84 });
+            diag.cropCompareAttempts += 1;
             const outCrop = await compareFaces(sourceCmp, faceCropNorm);
             const m2 = outCrop.FaceMatches || [];
-            if (m2.length > 0 && (m2[0].Similarity || 0) >= threshold) {
+            if (m2.length > 0 && (m2[0].Similarity || 0) >= thresholdFallback) {
               matchedSet.add(p.id);
+              diag.cropCompareMatches += 1;
               break;
             }
           } catch (_) {
             // ignora recorte inválido e segue
+            diag.compareErrors += 1;
           }
         }
       } catch (_) {
         /* foto inválida / Rekognition / rede — ignora e continua */
+        diag.fetchErrors += 1;
       }
     }
   }
   const nWorkers = Math.min(concurrency, Math.max(1, photos.length));
   await Promise.all(Array.from({ length: nWorkers }, () => worker()));
-  return Array.from(matchedSet);
+  return { photoIds: Array.from(matchedSet), diagnostics: diag };
 }
 
 async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient) {
@@ -4930,7 +4957,7 @@ async function compareFacesAgainstGallery(sourceImageBytes, galleryId, pgClient)
     const rows = sliceRes.rows || [];
     if (!rows.length) break;
     const part = await compareFacesAgainstPhotoRows(sourceImageBytes, rows, { verifySourceFace: skip === 0 });
-    part.forEach((id) => matched.add(id));
+    (part.photoIds || []).forEach((id) => matched.add(id));
   }
   return Array.from(matched);
 }
@@ -4988,7 +5015,8 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
           [galleryId, batch, skip]
         );
         const rows = sliceRes.rows || [];
-        const photoIds = await compareFacesAgainstPhotoRows(refBytes, rows, { verifySourceFace: skip === 0 });
+        const chunkRes = await compareFacesAgainstPhotoRows(refBytes, rows, { verifySourceFace: skip === 0 });
+        const photoIds = chunkRes.photoIds || [];
         const hasMore = skip + rows.length < totalGallery;
         return res.json({
           success: true,
@@ -4998,7 +5026,8 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
           photoSkip: skip,
           photoBatchReturned: rows.length,
           hasMore,
-          total: photoIds.length
+          total: photoIds.length,
+          diagnostics: chunkRes.diagnostics || undefined
         });
       }
       // 200 (não 400): evita “failed fetch” no DevTools e falhas se o body JSON falhar parcialmente;
@@ -5098,7 +5127,8 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
           [galleryId, batch, skip]
         );
         const rows = sliceRes.rows || [];
-        const chunkMatched = await compareFacesAgainstPhotoRows(refBytesIndexed, rows, { verifySourceFace: skip === 0 });
+        const chunkRes = await compareFacesAgainstPhotoRows(refBytesIndexed, rows, { verifySourceFace: skip === 0 });
+        const chunkMatched = chunkRes.photoIds || [];
         const hasMore = skip + rows.length < totalGallery;
         return res.json({
           success: true,
@@ -5109,7 +5139,8 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
           photoBatchReturned: rows.length,
           hasMore,
           total: chunkMatched.length,
-          compareFallback: true
+          compareFallback: true,
+          diagnostics: chunkRes.diagnostics || undefined
         });
       }
       return res.status(200).json({
