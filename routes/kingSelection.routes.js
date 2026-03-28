@@ -4821,7 +4821,36 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
     Math.max(2, parseInt(String(process.env.KINGSELECTION_FACE_COMPARE_CONCURRENCY || '8'), 10) || 8)
   );
   const threshold = getRekogConfig().compareSimilarityThreshold ?? getRekogConfig().faceMatchThreshold ?? 78;
+  const faceCropFallbackEnabled = String(process.env.KINGSELECTION_FACE_CROP_FALLBACK || '1').trim() !== '0';
+  const faceCropMaxFaces = Math.min(
+    8,
+    Math.max(1, parseInt(String(process.env.KINGSELECTION_FACE_CROP_MAX_FACES || '4'), 10) || 4)
+  );
+  const faceCropMinConfidence = Math.min(
+    100,
+    Math.max(0, parseInt(String(process.env.KINGSELECTION_FACE_CROP_MIN_CONFIDENCE || '70'), 10) || 70)
+  );
   const matchedSet = new Set();
+
+  // Normaliza selfie para priorizar rosto principal (reduz falsos negativos em fotos com fundo complexo).
+  let sourceCmp = sourceNorm;
+  try {
+    const detSrc = await detectFacesFromBytes(sourceNorm);
+    const srcFaces = (detSrc.FaceDetails || [])
+      .filter((f) => (f.Confidence || 0) >= faceCropMinConfidence && f.BoundingBox)
+      .sort((a, b) => {
+        const aa = (a.BoundingBox?.Width || 0) * (a.BoundingBox?.Height || 0);
+        const bb = (b.BoundingBox?.Width || 0) * (b.BoundingBox?.Height || 0);
+        return bb - aa;
+      });
+    if (srcFaces.length > 0) {
+      const srcCrop = await cropFace(sourceNorm, srcFaces[0].BoundingBox, 0.12);
+      sourceCmp = await normalizeImageForRekognition(srcCrop, 1024, { fast: true, quality: 84 });
+    }
+  } catch (_) {
+    sourceCmp = sourceNorm;
+  }
+
   let pi = 0;
   function nextPhoto() {
     if (pi >= photos.length) return null;
@@ -4840,10 +4869,43 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
         } catch (_) {
           targetBuf = buf;
         }
-        const out = await compareFaces(sourceNorm, targetBuf);
+        const out = await compareFaces(sourceCmp, targetBuf);
         const matches = out.FaceMatches || [];
         if (matches.length > 0 && (matches[0].Similarity || 0) >= threshold) {
           matchedSet.add(p.id);
+          continue;
+        }
+
+        // Fallback para multidão: detectar rostos da foto e comparar selfie com cada recorte.
+        if (!faceCropFallbackEnabled) continue;
+        let faceDetails = [];
+        try {
+          const det = await detectFacesFromBytes(targetBuf);
+          faceDetails = (det.FaceDetails || [])
+            .filter((f) => (f.Confidence || 0) >= faceCropMinConfidence && f.BoundingBox)
+            .sort((a, b) => {
+              const aa = (a.BoundingBox?.Width || 0) * (a.BoundingBox?.Height || 0);
+              const bb = (b.BoundingBox?.Width || 0) * (b.BoundingBox?.Height || 0);
+              return bb - aa;
+            })
+            .slice(0, faceCropMaxFaces);
+        } catch (_) {
+          faceDetails = [];
+        }
+
+        for (const fd of faceDetails) {
+          try {
+            const faceCrop = await cropFace(targetBuf, fd.BoundingBox, 0.12);
+            const faceCropNorm = await normalizeImageForRekognition(faceCrop, 1024, { fast: true, quality: 84 });
+            const outCrop = await compareFaces(sourceCmp, faceCropNorm);
+            const m2 = outCrop.FaceMatches || [];
+            if (m2.length > 0 && (m2[0].Similarity || 0) >= threshold) {
+              matchedSet.add(p.id);
+              break;
+            }
+          } catch (_) {
+            // ignora recorte inválido e segue
+          }
         }
       } catch (_) {
         /* foto inválida / Rekognition / rede — ignora e continua */
