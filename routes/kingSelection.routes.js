@@ -2825,14 +2825,25 @@ router.post('/galleries/:id/folders', protectUser, asyncHandler(async (req, res)
     if (!(await hasTable(client, 'king_photo_folders'))) {
       return res.status(412).json({ message: 'Migrations de pasta ainda não aplicadas no banco.' });
     }
-    const ins = await client.query(
-      `INSERT INTO king_photo_folders (gallery_id, name, sort_order)
-       VALUES ($1,$2,$3)
-       RETURNING id, gallery_id, name, sort_order, cover_photo_id, created_at`,
-      [galleryId, name.slice(0, 120), sortOrder]
-    );
-    const folders = await listFoldersForGallery(client, galleryId);
-    res.status(201).json({ success: true, folder: ins.rows[0], folders });
+    const safeName = name.slice(0, 120);
+    try {
+      const ins = await client.query(
+        `INSERT INTO king_photo_folders (gallery_id, name, sort_order)
+         VALUES ($1,$2,$3)
+         RETURNING id, gallery_id, name, sort_order, cover_photo_id, created_at`,
+        [galleryId, safeName, sortOrder]
+      );
+      const folders = await listFoldersForGallery(client, galleryId);
+      res.status(201).json({ success: true, folder: ins.rows[0], folders });
+    } catch (e) {
+      if (e?.code !== '23505') throw e;
+      const ex = await client.query(
+        'SELECT id, gallery_id, name, sort_order, cover_photo_id, created_at FROM king_photo_folders WHERE gallery_id=$1 AND lower(name)=lower($2) LIMIT 1',
+        [galleryId, safeName]
+      );
+      const folders = await listFoldersForGallery(client, galleryId);
+      res.json({ success: true, folder: ex.rows?.[0] || null, folders, alreadyExists: true });
+    }
   } finally {
     client.release();
   }
