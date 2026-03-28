@@ -2597,6 +2597,70 @@ router.post('/photos/:photoId/replace-proxy', protectUser, (req, res, next) => {
   }
 }));
 
+// ===== Upload de versão editada para entrega (vendas por evento)
+router.post('/galleries/:id/photos/:photoId/edited-upload', protectUser, (req, res, next) => {
+  uploadMem.single('file')(req, res, (err) => {
+    if (!err) return next();
+    if (err.name === 'MulterError' && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ success: false, message: 'Arquivo muito grande (limite 30MB).' });
+    }
+    return res.status(400).json({ success: false, message: err.message || 'Falha ao processar upload.' });
+  });
+}, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const photoId = parseInt(req.params.photoId, 10);
+  if (!galleryId || !photoId) return res.status(400).json({ message: 'IDs inválidos.' });
+  if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'Arquivo editado é obrigatório.' });
+  if (!KS_WORKER_SECRET) return res.status(501).json({ message: 'Worker não configurado' });
+
+  const userId = req.user.userId;
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2
+       LIMIT 1`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    if (!(await hasColumn(client, 'king_photos', 'edited_file_path'))) {
+      return res.status(503).json({ message: 'Coluna edited_file_path indisponível. Execute a migration 208.' });
+    }
+
+    const belongs = await client.query(
+      `SELECT id
+       FROM king_photos
+       WHERE id=$1 AND gallery_id=$2
+       LIMIT 1`,
+      [photoId, galleryId]
+    );
+    if (!belongs.rows.length) return res.status(404).json({ message: 'Foto não encontrada para esta galeria.' });
+
+    const out = await uploadBufferToWorker({
+      buffer: req.file.buffer,
+      filename: req.file.originalname || `edited-${photoId}.jpg`,
+      mimetype: req.file.mimetype || 'application/octet-stream',
+      galleryId,
+      userId
+    });
+    const editedPath = `r2:${out.key}`;
+
+    await client.query(
+      `UPDATE king_photos
+       SET edited_file_path=$1
+       WHERE id=$2 AND gallery_id=$3`,
+      [editedPath, photoId, galleryId]
+    );
+
+    res.json({ success: true, photo_id: photoId, edited_file_path: editedPath });
+  } finally {
+    client.release();
+  }
+}));
+
 // ===== Marca d'água: upload para R2 (substitui Cloudflare Images)
 router.post('/galleries/:id/watermark', protectUser, (req, res, next) => {
   uploadMem.single('file')(req, res, (err) => {
@@ -3403,7 +3467,7 @@ router.get('/galleries/:id/sales/clients/:clientId/round/:selectionBatch', prote
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
     const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
     const selectedRows = (await client.query(
-      `SELECT s.photo_id, p.original_name, p."order"
+      `SELECT s.photo_id, p.original_name, p."order", p.edited_file_path
        FROM king_selections s
        JOIN king_photos p ON p.id=s.photo_id AND p.gallery_id=s.gallery_id
        WHERE s.gallery_id=$1 AND s.client_id=$2 ${hasSelBatch ? 'AND s.selection_batch=$3' : ''}
@@ -3417,7 +3481,8 @@ router.get('/galleries/:id/sales/clients/:clientId/round/:selectionBatch', prote
       selected: selectedRows.map((r) => ({
         photo_id: parseInt(r.photo_id, 10) || 0,
         original_name: r.original_name || '',
-        order: parseInt(r.order, 10) || 0
+        order: parseInt(r.order, 10) || 0,
+        edited_file_path: r.edited_file_path || null
       })),
       payment,
       approvals
