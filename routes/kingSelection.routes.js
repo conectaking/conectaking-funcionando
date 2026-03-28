@@ -4527,8 +4527,12 @@ function useRekogOnDemand() {
 }
 
 function useIndexedCompareFallback() {
-  const v = String(process.env.REKOG_INDEXED_COMPARE_FALLBACK || '1').toLowerCase();
-  return v === '1' || v === 'true';
+  // Força fallback por comparação quando o modo indexado ainda não tem matches.
+  // Em produção havia env antiga a "0", o que travava o fluxo no "aguarde indexação".
+  // Mantemos possibilidade de desligar só com valor explícito "off".
+  const v = String(process.env.REKOG_INDEXED_COMPARE_FALLBACK || '1').trim().toLowerCase();
+  if (v === 'off') return false;
+  return true;
 }
 
 function getFaceResultMinSimilarity() {
@@ -5160,9 +5164,9 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
       success: true,
       total: 0,
       photoIds: [],
-      message: useIndexedCompareFallback()
-        ? 'Ainda sem resultados. Se necessário, ative o fallback por comparação.'
-        : 'Ainda sem resultados indexados. Aguarde a indexação da galeria e tente novamente em instantes.'
+      message: refBytesIndexed && refBytesIndexed.length > 0
+        ? 'Ainda sem resultados para esta selfie. Tente outra selfie com boa luz e rosto de frente.'
+        : 'Nenhuma selfie de referência ativa nesta sessão. Envie a foto novamente para iniciar a busca.'
     });
   } finally {
     client.release();
