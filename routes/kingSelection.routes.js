@@ -3498,8 +3498,10 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
   const selectionBatch = Math.max(1, parseInt(req.params.selectionBatch, 10) || 1);
   if (!galleryId || !clientId) return res.status(400).json({ message: 'IDs inválidos' });
   const nextStatusRaw = String(req.body?.status || '').toLowerCase().trim();
-  const nextStatus = nextStatusRaw === 'confirmed' ? 'confirmed' : (nextStatusRaw === 'rejected' ? 'rejected' : null);
-  if (!nextStatus) return res.status(400).json({ message: 'Status inválido. Use confirmed/rejected.' });
+  const nextStatus = nextStatusRaw === 'confirmed'
+    ? 'confirmed'
+    : (nextStatusRaw === 'rejected' ? 'rejected' : (nextStatusRaw === 'pending' ? 'pending' : null));
+  if (!nextStatus) return res.status(400).json({ message: 'Status inválido. Use pending/confirmed/rejected.' });
   const noteAdmin = req.body?.note_admin != null ? String(req.body.note_admin).trim().slice(0, 1000) : null;
   const amountCents = req.body?.amount_cents != null ? Math.max(0, parseInt(req.body.amount_cents, 10) || 0) : null;
   const dbClient = await db.pool.connect();
@@ -8282,12 +8284,13 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     );
     const accessMode = ksNormAccessMode(gResMeta.rows?.[0]?.access_mode || 'private');
     const allowDownload = !!(hasAllowDownload ? gResMeta.rows?.[0]?.allow_download : true);
+    const isPaidEventMode = ksIsPaidEventAccessMode(accessMode);
 
-    if (isDownload && !allowDownload) {
+    if (isDownload && !allowDownload && !isPaidEventMode) {
       return res.status(403).send('Download desativado para esta galeria.');
     }
 
-    if (isDownload && ksIsPaidEventAccessMode(accessMode)) {
+    if (isDownload && isPaidEventMode) {
       const cid = parseInt(payload.clientId || 0, 10) || 0;
       if (!cid) return res.status(403).send('Faça login para baixar as fotos aprovadas.');
       if (!ksEnforceDownloadRateLimit(payload.galleryId, cid, req.ip)) {
@@ -8332,6 +8335,30 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
           [payload.galleryId, cid, photoId, parseInt(ap.selection_batch, 10) || null, String(req.ip || '').slice(0, 100), String(req.headers['user-agent'] || '').slice(0, 400)]
         );
       } catch (_) { }
+
+      // Download pago/aprovado deve sair SEM redimensionar e SEM recompressão (qualidade original).
+      const originalBuf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+      if (!originalBuf) return res.status(500).send('Não foi possível carregar a imagem original.');
+      let contentType = 'application/octet-stream';
+      let ext = '';
+      try {
+        const metaOrig = await sharp(originalBuf).metadata();
+        const fmt = String(metaOrig?.format || '').toLowerCase();
+        if (fmt === 'jpeg' || fmt === 'jpg') { contentType = 'image/jpeg'; ext = '.jpg'; }
+        else if (fmt === 'png') { contentType = 'image/png'; ext = '.png'; }
+        else if (fmt === 'webp') { contentType = 'image/webp'; ext = '.webp'; }
+        else if (fmt === 'gif') { contentType = 'image/gif'; ext = '.gif'; }
+        else if (fmt === 'tiff') { contentType = 'image/tiff'; ext = '.tif'; }
+        else if (fmt === 'avif') { contentType = 'image/avif'; ext = '.avif'; }
+      } catch (_) { }
+      const baseName = (photo.original_name || `foto-${photoId}`).toString().replace(/[\/\\:*?"<>|]+/g, '-').trim();
+      const finalName = /\.[a-z0-9]{2,5}$/i.test(baseName) ? baseName : `${baseName}${ext || '.jpg'}`;
+      res.set('Content-Type', contentType);
+      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+      res.set('Pragma', 'no-cache');
+      res.set('Content-Disposition', `attachment; filename="${finalName}"`);
+      return res.send(originalBuf);
     }
 
     let galleryQuality = 'low';
@@ -8370,7 +8397,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     } else {
       res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
     }
-    if (isDownload && allowDownload) {
+    if (isDownload && (allowDownload || isPaidEventMode)) {
       const fn = (photo.original_name || `foto-${photoId}.jpg`).toString().replace(/[\/\\:*?"<>|]+/g, '-');
       res.set('Content-Disposition', `attachment; filename="${fn.endsWith('.jpg') || fn.endsWith('.jpeg') ? fn : fn + '.jpg'}"`);
     }
