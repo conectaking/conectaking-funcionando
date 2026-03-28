@@ -6379,6 +6379,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       [gallery.id]
     );
 
+    const galleryAccessMode = ksNormAccessMode(hasAccessModeG ? gallery.access_mode : 'private');
+    const salesModeActive = ksIsPaidEventAccessMode(galleryAccessMode);
     const hasSelClientId = await hasColumn(client, 'king_selections', 'client_id');
     const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
     const hasSessionKey = await hasColumn(client, 'king_selections', 'session_key');
@@ -6400,7 +6402,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
             sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
           );
         }
-      } else if (sk && hasSessionKey) {
+      } else if (!salesModeActive && sk && hasSessionKey) {
         const sRes = await client.query(
           `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2`,
           [gallery.id, sk]
@@ -6411,7 +6413,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
             sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
           );
         }
-      } else {
+      } else if (!salesModeActive) {
         const sRes = await client.query(
           `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL${hasSessionKey ? ' AND (session_key IS NULL OR session_key = \'\')' : ''}`,
           [gallery.id]
@@ -6422,25 +6424,24 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
             sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
           );
         }
-      }
+      } // modo pago + sem clientId: nunca retorna seleções anônimas/terceiros
     } else {
-      const sRes = await client.query(
-        hasSelBatch
-          ? 'SELECT photo_id, selection_batch FROM king_selections WHERE gallery_id=$1'
-          : 'SELECT photo_id FROM king_selections WHERE gallery_id=$1',
-        [gallery.id]
-      );
-      selectedPhotoIds = sRes.rows.map(r => r.photo_id);
-      if (hasSelBatch) {
-        selectionBatchByPhotoId = Object.fromEntries(
-          sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
+      if (!salesModeActive) {
+        const sRes = await client.query(
+          hasSelBatch
+            ? 'SELECT photo_id, selection_batch FROM king_selections WHERE gallery_id=$1'
+            : 'SELECT photo_id FROM king_selections WHERE gallery_id=$1',
+          [gallery.id]
         );
+        selectedPhotoIds = sRes.rows.map(r => r.photo_id);
+        if (hasSelBatch) {
+          selectionBatchByPhotoId = Object.fromEntries(
+            sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
+          );
+        }
       }
     }
     const currentSelectionRound = await ksGetCurrentSelectionRound(client, gallery.id, cid);
-
-    const galleryAccessMode = ksNormAccessMode(hasAccessModeG ? gallery.access_mode : 'private');
-    const salesModeActive = ksIsPaidEventAccessMode(galleryAccessMode);
     const salesConfig = salesModeActive ? await ksLoadGallerySalesConfig(client, gallery.id) : null;
     const salePackages = salesModeActive ? (await ksListSalePackages(client, gallery.id)).filter((p) => p.active !== false) : [];
     const selectedCountForPricing = selectedPhotoIds.length;
@@ -6458,9 +6459,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       && maxPackageQty > 0
       && selectedCountForPricing > maxPackageQty);
     const resolvedClientId = await resolveFaceClientIdForSession(client, gallery.id, cid, sk);
-    const salesClientId = (salesModeActive && (parseInt(cid, 10) || 0))
+    // Modo pago: nunca usar fallback de sessão para evitar cruzar dados entre clientes.
+    const salesClientId = salesModeActive
       ? (parseInt(cid, 10) || 0)
-      : (salesModeActive ? (parseInt(resolvedClientId || 0, 10) || 0) : 0);
+      : 0;
     const salesSelectionRound = (salesModeActive && salesClientId)
       ? await ksGetSalesSelectionRound(client, gallery.id, salesClientId)
       : currentSelectionRound;
