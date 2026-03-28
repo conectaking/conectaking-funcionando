@@ -27,6 +27,7 @@ const { normalizeImageForRekognition, cropFace } = require('../utils/rekognition
 const { fetchKingSelectionOgData, buildShareMetaPayload } = require('../utils/kingSelectionOg');
 
 const router = express.Router();
+const KS_PAYMENT_PROOF_DIR = path.resolve(process.cwd(), 'uploads', 'kingselection-payment-proofs');
 
 const uploadMem = multer({
   storage: multer.memoryStorage(),
@@ -37,6 +38,19 @@ const uploadMem = multer({
     return cb(new Error('Apenas imagens são permitidas'), false);
   }
 });
+
+async function ksStorePaymentProofImage(file, galleryId, clientId, selectionBatch) {
+  if (!file || !file.buffer) throw new Error('Arquivo de comprovante não enviado.');
+  await fs.promises.mkdir(KS_PAYMENT_PROOF_DIR, { recursive: true });
+  const safeG = parseInt(galleryId, 10) || 0;
+  const safeC = parseInt(clientId, 10) || 0;
+  const safeB = parseInt(selectionBatch, 10) || 1;
+  const outName = `g${safeG}_c${safeC}_r${safeB}_${Date.now()}.jpg`;
+  const outPath = path.join(KS_PAYMENT_PROOF_DIR, outName);
+  const outBuf = await sharp(file.buffer).rotate().jpeg({ quality: 88, progressive: true }).toBuffer();
+  await fs.promises.writeFile(outPath, outBuf);
+  return outPath;
+}
 
 // TESTE DE VERSÃO - Para confirmar que o backend foi atualizado
 router.get('/ping-version', (req, res) => res.json({ success: true, version: '2026-02-21-v3', timestamp: new Date() }));
@@ -867,8 +881,8 @@ function ksGalleryRowIsDeferredSignup(row, hasAccessModeCol, hasAllowSelfCol) {
   if (!row) return false;
   let am = hasAccessModeCol ? String(row.access_mode || 'private').toLowerCase() : 'private';
   if (am === 'password') am = 'signup';
-  const allowSelf = hasAllowSelfCol ? !!row.allow_self_signup : am === 'signup';
-  return am === 'signup' && allowSelf;
+  const allowSelf = hasAllowSelfCol ? !!row.allow_self_signup : (am === 'signup' || am === 'paid_event_photos');
+  return (am === 'signup' || am === 'paid_event_photos') && allowSelf;
 }
 
 /**
@@ -880,6 +894,130 @@ function ksClientJwtThankYouHold(jwtPayload, clientStatusNorm) {
   if (jwtPayload.tyh === false) return false;
   if (jwtPayload.tyh === true) return true;
   return isKsClientLockedStatus(clientStatusNorm);
+}
+
+function ksNormAccessMode(raw) {
+  let am = String(raw || 'private').toLowerCase().trim();
+  if (am === 'password') am = 'signup';
+  if (!['private', 'signup', 'public', 'paid_event_photos'].includes(am)) am = 'private';
+  return am;
+}
+
+function ksIsPaidEventAccessMode(raw) {
+  return ksNormAccessMode(raw) === 'paid_event_photos';
+}
+
+function ksAccessModeAllowsSelfSignup(accessMode) {
+  const am = ksNormAccessMode(accessMode);
+  return am === 'signup' || am === 'paid_event_photos';
+}
+
+function ksNormDeliveryMode(raw) {
+  const s = String(raw || '').toLowerCase().trim();
+  return s === 'edited' ? 'edited' : 'original';
+}
+
+function ksNormPaymentStatus(raw) {
+  const s = String(raw || '').toLowerCase().trim();
+  if (s === 'confirmed' || s === 'paid') return 'confirmed';
+  if (s === 'rejected') return 'rejected';
+  return 'pending';
+}
+
+function ksNormalizeOverLimitPolicy(raw) {
+  const s = String(raw || '').toLowerCase().trim();
+  return ['allow_and_warn', 'block_selection', 'allow_extra_per_photo'].includes(s) ? s : 'allow_and_warn';
+}
+
+function ksNormalizePriceMode(raw) {
+  const s = String(raw || '').toLowerCase().trim();
+  return ['packages_only', 'packages_plus_unit', 'best_price_auto'].includes(s) ? s : 'best_price_auto';
+}
+
+function ksMoneyToCents(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.round(n * 100));
+}
+
+function ksComputeBestPriceCents(selectedCount, packages, unitPriceCents, priceMode) {
+  const n = Math.max(0, parseInt(selectedCount, 10) || 0);
+  const mode = ksNormalizePriceMode(priceMode);
+  const unit = Math.max(0, parseInt(unitPriceCents, 10) || 0);
+  const packs = (Array.isArray(packages) ? packages : [])
+    .map((p) => ({
+      qty: Math.max(1, parseInt(p.photo_qty, 10) || 0),
+      price: Math.max(0, parseInt(p.price_cents, 10) || 0)
+    }))
+    .filter((p) => p.qty > 0 && p.price >= 0);
+  if (n <= 0) return 0;
+  if (!packs.length) return mode === 'packages_only' ? 0 : n * unit;
+
+  if (mode === 'packages_only') {
+    const exact = packs.find((p) => p.qty === n);
+    return exact ? exact.price : 0;
+  }
+
+  if (mode === 'packages_plus_unit') {
+    let best = n * unit;
+    for (const p of packs) {
+      if (p.qty === n) best = Math.min(best || Number.MAX_SAFE_INTEGER, p.price);
+      if (p.qty < n) best = Math.min(best || Number.MAX_SAFE_INTEGER, p.price + ((n - p.qty) * unit));
+    }
+    return Number.isFinite(best) ? best : (n * unit);
+  }
+
+  const maxQty = Math.max(...packs.map((p) => p.qty), 0);
+  const cap = Math.max(n, n + maxQty);
+  const INF = Number.MAX_SAFE_INTEGER;
+  const dp = Array(cap + 1).fill(INF);
+  dp[0] = 0;
+  for (let i = 0; i <= cap; i += 1) {
+    if (dp[i] === INF) continue;
+    if (unit > 0 && i + 1 <= cap) dp[i + 1] = Math.min(dp[i + 1], dp[i] + unit);
+    for (const p of packs) {
+      if (i + p.qty <= cap) dp[i + p.qty] = Math.min(dp[i + p.qty], dp[i] + p.price);
+    }
+  }
+  let out = dp[n];
+  for (let i = n + 1; i <= cap; i += 1) out = Math.min(out, dp[i]);
+  if (!Number.isFinite(out) || out === INF) out = n * unit;
+  return out;
+}
+
+async function ksListSalePackages(pgClient, galleryId) {
+  if (!(await hasTable(pgClient, 'king_gallery_sale_packages'))) return [];
+  const rows = (await pgClient.query(
+    `SELECT id, name, photo_qty, price_cents, sort_order, active
+     FROM king_gallery_sale_packages
+     WHERE gallery_id=$1
+     ORDER BY sort_order ASC, photo_qty ASC, id ASC`,
+    [galleryId]
+  )).rows || [];
+  return rows.map((r) => ({
+    id: parseInt(r.id, 10) || 0,
+    name: String(r.name || '').trim() || 'Pacote',
+    photo_qty: Math.max(1, parseInt(r.photo_qty, 10) || 1),
+    price_cents: Math.max(0, parseInt(r.price_cents, 10) || 0),
+    sort_order: parseInt(r.sort_order, 10) || 0,
+    active: r.active !== false
+  }));
+}
+
+const ksDownloadLimiter = new Map();
+function ksEnforceDownloadRateLimit(galleryId, clientId, ip) {
+  const key = `${galleryId}:${clientId || 'anon'}:${String(ip || '').slice(0, 80)}`;
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxHits = 40;
+  const row = ksDownloadLimiter.get(key) || { t0: now, hits: 0 };
+  if (now - row.t0 > windowMs) {
+    row.t0 = now;
+    row.hits = 0;
+  }
+  row.hits += 1;
+  ksDownloadLimiter.set(key, row);
+  return row.hits <= maxHits;
 }
 
 function ksNormClientNameMatch(s) {
@@ -1654,10 +1792,7 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
       return res.status(400).json({ message: 'Campos obrigatórios: profileItemId e nome do projeto.' });
     }
 
-    let accessType = String(body.access_type || body.tipo_acesso || body.access_mode || 'private')
-      .toLowerCase()
-      .trim();
-    if (!['private', 'signup', 'public'].includes(accessType)) accessType = 'private';
+    let accessType = ksNormAccessMode(body.access_type || body.tipo_acesso || body.access_mode || 'private');
 
     const useWatermark = !(
       body.use_watermark === false ||
@@ -1702,9 +1837,9 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
       emailToStore = em;
       plainPassword = pw;
       clientPasswordResponse = pw;
-    } else if (accessType === 'signup') {
+    } else if (accessType === 'signup' || accessType === 'paid_event_photos') {
       plainPassword = randomPass();
-      const localPart = `visitante+${slug}`.slice(0, 200);
+      const localPart = `${accessType === 'paid_event_photos' ? 'paid' : 'visitante'}+${slug}`.slice(0, 200);
       emailToStore = `${localPart}@cadastro.kingselection.invalid`.slice(0, 255);
     } else {
       plainPassword = randomPass();
@@ -1772,13 +1907,15 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
     const metaVals = [];
     let p = 1;
     if (hasAccessMode) {
-      const mode = accessType === 'public' ? 'public' : (accessType === 'signup' ? 'signup' : 'private');
+      const mode = accessType === 'public'
+        ? 'public'
+        : (accessType === 'paid_event_photos' ? 'paid_event_photos' : (accessType === 'signup' ? 'signup' : 'private'));
       metaSets.push(`access_mode=$${p++}`);
       metaVals.push(mode);
     }
     if (hasSelf) {
       metaSets.push(`allow_self_signup=$${p++}`);
-      metaVals.push(accessType === 'signup');
+      metaVals.push(ksAccessModeAllowsSelfSignup(accessType));
     }
     if (hasClienteNome && nomeCliente) {
       metaSets.push(`cliente_nome=$${p++}`);
@@ -1814,9 +1951,11 @@ router.post('/galleries', protectUser, asyncHandler(async (req, res) => {
         if (useWatermark && hasWmOpacity) ins.rows[0].watermark_opacity = 0.15;
         if (useWatermark && hasWmScale) ins.rows[0].watermark_scale = 1.19;
         if (hasAccessMode) {
-          ins.rows[0].access_mode = accessType === 'public' ? 'public' : (accessType === 'signup' ? 'signup' : 'private');
+          ins.rows[0].access_mode = accessType === 'public'
+            ? 'public'
+            : (accessType === 'paid_event_photos' ? 'paid_event_photos' : (accessType === 'signup' ? 'signup' : 'private'));
         }
-        if (hasSelf) ins.rows[0].allow_self_signup = accessType === 'signup';
+        if (hasSelf) ins.rows[0].allow_self_signup = ksAccessModeAllowsSelfSignup(accessType);
         if (hasClienteNome && nomeCliente) ins.rows[0].cliente_nome = nomeCliente;
         if (hasCategoria && cat) ins.rows[0].categoria = cat;
         if (hasDataTrabalho) ins.rows[0].data_trabalho = dataTrabalho;
@@ -2807,6 +2946,79 @@ router.get('/config-finalizacao/:galleryId', protectUser, asyncHandler(async (re
   }
 }));
 
+async function ksLoadGallerySalesConfig(pgClient, galleryId) {
+  const hasPixEnabled = await hasColumn(pgClient, 'king_galleries', 'pix_enabled');
+  const hasPixKey = await hasColumn(pgClient, 'king_galleries', 'pix_key');
+  const hasPixHolder = await hasColumn(pgClient, 'king_galleries', 'pix_holder_name');
+  const hasPixInstructions = await hasColumn(pgClient, 'king_galleries', 'pix_instructions');
+  const hasOverLimit = await hasColumn(pgClient, 'king_galleries', 'sales_over_limit_policy');
+  const hasPriceMode = await hasColumn(pgClient, 'king_galleries', 'sales_price_mode');
+  const hasUnit = await hasColumn(pgClient, 'king_galleries', 'sales_unit_price_cents');
+  const cols = ['id']
+    .concat(hasPixEnabled ? ['pix_enabled'] : [])
+    .concat(hasPixKey ? ['pix_key'] : [])
+    .concat(hasPixHolder ? ['pix_holder_name'] : [])
+    .concat(hasPixInstructions ? ['pix_instructions'] : [])
+    .concat(hasOverLimit ? ['sales_over_limit_policy'] : [])
+    .concat(hasPriceMode ? ['sales_price_mode'] : [])
+    .concat(hasUnit ? ['sales_unit_price_cents'] : []);
+  const row = (await pgClient.query(`SELECT ${cols.join(', ')} FROM king_galleries WHERE id=$1`, [galleryId])).rows?.[0] || {};
+  return {
+    pix_enabled: hasPixEnabled ? !!row.pix_enabled : false,
+    pix_key: hasPixKey ? (row.pix_key || null) : null,
+    pix_holder_name: hasPixHolder ? (row.pix_holder_name || null) : null,
+    pix_instructions: hasPixInstructions ? (row.pix_instructions || null) : null,
+    sales_over_limit_policy: hasOverLimit ? ksNormalizeOverLimitPolicy(row.sales_over_limit_policy) : 'allow_and_warn',
+    sales_price_mode: hasPriceMode ? ksNormalizePriceMode(row.sales_price_mode) : 'best_price_auto',
+    sales_unit_price_cents: hasUnit ? Math.max(0, parseInt(row.sales_unit_price_cents, 10) || 0) : 0
+  };
+}
+
+async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectionBatch) {
+  if (!(await hasTable(pgClient, 'king_client_payment_requests'))) return null;
+  const r = await pgClient.query(
+    `SELECT id, status, payment_method, amount_cents, proof_file_path, note_client, note_admin, reviewed_at, created_at
+     FROM king_client_payment_requests
+     WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3
+     LIMIT 1`,
+    [galleryId, clientId, selectionBatch]
+  );
+  if (!r.rows.length) return null;
+  const row = r.rows[0];
+  return {
+    id: parseInt(row.id, 10) || 0,
+    status: ksNormPaymentStatus(row.status),
+    payment_method: String(row.payment_method || 'pix'),
+    amount_cents: row.amount_cents != null ? Math.max(0, parseInt(row.amount_cents, 10) || 0) : null,
+    proof_file_path: row.proof_file_path || null,
+    note_client: row.note_client || null,
+    note_admin: row.note_admin || null,
+    reviewed_at: row.reviewed_at || null,
+    created_at: row.created_at || null
+  };
+}
+
+async function ksListApprovalsByClientRound(pgClient, galleryId, clientId, selectionBatch) {
+  if (!(await hasTable(pgClient, 'king_selection_photo_approvals'))) return [];
+  const rows = (await pgClient.query(
+    `SELECT a.id, a.photo_id, a.status, a.delivery_mode, a.decided_at, p.original_name, p."order"
+     FROM king_selection_photo_approvals a
+     JOIN king_photos p ON p.id = a.photo_id AND p.gallery_id = a.gallery_id
+     WHERE a.gallery_id=$1 AND a.client_id=$2 AND a.selection_batch=$3
+     ORDER BY p."order" ASC, p.id ASC`,
+    [galleryId, clientId, selectionBatch]
+  )).rows || [];
+  return rows.map((r) => ({
+    id: parseInt(r.id, 10) || 0,
+    photo_id: parseInt(r.photo_id, 10) || 0,
+    status: String(r.status || 'pending').toLowerCase(),
+    delivery_mode: ksNormDeliveryMode(r.delivery_mode),
+    decided_at: r.decided_at || null,
+    original_name: r.original_name || null,
+    order: parseInt(r.order, 10) || 0
+  }));
+}
+
 router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
@@ -2929,6 +3141,371 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         selectionRoundsSummary
       }
     });
+  } finally {
+    client.release();
+  }
+}));
+
+router.get('/galleries/:id/sales-config', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id, g.access_mode
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    const salesConfig = await ksLoadGallerySalesConfig(client, galleryId);
+    const packages = await ksListSalePackages(client, galleryId);
+    res.json({
+      success: true,
+      access_mode: ksNormAccessMode(own.rows[0].access_mode),
+      salesConfig,
+      packages
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+router.put('/galleries/:id/sales-config', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  const body = req.body || {};
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const hasPixEnabled = await hasColumn(client, 'king_galleries', 'pix_enabled');
+    const hasPixKey = await hasColumn(client, 'king_galleries', 'pix_key');
+    const hasPixHolder = await hasColumn(client, 'king_galleries', 'pix_holder_name');
+    const hasPixInstructions = await hasColumn(client, 'king_galleries', 'pix_instructions');
+    const hasOverLimit = await hasColumn(client, 'king_galleries', 'sales_over_limit_policy');
+    const hasPriceMode = await hasColumn(client, 'king_galleries', 'sales_price_mode');
+    const hasUnit = await hasColumn(client, 'king_galleries', 'sales_unit_price_cents');
+
+    const sets = [];
+    const vals = [];
+    let p = 1;
+    if (hasPixEnabled && Object.prototype.hasOwnProperty.call(body, 'pix_enabled')) {
+      sets.push(`pix_enabled=$${p++}`);
+      vals.push(!!body.pix_enabled);
+    }
+    if (hasPixKey && Object.prototype.hasOwnProperty.call(body, 'pix_key')) {
+      const v = body.pix_key == null ? null : String(body.pix_key).trim().slice(0, 255);
+      sets.push(`pix_key=$${p++}`);
+      vals.push(v || null);
+    }
+    if (hasPixHolder && Object.prototype.hasOwnProperty.call(body, 'pix_holder_name')) {
+      const v = body.pix_holder_name == null ? null : String(body.pix_holder_name).trim().slice(0, 255);
+      sets.push(`pix_holder_name=$${p++}`);
+      vals.push(v || null);
+    }
+    if (hasPixInstructions && Object.prototype.hasOwnProperty.call(body, 'pix_instructions')) {
+      const v = body.pix_instructions == null ? null : String(body.pix_instructions).trim().slice(0, 2000);
+      sets.push(`pix_instructions=$${p++}`);
+      vals.push(v || null);
+    }
+    if (hasOverLimit && Object.prototype.hasOwnProperty.call(body, 'sales_over_limit_policy')) {
+      sets.push(`sales_over_limit_policy=$${p++}`);
+      vals.push(ksNormalizeOverLimitPolicy(body.sales_over_limit_policy));
+    }
+    if (hasPriceMode && Object.prototype.hasOwnProperty.call(body, 'sales_price_mode')) {
+      sets.push(`sales_price_mode=$${p++}`);
+      vals.push(ksNormalizePriceMode(body.sales_price_mode));
+    }
+    if (hasUnit && Object.prototype.hasOwnProperty.call(body, 'sales_unit_price_cents')) {
+      sets.push(`sales_unit_price_cents=$${p++}`);
+      vals.push(Math.max(0, parseInt(body.sales_unit_price_cents, 10) || 0));
+    }
+    if (sets.length) {
+      vals.push(galleryId);
+      await client.query(`UPDATE king_galleries SET ${sets.join(', ')}, updated_at=NOW() WHERE id=$${p}`, vals);
+    }
+
+    if (await hasTable(client, 'king_gallery_sale_packages')) {
+      const list = Array.isArray(body.packages) ? body.packages : null;
+      if (list) {
+        await client.query('BEGIN');
+        try {
+          await client.query('DELETE FROM king_gallery_sale_packages WHERE gallery_id=$1', [galleryId]);
+          for (let i = 0; i < list.length; i += 1) {
+            const it = list[i] || {};
+            const qty = Math.max(1, parseInt(it.photo_qty, 10) || 0);
+            const cents = Math.max(0, parseInt(it.price_cents, 10) || 0);
+            const active = it.active !== false;
+            if (!qty || !cents) continue;
+            const nm = String(it.name || `${qty} fotos`).trim().slice(0, 120) || `${qty} fotos`;
+            await client.query(
+              `INSERT INTO king_gallery_sale_packages (gallery_id, name, photo_qty, price_cents, sort_order, active, created_at, updated_at)
+               VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())`,
+              [galleryId, nm, qty, cents, i + 1, active]
+            );
+          }
+          await client.query('COMMIT');
+        } catch (e) {
+          await client.query('ROLLBACK');
+          throw e;
+        }
+      }
+    }
+
+    const salesConfig = await ksLoadGallerySalesConfig(client, galleryId);
+    const packages = await ksListSalePackages(client, galleryId);
+    res.json({ success: true, salesConfig, packages });
+  } finally {
+    client.release();
+  }
+}));
+
+router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    if (!(await hasTable(client, 'king_gallery_clients'))) return res.json({ success: true, clients: [] });
+    const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
+    const cRows = (await client.query(
+      `SELECT id, nome, email, telefone, status, enabled
+       FROM king_gallery_clients
+       WHERE gallery_id=$1 AND (enabled IS DISTINCT FROM false)
+       ORDER BY created_at ASC, id ASC`,
+      [galleryId]
+    )).rows || [];
+    const filteredClients = cRows.filter((row) => !isTechnicalFaceGalleryClientEmail(row.email));
+
+    const sRows = (await client.query(
+      `SELECT client_id, ${hasSelBatch ? 'selection_batch' : '1 AS selection_batch'}, COUNT(*)::int AS selected_count
+       FROM king_selections
+       WHERE gallery_id=$1 AND client_id IS NOT NULL
+       GROUP BY client_id, ${hasSelBatch ? 'selection_batch' : '1'}
+       ORDER BY client_id ASC, ${hasSelBatch ? 'selection_batch ASC' : '1 ASC'}`,
+      [galleryId]
+    )).rows || [];
+    const paymentRows = (await hasTable(client, 'king_client_payment_requests'))
+      ? ((await client.query(
+        `SELECT client_id, selection_batch, status
+         FROM king_client_payment_requests
+         WHERE gallery_id=$1`,
+        [galleryId]
+      )).rows || [])
+      : [];
+    const approvalRows = (await hasTable(client, 'king_selection_photo_approvals'))
+      ? ((await client.query(
+        `SELECT client_id, selection_batch, COUNT(*)::int AS approved_count
+         FROM king_selection_photo_approvals
+         WHERE gallery_id=$1 AND lower(status)='approved'
+         GROUP BY client_id, selection_batch`,
+        [galleryId]
+      )).rows || [])
+      : [];
+
+    const payMap = new Map(paymentRows.map((r) => [`${r.client_id}:${r.selection_batch}`, ksNormPaymentStatus(r.status)]));
+    const apMap = new Map(approvalRows.map((r) => [`${r.client_id}:${r.selection_batch}`, parseInt(r.approved_count, 10) || 0]));
+    const roundsByClient = new Map();
+    for (const s of sRows) {
+      const cid = parseInt(s.client_id, 10) || 0;
+      const b = Math.max(1, parseInt(s.selection_batch, 10) || 1);
+      const key = `${cid}:${b}`;
+      if (!roundsByClient.has(cid)) roundsByClient.set(cid, []);
+      roundsByClient.get(cid).push({
+        selection_batch: b,
+        selected_count: parseInt(s.selected_count, 10) || 0,
+        payment_status: payMap.get(key) || 'pending',
+        approved_count: apMap.get(key) || 0
+      });
+    }
+
+    const out = filteredClients.map((c) => ({
+      ...c,
+      rounds: roundsByClient.get(parseInt(c.id, 10) || 0) || []
+    }));
+    res.json({ success: true, clients: out });
+  } finally {
+    client.release();
+  }
+}));
+
+router.get('/galleries/:id/sales/clients/:clientId/round/:selectionBatch', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const selectionBatch = Math.max(1, parseInt(req.params.selectionBatch, 10) || 1);
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'IDs inválidos' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
+    const selectedRows = (await client.query(
+      `SELECT s.photo_id, p.original_name, p."order"
+       FROM king_selections s
+       JOIN king_photos p ON p.id=s.photo_id AND p.gallery_id=s.gallery_id
+       WHERE s.gallery_id=$1 AND s.client_id=$2 ${hasSelBatch ? 'AND s.selection_batch=$3' : ''}
+       ORDER BY p."order" ASC, p.id ASC`,
+      hasSelBatch ? [galleryId, clientId, selectionBatch] : [galleryId, clientId]
+    )).rows || [];
+    const payment = await ksGetPaymentByClientRound(client, galleryId, clientId, selectionBatch);
+    const approvals = await ksListApprovalsByClientRound(client, galleryId, clientId, selectionBatch);
+    res.json({
+      success: true,
+      selected: selectedRows.map((r) => ({
+        photo_id: parseInt(r.photo_id, 10) || 0,
+        original_name: r.original_name || '',
+        order: parseInt(r.order, 10) || 0
+      })),
+      payment,
+      approvals
+    });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/payment-review', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const selectionBatch = Math.max(1, parseInt(req.params.selectionBatch, 10) || 1);
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'IDs inválidos' });
+  const nextStatusRaw = String(req.body?.status || '').toLowerCase().trim();
+  const nextStatus = nextStatusRaw === 'confirmed' ? 'confirmed' : (nextStatusRaw === 'rejected' ? 'rejected' : null);
+  if (!nextStatus) return res.status(400).json({ message: 'Status inválido. Use confirmed/rejected.' });
+  const noteAdmin = req.body?.note_admin != null ? String(req.body.note_admin).trim().slice(0, 1000) : null;
+  const amountCents = req.body?.amount_cents != null ? Math.max(0, parseInt(req.body.amount_cents, 10) || 0) : null;
+  const dbClient = await db.pool.connect();
+  try {
+    const own = await dbClient.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(dbClient, 'king_client_payment_requests'))) {
+      return res.status(503).json({ message: 'Tabela de pagamentos indisponível. Execute a migration 208.' });
+    }
+    await dbClient.query(
+      `INSERT INTO king_client_payment_requests
+         (gallery_id, client_id, selection_batch, payment_method, status, amount_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
+       VALUES ($1,$2,$3,'pix',$4,$5,$6,$7,NOW(),NOW(),NOW())
+       ON CONFLICT (gallery_id, client_id, selection_batch)
+       DO UPDATE SET status=EXCLUDED.status, amount_cents=COALESCE(EXCLUDED.amount_cents, king_client_payment_requests.amount_cents),
+                     note_admin=EXCLUDED.note_admin, reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
+      [galleryId, clientId, selectionBatch, nextStatus, amountCents, noteAdmin, req.user.userId]
+    );
+    const payment = await ksGetPaymentByClientRound(dbClient, galleryId, clientId, selectionBatch);
+    res.json({ success: true, payment });
+  } finally {
+    dbClient.release();
+  }
+}));
+
+router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/approve-photo', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const selectionBatch = Math.max(1, parseInt(req.params.selectionBatch, 10) || 1);
+  const photoId = parseInt(req.body?.photo_id, 10);
+  if (!galleryId || !clientId || !photoId) return res.status(400).json({ message: 'IDs inválidos' });
+  const status = String(req.body?.status || '').toLowerCase().trim();
+  if (!['pending', 'approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ message: 'status inválido (pending/approved/rejected).' });
+  }
+  const deliveryMode = ksNormDeliveryMode(req.body?.delivery_mode);
+  const dbClient = await db.pool.connect();
+  try {
+    const own = await dbClient.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(dbClient, 'king_selection_photo_approvals'))) {
+      return res.status(503).json({ message: 'Tabela de aprovações indisponível. Execute a migration 208.' });
+    }
+    const hasSelBatch = await hasColumn(dbClient, 'king_selections', 'selection_batch');
+    const hasSelection = await dbClient.query(
+      `SELECT 1
+       FROM king_selections
+       WHERE gallery_id=$1 AND client_id=$2 AND photo_id=$3 ${hasSelBatch ? 'AND selection_batch=$4' : ''}
+       LIMIT 1`,
+      hasSelBatch ? [galleryId, clientId, photoId, selectionBatch] : [galleryId, clientId, photoId]
+    );
+    if (!hasSelection.rows.length) return res.status(404).json({ message: 'Foto não está selecionada para este cliente/rodada.' });
+    await dbClient.query(
+      `INSERT INTO king_selection_photo_approvals
+         (gallery_id, client_id, selection_batch, photo_id, status, delivery_mode, decided_by_user_id, decided_at, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW(),NOW())
+       ON CONFLICT (gallery_id, client_id, selection_batch, photo_id)
+       DO UPDATE SET status=EXCLUDED.status, delivery_mode=EXCLUDED.delivery_mode,
+                     decided_by_user_id=EXCLUDED.decided_by_user_id, decided_at=NOW(), updated_at=NOW()`,
+      [galleryId, clientId, selectionBatch, photoId, status, deliveryMode, req.user.userId]
+    );
+    const approvals = await ksListApprovalsByClientRound(dbClient, galleryId, clientId, selectionBatch);
+    res.json({ success: true, approvals });
+  } finally {
+    dbClient.release();
+  }
+}));
+
+router.get('/galleries/:id/sales/payment-proof/:paymentId', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const paymentId = parseInt(req.params.paymentId, 10);
+  if (!galleryId || !paymentId) return res.status(400).json({ message: 'IDs inválidos' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_client_payment_requests'))) {
+      return res.status(404).json({ message: 'Comprovante não encontrado.' });
+    }
+    const row = (await client.query(
+      `SELECT proof_file_path
+       FROM king_client_payment_requests
+       WHERE id=$1 AND gallery_id=$2
+       LIMIT 1`,
+      [paymentId, galleryId]
+    )).rows?.[0];
+    const filePath = row?.proof_file_path ? path.resolve(String(row.proof_file_path)) : '';
+    if (!filePath || !fs.existsSync(filePath)) return res.status(404).json({ message: 'Comprovante não encontrado.' });
+    const ext = path.extname(filePath).toLowerCase();
+    const ct = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
+    res.set('Content-Type', ct);
+    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    fs.createReadStream(filePath).pipe(res);
   } finally {
     client.release();
   }
@@ -4015,6 +4592,13 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'watermark_rotate',
     'face_recognition_enabled',
     'client_image_quality',
+    'pix_enabled',
+    'pix_key',
+    'pix_holder_name',
+    'pix_instructions',
+    'sales_over_limit_policy',
+    'sales_price_mode',
+    'sales_unit_price_cents',
     'thank_you_title',
     'thank_you_message',
     'thank_you_image_url',
@@ -4076,8 +4660,16 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
 
       let val = body[key];
       if (key === 'total_fotos_contratadas' || key === 'min_selections') val = parseInt(val || 0, 10) || 0;
-      if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing' || key === 'allow_self_signup' || key === 'client_enabled' || key === 'face_recognition_enabled') val = !!val;
+      if (key === 'is_published' || key === 'allow_download' || key === 'allow_comments' || key === 'allow_social_sharing' || key === 'allow_self_signup' || key === 'client_enabled' || key === 'face_recognition_enabled' || key === 'pix_enabled') val = !!val;
       if (key === 'client_image_quality') val = normalizeClientImageQuality(val);
+      if (key === 'access_mode') val = ksNormAccessMode(val);
+      if (key === 'sales_over_limit_policy') val = ksNormalizeOverLimitPolicy(val);
+      if (key === 'sales_price_mode') val = ksNormalizePriceMode(val);
+      if (key === 'sales_unit_price_cents') val = Math.max(0, parseInt(val || 0, 10) || 0);
+      if (key === 'pix_key' || key === 'pix_holder_name' || key === 'pix_instructions') {
+        if (val === '' || val === 'null' || val == null) val = null;
+        else val = String(val).trim().slice(0, key === 'pix_instructions' ? 2000 : 255);
+      }
       if (key === 'cliente_email') val = String(val || '').toLowerCase().trim();
       if (key === 'data_trabalho' && val) val = String(val).slice(0, 10);
       if (key === 'watermark_opacity') {
@@ -4358,7 +4950,7 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
 
     let accessMode = hasAccessMode ? (g.access_mode || 'private') : 'private';
     if (accessMode === 'password') accessMode = 'signup';
-    const allowSelfSignup = hasSelf ? !!g.allow_self_signup : (accessMode === 'signup');
+    const allowSelfSignup = hasSelf ? !!g.allow_self_signup : ksAccessModeAllowsSelfSignup(accessMode);
 
     const pRes = await client.query('SELECT id FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [g.id]);
     const coverPhotoId = pRes.rows.length ? pRes.rows[0].id : null;
@@ -4366,7 +4958,7 @@ router.get('/public/gallery', asyncHandler(async (req, res) => {
     const totalPhotosRes = await client.query('SELECT COUNT(*)::int AS c FROM king_photos WHERE gallery_id=$1', [g.id]);
     const totalPhotos = totalPhotosRes.rows[0]?.c || 0;
 
-    const deferredSignupFlow = accessMode === 'signup' && allowSelfSignup;
+    const deferredSignupFlow = ksAccessModeAllowsSelfSignup(accessMode) && allowSelfSignup;
     res.json({
       success: true,
       gallery: {
@@ -4609,7 +5201,7 @@ router.patch('/photos/:photoId', protectUser, asyncHandler(async (req, res) => {
   const photoId = parseInt(req.params.photoId, 10);
   if (!photoId) return res.status(400).json({ message: 'photoId inválido' });
 
-  const { is_favorite, is_cover, original_name, order } = req.body || {};
+  const { is_favorite, is_cover, original_name, order, edited_file_path } = req.body || {};
 
   const client = await db.pool.connect();
   try {
@@ -4640,6 +5232,11 @@ router.patch('/photos/:photoId', protectUser, asyncHandler(async (req, res) => {
     if (typeof order !== 'undefined') {
       sets.push(`"order"=$${i++}`);
       values.push(parseInt(order || 0, 10) || 0);
+    }
+    if (typeof edited_file_path !== 'undefined' && await hasColumn(client, 'king_photos', 'edited_file_path')) {
+      const v = edited_file_path == null ? null : String(edited_file_path).trim();
+      sets.push(`edited_file_path=$${i++}`);
+      values.push(v || null);
     }
 
     // capa: limpar outras e setar esta
@@ -5060,7 +5657,7 @@ router.post('/client/login-by-details', asyncHandler(async (req, res) => {
     const grow = gx.rows[0] || {};
     let am = hasAm ? String(grow.access_mode || 'private').toLowerCase() : 'private';
     if (am === 'password') am = 'signup';
-    const allow = hasSelf ? !!grow.allow_self_signup : am === 'signup';
+    const allow = hasSelf ? !!grow.allow_self_signup : ksAccessModeAllowsSelfSignup(am);
     if (am !== 'signup' || !allow) {
       return res.status(403).json({
         message: 'Nesta galeria use e-mail e senha. O acesso só com nome e telefone é para o fluxo de cadastro ao enviar.'
@@ -5237,8 +5834,8 @@ router.post('/client/signup-enter', asyncHandler(async (req, res) => {
     const g = gRes.rows[0];
     let accessMode = hasAccessMode ? String(g.access_mode || 'private').toLowerCase() : 'private';
     if (accessMode === 'password') accessMode = 'signup';
-    const allowSelf = hasSelf ? !!g.allow_self_signup : accessMode === 'signup';
-    if (accessMode !== 'signup' || !allowSelf) {
+    const allowSelf = hasSelf ? !!g.allow_self_signup : ksAccessModeAllowsSelfSignup(accessMode);
+    if (!ksAccessModeAllowsSelfSignup(accessMode) || !allowSelf) {
       return res.status(403).json({ message: 'Esta galeria não usa o fluxo de cadastro ao enviar.' });
     }
 
@@ -5346,6 +5943,35 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     }
     const currentSelectionRound = await ksGetCurrentSelectionRound(client, gallery.id, cid);
 
+    const galleryAccessMode = ksNormAccessMode(hasAccessModeG ? gallery.access_mode : 'private');
+    const salesModeActive = ksIsPaidEventAccessMode(galleryAccessMode);
+    const salesConfig = salesModeActive ? await ksLoadGallerySalesConfig(client, gallery.id) : null;
+    const salePackages = salesModeActive ? (await ksListSalePackages(client, gallery.id)).filter((p) => p.active !== false) : [];
+    const selectedCountForPricing = selectedPhotoIds.length;
+    const computedTotalCents = salesModeActive
+      ? ksComputeBestPriceCents(
+        selectedCountForPricing,
+        salePackages,
+        salesConfig?.sales_unit_price_cents || 0,
+        salesConfig?.sales_price_mode || 'best_price_auto'
+      )
+      : null;
+    const maxPackageQty = salePackages.length ? Math.max(...salePackages.map((p) => parseInt(p.photo_qty, 10) || 0), 0) : 0;
+    const overLimitWarn = !!(salesModeActive
+      && salesConfig?.sales_over_limit_policy === 'allow_and_warn'
+      && maxPackageQty > 0
+      && selectedCountForPricing > maxPackageQty);
+    const paymentState = (salesModeActive && cid)
+      ? await ksGetPaymentByClientRound(client, gallery.id, parseInt(cid, 10), currentSelectionRound)
+      : null;
+    const approvalsState = (salesModeActive && cid)
+      ? await ksListApprovalsByClientRound(client, gallery.id, parseInt(cid, 10), currentSelectionRound)
+      : [];
+    const approvedPhotoIds = approvalsState
+      .filter((a) => String(a.status || '').toLowerCase() === 'approved')
+      .map((a) => parseInt(a.photo_id, 10))
+      .filter(Boolean);
+
     const resolvedClientId = await resolveFaceClientIdForSession(client, gallery.id, cid, sk);
     const faceOn = hasFaceEnabled && !!gallery.face_recognition_enabled;
     const faceRecognitionUsable = !!(faceOn && resolvedClientId);
@@ -5409,8 +6035,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         const row = gr.rows[0] || {};
         let am = hasAmG ? String(row.access_mode || 'private').toLowerCase() : 'private';
         if (am === 'password') am = 'signup';
-        const allow = hasSelfG ? !!row.allow_self_signup : am === 'signup';
-        deferredSignupActive = am === 'signup' && allow;
+        const allow = hasSelfG ? !!row.allow_self_signup : ksAccessModeAllowsSelfSignup(am);
+        deferredSignupActive = ksAccessModeAllowsSelfSignup(am) && allow;
       }
     }
 
@@ -5441,9 +6067,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
         photos,
         folders,
         locked,
-        allow_download: hasAllowDownload ? !!gallery.allow_download : false,
+        allow_download: salesModeActive ? false : (hasAllowDownload ? !!gallery.allow_download : false),
         face_recognition_enabled: hasFaceEnabled ? !!gallery.face_recognition_enabled : false,
-        client_image_quality: hasClientImgQ ? normalizeClientImageQuality(gallery.client_image_quality) : 'low'
+        client_image_quality: hasClientImgQ ? normalizeClientImageQuality(gallery.client_image_quality) : 'low',
+        access_mode: galleryAccessMode
       },
       resolvedClientId: resolvedClientId || undefined,
       faceRecognitionUsable: faceRecognitionUsable || undefined,
@@ -5456,8 +6083,74 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       selectionBatchByPhotoId: hasSelBatch ? selectionBatchByPhotoId : undefined,
       frozenSelectionPhotoIds: hasSelBatch && frozenSelectionPhotoIds.length ? frozenSelectionPhotoIds : undefined,
       immutableSelectionNotice: immutableSelectionNotice || undefined,
-      deferredSignupActive: deferredSignupActive || undefined
+      deferredSignupActive: deferredSignupActive || undefined,
+      salesModeActive: salesModeActive || undefined,
+      salesConfig: salesModeActive ? {
+        pix_enabled: !!salesConfig?.pix_enabled,
+        pix_key: salesConfig?.pix_key || null,
+        pix_holder_name: salesConfig?.pix_holder_name || null,
+        pix_instructions: salesConfig?.pix_instructions || null,
+        sales_over_limit_policy: salesConfig?.sales_over_limit_policy || 'allow_and_warn',
+        sales_price_mode: salesConfig?.sales_price_mode || 'best_price_auto',
+        sales_unit_price_cents: salesConfig?.sales_unit_price_cents || 0
+      } : undefined,
+      salesPackages: salesModeActive ? salePackages : undefined,
+      salesPricing: salesModeActive ? {
+        selected_count: selectedCountForPricing,
+        computed_total_cents: computedTotalCents,
+        over_limit_warn: overLimitWarn || undefined
+      } : undefined,
+      paymentState: salesModeActive ? paymentState : undefined,
+      approvalsState: salesModeActive ? approvalsState : undefined,
+      approvedPhotoIds: salesModeActive ? approvedPhotoIds : undefined
     });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/client/payment-proof', requireClient, uploadMem.single('proof'), asyncHandler(async (req, res) => {
+  const slug = String(req.body?.slug || req.query?.slug || '').trim();
+  if (!slug) return res.status(400).json({ message: 'slug é obrigatório.' });
+  if (slug !== req.ksClient.slug) return res.status(403).json({ message: 'Sem permissão.' });
+  if (!req.file) return res.status(400).json({ message: 'Envie o comprovante.' });
+  const note = req.body?.note ? String(req.body.note).trim().slice(0, 1000) : null;
+  const amountCents = req.body?.amount_cents != null ? Math.max(0, parseInt(req.body.amount_cents, 10) || 0) : null;
+
+  const client = await db.pool.connect();
+  try {
+    if (!(await hasTable(client, 'king_client_payment_requests'))) {
+      return res.status(503).json({ message: 'Sistema de pagamento indisponível. Execute a migration 208.' });
+    }
+    const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const gRes = await client.query(
+      `SELECT id${hasAccessMode ? ', access_mode' : ''} FROM king_galleries WHERE id=$1`,
+      [req.ksClient.galleryId]
+    );
+    if (!gRes.rows.length) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const accessMode = ksNormAccessMode(gRes.rows[0].access_mode);
+    if (!ksIsPaidEventAccessMode(accessMode)) {
+      return res.status(403).json({ message: 'Comprovante disponível apenas na modalidade Fotos vendidas por evento.' });
+    }
+
+    const clientId = req.ksCtx.cid ? parseInt(req.ksCtx.cid, 10) : 0;
+    if (!clientId) return res.status(403).json({ message: 'Entre com sua conta antes de enviar comprovante.' });
+    const round = await ksGetCurrentSelectionRound(client, req.ksClient.galleryId, clientId);
+    const filePath = await ksStorePaymentProofImage(req.file, req.ksClient.galleryId, clientId, round);
+
+    await client.query(
+      `INSERT INTO king_client_payment_requests
+         (gallery_id, client_id, selection_batch, payment_method, status, amount_cents, proof_file_path, note_client, created_at, updated_at)
+       VALUES ($1,$2,$3,'pix','pending',$4,$5,$6,NOW(),NOW())
+       ON CONFLICT (gallery_id, client_id, selection_batch)
+       DO UPDATE SET status='pending', amount_cents=COALESCE(EXCLUDED.amount_cents, king_client_payment_requests.amount_cents),
+                     proof_file_path=EXCLUDED.proof_file_path, note_client=EXCLUDED.note_client,
+                     note_admin=NULL, reviewed_by_user_id=NULL, reviewed_at=NULL, updated_at=NOW()`,
+      [req.ksClient.galleryId, clientId, round, amountCents, filePath, note]
+    );
+
+    const payment = await ksGetPaymentByClientRound(client, req.ksClient.galleryId, clientId, round);
+    res.json({ success: true, payment, message: 'Comprovante enviado. Aguarde a validação do fotógrafo.' });
   } finally {
     client.release();
   }
@@ -6933,8 +7626,8 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       const gx = await client.query(`SELECT ${gMetaCols.join(', ')} FROM king_galleries WHERE id=$1`, [galleryId]);
       let am = hasAm ? String(gx.rows[0]?.access_mode || 'private').toLowerCase() : 'private';
       if (am === 'password') am = 'signup';
-      const allow = hasSelf ? !!gx.rows[0]?.allow_self_signup : am === 'signup';
-      if (am !== 'signup' || !allow) {
+      const allow = hasSelf ? !!gx.rows[0]?.allow_self_signup : ksAccessModeAllowsSelfSignup(am);
+      if (!ksAccessModeAllowsSelfSignup(am) || !allow) {
         return res.status(403).json({ message: 'Este envio não está disponível para esta galeria.' });
       }
 
@@ -7301,18 +7994,81 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
   try {
     const pRes = await client.query('SELECT * FROM king_photos WHERE id=$1 AND gallery_id=$2', [photoId, payload.galleryId]);
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
-    const photo = pRes.rows[0];
+    let photo = pRes.rows[0];
     const useThumb = ['1', 'true', 'thumb', 's'].includes(String(req.query.thumb || req.query.size || '').toLowerCase());
+    const isDownload = String(req.query.download || '') === '1';
+
+    const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
+    const gResMeta = await client.query(
+      `SELECT ${hasAccessMode ? 'access_mode,' : ''}${hasAllowDownload ? 'allow_download' : 'TRUE AS allow_download'}
+       FROM king_galleries WHERE id=$1`,
+      [payload.galleryId]
+    );
+    const accessMode = ksNormAccessMode(gResMeta.rows?.[0]?.access_mode || 'private');
+    const allowDownload = !!(hasAllowDownload ? gResMeta.rows?.[0]?.allow_download : true);
+
+    if (isDownload && !allowDownload) {
+      return res.status(403).send('Download desativado para esta galeria.');
+    }
+
+    if (isDownload && ksIsPaidEventAccessMode(accessMode)) {
+      const cid = parseInt(payload.clientId || 0, 10) || 0;
+      if (!cid) return res.status(403).send('Faça login para baixar as fotos aprovadas.');
+      if (!ksEnforceDownloadRateLimit(payload.galleryId, cid, req.ip)) {
+        return res.status(429).send('Muitas tentativas de download. Tente novamente em instantes.');
+      }
+      if (!(await hasTable(client, 'king_selection_photo_approvals')) || !(await hasTable(client, 'king_client_payment_requests'))) {
+        return res.status(503).send('Aprovação de download indisponível no servidor.');
+      }
+
+      const approvalRes = await client.query(
+        `SELECT a.selection_batch, a.delivery_mode
+         FROM king_selection_photo_approvals a
+         JOIN king_client_payment_requests pr
+           ON pr.gallery_id=a.gallery_id
+          AND pr.client_id=a.client_id
+          AND pr.selection_batch=a.selection_batch
+         WHERE a.gallery_id=$1
+           AND a.client_id=$2
+           AND a.photo_id=$3
+           AND lower(a.status)='approved'
+           AND lower(pr.status)='confirmed'
+         ORDER BY a.selection_batch DESC
+         LIMIT 1`,
+        [payload.galleryId, cid, photoId]
+      );
+      if (!approvalRes.rows.length) {
+        return res.status(403).send('Foto ainda não aprovada para download.');
+      }
+      const ap = approvalRes.rows[0];
+      const mode = ksNormDeliveryMode(ap.delivery_mode);
+      const hasEditedPath = await hasColumn(client, 'king_photos', 'edited_file_path');
+      if (mode === 'edited') {
+        const editedPath = hasEditedPath ? String(photo.edited_file_path || '').trim() : '';
+        if (!editedPath) return res.status(409).send('Versão editada ainda não foi enviada pelo fotógrafo.');
+        photo = { ...photo, file_path: editedPath };
+      }
+      try {
+        await client.query(
+          `INSERT INTO king_download_audit
+             (gallery_id, client_id, photo_id, selection_batch, action, ip_address, user_agent, created_at)
+           VALUES ($1,$2,$3,$4,'download_clean',$5,$6,NOW())`,
+          [payload.galleryId, cid, photoId, parseInt(ap.selection_batch, 10) || null, String(req.ip || '').slice(0, 100), String(req.headers['user-agent'] || '').slice(0, 400)]
+        );
+      } catch (_) { }
+    }
+
     let galleryQuality = 'low';
     if (await hasColumn(client, 'king_galleries', 'client_image_quality')) {
       const gq = await client.query('SELECT client_image_quality FROM king_galleries WHERE id=$1', [payload.galleryId]);
       galleryQuality = normalizeClientImageQuality(gq.rows[0]?.client_image_quality);
     }
     const spec = getClientPreviewOutputSpec(galleryQuality, useThumb);
-    const [buf, wm] = await Promise.all([
-      fetchPhotoFileBufferFromFilePath(photo.file_path),
-      loadWatermarkForGallery(client, payload.galleryId)
-    ]);
+    const wm = (isDownload && ksIsPaidEventAccessMode(accessMode))
+      ? { mode: 'none', opacity: 0, scale: 1.0, rotate: 0, logoBuffer: null }
+      : await loadWatermarkForGallery(client, payload.galleryId);
+    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
     if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
 
     const img = sharp(buf).rotate();
@@ -7333,21 +8089,15 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    const isDownload = String(req.query.download || '') === '1';
     if (isDownload) {
       res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
       res.set('Pragma', 'no-cache');
     } else {
       res.set('Cache-Control', 'private, max-age=' + (useThumb ? '86400' : '3600'));
     }
-    if (isDownload) {
-      const hasAllowDownload = await hasColumn(client, 'king_galleries', 'allow_download');
-      const gRes = await client.query('SELECT allow_download FROM king_galleries WHERE id=$1', [payload.galleryId]);
-      const allowDownload = hasAllowDownload && gRes.rows[0] && gRes.rows[0].allow_download === true;
-      if (allowDownload) {
-        const fn = (photo.original_name || `foto-${photoId}.jpg`).toString().replace(/[\/\\:*?"<>|]+/g, '-');
-        res.set('Content-Disposition', `attachment; filename="${fn.endsWith('.jpg') || fn.endsWith('.jpeg') ? fn : fn + '.jpg'}"`);
-      }
+    if (isDownload && allowDownload) {
+      const fn = (photo.original_name || `foto-${photoId}.jpg`).toString().replace(/[\/\\:*?"<>|]+/g, '-');
+      res.set('Content-Disposition', `attachment; filename="${fn.endsWith('.jpg') || fn.endsWith('.jpeg') ? fn : fn + '.jpg'}"`);
     }
     res.send(out);
   } finally {
