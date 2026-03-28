@@ -4840,7 +4840,7 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
   );
   const photos = photoRows;
   /** Muita concorrência → ThrottlingException na AWS; o catch antigo engolia tudo e zerava resultados. */
-  const concurrency = Math.min(
+  const baseConcurrency = Math.min(
     24,
     Math.max(
       2,
@@ -4850,6 +4850,8 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
       ) || (isFastMode ? 10 : 8)
     )
   );
+  // Em modo rápido, sobe um pouco a concorrência efetiva para reduzir tempo total por chunk.
+  const concurrency = isFastMode ? Math.min(24, Math.max(2, baseConcurrency + 2)) : baseConcurrency;
   const threshold = getRekogConfig().compareSimilarityThreshold ?? getRekogConfig().faceMatchThreshold ?? 78;
   const minRelaxedThreshold = Math.min(
     95,
