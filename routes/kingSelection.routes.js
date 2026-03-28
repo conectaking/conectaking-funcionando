@@ -3149,6 +3149,25 @@ router.post('/galleries/:id/folders/auto-separate-job/start', protectUser, async
     if (!(await hasTable(client, 'king_folder_auto_jobs'))) {
       return res.status(412).json({ message: 'Tabela king_folder_auto_jobs não encontrada. Execute a migration 207.' });
     }
+    const active = await client.query(
+      `SELECT id, gallery_id, status, stage, message, min_similarity, force_reprocess,
+              total_photos, processed_photos, error_photos, assigned_photos,
+              error_message, created_at, started_at, finished_at, updated_at
+       FROM king_folder_auto_jobs
+       WHERE gallery_id=$1
+         AND status IN ('pending','processing')
+       ORDER BY created_at DESC, id DESC
+       LIMIT 1`,
+      [galleryId]
+    );
+    if (active.rows.length) {
+      return res.json({
+        success: true,
+        message: 'Já existe um job em andamento para esta galeria.',
+        job: active.rows[0],
+        alreadyRunning: true
+      });
+    }
 
     const ins = await client.query(
       `INSERT INTO king_folder_auto_jobs
@@ -3183,9 +3202,25 @@ router.post('/galleries/:id/folders/auto-separate-job/start', protectUser, async
         if (Object.prototype.hasOwnProperty.call(patch, 'error_message')) push('error_message', patch.error_message);
         if (Object.prototype.hasOwnProperty.call(patch, 'started_at')) sets.push(`started_at=${patch.started_at ? 'NOW()' : 'NULL'}`);
         if (Object.prototype.hasOwnProperty.call(patch, 'finished_at')) sets.push(`finished_at=${patch.finished_at ? 'NOW()' : 'NULL'}`);
-        if (!sets.length) return;
+        if (!sets.length) return true;
         vals.push(jobId);
-        await c.query(`UPDATE king_folder_auto_jobs SET ${sets.join(', ')}, updated_at=NOW() WHERE id=$${i}`, vals);
+        const out = await c.query(
+          `UPDATE king_folder_auto_jobs
+           SET ${sets.join(', ')}, updated_at=NOW()
+           WHERE id=$${i} AND status <> 'cancelled'`,
+          vals
+        );
+        return (out.rowCount || 0) > 0;
+      } finally {
+        c.release();
+      }
+    };
+
+    const isJobCancelled = async (jobId) => {
+      const c = await db.pool.connect();
+      try {
+        const q = await c.query('SELECT status FROM king_folder_auto_jobs WHERE id=$1 LIMIT 1', [jobId]);
+        return String(q.rows?.[0]?.status || '').toLowerCase() === 'cancelled';
       } finally {
         c.release();
       }
@@ -3193,12 +3228,13 @@ router.post('/galleries/:id/folders/auto-separate-job/start', protectUser, async
 
     setImmediate(async () => {
       try {
-        await updateJob(job.id, {
+        const canStart = await updateJob(job.id, {
           status: 'processing',
           stage: 'processing_faces',
           message: 'Processando reconhecimento facial em segundo plano...',
           started_at: true
         });
+        if (!canStart) return;
 
         const cList = await db.pool.connect();
         let photos = [];
@@ -3225,6 +3261,7 @@ router.post('/galleries/:id/folders/auto-separate-job/start', protectUser, async
           cList.release();
         }
 
+        if (await isJobCancelled(job.id)) return;
         await updateJob(job.id, {
           total_photos: photos.length,
           message: photos.length
@@ -3237,6 +3274,7 @@ router.post('/galleries/:id/folders/auto-separate-job/start', protectUser, async
           faceOut = await runGalleryPhotosThroughRekognition(galleryId, photos, concurrency, { speedMode });
         }
 
+        if (await isJobCancelled(job.id)) return;
         await updateJob(job.id, {
           processed_photos: parseInt(faceOut.processed, 10) || 0,
           error_photos: parseInt(faceOut.errors, 10) || 0,
@@ -3252,6 +3290,7 @@ router.post('/galleries/:id/folders/auto-separate-job/start', protectUser, async
           cSep.release();
         }
 
+        if (await isJobCancelled(job.id)) return;
         await updateJob(job.id, {
           status: 'done',
           stage: 'done',
@@ -3310,6 +3349,84 @@ router.get('/galleries/:id/folders/auto-separate-job', protectUser, asyncHandler
       [galleryId]
     );
     return res.json({ success: true, job: jr.rows?.[0] || null });
+  } finally {
+    client.release();
+  }
+}));
+
+router.get('/galleries/:id/folders/auto-separate-jobs', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit || '20', 10) || 20));
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_folder_auto_jobs'))) {
+      return res.json({ success: true, jobs: [] });
+    }
+    const jr = await client.query(
+      `SELECT id, gallery_id, status, stage, message, min_similarity, force_reprocess,
+              total_photos, processed_photos, error_photos, assigned_photos,
+              error_message, created_at, started_at, finished_at, updated_at
+       FROM king_folder_auto_jobs
+       WHERE gallery_id=$1
+       ORDER BY created_at DESC, id DESC
+       LIMIT $2`,
+      [galleryId, limit]
+    );
+    return res.json({ success: true, jobs: jr.rows || [] });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/galleries/:id/folders/auto-separate-job/:jobId/cancel', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const jobId = parseInt(req.params.jobId, 10);
+  if (!galleryId || !jobId) return res.status(400).json({ message: 'galleryId/jobId inválidos' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_folder_auto_jobs'))) {
+      return res.status(412).json({ message: 'Tabela king_folder_auto_jobs não encontrada. Execute a migration 207.' });
+    }
+    const up = await client.query(
+      `UPDATE king_folder_auto_jobs
+       SET status='cancelled', stage='cancelled', message='Job cancelado pelo usuário.', finished_at=NOW(), updated_at=NOW()
+       WHERE id=$1 AND gallery_id=$2 AND status IN ('pending','processing')
+       RETURNING id, gallery_id, status, stage, message, min_similarity, force_reprocess,
+                 total_photos, processed_photos, error_photos, assigned_photos,
+                 error_message, created_at, started_at, finished_at, updated_at`,
+      [jobId, galleryId]
+    );
+    if (!up.rows.length) {
+      const cur = await client.query(
+        `SELECT id, gallery_id, status, stage, message, min_similarity, force_reprocess,
+                total_photos, processed_photos, error_photos, assigned_photos,
+                error_message, created_at, started_at, finished_at, updated_at
+         FROM king_folder_auto_jobs
+         WHERE id=$1 AND gallery_id=$2
+         LIMIT 1`,
+        [jobId, galleryId]
+      );
+      if (!cur.rows.length) return res.status(404).json({ message: 'Job não encontrado.' });
+      return res.json({ success: true, job: cur.rows[0], message: 'Job já finalizado.' });
+    }
+    return res.json({ success: true, job: up.rows[0], message: 'Job cancelado.' });
   } finally {
     client.release();
   }
