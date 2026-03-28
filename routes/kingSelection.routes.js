@@ -2886,6 +2886,68 @@ router.post('/galleries/:id/folders/generate', protectUser, asyncHandler(async (
   }
 }));
 
+router.post('/galleries/:id/folders/reorder', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const folderIds = Array.isArray(req.body?.folder_ids)
+    ? req.body.folder_ids.map((v) => parseInt(v, 10)).filter(Boolean)
+    : [];
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  if (!folderIds.length) return res.status(400).json({ message: 'folder_ids é obrigatório' });
+
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const dbFolders = await client.query(
+      'SELECT id FROM king_photo_folders WHERE gallery_id=$1 ORDER BY sort_order ASC, id ASC',
+      [galleryId]
+    );
+    const dbIds = dbFolders.rows.map((r) => parseInt(r.id, 10)).filter(Boolean);
+    if (!dbIds.length) return res.json({ success: true, folders: [] });
+
+    const seen = new Set();
+    const wanted = [];
+    for (const id of folderIds) {
+      if (!dbIds.includes(id)) continue;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      wanted.push(id);
+    }
+    for (const id of dbIds) {
+      if (!seen.has(id)) wanted.push(id);
+    }
+
+    await client.query('BEGIN');
+    try {
+      let sort = 10;
+      for (const id of wanted) {
+        // eslint-disable-next-line no-await-in-loop
+        await client.query(
+          'UPDATE king_photo_folders SET sort_order=$1, updated_at=NOW() WHERE gallery_id=$2 AND id=$3',
+          [sort, galleryId, id]
+        );
+        sort += 10;
+      }
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    }
+
+    const folders = await listFoldersForGallery(client, galleryId);
+    res.json({ success: true, folders });
+  } finally {
+    client.release();
+  }
+}));
+
 router.patch('/galleries/:id/folders/:folderId', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   const folderId = parseInt(req.params.folderId, 10);
