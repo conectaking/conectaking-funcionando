@@ -4967,6 +4967,10 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
   try {
     if (req.socket) req.socket.setTimeout(12 * 60 * 1000);
   } catch (_) { }
+  // Evita cache 304/ETag em resultado facial (sempre dinâmico por sessão/selfie).
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   next();
 }, asyncHandler(async (req, res) => {
   const galleryId = req.ksClient.galleryId;
