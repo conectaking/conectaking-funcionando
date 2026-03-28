@@ -4248,6 +4248,56 @@ router.post('/galleries/:id/clients/:clientId/delete-selection-batch', protectUs
   }
 }));
 
+/** Fotógrafo: limpa tudo que está em revisão do cliente (todas as rodadas da seleção). */
+router.post('/galleries/:id/clients/:clientId/clear-review', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  if (!galleryId || !clientId) {
+    return res.status(400).json({ message: 'galleryId e clientId são obrigatórios.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão.' });
+
+    const ck = await client.query(
+      'SELECT id FROM king_gallery_clients WHERE gallery_id=$1 AND id=$2 AND enabled=TRUE',
+      [galleryId, clientId]
+    );
+    if (ck.rows.length === 0) return res.status(404).json({ message: 'Cliente não encontrado.' });
+
+    await client.query('BEGIN');
+    try {
+      const del = await client.query(
+        'DELETE FROM king_selections WHERE gallery_id=$1 AND client_id=$2',
+        [galleryId, clientId]
+      );
+      if (await hasColumn(client, 'king_gallery_clients', 'status')) {
+        await client.query(
+          `UPDATE king_gallery_clients
+           SET status='andamento', feedback_cliente=NULL, updated_at=NOW()
+           WHERE gallery_id=$1 AND id=$2`,
+          [galleryId, clientId]
+        );
+      }
+      await client.query('COMMIT');
+      return res.json({ success: true, deleted: del.rowCount || 0 });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    }
+  } finally {
+    client.release();
+  }
+}));
+
 router.post('/galleries/:id/clients', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   const { nome, email, telefone, senha, note } = req.body || {};
