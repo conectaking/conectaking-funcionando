@@ -1907,12 +1907,26 @@ router.post('/galleries/:id/photos', protectUser, asyncHandler(async (req, res) 
     );
     if (g.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
 
+    const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
+    const wantedFolderId = hasFolderId
+      ? await resolveFolderIdForGallery(client, galleryId, req.body?.folder_id ?? req.body?.folderId)
+      : null;
+    if ((req.body?.folder_id != null || req.body?.folderId != null) && hasFolderId && !wantedFolderId) {
+      return res.status(400).json({ message: 'Pasta inválida para esta galeria.' });
+    }
+
     try {
       const ins = await client.query(
-        `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
-         VALUES ($1,$2,$3,$4)
-         RETURNING id, gallery_id, original_name, "order"`,
-        [galleryId, file_path, original_name || 'foto', parseInt(order || 0, 10) || 0]
+        hasFolderId
+          ? `INSERT INTO king_photos (gallery_id, file_path, original_name, "order", folder_id)
+             VALUES ($1,$2,$3,$4,$5)
+             RETURNING id, gallery_id, original_name, "order", folder_id`
+          : `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
+             VALUES ($1,$2,$3,$4)
+             RETURNING id, gallery_id, original_name, "order"`,
+        hasFolderId
+          ? [galleryId, file_path, original_name || 'foto', parseInt(order || 0, 10) || 0, wantedFolderId]
+          : [galleryId, file_path, original_name || 'foto', parseInt(order || 0, 10) || 0]
       );
       res.status(201).json({ success: true, photo: ins.rows[0] });
     } catch (e) {
@@ -2209,13 +2223,27 @@ router.post('/galleries/:id/uploads/proxy', protectUser, (req, res, next) => {
       return res.status(502).json({ success: false, message: msg });
     }
 
+    const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
+    const wantedFolderId = hasFolderId
+      ? await resolveFolderIdForGallery(client, galleryId, req.body?.folder_id ?? req.body?.folderId)
+      : null;
+    if ((req.body?.folder_id != null || req.body?.folderId != null) && hasFolderId && !wantedFolderId) {
+      return res.status(400).json({ success: false, message: 'Pasta inválida para esta galeria.' });
+    }
+
     let ins = null;
     try {
       ins = await client.query(
-        `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
-         VALUES ($1,$2,$3,$4)
-         RETURNING id, gallery_id, original_name, "order", file_path`,
-        [galleryId, `r2:${key}`, originalName, order]
+        hasFolderId
+          ? `INSERT INTO king_photos (gallery_id, file_path, original_name, "order", folder_id)
+             VALUES ($1,$2,$3,$4,$5)
+             RETURNING id, gallery_id, original_name, "order", file_path, folder_id`
+          : `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
+             VALUES ($1,$2,$3,$4)
+             RETURNING id, gallery_id, original_name, "order", file_path`,
+        hasFolderId
+          ? [galleryId, `r2:${key}`, originalName, order, wantedFolderId]
+          : [galleryId, `r2:${key}`, originalName, order]
       );
     } catch (e) {
       const msg = (e && e.message) ? String(e.message).slice(0, 250) : 'Falha ao salvar no banco';
@@ -2413,6 +2441,13 @@ router.post('/galleries/:id/photos/worker-commit', protectUser, asyncHandler(asy
     );
     if (!own.rows.length) return res.status(403).json({ success: false, message: 'Sem permissão' });
 
+    const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
+    let validFolderIds = new Set();
+    if (hasFolderId && (await hasTable(client, 'king_photo_folders'))) {
+      const fr = await client.query('SELECT id FROM king_photo_folders WHERE gallery_id=$1', [galleryId]);
+      validFolderIds = new Set((fr.rows || []).map((r) => parseInt(r.id, 10)).filter(Boolean));
+    }
+
     const values = [];
     const rows = [];
     let i = 1;
@@ -2422,6 +2457,8 @@ router.post('/galleries/:id/photos/worker-commit', protectUser, asyncHandler(asy
       const receipt = String(it?.receipt || '').trim();
       const name = String(it?.name || '').slice(0, 500) || 'foto';
       const order = parseInt(it?.order || 0, 10) || 0;
+      const folderIdRaw = toPosIntOrNull(it?.folder_id ?? it?.folderId);
+      const folderId = (folderIdRaw && validFolderIds.has(folderIdRaw)) ? folderIdRaw : null;
 
       if (!key || !receipt) continue;
       if (!key.startsWith(`galleries/${galleryId}/`)) continue;
@@ -2431,16 +2468,25 @@ router.post('/galleries/:id/photos/worker-commit', protectUser, asyncHandler(asy
       if (parseInt(payload.galleryId || 0, 10) !== galleryId) continue;
       if (String(payload.key || '') !== key) continue;
 
-      rows.push(`($${i++}, $${i++}, $${i++}, $${i++})`);
-      values.push(galleryId, `r2:${key}`, name, order);
+      if (hasFolderId) {
+        rows.push(`($${i++}, $${i++}, $${i++}, $${i++}, $${i++})`);
+        values.push(galleryId, `r2:${key}`, name, order, folderId);
+      } else {
+        rows.push(`($${i++}, $${i++}, $${i++}, $${i++})`);
+        values.push(galleryId, `r2:${key}`, name, order);
+      }
     }
 
     if (!rows.length) return res.status(400).json({ success: false, message: 'Nenhum item válido (recibo/key inválidos).' });
 
     const ins = await client.query(
-      `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
-       VALUES ${rows.join(',')}
-       RETURNING id, gallery_id, original_name, "order", file_path`,
+      hasFolderId
+        ? `INSERT INTO king_photos (gallery_id, file_path, original_name, "order", folder_id)
+           VALUES ${rows.join(',')}
+           RETURNING id, gallery_id, original_name, "order", file_path, folder_id`
+        : `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
+           VALUES ${rows.join(',')}
+           RETURNING id, gallery_id, original_name, "order", file_path`,
       values
     );
     scheduleFaceProcessingForNewPhotos(galleryId, ins.rows);
@@ -2472,6 +2518,13 @@ router.post('/galleries/:id/photos/batch', protectUser, asyncHandler(async (req,
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
 
+    const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
+    let validFolderIds = new Set();
+    if (hasFolderId && (await hasTable(client, 'king_photo_folders'))) {
+      const fr = await client.query('SELECT id FROM king_photo_folders WHERE gallery_id=$1', [galleryId]);
+      validFolderIds = new Set((fr.rows || []).map((r) => parseInt(r.id, 10)).filter(Boolean));
+    }
+
     // Inserir em batch (file_path=r2:<key>)
     const values = [];
     const rows = [];
@@ -2481,15 +2534,26 @@ router.post('/galleries/:id/photos/batch', protectUser, asyncHandler(async (req,
       if (!key) continue;
       const originalName = String(img.name || '').slice(0, 500) || 'foto';
       const order = parseInt(img.order || 0, 10) || 0;
-      rows.push(`($${i++}, $${i++}, $${i++}, $${i++})`);
-      values.push(galleryId, `r2:${key}`, originalName, order);
+      const folderIdRaw = toPosIntOrNull(img.folder_id ?? img.folderId);
+      const folderId = (folderIdRaw && validFolderIds.has(folderIdRaw)) ? folderIdRaw : null;
+      if (hasFolderId) {
+        rows.push(`($${i++}, $${i++}, $${i++}, $${i++}, $${i++})`);
+        values.push(galleryId, `r2:${key}`, originalName, order, folderId);
+      } else {
+        rows.push(`($${i++}, $${i++}, $${i++}, $${i++})`);
+        values.push(galleryId, `r2:${key}`, originalName, order);
+      }
     }
     if (!rows.length) return res.status(400).json({ message: 'Nenhuma imagem válida.' });
 
     const ins = await client.query(
-      `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
-       VALUES ${rows.join(',')}
-       RETURNING id, gallery_id, original_name, "order", file_path`,
+      hasFolderId
+        ? `INSERT INTO king_photos (gallery_id, file_path, original_name, "order", folder_id)
+           VALUES ${rows.join(',')}
+           RETURNING id, gallery_id, original_name, "order", file_path, folder_id`
+        : `INSERT INTO king_photos (gallery_id, file_path, original_name, "order")
+           VALUES ${rows.join(',')}
+           RETURNING id, gallery_id, original_name, "order", file_path`,
       values
     );
 
@@ -3820,7 +3884,7 @@ router.get('/public/gallery-content', asyncHandler(async (req, res) => {
     const folders = await listFoldersForGallery(client, gallery.id);
     res.json({
       success: true,
-      gallery: { ...gallery, photos, locked: true, allow_download: !!gallery.allow_download, face_recognition_enabled: !!gallery.face_recognition_enabled },
+      gallery: { ...gallery, photos, folders, locked: true, allow_download: !!gallery.allow_download, face_recognition_enabled: !!gallery.face_recognition_enabled },
       selectedPhotoIds: []
     });
   } finally {
