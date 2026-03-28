@@ -3060,6 +3060,42 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       );
       clients = (cRes.rows || []).filter((row) => !isTechnicalFaceGalleryClientEmail(row.email));
     }
+    // Badge de pagamento/comprovante para bater o olho na lista de clientes (modo paid_event_photos).
+    if (ksIsPaidEventAccessMode(g.access_mode) && clients.length && (await hasTable(client, 'king_client_payment_requests'))) {
+      const clientIds = clients.map((c) => parseInt(c.id, 10)).filter((n) => Number.isFinite(n) && n > 0);
+      if (clientIds.length) {
+        const prRows = (await client.query(
+          `SELECT DISTINCT ON (client_id) client_id, status, proof_file_path, updated_at
+           FROM king_client_payment_requests
+           WHERE gallery_id=$1 AND client_id = ANY($2::int[])
+           ORDER BY client_id ASC, updated_at DESC, id DESC`,
+          [galleryId, clientIds]
+        )).rows || [];
+        const prMap = new Map();
+        for (const r of prRows) {
+          const cid = parseInt(r.client_id, 10) || 0;
+          if (!cid) continue;
+          const st = ksNormPaymentStatus(r.status);
+          const hasProof = !!String(r.proof_file_path || '').trim();
+          let badge = null;
+          if (st === 'confirmed') badge = 'Pagamento confirmado';
+          else if (st === 'rejected') badge = 'Comprovante recusado';
+          else if (st === 'pending' && hasProof) badge = 'Comprovante enviado';
+          prMap.set(cid, { status: st, hasProof, badge });
+        }
+        clients = clients.map((c) => {
+          const cid = parseInt(c.id, 10) || 0;
+          const p = prMap.get(cid);
+          if (!p) return c;
+          return {
+            ...c,
+            sales_payment_status: p.status,
+            sales_has_proof: p.hasProof,
+            sales_payment_badge: p.badge
+          };
+        });
+      }
+    }
 
     const hasSelClientIdEarly = await hasColumn(client, 'king_selections', 'client_id');
     if (!focusCid && clients.length > 1 && hasSelClientIdEarly) {
