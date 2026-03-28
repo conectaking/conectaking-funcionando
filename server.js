@@ -623,6 +623,14 @@ app.get(['/kingSelection', '/kingSelection/', '/kingselection', '/kingselection/
     res.sendFile(kingSelectionEditHtml);
 });
 
+// Compat legado: qualquer URL antiga kingSelectionEdit* deve cair no caminho oficial /kingSelection
+app.get(
+    ['/kingSelectionEdit', '/kingSelectionEdit/', '/kingselectionedit', '/kingselectionedit/', '/kingSelectionEdit.html', '/kingselectionedit.html'],
+    (req, res) => {
+        res.redirect(302, '/kingSelection');
+    }
+);
+
 // Galeria cliente (Node) ANTES do proxy.
 // Aceita aliases para manter compatibilidade com links antigos/variantes enviados por WhatsApp.
 app.get([
