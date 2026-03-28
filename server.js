@@ -458,6 +458,7 @@ app.use(requestLogger);
 const publicHtmlDir = path.join(__dirname, 'public_html');
 const kingSelectionClienteHtml = path.join(publicHtmlDir, 'kingSelectionCliente.html');
 const kingSelectionEditHtml = path.join(publicHtmlDir, 'kingSelectionEdit.html');
+const kingSelectionProjectHtml = path.join(publicHtmlDir, 'kingSelectionProject.html');
 const KING_SELECTION_CLIENTE_RESERVED_SLUGS = new Set([
     'admin',
     'api',
@@ -619,8 +620,9 @@ function proxyKingSelection(req, res, next) {
 
 // /kingSelection sem slug → painel do fotógrafo (mesmo ficheiro que kingSelectionEdit.html)
 app.get(['/kingSelection', '/kingSelection/', '/kingselection', '/kingselection/'], (req, res, next) => {
-    if (!fs.existsSync(kingSelectionEditHtml)) return next();
-    res.sendFile(kingSelectionEditHtml);
+    if (fs.existsSync(kingSelectionProjectHtml)) return res.sendFile(kingSelectionProjectHtml);
+    if (fs.existsSync(kingSelectionEditHtml)) return res.sendFile(kingSelectionEditHtml);
+    return next();
 });
 
 // Compat legado: qualquer URL antiga kingSelectionEdit* deve cair no caminho oficial /kingSelection
