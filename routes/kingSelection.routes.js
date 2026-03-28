@@ -12,6 +12,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const archiver = require('archiver');
 const { getR2Config, r2PublicUrl, r2GetObjectBuffer, r2GetObjectViaPublicUrl, r2PresignPut, r2PutObjectBuffer, r2HeadObject } = require('../utils/r2');
 const { getStagingConfig, buildStagingKey, putStagingObject, getStagingObject, deleteStagingObject } = require('../utils/rekognition/s3StagingService');
 const {
@@ -4824,6 +4825,8 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'thank_you_message',
     'thank_you_image_url',
     'thank_you_photographer_name',
+    'gallery_link_cover_photo_id',
+    'gallery_link_cover_file_path',
     'support_whatsapp_number',
     'support_whatsapp_label',
     'support_whatsapp_message'
@@ -4858,6 +4861,18 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (!ok) {
         return res.status(503).json({
           message: 'O banco não tem client_image_quality. Execute a migration 205 no Postgres.'
+        });
+      }
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(body, 'gallery_link_cover_photo_id') ||
+      Object.prototype.hasOwnProperty.call(body, 'gallery_link_cover_file_path')
+    ) {
+      const okPid = await hasColumn(client, 'king_galleries', 'gallery_link_cover_photo_id');
+      const okFile = await hasColumn(client, 'king_galleries', 'gallery_link_cover_file_path');
+      if (!okPid || !okFile) {
+        return res.status(503).json({
+          message: 'O banco ainda não tem os campos de capa do link. Execute a migration 210 no Postgres.'
         });
       }
     }
@@ -4937,6 +4952,14 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         if (val === '' || val === 'null') val = null;
         else if (val != null) val = String(val).trim().slice(0, 255);
       }
+      if (key === 'gallery_link_cover_photo_id') {
+        const pid = parseInt(val || 0, 10) || 0;
+        val = pid > 0 ? pid : null;
+      }
+      if (key === 'gallery_link_cover_file_path') {
+        if (val === '' || val === 'null' || val == null) val = null;
+        else val = String(val).trim().slice(0, 2000);
+      }
       if (key === 'support_whatsapp_number') {
         if (val === '' || val === 'null' || val == null) val = null;
         else val = String(val).replace(/\D/g, '').slice(0, 20) || null;
@@ -5011,6 +5034,82 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     }
 
     res.json({ success: true, cloudflare_watermark: cloudflare, r2_watermark: r2Wm });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/galleries/:id/link-cover-upload', protectUser, (req, res, next) => {
+  uploadMem.single('file')(req, res, (err) => {
+    if (!err) return next();
+    if (err.name === 'MulterError' && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ success: false, message: 'Arquivo muito grande (limite 30MB).' });
+    }
+    return res.status(400).json({ success: false, message: err.message || 'Falha ao processar upload.' });
+  });
+}, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  if (!req.file || !req.file.buffer) return res.status(400).json({ message: 'Arquivo de capa é obrigatório.' });
+  if (!String(req.file.mimetype || '').toLowerCase().startsWith('image/')) {
+    return res.status(400).json({ message: 'Envie apenas imagem para capa.' });
+  }
+  if (!KS_WORKER_SECRET) return res.status(501).json({ message: 'Worker não configurado' });
+
+  const userId = req.user.userId;
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2
+       LIMIT 1`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const hasCoverPhoto = await hasColumn(client, 'king_galleries', 'gallery_link_cover_photo_id');
+    const hasCoverFile = await hasColumn(client, 'king_galleries', 'gallery_link_cover_file_path');
+    if (!hasCoverPhoto || !hasCoverFile) {
+      return res.status(503).json({ message: 'Campos de capa do link indisponíveis. Execute a migration 210.' });
+    }
+
+    const prevRes = await client.query(
+      'SELECT gallery_link_cover_file_path FROM king_galleries WHERE id=$1 LIMIT 1',
+      [galleryId]
+    );
+    const oldFilePath = String(prevRes.rows?.[0]?.gallery_link_cover_file_path || '').trim();
+
+    const out = await uploadBufferToWorker({
+      buffer: req.file.buffer,
+      filename: req.file.originalname || `link-cover-${galleryId}.jpg`,
+      mimetype: req.file.mimetype || 'application/octet-stream',
+      galleryId,
+      userId
+    });
+    const newPath = `r2:${out.key}`;
+
+    await client.query(
+      `UPDATE king_galleries
+       SET gallery_link_cover_file_path=$1, gallery_link_cover_photo_id=NULL, updated_at=NOW()
+       WHERE id=$2`,
+      [newPath, galleryId]
+    );
+
+    // limpeza best-effort do arquivo antigo de capa customizada (se existir e for diferente)
+    try {
+      const oldKey = extractR2Key(oldFilePath);
+      if (oldKey && oldFilePath !== newPath) {
+        await deleteR2ObjectViaWorker(oldKey);
+      }
+    } catch (_) { }
+
+    return res.json({
+      success: true,
+      gallery_link_cover_photo_id: null,
+      gallery_link_cover_file_path: newPath
+    });
   } finally {
     client.release();
   }
@@ -5347,6 +5446,37 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
   }
 }));
 
+async function ksResolveGalleryLinkCoverFilePath(pgClient, galleryId) {
+  const hasLinkCoverPhoto = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_photo_id');
+  const hasLinkCoverFile = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_file_path');
+  if (hasLinkCoverPhoto || hasLinkCoverFile) {
+    const cols = [];
+    if (hasLinkCoverPhoto) cols.push('gallery_link_cover_photo_id');
+    if (hasLinkCoverFile) cols.push('gallery_link_cover_file_path');
+    const gRes = await pgClient.query(`SELECT ${cols.join(', ')} FROM king_galleries WHERE id=$1 LIMIT 1`, [galleryId]);
+    if (gRes.rows.length) {
+      const row = gRes.rows[0] || {};
+      const customPath = String(row.gallery_link_cover_file_path || '').trim();
+      if (customPath) return customPath;
+      const coverPhotoId = parseInt(row.gallery_link_cover_photo_id, 10) || 0;
+      if (coverPhotoId > 0) {
+        const pById = await pgClient.query(
+          'SELECT file_path FROM king_photos WHERE gallery_id=$1 AND id=$2 LIMIT 1',
+          [galleryId, coverPhotoId]
+        );
+        const byIdPath = String(pById.rows?.[0]?.file_path || '').trim();
+        if (byIdPath) return byIdPath;
+      }
+    }
+  }
+  const hasCover = await hasColumn(pgClient, 'king_photos', 'is_cover');
+  const pRes = hasCover
+    ? await pgClient.query('SELECT file_path FROM king_photos WHERE gallery_id=$1 ORDER BY is_cover DESC, "order" ASC, id ASC LIMIT 1', [galleryId])
+    : await pgClient.query('SELECT file_path FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [galleryId]);
+  const fallbackPath = String(pRes.rows?.[0]?.file_path || '').trim();
+  return fallbackPath || null;
+}
+
 router.get('/public/cover', asyncHandler(async (req, res) => {
   const slug = (req.query.slug || '').toString().trim();
   if (!slug) return res.status(400).send('slug é obrigatório');
@@ -5357,13 +5487,9 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).send('Galeria não encontrada');
     const galleryId = gRes.rows[0].id;
 
-    const hasCover = await hasColumn(client, 'king_photos', 'is_cover');
-    const pRes = hasCover
-      ? await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY is_cover DESC, "order" ASC, id ASC LIMIT 1', [galleryId])
-      : await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [galleryId]);
-    if (pRes.rows.length === 0) return res.status(404).send('Sem fotos');
-    const photo = pRes.rows[0];
-    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+    const coverPath = await ksResolveGalleryLinkCoverFilePath(client, galleryId);
+    if (!coverPath) return res.status(404).send('Sem capa');
+    const buf = await fetchPhotoFileBufferFromFilePath(coverPath);
     if (!buf) return res.status(500).send('Não foi possível carregar a capa (Cloudflare/R2 não configurado).');
 
     // Capa: preview watermarked + blur leve, 1400px
@@ -5409,13 +5535,9 @@ router.get('/public/og-image', asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).send('Galeria não encontrada');
     const galleryId = gRes.rows[0].id;
 
-    const hasCover = await hasColumn(client, 'king_photos', 'is_cover');
-    const pRes = hasCover
-      ? await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY is_cover DESC, "order" ASC, id ASC LIMIT 1', [galleryId])
-      : await client.query('SELECT * FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [galleryId]);
-    if (pRes.rows.length === 0) return res.status(404).send('Sem fotos');
-    const photo = pRes.rows[0];
-    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+    const coverPath = await ksResolveGalleryLinkCoverFilePath(client, galleryId);
+    if (!coverPath) return res.status(404).send('Sem capa');
+    const buf = await fetchPhotoFileBufferFromFilePath(coverPath);
     if (!buf) return res.status(500).send('Não foi possível carregar a capa (Cloudflare/R2 não configurado).');
 
     // Fundo desfocado (preenche 1200x630) + foto inteira por cima (contain)
@@ -5441,6 +5563,45 @@ router.get('/public/og-image', asyncHandler(async (req, res) => {
     res.set('Content-Type', 'image/jpeg');
     res.set('Cache-Control', 'public, max-age=900'); // 15min
     res.send(out);
+  } finally {
+    client.release();
+  }
+}));
+
+router.get('/galleries/:id/link-cover-preview', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const coverPath = await ksResolveGalleryLinkCoverFilePath(client, galleryId);
+    if (!coverPath) return res.status(404).send('Sem capa');
+    const buf = await fetchPhotoFileBufferFromFilePath(coverPath);
+    if (!buf) return res.status(500).send('Não foi possível carregar a capa.');
+
+    const img = sharp(buf).rotate();
+    const meta = await img.metadata();
+    const { width, height } = getDisplayDimensions(meta, 1200, 1200);
+    const max = 1200;
+    const scale = Math.min(max / Math.max(width, height), 1);
+    const outW = Math.max(1, Math.round(width * scale));
+    const outH = Math.max(1, Math.round(height * scale));
+    const out = await img
+      .resize(outW, outH, { fit: 'inside' })
+      .jpeg({ quality: 86, progressive: true })
+      .toBuffer();
+
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    return res.send(out);
   } finally {
     client.release();
   }
@@ -6354,6 +6515,137 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       approvedPhotoIds: salesModeActive ? approvedPhotoIds : undefined,
       clientAuthenticated: !!salesClientId
     });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/client/download-zip', requireClient, asyncHandler(async (req, res) => {
+  const payload = req.ksClient;
+  const body = req.body || {};
+  const slug = String(body.slug || '').trim();
+  if (slug && slug !== payload.slug) {
+    return res.status(403).json({ message: 'Sem permissão para esta galeria.' });
+  }
+
+  const wantedIds = Array.isArray(body.photo_ids)
+    ? Array.from(new Set(body.photo_ids.map((x) => parseInt(x, 10)).filter((n) => Number.isFinite(n) && n > 0))).slice(0, 1000)
+    : [];
+  if (!wantedIds.length) {
+    return res.status(400).json({ message: 'Selecione pelo menos 1 foto liberada para gerar ZIP.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const hasAccessMode = await hasColumn(client, 'king_galleries', 'access_mode');
+    const gRes = await client.query(
+      `SELECT id, nome_projeto${hasAccessMode ? ', access_mode' : ''} FROM king_galleries WHERE id=$1 LIMIT 1`,
+      [payload.galleryId]
+    );
+    if (!gRes.rows.length) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const accessMode = ksNormAccessMode(gRes.rows[0]?.access_mode || 'private');
+    if (!ksIsPaidEventAccessMode(accessMode)) {
+      return res.status(403).json({ message: 'ZIP disponível apenas no modo Fotos vendidas por evento.' });
+    }
+    if (!(await hasTable(client, 'king_selection_photo_approvals'))) {
+      return res.status(503).json({ message: 'Aprovação de download indisponível no servidor.' });
+    }
+
+    let cid = parseInt(payload.clientId || 0, 10) || 0;
+    if (!cid) {
+      cid = await resolveFaceClientIdForSession(client, payload.galleryId, payload.clientId, payload.sk);
+    }
+    if (!cid) return res.status(403).json({ message: 'Faça login para baixar as fotos aprovadas.' });
+    if (!ksEnforceDownloadRateLimit(payload.galleryId, cid, req.ip)) {
+      return res.status(429).json({ message: 'Muitas tentativas de download. Tente novamente em instantes.' });
+    }
+
+    const round = await ksGetSalesSelectionRound(client, payload.galleryId, cid);
+    const hasEditedPath = await hasColumn(client, 'king_photos', 'edited_file_path');
+    const rows = (await client.query(
+      `SELECT a.photo_id, a.selection_batch, a.delivery_mode, p.original_name, p.file_path${hasEditedPath ? ', p.edited_file_path' : ', NULL::text AS edited_file_path'}
+       FROM king_selection_photo_approvals a
+       JOIN king_photos p ON p.id = a.photo_id AND p.gallery_id = a.gallery_id
+       WHERE a.gallery_id=$1
+         AND a.client_id=$2
+         AND a.selection_batch=$3
+         AND lower(a.status)='approved'
+         AND a.photo_id = ANY($4::int[])
+       ORDER BY a.photo_id ASC`,
+      [payload.galleryId, cid, round, wantedIds]
+    )).rows || [];
+    if (!rows.length) {
+      return res.status(404).json({ message: 'Nenhuma foto aprovada encontrada para as seleções informadas.' });
+    }
+
+    const selectedRows = rows.filter((r) => {
+      const mode = ksNormDeliveryMode(r.delivery_mode);
+      if (mode !== 'edited') return true;
+      const editedPath = String(r.edited_file_path || '').trim();
+      return !!editedPath;
+    });
+    if (!selectedRows.length) {
+      return res.status(409).json({ message: 'As fotos aprovadas em modo editado ainda não possuem arquivo enviado.' });
+    }
+
+    const zipNameBase = String(gRes.rows[0]?.nome_projeto || payload.slug || 'fotos')
+      .replace(/[^\w\-]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 60) || 'fotos';
+    res.set('Content-Type', 'application/zip');
+    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Content-Disposition', `attachment; filename="${zipNameBase}_aprovadas.zip"`);
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.on('error', (err) => {
+      try { res.destroy(err); } catch (_) { }
+    });
+    archive.pipe(res);
+
+    const usedNames = new Set();
+    const toAudit = [];
+    for (const r of selectedRows) {
+      const mode = ksNormDeliveryMode(r.delivery_mode);
+      const sourcePath = mode === 'edited' ? String(r.edited_file_path || '').trim() : String(r.file_path || '').trim();
+      if (!sourcePath) continue;
+      // eslint-disable-next-line no-await-in-loop
+      const buf = await fetchPhotoFileBufferFromFilePath(sourcePath);
+      if (!buf) continue;
+      let fname = String(r.original_name || `foto-${r.photo_id}`).replace(/[\/\\:*?"<>|]+/g, '-').trim();
+      if (!fname) fname = `foto-${r.photo_id}.jpg`;
+      if (!/\.[a-z0-9]{2,5}$/i.test(fname)) fname = `${fname}.jpg`;
+      if (usedNames.has(fname.toLowerCase())) {
+        const dot = fname.lastIndexOf('.');
+        const base = dot > 0 ? fname.slice(0, dot) : fname;
+        const ext = dot > 0 ? fname.slice(dot) : '.jpg';
+        let k = 2;
+        let candidate = `${base} (${k})${ext}`;
+        while (usedNames.has(candidate.toLowerCase())) {
+          k += 1;
+          candidate = `${base} (${k})${ext}`;
+        }
+        fname = candidate;
+      }
+      usedNames.add(fname.toLowerCase());
+      archive.append(buf, { name: fname });
+      toAudit.push({ photoId: parseInt(r.photo_id, 10) || 0, selectionBatch: parseInt(r.selection_batch, 10) || null });
+    }
+
+    for (const a of toAudit) {
+      if (!a.photoId) continue;
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await client.query(
+          `INSERT INTO king_download_audit
+             (gallery_id, client_id, photo_id, selection_batch, action, ip_address, user_agent, created_at)
+           VALUES ($1,$2,$3,$4,'download_zip',$5,$6,NOW())`,
+          [payload.galleryId, cid, a.photoId, a.selectionBatch, String(req.ip || '').slice(0, 100), String(req.headers['user-agent'] || '').slice(0, 400)]
+        );
+      } catch (_) { }
+    }
+
+    await archive.finalize();
   } finally {
     client.release();
   }
@@ -7915,39 +8207,42 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
 
       const hasCliTelCol = await hasColumn(client, 'king_gallery_clients', 'telefone');
       let mergeBackfillPhone = null;
+      let reactivateExistingClient = false;
       let newClientId;
       await client.query('BEGIN');
       try {
         if (existingByEmail.rows.length) {
           const ex = existingByEmail.rows[0];
           if (ex.enabled === false) {
-            await client.query('ROLLBACK');
-            return res.status(409).json({
-              message: 'Já existe cadastro com este e-mail, mas o acesso está desativado. Fale com o fotógrafo.'
-            });
+            reactivateExistingClient = true;
+            newClientId = ex.id;
+            if (hasCliTelCol && String(telefone || '').trim()) {
+              mergeBackfillPhone = String(telefone).trim().slice(0, 120);
+            }
+          } else {
+            if (normKsStatus(ex.status) === 'finalizado') {
+              await client.query('ROLLBACK');
+              return res.status(409).json({ message: 'Esta seleção já foi finalizada. Fale com o fotógrafo.' });
+            }
+            if (ksNormClientNameMatch(ex.nome) !== ksNormClientNameMatch(nome)) {
+              await client.query('ROLLBACK');
+              return res.status(409).json({
+                message:
+                  'Este e-mail já está cadastrado com outro nome. Use os mesmos dados de quando você enviou ou entre com e-mail e senha.'
+              });
+            }
+            if (!ksClientPhoneMatchesStored(ex.telefone, telefone)) {
+              await client.query('ROLLBACK');
+              return res.status(409).json({
+                message:
+                  'O telefone não confere com o cadastro deste e-mail. Confira o número ou entre com e-mail e senha.'
+              });
+            }
+            if (ksShouldBackfillClientPhone(ex.telefone, telefone)) {
+              mergeBackfillPhone = String(telefone).trim().slice(0, 120);
+            }
+            newClientId = ex.id;
           }
-          if (normKsStatus(ex.status) === 'finalizado') {
-            await client.query('ROLLBACK');
-            return res.status(409).json({ message: 'Esta seleção já foi finalizada. Fale com o fotógrafo.' });
-          }
-          if (ksNormClientNameMatch(ex.nome) !== ksNormClientNameMatch(nome)) {
-            await client.query('ROLLBACK');
-            return res.status(409).json({
-              message:
-                'Este e-mail já está cadastrado com outro nome. Use os mesmos dados de quando você enviou ou entre com e-mail e senha.'
-            });
-          }
-          if (!ksClientPhoneMatchesStored(ex.telefone, telefone)) {
-            await client.query('ROLLBACK');
-            return res.status(409).json({
-              message:
-                'O telefone não confere com o cadastro deste e-mail. Confira o número ou entre com e-mail e senha.'
-            });
-          }
-          if (ksShouldBackfillClientPhone(ex.telefone, telefone)) {
-            mergeBackfillPhone = String(telefone).trim().slice(0, 120);
-          }
-          newClientId = ex.id;
         } else {
           const insC = await client.query(
             `INSERT INTO king_gallery_clients (gallery_id, nome, email, telefone, senha_hash, senha_enc, enabled, created_at, updated_at)
@@ -7962,6 +8257,24 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
           'UPDATE king_selections SET client_id=$1, session_key=NULL WHERE gallery_id=$2 AND client_id IS NULL AND session_key=$3',
           [newClientId, galleryId, sk]
         );
+
+        if (reactivateExistingClient) {
+          if (hasCliTelCol && mergeBackfillPhone) {
+            await client.query(
+              `UPDATE king_gallery_clients
+               SET enabled=TRUE, nome=$1, telefone=$2, updated_at=NOW()
+               WHERE gallery_id=$3 AND id=$4`,
+              [nome, mergeBackfillPhone, galleryId, newClientId]
+            );
+          } else {
+            await client.query(
+              `UPDATE king_gallery_clients
+               SET enabled=TRUE, nome=$1, updated_at=NOW()
+               WHERE gallery_id=$2 AND id=$3`,
+              [nome, galleryId, newClientId]
+            );
+          }
+        }
 
         const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
         let maxRound = 1;
