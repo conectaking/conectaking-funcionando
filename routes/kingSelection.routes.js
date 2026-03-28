@@ -4656,7 +4656,10 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'thank_you_title',
     'thank_you_message',
     'thank_you_image_url',
-    'thank_you_photographer_name'
+    'thank_you_photographer_name',
+    'support_whatsapp_number',
+    'support_whatsapp_label',
+    'support_whatsapp_message'
   ];
 
   const body = req.body || {};
@@ -4752,6 +4755,18 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'thank_you_photographer_name') {
         if (val === '' || val === 'null') val = null;
         else if (val != null) val = String(val).trim().slice(0, 255);
+      }
+      if (key === 'support_whatsapp_number') {
+        if (val === '' || val === 'null' || val == null) val = null;
+        else val = String(val).replace(/\D/g, '').slice(0, 20) || null;
+      }
+      if (key === 'support_whatsapp_label') {
+        if (val === '' || val === 'null' || val == null) val = null;
+        else val = String(val).trim().slice(0, 120);
+      }
+      if (key === 'support_whatsapp_message') {
+        if (val === '' || val === 'null' || val == null) val = null;
+        else val = String(val).trim().slice(0, 1200);
       }
       sets.push(`${key}=$${idx++}`);
       values.push(val);
@@ -5918,10 +5933,13 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasClientImgQ = await hasColumn(client, 'king_galleries', 'client_image_quality');
     const hasThankYou = await hasColumn(client, 'king_galleries', 'thank_you_title');
     const hasThankYouName = await hasColumn(client, 'king_galleries', 'thank_you_photographer_name');
+    const hasSupportWhats = await hasColumn(client, 'king_galleries', 'support_whatsapp_number');
+    const hasSupportLabel = await hasColumn(client, 'king_galleries', 'support_whatsapp_label');
+    const hasSupportMsg = await hasColumn(client, 'king_galleries', 'support_whatsapp_message');
     const hasAccessModeG = await hasColumn(client, 'king_galleries', 'access_mode');
     const hasAllowSelfG = await hasColumn(client, 'king_galleries', 'allow_self_signup');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
