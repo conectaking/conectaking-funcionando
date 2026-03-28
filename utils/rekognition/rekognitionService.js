@@ -16,10 +16,10 @@ function getRekogConfig() {
   const region = (process.env.AWS_REGION || 'us-east-1').toString().trim();
   const collectionId = (process.env.REKOG_COLLECTION_ID || 'kingselection').toString().trim();
   const faceMatchThreshold = Math.min(100, Math.max(0, parseInt(process.env.REKOG_FACE_MATCH_THRESHOLD || '85', 10)));
-  /** CompareFaces (galeria sob demanda): padrão 78 — eventos reais costumam ficar abaixo de 85. */
+  /** CompareFaces (galeria sob demanda): padrão 72 para melhorar recall em eventos com luz/ângulo difíceis. */
   const compareSimilarityThreshold = Math.min(
     100,
-    Math.max(50, parseInt(process.env.REKOG_COMPARE_SIMILARITY_THRESHOLD || '78', 10) || 78)
+    Math.max(50, parseInt(process.env.REKOG_COMPARE_SIMILARITY_THRESHOLD || '72', 10) || 72)
   );
   /**
    * SearchFacesByImage (recorte da foto do evento vs collection): por defeito o mínimo entre faceMatch e compare,

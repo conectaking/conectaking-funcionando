@@ -591,7 +591,7 @@ function ksGalleryStatusRank(raw) {
  */
 function aggregateGalleryStatusFromClientRows(clientRows) {
   if (!Array.isArray(clientRows) || clientRows.length === 0) return null;
-  const active = clientRows.filter(c => c && c.enabled !== false);
+  const active = clientRows.filter(c => c && c.enabled !== false && !isTechnicalFaceGalleryClientEmail(c.email));
   if (active.length < 2) return null;
   let minR = null;
   for (const c of active) {
@@ -1383,7 +1383,15 @@ router.get('/galleries', protectUser, asyncHandler(async (req, res) => {
             END
           ) AS min_rank
          FROM king_gallery_clients gc
-         WHERE gc.gallery_id = ANY($1::int[]) ${enabledSql}
+         WHERE gc.gallery_id = ANY($1::int[])
+           ${enabledSql}
+           AND (
+             gc.email IS NULL
+             OR NOT (
+               lower(gc.email) LIKE '__ks_face_default_%@internal.king'
+               OR lower(gc.email) LIKE '__ks_face_sess_%@internal.king'
+             )
+           )
          GROUP BY gc.gallery_id
          HAVING COUNT(*) >= 2`,
         [ids]
@@ -2554,7 +2562,7 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
          ORDER BY created_at ASC, id ASC`,
         [galleryId]
       );
-      clients = cRes.rows || [];
+      clients = (cRes.rows || []).filter((row) => !isTechnicalFaceGalleryClientEmail(row.email));
     }
 
     const hasSelClientIdEarly = await hasColumn(client, 'king_selections', 'client_id');
@@ -2675,7 +2683,8 @@ router.get('/galleries/:id/clients', protectUser, asyncHandler(async (req, res) 
        ORDER BY created_at ASC, id ASC`,
       [galleryId]
     );
-    res.json({ success: true, clients: cRes.rows || [] });
+    const rows = (cRes.rows || []).filter((row) => !isTechnicalFaceGalleryClientEmail(row.email));
+    res.json({ success: true, clients: rows });
   } finally {
     client.release();
   }
@@ -4525,7 +4534,8 @@ function useIndexedCompareFallback() {
 function getFaceResultMinSimilarity() {
   const searchT = Math.min(100, Math.max(50, parseInt(String(process.env.REKOG_SEARCH_FACE_MATCH_THRESHOLD || '72'), 10) || 72));
   const envValue = parseInt(String(process.env.REKOG_RESULT_MIN_SIMILARITY || ''), 10);
-  const fallback = Math.min(100, Math.max(65, searchT));
+  // Prioriza recall: em eventos reais rostos úteis podem cair <72 por luz/ângulo.
+  const fallback = 65;
   if (!Number.isFinite(envValue)) return fallback;
   return Math.min(100, Math.max(50, envValue));
 }
@@ -4885,7 +4895,7 @@ router.get('/client/face-results', requireClient, (req, res, next) => {
     // Modo sob demanda: CompareFaces + cache (não precisa ter processado as fotos da galeria)
     if (useRekogOnDemand()) {
       const cached = await getSearchCache(client, galleryId, clientId, 'enroll');
-      if (cached !== null) {
+      if (Array.isArray(cached) && cached.length > 0) {
         const total = cached.length;
         const photoIds = cached.slice(offset, offset + limit);
         return res.json({ success: true, total, photoIds, fromCache: true });
@@ -5078,6 +5088,10 @@ router.post('/client/face-enroll-cache', requireClient, asyncHandler(async (req,
         return res.status(403).json({ message: 'Reconhecimento facial desativado nesta galeria.' });
       }
     }
+    if (!ids.length) {
+      await deleteSearchCacheForClientSession(client, galleryId, clientId);
+      return res.json({ success: true, saved: 0, message: 'Cache facial vazio descartado.' });
+    }
     await setSearchCache(client, galleryId, clientId, 'enroll', ids);
     res.json({ success: true, saved: ids.length });
   } finally {
@@ -5121,7 +5135,7 @@ router.post('/client/search-face-by-photo', requireClient, uploadMem.single('ima
     if (useRekogOnDemand()) {
       const imageHash = crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 32);
       const cached = await getSearchCache(pgClient, galleryId, clientId, imageHash);
-      if (cached !== null) {
+      if (Array.isArray(cached) && cached.length > 0) {
         return res.json({ success: true, total: cached.length, photoIds: cached });
       }
       const photoIds = await compareFacesAgainstGallery(buffer, galleryId, pgClient);
