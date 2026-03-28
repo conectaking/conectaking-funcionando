@@ -5272,8 +5272,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const folders = await listFoldersForGallery(client, gallery.id);
 
     const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
+    const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
     const pRes = await client.query(
-      `SELECT id, original_name, "order"${hasFilePath ? ', file_path' : ''} FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC`,
+      `SELECT id, original_name, "order"${hasFilePath ? ', file_path' : ''}${hasFolderId ? ', folder_id' : ''} FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC`,
       [gallery.id]
     );
 
@@ -5353,6 +5354,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
 
     const photos = (pRes.rows || []).map(p => {
       const out = { id: p.id, original_name: p.original_name, order: p.order };
+      if (hasFolderId) out.folder_id = p.folder_id ? parseInt(p.folder_id, 10) : null;
       if (hasFilePath && p.file_path && String(p.file_path).toLowerCase().startsWith('r2:')) {
         const objectKey = String(p.file_path).slice(3).trim().replace(/^\/+/, '');
         if (objectKey) out.url = r2PublicUrl(objectKey) || undefined;
