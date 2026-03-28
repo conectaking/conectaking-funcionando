@@ -5708,7 +5708,7 @@ router.post('/client/login-by-details', asyncHandler(async (req, res) => {
     let am = hasAm ? String(grow.access_mode || 'private').toLowerCase() : 'private';
     if (am === 'password') am = 'signup';
     const allow = hasSelf ? !!grow.allow_self_signup : ksAccessModeAllowsSelfSignup(am);
-    if (am !== 'signup' || !allow) {
+    if (!ksAccessModeAllowsSelfSignup(am) || !allow) {
       return res.status(403).json({
         message: 'Nesta galeria use e-mail e senha. O acesso só com nome e telefone é para o fluxo de cadastro ao enviar.'
       });
