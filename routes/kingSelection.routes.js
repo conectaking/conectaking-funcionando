@@ -2959,6 +2959,150 @@ router.post('/galleries/:id/folders/reorder', protectUser, asyncHandler(async (r
   }
 }));
 
+router.post('/galleries/:id/folders/auto-separate-by-face', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const minSimilarity = Math.max(45, Math.min(99, parseFloat(req.body?.minSimilarity ?? 72) || 72));
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const needed = ['king_photo_folders', 'rekognition_photo_faces', 'rekognition_face_matches', 'king_gallery_clients'];
+    for (const t of needed) {
+      // eslint-disable-next-line no-await-in-loop
+      if (!(await hasTable(client, t))) {
+        return res.status(412).json({ message: `Tabela ${t} não encontrada. Execute as migrations faciais e de pastas.` });
+      }
+    }
+    if (!(await hasColumn(client, 'king_photos', 'folder_id'))) {
+      return res.status(412).json({ message: 'Coluna king_photos.folder_id não encontrada. Execute a migration 206.' });
+    }
+
+    const matchRes = await client.query(
+      `WITH ranked AS (
+         SELECT
+           kp.id AS photo_id,
+           kgc.id AS client_id,
+           COALESCE(NULLIF(BTRIM(kgc.nome), ''), CONCAT('Pessoa ', kgc.id::text)) AS folder_name,
+           MAX(rfm.similarity)::float8 AS best_similarity
+         FROM king_photos kp
+         JOIN rekognition_photo_faces rpf ON rpf.photo_id = kp.id
+         JOIN rekognition_face_matches rfm ON rfm.photo_face_id = rpf.id
+         JOIN king_gallery_clients kgc ON kgc.id = rfm.client_id AND kgc.gallery_id = kp.gallery_id
+         WHERE kp.gallery_id = $1
+           AND (kgc.email IS NULL OR lower(kgc.email) NOT LIKE '__ks_face_%@internal.king')
+         GROUP BY kp.id, kgc.id, COALESCE(NULLIF(BTRIM(kgc.nome), ''), CONCAT('Pessoa ', kgc.id::text))
+       ),
+       picked AS (
+         SELECT DISTINCT ON (photo_id)
+           photo_id, client_id, folder_name, best_similarity
+         FROM ranked
+         WHERE best_similarity >= $2
+         ORDER BY photo_id, best_similarity DESC, client_id ASC
+       )
+       SELECT * FROM picked`,
+      [galleryId, minSimilarity]
+    );
+    const picked = matchRes.rows || [];
+    if (!picked.length) {
+      return res.json({
+        success: true,
+        updated: 0,
+        message: 'Não encontrei correspondências faciais suficientes. Rode "Processar reconhecimento em todas as fotos" e tente novamente.'
+      });
+    }
+
+    const folderNames = Array.from(new Set(picked.map((r) => String(r.folder_name || '').trim()).filter(Boolean)));
+    const foldersBefore = await listFoldersForGallery(client, galleryId);
+    const folderIdByName = new Map(
+      foldersBefore.map((f) => [String(f.name || '').trim().toLowerCase(), parseInt(f.id, 10)]).filter((x) => x[1])
+    );
+    let sortBase = 10;
+    if (foldersBefore.length) {
+      sortBase = Math.max(...foldersBefore.map((f) => parseInt(f.sort_order, 10) || 0)) + 10;
+    }
+    for (const name of folderNames) {
+      const key = name.toLowerCase();
+      if (folderIdByName.has(key)) continue;
+      // eslint-disable-next-line no-await-in-loop
+      const ins = await client.query(
+        `INSERT INTO king_photo_folders (gallery_id, name, sort_order)
+         VALUES ($1,$2,$3)
+         RETURNING id`,
+        [galleryId, name.slice(0, 120), sortBase]
+      );
+      sortBase += 10;
+      const id = parseInt(ins.rows?.[0]?.id, 10);
+      if (id) folderIdByName.set(key, id);
+    }
+
+    const assignments = [];
+    for (const row of picked) {
+      const photoId = parseInt(row.photo_id, 10);
+      const folderId = folderIdByName.get(String(row.folder_name || '').trim().toLowerCase()) || null;
+      if (!photoId || !folderId) continue;
+      assignments.push({ photoId, folderId });
+    }
+    if (!assignments.length) {
+      return res.json({ success: true, updated: 0, message: 'Nenhuma atribuição válida foi gerada.' });
+    }
+
+    await client.query('BEGIN');
+    try {
+      for (const a of assignments) {
+        // eslint-disable-next-line no-await-in-loop
+        await client.query(
+          'UPDATE king_photos SET folder_id=$1 WHERE id=$2 AND gallery_id=$3',
+          [a.folderId, a.photoId, galleryId]
+        );
+      }
+
+      const folderIds = Array.from(new Set(assignments.map((a) => a.folderId)));
+      for (const fid of folderIds) {
+        // eslint-disable-next-line no-await-in-loop
+        await client.query(
+          `UPDATE king_photo_folders f
+           SET cover_photo_id = COALESCE(
+             f.cover_photo_id,
+             (
+               SELECT p.id
+               FROM king_photos p
+               WHERE p.gallery_id = $1 AND p.folder_id = $2
+               ORDER BY p."order" ASC, p.id ASC
+               LIMIT 1
+             )
+           ),
+           updated_at = NOW()
+           WHERE f.gallery_id = $1 AND f.id = $2`,
+          [galleryId, fid]
+        );
+      }
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    }
+
+    const folders = await listFoldersForGallery(client, galleryId);
+    res.json({
+      success: true,
+      updated: assignments.length,
+      folders,
+      assignments
+    });
+  } finally {
+    client.release();
+  }
+}));
+
 router.patch('/galleries/:id/folders/:folderId', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   const folderId = parseInt(req.params.folderId, 10);
