@@ -5269,6 +5269,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     );
     if (gRes.rows.length === 0) return res.status(404).json({ message: 'Galeria não encontrada.' });
     const gallery = gRes.rows[0];
+    const folders = await listFoldersForGallery(client, gallery.id);
 
     const hasFilePath = await hasColumn(client, 'king_photos', 'file_path');
     const pRes = await client.query(
