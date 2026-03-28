@@ -4854,7 +4854,10 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
     100,
     Math.max(0, parseInt(String(process.env.KINGSELECTION_FACE_CROP_MIN_CONFIDENCE || '45'), 10) || 45)
   );
+  // Modo rápido: só aplica crop fallback pesado quando não houve match direto.
+  const deferCropFallback = String(process.env.KINGSELECTION_FACE_DEFER_CROP_FALLBACK || '1').trim().toLowerCase() !== '0';
   const matchedSet = new Set();
+  const directMisses = [];
 
   // Normaliza selfie para priorizar rosto principal (reduz falsos negativos em fotos com fundo complexo).
   let sourceCmp = sourceNorm;
@@ -4880,7 +4883,7 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
     if (pi >= photos.length) return null;
     return photos[pi++];
   }
-  async function worker() {
+  async function workerDirect() {
     for (;;) {
       const p = nextPhoto();
       if (!p) return;
@@ -4901,41 +4904,8 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
           diag.compareMatches += 1;
           continue;
         }
-
-        // Fallback para multidão: detectar rostos da foto e comparar selfie com cada recorte.
-        if (!faceCropFallbackEnabled) continue;
-        let faceDetails = [];
-        try {
-          const det = await detectFacesFromBytes(targetBuf);
-          faceDetails = (det.FaceDetails || [])
-            .filter((f) => (f.Confidence || 0) >= faceCropMinConfidence && f.BoundingBox)
-            .sort((a, b) => {
-              const aa = (a.BoundingBox?.Width || 0) * (a.BoundingBox?.Height || 0);
-              const bb = (b.BoundingBox?.Width || 0) * (b.BoundingBox?.Height || 0);
-              return bb - aa;
-            })
-            .slice(0, faceCropMaxFaces);
-          diag.cropFaceCandidates += faceDetails.length;
-        } catch (_) {
-          faceDetails = [];
-        }
-
-        for (const fd of faceDetails) {
-          try {
-            const faceCrop = await cropFace(targetBuf, fd.BoundingBox, 0.12);
-            const faceCropNorm = await normalizeImageForRekognition(faceCrop, 1024, { fast: true, quality: 84 });
-            diag.cropCompareAttempts += 1;
-            const outCrop = await compareFaces(sourceCmp, faceCropNorm);
-            const m2 = outCrop.FaceMatches || [];
-            if (m2.length > 0 && (m2[0].Similarity || 0) >= thresholdFallback) {
-              matchedSet.add(p.id);
-              diag.cropCompareMatches += 1;
-              break;
-            }
-          } catch (_) {
-            // ignora recorte inválido e segue
-            diag.compareErrors += 1;
-          }
+        if (faceCropFallbackEnabled) {
+          directMisses.push({ id: p.id, targetBuf });
         }
       } catch (_) {
         /* foto inválida / Rekognition / rede — ignora e continua */
@@ -4944,7 +4914,61 @@ async function compareFacesAgainstPhotoRows(sourceImageBytes, photoRows, opts = 
     }
   }
   const nWorkers = Math.min(concurrency, Math.max(1, photos.length));
-  await Promise.all(Array.from({ length: nWorkers }, () => worker()));
+  await Promise.all(Array.from({ length: nWorkers }, () => workerDirect()));
+
+  if (faceCropFallbackEnabled) {
+    const shouldRunFallback = !deferCropFallback || matchedSet.size === 0;
+    if (shouldRunFallback && directMisses.length > 0) {
+      let mi = 0;
+      const fallbackConcurrency = Math.min(Math.max(1, Math.floor(concurrency / 2)), 8);
+      function nextMiss() {
+        if (mi >= directMisses.length) return null;
+        return directMisses[mi++];
+      }
+      async function workerFallback() {
+        for (;;) {
+          const miss = nextMiss();
+          if (!miss) return;
+          const { id, targetBuf } = miss;
+          let faceDetails = [];
+          try {
+            const det = await detectFacesFromBytes(targetBuf);
+            faceDetails = (det.FaceDetails || [])
+              .filter((f) => (f.Confidence || 0) >= faceCropMinConfidence && f.BoundingBox)
+              .sort((a, b) => {
+                const aa = (a.BoundingBox?.Width || 0) * (a.BoundingBox?.Height || 0);
+                const bb = (b.BoundingBox?.Width || 0) * (b.BoundingBox?.Height || 0);
+                return bb - aa;
+              })
+              .slice(0, faceCropMaxFaces);
+            diag.cropFaceCandidates += faceDetails.length;
+          } catch (_) {
+            faceDetails = [];
+          }
+
+          for (const fd of faceDetails) {
+            try {
+              const faceCrop = await cropFace(targetBuf, fd.BoundingBox, 0.12);
+              const faceCropNorm = await normalizeImageForRekognition(faceCrop, 1024, { fast: true, quality: 84 });
+              diag.cropCompareAttempts += 1;
+              const outCrop = await compareFaces(sourceCmp, faceCropNorm);
+              const m2 = outCrop.FaceMatches || [];
+              if (m2.length > 0 && (m2[0].Similarity || 0) >= thresholdFallback) {
+                matchedSet.add(id);
+                diag.cropCompareMatches += 1;
+                break;
+              }
+            } catch (_) {
+              // ignora recorte inválido e segue
+              diag.compareErrors += 1;
+            }
+          }
+        }
+      }
+      const nFallbackWorkers = Math.min(fallbackConcurrency, Math.max(1, directMisses.length));
+      await Promise.all(Array.from({ length: nFallbackWorkers }, () => workerFallback()));
+    }
+  }
   return { photoIds: Array.from(matchedSet), diagnostics: diag };
 }
 
