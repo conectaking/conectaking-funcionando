@@ -630,6 +630,22 @@ app.get(
         res.redirect(302, '/kingSelection');
     }
 );
+app.get(
+    [
+        '/kingselectionproject',
+        '/kingselectionproject/',
+        '/kingselectionproject.html',
+        '/ringselectionproject',
+        '/ringselectionproject/',
+        '/ringselectionproject.html',
+        '/ringsselectionproject',
+        '/ringsselectionproject/',
+        '/ringsselectionproject.html'
+    ],
+    (req, res) => {
+        res.redirect(302, '/kingSelection');
+    }
+);
 
 // Galeria cliente (Node) ANTES do proxy.
 // Aceita aliases para manter compatibilidade com links antigos/variantes enviados por WhatsApp.

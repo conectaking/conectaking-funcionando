@@ -30,6 +30,8 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^kingSelection/([^/]+)/?$ kingSelectionGallery.php?ks_slug=$1 [L,NC,QSA]
 # Compatibilidade: links antigos /kingSelectionEdit?itemId=... -> /kingSelection
 RewriteRule ^kingSelectionEdit(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
+# Compatibilidade: páginas legadas do projeto (layout antigo) -> painel oficial
+RewriteRule ^(?:ring|rings|king)selectionproject(?:\.html)?/?$ /kingSelection [R=302,L,NC,QSA]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^kingSelection/?$ kingSelectionEdit.html [L,QSA,NC]
