@@ -4794,6 +4794,20 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         });
       }
     }
+    if (
+      Object.prototype.hasOwnProperty.call(body, 'support_whatsapp_number') ||
+      Object.prototype.hasOwnProperty.call(body, 'support_whatsapp_label') ||
+      Object.prototype.hasOwnProperty.call(body, 'support_whatsapp_message')
+    ) {
+      const okNum = await hasColumn(client, 'king_galleries', 'support_whatsapp_number');
+      const okLbl = await hasColumn(client, 'king_galleries', 'support_whatsapp_label');
+      const okMsg = await hasColumn(client, 'king_galleries', 'support_whatsapp_message');
+      if (!okNum || !okLbl || !okMsg) {
+        return res.status(503).json({
+          message: 'O banco ainda não tem os campos de WhatsApp de suporte. Execute a migration 209 no Postgres.'
+        });
+      }
+    }
 
     // Se o watermark_path for alterado/removido, deletar o antigo no Cloudflare (evita órfãos).
     const hasWmPathCol = await hasColumn(client, 'king_galleries', 'watermark_path');
@@ -7919,6 +7933,19 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
         await client.query('COMMIT');
       } catch (e) {
         await client.query('ROLLBACK');
+        const msg = String(e?.message || '').toLowerCase();
+        if (
+          e?.code === '23505' ||
+          e?.code === '23514' ||
+          msg.includes('violação de restrição') ||
+          msg.includes('violation') ||
+          msg.includes('unique') ||
+          msg.includes('constraint')
+        ) {
+          return res.status(409).json({
+            message: 'Sua seleção neste cadastro já foi enviada. Se quiser selecionar novamente, fale com o fotógrafo para reativar ou abrir nova seleção.'
+          });
+        }
         throw e;
       }
 
@@ -8139,6 +8166,21 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       );
     }
     res.json(out);
+  } catch (e) {
+    const msg = String(e?.message || '').toLowerCase();
+    if (
+      e?.code === '23505' ||
+      e?.code === '23514' ||
+      msg.includes('violação de restrição') ||
+      msg.includes('violation') ||
+      msg.includes('unique') ||
+      msg.includes('constraint')
+    ) {
+      return res.status(409).json({
+        message: 'Sua seleção neste cadastro já foi enviada. Se quiser selecionar novamente, fale com o fotógrafo para reativar ou abrir nova seleção.'
+      });
+    }
+    throw e;
   } finally {
     client.release();
   }
