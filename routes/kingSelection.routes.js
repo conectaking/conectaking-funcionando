@@ -452,6 +452,73 @@ function invalidateSchemaColumnCache(tableName, columnName) {
   _schemaCache.columns.delete(`${tableName}.${columnName}`);
 }
 
+function toPosIntOrNull(v) {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+async function resolveFolderIdForGallery(pgClient, galleryId, rawFolderId) {
+  const folderId = toPosIntOrNull(rawFolderId);
+  if (!folderId) return null;
+  if (!(await hasTable(pgClient, 'king_photo_folders'))) return null;
+  const hasFolderId = await hasColumn(pgClient, 'king_photos', 'folder_id');
+  if (!hasFolderId) return null;
+  const f = await pgClient.query(
+    'SELECT id FROM king_photo_folders WHERE id=$1 AND gallery_id=$2 LIMIT 1',
+    [folderId, galleryId]
+  );
+  return f.rows.length ? folderId : null;
+}
+
+async function listFoldersForGallery(pgClient, galleryId) {
+  if (!(await hasTable(pgClient, 'king_photo_folders'))) return [];
+  const hasFolderId = await hasColumn(pgClient, 'king_photos', 'folder_id');
+  if (!hasFolderId) return [];
+  const res = await pgClient.query(
+    `SELECT
+       f.id,
+       f.gallery_id,
+       f.name,
+       f.sort_order,
+       f.cover_photo_id,
+       f.created_at,
+       COALESCE(pc.photo_count, 0)::INTEGER AS photo_count,
+       cp.original_name AS cover_photo_name,
+       cp.file_path AS cover_file_path
+     FROM king_photo_folders f
+     LEFT JOIN (
+       SELECT folder_id, COUNT(*)::INTEGER AS photo_count
+       FROM king_photos
+       WHERE gallery_id=$1 AND folder_id IS NOT NULL
+       GROUP BY folder_id
+     ) pc ON pc.folder_id = f.id
+     LEFT JOIN king_photos cp
+       ON cp.id = f.cover_photo_id
+      AND cp.gallery_id = f.gallery_id
+     WHERE f.gallery_id=$1
+     ORDER BY f.sort_order ASC, f.id ASC`,
+    [galleryId]
+  );
+  return (res.rows || []).map((row) => {
+    const out = {
+      id: row.id,
+      gallery_id: row.gallery_id,
+      name: row.name,
+      sort_order: parseInt(row.sort_order, 10) || 0,
+      cover_photo_id: row.cover_photo_id ? parseInt(row.cover_photo_id, 10) : null,
+      photo_count: parseInt(row.photo_count, 10) || 0,
+      created_at: row.created_at
+    };
+    const fp = String(row.cover_file_path || '');
+    if (fp.toLowerCase().startsWith('r2:')) {
+      const objectKey = fp.slice(3).trim().replace(/^\/+/, '');
+      if (objectKey) out.cover_photo_url = r2PublicUrl(objectKey) || undefined;
+    }
+    if (row.cover_photo_name) out.cover_photo_name = row.cover_photo_name;
+    return out;
+  });
+}
+
 /**
  * Galeria sem nenhum king_gallery_clients (ex.: sem cliente_email no backfill 153):
  * cria uma ficha interna só para amarrar enroll/cache de rosto (FK em rekognition_*).
@@ -2573,6 +2640,7 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
 
     const hasFav = await hasColumn(client, 'king_photos', 'is_favorite');
     const hasCover = await hasColumn(client, 'king_photos', 'is_cover');
+    const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
     const cols = [
       'id',
       'gallery_id',
@@ -2580,7 +2648,8 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       '"order"',
       'created_at',
       hasFav ? 'is_favorite' : 'FALSE AS is_favorite',
-      hasCover ? 'is_cover' : 'FALSE AS is_cover'
+      hasCover ? 'is_cover' : 'FALSE AS is_cover',
+      hasFolderId ? 'folder_id' : 'NULL::INTEGER AS folder_id'
     ];
     const pRes = await client.query(
       `SELECT ${cols.join(', ')}
@@ -2630,6 +2699,7 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     }
     const shareBaseUrl = (config.urls && config.urls.shareBase) ? config.urls.shareBase.toString().trim().replace(/\/$/, '') : null;
     const statusSummary = aggregateGalleryStatusFromClientRows(clients);
+    const folders = await listFoldersForGallery(client, galleryId);
     res.json({
       success: true,
       share_base_url: shareBaseUrl || undefined,
@@ -2641,10 +2711,262 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         selectedPhotoIds,
         feedback_cliente: feedback,
         clients,
+        folders,
         selectionBatchByPhotoId,
         selectionRoundsSummary
       }
     });
+  } finally {
+    client.release();
+  }
+}));
+
+// ===== Admin: pastas (álbuns) =====
+router.get('/galleries/:id/folders', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    const folders = await listFoldersForGallery(client, galleryId);
+    res.json({ success: true, folders });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/galleries/:id/folders', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const name = String(req.body?.name || '').trim();
+  const sortOrder = parseInt(req.body?.sort_order ?? req.body?.sortOrder ?? 0, 10) || 0;
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  if (!name) return res.status(400).json({ message: 'Nome da pasta é obrigatório' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_photo_folders'))) {
+      return res.status(412).json({ message: 'Migrations de pasta ainda não aplicadas no banco.' });
+    }
+    const ins = await client.query(
+      `INSERT INTO king_photo_folders (gallery_id, name, sort_order)
+       VALUES ($1,$2,$3)
+       RETURNING id, gallery_id, name, sort_order, cover_photo_id, created_at`,
+      [galleryId, name.slice(0, 120), sortOrder]
+    );
+    const folders = await listFoldersForGallery(client, galleryId);
+    res.status(201).json({ success: true, folder: ins.rows[0], folders });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/galleries/:id/folders/generate', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const count = Math.min(200, Math.max(1, parseInt(req.body?.count || 0, 10) || 0));
+  const startAt = Math.max(1, parseInt(req.body?.startAt || req.body?.start_at || 1, 10) || 1);
+  const prefix = String(req.body?.prefix || 'Pasta').trim() || 'Pasta';
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  if (!count) return res.status(400).json({ message: 'count é obrigatório (1-200)' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(client, 'king_photo_folders'))) {
+      return res.status(412).json({ message: 'Migrations de pasta ainda não aplicadas no banco.' });
+    }
+    const maxRes = await client.query('SELECT COALESCE(MAX(sort_order), 0) AS v FROM king_photo_folders WHERE gallery_id=$1', [galleryId]);
+    let sortBase = parseInt(maxRes.rows?.[0]?.v, 10) || 0;
+    let created = 0;
+    for (let i = 0; i < count; i += 1) {
+      const idx = startAt + i;
+      const name = `${prefix} ${idx}`.trim().slice(0, 120);
+      sortBase += 10;
+      // eslint-disable-next-line no-await-in-loop
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const out = await client.query(
+          `INSERT INTO king_photo_folders (gallery_id, name, sort_order)
+           VALUES ($1,$2,$3)
+           RETURNING id`,
+          [galleryId, name, sortBase]
+        );
+        if (out.rows.length) created += 1;
+      } catch (e) {
+        if (e?.code !== '23505') throw e;
+      }
+    }
+    const folders = await listFoldersForGallery(client, galleryId);
+    res.status(201).json({ success: true, created, folders });
+  } finally {
+    client.release();
+  }
+}));
+
+router.patch('/galleries/:id/folders/:folderId', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const folderId = parseInt(req.params.folderId, 10);
+  if (!galleryId || !folderId) return res.status(400).json({ message: 'galleryId/folderId inválidos' });
+  const body = req.body || {};
+  const name = body.name != null ? String(body.name || '').trim().slice(0, 120) : undefined;
+  const sortOrder = body.sort_order != null || body.sortOrder != null
+    ? (parseInt(body.sort_order ?? body.sortOrder, 10) || 0)
+    : undefined;
+  const coverPhotoIdRaw = (body.cover_photo_id ?? body.coverPhotoId);
+  const wantsCoverUpdate = (coverPhotoIdRaw !== undefined);
+  const coverPhotoId = toPosIntOrNull(coverPhotoIdRaw);
+
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    const fRes = await client.query(
+      'SELECT id FROM king_photo_folders WHERE id=$1 AND gallery_id=$2 LIMIT 1',
+      [folderId, galleryId]
+    );
+    if (!fRes.rows.length) return res.status(404).json({ message: 'Pasta não encontrada' });
+
+    if (wantsCoverUpdate && coverPhotoId) {
+      const pRes = await client.query(
+        `SELECT id
+         FROM king_photos
+         WHERE id=$1 AND gallery_id=$2 AND folder_id=$3
+         LIMIT 1`,
+        [coverPhotoId, galleryId, folderId]
+      );
+      if (!pRes.rows.length) {
+        return res.status(400).json({ message: 'A capa deve ser uma foto dessa pasta.' });
+      }
+    }
+
+    const sets = [];
+    const vals = [];
+    let i = 1;
+    if (name !== undefined) { sets.push(`name=$${i++}`); vals.push(name || 'Pasta'); }
+    if (sortOrder !== undefined) { sets.push(`sort_order=$${i++}`); vals.push(sortOrder); }
+    if (wantsCoverUpdate) { sets.push(`cover_photo_id=$${i++}`); vals.push(coverPhotoId); }
+    if (!sets.length) return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+    vals.push(folderId, galleryId);
+    await client.query(
+      `UPDATE king_photo_folders
+       SET ${sets.join(', ')}, updated_at=NOW()
+       WHERE id=$${i++} AND gallery_id=$${i}`,
+      vals
+    );
+    const folders = await listFoldersForGallery(client, galleryId);
+    res.json({ success: true, folders });
+  } finally {
+    client.release();
+  }
+}));
+
+router.delete('/galleries/:id/folders/:folderId', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const folderId = parseInt(req.params.folderId, 10);
+  if (!galleryId || !folderId) return res.status(400).json({ message: 'galleryId/folderId inválidos' });
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    await client.query('UPDATE king_photos SET folder_id=NULL WHERE gallery_id=$1 AND folder_id=$2', [galleryId, folderId]);
+    const del = await client.query('DELETE FROM king_photo_folders WHERE id=$1 AND gallery_id=$2', [folderId, galleryId]);
+    if (!del.rowCount) return res.status(404).json({ message: 'Pasta não encontrada' });
+    const folders = await listFoldersForGallery(client, galleryId);
+    res.json({ success: true, folders });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/galleries/:id/photos/assign-folder', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const photoIds = Array.isArray(req.body?.photo_ids) ? req.body.photo_ids.map((v) => parseInt(v, 10)).filter(Boolean) : [];
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+  if (!photoIds.length) return res.status(400).json({ message: 'photo_ids é obrigatório' });
+
+  const client = await db.pool.connect();
+  try {
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    const hasFolderId = await hasColumn(client, 'king_photos', 'folder_id');
+    if (!hasFolderId) {
+      return res.status(412).json({ message: 'Migrations de pasta ainda não aplicadas no banco.' });
+    }
+
+    const wantedFolderId = await resolveFolderIdForGallery(client, galleryId, req.body?.folder_id ?? req.body?.folderId);
+    const incomingFolder = req.body?.folder_id ?? req.body?.folderId;
+    if (incomingFolder != null && incomingFolder !== '' && !wantedFolderId) {
+      return res.status(400).json({ message: 'Pasta inválida para esta galeria.' });
+    }
+
+    const upd = await client.query(
+      `UPDATE king_photos
+       SET folder_id=$1
+       WHERE gallery_id=$2
+         AND id = ANY($3::int[])`,
+      [wantedFolderId, galleryId, photoIds]
+    );
+
+    if (wantedFolderId) {
+      await client.query(
+        `UPDATE king_photo_folders f
+         SET cover_photo_id = COALESCE(
+           f.cover_photo_id,
+           (
+             SELECT p.id
+             FROM king_photos p
+             WHERE p.gallery_id = $1
+               AND p.folder_id = $2
+             ORDER BY p."order" ASC, p.id ASC
+             LIMIT 1
+           )
+         ),
+         updated_at = NOW()
+         WHERE f.gallery_id = $1
+           AND f.id = $2`,
+        [galleryId, wantedFolderId]
+      );
+    }
+
+    const folders = await listFoldersForGallery(client, galleryId);
+    res.json({ success: true, updated: upd.rowCount || 0, folders });
   } finally {
     client.release();
   }
