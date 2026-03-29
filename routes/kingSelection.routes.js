@@ -3394,6 +3394,7 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
 
     if (!(await hasTable(client, 'king_gallery_clients'))) return res.json({ success: true, clients: [] });
     const hasSelBatch = await hasColumn(client, 'king_selections', 'selection_batch');
+    const hasSelCreatedAt = await hasColumn(client, 'king_selections', 'created_at');
     const cRows = (await client.query(
       `SELECT id, nome, email, telefone, status, enabled
        FROM king_gallery_clients
@@ -3404,7 +3405,7 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
     const filteredClients = cRows.filter((row) => !isTechnicalFaceGalleryClientEmail(row.email));
 
     const sRows = (await client.query(
-      `SELECT client_id, ${hasSelBatch ? 'selection_batch' : '1 AS selection_batch'}, COUNT(*)::int AS selected_count
+      `SELECT client_id, ${hasSelBatch ? 'selection_batch' : '1 AS selection_batch'}, COUNT(*)::int AS selected_count${hasSelCreatedAt ? ', MAX(created_at) AS round_created_at' : ', NULL::timestamp AS round_created_at'}
        FROM king_selections
        WHERE gallery_id=$1 AND client_id IS NOT NULL
        GROUP BY client_id, ${hasSelBatch ? 'selection_batch' : '1'}
@@ -3448,6 +3449,7 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
       roundsByClient.get(cid).push({
         selection_batch: b,
         selected_count: parseInt(s.selected_count, 10) || 0,
+        round_created_at: s.round_created_at || null,
         payment_status: pay?.status || 'pending',
         payment_amount_cents: pay?.amount_cents ?? null,
         payment_note_admin: pay?.note_admin || null,
