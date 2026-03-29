@@ -3587,6 +3587,60 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/approv
   }
 }));
 
+router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/approve-all', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const selectionBatch = Math.max(1, parseInt(req.params.selectionBatch, 10) || 1);
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'IDs inválidos' });
+  const status = String(req.body?.status || 'approved').toLowerCase().trim();
+  if (!['pending', 'approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ message: 'status inválido (pending/approved/rejected).' });
+  }
+  const deliveryMode = ksNormDeliveryMode(req.body?.delivery_mode);
+  const dbClient = await db.pool.connect();
+  try {
+    const own = await dbClient.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(dbClient, 'king_selection_photo_approvals'))) {
+      return res.status(503).json({ message: 'Tabela de aprovações indisponível. Execute a migration 208.' });
+    }
+    const hasSelBatch = await hasColumn(dbClient, 'king_selections', 'selection_batch');
+    const selectedRows = (await dbClient.query(
+      `SELECT photo_id
+       FROM king_selections
+       WHERE gallery_id=$1 AND client_id=$2 ${hasSelBatch ? 'AND selection_batch=$3' : ''}
+       ORDER BY photo_id ASC`,
+      hasSelBatch ? [galleryId, clientId, selectionBatch] : [galleryId, clientId]
+    )).rows || [];
+    const photoIds = selectedRows.map((r) => parseInt(r.photo_id, 10)).filter(Boolean);
+    if (!photoIds.length) {
+      return res.status(404).json({ message: 'Nenhuma foto selecionada para este cliente/rodada.' });
+    }
+    for (const photoId of photoIds) {
+      // eslint-disable-next-line no-await-in-loop
+      await dbClient.query(
+        `INSERT INTO king_selection_photo_approvals
+           (gallery_id, client_id, selection_batch, photo_id, status, delivery_mode, decided_by_user_id, decided_at, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW(),NOW())
+         ON CONFLICT (gallery_id, client_id, selection_batch, photo_id)
+         DO UPDATE SET status=EXCLUDED.status, delivery_mode=EXCLUDED.delivery_mode,
+                       decided_by_user_id=EXCLUDED.decided_by_user_id, decided_at=NOW(), updated_at=NOW()`,
+        [galleryId, clientId, selectionBatch, photoId, status, deliveryMode, req.user.userId]
+      );
+    }
+    const approvals = await ksListApprovalsByClientRound(dbClient, galleryId, clientId, selectionBatch);
+    res.json({ success: true, updated: photoIds.length, approvals });
+  } finally {
+    dbClient.release();
+  }
+}));
+
 router.get('/galleries/:id/sales/payment-proof/:paymentId', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   const paymentId = parseInt(req.params.paymentId, 10);
@@ -8235,6 +8289,21 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
     const gRes = await client.query(`SELECT ${gColsF.join(', ')} FROM king_galleries WHERE id=$1`, [req.ksClient.galleryId]);
     const galleryId = gRes.rows?.[0]?.id;
     if (!galleryId) return res.status(404).json({ message: 'Galeria não encontrada.' });
+    const accessModeFinalize = ksNormAccessMode(hasAmF ? gRes.rows?.[0]?.access_mode : 'private');
+    let paymentPixForThankYou = null;
+    if (ksIsPaidEventAccessMode(accessModeFinalize)) {
+      try {
+        const pixCfg = await ksLoadGallerySalesConfig(client, galleryId);
+        const pixKey = String(pixCfg?.pix_key || '').trim();
+        if (pixKey) {
+          paymentPixForThankYou = {
+            pix_enabled: !!pixCfg?.pix_enabled,
+            pix_key: pixKey,
+            pix_holder_name: String(pixCfg?.pix_holder_name || '').trim() || null
+          };
+        }
+      } catch (_) { }
+    }
 
     const hasClientTable = await hasTable(client, 'king_gallery_clients');
     const hasClientStatus = hasClientTable && (await hasColumn(client, 'king_gallery_clients', 'status'));
@@ -8635,7 +8704,8 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
         photographerDisplayName,
         clientDisplayName,
         projectName,
-        thankYouConfig
+        thankYouConfig,
+        paymentPix: paymentPixForThankYou || undefined
       });
     }
 
@@ -8763,7 +8833,8 @@ router.post('/client/finalize', requireClient, asyncHandler(async (req, res) => 
       photographerDisplayName,
       clientDisplayName,
       projectName,
-      thankYouConfig
+      thankYouConfig,
+      paymentPix: paymentPixForThankYou || undefined
     };
     if (cid) {
       out.token = jwt.sign(
