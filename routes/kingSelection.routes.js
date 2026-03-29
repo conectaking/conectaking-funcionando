@@ -6138,7 +6138,7 @@ function verifyClientToken(token) {
   }
 }
 
-function requireClient(req, res, next) {
+async function requireClient(req, res, next) {
   const auth = req.headers.authorization || '';
   const m = auth.match(/^Bearer\s+(.+)$/i);
   const token = m ? m[1] : null;
@@ -6146,7 +6146,39 @@ function requireClient(req, res, next) {
   if (!payload) return res.status(401).json({ message: 'Não autorizado.' });
   req.ksClient = payload;
   req.ksCtx = parseKsClientContext(payload);
-  next();
+  const galleryId = parseInt(payload.galleryId, 10) || 0;
+  const cid = parseInt(req.ksCtx?.cid, 10) || 0;
+  if (!galleryId || !cid) return next();
+  let dbClient;
+  try {
+    dbClient = await db.pool.connect();
+    if (!(await hasTable(dbClient, 'king_gallery_clients'))) return next();
+    const hasEnabled = await hasColumn(dbClient, 'king_gallery_clients', 'enabled');
+    const cols = ['id'].concat(hasEnabled ? ['enabled'] : []);
+    const cRes = await dbClient.query(
+      `SELECT ${cols.join(', ')}
+       FROM king_gallery_clients
+       WHERE gallery_id=$1 AND id=$2
+       LIMIT 1`,
+      [galleryId, cid]
+    );
+    const c = cRes.rows[0] || null;
+    if (!c) {
+      return res.status(401).json({
+        message: 'Seu cadastro foi removido pelo fotógrafo. Entre novamente.'
+      });
+    }
+    if (hasEnabled && c.enabled === false) {
+      return res.status(401).json({
+        message: 'Seu acesso foi desativado. Solicite nova liberação ao fotógrafo.'
+      });
+    }
+    return next();
+  } catch (e) {
+    return next(e);
+  } finally {
+    if (dbClient) dbClient.release();
+  }
 }
 
 router.post('/client/login', asyncHandler(async (req, res) => {
@@ -7912,6 +7944,7 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
     const round = await ksGetCurrentSelectionRound(client, galleryId, cid);
     const anonSk = sk && hasSessionKey ? sk : null;
 
+    try {
     if (hasSelClientId) {
       if (cid) {
         const exists = await client.query(
@@ -8022,6 +8055,22 @@ router.post('/client/select', requireClient, asyncHandler(async (req, res) => {
       }
     }
     res.json(hasSelBatch ? { success: true, selected: true, selection_batch: round } : { success: true, selected: true });
+    } catch (e) {
+      const msg = String(e?.message || '').toLowerCase();
+      if (
+        e?.code === '23503' ||
+        e?.code === '23505' ||
+        e?.code === '23514' ||
+        msg.includes('violação de restrição') ||
+        msg.includes('constraint') ||
+        msg.includes('foreign key')
+      ) {
+        return res.status(409).json({
+          message: 'Não foi possível atualizar a seleção agora. Atualize a página e tente novamente.'
+        });
+      }
+      throw e;
+    }
   } finally {
     client.release();
   }
@@ -8057,6 +8106,7 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
     const anonSk = sk && hasSessionKey ? sk : null;
     const legacyAnonNullSk = hasSessionKey ? ' AND (session_key IS NULL OR session_key = \'\')' : '';
 
+    try {
     if (String(mode) === 'unselect') {
       if (hasSelClientId) {
         if (cid) {
@@ -8225,6 +8275,22 @@ router.post('/client/select-bulk', requireClient, asyncHandler(async (req, res) 
       );
     }
     res.json({ success: true });
+    } catch (e) {
+      const msg = String(e?.message || '').toLowerCase();
+      if (
+        e?.code === '23503' ||
+        e?.code === '23505' ||
+        e?.code === '23514' ||
+        msg.includes('violação de restrição') ||
+        msg.includes('constraint') ||
+        msg.includes('foreign key')
+      ) {
+        return res.status(409).json({
+          message: 'Não foi possível atualizar a seleção agora. Atualize a página e tente novamente.'
+        });
+      }
+      throw e;
+    }
   } finally {
     client.release();
   }
