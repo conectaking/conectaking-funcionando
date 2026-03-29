@@ -127,7 +127,7 @@ function ogImageProxyUrlForHost(host, slug) {
   const h = normalizeShareHost(host);
   const s = String(slug || '').trim();
   if (!h || !s) return null;
-  return `https://${h}/king-selection-og-image.php?slug=${encodeURIComponent(s)}`;
+  return `https://${h}/kingSelectionGallery.php?ks_og=1&slug=${encodeURIComponent(s)}`;
 }
 
 function buildShareMetaPayload(ogRow, hostnameForCanonical, slugRequested) {
