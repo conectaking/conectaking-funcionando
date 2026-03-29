@@ -504,16 +504,19 @@ async function serveKingSelectionClienteGallery(req, res, next) {
 
     try {
         const og = await fetchKingSelectionOgData(db.pool, slug);
-        if (og) {
-            ogTitle = `${og.title} — King Selection`;
-            pageTitle = ogTitle;
-            ogDesc = `Galeria de fotos: ${og.title}. Entre para ver e selecionar as imagens.`;
-            ogImage = ogImageUrlForGallerySlug(og.slug) || ensureHttpsUrl(og.imageUrl) || defaultOgImage;
-        }
         const protoHdr = (req.headers['x-forwarded-proto'] || req.protocol || 'https').toString();
         const proto = protoHdr.split(',')[0].trim().split(/\s+/)[0] || 'https';
         const hostHdr = (req.headers['x-forwarded-host'] || req.headers.host || '').toString();
         const host = hostHdr.split(',')[0].trim();
+        if (og) {
+            ogTitle = `${og.title} — King Selection`;
+            pageTitle = ogTitle;
+            ogDesc = `Galeria: ${og.title}. Entre pelo link, faça login se pedir senha e baixe suas fotos.`;
+            // Mesmo host da página (WhatsApp ignora ou falha com og:image só no domínio externo da API).
+            ogImage = host
+                ? `${proto}://${host}/api/king-selection/public/og-image?slug=${encodeURIComponent(og.slug)}`
+                : ogImageUrlForGallerySlug(og.slug) || ensureHttpsUrl(og.imageUrl) || defaultOgImage;
+        }
         const slugForPath = og && og.slug ? og.slug : slug;
         const path = `/kingSelection/${encodeURIComponent(String(slugForPath))}`;
         if (host) canonical = `${proto}://${host}${path}`;

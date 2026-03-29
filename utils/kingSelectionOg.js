@@ -109,6 +109,27 @@ function normalizeShareHost(h) {
   return s.split('/')[0].split(':')[0] || '';
 }
 
+/** Não apontar og:image para king-selection-og-image.php no host da API (não existe PHP no Render). */
+function shouldUseOgImageProxy(hostnameForCanonical) {
+  const h = normalizeShareHost(hostnameForCanonical);
+  if (!h) return false;
+  const apiRaw = String(process.env.API_URL || config.urls?.api || '').trim();
+  const apiHost = normalizeShareHost(apiRaw.replace(/\/$/, ''));
+  if (apiHost && h.toLowerCase() === apiHost.toLowerCase()) return false;
+  return true;
+}
+
+/**
+ * Imagem OG no mesmo host da página (ex.: Hostinger). O WhatsApp/Facebook costumam
+ * não exibir prévia quando og:image fica só no domínio da API (Render).
+ */
+function ogImageProxyUrlForHost(host, slug) {
+  const h = normalizeShareHost(host);
+  const s = String(slug || '').trim();
+  if (!h || !s) return null;
+  return `https://${h}/king-selection-og-image.php?slug=${encodeURIComponent(s)}`;
+}
+
 function buildShareMetaPayload(ogRow, hostnameForCanonical, slugRequested) {
   const defaultImg = defaultOgImageUrl();
   const host = normalizeShareHost(hostnameForCanonical);
@@ -126,11 +147,12 @@ function buildShareMetaPayload(ogRow, hostnameForCanonical, slugRequested) {
     };
   }
   const ogFromApi = ogImageUrlForGallerySlug(ogRow.slug);
+  const sameHostOg = shouldUseOgImageProxy(host) ? ogImageProxyUrlForHost(host, ogRow.slug) : null;
   return {
     success: true,
     ogTitle: `${ogRow.title} — King Selection`,
-    ogDescription: `Galeria de fotos: ${ogRow.title}. Entre para ver e selecionar as imagens.`,
-    ogImage: ogFromApi || ensureHttpsUrl(ogRow.imageUrl) || defaultImg,
+    ogDescription: `Galeria: ${ogRow.title}. Entre pelo link, faça login se pedir senha e baixe suas fotos.`,
+    ogImage: sameHostOg || ogFromApi || ensureHttpsUrl(ogRow.imageUrl) || defaultImg,
     slug: ogRow.slug,
     canonicalUrl: canonical
   };
@@ -142,5 +164,6 @@ module.exports = {
   ensureHttpsUrl,
   defaultOgImageUrl,
   ogImageUrlForGallerySlug,
+  ogImageProxyUrlForHost,
   buildShareMetaPayload
 };
