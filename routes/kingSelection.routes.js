@@ -3145,14 +3145,19 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
           const st = ksNormPaymentStatus(r.status);
           const amount = r.amount_cents != null ? Math.max(0, parseInt(r.amount_cents, 10) || 0) : null;
           const note = String(r.note_admin || '').toLowerCase();
-          const isBlessed = st === 'confirmed' && (amount === 0 || note.includes('aben') || note.includes('cortesia'));
           const hasProof = !!String(r.proof_file_path || '').trim();
+          const isBlessed = st === 'confirmed' && (
+            amount === 0
+            || note.includes('aben')
+            || note.includes('cortesia')
+            || (!hasProof && (amount == null || amount === 0))
+          );
           let badge = null;
           if (isBlessed) badge = 'Cortesia (abençoado)';
           else if (st === 'confirmed') badge = 'Pagamento confirmado';
           else if (st === 'rejected') badge = 'Comprovante recusado';
           else if (st === 'pending' && hasProof) badge = 'Comprovante enviado';
-          prMap.set(cid, { status: isBlessed ? 'blessed' : st, hasProof, badge });
+          prMap.set(cid, { status: isBlessed ? 'blessed' : st, hasProof, badge, isBlessed });
         }
         clients = clients.map((c) => {
           const cid = parseInt(c.id, 10) || 0;
@@ -3161,6 +3166,7 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
           return {
             ...c,
             sales_payment_status: p.status,
+            sales_payment_is_blessed: !!p.isBlessed,
             sales_has_proof: p.hasProof,
             sales_payment_badge: p.badge
           };
