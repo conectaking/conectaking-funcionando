@@ -3132,7 +3132,7 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       const clientIds = clients.map((c) => parseInt(c.id, 10)).filter((n) => Number.isFinite(n) && n > 0);
       if (clientIds.length) {
         const prRows = (await client.query(
-          `SELECT DISTINCT ON (client_id) client_id, status, proof_file_path, updated_at
+          `SELECT DISTINCT ON (client_id) client_id, status, proof_file_path, amount_cents, note_admin, updated_at
            FROM king_client_payment_requests
            WHERE gallery_id=$1 AND client_id = ANY($2::int[])
            ORDER BY client_id ASC, updated_at DESC, id DESC`,
@@ -3143,12 +3143,16 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
           const cid = parseInt(r.client_id, 10) || 0;
           if (!cid) continue;
           const st = ksNormPaymentStatus(r.status);
+          const amount = r.amount_cents != null ? Math.max(0, parseInt(r.amount_cents, 10) || 0) : null;
+          const note = String(r.note_admin || '').toLowerCase();
+          const isBlessed = st === 'confirmed' && (amount === 0 || note.includes('aben') || note.includes('cortesia'));
           const hasProof = !!String(r.proof_file_path || '').trim();
           let badge = null;
-          if (st === 'confirmed') badge = 'Pagamento confirmado';
+          if (isBlessed) badge = 'Cortesia (abençoado)';
+          else if (st === 'confirmed') badge = 'Pagamento confirmado';
           else if (st === 'rejected') badge = 'Comprovante recusado';
           else if (st === 'pending' && hasProof) badge = 'Comprovante enviado';
-          prMap.set(cid, { status: st, hasProof, badge });
+          prMap.set(cid, { status: isBlessed ? 'blessed' : st, hasProof, badge });
         }
         clients = clients.map((c) => {
           const cid = parseInt(c.id, 10) || 0;
