@@ -3413,7 +3413,7 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
     )).rows || [];
     const paymentRows = (await hasTable(client, 'king_client_payment_requests'))
       ? ((await client.query(
-        `SELECT client_id, selection_batch, status
+        `SELECT client_id, selection_batch, status, amount_cents, note_admin
          FROM king_client_payment_requests
          WHERE gallery_id=$1`,
         [galleryId]
@@ -3429,18 +3429,28 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
       )).rows || [])
       : [];
 
-    const payMap = new Map(paymentRows.map((r) => [`${r.client_id}:${r.selection_batch}`, ksNormPaymentStatus(r.status)]));
+    const payMap = new Map(paymentRows.map((r) => {
+      const key = `${r.client_id}:${r.selection_batch}`;
+      return [key, {
+        status: ksNormPaymentStatus(r.status),
+        amount_cents: r.amount_cents != null ? Math.max(0, parseInt(r.amount_cents, 10) || 0) : null,
+        note_admin: r.note_admin || null
+      }];
+    }));
     const apMap = new Map(approvalRows.map((r) => [`${r.client_id}:${r.selection_batch}`, parseInt(r.approved_count, 10) || 0]));
     const roundsByClient = new Map();
     for (const s of sRows) {
       const cid = parseInt(s.client_id, 10) || 0;
       const b = Math.max(1, parseInt(s.selection_batch, 10) || 1);
       const key = `${cid}:${b}`;
+      const pay = payMap.get(key) || null;
       if (!roundsByClient.has(cid)) roundsByClient.set(cid, []);
       roundsByClient.get(cid).push({
         selection_batch: b,
         selected_count: parseInt(s.selected_count, 10) || 0,
-        payment_status: payMap.get(key) || 'pending',
+        payment_status: pay?.status || 'pending',
+        payment_amount_cents: pay?.amount_cents ?? null,
+        payment_note_admin: pay?.note_admin || null,
         approved_count: apMap.get(key) || 0
       });
     }
