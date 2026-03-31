@@ -6958,7 +6958,8 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
             sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
           );
         }
-      } else if (!salesModeActive && sk && hasSessionKey) {
+      } else if (sk && hasSessionKey) {
+        /* Mesmo em modo pago: JWT só com session_key (cadastro ao enviar) precisa ler as mesmas linhas que o select-bulk grava. */
         const sRes = await client.query(
           `SELECT ${selCols.join(', ')} FROM king_selections WHERE gallery_id=$1 AND client_id IS NULL AND session_key=$2`,
           [gallery.id, sk]
@@ -6980,7 +6981,7 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
             sRes.rows.map(r => [String(r.photo_id), parseInt(r.selection_batch, 10) || 1])
           );
         }
-      } // modo pago + sem clientId: nunca retorna seleções anônimas/terceiros
+      } /* modo pago + sem cid e sem session_key no JWT: sem seleção anónima legível */
     } else {
       if (!salesModeActive) {
         const sRes = await client.query(
