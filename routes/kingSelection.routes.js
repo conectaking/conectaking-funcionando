@@ -3160,13 +3160,27 @@ async function ksLoadGallerySalesConfig(pgClient, galleryId) {
   };
 }
 
+function ksEffectiveExpectedTotalCents(computedPackageCents, row, hasNegotiatedCol) {
+  const pkg = Math.max(0, parseInt(computedPackageCents, 10) || 0);
+  if (!hasNegotiatedCol || !row || row.negotiated_total_cents == null) return pkg;
+  const n = parseInt(row.negotiated_total_cents, 10);
+  if (!Number.isFinite(n) || n < 0) return pkg;
+  return n;
+}
+
 async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectionBatch, cache) {
   if (!(await hasTable(pgClient, 'king_client_payment_requests'))) return null;
   const hasCum = await hasColumn(pgClient, 'king_client_payment_requests', 'amount_received_cumulative_cents');
   const hasCourtesy = await hasColumn(pgClient, 'king_client_payment_requests', 'courtesy_cents');
+  const hasNeg = await hasColumn(pgClient, 'king_client_payment_requests', 'negotiated_total_cents');
+  const hasDown = await hasColumn(pgClient, 'king_client_payment_requests', 'down_payment_cents');
+  const hasInst = await hasColumn(pgClient, 'king_client_payment_requests', 'installment_count');
   const extraCols = []
     .concat(hasCum ? ['amount_received_cumulative_cents'] : [])
-    .concat(hasCourtesy ? ['courtesy_cents'] : []);
+    .concat(hasCourtesy ? ['courtesy_cents'] : [])
+    .concat(hasNeg ? ['negotiated_total_cents'] : [])
+    .concat(hasDown ? ['down_payment_cents'] : [])
+    .concat(hasInst ? ['installment_count'] : []);
   const r = await pgClient.query(
     `SELECT id, status, payment_method, amount_cents, proof_file_path, note_client, note_admin, reviewed_at, created_at${extraCols.length ? `, ${extraCols.join(', ')}` : ''}
      FROM king_client_payment_requests
@@ -3177,7 +3191,8 @@ async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectio
   if (!r.rows.length) return null;
   const row = r.rows[0];
   const pricing = await ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId, selectionBatch, cache);
-  const expected = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+  const computedPackage = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+  const expected = ksEffectiveExpectedTotalCents(computedPackage, row, hasNeg);
   let cumulative = hasCum ? Math.max(0, parseInt(row.amount_received_cumulative_cents, 10) || 0) : 0;
   let courtesy = hasCourtesy ? Math.max(0, parseInt(row.courtesy_cents, 10) || 0) : 0;
   const st = ksNormPaymentStatus(row.status);
@@ -3204,6 +3219,10 @@ async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectio
     note_admin: row.note_admin || null,
     reviewed_at: row.reviewed_at || null,
     created_at: row.created_at || null,
+    computed_package_total_cents: computedPackage,
+    negotiated_total_cents: hasNeg && row.negotiated_total_cents != null ? Math.max(0, parseInt(row.negotiated_total_cents, 10) || 0) : null,
+    down_payment_cents: hasDown && row.down_payment_cents != null ? Math.max(0, parseInt(row.down_payment_cents, 10) || 0) : null,
+    installment_count: hasInst && row.installment_count != null ? Math.max(1, parseInt(row.installment_count, 10) || 1) : null,
     expected_total_cents: expected,
     amount_received_cumulative_cents: cumulative,
     courtesy_cents: courtesy,
@@ -3567,9 +3586,15 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
     )).rows || [];
     const hasPayCum = await hasColumn(client, 'king_client_payment_requests', 'amount_received_cumulative_cents');
     const hasPayCourtesy = await hasColumn(client, 'king_client_payment_requests', 'courtesy_cents');
+    const hasPayNeg = await hasColumn(client, 'king_client_payment_requests', 'negotiated_total_cents');
+    const hasPayDown = await hasColumn(client, 'king_client_payment_requests', 'down_payment_cents');
+    const hasPayInst = await hasColumn(client, 'king_client_payment_requests', 'installment_count');
     let paySelect = 'client_id, selection_batch, status, amount_cents, note_admin';
     if (hasPayCum) paySelect += ', amount_received_cumulative_cents';
     if (hasPayCourtesy) paySelect += ', courtesy_cents';
+    if (hasPayNeg) paySelect += ', negotiated_total_cents';
+    if (hasPayDown) paySelect += ', down_payment_cents';
+    if (hasPayInst) paySelect += ', installment_count';
     const paymentRows = (await hasTable(client, 'king_client_payment_requests'))
       ? ((await client.query(
         `SELECT ${paySelect}
@@ -3595,7 +3620,10 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
         amount_cents: r.amount_cents != null ? Math.max(0, parseInt(r.amount_cents, 10) || 0) : null,
         note_admin: r.note_admin || null,
         amount_received_cumulative_cents: hasPayCum ? Math.max(0, parseInt(r.amount_received_cumulative_cents, 10) || 0) : 0,
-        courtesy_cents: hasPayCourtesy ? Math.max(0, parseInt(r.courtesy_cents, 10) || 0) : 0
+        courtesy_cents: hasPayCourtesy ? Math.max(0, parseInt(r.courtesy_cents, 10) || 0) : 0,
+        negotiated_total_cents: hasPayNeg && r.negotiated_total_cents != null ? Math.max(0, parseInt(r.negotiated_total_cents, 10) || 0) : null,
+        down_payment_cents: hasPayDown && r.down_payment_cents != null ? Math.max(0, parseInt(r.down_payment_cents, 10) || 0) : null,
+        installment_count: hasPayInst && r.installment_count != null ? Math.max(1, parseInt(r.installment_count, 10) || 1) : null
       }];
     }));
     const apMap = new Map(approvalRows.map((r) => [`${r.client_id}:${r.selection_batch}`, parseInt(r.approved_count, 10) || 0]));
@@ -3635,7 +3663,11 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
         promoClientRow: promoByClient.get(cid) || null
       };
       const pricing = await ksComputeSalesPricingForClientRound(client, galleryId, cid, b, cache);
-      const expected = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+      const computedPkg = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+      const payRowForNeg = pay
+        ? { negotiated_total_cents: pay.negotiated_total_cents != null ? pay.negotiated_total_cents : null }
+        : null;
+      const expected = ksEffectiveExpectedTotalCents(computedPkg, payRowForNeg, hasPayNeg);
       let cumulative = pay?.amount_received_cumulative_cents || 0;
       let courtesy = pay?.courtesy_cents || 0;
       const st = pay?.status || 'pending';
@@ -3663,6 +3695,10 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
         payment_status: st,
         payment_amount_cents: pay?.amount_cents ?? null,
         payment_note_admin: pay?.note_admin || null,
+        computed_package_total_cents: computedPkg,
+        negotiated_total_cents: pay?.negotiated_total_cents ?? null,
+        down_payment_cents: pay?.down_payment_cents ?? null,
+        installment_count: pay?.installment_count ?? null,
         expected_total_cents: expected,
         amount_received_cumulative_cents: cumulative,
         courtesy_cents: courtesy,
@@ -3812,14 +3848,16 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
     }
 
     const pricing = await ksComputeSalesPricingForClientRound(dbClient, galleryId, clientId, selectionBatch);
-    const expected = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+    const computedPkg = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+    const hasNegCol = await hasColumn(dbClient, 'king_client_payment_requests', 'negotiated_total_cents');
 
     const curRow = (await dbClient.query(
-      `SELECT status, amount_cents, note_admin${hasCum ? ', amount_received_cumulative_cents' : ''}${hasCourtesy ? ', courtesy_cents' : ''}
+      `SELECT status, amount_cents, note_admin${hasCum ? ', amount_received_cumulative_cents' : ''}${hasCourtesy ? ', courtesy_cents' : ''}${hasNegCol ? ', negotiated_total_cents' : ''}
        FROM king_client_payment_requests
        WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3`,
       [galleryId, clientId, selectionBatch]
     )).rows?.[0];
+    const expected = ksEffectiveExpectedTotalCents(computedPkg, curRow, hasNegCol);
 
     let cumulative = hasCum ? Math.max(0, parseInt(curRow?.amount_received_cumulative_cents, 10) || 0) : 0;
     let courtesy = hasCourtesy ? Math.max(0, parseInt(curRow?.courtesy_cents, 10) || 0) : 0;
