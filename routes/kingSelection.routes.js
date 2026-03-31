@@ -4981,7 +4981,10 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'gallery_link_cover_file_path',
     'support_whatsapp_number',
     'support_whatsapp_label',
-    'support_whatsapp_message'
+    'support_whatsapp_message',
+    'sales_whatsapp_template_approved',
+    'sales_whatsapp_template_pending',
+    'sales_whatsapp_template_rejected'
   ];
 
   const body = req.body || {};
@@ -5039,6 +5042,21 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (!okNum || !okLbl || !okMsg) {
         return res.status(503).json({
           message: 'O banco ainda não tem os campos de WhatsApp de suporte. Execute a migration 209 no Postgres.'
+        });
+      }
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(body, 'sales_whatsapp_template_approved') ||
+      Object.prototype.hasOwnProperty.call(body, 'sales_whatsapp_template_pending') ||
+      Object.prototype.hasOwnProperty.call(body, 'sales_whatsapp_template_rejected')
+    ) {
+      const a = await hasColumn(client, 'king_galleries', 'sales_whatsapp_template_approved');
+      const b = await hasColumn(client, 'king_galleries', 'sales_whatsapp_template_pending');
+      const c = await hasColumn(client, 'king_galleries', 'sales_whatsapp_template_rejected');
+      if (!a || !b || !c) {
+        return res.status(503).json({
+          message:
+            'O banco ainda não tem os campos de mensagens WhatsApp (vendas). Execute a migration 212 no Postgres (212_add_kingselection_sales_whatsapp_templates.sql).'
         });
       }
     }
@@ -5127,6 +5145,14 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'support_whatsapp_message') {
         if (val === '' || val === 'null' || val == null) val = null;
         else val = String(val).trim().slice(0, 1200);
+      }
+      if (
+        key === 'sales_whatsapp_template_approved' ||
+        key === 'sales_whatsapp_template_pending' ||
+        key === 'sales_whatsapp_template_rejected'
+      ) {
+        if (val === '' || val === 'null' || val == null) val = null;
+        else val = String(val).trim().slice(0, 4000);
       }
       sets.push(`${key}=$${idx++}`);
       values.push(val);
