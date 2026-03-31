@@ -3170,8 +3170,9 @@ async function ksLoadGallerySalesConfig(pgClient, galleryId) {
   };
 }
 
-function ksEffectiveExpectedTotalCents(computedPackageCents, row, hasNegotiatedCol) {
-  const pkg = Math.max(0, parseInt(computedPackageCents, 10) || 0);
+/** Baseline: total pelos pacotes para a quantidade de fotos (sem cupom). Se houver negotiated_total_cents na linha, substitui. */
+function ksEffectiveExpectedTotalCents(computedPackageBaselineCents, row, hasNegotiatedCol) {
+  const pkg = Math.max(0, parseInt(computedPackageBaselineCents, 10) || 0);
   if (!hasNegotiatedCol || !row || row.negotiated_total_cents == null) return pkg;
   const n = parseInt(row.negotiated_total_cents, 10);
   if (!Number.isFinite(n) || n < 0) return pkg;
@@ -3203,7 +3204,7 @@ async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectio
   const pricing = await ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId, selectionBatch, cache);
   const computedPackage = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
   const computedPackageGross = Math.max(0, parseInt(pricing.computed_total_gross_cents, 10) || 0);
-  const expected = ksEffectiveExpectedTotalCents(computedPackage, row, hasNeg);
+  const expected = ksEffectiveExpectedTotalCents(computedPackageGross, row, hasNeg);
   let cumulative = hasCum ? Math.max(0, parseInt(row.amount_received_cumulative_cents, 10) || 0) : 0;
   let courtesy = hasCourtesy ? Math.max(0, parseInt(row.courtesy_cents, 10) || 0) : 0;
   const st = ksNormPaymentStatus(row.status);
@@ -3233,6 +3234,7 @@ async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectio
     computed_package_total_cents: computedPackage,
     computed_package_gross_cents: computedPackageGross,
     pricing_promo_applied: !!pricing.promo_applied,
+    pricing_selected_count: parseInt(pricing.selected_count, 10) || 0,
     negotiated_total_cents: hasNeg && row.negotiated_total_cents != null ? Math.max(0, parseInt(row.negotiated_total_cents, 10) || 0) : null,
     down_payment_cents: hasDown && row.down_payment_cents != null ? Math.max(0, parseInt(row.down_payment_cents, 10) || 0) : null,
     installment_count: hasInst && row.installment_count != null ? Math.max(1, parseInt(row.installment_count, 10) || 1) : null,
@@ -3681,7 +3683,7 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
       const payRowForNeg = pay
         ? { negotiated_total_cents: pay.negotiated_total_cents != null ? pay.negotiated_total_cents : null }
         : null;
-      const expected = ksEffectiveExpectedTotalCents(computedPkg, payRowForNeg, hasPayNeg);
+      const expected = ksEffectiveExpectedTotalCents(computedPkgGross, payRowForNeg, hasPayNeg);
       let cumulative = pay?.amount_received_cumulative_cents || 0;
       let courtesy = pay?.courtesy_cents || 0;
       const st = pay?.status || 'pending';
@@ -4024,7 +4026,7 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
     }
 
     const pricing = await ksComputeSalesPricingForClientRound(dbClient, galleryId, clientId, selectionBatch);
-    const computedPkg = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+    const computedPkgGross = Math.max(0, parseInt(pricing.computed_total_gross_cents, 10) || 0);
     const hasNegCol = await hasColumn(dbClient, 'king_client_payment_requests', 'negotiated_total_cents');
 
     const curRow = (await dbClient.query(
@@ -4033,7 +4035,7 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
        WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3`,
       [galleryId, clientId, selectionBatch]
     )).rows?.[0];
-    const expected = ksEffectiveExpectedTotalCents(computedPkg, curRow, hasNegCol);
+    const expected = ksEffectiveExpectedTotalCents(computedPkgGross, curRow, hasNegCol);
 
     let cumulative = hasCum ? Math.max(0, parseInt(curRow?.amount_received_cumulative_cents, 10) || 0) : 0;
     let courtesy = hasCourtesy ? Math.max(0, parseInt(curRow?.courtesy_cents, 10) || 0) : 0;
