@@ -3863,7 +3863,7 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
           outCourtesy = Math.max(0, expected - outCumulative);
         }
       }
-      outCumulative = Math.min(outCumulative, expected);
+      /* Não limitar recebido ao total estimado: o fotógrafo pode registar valor real negociado (acima/abaixo do pacote). */
       if (outCourtesy > 0) {
         outCourtesy = Math.min(outCourtesy, Math.max(0, expected - outCumulative));
       }
