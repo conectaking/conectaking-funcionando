@@ -923,6 +923,7 @@ function ksNormDeliveryMode(raw) {
 function ksNormPaymentStatus(raw) {
   const s = String(raw || '').toLowerCase().trim();
   if (s === 'confirmed' || s === 'paid') return 'confirmed';
+  if (s === 'partial') return 'partial';
   if (s === 'rejected') return 'rejected';
   return 'pending';
 }
@@ -1040,6 +1041,85 @@ async function ksListSalePackages(pgClient, galleryId) {
     sort_order: parseInt(r.sort_order, 10) || 0,
     active: r.active !== false
   }));
+}
+
+/**
+ * Preço esperado para uma rodada (mesma regra do GET /client/gallery).
+ * `cache` opcional: { galleryRow, salesConfig, salePackages, promoClientRow } para evitar N queries na listagem.
+ */
+async function ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId, selectionBatch, cache) {
+  const batch = Math.max(1, parseInt(selectionBatch, 10) || 1);
+  const cid = parseInt(clientId, 10) || 0;
+  const hasSelBatch = await hasColumn(pgClient, 'king_selections', 'selection_batch');
+  const selRes = await pgClient.query(
+    `SELECT COUNT(*)::int AS c FROM king_selections
+     WHERE gallery_id=$1 AND client_id=$2 ${hasSelBatch ? 'AND selection_batch=$3' : ''}`,
+    hasSelBatch ? [galleryId, cid, batch] : [galleryId, cid]
+  );
+  const selectedCount = parseInt(selRes.rows?.[0]?.c, 10) || 0;
+
+  let galleryRow = cache?.galleryRow;
+  if (!galleryRow) {
+    const hasPromoEnabled = await hasColumn(pgClient, 'king_galleries', 'promo_enabled');
+    const gCols = ['id', 'access_mode']
+      .concat(hasPromoEnabled ? ['promo_enabled', 'promo_coupon_code', 'promo_valid_until', 'promo_free_photo_count'] : []);
+    const gRes = await pgClient.query(`SELECT ${gCols.join(', ')} FROM king_galleries WHERE id=$1`, [galleryId]);
+    galleryRow = gRes.rows?.[0] || null;
+  }
+  if (!galleryRow) {
+    return {
+      computed_total_cents: 0,
+      selected_count: selectedCount,
+      billable_photo_count: 0,
+      promo_applied: false
+    };
+  }
+  if (!ksIsPaidEventAccessMode(galleryRow.access_mode)) {
+    return {
+      computed_total_cents: 0,
+      selected_count: selectedCount,
+      billable_photo_count: selectedCount,
+      promo_applied: false
+    };
+  }
+
+  const salesConfig = cache?.salesConfig || (await ksLoadGallerySalesConfig(pgClient, galleryId));
+  const salePackages = cache?.salePackages != null
+    ? cache.salePackages
+    : (await ksListSalePackages(pgClient, galleryId)).filter((p) => p.active !== false);
+
+  const hasPromoEnabled = await hasColumn(pgClient, 'king_galleries', 'promo_enabled');
+  let promoClientRow = cache?.promoClientRow;
+  if (promoClientRow === undefined && hasPromoEnabled && (await hasColumn(pgClient, 'king_gallery_clients', 'promo_coupon_validated_at'))) {
+    const pr = await pgClient.query(
+      `SELECT promo_social_confirmed_at, promo_coupon_validated_at, promo_coupon_entered
+       FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1`,
+      [cid, galleryId]
+    );
+    promoClientRow = pr.rows?.[0] || null;
+  } else if (promoClientRow === undefined) {
+    promoClientRow = null;
+  }
+
+  const promoEligible =
+    !!(hasPromoEnabled && galleryRow.promo_enabled && ksClientPromoEligibleForPricing(galleryRow, promoClientRow));
+  const freePromoN =
+    hasPromoEnabled && galleryRow.promo_enabled
+      ? Math.max(1, Math.min(50, parseInt(galleryRow.promo_free_photo_count, 10) || 1))
+      : 0;
+  const billableForPricing = ksBillablePhotoCountAfterPromo(selectedCount, freePromoN, promoEligible);
+  const computedTotalCents = ksComputeBestPriceCents(
+    billableForPricing,
+    salePackages,
+    salesConfig?.sales_unit_price_cents || 0,
+    salesConfig?.sales_price_mode || 'best_price_auto'
+  );
+  return {
+    computed_total_cents: computedTotalCents,
+    selected_count: selectedCount,
+    billable_photo_count: billableForPricing,
+    promo_applied: promoEligible
+  };
 }
 
 const ksDownloadLimiter = new Map();
@@ -3080,10 +3160,15 @@ async function ksLoadGallerySalesConfig(pgClient, galleryId) {
   };
 }
 
-async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectionBatch) {
+async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectionBatch, cache) {
   if (!(await hasTable(pgClient, 'king_client_payment_requests'))) return null;
+  const hasCum = await hasColumn(pgClient, 'king_client_payment_requests', 'amount_received_cumulative_cents');
+  const hasCourtesy = await hasColumn(pgClient, 'king_client_payment_requests', 'courtesy_cents');
+  const extraCols = []
+    .concat(hasCum ? ['amount_received_cumulative_cents'] : [])
+    .concat(hasCourtesy ? ['courtesy_cents'] : []);
   const r = await pgClient.query(
-    `SELECT id, status, payment_method, amount_cents, proof_file_path, note_client, note_admin, reviewed_at, created_at
+    `SELECT id, status, payment_method, amount_cents, proof_file_path, note_client, note_admin, reviewed_at, created_at${extraCols.length ? `, ${extraCols.join(', ')}` : ''}
      FROM king_client_payment_requests
      WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3
      LIMIT 1`,
@@ -3091,16 +3176,38 @@ async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectio
   );
   if (!r.rows.length) return null;
   const row = r.rows[0];
+  const pricing = await ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId, selectionBatch, cache);
+  const expected = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+  let cumulative = hasCum ? Math.max(0, parseInt(row.amount_received_cumulative_cents, 10) || 0) : 0;
+  let courtesy = hasCourtesy ? Math.max(0, parseInt(row.courtesy_cents, 10) || 0) : 0;
+  const st = ksNormPaymentStatus(row.status);
+  if (hasCum && cumulative === 0 && st === 'confirmed') {
+    const legacy = row.amount_cents != null ? Math.max(0, parseInt(row.amount_cents, 10) || 0) : 0;
+    if (legacy > 0 && courtesy === 0) cumulative = legacy;
+  }
+  let balanceDue = Math.max(0, expected - cumulative - courtesy);
+  const noteLow = String(row.note_admin || '').toLowerCase();
+  const blessedGuess =
+    st === 'confirmed' &&
+    cumulative === 0 &&
+    courtesy === 0 &&
+    (row.amount_cents == null || parseInt(row.amount_cents, 10) === 0) &&
+    (noteLow.includes('aben') || noteLow.includes('cortesia'));
+  if (blessedGuess) balanceDue = 0;
   return {
     id: parseInt(row.id, 10) || 0,
-    status: ksNormPaymentStatus(row.status),
+    status: st,
     payment_method: String(row.payment_method || 'pix'),
     amount_cents: row.amount_cents != null ? Math.max(0, parseInt(row.amount_cents, 10) || 0) : null,
     proof_file_path: row.proof_file_path || null,
     note_client: row.note_client || null,
     note_admin: row.note_admin || null,
     reviewed_at: row.reviewed_at || null,
-    created_at: row.created_at || null
+    created_at: row.created_at || null,
+    expected_total_cents: expected,
+    amount_received_cumulative_cents: cumulative,
+    courtesy_cents: courtesy,
+    balance_due_cents: balanceDue
   };
 }
 
@@ -3190,6 +3297,7 @@ router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
           let badge = null;
           if (isBlessed) badge = 'Cortesia (abençoado)';
           else if (st === 'confirmed') badge = 'Pagamento confirmado';
+          else if (st === 'partial') badge = 'Pagamento parcial (há saldo)';
           else if (st === 'rejected') badge = 'Comprovante recusado';
           else if (st === 'pending' && hasProof) badge = 'Comprovante enviado';
           prMap.set(cid, { status: isBlessed ? 'blessed' : st, hasProof, badge, isBlessed });
@@ -3457,9 +3565,14 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
        ORDER BY client_id ASC, ${hasSelBatch ? 'selection_batch ASC' : '1 ASC'}`,
       [galleryId]
     )).rows || [];
+    const hasPayCum = await hasColumn(client, 'king_client_payment_requests', 'amount_received_cumulative_cents');
+    const hasPayCourtesy = await hasColumn(client, 'king_client_payment_requests', 'courtesy_cents');
+    let paySelect = 'client_id, selection_batch, status, amount_cents, note_admin';
+    if (hasPayCum) paySelect += ', amount_received_cumulative_cents';
+    if (hasPayCourtesy) paySelect += ', courtesy_cents';
     const paymentRows = (await hasTable(client, 'king_client_payment_requests'))
       ? ((await client.query(
-        `SELECT client_id, selection_batch, status, amount_cents, note_admin
+        `SELECT ${paySelect}
          FROM king_client_payment_requests
          WHERE gallery_id=$1`,
         [galleryId]
@@ -3480,24 +3593,80 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
       return [key, {
         status: ksNormPaymentStatus(r.status),
         amount_cents: r.amount_cents != null ? Math.max(0, parseInt(r.amount_cents, 10) || 0) : null,
-        note_admin: r.note_admin || null
+        note_admin: r.note_admin || null,
+        amount_received_cumulative_cents: hasPayCum ? Math.max(0, parseInt(r.amount_received_cumulative_cents, 10) || 0) : 0,
+        courtesy_cents: hasPayCourtesy ? Math.max(0, parseInt(r.courtesy_cents, 10) || 0) : 0
       }];
     }));
     const apMap = new Map(approvalRows.map((r) => [`${r.client_id}:${r.selection_batch}`, parseInt(r.approved_count, 10) || 0]));
+
+    const hasPromoG = await hasColumn(client, 'king_galleries', 'promo_enabled');
+    const gColsCache = ['id', 'access_mode'].concat(
+      hasPromoG ? ['promo_enabled', 'promo_coupon_code', 'promo_valid_until', 'promo_free_photo_count'] : []
+    );
+    const galleryMeta = (await client.query(`SELECT ${gColsCache.join(', ')} FROM king_galleries WHERE id=$1`, [galleryId])).rows?.[0] || null;
+    const salesConfigCached = await ksLoadGallerySalesConfig(client, galleryId);
+    const salePackagesCached = (await ksListSalePackages(client, galleryId)).filter((p) => p.active !== false);
+    const promoByClient = new Map();
+    if (hasPromoG && (await hasColumn(client, 'king_gallery_clients', 'promo_coupon_validated_at')) && filteredClients.length) {
+      const pids = filteredClients.map((c) => parseInt(c.id, 10)).filter((n) => n > 0);
+      if (pids.length) {
+        const prs = await client.query(
+          `SELECT id, promo_social_confirmed_at, promo_coupon_validated_at, promo_coupon_entered
+           FROM king_gallery_clients WHERE gallery_id=$1 AND id = ANY($2::int[])`,
+          [galleryId, pids]
+        );
+        for (const pr of prs.rows || []) {
+          promoByClient.set(parseInt(pr.id, 10) || 0, pr);
+        }
+      }
+    }
+
     const roundsByClient = new Map();
     for (const s of sRows) {
       const cid = parseInt(s.client_id, 10) || 0;
       const b = Math.max(1, parseInt(s.selection_batch, 10) || 1);
       const key = `${cid}:${b}`;
       const pay = payMap.get(key) || null;
+      const cache = {
+        galleryRow: galleryMeta,
+        salesConfig: salesConfigCached,
+        salePackages: salePackagesCached,
+        promoClientRow: promoByClient.get(cid) || null
+      };
+      const pricing = await ksComputeSalesPricingForClientRound(client, galleryId, cid, b, cache);
+      const expected = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+      let cumulative = pay?.amount_received_cumulative_cents || 0;
+      let courtesy = pay?.courtesy_cents || 0;
+      const st = pay?.status || 'pending';
+      if (hasPayCum && cumulative === 0 && st === 'confirmed' && pay) {
+        const legacy = pay.amount_cents != null ? Math.max(0, parseInt(pay.amount_cents, 10) || 0) : 0;
+        if (legacy > 0 && courtesy === 0) cumulative = legacy;
+      }
+      let balanceDue = Math.max(0, expected - cumulative - courtesy);
+      const noteLow = String(pay?.note_admin || '').toLowerCase();
+      if (
+        st === 'confirmed' &&
+        cumulative === 0 &&
+        courtesy === 0 &&
+        pay &&
+        (pay.amount_cents == null || parseInt(pay.amount_cents, 10) === 0) &&
+        (noteLow.includes('aben') || noteLow.includes('cortesia'))
+      ) {
+        balanceDue = 0;
+      }
       if (!roundsByClient.has(cid)) roundsByClient.set(cid, []);
       roundsByClient.get(cid).push({
         selection_batch: b,
         selected_count: parseInt(s.selected_count, 10) || 0,
         round_created_at: s.round_created_at || null,
-        payment_status: pay?.status || 'pending',
+        payment_status: st,
         payment_amount_cents: pay?.amount_cents ?? null,
         payment_note_admin: pay?.note_admin || null,
+        expected_total_cents: expected,
+        amount_received_cumulative_cents: cumulative,
+        courtesy_cents: courtesy,
+        balance_due_cents: balanceDue,
         approved_count: apMap.get(key) || 0
       });
     }
@@ -3565,7 +3734,12 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
     : (nextStatusRaw === 'rejected' ? 'rejected' : (nextStatusRaw === 'pending' ? 'pending' : null));
   if (!nextStatus) return res.status(400).json({ message: 'Status inválido. Use pending/confirmed/rejected.' });
   const noteAdmin = req.body?.note_admin != null ? String(req.body.note_admin).trim().slice(0, 1000) : null;
-  const amountCents = req.body?.amount_cents != null ? Math.max(0, parseInt(req.body.amount_cents, 10) || 0) : null;
+  const amountCentsBody = req.body?.amount_cents != null ? Math.max(0, parseInt(req.body.amount_cents, 10) || 0) : null;
+  const photographerConfirmed =
+    req.body?.photographer_confirmed_cents != null ? Math.max(0, parseInt(req.body.photographer_confirmed_cents, 10) || 0) : null;
+  const incrementMode = !!req.body?.increment_mode;
+  const remainderAsCourtesy = !!req.body?.remainder_as_courtesy;
+
   const dbClient = await db.pool.connect();
   try {
     const own = await dbClient.query(
@@ -3579,15 +3753,159 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
     if (!(await hasTable(dbClient, 'king_client_payment_requests'))) {
       return res.status(503).json({ message: 'Tabela de pagamentos indisponível. Execute a migration 208.' });
     }
-    await dbClient.query(
-      `INSERT INTO king_client_payment_requests
-         (gallery_id, client_id, selection_batch, payment_method, status, amount_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
-       VALUES ($1,$2,$3,'pix',$4,$5,$6,$7,NOW(),NOW(),NOW())
-       ON CONFLICT (gallery_id, client_id, selection_batch)
-       DO UPDATE SET status=EXCLUDED.status, amount_cents=COALESCE(EXCLUDED.amount_cents, king_client_payment_requests.amount_cents),
-                     note_admin=EXCLUDED.note_admin, reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
-      [galleryId, clientId, selectionBatch, nextStatus, amountCents, noteAdmin, req.user.userId]
-    );
+    const hasCum = await hasColumn(dbClient, 'king_client_payment_requests', 'amount_received_cumulative_cents');
+    const hasCourtesy = await hasColumn(dbClient, 'king_client_payment_requests', 'courtesy_cents');
+
+    if (nextStatus === 'pending' || nextStatus === 'rejected') {
+      await dbClient.query(
+        `INSERT INTO king_client_payment_requests
+           (gallery_id, client_id, selection_batch, payment_method, status, amount_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
+         VALUES ($1,$2,$3,'pix',$4,$5,$6,$7,NOW(),NOW(),NOW())
+         ON CONFLICT (gallery_id, client_id, selection_batch)
+         DO UPDATE SET status=EXCLUDED.status, note_admin=EXCLUDED.note_admin,
+                       reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
+        [galleryId, clientId, selectionBatch, nextStatus, amountCentsBody, noteAdmin, req.user.userId]
+      );
+      const payment = await ksGetPaymentByClientRound(dbClient, galleryId, clientId, selectionBatch);
+      return res.json({ success: true, payment });
+    }
+
+    if (nextStatus !== 'confirmed') {
+      return res.status(400).json({ message: 'Status inválido.' });
+    }
+
+    if (!hasCum || !hasCourtesy) {
+      if (incrementMode || remainderAsCourtesy) {
+        return res.status(503).json({
+          message:
+            'Parcelas e cortesia do restante exigem a migration 214 no Postgres (214_kingselection_payment_partial_courtesy.sql).'
+        });
+      }
+      const curRowLegacy = (await dbClient.query(
+        `SELECT status, amount_cents, note_admin FROM king_client_payment_requests
+         WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3`,
+        [galleryId, clientId, selectionBatch]
+      )).rows?.[0];
+      const noteLowL = String(noteAdmin || curRowLegacy?.note_admin || '').toLowerCase();
+      const blessLikeL =
+        (photographerConfirmed === null || photographerConfirmed === 0) &&
+        (amountCentsBody === 0 || amountCentsBody === null) &&
+        (noteLowL.includes('aben') || noteLowL.includes('cortesia'));
+      let amtL = photographerConfirmed != null ? photographerConfirmed : amountCentsBody;
+      if (blessLikeL) amtL = 0;
+      if ((amtL == null || amtL === 0) && !blessLikeL) {
+        return res.status(400).json({
+          message: 'Informe photographer_confirmed_cents ou amount_cents (valor confirmado).'
+        });
+      }
+      await dbClient.query(
+        `INSERT INTO king_client_payment_requests
+           (gallery_id, client_id, selection_batch, payment_method, status, amount_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
+         VALUES ($1,$2,$3,'pix',$4,$5,$6,$7,NOW(),NOW(),NOW())
+         ON CONFLICT (gallery_id, client_id, selection_batch)
+         DO UPDATE SET status=EXCLUDED.status, amount_cents=COALESCE(EXCLUDED.amount_cents, king_client_payment_requests.amount_cents),
+           note_admin=EXCLUDED.note_admin, reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
+        [galleryId, clientId, selectionBatch, 'confirmed', amtL != null ? amtL : 0, noteAdmin, req.user.userId]
+      );
+      const payment = await ksGetPaymentByClientRound(dbClient, galleryId, clientId, selectionBatch);
+      return res.json({ success: true, payment });
+    }
+
+    const pricing = await ksComputeSalesPricingForClientRound(dbClient, galleryId, clientId, selectionBatch);
+    const expected = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+
+    const curRow = (await dbClient.query(
+      `SELECT status, amount_cents, note_admin${hasCum ? ', amount_received_cumulative_cents' : ''}${hasCourtesy ? ', courtesy_cents' : ''}
+       FROM king_client_payment_requests
+       WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3`,
+      [galleryId, clientId, selectionBatch]
+    )).rows?.[0];
+
+    let cumulative = hasCum ? Math.max(0, parseInt(curRow?.amount_received_cumulative_cents, 10) || 0) : 0;
+    let courtesy = hasCourtesy ? Math.max(0, parseInt(curRow?.courtesy_cents, 10) || 0) : 0;
+    const prevSt = ksNormPaymentStatus(curRow?.status);
+    if (hasCum && cumulative === 0 && prevSt === 'confirmed' && curRow) {
+      const legacy = curRow.amount_cents != null ? Math.max(0, parseInt(curRow.amount_cents, 10) || 0) : 0;
+      if (legacy > 0 && courtesy === 0) cumulative = legacy;
+    }
+
+    const noteLow = String(noteAdmin || curRow?.note_admin || '').toLowerCase();
+    const blessLike =
+      (photographerConfirmed === null || photographerConfirmed === 0) &&
+      (amountCentsBody === 0 || amountCentsBody === null) &&
+      (noteLow.includes('aben') || noteLow.includes('cortesia'));
+
+    let outCumulative = cumulative;
+    let outCourtesy = courtesy;
+    let outAmountCents = amountCentsBody != null ? amountCentsBody : outCumulative;
+    let finalStatus = 'confirmed';
+
+    if (hasCum && hasCourtesy && blessLike) {
+      outCumulative = 0;
+      outCourtesy = expected;
+      outAmountCents = 0;
+      finalStatus = 'confirmed';
+    } else {
+      const confirmedVal = photographerConfirmed != null ? photographerConfirmed : amountCentsBody;
+      if (remainderAsCourtesy && (confirmedVal == null || confirmedVal === 0) && expected > 0) {
+        outCourtesy = Math.max(0, expected - outCumulative);
+      } else {
+        if ((confirmedVal == null || confirmedVal === 0) && !remainderAsCourtesy) {
+          return res.status(400).json({
+            message:
+              'Informe photographer_confirmed_cents ou amount_cents (valor confirmado), ou marque o restante como cortesia.'
+          });
+        }
+        if (confirmedVal != null && confirmedVal > 0) {
+          outCumulative = incrementMode ? cumulative + confirmedVal : confirmedVal;
+        }
+        if (remainderAsCourtesy && expected > 0) {
+          outCourtesy = Math.max(0, expected - outCumulative);
+        }
+      }
+      outCumulative = Math.min(outCumulative, expected);
+      if (outCourtesy > 0) {
+        outCourtesy = Math.min(outCourtesy, Math.max(0, expected - outCumulative));
+      }
+      outAmountCents = outCumulative;
+      finalStatus = outCumulative + outCourtesy >= expected ? 'confirmed' : 'partial';
+    }
+
+    if (hasCum && hasCourtesy) {
+      await dbClient.query(
+        `INSERT INTO king_client_payment_requests
+           (gallery_id, client_id, selection_batch, payment_method, status, amount_cents,
+            amount_received_cumulative_cents, courtesy_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
+         VALUES ($1,$2,$3,'pix',$4,$5,$6,$7,$8,$9,NOW(),NOW(),NOW())
+         ON CONFLICT (gallery_id, client_id, selection_batch)
+         DO UPDATE SET status=EXCLUDED.status, amount_cents=EXCLUDED.amount_cents,
+           amount_received_cumulative_cents=EXCLUDED.amount_received_cumulative_cents,
+           courtesy_cents=EXCLUDED.courtesy_cents, note_admin=EXCLUDED.note_admin,
+           reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
+        [
+          galleryId,
+          clientId,
+          selectionBatch,
+          finalStatus,
+          outAmountCents,
+          outCumulative,
+          outCourtesy,
+          noteAdmin,
+          req.user.userId
+        ]
+      );
+    } else {
+      await dbClient.query(
+        `INSERT INTO king_client_payment_requests
+           (gallery_id, client_id, selection_batch, payment_method, status, amount_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
+         VALUES ($1,$2,$3,'pix',$4,$5,$6,$7,NOW(),NOW(),NOW())
+         ON CONFLICT (gallery_id, client_id, selection_batch)
+         DO UPDATE SET status=EXCLUDED.status, amount_cents=COALESCE(EXCLUDED.amount_cents, king_client_payment_requests.amount_cents),
+           note_admin=EXCLUDED.note_admin, reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
+        [galleryId, clientId, selectionBatch, finalStatus, outAmountCents, noteAdmin, req.user.userId]
+      );
+    }
+
     const payment = await ksGetPaymentByClientRound(dbClient, galleryId, clientId, selectionBatch);
     res.json({ success: true, payment });
   } finally {
@@ -7049,6 +7367,18 @@ router.post('/client/payment-proof', requireClient, uploadMem.single('proof'), a
     const clientId = req.ksCtx.cid ? parseInt(req.ksCtx.cid, 10) : 0;
     if (!clientId) return res.status(403).json({ message: 'Entre com sua conta antes de enviar comprovante.' });
     const round = await ksGetSalesSelectionRound(client, req.ksClient.galleryId, clientId);
+    const pricingPre = await ksComputeSalesPricingForClientRound(client, req.ksClient.galleryId, clientId, round);
+    const expectedPre = Math.max(0, parseInt(pricingPre.computed_total_cents, 10) || 0);
+    const payPre = await ksGetPaymentByClientRound(client, req.ksClient.galleryId, clientId, round);
+    let balanceDue = expectedPre;
+    if (payPre && payPre.balance_due_cents != null) balanceDue = Math.max(0, parseInt(payPre.balance_due_cents, 10) || 0);
+    if (amountCents != null && amountCents > balanceDue) {
+      return res.status(400).json({
+        message:
+          `O valor informado ultrapassa o saldo em aberto (${(balanceDue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}). Informe um valor menor ou deixe o campo em branco.`
+      });
+    }
+
     const filePath = await ksStorePaymentProofImage(req.file, req.ksClient.galleryId, clientId, round);
 
     await client.query(
