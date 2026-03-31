@@ -3759,6 +3759,128 @@ router.get('/galleries/:id/sales/clients/:clientId/round/:selectionBatch', prote
   }
 }));
 
+/** Total acordado, entrada declarada e nº parcelas (não altera recebido real — continua nos botões de pagamento). */
+router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/payment-terms', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const selectionBatch = Math.max(1, parseInt(req.params.selectionBatch, 10) || 1);
+  if (!galleryId || !clientId) return res.status(400).json({ message: 'IDs inválidos' });
+  const body = req.body || {};
+  const dbClient = await db.pool.connect();
+  try {
+    const own = await dbClient.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, req.user.userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+    if (!(await hasTable(dbClient, 'king_client_payment_requests'))) {
+      return res.status(503).json({ message: 'Tabela de pagamentos indisponível.' });
+    }
+    const hasNeg = await hasColumn(dbClient, 'king_client_payment_requests', 'negotiated_total_cents');
+    const hasDown = await hasColumn(dbClient, 'king_client_payment_requests', 'down_payment_cents');
+    const hasInst = await hasColumn(dbClient, 'king_client_payment_requests', 'installment_count');
+    if (!hasNeg) {
+      return res.status(503).json({
+        message: 'Execute a migration 215 (215_kingselection_payment_negotiated_terms.sql) no Postgres.'
+      });
+    }
+
+    const selParts = ['negotiated_total_cents'];
+    if (hasDown) selParts.push('down_payment_cents');
+    if (hasInst) selParts.push('installment_count');
+    const ex = await dbClient.query(
+      `SELECT ${selParts.join(', ')}
+       FROM king_client_payment_requests
+       WHERE gallery_id=$1 AND client_id=$2 AND selection_batch=$3`,
+      [galleryId, clientId, selectionBatch]
+    );
+    const cur = ex.rows?.[0] || null;
+
+    let neg = cur != null && cur.negotiated_total_cents != null ? parseInt(cur.negotiated_total_cents, 10) : null;
+    let down = cur != null && hasDown && cur.down_payment_cents != null ? parseInt(cur.down_payment_cents, 10) : null;
+    let inst = cur != null && hasInst && cur.installment_count != null ? parseInt(cur.installment_count, 10) : null;
+
+    if (Object.prototype.hasOwnProperty.call(body, 'negotiated_total_cents')) {
+      const raw = body.negotiated_total_cents;
+      if (raw === null || raw === '') neg = null;
+      else {
+        const n = parseInt(raw, 10);
+        if (!Number.isFinite(n) || n < 0) return res.status(400).json({ message: 'Total acordado inválido.' });
+        neg = n;
+      }
+    }
+    if (hasDown && Object.prototype.hasOwnProperty.call(body, 'down_payment_cents')) {
+      const raw = body.down_payment_cents;
+      if (raw === null || raw === '') down = null;
+      else {
+        const n = parseInt(raw, 10);
+        if (!Number.isFinite(n) || n < 0) return res.status(400).json({ message: 'Entrada declarada inválida.' });
+        down = n;
+      }
+    }
+    if (hasInst && Object.prototype.hasOwnProperty.call(body, 'installment_count')) {
+      const raw = body.installment_count;
+      if (raw === null || raw === '') inst = null;
+      else {
+        const n = parseInt(raw, 10);
+        if (!Number.isFinite(n) || n < 1 || n > 240) return res.status(400).json({ message: 'Número de parcelas inválido (1–240).' });
+        inst = n;
+      }
+    }
+
+    if (
+      !Object.prototype.hasOwnProperty.call(body, 'negotiated_total_cents') &&
+      !(hasDown && Object.prototype.hasOwnProperty.call(body, 'down_payment_cents')) &&
+      !(hasInst && Object.prototype.hasOwnProperty.call(body, 'installment_count'))
+    ) {
+      return res.status(400).json({
+        message: 'Envie negotiated_total_cents, down_payment_cents ou installment_count.'
+      });
+    }
+
+    const hasCum = await hasColumn(dbClient, 'king_client_payment_requests', 'amount_received_cumulative_cents');
+    const hasCourtesy = await hasColumn(dbClient, 'king_client_payment_requests', 'courtesy_cents');
+
+    const insCols = ['gallery_id', 'client_id', 'selection_batch', 'payment_method', 'status', 'negotiated_total_cents'];
+    const insVals = [galleryId, clientId, selectionBatch, 'pix', 'pending', neg];
+    if (hasDown) {
+      insCols.push('down_payment_cents');
+      insVals.push(down);
+    }
+    if (hasInst) {
+      insCols.push('installment_count');
+      insVals.push(inst);
+    }
+    if (hasCum) {
+      insCols.push('amount_received_cumulative_cents');
+      insVals.push(0);
+    }
+    if (hasCourtesy) {
+      insCols.push('courtesy_cents');
+      insVals.push(0);
+    }
+    const placeholders = insVals.map((_, i) => `$${i + 1}`).join(', ');
+    const updParts = ['negotiated_total_cents = EXCLUDED.negotiated_total_cents'];
+    if (hasDown) updParts.push('down_payment_cents = EXCLUDED.down_payment_cents');
+    if (hasInst) updParts.push('installment_count = EXCLUDED.installment_count');
+
+    await dbClient.query(
+      `INSERT INTO king_client_payment_requests (${insCols.join(', ')}, created_at, updated_at)
+       VALUES (${placeholders}, NOW(), NOW())
+       ON CONFLICT (gallery_id, client_id, selection_batch)
+       DO UPDATE SET ${updParts.join(', ')}, updated_at = NOW()`,
+      insVals
+    );
+    const payment = await ksGetPaymentByClientRound(dbClient, galleryId, clientId, selectionBatch);
+    res.json({ success: true, payment });
+  } finally {
+    dbClient.release();
+  }
+}));
+
 router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/payment-review', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   const clientId = parseInt(req.params.clientId, 10);
