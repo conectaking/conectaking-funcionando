@@ -3624,12 +3624,16 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
     const hasPayNeg = await hasColumn(client, 'king_client_payment_requests', 'negotiated_total_cents');
     const hasPayDown = await hasColumn(client, 'king_client_payment_requests', 'down_payment_cents');
     const hasPayInst = await hasColumn(client, 'king_client_payment_requests', 'installment_count');
+    const hasPayRemBal = await hasColumn(client, 'king_client_payment_requests', 'remaining_balance_cents');
+    const hasPayIntDays = await hasColumn(client, 'king_client_payment_requests', 'installment_interval_days');
     let paySelect = 'client_id, selection_batch, status, amount_cents, note_admin';
     if (hasPayCum) paySelect += ', amount_received_cumulative_cents';
     if (hasPayCourtesy) paySelect += ', courtesy_cents';
     if (hasPayNeg) paySelect += ', negotiated_total_cents';
     if (hasPayDown) paySelect += ', down_payment_cents';
     if (hasPayInst) paySelect += ', installment_count';
+    if (hasPayRemBal) paySelect += ', remaining_balance_cents';
+    if (hasPayIntDays) paySelect += ', installment_interval_days';
     const paymentRows = (await hasTable(client, 'king_client_payment_requests'))
       ? ((await client.query(
         `SELECT ${paySelect}
@@ -3658,7 +3662,11 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
         courtesy_cents: hasPayCourtesy ? Math.max(0, parseInt(r.courtesy_cents, 10) || 0) : 0,
         negotiated_total_cents: hasPayNeg && r.negotiated_total_cents != null ? Math.max(0, parseInt(r.negotiated_total_cents, 10) || 0) : null,
         down_payment_cents: hasPayDown && r.down_payment_cents != null ? Math.max(0, parseInt(r.down_payment_cents, 10) || 0) : null,
-        installment_count: hasPayInst && r.installment_count != null ? Math.max(1, parseInt(r.installment_count, 10) || 1) : null
+        installment_count: hasPayInst && r.installment_count != null ? Math.max(1, parseInt(r.installment_count, 10) || 1) : null,
+        remaining_balance_cents:
+          hasPayRemBal && r.remaining_balance_cents != null ? Math.max(0, parseInt(r.remaining_balance_cents, 10) || 0) : null,
+        installment_interval_days:
+          hasPayIntDays && r.installment_interval_days != null ? Math.max(1, parseInt(r.installment_interval_days, 10) || 1) : null
       }];
     }));
     const apMap = new Map(approvalRows.map((r) => [`${r.client_id}:${r.selection_batch}`, parseInt(r.approved_count, 10) || 0]));
@@ -3737,6 +3745,8 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
         negotiated_total_cents: pay?.negotiated_total_cents ?? null,
         down_payment_cents: pay?.down_payment_cents ?? null,
         installment_count: pay?.installment_count ?? null,
+        remaining_balance_cents: pay?.remaining_balance_cents ?? null,
+        installment_interval_days: pay?.installment_interval_days ?? null,
         expected_total_cents: expected,
         amount_received_cumulative_cents: cumulative,
         courtesy_cents: courtesy,
@@ -3820,6 +3830,8 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
     const hasNeg = await hasColumn(dbClient, 'king_client_payment_requests', 'negotiated_total_cents');
     const hasDown = await hasColumn(dbClient, 'king_client_payment_requests', 'down_payment_cents');
     const hasInst = await hasColumn(dbClient, 'king_client_payment_requests', 'installment_count');
+    const hasRemBal = await hasColumn(dbClient, 'king_client_payment_requests', 'remaining_balance_cents');
+    const hasIntDays = await hasColumn(dbClient, 'king_client_payment_requests', 'installment_interval_days');
     if (!hasNeg) {
       return res.status(503).json({
         message: 'Execute a migration 215 (215_kingselection_payment_negotiated_terms.sql) no Postgres.'
@@ -3829,6 +3841,8 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
     const selParts = ['negotiated_total_cents'];
     if (hasDown) selParts.push('down_payment_cents');
     if (hasInst) selParts.push('installment_count');
+    if (hasRemBal) selParts.push('remaining_balance_cents');
+    if (hasIntDays) selParts.push('installment_interval_days');
     const ex = await dbClient.query(
       `SELECT ${selParts.join(', ')}
        FROM king_client_payment_requests
@@ -3840,6 +3854,10 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
     let neg = cur != null && cur.negotiated_total_cents != null ? parseInt(cur.negotiated_total_cents, 10) : null;
     let down = cur != null && hasDown && cur.down_payment_cents != null ? parseInt(cur.down_payment_cents, 10) : null;
     let inst = cur != null && hasInst && cur.installment_count != null ? parseInt(cur.installment_count, 10) : null;
+    let remBal =
+      cur != null && hasRemBal && cur.remaining_balance_cents != null ? parseInt(cur.remaining_balance_cents, 10) : null;
+    let intDays =
+      cur != null && hasIntDays && cur.installment_interval_days != null ? parseInt(cur.installment_interval_days, 10) : null;
 
     if (Object.prototype.hasOwnProperty.call(body, 'negotiated_total_cents')) {
       const raw = body.negotiated_total_cents;
@@ -3868,14 +3886,35 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
         inst = n;
       }
     }
+    if (hasRemBal && Object.prototype.hasOwnProperty.call(body, 'remaining_balance_cents')) {
+      const raw = body.remaining_balance_cents;
+      if (raw === null || raw === '') remBal = null;
+      else {
+        const n = parseInt(raw, 10);
+        if (!Number.isFinite(n) || n < 0) return res.status(400).json({ message: 'Valor restante inválido.' });
+        remBal = n;
+      }
+    }
+    if (hasIntDays && Object.prototype.hasOwnProperty.call(body, 'installment_interval_days')) {
+      const raw = body.installment_interval_days;
+      if (raw === null || raw === '') intDays = null;
+      else {
+        const n = parseInt(raw, 10);
+        if (!Number.isFinite(n) || n < 1 || n > 730) return res.status(400).json({ message: 'Intervalo em dias inválido (1–730).' });
+        intDays = n;
+      }
+    }
 
     if (
       !Object.prototype.hasOwnProperty.call(body, 'negotiated_total_cents') &&
       !(hasDown && Object.prototype.hasOwnProperty.call(body, 'down_payment_cents')) &&
-      !(hasInst && Object.prototype.hasOwnProperty.call(body, 'installment_count'))
+      !(hasInst && Object.prototype.hasOwnProperty.call(body, 'installment_count')) &&
+      !(hasRemBal && Object.prototype.hasOwnProperty.call(body, 'remaining_balance_cents')) &&
+      !(hasIntDays && Object.prototype.hasOwnProperty.call(body, 'installment_interval_days'))
     ) {
       return res.status(400).json({
-        message: 'Envie negotiated_total_cents, down_payment_cents ou installment_count.'
+        message:
+          'Envie negotiated_total_cents, down_payment_cents, installment_count, remaining_balance_cents ou installment_interval_days.'
       });
     }
 
@@ -3892,6 +3931,14 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
       insCols.push('installment_count');
       insVals.push(inst);
     }
+    if (hasRemBal) {
+      insCols.push('remaining_balance_cents');
+      insVals.push(remBal);
+    }
+    if (hasIntDays) {
+      insCols.push('installment_interval_days');
+      insVals.push(intDays);
+    }
     if (hasCum) {
       insCols.push('amount_received_cumulative_cents');
       insVals.push(0);
@@ -3904,6 +3951,8 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
     const updParts = ['negotiated_total_cents = EXCLUDED.negotiated_total_cents'];
     if (hasDown) updParts.push('down_payment_cents = EXCLUDED.down_payment_cents');
     if (hasInst) updParts.push('installment_count = EXCLUDED.installment_count');
+    if (hasRemBal) updParts.push('remaining_balance_cents = EXCLUDED.remaining_balance_cents');
+    if (hasIntDays) updParts.push('installment_interval_days = EXCLUDED.installment_interval_days');
 
     await dbClient.query(
       `INSERT INTO king_client_payment_requests (${insCols.join(', ')}, created_at, updated_at)
