@@ -944,6 +944,40 @@ function ksMoneyToCents(v) {
   return Math.max(0, Math.round(n * 100));
 }
 
+/**
+ * Mesma lógica de `estimateClientTotalByPackages` no kingSelectionCliente.js (interpolar entre pacotes).
+ * Usada quando "Pacotes + extra" tem unitário 0 ou para alinhar total exibido ao cliente.
+ */
+function ksEstimatePriceByPackageInterpolationCents(selectedCount, packages) {
+  const qty = Math.max(0, parseInt(selectedCount, 10) || 0);
+  if (!qty) return 0;
+  const sorted = (Array.isArray(packages) ? packages : [])
+    .map((p) => ({
+      qty: Math.max(1, parseInt(p.photo_qty, 10) || 1),
+      price: Math.max(0, parseInt(p.price_cents, 10) || 0)
+    }))
+    .filter((p) => p.price > 0)
+    .sort((a, b) => a.qty - b.qty);
+  if (!sorted.length) return 0;
+  const exact = sorted.find((p) => p.qty === qty);
+  if (exact) return exact.price;
+  if (qty <= sorted[0].qty) {
+    const per = sorted[0].price / sorted[0].qty;
+    return Math.round(per * qty);
+  }
+  for (let i = 0; i < sorted.length - 1; i += 1) {
+    const cur = sorted[i];
+    const next = sorted[i + 1];
+    if (qty > cur.qty && qty < next.qty) {
+      const nextPer = next.price / next.qty;
+      return Math.round(cur.price + (qty - cur.qty) * nextPer);
+    }
+  }
+  const last = sorted[sorted.length - 1];
+  const lastPer = last.price / last.qty;
+  return Math.round(last.price + (qty - last.qty) * lastPer);
+}
+
 function ksComputeBestPriceCents(selectedCount, packages, unitPriceCents, priceMode) {
   const n = Math.max(0, parseInt(selectedCount, 10) || 0);
   const mode = ksNormalizePriceMode(priceMode);
@@ -963,6 +997,9 @@ function ksComputeBestPriceCents(selectedCount, packages, unitPriceCents, priceM
   }
 
   if (mode === 'packages_plus_unit') {
+    if (unit === 0) {
+      return ksEstimatePriceByPackageInterpolationCents(n, packs);
+    }
     let best = n * unit;
     for (const p of packs) {
       if (p.qty === n) best = Math.min(best || Number.MAX_SAFE_INTEGER, p.price);
