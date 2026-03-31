@@ -3186,12 +3186,16 @@ async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectio
   const hasNeg = await hasColumn(pgClient, 'king_client_payment_requests', 'negotiated_total_cents');
   const hasDown = await hasColumn(pgClient, 'king_client_payment_requests', 'down_payment_cents');
   const hasInst = await hasColumn(pgClient, 'king_client_payment_requests', 'installment_count');
+  const hasRemBal = await hasColumn(pgClient, 'king_client_payment_requests', 'remaining_balance_cents');
+  const hasIntDays = await hasColumn(pgClient, 'king_client_payment_requests', 'installment_interval_days');
   const extraCols = []
     .concat(hasCum ? ['amount_received_cumulative_cents'] : [])
     .concat(hasCourtesy ? ['courtesy_cents'] : [])
     .concat(hasNeg ? ['negotiated_total_cents'] : [])
     .concat(hasDown ? ['down_payment_cents'] : [])
-    .concat(hasInst ? ['installment_count'] : []);
+    .concat(hasInst ? ['installment_count'] : [])
+    .concat(hasRemBal ? ['remaining_balance_cents'] : [])
+    .concat(hasIntDays ? ['installment_interval_days'] : []);
   const r = await pgClient.query(
     `SELECT id, status, payment_method, amount_cents, proof_file_path, note_client, note_admin, reviewed_at, created_at${extraCols.length ? `, ${extraCols.join(', ')}` : ''}
      FROM king_client_payment_requests
@@ -3221,6 +3225,17 @@ async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectio
     (row.amount_cents == null || parseInt(row.amount_cents, 10) === 0) &&
     (noteLow.includes('aben') || noteLow.includes('cortesia'));
   if (blessedGuess) balanceDue = 0;
+  let remainderPerInstallmentCents = null;
+  if (
+    hasRemBal &&
+    row.remaining_balance_cents != null &&
+    hasInst &&
+    row.installment_count != null
+  ) {
+    const rem = Math.max(0, parseInt(row.remaining_balance_cents, 10) || 0);
+    const ni = Math.max(1, parseInt(row.installment_count, 10) || 1);
+    remainderPerInstallmentCents = ni > 0 ? Math.round(rem / ni) : rem;
+  }
   return {
     id: parseInt(row.id, 10) || 0,
     status: st,
@@ -3238,6 +3253,11 @@ async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectio
     negotiated_total_cents: hasNeg && row.negotiated_total_cents != null ? Math.max(0, parseInt(row.negotiated_total_cents, 10) || 0) : null,
     down_payment_cents: hasDown && row.down_payment_cents != null ? Math.max(0, parseInt(row.down_payment_cents, 10) || 0) : null,
     installment_count: hasInst && row.installment_count != null ? Math.max(1, parseInt(row.installment_count, 10) || 1) : null,
+    remaining_balance_cents:
+      hasRemBal && row.remaining_balance_cents != null ? Math.max(0, parseInt(row.remaining_balance_cents, 10) || 0) : null,
+    installment_interval_days:
+      hasIntDays && row.installment_interval_days != null ? Math.max(1, parseInt(row.installment_interval_days, 10) || 1) : null,
+    remainder_per_installment_cents: remainderPerInstallmentCents,
     expected_total_cents: expected,
     amount_received_cumulative_cents: cumulative,
     courtesy_cents: courtesy,
