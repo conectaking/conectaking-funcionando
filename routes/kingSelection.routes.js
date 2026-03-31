@@ -1069,6 +1069,7 @@ async function ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId
   if (!galleryRow) {
     return {
       computed_total_cents: 0,
+      computed_total_gross_cents: 0,
       selected_count: selectedCount,
       billable_photo_count: 0,
       promo_applied: false
@@ -1077,6 +1078,7 @@ async function ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId
   if (!ksIsPaidEventAccessMode(galleryRow.access_mode)) {
     return {
       computed_total_cents: 0,
+      computed_total_gross_cents: 0,
       selected_count: selectedCount,
       billable_photo_count: selectedCount,
       promo_applied: false
@@ -1114,8 +1116,16 @@ async function ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId
     salesConfig?.sales_unit_price_cents || 0,
     salesConfig?.sales_price_mode || 'best_price_auto'
   );
+  /** Preço de referência para TODAS as fotos selecionadas, ignorando isenção do cupom (transparência na lista admin). */
+  const computedTotalGrossCents = ksComputeBestPriceCents(
+    selectedCount,
+    salePackages,
+    salesConfig?.sales_unit_price_cents || 0,
+    salesConfig?.sales_price_mode || 'best_price_auto'
+  );
   return {
     computed_total_cents: computedTotalCents,
+    computed_total_gross_cents: computedTotalGrossCents,
     selected_count: selectedCount,
     billable_photo_count: billableForPricing,
     promo_applied: promoEligible
@@ -3192,6 +3202,7 @@ async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectio
   const row = r.rows[0];
   const pricing = await ksComputeSalesPricingForClientRound(pgClient, galleryId, clientId, selectionBatch, cache);
   const computedPackage = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+  const computedPackageGross = Math.max(0, parseInt(pricing.computed_total_gross_cents, 10) || 0);
   const expected = ksEffectiveExpectedTotalCents(computedPackage, row, hasNeg);
   let cumulative = hasCum ? Math.max(0, parseInt(row.amount_received_cumulative_cents, 10) || 0) : 0;
   let courtesy = hasCourtesy ? Math.max(0, parseInt(row.courtesy_cents, 10) || 0) : 0;
@@ -3220,6 +3231,8 @@ async function ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectio
     reviewed_at: row.reviewed_at || null,
     created_at: row.created_at || null,
     computed_package_total_cents: computedPackage,
+    computed_package_gross_cents: computedPackageGross,
+    pricing_promo_applied: !!pricing.promo_applied,
     negotiated_total_cents: hasNeg && row.negotiated_total_cents != null ? Math.max(0, parseInt(row.negotiated_total_cents, 10) || 0) : null,
     down_payment_cents: hasDown && row.down_payment_cents != null ? Math.max(0, parseInt(row.down_payment_cents, 10) || 0) : null,
     installment_count: hasInst && row.installment_count != null ? Math.max(1, parseInt(row.installment_count, 10) || 1) : null,
@@ -3664,6 +3677,7 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
       };
       const pricing = await ksComputeSalesPricingForClientRound(client, galleryId, cid, b, cache);
       const computedPkg = Math.max(0, parseInt(pricing.computed_total_cents, 10) || 0);
+      const computedPkgGross = Math.max(0, parseInt(pricing.computed_total_gross_cents, 10) || 0);
       const payRowForNeg = pay
         ? { negotiated_total_cents: pay.negotiated_total_cents != null ? pay.negotiated_total_cents : null }
         : null;
@@ -3696,6 +3710,8 @@ router.get('/galleries/:id/sales/clients', protectUser, asyncHandler(async (req,
         payment_amount_cents: pay?.amount_cents ?? null,
         payment_note_admin: pay?.note_admin || null,
         computed_package_total_cents: computedPkg,
+        computed_package_gross_cents: computedPkgGross,
+        promo_applied: !!pricing.promo_applied,
         negotiated_total_cents: pay?.negotiated_total_cents ?? null,
         down_payment_cents: pay?.down_payment_cents ?? null,
         installment_count: pay?.installment_count ?? null,
@@ -3915,15 +3931,53 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
     const hasCourtesy = await hasColumn(dbClient, 'king_client_payment_requests', 'courtesy_cents');
 
     if (nextStatus === 'pending' || nextStatus === 'rejected') {
-      await dbClient.query(
-        `INSERT INTO king_client_payment_requests
-           (gallery_id, client_id, selection_batch, payment_method, status, amount_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
-         VALUES ($1,$2,$3,'pix',$4,$5,$6,$7,NOW(),NOW(),NOW())
-         ON CONFLICT (gallery_id, client_id, selection_batch)
-         DO UPDATE SET status=EXCLUDED.status, note_admin=EXCLUDED.note_admin,
-                       reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
-        [galleryId, clientId, selectionBatch, nextStatus, amountCentsBody, noteAdmin, req.user.userId]
-      );
+      const clearFinancial =
+        nextStatus === 'pending' && !!req.body.clear_payment_amounts;
+      if (clearFinancial && hasCum && hasCourtesy) {
+        await dbClient.query(
+          `INSERT INTO king_client_payment_requests
+             (gallery_id, client_id, selection_batch, payment_method, status, amount_cents,
+              amount_received_cumulative_cents, courtesy_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
+           VALUES ($1,$2,$3,'pix','pending',NULL,0,0,$4,$5,NOW(),NOW(),NOW())
+           ON CONFLICT (gallery_id, client_id, selection_batch)
+           DO UPDATE SET status='pending', amount_cents=NULL,
+             amount_received_cumulative_cents=0, courtesy_cents=0,
+             note_admin=EXCLUDED.note_admin, reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
+          [galleryId, clientId, selectionBatch, noteAdmin, req.user.userId]
+        );
+      } else if (clearFinancial && hasCum && !hasCourtesy) {
+        await dbClient.query(
+          `INSERT INTO king_client_payment_requests
+             (gallery_id, client_id, selection_batch, payment_method, status, amount_cents,
+              amount_received_cumulative_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
+           VALUES ($1,$2,$3,'pix','pending',NULL,0,$4,$5,NOW(),NOW(),NOW())
+           ON CONFLICT (gallery_id, client_id, selection_batch)
+           DO UPDATE SET status='pending', amount_cents=NULL,
+             amount_received_cumulative_cents=0,
+             note_admin=EXCLUDED.note_admin, reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
+          [galleryId, clientId, selectionBatch, noteAdmin, req.user.userId]
+        );
+      } else if (clearFinancial && !hasCum) {
+        await dbClient.query(
+          `INSERT INTO king_client_payment_requests
+             (gallery_id, client_id, selection_batch, payment_method, status, amount_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
+           VALUES ($1,$2,$3,'pix','pending',NULL,$4,$5,NOW(),NOW(),NOW())
+           ON CONFLICT (gallery_id, client_id, selection_batch)
+           DO UPDATE SET status='pending', amount_cents=NULL,
+             note_admin=EXCLUDED.note_admin, reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
+          [galleryId, clientId, selectionBatch, noteAdmin, req.user.userId]
+        );
+      } else {
+        await dbClient.query(
+          `INSERT INTO king_client_payment_requests
+             (gallery_id, client_id, selection_batch, payment_method, status, amount_cents, note_admin, reviewed_by_user_id, reviewed_at, created_at, updated_at)
+           VALUES ($1,$2,$3,'pix',$4,$5,$6,$7,NOW(),NOW(),NOW())
+           ON CONFLICT (gallery_id, client_id, selection_batch)
+           DO UPDATE SET status=EXCLUDED.status, note_admin=EXCLUDED.note_admin,
+                         reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
+          [galleryId, clientId, selectionBatch, nextStatus, amountCentsBody, noteAdmin, req.user.userId]
+        );
+      }
       const payment = await ksGetPaymentByClientRound(dbClient, galleryId, clientId, selectionBatch);
       return res.json({ success: true, payment });
     }
