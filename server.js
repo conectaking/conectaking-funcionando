@@ -511,7 +511,7 @@ async function serveKingSelectionClienteGallery(req, res, next) {
         if (og) {
             ogTitle = `${og.title} — King Selection`;
             pageTitle = ogTitle;
-            ogDesc = `Galeria: ${og.title}. Entre pelo link, faça login se pedir senha e baixe suas fotos.`;
+            ogDesc = `Galeria ${og.title}. Aceda pelo link com o mesmo nome, e-mail e WhatsApp do cadastro e baixe as suas fotos.`;
             // Mesmo host da página (WhatsApp ignora ou falha com og:image só no domínio externo da API).
             ogImage = host
                 ? `${proto}://${host}/api/king-selection/public/og-image?slug=${encodeURIComponent(og.slug)}`

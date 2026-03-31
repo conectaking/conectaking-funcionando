@@ -151,7 +151,7 @@ function buildShareMetaPayload(ogRow, hostnameForCanonical, slugRequested) {
   return {
     success: true,
     ogTitle: `${ogRow.title} — King Selection`,
-    ogDescription: `Galeria: ${ogRow.title}. Entre pelo link, faça login se pedir senha e baixe suas fotos.`,
+    ogDescription: `Galeria ${ogRow.title}. Aceda pelo link com o mesmo nome, e-mail e WhatsApp do cadastro e baixe as suas fotos.`,
     ogImage: sameHostOg || ogFromApi || ensureHttpsUrl(ogRow.imageUrl) || defaultImg,
     slug: ogRow.slug,
     canonicalUrl: canonical
