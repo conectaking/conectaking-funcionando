@@ -988,6 +988,41 @@ function ksComputeBestPriceCents(selectedCount, packages, unitPriceCents, priceM
   return out;
 }
 
+function ksNormPromoCouponCode(s) {
+  return String(s || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+/** Fotos cobradas após isenção do cupom (promo aplica só se cliente validou redes+código e janela válida). */
+function ksBillablePhotoCountAfterPromo(selectedCount, freePromoPhotos, promoApplies) {
+  const n = Math.max(0, parseInt(selectedCount, 10) || 0);
+  if (!promoApplies) return n;
+  const free = Math.max(0, parseInt(freePromoPhotos, 10) || 0);
+  const take = Math.min(free, n);
+  return Math.max(0, n - take);
+}
+
+function ksPromoWindowStillValid(galleryRow) {
+  if (!galleryRow || !galleryRow.promo_enabled) return false;
+  const until = galleryRow.promo_valid_until;
+  if (until == null) return true;
+  const t = new Date(until).getTime();
+  if (Number.isNaN(t)) return true;
+  return Date.now() <= t;
+}
+
+function ksClientPromoEligibleForPricing(galleryRow, clientRow) {
+  if (!galleryRow?.promo_enabled) return false;
+  if (!ksPromoWindowStillValid(galleryRow)) return false;
+  if (!clientRow?.promo_coupon_validated_at || !clientRow?.promo_social_confirmed_at) return false;
+  const want = ksNormPromoCouponCode(galleryRow.promo_coupon_code);
+  const got = ksNormPromoCouponCode(clientRow.promo_coupon_entered);
+  return !!want && want === got;
+}
+
 async function ksListSalePackages(pgClient, galleryId) {
   if (!(await hasTable(pgClient, 'king_gallery_sale_packages'))) return [];
   const rows = (await pgClient.query(
@@ -4984,7 +5019,13 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'support_whatsapp_message',
     'sales_whatsapp_template_approved',
     'sales_whatsapp_template_pending',
-    'sales_whatsapp_template_rejected'
+    'sales_whatsapp_template_rejected',
+    'promo_enabled',
+    'promo_coupon_code',
+    'promo_valid_until',
+    'promo_free_photo_count',
+    'promo_social_links',
+    'promo_instructions'
   ];
 
   const body = req.body || {};
@@ -5058,6 +5099,30 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
           message:
             'O banco ainda não tem os campos de mensagens WhatsApp (vendas). Execute a migration 212 no Postgres (212_add_kingselection_sales_whatsapp_templates.sql).'
         });
+      }
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(body, 'promo_enabled') ||
+      Object.prototype.hasOwnProperty.call(body, 'promo_coupon_code') ||
+      Object.prototype.hasOwnProperty.call(body, 'promo_valid_until') ||
+      Object.prototype.hasOwnProperty.call(body, 'promo_free_photo_count') ||
+      Object.prototype.hasOwnProperty.call(body, 'promo_social_links') ||
+      Object.prototype.hasOwnProperty.call(body, 'promo_instructions')
+    ) {
+      const ok = await hasColumn(client, 'king_galleries', 'promo_enabled');
+      if (!ok) {
+        return res.status(503).json({
+          message: 'O banco ainda não tem os campos de cupom/promo. Execute a migration 213 no Postgres (213_kingselection_promo_cupom.sql).'
+        });
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'promo_valid_days') && (await hasColumn(client, 'king_galleries', 'promo_valid_until'))) {
+      const d = parseInt(body.promo_valid_days, 10);
+      if (Number.isFinite(d) && d > 0) {
+        body.promo_valid_until = new Date(Date.now() + d * 86400000).toISOString();
+      } else {
+        body.promo_valid_until = null;
       }
     }
 
@@ -5153,6 +5218,40 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       ) {
         if (val === '' || val === 'null' || val == null) val = null;
         else val = String(val).trim().slice(0, 4000);
+      }
+      if (key === 'promo_enabled') val = !!val;
+      if (key === 'promo_coupon_code') {
+        if (val === '' || val === 'null' || val == null) val = null;
+        else val = String(val).trim().slice(0, 80);
+      }
+      if (key === 'promo_valid_until') {
+        if (val === '' || val === 'null' || val == null) val = null;
+        else val = String(val).trim().slice(0, 40);
+      }
+      if (key === 'promo_free_photo_count') {
+        val = Math.max(1, Math.min(50, parseInt(val || 1, 10) || 1));
+      }
+      if (key === 'promo_social_links') {
+        let arr = val;
+        if (typeof arr === 'string') {
+          try {
+            arr = JSON.parse(arr || '[]');
+          } catch (_) {
+            arr = [];
+          }
+        }
+        if (!Array.isArray(arr)) arr = [];
+        val = arr
+          .slice(0, 20)
+          .map((x) => ({
+            handle: String(x?.handle || '').trim().slice(0, 80),
+            url: String(x?.url || '').trim().slice(0, 500)
+          }))
+          .filter((x) => x.url);
+      }
+      if (key === 'promo_instructions') {
+        if (val === '' || val === 'null' || val == null) val = null;
+        else val = String(val).trim().slice(0, 2000);
       }
       sets.push(`${key}=$${idx++}`);
       values.push(val);
@@ -6500,8 +6599,9 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const hasSupportMsg = await hasColumn(client, 'king_galleries', 'support_whatsapp_message');
     const hasAccessModeG = await hasColumn(client, 'king_galleries', 'access_mode');
     const hasAllowSelfG = await hasColumn(client, 'king_galleries', 'allow_self_signup');
+    const hasPromoEnabled = await hasColumn(client, 'king_galleries', 'promo_enabled');
     const gRes = await client.query(
-      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}
+      `SELECT id, nome_projeto, slug, status, total_fotos_contratadas${hasMin ? ', min_selections' : ''}${hasAllowDownload ? ', allow_download' : ''}${hasFaceEnabled ? ', face_recognition_enabled' : ''}${hasClientImgQ ? ', client_image_quality' : ''}${hasClientCardH ? ', client_card_height_px' : ''}${hasAccessModeG ? ', access_mode' : ''}${hasAllowSelfG ? ', allow_self_signup' : ''}${hasThankYou ? ', thank_you_title, thank_you_message, thank_you_image_url' : ''}${hasThankYouName ? ', thank_you_photographer_name' : ''}${hasSupportWhats ? ', support_whatsapp_number' : ''}${hasSupportLabel ? ', support_whatsapp_label' : ''}${hasSupportMsg ? ', support_whatsapp_message' : ''}${hasPromoEnabled ? ', promo_enabled, promo_coupon_code, promo_valid_until, promo_free_photo_count, promo_social_links, promo_instructions' : ''}
        FROM king_galleries
        WHERE id=$1`,
       [req.ksClient.galleryId]
@@ -6583,9 +6683,29 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const salesConfig = salesModeActive ? await ksLoadGallerySalesConfig(client, gallery.id) : null;
     const salePackages = salesModeActive ? (await ksListSalePackages(client, gallery.id)).filter((p) => p.active !== false) : [];
     const selectedCountForPricing = selectedPhotoIds.length;
+    let promoClientRow = null;
+    if (cid && hasPromoEnabled && (await hasColumn(client, 'king_gallery_clients', 'promo_coupon_validated_at'))) {
+      try {
+        const pr = await client.query(
+          `SELECT promo_social_confirmed_at, promo_coupon_validated_at, promo_coupon_entered
+           FROM king_gallery_clients WHERE id=$1 AND gallery_id=$2 LIMIT 1`,
+          [cid, gallery.id]
+        );
+        promoClientRow = pr.rows[0] || null;
+      } catch (_) { }
+    }
+    const promoEligible =
+      !!(salesModeActive && hasPromoEnabled && ksClientPromoEligibleForPricing(gallery, promoClientRow));
+    const freePromoN =
+      hasPromoEnabled && gallery.promo_enabled
+        ? Math.max(1, Math.min(50, parseInt(gallery.promo_free_photo_count, 10) || 1))
+        : 0;
+    const billableForPricing = salesModeActive
+      ? ksBillablePhotoCountAfterPromo(selectedCountForPricing, freePromoN, promoEligible)
+      : selectedCountForPricing;
     const computedTotalCents = salesModeActive
       ? ksComputeBestPriceCents(
-        selectedCountForPricing,
+        billableForPricing,
         salePackages,
         salesConfig?.sales_unit_price_cents || 0,
         salesConfig?.sales_price_mode || 'best_price_auto'
@@ -6730,9 +6850,37 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       salesPackages: salesModeActive ? salePackages : undefined,
       salesPricing: salesModeActive ? {
         selected_count: selectedCountForPricing,
+        billable_photo_count: billableForPricing,
         computed_total_cents: computedTotalCents,
-        over_limit_warn: overLimitWarn || undefined
+        over_limit_warn: overLimitWarn || undefined,
+        promo_applied: promoEligible || undefined
       } : undefined,
+      promo: salesModeActive && hasPromoEnabled
+        ? (() => {
+            let links = gallery.promo_social_links;
+            if (typeof links === 'string') {
+              try {
+                links = JSON.parse(links || '[]');
+              } catch (_) {
+                links = [];
+              }
+            }
+            if (!Array.isArray(links)) links = [];
+            return {
+              active: !!gallery.promo_enabled,
+              expired: !!(gallery.promo_enabled && !ksPromoWindowStillValid(gallery)),
+              valid_until: gallery.promo_valid_until || null,
+              free_photo_count: freePromoN,
+              social_links: links,
+              instructions: gallery.promo_instructions ? String(gallery.promo_instructions).trim().slice(0, 2000) : null,
+              validated: promoEligible,
+              social_confirmed: !!promoClientRow?.promo_social_confirmed_at,
+              coupon_validated: !!promoClientRow?.promo_coupon_validated_at,
+              billable_photo_count: billableForPricing,
+              promo_photos_applied: promoEligible ? Math.min(freePromoN, selectedCountForPricing) : 0
+            };
+          })()
+        : undefined,
       paymentState: salesModeActive ? paymentState : undefined,
       approvalsState: salesModeActive ? approvalsState : undefined,
       approvedPhotoIds: salesModeActive ? approvedPhotoIds : undefined,
@@ -6916,6 +7064,57 @@ router.post('/client/payment-proof', requireClient, uploadMem.single('proof'), a
 
     const payment = await ksGetPaymentByClientRound(client, req.ksClient.galleryId, clientId, round);
     res.json({ success: true, payment, message: 'Comprovante enviado. Aguarde a validação do fotógrafo.' });
+  } finally {
+    client.release();
+  }
+}));
+
+router.post('/client/promo-verify', requireClient, asyncHandler(async (req, res) => {
+  const slug = String(req.body?.slug || '').trim();
+  const socialConfirmed = !!req.body?.social_confirmed;
+  const couponCode = String(req.body?.coupon_code || '').trim();
+  if (!slug) return res.status(400).json({ message: 'slug é obrigatório.' });
+  if (slug !== req.ksClient.slug) return res.status(403).json({ message: 'Sem permissão.' });
+  const cid = req.ksCtx.cid ? parseInt(req.ksCtx.cid, 10) : 0;
+  if (!cid) return res.status(403).json({ message: 'Entre com sua conta para validar o cupom.' });
+  if (!socialConfirmed) {
+    return res.status(400).json({ message: 'Marque que seguiu os perfis indicados.' });
+  }
+  if (!couponCode) return res.status(400).json({ message: 'Informe o código do cupom.' });
+
+  const client = await db.pool.connect();
+  try {
+    const hasPromo = await hasColumn(client, 'king_galleries', 'promo_enabled');
+    if (!hasPromo) {
+      return res.status(503).json({ message: 'Cupom indisponível neste servidor. Execute a migration 213 no Postgres.' });
+    }
+    const gRes = await client.query(
+      'SELECT id, promo_enabled, promo_coupon_code, promo_valid_until FROM king_galleries WHERE id=$1',
+      [req.ksClient.galleryId]
+    );
+    const g = gRes.rows[0];
+    if (!g || !g.promo_enabled) return res.status(400).json({ message: 'Cupom não está ativo nesta galeria.' });
+    if (!ksPromoWindowStillValid(g)) return res.status(400).json({ message: 'Este cupom expirou. Fale com o fotógrafo.' });
+    const want = ksNormPromoCouponCode(g.promo_coupon_code);
+    const got = ksNormPromoCouponCode(couponCode);
+    if (!want || want !== got) return res.status(400).json({ message: 'Código do cupom inválido.' });
+
+    const hasVal = await hasColumn(client, 'king_gallery_clients', 'promo_coupon_validated_at');
+    if (!hasVal) {
+      return res.status(503).json({ message: 'Cadastro de cliente sem campos de cupom. Execute a migration 213.' });
+    }
+
+    await client.query(
+      `UPDATE king_gallery_clients
+       SET promo_social_confirmed_at = NOW(),
+           promo_coupon_validated_at = NOW(),
+           promo_coupon_entered = $1,
+           updated_at = NOW()
+       WHERE id=$2 AND gallery_id=$3`,
+      [String(couponCode).trim().slice(0, 120), cid, req.ksClient.galleryId]
+    );
+
+    res.json({ success: true, message: 'Cupom aplicado com sucesso.' });
   } finally {
     client.release();
   }
