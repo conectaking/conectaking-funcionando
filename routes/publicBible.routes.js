@@ -28,8 +28,9 @@ function isLocalFrontend(baseUrl) {
 }
 
 /**
- * URL da página da Bíblia no painel (bibliaking.html). itemId opcional.
+ * URL da página da Bíblia no painel (/bibliaking.html → /bible.html). itemId opcional.
  * Com `req`, usa o mesmo host do pedido (evita perder sessão entre domínios).
+ * O HTML é servido por views/biblePanel.ejs (rota Express), não por ficheiros em public/.
  */
 function getBiblePanelUrl(itemId, req) {
     let base;
@@ -42,7 +43,7 @@ function getBiblePanelUrl(itemId, req) {
     } else {
         base = getFrontendBase();
     }
-    const path = isLocalFrontend(base) ? 'public_html/bibliaking.html' : 'bibliaking.html';
+    const path = 'bibliaking.html';
     const dashPath = isLocalFrontend(base) ? 'public_html/dashboard.html' : 'dashboard.html';
     return itemId ? `${base}/${path}?itemId=${itemId}` : `${base}/${dashPath}`;
 }
@@ -71,6 +72,17 @@ async function getBiblePageContext(client, slug) {
         API_URL: null
     };
 }
+
+/** Painel da Bíblia (cartão): fonte única em views/biblePanel.ejs — evita duplicar HTML em public/. */
+router.get('/bible.html', (req, res) => {
+    res.render('biblePanel', { title: 'Bíblia — painel' });
+});
+
+router.get('/bibliaking.html', (req, res) => {
+    const itemId = req.query.itemId || req.query.id;
+    const q = itemId ? `?itemId=${encodeURIComponent(String(itemId))}` : '';
+    res.redirect(302, `/bible.html${q}`);
+});
 
 /** URL antiga: redireciona para a URL limpa /biblia/estudos-livro/:bookId */
 router.get('/:slug/bible/estudo-livro', (req, res) => {
