@@ -73,28 +73,7 @@ async function getBiblePageContext(client, slug) {
     };
 }
 
-/** Painel da Bíblia (cartão): fonte única em views/biblePanel.ejs — evita duplicar HTML em public/. */
-router.get('/bible.html', (req, res) => {
-    res.render('biblePanel', { title: 'Bíblia — painel' });
-});
-
-router.get('/bibliaking.html', (req, res) => {
-    const itemId = req.query.itemId || req.query.id;
-    const q = itemId ? `?itemId=${encodeURIComponent(String(itemId))}` : '';
-    res.redirect(302, `/bible.html${q}`);
-});
-
-/** Compat: alguns ambientes abrem …/public_html/bibliaking.html (Live Server) — canoniza para /bibliaking.html */
-router.get('/public_html/bibliaking.html', (req, res) => {
-    const itemId = req.query.itemId || req.query.id;
-    const q = itemId ? `?itemId=${encodeURIComponent(String(itemId))}` : '';
-    res.redirect(302, `/bibliaking.html${q}`);
-});
-
-router.get('/public_html/bible.html', (req, res) => {
-    const qs = req.url && req.url.indexOf('?') >= 0 ? req.url.slice(req.url.indexOf('?')) : '';
-    res.redirect(302, `/bible.html${qs}`);
-});
+/** Painel /bible.html: definido em server.js antes do static (prioridade sobre ficheiros em public_html). */
 
 /** URL antiga: redireciona para a URL limpa /biblia/estudos-livro/:bookId */
 router.get('/:slug/bible/estudo-livro', (req, res) => {

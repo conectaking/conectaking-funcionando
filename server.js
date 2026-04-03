@@ -685,6 +685,28 @@ app.get([
 // Proxy Laravel: /kingselection/admin e demais rotas reservadas/subcaminhos
 app.use('/kingselection', proxyKingSelection);
 
+// Painel Bíblia (EJS) ANTES de express.static(public_html): no Node a vista tem prioridade sobre qualquer
+// public_html/bible.html; em conectaking.com.br (só estático) o ficheiro de redirect no Hostinger envia para a API.
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.get('/bible.html', (req, res) => {
+    res.render('biblePanel', { title: 'Bíblia — painel' });
+});
+app.get('/bibliaking.html', (req, res) => {
+    const itemId = req.query.itemId || req.query.id;
+    const q = itemId ? `?itemId=${encodeURIComponent(String(itemId))}` : '';
+    res.redirect(302, `/bible.html${q}`);
+});
+app.get('/public_html/bibliaking.html', (req, res) => {
+    const itemId = req.query.itemId || req.query.id;
+    const q = itemId ? `?itemId=${encodeURIComponent(String(itemId))}` : '';
+    res.redirect(302, `/bibliaking.html${q}`);
+});
+app.get('/public_html/bible.html', (req, res) => {
+    const qs = req.url && req.url.indexOf('?') >= 0 ? req.url.slice(req.url.indexOf('?')) : '';
+    res.redirect(302, `/bible.html${qs}`);
+});
+
 // ============================================
 // Frontend estático (Hostinger → Render/Node)
 // Serve public_html/ como origem do domínio
@@ -767,10 +789,6 @@ app.get('/logo.png', (req, res) => {
         res.redirect(302, logoFaviconUrl);
     }
 });
-
-
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
 
 // Favicon: logomarca em todas as páginas (usa mesma URL das rotas acima)
 app.locals.faviconUrl = logoFaviconUrl;

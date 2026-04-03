@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bíblia — a redirecionar…</title>
+    <script>
+        (function () {
+            var DEFAULT_API = 'https://conectaking-api.onrender.com';
+            var api = DEFAULT_API;
+            try {
+                var s = localStorage.getItem('conecta_api_origin');
+                if (s) api = s.replace(/\/$/, '');
+            } catch (e) {}
+            window.location.replace(api + '/bible.html' + (window.location.search || ''));
+        })();
+    </script>
+</head>
+<body><p>A redirecionar…</p></body>
+</html>
