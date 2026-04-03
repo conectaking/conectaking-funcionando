@@ -108,16 +108,17 @@
     </style>
 </head>
 <body>
-    <% if (typeof biblePanelUrl === 'undefined' || !biblePanelUrl) { biblePanelUrl = (baseUrl ? String(baseUrl).replace(/\/$/, '') : '') + '/' + slug + '/bible/gn/1'; } %>
+    <% if (typeof biblePanelUrl === 'undefined' || !biblePanelUrl) { biblePanelUrl = (baseUrl ? String(baseUrl).replace(/\/$/, '') : '') + '/' + slug + '/biblia'; } %>
+    <% var dashboardUrlReader = typeof dashboardUrl !== 'undefined' && dashboardUrl ? dashboardUrl : ((typeof baseUrl !== 'undefined' && baseUrl ? String(baseUrl).replace(/\/$/, '') : '') + '/dashboard.html'); %>
     <% var returnTo = typeof returnTo !== 'undefined' && returnTo ? returnTo : ''; %>
     <% var _ch = chapterData.chapter || 1; var _tot = chapterData.totalChapters || 1; var _pct = Math.min(100, Math.round((_ch / _tot) * 100)); %>
     <div class="reader-chapter-progress" title="Capítulo <%= _ch %> de <%= _tot %>"><span style="width:<%= _pct %>%"></span></div>
     <div class="reader-wrap">
         <% if (returnTo) { %>
         <a href="<%= returnTo %>" class="back-link" id="back-study-link"><i class="fas fa-arrow-left"></i> Voltar ao estudo</a>
-        <a href="javascript:void(0)" id="back-bible-link" class="back-link" style="margin-left:12px;font-size:0.85rem;opacity:0.9"><i class="fas fa-home"></i> Painel da Bíblia</a>
+        <a href="javascript:void(0)" id="back-bible-link" class="back-link" style="margin-left:12px;font-size:0.85rem;opacity:0.9"><i class="fas fa-home"></i> Menu inicial</a>
         <% } else { %>
-        <a href="javascript:void(0)" id="back-bible-link" class="back-link"><i class="fas fa-arrow-left"></i> Voltar ao painel da Bíblia</a>
+        <a href="javascript:void(0)" id="back-bible-link" class="back-link"><i class="fas fa-arrow-left"></i> Voltar ao menu inicial</a>
         <% } %>
         <div class="reader-header">
             <div class="book-icon"><i class="fas fa-book-open"></i></div>
@@ -201,6 +202,7 @@
             const texts = Array.from(verses).map(v => v.querySelector('.verse-text').textContent);
             const fullText = texts.join(' ');
             const biblePanelUrl = <%- JSON.stringify(biblePanelUrl) %>;
+            const dashboardUrl = <%- JSON.stringify(dashboardUrlReader) %>;
             const readerSlug = <%- JSON.stringify(slug) %>;
             const readerBookId = <%- JSON.stringify(chapterData.bookId) %>;
             const readerChapter = <%- JSON.stringify(chapterData.chapter) %>;
@@ -382,7 +384,7 @@
             })();
 
             var backBible = document.getElementById('back-bible-link');
-            if (backBible) backBible.addEventListener('click', function() { window.location.href = biblePanelUrl; });
+            if (backBible) backBible.addEventListener('click', function() { window.location.href = dashboardUrl || biblePanelUrl; });
 
             (function chapterPicker() {
                 var trigger = document.getElementById('cap-picker-trigger');

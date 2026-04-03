@@ -17,6 +17,11 @@ function getFrontendBase() {
     return (process.env.FRONTEND_URL || process.env.API_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
 }
 
+/** Menu inicial Conecta King (dashboard.html) — não o perfil público. */
+function getDashboardHtmlUrl() {
+    return `${getFrontendBase()}/dashboard.html`;
+}
+
 /** Retorna true se a base for ambiente local (Live Server, etc.). */
 function isLocalFrontend(baseUrl) {
     try {
@@ -171,6 +176,7 @@ async function renderBookStudy(req, res, slug, bookId) {
             study: study ? { ...study, contentSafe } : null,
             baseUrl: base,
             biblePanelUrl,
+            dashboardUrl: getDashboardHtmlUrl(),
             returnTo
         });
     } finally {
@@ -206,7 +212,11 @@ router.get('/:slug/biblia', asyncHandler(async (req, res) => {
             baseUrl,
             API_URL: process.env.FRONTEND_URL || baseUrl,
             ttsScriptSrc,
-            initialEstudoBookId: null
+            initialEstudoBookId: null,
+            dashboardUrl: getDashboardHtmlUrl(),
+            profilePublicUrl: `${baseUrl.replace(/\/$/, '')}/${encodeURIComponent(ctx.slug)}`,
+            cunhaDevotionalUrl: (process.env.BIBLE_CUNHA_URL || '').trim(),
+            bibleAiAssistantUrl: (process.env.BIBLE_AI_URL || '').trim()
         });
     } finally {
         client.release();
