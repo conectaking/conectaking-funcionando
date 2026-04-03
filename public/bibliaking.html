@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bíblia — Conecta King</title>
+    <script>
+        /**
+         * Cópia de public_html/bibliaking.html — mesma lógica (ver comentários lá).
+         */
+        (function () {
+            var search = window.location.search || '';
+            var api = '';
+            try {
+                api = (localStorage.getItem('conecta_api_origin') || '').replace(/\/$/, '');
+            } catch (e) {}
+            if (!api) {
+                var loc = window.location;
+                var path = loc.pathname || '';
+                var localHost = loc.hostname === '127.0.0.1' || loc.hostname === 'localhost';
+                if (localHost && (loc.port === '5500' || path.indexOf('public_html') !== -1)) {
+                    var port = '5000';
+                    try {
+                        var p = localStorage.getItem('conecta_node_port');
+                        if (p && /^[0-9]+$/.test(String(p).trim())) port = String(p).trim();
+                    } catch (err) {}
+                    api = loc.protocol + '//' + loc.hostname + ':' + port;
+                } else {
+                    api = (loc.origin || '').replace(/\/$/, '');
+                }
+            }
+            window.location.replace(api + '/bible.html' + search);
+        })();
+    </script>
+</head>
+<body>
+    <p style="font-family: system-ui, sans-serif; padding: 1.5rem;">A abrir a Bíblia no servidor Node (porta 5000 por defeito)…</p>
+</body>
+</html>
