@@ -685,13 +685,24 @@ app.get([
 // Proxy Laravel: /kingselection/admin e demais rotas reservadas/subcaminhos
 app.use('/kingselection', proxyKingSelection);
 
-// Painel Bíblia (EJS) ANTES de express.static(public_html): no Node a vista tem prioridade sobre qualquer
-// public_html/bible.html; em conectaking.com.br (só estático) o ficheiro de redirect no Hostinger envia para a API.
+// /bible.html?itemId= → redirect para /:slug/biblia (experiência pública completa; não usa biblePanel com login).
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.get('/bible.html', (req, res) => {
-    res.render('biblePanel', { title: 'Bíblia — painel' });
-});
+app.get('/bible.html', asyncHandler(async (req, res) => {
+    const rawId = req.query.itemId || req.query.id;
+    const proto = (req.get('x-forwarded-proto') || req.protocol || 'https').toString().split(',')[0].trim();
+    const host = (req.get('x-forwarded-host') || req.get('host') || '').toString().split(',')[0].trim();
+    const selfBase = `${proto}://${host}`.replace(/\/$/, '');
+    if (rawId) {
+        const bibleRepository = require('./modules/bible/bible.repository');
+        const slug = await bibleRepository.getProfileSlugByBibleProfileItemId(rawId);
+        if (slug) {
+            return res.redirect(302, `${selfBase}/${encodeURIComponent(slug)}/biblia`);
+        }
+    }
+    const fallback = (process.env.FRONTEND_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
+    res.redirect(302, `${fallback}/`);
+}));
 app.get('/bibliaking.html', (req, res) => {
     const itemId = req.query.itemId || req.query.id;
     const q = itemId ? `?itemId=${encodeURIComponent(String(itemId))}` : '';

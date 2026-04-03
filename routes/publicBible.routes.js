@@ -28,11 +28,10 @@ function isLocalFrontend(baseUrl) {
 }
 
 /**
- * URL da página da Bíblia no painel (/bibliaking.html → /bible.html). itemId opcional.
- * Com `req`, usa o mesmo host do pedido (evita perder sessão entre domínios).
- * O HTML é servido por views/biblePanel.ejs (rota Express), não por ficheiros em public/.
+ * URL “painel” da Bíblia = página pública /:slug/biblia (versículo do dia, livros, devocionais).
+ * Sem slug no contexto: /bible.html?itemId= (o servidor redireciona para /slug/biblia).
  */
-function getBiblePanelUrl(itemId, req) {
+function getBiblePanelUrl(itemId, req, slugParam) {
     let base;
     if (req && typeof req.get === 'function' && req.protocol) {
         try {
@@ -43,9 +42,15 @@ function getBiblePanelUrl(itemId, req) {
     } else {
         base = getFrontendBase();
     }
-    const path = 'bibliaking.html';
     const dashPath = isLocalFrontend(base) ? 'public_html/dashboard.html' : 'dashboard.html';
-    return itemId ? `${base}/${path}?itemId=${itemId}` : `${base}/${dashPath}`;
+    const slug = slugParam || (req && req.params && req.params.slug);
+    if (slug) {
+        return `${base}/${encodeURIComponent(slug)}/biblia`;
+    }
+    if (itemId) {
+        return `${base}/bible.html?itemId=${encodeURIComponent(itemId)}`;
+    }
+    return `${base}/${dashPath}`;
 }
 
 /** Renderiza a página da Bíblia (biblePublic) com os dados do perfil. */
@@ -154,7 +159,7 @@ async function renderBookStudy(req, res, slug, bookId) {
         const bookName = book ? (book.name || bookId) : bookId;
         const study = await bibleService.getBookStudy(bookId);
         const bibleItemId = ctx.bibleItemId || null;
-        const biblePanelUrl = getBiblePanelUrl(bibleItemId, req);
+        const biblePanelUrl = getBiblePanelUrl(bibleItemId, req, ctx.slug);
         const returnTo = base + '/' + slug + '/biblia/estudos-livro/' + encodeURIComponent(bookId || '');
         const contentSafe = study && study.content
             ? prepareStudyContent(study.content, base, slug, bookId, returnTo)
@@ -172,6 +177,41 @@ async function renderBookStudy(req, res, slug, bookId) {
         client.release();
     }
 }
+
+/** Página principal da Bíblia pública (hub): versículo do dia, receba mais, livros, estudos — sem login. */
+router.get('/:slug/biblia', asyncHandler(async (req, res) => {
+    const { slug } = req.params;
+    const client = await db.pool.connect();
+    try {
+        const ctx = await getBiblePageContext(client, slug);
+        if (!ctx) {
+            return res.status(404).send(`
+                <!DOCTYPE html>
+                <html><head><meta charset="utf-8"><title>Bíblia não encontrada</title></head>
+                <body style="font-family:sans-serif;text-align:center;padding:3rem;background:#0D0D0F;color:#ECECEC;">
+                    <h1>Bíblia não encontrada</h1>
+                    <p>Este perfil não possui o módulo Bíblia ativo.</p>
+                </body></html>
+            `);
+        }
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const booksManifest = bibleService.loadBooksManifest();
+        const frontendBase = getFrontendBase();
+        const isLocal = isLocalFrontend(frontendBase);
+        const ttsScriptSrc = frontendBase + (isLocal ? '/public_html/js/tts.js' : '/js/tts.js');
+        res.render('biblePublic', {
+            slug: ctx.slug,
+            translation: ctx.translation || 'nvi',
+            booksManifest,
+            baseUrl,
+            API_URL: process.env.FRONTEND_URL || baseUrl,
+            ttsScriptSrc,
+            initialEstudoBookId: null
+        });
+    } finally {
+        client.release();
+    }
+}));
 
 router.get('/:slug/biblia/estudos-livro', (req, res) => {
     res.redirect(302, getBiblePanelUrl(null, req));
@@ -213,7 +253,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             const baseUrl = `${req.protocol}://${req.get('host')}`;
             const tParam = translation !== 'nvi' ? '?translation=' + encodeURIComponent(translation) : '';
             const bibleItemId = itemRes.rows[0]?.id || null;
-            const biblePanelUrl = bibleItemId ? getBiblePanelUrl(bibleItemId, req) : `${baseUrl}/${slug}/bible/gn/1`;
+            const biblePanelUrl = bibleItemId ? getBiblePanelUrl(bibleItemId, req, slug) : `${baseUrl}/${slug}/biblia`;
             const returnTo = (req.query.returnTo && typeof req.query.returnTo === 'string') ? req.query.returnTo : '';
             const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter);
             const manifestReader = bibleService.loadBooksManifest();
@@ -243,13 +283,10 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
     }
 }));
 
-/**
- * Página principal /:slug/bible desativada como conteúdo único — redireciona para o leitor (Gênesis 1)
- * para que links antigos e o cartão público abram a Bíblia corretamente.
- */
+/** /:slug/bible (URL antiga) → hub público /:slug/biblia */
 router.get('/:slug/bible', (req, res) => {
     const slug = req.params.slug;
-    res.redirect(302, `/${encodeURIComponent(slug)}/bible/gn/1`);
+    res.redirect(302, `/${encodeURIComponent(slug)}/biblia`);
 });
 
 module.exports = router;
