@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bíblia — Conecta King</title>
+    <script>
+        (function () {
+            var q = new URLSearchParams(window.location.search);
+            var id = q.get('itemId') || q.get('id') || '';
+            var target = 'bible.html';
+            if (id) target += '?itemId=' + encodeURIComponent(id);
+            window.location.replace(target);
+        })();
+    </script>
+    <meta http-equiv="refresh" content="0;url=bible.html">
+</head>
+<body>
+    <p style="font-family: system-ui, sans-serif; padding: 1.5rem;">A abrir a Bíblia… Se não redirecionar, <a href="bible.html">toque aqui</a>.</p>
+</body>
+</html>
