@@ -68,6 +68,22 @@ async function ensureOwnership(profileItemId, userId) {
     }
 }
 
+/** Slug público do cartão (users.profile_slug) para o item do perfil. */
+async function getProfileSlugByItemId(profileItemId, userId) {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            `SELECT u.profile_slug FROM profile_items pi
+             INNER JOIN users u ON u.id = pi.user_id
+             WHERE pi.id = $1 AND pi.user_id = $2 LIMIT 1`,
+            [profileItemId, userId]
+        );
+        return r.rows[0]?.profile_slug || null;
+    } finally {
+        client.release();
+    }
+}
+
 async function getProgress(userId) {
     const client = await db.pool.connect();
     try {
@@ -630,6 +646,7 @@ module.exports = {
     create,
     update,
     ensureOwnership,
+    getProfileSlugByItemId,
     getProgress,
     markRead,
     resetProgress,

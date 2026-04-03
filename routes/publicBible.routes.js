@@ -27,9 +27,21 @@ function isLocalFrontend(baseUrl) {
     }
 }
 
-/** URL da página da Bíblia no painel (bibliaking.html). itemId opcional. */
-function getBiblePanelUrl(itemId) {
-    const base = getFrontendBase();
+/**
+ * URL da página da Bíblia no painel (bibliaking.html). itemId opcional.
+ * Com `req`, usa o mesmo host do pedido (evita perder sessão entre domínios).
+ */
+function getBiblePanelUrl(itemId, req) {
+    let base;
+    if (req && typeof req.get === 'function' && req.protocol) {
+        try {
+            base = `${req.protocol}://${req.get('host')}`.replace(/\/$/, '');
+        } catch (_) {
+            base = getFrontendBase();
+        }
+    } else {
+        base = getFrontendBase();
+    }
     const path = isLocalFrontend(base) ? 'public_html/bibliaking.html' : 'bibliaking.html';
     const dashPath = isLocalFrontend(base) ? 'public_html/dashboard.html' : 'dashboard.html';
     return itemId ? `${base}/${path}?itemId=${itemId}` : `${base}/${dashPath}`;
@@ -62,7 +74,7 @@ async function getBiblePageContext(client, slug) {
 
 /** URL antiga: redireciona para a URL limpa /biblia/estudos-livro/:bookId */
 router.get('/:slug/bible/estudo-livro', (req, res) => {
-    const dashboardUrl = getBiblePanelUrl(null);
+    const dashboardUrl = getBiblePanelUrl(null, req);
     res.status(404).send(`
         <!DOCTYPE html>
         <html><head><meta charset="utf-8"><title>Página não disponível</title></head>
@@ -78,7 +90,7 @@ router.get('/:slug/bible/estudo-livro/:bookId', (req, res) => {
     res.redirect(302, `/${req.params.slug}/biblia/estudos-livro/${encodeURIComponent(req.params.bookId)}`);
 });
 
-/** Escapa HTML e opcionalmente transforma referências Gn/Gênesis em links para o leitor. */
+/** Escapa HTML e transforma "Nome do livro + capítulo" em links (todos os livros do manifest). */
 function prepareStudyContent(raw, baseUrl, slug, bookId, returnTo) {
     if (!raw || typeof raw !== 'string') return '';
     const escape = (s) => String(s)
@@ -87,17 +99,32 @@ function prepareStudyContent(raw, baseUrl, slug, bookId, returnTo) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
     let out = escape(raw).replace(/\n/g, '<br>');
-    if ((bookId || '').toLowerCase() === 'gn') {
-        const base = (baseUrl || '').replace(/\/$/, '') + '/' + (slug || '') + '/bible/gn/';
-        const returnQ = returnTo ? '?returnTo=' + encodeURIComponent(returnTo) : '';
-        out = out.replace(/\b(?:Gn|Gênesis)\s*(\d+)(?::(\d+))?(?:[–-]\d+)?(?:\s*[–-]\s*\d+(?::\d+(?:[–-]\d+)?)?)?\b/g, (match) => {
-            const m = match.match(/(\d+)(?::(\d+))?/);
-            const ch = m[1];
-            const v = m[2] || '';
-            const href = base + ch + (v ? '#v' + v : '') + returnQ;
-            return '<a href="' + href + '" class="bible-ref-link" target="_blank" rel="noopener">' + match + '</a>';
-        });
+    const manifest = bibleService.loadBooksManifest();
+    const allBooks = (manifest.at || []).concat(manifest.nt || []).filter((b) => b && b.id && b.name);
+    if (!allBooks.length) return out;
+    const sorted = [...allBooks].sort((a, b) => String(b.name).length - String(a.name).length);
+    const nameToId = {};
+    sorted.forEach((b) => {
+        nameToId[String(b.name).toLowerCase()] = b.id;
+    });
+    const parts = sorted.map((b) => String(b.name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    let alternation;
+    try {
+        alternation = parts.join('|');
+    } catch (_) {
+        return out;
     }
+    if (!alternation) return out;
+    const re = new RegExp('\\b(' + alternation + ')\\s+(\\d+)(?::(\\d+))?', 'gi');
+    const base = (baseUrl || '').replace(/\/$/, '');
+    const returnQ = returnTo ? '?returnTo=' + encodeURIComponent(returnTo) : '';
+    out = out.replace(re, (match, bookName, ch, verseNum) => {
+        const id = nameToId[String(bookName).toLowerCase()];
+        if (!id) return match;
+        const v = verseNum || '';
+        const href = base + '/' + slug + '/bible/' + id + '/' + ch + (v ? '#v' + v : '') + returnQ;
+        return '<a href="' + href + '" class="bible-ref-link" target="_blank" rel="noopener">' + match + '</a>';
+    });
     return out;
 }
 
@@ -124,7 +151,7 @@ async function renderBookStudy(req, res, slug, bookId) {
         const bookName = book ? (book.name || bookId) : bookId;
         const study = await bibleService.getBookStudy(bookId);
         const bibleItemId = ctx.bibleItemId || null;
-        const biblePanelUrl = getBiblePanelUrl(bibleItemId);
+        const biblePanelUrl = getBiblePanelUrl(bibleItemId, req);
         const returnTo = base + '/' + slug + '/biblia/estudos-livro/' + encodeURIComponent(bookId || '');
         const contentSafe = study && study.content
             ? prepareStudyContent(study.content, base, slug, bookId, returnTo)
@@ -144,7 +171,7 @@ async function renderBookStudy(req, res, slug, bookId) {
 }
 
 router.get('/:slug/biblia/estudos-livro', (req, res) => {
-    res.redirect(302, getBiblePanelUrl(null));
+    res.redirect(302, getBiblePanelUrl(null, req));
 });
 
 router.get('/:slug/biblia/estudos-livro/:bookId', asyncHandler(async (req, res) => {
@@ -183,9 +210,11 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             const baseUrl = `${req.protocol}://${req.get('host')}`;
             const tParam = translation !== 'nvi' ? '?translation=' + encodeURIComponent(translation) : '';
             const bibleItemId = itemRes.rows[0]?.id || null;
-            const biblePanelUrl = bibleItemId ? getBiblePanelUrl(bibleItemId) : `${baseUrl}/${slug}/bible/gn/1`;
+            const biblePanelUrl = bibleItemId ? getBiblePanelUrl(bibleItemId, req) : `${baseUrl}/${slug}/bible/gn/1`;
             const returnTo = (req.query.returnTo && typeof req.query.returnTo === 'string') ? req.query.returnTo : '';
             const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter);
+            const manifestReader = bibleService.loadBooksManifest();
+            const isOldTestament = (manifestReader.at || []).some((b) => b && b.id === bookId);
             const frontendBase = getFrontendBase();
             const isLocal = isLocalFrontend(frontendBase);
             const ttsScriptSrc = frontendBase + (isLocal ? '/public_html/js/tts.js' : '/js/tts.js');
@@ -199,7 +228,8 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 returnTo,
                 API_URL: process.env.FRONTEND_URL || baseUrl,
                 ttsScriptSrc,
-                jesusVerseNumbers: jesusVerseNumbers || []
+                jesusVerseNumbers: jesusVerseNumbers || [],
+                isOldTestament
             });
         } finally {
             client.release();

@@ -163,7 +163,8 @@ async function getConfig(profileItemId, userId) {
     if (!owned) throw new Error('Sem permissão para este item.');
     let item = await repository.findByProfileItemId(profileItemId);
     if (!item) item = await repository.create(profileItemId);
-    return item;
+    const profile_slug = await repository.getProfileSlugByItemId(profileItemId, userId);
+    return { ...item, profile_slug };
 }
 
 async function saveConfig(profileItemId, userId, data) {
@@ -171,7 +172,9 @@ async function saveConfig(profileItemId, userId, data) {
     if (!owned) throw new Error('Sem permissão para este item.');
     let item = await repository.findByProfileItemId(profileItemId);
     if (!item) item = await repository.create(profileItemId);
-    return await repository.update(profileItemId, data);
+    const updated = await repository.update(profileItemId, data);
+    const profile_slug = await repository.getProfileSlugByItemId(profileItemId, userId);
+    return { ...updated, profile_slug };
 }
 
 function getNameMeaning(name) {
