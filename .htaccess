@@ -18,6 +18,13 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 RewriteCond %{HTTP_HOST} ^conectaking.com.br [NC]
 RewriteRule ^(.*)$ https://www.conectaking.com.br/$1 [L,R=301,NC]
 
+# Painel Bíblia (módulo): a página real corre no Node (Render). Tem prioridade sobre as regras de
+# "URL limpa" abaixo — senão bible.html vira /bible e facilmente dá 404 se o ficheiro não existir no Hostinger.
+RewriteRule ^bible\.html$ https://conectaking-api.onrender.com/bible.html [R=302,L,QSA]
+RewriteRule ^bibliaking\.html$ https://conectaking-api.onrender.com/bibliaking.html [R=302,L,QSA]
+RewriteRule ^bible/?$ https://conectaking-api.onrender.com/bible.html [R=302,L,QSA]
+RewriteRule ^bibliaking/?$ https://conectaking-api.onrender.com/bibliaking.html [R=302,L,QSA]
+
 # 1. Redireciona o usuário que acessa "pagina.html" para a versão limpa "pagina"
 RewriteCond %{THE_REQUEST} \s/+(.+?)\.html[\s?] [NC]
 RewriteRule ^ %1 [R=301,L]
