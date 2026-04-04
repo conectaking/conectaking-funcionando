@@ -389,7 +389,9 @@ function getDev365GenerationJob(jobId) {
         etaMinutes,
         currentDay: j.currentDay,
         errorMessage: j.errorMessage || null,
-        failedSamples: (j.failedSamples || []).slice(0, 20)
+        failedSamples: (j.failedSamples || []).slice(0, 20),
+        updatedAt: j.updatedAt || null,
+        startedAt: j.startedAt || null
     };
 }
 

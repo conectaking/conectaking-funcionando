@@ -272,7 +272,7 @@
                     <p style="color:#ECECEC;font-size:1rem;margin-bottom:8px"><strong id="meu-progresso-total">0</strong> devocional(is) lido(s)</p>
                     <p id="meu-progresso-dias" style="font-size:0.85rem;color:#A1A1A1;line-height:1.5"></p>
                 </div>
-                <div id="meu-progresso-empty" style="display:none;color:#A1A1A1;font-size:0.9rem">Nenhum devocional marcado como lido ainda. Abra <strong>Devocional diário</strong> (cronograma) ou o bloco <strong>Devocionais 365</strong> abaixo e use &quot;Marcar como lido&quot;.</div>
+                <div id="meu-progresso-empty" style="display:none;color:#A1A1A1;font-size:0.9rem">Nenhum devocional marcado como lido ainda. Abra <strong>Devocional diário</strong> e use &quot;Marcar como lido&quot;.</div>
             </div>
         </div>
 
@@ -364,7 +364,7 @@
                 </div>
             </div>
             <div id="receba-plano" class="receba-content">
-                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:14px">Cronograma de <strong>vários capítulos por dia</strong> para terminar a Bíblia em ~1 ano (leitura por etapas). Escolha uma <strong>data no calendário</strong> ou o <strong>número do dia</strong> (1–365). O texto devocional ligado a cada dia (tema/reflexão) está também no bloco <strong>Devocionais 365</strong> no fim da página.</p>
+                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:14px">Cronograma de <strong>vários capítulos por dia</strong> para terminar a Bíblia em ~1 ano. Abaixo aparecem a leitura do dia e o <strong>devocional</strong> (reflexão, aplicação e oração) quando existir na base para esse dia.</p>
                 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
                     <div>
                         <label for="plano-date" style="font-size:0.82rem;color:#A1A1A1;display:block;margin-bottom:6px"><i class="fas fa-calendar-alt" style="margin-right:6px;opacity:0.9"></i>Data no calendário</label>
@@ -379,9 +379,10 @@
                 </div>
                 <p id="plano-date-hint" style="font-size:0.88rem;color:#FFC700;margin:0 0 16px;line-height:1.45"></p>
                 <div id="plano-content"><p style="color:#A1A1A1;font-size:0.9rem">Escolha uma data ou um número de dia e clique em Carregar, ou use Dia de hoje.</p></div>
-                <div class="bible-actions" id="plano-actions" style="display:none;margin-top:16px">
+                <div class="bible-actions" id="plano-actions" style="display:none;margin-top:16px;flex-wrap:wrap;gap:10px;align-items:center">
                     <button type="button" class="bible-btn" id="plano-btn-ouvir" title="Ouvir"><i class="fas fa-volume-up"></i> Ouvir</button>
                     <button type="button" class="bible-btn" id="plano-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                    <button type="button" class="bible-btn secondary" id="plano-btn-mark-read" title="Marcar este dia como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
                 </div>
             </div>
             <div id="receba-estudo-livro" class="receba-content">
@@ -423,66 +424,10 @@
             </div>
         </div>
 
-        <!-- Devocionais 365, Estudos, Esboços -->
-        <div class="bible-card">
-            <h3 style="margin-bottom:16px;color:#FFC700">Devocionais 365</h3>
-            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Use o <strong>calendário</strong> ou o <strong>dia 1–365</strong> do ano civil que escolher abaixo; o modo de tema segue o mês/ano. Reflexão enriquecida é opcional (recomendado).</p>
-            <div style="margin-bottom:12px">
-                <label style="font-size:0.85rem;color:#A1A1A1;display:block;margin-bottom:6px">Como aplicar o tema</label>
-                <select id="dev365-tema-modo" style="width:100%;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.35);color:#ECECEC;font-size:0.9rem;cursor:pointer">
-                    <option value="mes_auto">Tema automático do mês (muda conforme o calendário)</option>
-                    <option value="ano_auto">Tema automático do ano (prioridade no texto)</option>
-                    <option value="mes_e_ano">Mês + ano juntos na reflexão</option>
-                    <option value="personalizado">Tema personalizado (escrevo abaixo)</option>
-                </select>
-            </div>
-            <div id="dev365-tema-custom-wrap" style="display:none;margin-bottom:12px">
-                <label style="font-size:0.85rem;color:#A1A1A1;display:block;margin-bottom:6px">Seu tema (ex.: perseverança na família)</label>
-                <input type="text" id="dev365-tema-custom" maxlength="500" placeholder="Ex.: perseverança na família" style="width:100%;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,199,0,0.35);background:rgba(0,0,0,0.3);color:#ECECEC;font-size:0.95rem">
-            </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-                <label style="font-size:0.85rem;color:#A1A1A1">Ano (calendário): <input type="number" id="dev365-year" min="2000" max="2100" style="width:88px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC"></label>
-                <label style="font-size:0.85rem;color:#A1A1A1;display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-dev365-ai" checked style="width:18px;height:18px;accent-color:#FFC700"> Reflexão enriquecida (recomendado)</label>
-            </div>
-            <div style="margin-bottom:12px">
-                <label style="font-size:0.85rem;color:#A1A1A1;display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-dev365-estilo-cunha" style="width:18px;height:18px;accent-color:#FFC700"> Tom estilo mensagem de rádio / devocional em áudio (inspirado em fé diária; não copia terceiros)</label>
-            </div>
-            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;align-items:flex-end">
-                <div>
-                    <label for="dev365-date" style="font-size:0.82rem;color:#A1A1A1;display:block;margin-bottom:6px"><i class="fas fa-calendar-alt" style="margin-right:6px;opacity:0.9"></i>Data no calendário</label>
-                    <input type="date" id="dev365-date" style="padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC;font-size:0.95rem;min-height:42px;box-sizing:border-box"/>
-                </div>
-                <div>
-                    <label for="dev365-day" style="font-size:0.82rem;color:#A1A1A1;display:block;margin-bottom:6px">Dia do ano (1–365)</label>
-                    <input type="number" id="dev365-day" min="1" max="365" placeholder="1–365" style="width:100px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC"/>
-                </div>
-                <button type="button" class="bible-btn" id="btn-dev365-load"><i class="fas fa-book-open"></i> Carregar</button>
-                <button type="button" class="bible-btn secondary" id="btn-dev365-today"><i class="fas fa-calendar-check"></i> Dia de hoje</button>
-            </div>
-            <p id="dev365-date-hint" style="font-size:0.88rem;color:#FFC700;margin:0 0 14px;line-height:1.45"></p>
-            <div id="dev365-content"><p style="color:#A1A1A1;font-size:0.9rem">Escolha uma data ou um número de dia e clique em Carregar, ou use Dia de hoje.</p></div>
-            <div class="bible-actions" id="dev365-actions" style="display:none;margin-top:12px;flex-wrap:wrap;gap:10px">
-                <button type="button" class="bible-btn" id="dev365-btn-ouvir" title="Ouvir o devocional 365"><i class="fas fa-volume-up"></i> Ouvir</button>
-                <button type="button" class="bible-btn secondary" id="dev365-btn-parar" style="display:none;background:rgba(239,68,68,0.2);color:#f87171"><i class="fas fa-stop"></i> Parar</button>
-            </div>
-        </div>
-
-        <div class="bible-card">
-            <h3 style="margin-bottom:16px;color:#FFC700">Estudos Bíblicos</h3>
-            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Estudos por temas: Escatologia, Família, Finanças, Liderança, Hermenêutica.</p>
-            <div id="estudos-public-content"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando temas...</p></div></div>
-        </div>
-
-        <div class="bible-card">
-            <h3 style="margin-bottom:16px;color:#FFC700">Esboços para Pregação</h3>
-            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Esboços por categorias: Avivamento, Casamento, Prosperidade, Batalha Espiritual, Família.</p>
-            <div id="esbocos-public-content"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando categorias...</p></div></div>
-        </div>
-
         <div class="bible-card">
             <h3 style="margin-bottom:16px;color:#FFC700">Busca</h3>
             <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-                <input type="text" id="busca-public-input" placeholder="Buscar em devocionais, estudos e esboços..." style="flex:1;min-width:180px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC">
+                <input type="text" id="busca-public-input" placeholder="Buscar em devocionais (dia 1–365)..." style="flex:1;min-width:180px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC">
                 <button type="button" class="bible-btn" id="btn-busca-public"><i class="fas fa-search"></i> Buscar</button>
             </div>
             <div id="busca-public-resultados"></div>
@@ -528,7 +473,7 @@
             const slug = '<%= slug %>';
             const initialEstudoBookId = <%= typeof initialEstudoBookId !== 'undefined' && initialEstudoBookId ? JSON.stringify(initialEstudoBookId) : 'null' %>;
             let salmoLoaded = false, devocionalBibliaInteiraLoaded = false, estudoLivroLoaded = false;
-            let currentSalmoData = null, currentDevBibliaData = null, currentPlanoData = null, currentDev365Data = null, currentEstudoLivroData = null;
+            let currentSalmoData = null, currentDevBibliaData = null, currentPlanoData = null, currentEstudoLivroData = null;
 
             function shareText(txt) {
                 txt = (txt || '').trim() + '\n\n— Bíblia King';
@@ -736,7 +681,6 @@
             });
 
             bindOuvirParar('devocional-biblia-inteira-container', 'dev-biblia-btn-ouvir', 'dev-biblia-btn-parar', 'sel-voice-public');
-            bindOuvirParar('dev365-content', 'dev365-btn-ouvir', 'dev365-btn-parar', 'sel-voice-public');
             bindOuvirParar('salmo-container', 'salmo-btn-ouvir', null, 'sel-voice-public');
             bindOuvirParar('plano-content', 'plano-btn-ouvir', null, 'sel-voice-public');
 
@@ -1067,27 +1011,38 @@
                 updatePlanoDateHint(cur);
             }
 
-            function getDev365CalendarYear() {
-                var yEl = document.getElementById('dev365-year');
-                var y = yEl && yEl.value ? parseInt(yEl.value, 10) : new Date().getFullYear();
-                if (isNaN(y) || y < 2000 || y > 2100) y = new Date().getFullYear();
-                return y;
-            }
-
-            function setDev365DateInputFromDay(dayNum) {
-                var y = getDev365CalendarYear();
-                var d = dayOfYearToDate(dayNum, y);
-                var el = document.getElementById('dev365-date');
-                if (!el) return;
-                el.value = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
-            }
-
-            function updateDev365DateHint(dayNum) {
-                var hint = document.getElementById('dev365-date-hint');
-                if (!hint || !dayNum || dayNum < 1 || dayNum > 365) return;
-                var y = getDev365CalendarYear();
-                var d = dayOfYearToDate(dayNum, y);
-                hint.textContent = 'Dia ' + dayNum + ' no ano civil ' + y + ' → ' + formatDateLong(d) + '.';
+            function bindPlanoMarkRead(dayNum) {
+                var btn = document.getElementById('plano-btn-mark-read');
+                if (!btn) return;
+                btn.style.display = 'inline-flex';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="far fa-check-circle"></i> Marcar como lido';
+                var vid = getVisitorId();
+                fetch(API_URL + '/api/bible/devotional/read-status?visitor_id=' + encodeURIComponent(vid) + '&days=' + dayNum)
+                    .then(function (r) { return r.json(); })
+                    .then(function (j) {
+                        var read = (j.data && j.data.read) || [];
+                        var isRead = read.some(function (row) { return row.day_of_year === dayNum; });
+                        if (isRead) {
+                            btn.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> Lido';
+                            btn.disabled = true;
+                        }
+                    })
+                    .catch(function () {});
+                btn.onclick = function () {
+                    if (btn.disabled) return;
+                    fetch(API_URL + '/api/bible/devotional/mark-read', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ day_of_year: dayNum, visitor_id: vid })
+                    })
+                        .then(function () {
+                            btn.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> Lido';
+                            btn.disabled = true;
+                            loadMeuProgresso();
+                        })
+                        .catch(function () {});
+                };
             }
 
             async function loadPlanoDay(dayNum) {
@@ -1114,187 +1069,32 @@
                     var dataFmt = dtCal.getDate() + ' de ' + dtCal.toLocaleDateString('pt-BR', { month: 'long' }) + ' de ' + dtCal.getFullYear();
                     var html = '<p style="color:#FFC700;font-size:0.92rem;margin-bottom:8px"><i class="fas fa-calendar-alt" style="margin-right:8px;opacity:0.9"></i>' + dataFmt + '</p>';
                     html += '<p style="color:#e8e8e8;margin-bottom:12px"><strong>Dia ' + d + '</strong> — Leitura: ' + (data.summary || bookId + ' cap. ' + from + (to > from ? ' a ' + to : '')) + '</p><p style="margin-bottom:12px">' + links.join(' ') + '</p>';
-                    if (data.devocional && (data.devocional.titulo || data.devocional.reflexao)) {
+                    if (data.devocional && (data.devocional.titulo || data.devocional.reflexao || data.devocional.aplicacao || data.devocional.oracao)) {
+                        var dev = data.devocional;
                         html += '<div class="bible-card" style="margin-top:16px;padding:14px;border-radius:10px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.08)">';
-                        html += '<div class="bible-ref">' + (data.devocional.titulo || 'Devocional') + '</div>';
-                        if (data.devocional.versiculo_ref) html += '<div style="color:#FFC700;font-size:0.9rem;margin:8px 0">' + data.devocional.versiculo_ref + '</div>';
-                        if (data.devocional.versiculo_texto) html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.6">' + (data.devocional.versiculo_texto || '').replace(/\n/g, '<br>') + '</div>';
-                        if (data.devocional.reflexao) html += '<div class="bible-text" style="color:#ccc;line-height:1.6;margin-top:8px">' + (data.devocional.reflexao || '').replace(/\n/g, '<br>') + '</div>';
+                        html += '<div class="bible-ref">' + (dev.titulo || 'Devocional') + '</div>';
+                        if (dev.versiculo_ref) html += '<div style="color:#FFC700;font-size:0.9rem;margin:8px 0">' + String(dev.versiculo_ref).replace(/</g, '&lt;') + '</div>';
+                        if (dev.versiculo_texto) html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.6">' + String(dev.versiculo_texto || '').replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</div>';
+                        if (dev.reflexao) html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.75;margin-top:12px">' + String(dev.reflexao || '').replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</div>';
+                        if (dev.aplicacao) html += '<div class="bible-reflexao" style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1)"><strong style="font-size:1rem;color:#FFC700">Aplicação prática</strong><p style="margin-top:10px;font-size:1rem;line-height:1.75;color:#ccc">' + String(dev.aplicacao).replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p></div>';
+                        if (dev.oracao) html += '<div class="bible-reflexao" style="margin-top:18px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1rem;line-height:1.8;font-style:italic;color:#e8e8e8">' + String(dev.oracao).replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p></div>';
                         html += '</div>';
                     }
                     el.innerHTML = html;
                     currentPlanoData = data;
                     updatePlanoDateHint(d);
+                    bindPlanoMarkRead(d);
                     var planoActions = document.getElementById('plano-actions');
                     if (planoActions) planoActions.style.display = 'flex';
                 } catch (e) {
                     el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar o dia.') + '</div>';
+                    var planoActionsErr = document.getElementById('plano-actions');
+                    if (planoActionsErr) planoActionsErr.style.display = 'none';
+                    var markErr = document.getElementById('plano-btn-mark-read');
+                    if (markErr) markErr.style.display = 'none';
                 }
             }
 
-            var currentDev365Day = 0;
-            (function initDev365Year() {
-                var yEl = document.getElementById('dev365-year');
-                var dDay = document.getElementById('dev365-day');
-                var dIn = document.getElementById('dev365-date');
-                if (yEl && !yEl.value) yEl.value = new Date().getFullYear();
-                var todayDoy = getDayOfYear();
-                if (dDay && !String(dDay.value || '').trim()) dDay.value = todayDoy;
-                var cur = dDay ? parseInt(dDay.value, 10) : NaN;
-                if (isNaN(cur) || cur < 1 || cur > 365) {
-                    cur = todayDoy;
-                    if (dDay) dDay.value = cur;
-                }
-                if (dIn && !dIn.value) setDev365DateInputFromDay(cur);
-                updateDev365DateHint(cur);
-            })();
-            (function initDev365TemaModo() {
-                var sel = document.getElementById('dev365-tema-modo');
-                var wrap = document.getElementById('dev365-tema-custom-wrap');
-                function toggle() {
-                    if (!wrap || !sel) return;
-                    wrap.style.display = sel.value === 'personalizado' ? 'block' : 'none';
-                }
-                if (sel) {
-                    sel.addEventListener('change', toggle);
-                    toggle();
-                }
-            })();
-            async function loadDev365ByDay(day) {
-                var el = document.getElementById('dev365-content');
-                var chkAi = document.getElementById('chk-dev365-ai');
-                var yEl = document.getElementById('dev365-year');
-                var useAi = chkAi && chkAi.checked;
-                var year = yEl && yEl.value ? parseInt(yEl.value, 10) : new Date().getFullYear();
-                if (isNaN(year) || year < 2000 || year > 2100) year = new Date().getFullYear();
-                el.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando…</p></div>';
-                try {
-                    var q = '?year=' + encodeURIComponent(year) + '&ai=' + (useAi ? '1' : '0');
-                    var temaModoEl = document.getElementById('dev365-tema-modo');
-                    var temaModo = temaModoEl ? temaModoEl.value : 'mes_auto';
-                    q += '&tema_modo=' + encodeURIComponent(temaModo);
-                    if (temaModo === 'personalizado') {
-                        var tc = document.getElementById('dev365-tema-custom');
-                        var tcs = tc && tc.value ? String(tc.value).trim() : '';
-                        if (tcs) q += '&tema=' + encodeURIComponent(tcs);
-                    }
-                    var chkCunha = document.getElementById('chk-dev365-estilo-cunha');
-                    if (chkCunha && chkCunha.checked) q += '&estilo=cunha';
-                    var res = await fetch(API_URL + '/api/bible/devotionals-365/' + day + q);
-                    var json = await res.json().catch(function() { return {}; });
-                    var d = json.data;
-                    if (!d) throw new Error('Devocional não encontrado para este dia.');
-                    currentDev365Day = day;
-                    currentDev365Data = d;
-                    var temaBlock = '';
-                    if (d.tema_mes || d.tema_ano || d.tema_modo_aplicado) {
-                        temaBlock = '<div style="padding:12px 14px;margin-bottom:16px;background:rgba(26,77,46,0.35);border:1px solid rgba(255,199,0,0.28);border-radius:12px;font-size:0.92rem;line-height:1.55">';
-                        if (d.tema_modo_aplicado) {
-                            var modos = { mes: 'Automático do mês', ano: 'Automático do ano', mes_e_ano: 'Mês + ano', personalizado: 'Personalizado' };
-                            temaBlock += '<div style="color:#A1A1A1;font-size:0.8rem;margin-bottom:8px">Modo de tema: <strong style="color:#E8E8E8">' + (modos[d.tema_modo_aplicado] || d.tema_modo_aplicado) + '</strong></div>';
-                        }
-                        if (d.tema_mes) temaBlock += '<div style="color:#FFC700;font-weight:600;margin-bottom:6px"><i class="fas fa-calendar-alt" style="margin-right:8px"></i>' + (d.tema_modo_aplicado === 'personalizado' ? 'Tema escolhido' : 'Tema do mês') + '</div><div style="color:#E8E8E8;margin-bottom:12px">' + String(d.tema_mes).replace(/</g, '&lt;') + '</div>';
-                        if (d.tema_mes_calendario && d.tema_modo_aplicado === 'personalizado') temaBlock += '<div style="color:#A1A1A1;font-size:0.85rem;margin-bottom:10px">Tema do mês (calendário): <span style="color:#E8E8E8">' + String(d.tema_mes_calendario).replace(/</g, '&lt;') + '</span></div>';
-                        if (d.tema_ano && d.tema_modo_aplicado !== 'personalizado') temaBlock += '<div style="color:#FFC700;font-weight:600;margin-bottom:6px"><i class="fas fa-sun" style="margin-right:8px"></i>Tema do ano' + (d.ano_calendario ? ' (' + d.ano_calendario + ')' : '') + '</div><div style="color:#E8E8E8">' + String(d.tema_ano).replace(/</g, '&lt;') + '</div>';
-                        if (d.tema_ano && d.tema_modo_aplicado === 'personalizado') temaBlock += '<div style="color:#FFC700;font-weight:600;margin-bottom:6px"><i class="fas fa-sun" style="margin-right:8px"></i>Tema do ano (referência)</div><div style="color:#A1A1A1;font-size:0.88rem">' + String(d.tema_ano).replace(/</g, '&lt;') + '</div>';
-                        temaBlock += '</div>';
-                    }
-                    var aiBanner = '';
-                    if (d.ai_gerado) aiBanner = '<p style="font-size:0.82rem;color:#86efac;margin-bottom:10px;line-height:1.45">Reflexão enriquecida gerada para este tema e dia.</p>';
-                    else if (d.ai_aviso) aiBanner = '<p style="font-size:0.88rem;color:#fbbf24;margin-bottom:12px;line-height:1.45"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>' + String(d.ai_aviso).replace(/</g, '&lt;') + '</p>';
-                    var dtCalDev = dayOfYearToDate(day, year);
-                    var calBannerDev = '<p style="color:#FFC700;font-size:0.92rem;margin-bottom:14px;line-height:1.45"><i class="fas fa-calendar-alt" style="margin-right:8px;opacity:0.9"></i>' +
-                        dtCalDev.getDate() + ' de ' + dtCalDev.toLocaleDateString('pt-BR', { month: 'long' }) + ' de ' + dtCalDev.getFullYear() +
-                        ' <span style="color:#A1A1A1;font-size:0.88rem;font-weight:400">(dia ' + day + ' de 365)</span></p>';
-                    var reflexaoHtml = (d.reflexao || '').replace(/\n/g, '<br>');
-                    var aplicacaoHtml = d.aplicacao ? '<div class="bible-reflexao" style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)"><strong style="font-size:1rem;color:#FFC700">Aplicação Prática</strong><p style="margin-top:12px;font-size:1.05rem;line-height:1.8">' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
-                    var oracaoHtml = d.oracao ? '<div class="bible-reflexao" style="margin-top:20px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1.05rem;line-height:1.8;font-style:italic">' + (d.oracao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
-                    var btnHtml = '<div class="bible-actions" style="margin-top:20px;flex-wrap:wrap;gap:10px"><button type="button" class="bible-btn" id="dev365-btn-share" data-day="' + day + '"><i class="fas fa-share-alt"></i> Compartilhar</button><button type="button" class="bible-btn secondary dev365-mark-read" data-day="' + day + '"><i class="far fa-check-circle"></i> Marcar como lido</button></div>';
-                    el.innerHTML = calBannerDev + temaBlock + aiBanner + '<div class="bible-ref" style="font-size:1.2rem;margin-bottom:12px">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:1rem;margin-bottom:16px;font-weight:600">' + (d.versiculo_ref || '') + '</div>' + (d.versiculo_texto ? '<div class="bible-text" style="margin-bottom:24px;font-size:1.1rem;line-height:1.8">"' + d.versiculo_texto + '"</div>' : '') + '<div class="bible-text" style="line-height:1.85;font-size:1.05rem">' + reflexaoHtml + '</div>' + aplicacaoHtml + oracaoHtml + btnHtml;
-                    setDev365DateInputFromDay(day);
-                    updateDev365DateHint(day);
-                    var dev365Actions = document.getElementById('dev365-actions');
-                    if (dev365Actions) dev365Actions.style.display = 'flex';
-                    var dev365ShareBtn = el.querySelector('#dev365-btn-share');
-                    if (dev365ShareBtn) dev365ShareBtn.addEventListener('click', function() {
-                        if (!currentDev365Data) return;
-                        var x = currentDev365Data;
-                        var t = (x.titulo || '') + '\n\n' + (x.versiculo_ref || '') + (x.versiculo_texto ? '\n"' + x.versiculo_texto + '"\n\n' : '') + (x.reflexao || '').replace(/<[^>]+>/g, '') + (x.aplicacao ? '\n\nAplicação: ' + x.aplicacao : '') + (x.oracao ? '\n\nOração: ' + x.oracao : '');
-                        shareText(t);
-                    });
-                    (async function checkAndBind() {
-                        var vid = getVisitorId();
-                        var r = await fetch(API_URL + '/api/bible/devotional/read-status?visitor_id=' + encodeURIComponent(vid) + '&days=' + day);
-                        var j = await r.json().catch(function() { return {}; });
-                        var read = (j.data && j.data.read) || [];
-                        var isRead = read.some(function(r) { return r.day_of_year === day; });
-                        var btn = el.querySelector('.dev365-mark-read');
-                        if (btn) {
-                            if (isRead) { btn.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> Lido'; btn.disabled = true; }
-                            btn.onclick = async function() {
-                                if (btn.disabled) return;
-                                try {
-                                    await fetch(API_URL + '/api/bible/devotional/mark-read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ day_of_year: day, visitor_id: vid }) });
-                                    btn.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> Lido';
-                                    btn.disabled = true;
-                                } catch (e) {}
-                            };
-                        }
-                    })();
-                } catch (e) {
-                    el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
-                    var dev365Actions = document.getElementById('dev365-actions');
-                    if (dev365Actions) dev365Actions.style.display = 'none';
-                }
-            }
-            document.getElementById('btn-dev365-load').addEventListener('click', function() {
-                var day = parseInt(document.getElementById('dev365-day').value, 10);
-                if (day < 1 || day > 365) { alert('Digite um dia entre 1 e 365.'); return; }
-                setDev365DateInputFromDay(day);
-                updateDev365DateHint(day);
-                loadDev365ByDay(day);
-            });
-            document.getElementById('btn-dev365-today').addEventListener('click', function() {
-                var day = getDayOfYear();
-                document.getElementById('dev365-day').value = day;
-                var yEl = document.getElementById('dev365-year');
-                if (yEl) yEl.value = new Date().getFullYear();
-                setDev365DateInputFromDay(day);
-                updateDev365DateHint(day);
-                loadDev365ByDay(day);
-            });
-            (function bindDev365DatePicker() {
-                var ddate = document.getElementById('dev365-date');
-                if (!ddate) return;
-                ddate.addEventListener('change', function() {
-                    var v = ddate.value;
-                    if (!v) return;
-                    var p = v.split('-');
-                    var y = parseInt(p[0], 10);
-                    var m = parseInt(p[1], 10) - 1;
-                    var da = parseInt(p[2], 10);
-                    if (isNaN(y) || isNaN(m) || isNaN(da)) return;
-                    var yEl = document.getElementById('dev365-year');
-                    if (yEl) yEl.value = y;
-                    var dt = new Date(y, m, da);
-                    var day = dateToDayOfYearCal(dt);
-                    document.getElementById('dev365-day').value = day;
-                    updateDev365DateHint(day);
-                    loadDev365ByDay(day);
-                });
-            })();
-            (function bindDev365YearSync() {
-                var yEl = document.getElementById('dev365-year');
-                if (!yEl) return;
-                yEl.addEventListener('change', function() {
-                    var pd = document.getElementById('dev365-day');
-                    var day = pd ? parseInt(pd.value, 10) : NaN;
-                    if (!isNaN(day) && day >= 1 && day <= 365) {
-                        setDev365DateInputFromDay(day);
-                        updateDev365DateHint(day);
-                    }
-                });
-            })();
             document.getElementById('btn-plano-load').addEventListener('click', function() {
                 var day = parseInt(document.getElementById('plano-day').value, 10);
                 if (day < 1 || day > 365) { alert('Digite um dia entre 1 e 365.'); return; }
@@ -1331,8 +1131,16 @@
                 if (!currentPlanoData) return;
                 var d = currentPlanoData;
                 var dev = d.devocional;
-                var t = 'Devocional diário (plano) — Dia ' + (document.getElementById('plano-day').value || '') + '\n\n' + (d.summary || '') + (dev && (dev.titulo || dev.reflexao) ? '\n\n' + (dev.titulo || '') + '\n' + (dev.versiculo_ref || '') + '\n' + (dev.versiculo_texto || '') + '\n' + (dev.reflexao || '') : '');
-                shareText(t);
+                var parts = ['Devocional diário (plano) — Dia ' + (document.getElementById('plano-day').value || ''), '', d.summary || ''];
+                if (dev && (dev.titulo || dev.reflexao || dev.aplicacao || dev.oracao)) {
+                    if (dev.titulo) parts.push(dev.titulo);
+                    if (dev.versiculo_ref) parts.push(dev.versiculo_ref);
+                    if (dev.versiculo_texto) parts.push('"' + dev.versiculo_texto + '"');
+                    if (dev.reflexao) parts.push(dev.reflexao);
+                    if (dev.aplicacao) parts.push('\nAplicação prática:\n' + dev.aplicacao);
+                    if (dev.oracao) parts.push('\nOração:\n' + dev.oracao);
+                }
+                shareText(parts.join('\n'));
             });
 
             async function loadEstudoLivroList() {
@@ -1408,38 +1216,6 @@
                 shareText(t);
             });
 
-            (async function loadEstudosPublic() {
-                var el = document.getElementById('estudos-public-content');
-                try {
-                    var res = await fetch(API_URL + '/api/bible/study-themes');
-                    var json = await res.json().catch(function() { return {}; });
-                    var themes = (json.data && json.data.themes) || [];
-                    if (!themes.length) { el.innerHTML = '<p style="color:#A1A1A1">Nenhum tema disponível.</p>'; return; }
-                    el.innerHTML = themes.map(function(t) {
-                        return '<div style="margin-bottom:12px;padding:12px;border:1px solid rgba(255,255,255,0.08);border-radius:8px"><strong style="color:#FFC700">' + t.nome + '</strong>' + (t.descricao ? '<p style="font-size:0.85rem;color:#A1A1A1;margin-top:6px">' + t.descricao + '</p>' : '') + '<p style="font-size:0.85rem;color:#7dd3fc;margin-top:8px">Acesse pelo painel do cartão para ver os estudos.</p></div>';
-                    }).join('');
-                } catch (e) { el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro.') + '</div>'; }
-            })();
-
-            (async function loadEsbocosPublic() {
-                var el = document.getElementById('esbocos-public-content');
-                try {
-                    var res = await fetch(API_URL + '/api/bible/outline-categories');
-                    var json = await res.json().catch(function() { return {}; });
-                    var cats = (json.data && json.data.categories) || [];
-                    if (!cats.length) { el.innerHTML = '<p style="color:#A1A1A1">Nenhuma categoria disponível.</p>'; return; }
-                    var res2 = await fetch(API_URL + '/api/bible/outlines');
-                    var json2 = await res2.json().catch(function() { return {}; });
-                    var outlines = (json2.data && json2.data.outlines) || [];
-                    var byCat = {};
-                    outlines.forEach(function(o) { var c = o.category_name || 'Outros'; if (!byCat[c]) byCat[c] = []; byCat[c].push(o); });
-                    el.innerHTML = Object.keys(byCat).map(function(cat) {
-                        var list = byCat[cat].map(function(o) { return '<div style="font-size:0.9rem;color:#ECECEC;margin-top:6px">• ' + o.titulo + '</div>'; }).join('');
-                        return '<div style="margin-bottom:16px"><strong style="color:#FFC700">' + cat + '</strong>' + list + '</div>';
-                    }).join('') + '<p style="font-size:0.85rem;color:#7dd3fc;margin-top:12px">Acesse pelo painel do cartão para ver o conteúdo completo dos esboços.</p>';
-                } catch (e) { el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro.') + '</div>'; }
-            })();
-
             document.getElementById('btn-busca-public').addEventListener('click', async function() {
                 var q = (document.getElementById('busca-public-input').value || '').trim();
                 var el = document.getElementById('busca-public-resultados');
@@ -1449,11 +1225,8 @@
                     var res = await fetch(API_URL + '/api/bible/search?q=' + encodeURIComponent(q) + '&limit=15');
                     var json = await res.json().catch(function() { return {}; });
                     var data = json.data || {};
-                    var dev = (data.devotionals || []).map(function(d) { return '<div style="padding:10px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:8px"><strong style="color:#FFC700">Devocional Dia ' + d.day_of_year + '</strong> — ' + d.titulo + '<div style="font-size:0.85rem;color:#A1A1A1;margin-top:4px">' + (d.reflexao_preview || '').substring(0, 120) + '...</div></div>'; }).join('');
-                    var stud = (data.studies || []).map(function(s) { return '<div style="padding:10px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:8px"><strong style="color:#FFC700">Estudo</strong> — ' + s.titulo + ' (' + (s.theme_name || '') + ')</div>'; }).join('');
-                    var out = (data.outlines || []).map(function(o) { return '<div style="padding:10px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:8px"><strong style="color:#FFC700">Esboço</strong> — ' + o.titulo + ' (' + (o.category_name || '') + ')</div>'; }).join('');
-                    var html = (dev ? '<h4 style="margin-bottom:10px;color:#ECECEC;font-size:1rem">Devocionais</h4>' + dev : '') + (stud ? '<h4 style="margin:16px 0 10px;color:#ECECEC;font-size:1rem">Estudos</h4>' + stud : '') + (out ? '<h4 style="margin:16px 0 10px;color:#ECECEC;font-size:1rem">Esboços</h4>' + out : '');
-                    el.innerHTML = html || '<p style="color:#A1A1A1">Nenhum resultado encontrado.</p>';
+                    var dev = (data.devotionals || []).map(function(d) { return '<div style="padding:10px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:8px"><strong style="color:#FFC700">Devocional dia ' + d.day_of_year + '</strong> — ' + d.titulo + '<div style="font-size:0.85rem;color:#A1A1A1;margin-top:4px">' + (d.reflexao_preview || '').substring(0, 120) + '...</div></div>'; }).join('');
+                    el.innerHTML = dev ? '<h4 style="margin-bottom:10px;color:#ECECEC;font-size:1rem">Devocionais (plano 1–365)</h4>' + dev : '<p style="color:#A1A1A1">Nenhum devocional encontrado para esta busca.</p>';
                 } catch (e) { el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro na busca.') + '</div>'; }
             });
 

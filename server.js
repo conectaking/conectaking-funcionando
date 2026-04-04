@@ -241,6 +241,13 @@ const skipOptions = (req) => {
     return req.method === 'OPTIONS';
 };
 
+/** Polling de estado de jobs longos (dev365 em segundo plano) não deve contar no limite admin (30/min), senão 1 pedido a cada 2s esgota o teto e o UI parava de actualizar. */
+const skipAdminGenerationJobPoll = (req) => {
+    if (skipOptions(req)) return true;
+    const url = req.originalUrl || req.url || '';
+    return req.method === 'GET' && url.indexOf('/devotionals-365/generation-job/') !== -1;
+};
+
 const authLimiter = rateLimit({
     windowMs: config.rateLimit.auth.windowMs,
     max: config.rateLimit.auth.max,
@@ -291,7 +298,7 @@ const adminLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     validate: { trustProxy: false },
-    skip: skipOptions,
+    skip: skipAdminGenerationJobPoll,
     message: 'Muitas requisições administrativas. Aguarde um momento.',
     handler: (req, res) => {
         logger.warn('Rate limit administrativo excedido', {
