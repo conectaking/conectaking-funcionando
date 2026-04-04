@@ -803,10 +803,12 @@ async function getDevocional365(dayOrDate, options = {}) {
     let useAi;
     if (options.aiExplicitOff) {
         useAi = false;
-    } else if (process.env.BIBLE_DEV365_AI_DEFAULT === '1') {
+    } else if (String(process.env.BIBLE_DEV365_AI_DEFAULT || '').trim() === '0') {
+        useAi = false;
+    } else if (String(process.env.BIBLE_DEV365_AI_DEFAULT || '').trim() === '1') {
         useAi = true;
     } else {
-        useAi = !!options.useAi;
+        useAi = options.useAi !== false;
     }
 
     let year = options.year;

@@ -180,11 +180,19 @@ async function getDevocionalBibliaInteira(req, res) {
     }
 }
 
+/** Query ?ai= — só desliga reflexão enriquecida com 0/false/off/no; omissão ou outros valores = ligado. */
+function isDev365AiExplicitOff(raw) {
+    if (raw === undefined || raw === null) return false;
+    const v = Array.isArray(raw) ? raw[raw.length - 1] : raw;
+    const t = String(v).trim().toLowerCase();
+    return t === '0' || t === 'false' || t === 'off' || t === 'no';
+}
+
 async function getDevocional365(req, res) {
     try {
         const day = req.params.day; // 1-365 ou date YYYY-MM-DD
-        const aiExplicitOff = req.query.ai === '0' || req.query.ai === 'false';
-        const useAi = req.query.ai === '1' || req.query.ai === 'true';
+        const aiExplicitOff = isDev365AiExplicitOff(req.query.ai);
+        const useAi = !aiExplicitOff;
         let year = parseInt(req.query.year, 10);
         if (Number.isNaN(year) || year < 2000 || year > 2100) {
             year = undefined;

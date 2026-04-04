@@ -1249,7 +1249,8 @@
                         temaBlock += '</div>';
                     }
                     var aiBanner = '';
-                    if (d.ai_aviso) aiBanner = '<p style="font-size:0.88rem;color:#fbbf24;margin-bottom:12px;line-height:1.45"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>' + String(d.ai_aviso).replace(/</g, '&lt;') + '</p>';
+                    if (d.ai_gerado) aiBanner = '<p style="font-size:0.82rem;color:#86efac;margin-bottom:10px;line-height:1.45">Reflexão enriquecida gerada para este tema e dia.</p>';
+                    else if (d.ai_aviso) aiBanner = '<p style="font-size:0.88rem;color:#fbbf24;margin-bottom:12px;line-height:1.45"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>' + String(d.ai_aviso).replace(/</g, '&lt;') + '</p>';
                     var reflexaoHtml = (d.reflexao || '').replace(/\n/g, '<br>');
                     var aplicacaoHtml = d.aplicacao ? '<div class="bible-reflexao" style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)"><strong style="font-size:1rem;color:#FFC700">Aplicação Prática</strong><p style="margin-top:12px;font-size:1.05rem;line-height:1.8">' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
                     var oracaoHtml = d.oracao ? '<div class="bible-reflexao" style="margin-top:20px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1.05rem;line-height:1.8;font-style:italic">' + (d.oracao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
