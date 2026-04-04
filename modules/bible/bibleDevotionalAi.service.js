@@ -233,7 +233,7 @@ async function generateAllMonthThemesForYear(year, delayMs) {
 }
 
 /**
- * Gera devocional completo (título, passagem nova, reflexão longa) alinhado ao tema — para admin / anti-duplicados.
+ * Gera devocional completo (título, passagem nova, reflexão longa) alinhado ao tema — uso admin.
  * @param {{ dayOfYear: number, year: number, estilo?: string, theme: object }} ctx — theme = saída de resolveThemeForDev365
  */
 async function generateFullDevotional365Day(ctx) {
