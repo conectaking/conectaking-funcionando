@@ -208,8 +208,17 @@ function resolveThemeForDev365(dayOfYear, year, options = {}) {
 }
 
 async function getPalavraDoDia(dateStr) {
-    const list = loadPalavrasDoDia();
-    if (!list.length) return null;
+    let list = loadPalavrasDoDia();
+    if (!list.length) {
+        list = [
+            {
+                palavra: 'Fé',
+                significado:
+                    'Do grego pistis. Confiança em Deus. Se a lista palavras_do_dia.json não estiver no servidor, esta entrada evita erro na API.',
+                ref: 'Hebreus 11:1'
+            }
+        ];
+    }
     const dayOfYear = getVerseOfDayIndex(dateStr);
     const index = dayOfYear % list.length;
     return { ...list[index], date: dateStr || new Date().toISOString().slice(0, 10) };

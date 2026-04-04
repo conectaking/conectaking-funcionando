@@ -219,6 +219,7 @@
         }
         .receba-item span { color: #fff; font-size: 0.9rem; font-weight: 500; }
         .receba-item i.fa-arrow-right { color: #FFC700; font-size: 0.85rem; }
+        .receba-hint { font-size: 0.82rem; color: #A1A1A1; line-height: 1.45; margin: 0 0 12px; }
         .receba-content { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.15); }
         .receba-content.show { display: block; }
         .receba-content .bible-ref, .receba-content .bible-text, .receba-content .bible-reflexao { color: #e8e8e8; }
@@ -269,48 +270,45 @@
                     <p style="color:#ECECEC;font-size:1rem;margin-bottom:8px"><strong id="meu-progresso-total">0</strong> devocional(is) lido(s)</p>
                     <p id="meu-progresso-dias" style="font-size:0.85rem;color:#A1A1A1;line-height:1.5"></p>
                 </div>
-                <div id="meu-progresso-empty" style="display:none;color:#A1A1A1;font-size:0.9rem">Nenhum devocional marcado como lido ainda. Leia o <strong>Devocional Diário</strong> e clique em &quot;Marcar como lido&quot;.</div>
+                <div id="meu-progresso-empty" style="display:none;color:#A1A1A1;font-size:0.9rem">Nenhum devocional marcado como lido ainda. Abra o <strong>Devocional do dia</strong> e clique em &quot;Marcar como lido&quot;.</div>
             </div>
         </div>
 
         <!-- Receba mais de Deus hoje -->
         <div class="receba-card">
             <h2>Receba mais de Deus hoje:</h2>
+            <p class="receba-hint">Versículo com reflexão, salmo, devocional curto e plano de leitura — cada opção tem um propósito diferente.</p>
             <div class="receba-grid">
                 <div class="receba-item active" data-tipo="versiculo">
-                    <span><i class="fas fa-book-open" style="margin-right:8px"></i>Versículo do Dia</span>
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="receba-item" data-tipo="palavra">
-                    <span><i class="fas fa-font" style="margin-right:8px"></i>Palavra do Dia</span>
+                    <span><i class="fas fa-book-open" style="margin-right:8px"></i>Versículo do dia</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="receba-item" data-tipo="salmo">
-                    <span><i class="fas fa-music" style="margin-right:8px"></i>Salmo do Dia</span>
+                    <span><i class="fas fa-music" style="margin-right:8px"></i>Salmo do dia</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="receba-item" data-tipo="devocional">
-                    <span><i class="fas fa-heart" style="margin-right:8px"></i>Devocional Diário</span>
+                    <span><i class="fas fa-sun" style="margin-right:8px"></i>Devocional do dia</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="receba-item" data-tipo="devocional-biblia-inteira">
-                    <span><i class="fas fa-bible" style="margin-right:8px"></i>Devocional da Bíblia inteira</span>
+                    <span><i class="fas fa-bible" style="margin-right:8px"></i>Um capítulo por dia</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="receba-item" data-tipo="plano">
-                    <span><i class="fas fa-calendar-check" style="margin-right:8px"></i>Plano de leitura (1 ano)</span>
+                    <span><i class="fas fa-list-ol" style="margin-right:8px"></i>Plano 1 ano (365 dias)</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="receba-item" data-tipo="estudo-livro">
-                    <span><i class="fas fa-book-open" style="margin-right:8px"></i>Estudo por livro</span>
+                    <span><i class="fas fa-book-reader" style="margin-right:8px"></i>Estudo por livro</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="receba-item" data-tipo="cunha">
-                    <span><i class="fas fa-microphone" style="margin-right:8px"></i>Devocional Cunha</span>
+                    <span><i class="fas fa-podcast" style="margin-right:8px"></i>Mensagem em áudio/vídeo</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="receba-item" data-tipo="bible-ia">
-                    <span><i class="fas fa-robot" style="margin-right:8px"></i>Assistente IA</span>
+                    <span><i class="fas fa-robot" style="margin-right:8px"></i>Dúvidas (assistente)</span>
                     <i class="fas fa-arrow-right"></i>
                 </div>
             </div>
@@ -334,13 +332,6 @@
                     </button>
                 </div>
             </div>
-            <div id="receba-palavra" class="receba-content">
-                <div id="palavra-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
-                <div class="bible-actions" id="palavra-actions" style="display:none;margin-top:16px">
-                    <button type="button" class="bible-btn" id="palavra-btn-ouvir" title="Ouvir"><i class="fas fa-volume-up"></i> Ouvir</button>
-                    <button type="button" class="bible-btn" id="palavra-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
-                </div>
-            </div>
             <div id="receba-salmo" class="receba-content">
                 <div id="salmo-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
                 <div class="bible-actions" id="salmo-actions" style="display:none;margin-top:16px">
@@ -349,6 +340,7 @@
                 </div>
             </div>
             <div id="receba-devocional" class="receba-content">
+                <p class="receba-hint">Texto completo com aplicação e oração (ligado ao calendário). Use <strong>Marcar como lido</strong> para ver seu progresso acima — não é o mesmo que o plano de capítulos por dia.</p>
                 <div id="devocional-container"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
                 <div id="devocional-actions" class="bible-actions" style="display:none;margin-top:20px;flex-wrap:wrap;gap:10px;align-items:center">
                     <button type="button" class="bible-btn" id="devocional-btn-ouvir" title="Ouvir o devocional do dia"><i class="fas fa-volume-up"></i> Ouvir</button>
@@ -359,7 +351,7 @@
                 </div>
             </div>
             <div id="receba-devocional-biblia-inteira" class="receba-content">
-                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:12px">Percorra a Bíblia inteira em devocionais: um capítulo por dia. Ao terminar, recomeça — para toda a vida.</p>
+                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:12px">Um <strong>capítulo</strong> por dia, em sequência (Gênesis até Apocalipse). Diferente do <strong>plano 365</strong> abaixo, que distribui vários capítulos por dia ao longo do ano.</p>
                 <div id="dev-biblia-mode-choice" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
                     <button type="button" class="bible-btn" id="btn-dev-biblia-comecar-hoje" title="Seu dia 1 será hoje; o plano segue até o fim da Bíblia e depois recomeça"><i class="fas fa-play"></i> Começar hoje</button>
                     <span style="color:#A1A1A1;font-size:0.9rem">ou</span>
@@ -385,7 +377,7 @@
                 </div>
             </div>
             <div id="receba-plano" class="receba-content">
-                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Leia a Bíblia inteira em um ano: 2–3 capítulos por dia. Escolha o dia (1–365) ou use o dia de hoje.</p>
+                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Cronograma de <strong>vários capítulos por dia</strong> para terminar a Bíblia em ~1 ano. O <strong>Devocional do dia</strong> acima é um texto único por data; este bloco é só leitura por etapas.</p>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
                     <input type="number" id="plano-day" min="1" max="365" placeholder="Dia (1-365)" style="width:100px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC">
                     <button type="button" class="bible-btn" id="btn-plano-load"><i class="fas fa-book-open"></i> Carregar dia</button>
@@ -398,7 +390,7 @@
                 </div>
             </div>
             <div id="receba-estudo-livro" class="receba-content">
-                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Introduções e estudos por livro e capítulo da Bíblia.</p>
+                <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Introduções e estudos publicados no cartão. Conteúdo é definido pelo administrador; para gerar ou revisar estudos com apoio de IA, use o <strong>painel Conecta King</strong> (gestão da Bíblia).</p>
                 <div id="estudo-livro-list"><div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></div>
                 <div id="estudo-livro-detail" style="display:none;margin-top:20px;padding:16px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.08);border-radius:12px;">
                     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
@@ -411,27 +403,26 @@
             <div id="receba-cunha" class="receba-content">
                 <div id="receba-cunha-body">
                     <% if (typeof cunhaDevotionalUrl !== 'undefined' && cunhaDevotionalUrl) { %>
-                    <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:14px;line-height:1.55">Devocional no estilo <strong style="color:#ECECEC">Pr. Cunha</strong> — mensagem e aplicação para o dia.</p>
-                    <a href="<%= cunhaDevotionalUrl %>" target="_blank" rel="noopener" class="bible-btn" style="margin-bottom:14px;display:inline-flex"><i class="fas fa-external-link-alt"></i> Abrir Devocional Cunha</a>
+                    <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:14px;line-height:1.55">Link para <strong style="color:#ECECEC">mensagem em vídeo ou áudio</strong> (ex.: estilo devocional em canal). O administrador define o endereço oficial.</p>
+                    <a href="<%= cunhaDevotionalUrl %>" target="_blank" rel="noopener" class="bible-btn" style="margin-bottom:14px;display:inline-flex"><i class="fas fa-external-link-alt"></i> Abrir mensagem</a>
                     <% var _cu = String(cunhaDevotionalUrl); var _emb = _cu.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/); if (_emb) { %>
                     <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;border:1px solid rgba(255,199,0,0.25);max-width:100%">
-                        <iframe title="Devocional Cunha" src="https://www.youtube.com/embed/<%= _emb[1] %>" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <iframe title="Mensagem em vídeo" src="https://www.youtube.com/embed/<%= _emb[1] %>" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                     </div>
                     <% } %>
                     <% } else { %>
-                    <p style="color:#ECECEC;line-height:1.65;margin-bottom:10px">O administrador pode definir o link oficial do <strong>Devocional Cunha</strong> na variável de ambiente <code style="font-size:0.85rem;color:#FFC700">BIBLE_CUNHA_URL</code> (Render). Ex.: URL de playlist ou vídeo no YouTube.</p>
-                    <p style="color:#A1A1A1;font-size:0.9rem">Enquanto isso, você pode buscar &quot;devocional Pr. Cunha&quot; no YouTube.</p>
+                    <p style="color:#ECECEC;line-height:1.65;margin-bottom:10px">Nenhum vídeo ou áudio oficial foi ligado a este cartão ainda. O administrador pode configurar isso no painel do Conecta King.</p>
                     <% } %>
                 </div>
             </div>
             <div id="receba-bible-ia" class="receba-content">
                 <div id="receba-bible-ia-body">
                     <% if (typeof bibleAiAssistantUrl !== 'undefined' && bibleAiAssistantUrl) { %>
-                    <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:14px;line-height:1.55">Assistente para tirar dúvidas sobre passagens, contexto e aplicação — abre no serviço configurado pelo Conecta King.</p>
-                    <a href="<%= bibleAiAssistantUrl %>" target="_blank" rel="noopener" class="bible-btn" style="display:inline-flex"><i class="fas fa-robot"></i> Abrir assistente de IA</a>
+                    <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:14px;line-height:1.55">Abre o assistente configurado pelo Conecta King para dúvidas sobre passagens e contexto (sempre confira na Bíblia).</p>
+                    <a href="<%= bibleAiAssistantUrl %>" target="_blank" rel="noopener" class="bible-btn" style="display:inline-flex"><i class="fas fa-robot"></i> Abrir assistente</a>
                     <% } else { %>
-                    <p style="color:#ECECEC;line-height:1.65;margin-bottom:10px">Para ativar o <strong>Assistente IA</strong> da Bíblia, defina <code style="font-size:0.85rem;color:#FFC700">BIBLE_AI_URL</code> no servidor (Render) — por exemplo um chat embutido, página do assistente ou link seguro.</p>
-                    <p style="color:#A1A1A1;font-size:0.9rem">Use com discernimento; a Palavra de Deus é a autoridade final.</p>
+                    <p style="color:#ECECEC;line-height:1.65;margin-bottom:10px">O assistente de dúvidas ainda não está disponível neste cartão. O administrador pode ativá-lo no painel do Conecta King.</p>
+                    <p style="color:#A1A1A1;font-size:0.9rem">A Escritura continua sendo a referência final.</p>
                     <% } %>
                 </div>
             </div>
@@ -533,8 +524,8 @@
             const translation = '<%= translation || "nvi" %>';
             const slug = '<%= slug %>';
             const initialEstudoBookId = <%= typeof initialEstudoBookId !== 'undefined' && initialEstudoBookId ? JSON.stringify(initialEstudoBookId) : 'null' %>;
-            let palavraLoaded = false, salmoLoaded = false, devocionalLoaded = false, devocionalBibliaInteiraLoaded = false, estudoLivroLoaded = false;
-            let currentPalavraData = null, currentSalmoData = null, currentDevBibliaData = null, currentPlanoData = null, currentDev365Data = null, currentEstudoLivroData = null;
+            let salmoLoaded = false, devocionalLoaded = false, devocionalBibliaInteiraLoaded = false, estudoLivroLoaded = false;
+            let currentSalmoData = null, currentDevBibliaData = null, currentPlanoData = null, currentDev365Data = null, currentEstudoLivroData = null;
 
             function shareText(txt) {
                 txt = (txt || '').trim() + '\n\n— Bíblia King';
@@ -744,7 +735,6 @@
             bindOuvirParar('devocional-container', 'devocional-btn-ouvir', 'devocional-btn-parar', 'sel-voice-public');
             bindOuvirParar('devocional-biblia-inteira-container', 'dev-biblia-btn-ouvir', 'dev-biblia-btn-parar', 'sel-voice-public');
             bindOuvirParar('dev365-content', 'dev365-btn-ouvir', 'dev365-btn-parar', 'sel-voice-public');
-            bindOuvirParar('palavra-container', 'palavra-btn-ouvir', null, 'sel-voice-public');
             bindOuvirParar('salmo-container', 'salmo-btn-ouvir', null, 'sel-voice-public');
             bindOuvirParar('plano-content', 'plano-btn-ouvir', null, 'sel-voice-public');
 
@@ -805,7 +795,6 @@
                     this.classList.add('active');
                     var content = document.getElementById('receba-' + tipo);
                     if (content) content.classList.add('show');
-                    if (tipo === 'palavra' && !palavraLoaded) loadPalavra();
                     if (tipo === 'salmo' && !salmoLoaded) loadSalmo();
                     if (tipo === 'devocional' && !devocionalLoaded) loadDevocional();
                     if (tipo === 'devocional-biblia-inteira') {
@@ -976,28 +965,6 @@
                     if (el) el.click();
                 }
             })();
-
-            async function loadPalavra() {
-                var el = document.getElementById('palavra-container');
-                var actionsEl = document.getElementById('palavra-actions');
-                try {
-                    var res = await fetch(API_URL + '/api/bible/palavra-do-dia');
-                    var json = await res.json().catch(function() { return {}; });
-                    var p = json.data;
-                    if (!p) throw new Error('Palavra não encontrada');
-                    currentPalavraData = p;
-                    el.innerHTML = '<div class="bible-ref">' + p.palavra + '</div><div class="bible-text" style="color:#e8e8e8">' + (p.significado || '') + '</div>' + (p.ref ? '<div class="bible-reflexao" style="margin-top:12px"><strong>Referência</strong> ' + p.ref + '</div>' : '');
-                    if (actionsEl) { actionsEl.style.display = 'flex'; }
-                    palavraLoaded = true;
-                } catch (e) {
-                    el.innerHTML = '<div class="bible-error">' + (e.message || 'Erro ao carregar.') + '</div>';
-                }
-            }
-            document.getElementById('palavra-btn-share').addEventListener('click', function() {
-                if (!currentPalavraData) return;
-                var t = (currentPalavraData.palavra || '') + '\n\n' + (currentPalavraData.significado || '') + (currentPalavraData.ref ? '\n\nRef: ' + currentPalavraData.ref : '');
-                shareText(t);
-            });
 
             async function loadSalmo() {
                 var el = document.getElementById('salmo-container');
