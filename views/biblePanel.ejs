@@ -186,8 +186,8 @@
                     if (slug) {
                         linkPublic.href = '/' + encodeURIComponent(slug) + '/biblia';
                     } else {
-                        linkPublic.href = '/';
-                        linkPublic.title = 'Slug do cartão não encontrado';
+                        linkPublic.href = '/dashboard.html';
+                        linkPublic.title = 'Slug do cartão não encontrado — abra o menu inicial e verifique o perfil';
                     }
 
                     return fetch(API + '/api/bible/my-progress', { credentials: 'include' })

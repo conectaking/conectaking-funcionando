@@ -693,15 +693,23 @@ app.get('/bible.html', asyncHandler(async (req, res) => {
     const proto = (req.get('x-forwarded-proto') || req.protocol || 'https').toString().split(',')[0].trim();
     const host = (req.get('x-forwarded-host') || req.get('host') || '').toString().split(',')[0].trim();
     const selfBase = `${proto}://${host}`.replace(/\/$/, '');
+    const fallback = (process.env.FRONTEND_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
+    const defaultSlug = (process.env.BIBLE_DEFAULT_SLUG || '').trim();
+
     if (rawId) {
         const bibleRepository = require('./modules/bible/bible.repository');
         const slug = await bibleRepository.getProfileSlugByBibleProfileItemId(rawId);
         if (slug) {
             return res.redirect(302, `${selfBase}/${encodeURIComponent(slug)}/biblia`);
         }
+        // itemId na URL mas slug não encontrado — não mandar para a home (índice)
+        return res.redirect(302, `${fallback}/dashboard.html?bible=sem_slug`);
     }
-    const fallback = (process.env.FRONTEND_URL || 'https://www.conectaking.com.br').replace(/\/$/, '');
-    res.redirect(302, `${fallback}/`);
+    if (defaultSlug) {
+        return res.redirect(302, `${selfBase}/${encodeURIComponent(defaultSlug)}/biblia`);
+    }
+    // Sem itemId: menu do painel, não a raiz do site
+    res.redirect(302, `${fallback}/dashboard.html`);
 }));
 app.get('/bibliaking.html', (req, res) => {
     const itemId = req.query.itemId || req.query.id;
