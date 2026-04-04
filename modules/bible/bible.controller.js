@@ -190,6 +190,20 @@ function isDev365AiExplicitOff(raw) {
 
 async function getDevocional365(req, res) {
     try {
+        const plain = req.query.plain;
+        if (plain === '1' || plain === 'true' || plain === 'db') {
+            const dayNum = parseInt(req.params.day, 10);
+            if (Number.isNaN(dayNum) || dayNum < 1 || dayNum > 365) {
+                return responseFormatter.error(res, 'Dia deve ser entre 1 e 365', 400);
+            }
+            const row = await bibleService.getDevocional365PlainFromDb(dayNum);
+            const hasText = row && [row.titulo, row.versiculo_ref, row.versiculo_texto, row.reflexao, row.aplicacao, row.oracao]
+                .some((x) => x && String(x).trim());
+            if (!hasText) {
+                return responseFormatter.error(res, 'Sem devocional na base para este dia.', 404);
+            }
+            return responseFormatter.success(res, row);
+        }
         const day = req.params.day; // 1-365 ou date YYYY-MM-DD
         const aiExplicitOff = isDev365AiExplicitOff(req.query.ai);
         const useAi = !aiExplicitOff;

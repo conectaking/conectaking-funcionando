@@ -418,6 +418,13 @@ function shapeDevocional365ForPublic(row) {
     };
 }
 
+/** Apenas `bible_devotionals_365` (igual ao GET admin / day), sem IA nem fallback de ficheiros. */
+async function getDevocional365PlainFromDb(dayNumber) {
+    const repo = require('./bible.repository');
+    const raw = await repo.getDevocional365(dayNumber);
+    return shapeDevocional365ForPublic(raw);
+}
+
 async function getReadingPlanDay(dayNumber) {
     const repo = require('./bible.repository');
     const dayRow = await repo.getReadingPlanDay(dayNumber);
@@ -987,6 +994,7 @@ module.exports = {
     getDevocionalDoDia,
     getDevocionalBibliaInteira,
     getDevocional365,
+    getDevocional365PlainFromDb,
     getStudyThemes,
     getStudies,
     getStudyBySlug,

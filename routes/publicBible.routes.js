@@ -201,6 +201,7 @@ router.get('/:slug/biblia', asyncHandler(async (req, res) => {
             `);
         }
         const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const apiBaseForClient = (process.env.API_URL || baseUrl).replace(/\/$/, '');
         const booksManifest = bibleService.loadBooksManifest();
         const frontendBase = getFrontendBase();
         const isLocal = isLocalFrontend(frontendBase);
@@ -210,7 +211,7 @@ router.get('/:slug/biblia', asyncHandler(async (req, res) => {
             translation: ctx.translation || 'nvi',
             booksManifest,
             baseUrl,
-            API_URL: process.env.FRONTEND_URL || baseUrl,
+            API_URL: apiBaseForClient,
             ttsScriptSrc,
             initialEstudoBookId: null,
             dashboardUrl: getDashboardHtmlUrl(),
@@ -261,6 +262,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 return res.status(404).send('<h1>Capítulo não encontrado</h1>');
             }
             const baseUrl = `${req.protocol}://${req.get('host')}`;
+            const apiBaseForClient = (process.env.API_URL || baseUrl).replace(/\/$/, '');
             const tParam = translation !== 'nvi' ? '?translation=' + encodeURIComponent(translation) : '';
             const bibleItemId = itemRes.rows[0]?.id || null;
             const biblePanelUrl = bibleItemId ? getBiblePanelUrl(bibleItemId, req, slug) : `${baseUrl}/${slug}/biblia`;
@@ -290,7 +292,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 biblePanelUrl,
                 dashboardUrl: getDashboardHtmlUrl(),
                 returnTo,
-                API_URL: process.env.FRONTEND_URL || baseUrl,
+                API_URL: apiBaseForClient,
                 ttsScriptSrc,
                 jesusVerseNumbers: jesusVerseNumbers || [],
                 godVerseNumbers: godVerseNumbers || [],

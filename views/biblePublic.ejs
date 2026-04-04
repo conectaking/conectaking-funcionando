@@ -468,7 +468,11 @@
     <script src="<%= typeof ttsScriptSrc !== 'undefined' && ttsScriptSrc ? ttsScriptSrc : 'https://www.conectaking.com.br/js/tts.js' %>"></script>
     <script>
         (function() {
-            const API_URL = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '<%= typeof API_URL !== "undefined" ? API_URL : "" %>';
+            const API_URL = (function() {
+                var injected = <%- JSON.stringify(typeof API_URL !== 'undefined' && API_URL ? String(API_URL).replace(/\/$/, '') : '') %>;
+                if (injected && /^https?:\/\//i.test(injected)) return injected;
+                return (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '';
+            })();
             const translation = '<%= translation || "nvi" %>';
             const slug = '<%= slug %>';
             const initialEstudoBookId = <%= typeof initialEstudoBookId !== 'undefined' && initialEstudoBookId ? JSON.stringify(initialEstudoBookId) : 'null' %>;
@@ -1057,6 +1061,11 @@
                     var json = await res.json().catch(function() { return {}; });
                     if (!res.ok || !json.success) throw new Error(json.message || 'Dia não encontrado');
                     var data = json.data;
+                    var resPlain = await fetch(API_URL + '/api/bible/devotionals-365/' + d + '?plain=1');
+                    var jPlain = await resPlain.json().catch(function() { return {}; });
+                    if (resPlain.ok && jPlain.success && jPlain.data) {
+                        data.devocional = jPlain.data;
+                    }
                     var bookId = data.book_id;
                     var from = parseInt(data.chapter_from, 10) || 1;
                     var to = parseInt(data.chapter_to, 10) || from;
