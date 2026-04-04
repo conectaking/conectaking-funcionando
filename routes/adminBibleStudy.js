@@ -230,6 +230,27 @@ router.post('/bible/devotionals-365/generate-range-ai', protectAdmin, async (req
     }
 });
 
+/** POST /api/admin/bible/devotionals-365/generate-month-ai/:year/:month — Gera todos os dias do mês civil (1–12) com tema do mês. */
+router.post('/bible/devotionals-365/generate-month-ai/:year/:month', protectAdmin, async (req, res) => {
+    const year = parseInt(req.params.year, 10);
+    const month = parseInt(req.params.month, 10);
+    if (Number.isNaN(year) || year < 2000 || year > 2100 || month < 1 || month > 12) {
+        return res.status(400).json({ success: false, message: 'Ano ou mês inválido.' });
+    }
+    try {
+        const out = await bibleAdminDev365.generateMonthAndSave(year, month, {
+            delayMs: req.body && req.body.delayMs,
+            temaModo: (req.body && req.body.temaModo) || 'mes_auto',
+            temaPersonalizado: (req.body && req.body.temaPersonalizado) || '',
+            estilo: req.body && req.body.estilo === 'cunha' ? 'cunha' : 'padrao'
+        });
+        res.json({ success: true, data: out });
+    } catch (e) {
+        logger.error('adminBibleStudy generate-month-ai:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro.' });
+    }
+});
+
 /** GET /api/admin/bible/devotionals-365/month-themes/:year */
 router.get('/bible/devotionals-365/month-themes/:year', protectAdmin, async (req, res) => {
     const year = parseInt(req.params.year, 10);

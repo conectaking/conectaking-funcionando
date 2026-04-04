@@ -10,6 +10,34 @@ const bibleRepository = require('./bible.repository');
 const devotionalAi = require('./bibleDevotionalAi.service');
 const logger = require('../../utils/logger');
 
+function isLeapYear(y) {
+    return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+
+/** Mesma lógica que bible.service (dia 1–365 → mês/dia civil). */
+function dayOfYearToMonthDay(doy, year) {
+    const leap = isLeapYear(year);
+    const dim = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let d = doy;
+    for (let m = 0; m < 12; m++) {
+        if (d <= dim[m]) return { month: m + 1, day: d };
+        d -= dim[m];
+    }
+    return { month: 12, day: dim[11] };
+}
+
+/** Lista de dias do ano (1–365) que caem num mês civil (1–12) num dado ano. */
+function getDayOfYearListForCalendarMonth(year, month) {
+    const m = Math.max(1, Math.min(12, parseInt(month, 10) || 1));
+    const y = parseInt(year, 10) || new Date().getFullYear();
+    const out = [];
+    for (let doy = 1; doy <= 365; doy++) {
+        const md = dayOfYearToMonthDay(doy, y);
+        if (md.month === m) out.push(doy);
+    }
+    return out;
+}
+
 const DATA_DIR = path.join(__dirname, '..', '..', 'data', 'bible');
 const MONTH_THEMES_FILE = path.join(DATA_DIR, 'dev365_month_themes.json');
 
@@ -127,6 +155,46 @@ async function generateRangeAndSave(startDay, endDay, year, options = {}) {
     return { ok: true, results, total: results.length, errors: results.filter(function (x) { return !x.ok; }).length };
 }
 
+/**
+ * Gera todos os dias do ano que pertencem ao mês civil (ex.: apenas janeiro = ~31 dias).
+ * Usa tema do mês (inclui overrides em dev365_month_themes.json) com temaModo mes_auto por defeito.
+ */
+async function generateMonthAndSave(year, month, options = {}) {
+    const y = parseInt(year, 10) || new Date().getFullYear();
+    const days = getDayOfYearListForCalendarMonth(y, month);
+    if (!days.length) {
+        return { ok: false, error: 'Mês inválido.', results: [], total: 0, errors: 0 };
+    }
+    devotionalAi.clearDev365Cache();
+    const delayMs = Math.max(0, parseInt(options.delayMs, 10) || 400);
+    const temaModo = options.temaModo || 'mes_auto';
+    const results = [];
+    for (let i = 0; i < days.length; i++) {
+        const d = days[i];
+        /* eslint-disable no-await-in-loop */
+        const r = await generateDayAndSave(d, y, {
+            temaModo,
+            temaPersonalizado: options.temaPersonalizado || '',
+            estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao'
+        });
+        results.push({ day: d, ok: r.ok, error: r.error || null });
+        if (delayMs && i < days.length - 1) {
+            await new Promise(function (resolve) {
+                setTimeout(resolve, delayMs);
+            });
+        }
+    }
+    return {
+        ok: true,
+        year: y,
+        month: parseInt(month, 10),
+        daysInBatch: days,
+        results,
+        total: results.length,
+        errors: results.filter(function (x) { return !x.ok; }).length
+    };
+}
+
 module.exports = {
     getMonthThemesForYear,
     setMonthTheme,
@@ -134,5 +202,7 @@ module.exports = {
     findDuplicateDevotionalGroups,
     generateDayAndSave,
     generateRangeAndSave,
+    generateMonthAndSave,
+    getDayOfYearListForCalendarMonth,
     MONTH_THEMES_FILE
 };

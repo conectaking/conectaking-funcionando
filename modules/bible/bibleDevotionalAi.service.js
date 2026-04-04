@@ -52,7 +52,8 @@ async function enrichDevotional365(devotional, ctx) {
     }
 
     const instr = String(devotional.tema_ia_instrucao || '').slice(0, 1200);
-    const cacheKey = `dev365-ai:${year}:${dayOfYear}:${MODEL}:${estilo}:${fnv1aShort(instr)}:${fnv1aShort(devotional.reflexao || '').slice(0, 200)}`;
+    /* dayOfYear no hash do texto-base: mesmo catálogo em vários dias não deve colidir em cache */
+    const cacheKey = `dev365-ai:${year}:${dayOfYear}:${MODEL}:${estilo}:${fnv1aShort(instr)}:${fnv1aShort(String(dayOfYear) + '|' + (devotional.reflexao || '')).slice(0, 240)}`;
     const hit = cacheGet(cacheKey);
     if (hit) return hit;
 
@@ -73,6 +74,7 @@ ESTILO DE ENTREGA (obrigatório): Devocional no estilo de mensagem de rádio cri
 
     const userPrompt = `Dia do ano: ${dayOfYear} de 365 · Ano civil: ${year}.
 IMPORTANTE: Este é o dia ${dayOfYear} — a reflexão deve ser claramente DISTINTA da de outros dias (outro ângulo, outros exemplos, outra abertura). Não reproduza o texto-base como cópia; reescreva por completo.
+ID único do pedido: ${year}-DOY-${dayOfYear} (garanta que o JSON deste pedido não seja igual ao de outro dia).
 
 PASSAGEM / referência principal: ${ref}
 Título de apoio (pode inspirar o tom): ${titulo}
@@ -102,7 +104,7 @@ Regras: a reflexão DEVE demonstrar que o tema instruído foi seguido (não gen�
             },
             body: JSON.stringify({
                 model: MODEL,
-                temperature: estilo === 'cunha' ? 0.72 : 0.65,
+                temperature: estilo === 'cunha' ? 0.78 : 0.72,
                 max_tokens: 1600,
                 messages: [
                     {
@@ -230,8 +232,13 @@ async function generateAllMonthThemesForYear(year, delayMs) {
     return { themes, errors };
 }
 
+function clearDev365Cache() {
+    cache.clear();
+}
+
 module.exports = {
     enrichDevotional365,
     generateMonthThemeLine,
-    generateAllMonthThemesForYear
+    generateAllMonthThemesForYear,
+    clearDev365Cache
 };

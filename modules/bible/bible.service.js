@@ -5,6 +5,22 @@ const devotionalAi = require('./bibleDevotionalAi.service');
 const logger = require('../../utils/logger');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data', 'bible');
+const DEV365_MONTH_THEMES_FILE = path.join(DATA_DIR, 'dev365_month_themes.json');
+
+const MESES_PT_LOWER = [
+    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+];
+
+function loadDev365MonthThemeOverrides() {
+    try {
+        if (!fs.existsSync(DEV365_MONTH_THEMES_FILE)) return {};
+        return JSON.parse(fs.readFileSync(DEV365_MONTH_THEMES_FILE, 'utf8'));
+    } catch (e) {
+        logger.error('bible.service loadDev365MonthThemeOverrides:', e);
+        return {};
+    }
+}
 
 function getVerseOfDayIndex(dateStr) {
     let y, m, d;
@@ -147,7 +163,13 @@ function dayOfYearToMonthDay(doy, year) {
 
 function getDevotional365Themes(dayOfYear, year) {
     const md = dayOfYearToMonthDay(dayOfYear, year);
-    const temaMes = TEMAS_MES_PT[md.month - 1] || TEMAS_MES_PT[0];
+    let temaMes = TEMAS_MES_PT[md.month - 1] || TEMAS_MES_PT[0];
+    const overrides = loadDev365MonthThemeOverrides();
+    const yk = String(year);
+    const mk = String(md.month);
+    if (overrides[yk] && overrides[yk][mk] && String(overrides[yk][mk]).trim()) {
+        temaMes = String(overrides[yk][mk]).trim().slice(0, 500);
+    }
     const temaAno = TEMAS_ANO_ROTATIVOS[((year % 5) + 5) % 5];
     return {
         mes: md.month,
@@ -156,6 +178,17 @@ function getDevotional365Themes(dayOfYear, year) {
         tema_mes: temaMes,
         tema_ano: temaAno
     };
+}
+
+/** Instrução extra para a IA evitar reflexões idênticas entre dias (duplicados na BD). */
+function dev365UniquenessInstruction(dayOfYear, year) {
+    const md = dayOfYearToMonthDay(dayOfYear, year);
+    const nomeMes = MESES_PT_LOWER[md.month - 1] || String(md.month);
+    return (
+        ` UNICIDADE: Dia ${dayOfYear}/365 do calendário devocional (${md.day} de ${nomeMes} de ${year}). ` +
+        'Não repita frases, aberturas nem estrutura de outros dias; varie exemplos e ângulo pastoral. ' +
+        'O texto final deve ser claramente diferente de qualquer outro dia.'
+    );
 }
 
 /**
@@ -178,7 +211,8 @@ function resolveThemeForDev365(dayOfYear, year, options = {}) {
             tema_ia_instrucao:
                 `O devocional deve girar em torno deste tema escolhido pelo usuário: "${custom}". ` +
                 `Inclua também uma ligação clara ao TEMA DO MÊS CALENDÁRIO (${md.month}/${year}): ${temaMesCalendario} — pelo menos uma frase no corpo da reflexão. ` +
-                'A abertura e o fecho devem deixar o tema personalizado explícito.'
+                'A abertura e o fecho devem deixar o tema personalizado explícito.' +
+                dev365UniquenessInstruction(dayOfYear, year)
         };
     }
     if (modo === 'ano_auto' || modo === 'ano') {
@@ -187,7 +221,8 @@ function resolveThemeForDev365(dayOfYear, year, options = {}) {
             tema_modo_aplicado: 'ano',
             tema_ia_instrucao:
                 `Priorize o TEMA DO ANO em toda a reflexão (introdução e conclusão centrados nele). ` +
-                `TEMA DO ANO: ${base.tema_ano}. O tema do mês é apenas apoio.`
+                `TEMA DO ANO: ${base.tema_ano}. O tema do mês é apenas apoio.` +
+                dev365UniquenessInstruction(dayOfYear, year)
         };
     }
     if (modo === 'mes_e_ano' || modo === 'mes_ano' || modo === 'ambos') {
@@ -196,14 +231,16 @@ function resolveThemeForDev365(dayOfYear, year, options = {}) {
             tema_modo_aplicado: 'mes_e_ano',
             tema_ia_instrucao:
                 `Integre de forma visível o TEMA DO MÊS (${base.tema_mes}) e o TEMA DO ANO (${base.tema_ano}) — ` +
-                'pelo menos uma frase para cada, além da ligação com a passagem.'
+                'pelo menos uma frase para cada, além da ligação com a passagem.' +
+                dev365UniquenessInstruction(dayOfYear, year)
         };
     }
     return {
         ...base,
         tema_modo_aplicado: 'mes',
         tema_ia_instrucao:
-            `Priorize o TEMA DO MÊS (${base.tema_mes}). O tema do ano pode aparecer só no fecho se couber.`
+            `Priorize o TEMA DO MÊS (${base.tema_mes}). O tema do ano pode aparecer só no fecho se couber.` +
+            dev365UniquenessInstruction(dayOfYear, year)
     };
 }
 
