@@ -124,7 +124,10 @@
             var qs = new URLSearchParams(window.location.search);
             var itemIdFromQuery = qs.get('itemId') || qs.get('id');
             if (itemIdFromQuery) {
-                try { sessionStorage.setItem(SESSION_KEY, itemIdFromQuery); } catch (e) {}
+                try {
+                    sessionStorage.setItem(SESSION_KEY, itemIdFromQuery);
+                    sessionStorage.setItem('bible_item_id', itemIdFromQuery);
+                } catch (e) {}
             }
             var itemId = itemIdFromQuery || (function () {
                 try { return sessionStorage.getItem(SESSION_KEY); } catch (e) { return null; }

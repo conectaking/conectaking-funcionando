@@ -15,7 +15,8 @@
             var search = window.location.search || '';
             try {
                 if (search.indexOf('itemId=') === -1 && search.indexOf('&itemId=') === -1 && search.indexOf('id=') === -1) {
-                    var sid = sessionStorage.getItem('bible_panel_item_id');
+                    /* dashboard.js grava bible_item_id; biblePanel.ejs grava bible_panel_item_id */
+                    var sid = sessionStorage.getItem('bible_panel_item_id') || sessionStorage.getItem('bible_item_id');
                     if (sid) search = (search ? search + '&' : '?') + 'itemId=' + encodeURIComponent(sid);
                 }
             } catch (e2) {}
