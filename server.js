@@ -739,6 +739,16 @@ app.get('/public_html/bible.html', (req, res) => {
 // Frontend estático (Hostinger → Render/Node)
 // Serve public_html/ como origem do domínio
 // ============================================
+// Painel admin Devocionais 365: versão canónica em public/ (public_html pode ter cópia antiga sem os botões novos)
+const adminDev365HtmlPath = path.join(__dirname, 'public', 'admin-devocionais-365.html');
+app.get('/admin-devocionais-365.html', (req, res) => {
+    if (!fs.existsSync(adminDev365HtmlPath)) {
+        return res.status(404).type('text/plain').send('Not found');
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.type('html').sendFile(adminDev365HtmlPath);
+});
+
 // Rota explícita para tts.js: garante Content-Type application/javascript (evita MIME text/html em 404)
 app.get('/js/tts.js', (req, res) => {
     const ttsPath = path.join(publicHtmlDir, 'js', 'tts.js');
