@@ -178,6 +178,54 @@ router.post('/bible/study/book/:bookId/upload', protectAdmin, (req, res, next) =
     }
 });
 
+/** POST /api/admin/bible/study/book/:bookId/generate-ai — Gera estudo completo do livro via IA (texto longo; para livros que não sejam Gênesis, usa o estudo de Gênesis já gravado como referência de formato, se existir). */
+router.post('/bible/study/book/:bookId/generate-ai', protectAdmin, async (req, res) => {
+    const bookId = (req.params.bookId || '').trim();
+    if (!bookId) {
+        return res.status(400).json({ success: false, message: 'bookId é obrigatório.' });
+    }
+    try {
+        const manifest = bibleService.loadBooksManifest();
+        const allBooks = (manifest.at || []).concat(manifest.nt || []);
+        const bookMeta = allBooks.find(
+            (b) => b && (b.id === bookId || String(b.id || '').toLowerCase() === bookId.toLowerCase())
+        );
+        if (!bookMeta) {
+            return res.status(400).json({ success: false, message: 'Livro não encontrado no manifesto.' });
+        }
+        const bookName = bookMeta.name || bookId;
+
+        let referenceSample = '';
+        if (String(bookId).toLowerCase() !== 'gn') {
+            const gnRow = await bibleRepository.getBookStudy('gn');
+            if (gnRow && gnRow.content) {
+                referenceSample = String(gnRow.content).trim();
+            }
+        }
+
+        const r = await bibleDevotionalAi.generateBookStudyFullText({
+            bookId,
+            bookName,
+            referenceSample
+        });
+        if (r.error) {
+            return res.status(400).json({ success: false, message: r.error });
+        }
+
+        const title = `Estudo: ${bookName}`;
+        await bibleRepository.upsertBookStudy(bookId, title, r.text);
+        logger.info(`Admin: estudo do livro ${bookId} (${bookName}) gerado por IA.`);
+        res.json({
+            success: true,
+            message: `Estudo de "${bookName}" foi gerado e gravado.`,
+            data: { book_id: bookId, book_name: bookName, content_length: r.text.length }
+        });
+    } catch (e) {
+        logger.error('adminBibleStudy generate-ai book study:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro ao gerar estudo.' });
+    }
+});
+
 // --- Devocionais 365 (só ADM): listar dias com conteúdo, adicionar/editar, remover ---
 
 /** GET /api/admin/bible/devotionals-365/day/:day — Devocional completo (visualização). */

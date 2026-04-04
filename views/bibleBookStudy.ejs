@@ -71,8 +71,8 @@
 </head>
 <body>
     <div class="study-wrap">
-        <a href="<%= typeof dashboardUrl !== 'undefined' && dashboardUrl ? dashboardUrl : ((typeof baseUrl !== 'undefined' && baseUrl ? String(baseUrl).replace(/\/$/, '') : '') + '/dashboard.html') %>" class="back-link"><i class="fas fa-arrow-left"></i> Voltar ao menu inicial</a>
-        <% if (typeof biblePanelUrl !== 'undefined' && biblePanelUrl) { %><a href="<%= biblePanelUrl %>" class="back-link" style="margin-left:12px;font-size:0.88rem;opacity:0.9"><i class="fas fa-bible"></i> Hub da Bíblia</a><% } %>
+        <a href="<%= typeof biblePanelUrl !== 'undefined' && biblePanelUrl ? biblePanelUrl : ((typeof baseUrl !== 'undefined' && baseUrl ? String(baseUrl).replace(/\/$/, '') : '') + '/dashboard.html') %>" class="back-link"><i class="fas fa-arrow-left"></i> Voltar à Bíblia</a>
+        <% if (typeof dashboardUrl !== 'undefined' && dashboardUrl) { %><a href="<%= dashboardUrl %>" class="back-link" style="margin-left:12px;font-size:0.88rem;opacity:0.85"><i class="fas fa-th-large"></i> Painel (menu inicial)</a><% } %>
 
         <% if (study && (study.title || study.content || study.contentSafe)) { %>
         <div class="study-header">

@@ -374,6 +374,93 @@ Use versiculo_texto vazio (o servidor preenche com a NVI quando possível).`;
     }
 }
 
+const MODEL_BOOK_STUDY = process.env.BIBLE_BOOK_STUDY_AI_MODEL || process.env.BIBLE_DEV365_AI_MODEL || 'gpt-4o-mini';
+const BOOK_STUDY_MAX_TOKENS = Math.min(16384, Math.max(2000, parseInt(process.env.BIBLE_BOOK_STUDY_MAX_TOKENS, 10) || 9000));
+
+/**
+ * Gera texto longo de estudo introdutório do livro (bible_book_studies), no tom de estudo completo tipo Gênesis no site.
+ * @param {{ bookId: string, bookName: string, referenceSample?: string }} opts — referenceSample = trecho do estudo de Gênesis para espelhar profundidade (opcional)
+ */
+async function generateBookStudyFullText(opts) {
+    const bookId = String(opts.bookId || '').trim();
+    const bookName = String(opts.bookName || bookId).trim();
+    const referenceSample = String(opts.referenceSample || '').trim();
+
+    if (!getOpenAiKey()) {
+        return { error: 'Chave OpenAI não configurada (OPENAI_API_KEY ou BIBLE_OPENAI_API_KEY).' };
+    }
+    if (!bookId || !bookName) {
+        return { error: 'Livro inválido.' };
+    }
+
+    const refBlock =
+        referenceSample && bookId.toLowerCase() !== 'gn'
+            ? `
+EXEMPLO NO SITE (estudo de Gênesis — use APENAS como referência de profundidade, extensão e estilo de secções; NÃO copie frases; o texto final deve ser 100% sobre ${bookName}):
+
+---
+${referenceSample.slice(0, 11000)}
+---
+`
+            : '';
+
+    const userPrompt = `Livro bíblico: ${bookName} (id técnico: ${bookId}).
+
+Escreva um ÚNICO estudo completo do livro em português do Brasil, para leitor cristão evangélico.
+
+REQUISITOS (obrigatórios):
+- NÃO seja um resumo de um minuto. O texto deve ser LONGO e denso: vários mil palavras de conteúdo útil, muitos parágrafos.
+- O leitor deve conseguir compreender a narrativa, os ensinamentos e o contexto SEM precisar ler o livro inteiro, mas sem superficialidade: explique acontecimentos, personagens, conflitos e mensagem teológica com profundidade.
+- Organize com títulos em linha própria (use linhas curtas em MAIÚSCULAS ou o padrão "► Secção" antes de cada bloco).
+- Inclua secções como: VISÃO GERAL; CONTEXTO; ESTRUTURA E CONTEÚDO (percorra os grandes blocos do livro com desenvolvimento — não se limite a uma frase por capítulo: agrupe e aprofunde); PERSONAGENS OU TEMAS CENTRAIS; MENSAGEM TEOLÓGICA; APLICAÇÃO PARA HOJE.
+- Ao citar passagens, use o formato com nome do livro como na Bíblia em português (ex.: ${bookName} 3, ou Salmos 23, João 3) para o site poder criar links.
+- Não invente citações literais longas da Bíblia; pode parafrasear. Não cite nomes de pastores ou obras comerciais.
+
+${refBlock}
+
+Responda SOMENTE com o texto do estudo, sem comentários introdutórios nem markdown de código.`;
+
+    try {
+        const res = await fetch(CHAT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${getOpenAiKey()}`
+            },
+            body: JSON.stringify({
+                model: MODEL_BOOK_STUDY,
+                temperature: 0.55,
+                max_tokens: BOOK_STUDY_MAX_TOKENS,
+                messages: [
+                    {
+                        role: 'system',
+                        content:
+                            'Você é teólogo evangélico e professor de Bíblia em português do Brasil. Conhece bem a estrutura e o conteúdo dos 66 livros; não contradiz a Escritura. Produz estudos longos, claros e pastorais, com rigor e acessibilidade.'
+                    },
+                    { role: 'user', content: userPrompt }
+                ]
+            })
+        });
+
+        const raw = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const msg = raw.error && raw.error.message ? raw.error.message : res.statusText;
+            logger.error('bibleDevotionalAi generateBookStudyFullText HTTP:', msg);
+            return { error: msg || 'Erro ao chamar a IA.' };
+        }
+
+        const text = (raw.choices && raw.choices[0] && raw.choices[0].message && raw.choices[0].message.content) || '';
+        const trimmed = String(text).trim();
+        if (trimmed.length < 800) {
+            return { error: 'A resposta da IA ficou curta demais; tente novamente.' };
+        }
+        return { text: trimmed };
+    } catch (e) {
+        logger.error('bibleDevotionalAi generateBookStudyFullText:', e);
+        return { error: e.message || 'Falha de rede.' };
+    }
+}
+
 function clearDev365Cache() {
     cache.clear();
 }
@@ -383,6 +470,7 @@ module.exports = {
     generateFullDevotional365Day,
     generateMonthThemeLine,
     generateAllMonthThemesForYear,
+    generateBookStudyFullText,
     clearDev365Cache,
     normalizeDev365Ref
 };

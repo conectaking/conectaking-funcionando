@@ -249,9 +249,28 @@
 
         <section id="panel-estudo" class="panel">
             <div class="card">
-                <h2>Estudo por livro</h2>
-                <p>Envio de Word/PDF e gestão de estudos por livro usam o painel de API: <code style="color:#7dd3fc">/api/admin/bible/...</code> (documentação interna). Abra o dashboard e o módulo Bíblia, ou utilize ferramentas de upload já ligadas ao seu fluxo.</p>
-                <a class="btn btn-secondary" href="/dashboard.html"><i class="fas fa-th-large"></i> Dashboard</a>
+                <h2><i class="fas fa-book-reader"></i> Estudo por livro</h2>
+                <p>Envie Word/PDF <strong>ou</strong> use <strong>Gerar via IA</strong> para criar um estudo longo e completo (mesmo tipo de profundidade do estudo de Gênesis no site). Requer a URL da API e token de administrador acima. Máx. 15 MB por ficheiro.</p>
+                <div class="row" style="margin-top:10px">
+                    <div style="flex:1;min-width:200px">
+                        <label for="study-book-search">Pesquisar livro (nome ou código, ex.: jo, Salmos)</label>
+                        <input type="text" id="study-book-search" placeholder="Filtrar lista…" style="width:100%;max-width:320px">
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="btn-study-reload"><i class="fas fa-sync"></i> Atualizar lista de livros</button>
+                </div>
+                <div style="overflow:auto;margin-top:14px">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Livro</th>
+                                <th>Estado</th>
+                                <th>Importar / IA</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-study-books"><tr><td colspan="4">Carregue a lista.</td></tr></tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
