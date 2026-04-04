@@ -205,7 +205,7 @@
 </head>
 <body class="reader-body">
     <% if (typeof biblePanelUrl === 'undefined' || !biblePanelUrl) { biblePanelUrl = (baseUrl ? String(baseUrl).replace(/\/$/, '') : '') + '/' + slug + '/biblia'; } %>
-    <% var dashboardUrlReader = typeof dashboardUrl !== 'undefined' && dashboardUrl ? dashboardUrl : ((typeof baseUrl !== 'undefined' && baseUrl ? String(baseUrl).replace(/\/$/, '') : '') + '/dashboard.html'); %>
+    <% var dashboardUrlReader = typeof dashboardUrl !== 'undefined' && dashboardUrl ? dashboardUrl : ''; %>
     <% var returnTo = typeof returnTo !== 'undefined' && returnTo ? returnTo : ''; %>
     <% var _ch = chapterData.chapter || 1; var _tot = chapterData.totalChapters || 1; var _pct = Math.min(100, Math.round((_ch / _tot) * 100)); %>
     <% var _books = (typeof allBooksList !== 'undefined' && Array.isArray(allBooksList)) ? allBooksList : []; %>
@@ -540,7 +540,7 @@
                 });
             })();
 
-            function goToDashboard() { window.location.href = dashboardUrl || biblePanelUrl; }
+            function goToDashboard() { window.location.href = biblePanelUrl || dashboardUrl; }
             var backBible = document.getElementById('back-bible-link');
             if (backBible) backBible.addEventListener('click', goToDashboard);
             var backBibleAlt = document.getElementById('back-bible-link-alt');

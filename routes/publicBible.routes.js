@@ -288,7 +288,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 baseUrl,
                 tParam,
                 biblePanelUrl,
-                dashboardUrl: `${baseUrl.replace(/\/$/, '')}/dashboard.html`,
+                dashboardUrl: getDashboardHtmlUrl(),
                 returnTo,
                 API_URL: process.env.FRONTEND_URL || baseUrl,
                 ttsScriptSrc,

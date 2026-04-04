@@ -98,6 +98,8 @@ app.use(helmet({
                 "'self'",
                 "'unsafe-inline'",
                 "'unsafe-eval'",
+                "https://conectaking.com.br",
+                "https://www.conectaking.com.br",
                 "https://cdn.jsdelivr.net",
                 "https://cdnjs.cloudflare.com",
                 "https://www.instagram.com",
