@@ -199,86 +199,97 @@
         }
     </style>
 </head>
-<body>
+<body class="reader-body">
     <% if (typeof biblePanelUrl === 'undefined' || !biblePanelUrl) { biblePanelUrl = (baseUrl ? String(baseUrl).replace(/\/$/, '') : '') + '/' + slug + '/biblia'; } %>
     <% var dashboardUrlReader = typeof dashboardUrl !== 'undefined' && dashboardUrl ? dashboardUrl : ((typeof baseUrl !== 'undefined' && baseUrl ? String(baseUrl).replace(/\/$/, '') : '') + '/dashboard.html'); %>
     <% var returnTo = typeof returnTo !== 'undefined' && returnTo ? returnTo : ''; %>
     <% var _ch = chapterData.chapter || 1; var _tot = chapterData.totalChapters || 1; var _pct = Math.min(100, Math.round((_ch / _tot) * 100)); %>
-    <div class="reader-chapter-progress" title="Capítulo <%= _ch %> de <%= _tot %>"><span style="width:<%= _pct %>%"></span></div>
-    <div class="reader-wrap">
+    <% var _books = (typeof allBooksList !== 'undefined' && Array.isArray(allBooksList)) ? allBooksList : []; %>
+    <% var _headList = (typeof sectionHeadings !== 'undefined' && Array.isArray(sectionHeadings)) ? sectionHeadings : []; %>
+    <header class="reader-app-bar">
         <% if (returnTo) { %>
-        <a href="<%= returnTo %>" class="back-link" id="back-study-link"><i class="fas fa-arrow-left"></i> Voltar ao estudo</a>
-        <a href="javascript:void(0)" id="back-bible-link" class="back-link" style="margin-left:12px;font-size:0.85rem;opacity:0.9"><i class="fas fa-home"></i> Menu inicial</a>
+        <a href="<%= returnTo %>" class="reader-app-icon" id="back-study-link" aria-label="Voltar ao estudo"><i class="fas fa-arrow-left"></i></a>
         <% } else { %>
-        <a href="javascript:void(0)" id="back-bible-link" class="back-link"><i class="fas fa-arrow-left"></i> Voltar ao menu inicial</a>
+        <a href="javascript:void(0)" class="reader-app-icon" id="back-bible-link" aria-label="Voltar ao menu inicial"><i class="fas fa-arrow-left"></i></a>
         <% } %>
-        <div class="reader-header">
-            <div class="book-icon"><i class="fas fa-book-open"></i></div>
-            <h1><%= chapterData.bookName %> — Capítulo <%= chapterData.chapter %></h1>
-            <div class="nav-chapters">
-                <% if (chapterData.chapter > 1) { %>
-                <a href="/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter - 1 %><%= tParam %>"><i class="fas fa-chevron-left"></i> Cap. <%= chapterData.chapter - 1 %></a>
-                <% } else { %>
-                <span class="disabled"><i class="fas fa-chevron-left"></i> Anterior</span>
-                <% } %>
-                <span class="cap-picker-trigger" id="cap-picker-trigger" title="Clique para ver todos os capítulos"><i class="fas fa-list"></i> Cap. <%= chapterData.chapter %> de <%= chapterData.totalChapters %></span>
-                <% if (chapterData.chapter < chapterData.totalChapters) { %>
-                <a href="/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter + 1 %><%= tParam %>">Cap. <%= chapterData.chapter + 1 %> <i class="fas fa-chevron-right"></i></a>
-                <% } else { %>
-                <span class="disabled">Próximo <i class="fas fa-chevron-right"></i></span>
-                <% } %>
-            </div>
-            <div class="chapter-picker-panel" id="chapter-picker-panel">
-                <h4><i class="fas fa-book-open"></i> Selecione o capítulo</h4>
-                <div class="chapter-picker-grid" id="chapter-picker-grid">
-                    <% for (var c = 1; c <= chapterData.totalChapters; c++) { %>
-                    <a href="/<%= slug %>/bible/<%= chapterData.bookId %>/<%= c %><%= tParam %>" class="<%= c === chapterData.chapter ? 'current' : '' %>"><%= c %></a>
-                    <% } %>
-                </div>
-                <div class="go-to-verse">
-                    <span style="color:#A1A1A1;font-size:0.85rem">Ir para cap.</span>
-                    <input type="number" id="go-cap" min="1" max="<%= chapterData.totalChapters %>" value="<%= chapterData.chapter %>" placeholder="Cap.">
-                    <span style="color:#A1A1A1;font-size:0.85rem">vers.</span>
-                    <input type="number" id="go-verse" min="1" max="<%= chapterData.verses && chapterData.verses.length || 1 %>" value="1" placeholder="Vers.">
-                    <button type="button" id="btn-go-verse"><i class="fas fa-arrow-right"></i> Ir</button>
-                </div>
-            </div>
-            <div class="reader-toolbar" style="flex-wrap:wrap;gap:10px;align-items:center;">
-                <label for="sel-translation" style="color:#A1A1A1;font-size:0.85rem;">Tradução:</label>
-                <select id="sel-translation" class="translation-select" onchange="var t=this.value; if(t) location.href='/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter %>'+(t!=='nvi'?'?translation='+encodeURIComponent(t):'');">
-                    <option value="nvi"<%= (typeof translation !== 'undefined' && translation === 'nvi') ? ' selected' : '' %>>NVI (Nova Versão Internacional)</option>
-                    <option value="arc"<%= (typeof translation !== 'undefined' && translation === 'arc') ? ' selected' : '' %>>ARC (Almeida Revista e Corrigida)</option>
-                    <option value="acf"<%= (typeof translation !== 'undefined' && translation === 'acf') ? ' selected' : '' %>>ACF (Almeida Corrigida Fiel)</option>
-                    <option value="ntlh"<%= (typeof translation !== 'undefined' && translation === 'ntlh') ? ' selected' : '' %>>NTLH (Nova Tradução na Linguagem de Hoje)</option>
-                    <option value="ara"<%= (typeof translation !== 'undefined' && translation === 'ara') ? ' selected' : '' %>>ARA (Almeida Revisada e Atualizada)</option>
-                    <option value="kja"<%= (typeof translation !== 'undefined' && translation === 'kja') ? ' selected' : '' %>>KJA (King James Atualizada)</option>
-                    <option value="kjv"<%= (typeof translation !== 'undefined' && translation === 'kjv') ? ' selected' : '' %>>KJV (King James Version)</option>
-                </select>
-                <label for="sel-voice" style="color:#A1A1A1;font-size:0.85rem;">Voz:</label>
-                <select id="sel-voice" class="translation-select" style="color:#ECECEC;background:rgba(255,255,255,0.08);border:1px solid rgba(255,199,0,0.3);cursor:pointer"><option value="">Padrão</option></select>
-                <span id="tts-aviso" style="font-size:0.8rem;color:#FFA500;display:none">Instale vozes pt-BR (Brasil) nas Configurações do dispositivo</span>
-                <a href="https://play.google.com/store/apps/details?id=com.google.android.tts" id="btn-baixar-vozes" target="_blank" rel="noopener" class="btn-download-voice" style="display:none;font-size:0.8rem;color:#FFC700;text-decoration:none;padding:6px 10px;white-space:nowrap"><i class="fas fa-download"></i> Baixar vozes pt-BR</a>
-                <button type="button" class="btn-ouvir" id="btn-ouvir"><i class="fas fa-volume-up"></i> Ouvir capítulo</button>
-                <button type="button" class="btn-ouvir" id="btn-parar" style="background:rgba(239,68,68,0.8);"><i class="fas fa-stop"></i> Parar</button>
-                <button type="button" class="btn-ouvir secondary" id="btn-mark-read" style="background:rgba(255,255,255,0.08);color:#ECECEC;border:1px solid rgba(255,199,0,0.4);" title="Marcar este capítulo como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
-                <a href="javascript:void(0)" id="btn-estudo-cap" class="btn-ouvir secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px" title="Ver estudo deste capítulo"><i class="fas fa-book-open"></i> Ver estudo</a>
-                <a href="/<%= slug %>/biblia/estudos-livro/<%= chapterData.bookId %>" target="_blank" rel="noopener" class="btn-ouvir secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px" title="Ver estudo completo de <%= chapterData.bookName || chapterData.bookId %>"><i class="fas fa-book"></i> Estudo completo do livro</a>
-                <span style="color:#A1A1A1;font-size:0.85rem;margin-left:4px">Fonte:</span>
-                <button type="button" class="btn-ouvir secondary btn-font" data-size="small" title="Fonte menor" style="padding:8px 12px;font-weight:600">A-</button>
-                <button type="button" class="btn-ouvir secondary btn-font active" data-size="normal" title="Fonte normal" style="padding:8px 12px;font-weight:600">A</button>
-                <button type="button" class="btn-ouvir secondary btn-font" data-size="large" title="Fonte maior" style="padding:8px 12px;font-weight:600">A+</button>
-                <button type="button" class="btn-ouvir secondary" id="btn-theme" title="Alternar tema claro/escuro" style="padding:8px 12px"><i class="fas fa-moon" id="icon-theme"></i></button>
-                <button type="button" class="btn-ouvir secondary" id="btn-favorito" title="Adicionar aos favoritos" style="padding:8px 12px"><i class="far fa-star"></i> Favorito</button>
-                <button type="button" class="btn-ouvir" id="btn-share-selection" style="display:none;padding:8px 14px"><i class="fas fa-share-alt"></i> Compartilhar seleção</button>
-            </div>
-            <div id="estudo-cap-content" style="display:none;margin-top:16px;padding:16px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,199,0,0.2);border-radius:12px;">
-                <div id="estudo-cap-body"></div>
-            </div>
+        <select id="sel-translation" class="reader-app-translation" aria-label="Tradução" onchange="var t=this.value; if(t) location.href='/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter %>'+(t!=='nvi'?'?translation='+encodeURIComponent(t):'');">
+            <option value="nvi"<%= (typeof translation !== 'undefined' && translation === 'nvi') ? ' selected' : '' %>>NVI</option>
+            <option value="arc"<%= (typeof translation !== 'undefined' && translation === 'arc') ? ' selected' : '' %>>ARC</option>
+            <option value="acf"<%= (typeof translation !== 'undefined' && translation === 'acf') ? ' selected' : '' %>>ACF</option>
+            <option value="ntlh"<%= (typeof translation !== 'undefined' && translation === 'ntlh') ? ' selected' : '' %>>NTLH</option>
+            <option value="ara"<%= (typeof translation !== 'undefined' && translation === 'ara') ? ' selected' : '' %>>ARA</option>
+            <option value="kja"<%= (typeof translation !== 'undefined' && translation === 'kja') ? ' selected' : '' %>>KJA</option>
+            <option value="kjv"<%= (typeof translation !== 'undefined' && translation === 'kjv') ? ' selected' : '' %>>KJV</option>
+        </select>
+        <div class="reader-app-actions">
+            <button type="button" id="btn-theme" title="Tema claro/escuro" aria-label="Tema"><i class="fas fa-moon" id="icon-theme"></i></button>
+            <button type="button" id="btn-ouvir" title="Ouvir capítulo" aria-label="Ouvir"><i class="fas fa-volume-up"></i></button>
+            <button type="button" id="btn-more-menu" title="Mais opções" aria-label="Menu"><i class="fas fa-ellipsis-v"></i></button>
         </div>
+    </header>
+    <% if (returnTo) { %>
+    <p style="text-align:center;margin-top:8px"><a href="javascript:void(0)" id="back-bible-link-alt" style="color:#A1A1A1;font-size:0.85rem"><i class="fas fa-home"></i> Menu inicial</a></p>
+    <% } %>
+    <div class="reader-select-row">
+        <select id="sel-book" aria-label="Livro">
+            <% _books.forEach(function(b) { if (!b || !b.id) return; %>
+            <option value="<%= b.id %>"<%= b.id === chapterData.bookId ? ' selected' : '' %>><%= b.name %></option>
+            <% }); %>
+        </select>
+        <select id="sel-chapter" aria-label="Capítulo">
+            <% for (var c = 1; c <= chapterData.totalChapters; c++) { %>
+            <option value="<%= c %>"<%= c === chapterData.chapter ? ' selected' : '' %>><%= c %></option>
+            <% } %>
+        </select>
+    </div>
+    <div class="reader-chapter-progress" title="Capítulo <%= _ch %> de <%= _tot %>"><span style="width:<%= _pct %>%"></span></div>
+    <div id="reader-more-panel" class="reader-more-panel">
+        <div class="reader-toolbar" style="flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;">
+            <label for="sel-voice" style="color:#A1A1A1;font-size:0.85rem;">Voz:</label>
+            <select id="sel-voice" class="translation-select" style="color:#ECECEC;background:rgba(255,255,255,0.08);border:1px solid rgba(255,199,0,0.3);cursor:pointer;min-width:140px"><option value="">Padrão</option></select>
+            <span id="tts-aviso" style="font-size:0.8rem;color:#FFA500;display:none">Instale vozes pt-BR nas Configurações</span>
+            <a href="https://play.google.com/store/apps/details?id=com.google.android.tts" id="btn-baixar-vozes" target="_blank" rel="noopener" class="btn-download-voice" style="display:none;font-size:0.8rem;color:#FFC700;text-decoration:none;padding:6px 10px;white-space:nowrap"><i class="fas fa-download"></i> Baixar vozes pt-BR</a>
+            <button type="button" class="btn-ouvir" id="btn-parar" style="background:rgba(239,68,68,0.8);"><i class="fas fa-stop"></i> Parar</button>
+            <button type="button" class="btn-ouvir secondary" id="btn-mark-read" style="background:rgba(255,255,255,0.08);color:#ECECEC;border:1px solid rgba(255,199,0,0.4);" title="Marcar este capítulo como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
+            <a href="javascript:void(0)" id="btn-estudo-cap" class="btn-ouvir secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px" title="Ver estudo deste capítulo"><i class="fas fa-book-open"></i> Ver estudo</a>
+            <a href="/<%= slug %>/biblia/estudos-livro/<%= chapterData.bookId %>" target="_blank" rel="noopener" class="btn-ouvir secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px"><i class="fas fa-book"></i> Estudo do livro</a>
+            <span style="color:#A1A1A1;font-size:0.85rem">Fonte:</span>
+            <button type="button" class="btn-ouvir secondary btn-font" data-size="small" title="Fonte menor" style="padding:8px 12px;font-weight:600">A-</button>
+            <button type="button" class="btn-ouvir secondary btn-font active" data-size="normal" title="Fonte normal" style="padding:8px 12px;font-weight:600">A</button>
+            <button type="button" class="btn-ouvir secondary btn-font" data-size="large" title="Fonte maior" style="padding:8px 12px;font-weight:600">A+</button>
+            <button type="button" class="btn-ouvir secondary" id="btn-favorito" title="Favorito" style="padding:8px 12px"><i class="far fa-star"></i> Favorito</button>
+            <button type="button" class="btn-ouvir" id="btn-share-selection" style="display:none;padding:8px 14px"><i class="fas fa-share-alt"></i> Compartilhar seleção</button>
+        </div>
+        <div class="go-to-verse" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.1);display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:center;">
+            <span style="color:#A1A1A1;font-size:0.85rem">Ir para cap.</span>
+            <input type="number" id="go-cap" min="1" max="<%= chapterData.totalChapters %>" value="<%= chapterData.chapter %>" placeholder="Cap.">
+            <span style="color:#A1A1A1;font-size:0.85rem">vers.</span>
+            <input type="number" id="go-verse" min="1" max="<%= chapterData.verses && chapterData.verses.length || 1 %>" value="1" placeholder="Vers.">
+            <button type="button" id="btn-go-verse" class="btn-ouvir secondary"><i class="fas fa-arrow-right"></i> Ir</button>
+        </div>
+        <div id="estudo-cap-content" style="display:none;margin-top:16px;padding:16px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,199,0,0.2);border-radius:12px;">
+            <div id="estudo-cap-body"></div>
+        </div>
+    </div>
+    <% if (chapterData.chapter > 1) { %>
+    <a href="/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter - 1 %><%= tParam %>" class="reader-fab reader-fab-prev" id="fab-prev" aria-label="Capítulo anterior"><i class="fas fa-chevron-left"></i></a>
+    <% } else { %>
+    <span class="reader-fab reader-fab-prev disabled" id="fab-prev" aria-hidden="true"><i class="fas fa-chevron-left"></i></span>
+    <% } %>
+    <% if (chapterData.chapter < chapterData.totalChapters) { %>
+    <a href="/<%= slug %>/bible/<%= chapterData.bookId %>/<%= chapterData.chapter + 1 %><%= tParam %>" class="reader-fab reader-fab-next" id="fab-next" aria-label="Próximo capítulo"><i class="fas fa-chevron-right"></i></a>
+    <% } else { %>
+    <span class="reader-fab reader-fab-next disabled" id="fab-next" aria-hidden="true"><i class="fas fa-chevron-right"></i></span>
+    <% } %>
+    <div class="reader-wrap">
+        <p class="reader-color-legend">Novo Testamento: palavras de Jesus em <span style="color:#f87171;font-weight:600">vermelho</span>. Antigo Testamento: trechos de fala divina (heurística) em <span style="color:#4ade80;font-weight:600">verde</span>.</p>
         <div class="verses-card">
         <div id="verses-container">
             <% var jesusList = (typeof jesusVerseNumbers !== 'undefined' && Array.isArray(jesusVerseNumbers)) ? jesusVerseNumbers : []; %>
             <% chapterData.verses.forEach(function(v) { %>
+            <% _headList.filter(function(h) { return h.beforeVerse === v.verse; }).forEach(function(h) { %>
+            <div class="section-heading"><%= h.text %></div>
+            <% }); %>
             <div class="verse-block selectable <%= jesusList.indexOf(v.verse) !== -1 ? 'verse-jesus' : '' %>" data-verse="<%= v.verse %>">
                 <span class="verse-num"><%= v.verse %></span>
                 <span class="verse-text"><%= v.text %></span>
@@ -301,6 +312,7 @@
             const readerBookName = <%- JSON.stringify(chapterData.bookName || '') %>;
             const readerTranslation = <%- JSON.stringify(typeof translation !== 'undefined' ? translation : 'nvi') %>;
             const isOldTestament = <%- JSON.stringify(typeof isOldTestament !== 'undefined' ? isOldTestament : false) %>;
+            var chapterCountsByBookMap = <%- JSON.stringify(typeof chapterCountsByBook !== 'undefined' && chapterCountsByBook ? chapterCountsByBook : {}) %>;
             var translationNames = { nvi: 'NVI (Nova Versão Internacional)', arc: 'ARC (Almeida Revista e Corrigida)', acf: 'ACF (Almeida Corrigida Fiel)', ntlh: 'NTLH (Nova Tradução na Linguagem de Hoje)', ara: 'ARA (Almeida Revisada e Atualizada)', kja: 'KJA (King James Atualizada)', kjv: 'KJV (King James Version)' };
             var btnOuvir = document.getElementById('btn-ouvir');
             var btnShareSel = document.getElementById('btn-share-selection');
@@ -345,9 +357,13 @@
                     /E disse o Senhor/i,
                     /\bDiz o Senhor\b/i,
                     /Oráculo do Senhor/i,
-                    /Fala o Senhor/i
+                    /Fala o Senhor/i,
+                    /Disse-lhe o Senhor/i,
+                    /O Senhor disse/i,
+                    /Então o Senhor/i
                 ];
                 document.querySelectorAll('.verse-block').forEach(function(block) {
+                    if (block.classList.contains('verse-jesus')) return;
                     var el = block.querySelector('.verse-text');
                     if (!el) return;
                     var t = el.textContent || '';
@@ -475,19 +491,48 @@
                 });
             })();
 
+            function goToDashboard() { window.location.href = dashboardUrl || biblePanelUrl; }
             var backBible = document.getElementById('back-bible-link');
-            if (backBible) backBible.addEventListener('click', function() { window.location.href = dashboardUrl || biblePanelUrl; });
+            if (backBible) backBible.addEventListener('click', goToDashboard);
+            var backBibleAlt = document.getElementById('back-bible-link-alt');
+            if (backBibleAlt) backBibleAlt.addEventListener('click', goToDashboard);
 
-            (function chapterPicker() {
-                var trigger = document.getElementById('cap-picker-trigger');
-                var panel = document.getElementById('chapter-picker-panel');
+            (function readerNav() {
                 var tParam = (readerTranslation && readerTranslation !== 'nvi') ? '?translation=' + encodeURIComponent(readerTranslation) : '';
-                if (trigger && panel) {
-                    trigger.addEventListener('click', function() {
-                        panel.classList.toggle('open');
+                function buildUrl(bookId, ch) {
+                    return '/' + readerSlug + '/bible/' + encodeURIComponent(bookId) + '/' + ch + tParam;
+                }
+                var selBook = document.getElementById('sel-book');
+                var selChapter = document.getElementById('sel-chapter');
+                if (selBook) {
+                    selBook.addEventListener('change', function() {
+                        var bid = this.value;
+                        var maxCh = chapterCountsByBookMap[bid] || 1;
+                        var ch = Math.min(parseInt(String(readerChapter), 10) || 1, maxCh);
+                        if (typeof stopSpeech === 'function') stopSpeech();
+                        window.location.href = buildUrl(bid, ch);
+                    });
+                }
+                if (selChapter) {
+                    selChapter.addEventListener('change', function() {
+                        var ch = parseInt(this.value, 10);
+                        if (ch >= 1) {
+                            if (typeof stopSpeech === 'function') stopSpeech();
+                            window.location.href = buildUrl(readerBookId, ch);
+                        }
+                    });
+                }
+                var btnMore = document.getElementById('btn-more-menu');
+                var morePanel = document.getElementById('reader-more-panel');
+                if (btnMore && morePanel) {
+                    btnMore.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        morePanel.classList.toggle('open');
                     });
                     document.addEventListener('click', function(e) {
-                        if (panel.classList.contains('open') && !panel.contains(e.target) && e.target !== trigger) panel.classList.remove('open');
+                        if (morePanel.classList.contains('open') && !morePanel.contains(e.target) && e.target !== btnMore) {
+                            morePanel.classList.remove('open');
+                        }
                     });
                 }
                 var btnGo = document.getElementById('btn-go-verse');
@@ -577,7 +622,7 @@
                 });
             })();
 
-            function stopSpeech() { speechSynthesis.cancel(); if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i> Ouvir capítulo'; }
+            function stopSpeech() { speechSynthesis.cancel(); if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i>'; }
             function speak() {
                 if (window.ConectaTTS && window.ConectaTTS.hasSupport()) {
                     window.ConectaTTS.speak(fullText, { voiceSel: document.getElementById('sel-voice'), useChunks: true });
@@ -589,14 +634,14 @@
                     speechSynthesis.speak(u);
                 }
             }
-            document.querySelectorAll('.nav-chapters a').forEach(function(a) { a.addEventListener('click', stopSpeech); });
+            document.querySelectorAll('a.reader-fab').forEach(function(a) { a.addEventListener('click', stopSpeech); });
             document.getElementById('btn-ouvir').addEventListener('click', function() {
-                if (speechSynthesis.speaking) { speechSynthesis.pause(); btnOuvir.innerHTML = '<i class="fas fa-play"></i> Continuar'; }
-                else if (speechSynthesis.paused) { speechSynthesis.resume(); btnOuvir.innerHTML = '<i class="fas fa-pause"></i> Pausar'; }
-                else { speak(); btnOuvir.innerHTML = '<i class="fas fa-pause"></i> Pausar'; }
+                if (speechSynthesis.speaking) { speechSynthesis.pause(); btnOuvir.innerHTML = '<i class="fas fa-play"></i>'; }
+                else if (speechSynthesis.paused) { speechSynthesis.resume(); btnOuvir.innerHTML = '<i class="fas fa-pause"></i>'; }
+                else { speak(); btnOuvir.innerHTML = '<i class="fas fa-pause"></i>'; }
             });
             document.getElementById('btn-parar').addEventListener('click', stopSpeech);
-            speechSynthesis.onend = function() { if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i> Ouvir capítulo'; };
+            speechSynthesis.onend = function() { if (btnOuvir) btnOuvir.innerHTML = '<i class="fas fa-volume-up"></i>'; };
 
             var loadVoicesRetries = 0;
             function loadVoices() {
