@@ -397,7 +397,7 @@ function getBookStudyExtraDirectives(bookId, bookName) {
 === OBRIGATÓRIO PARA ÊXODO (NÃO RESUMA ISTO NUMA ÚNICA SECÇÃO) ===
 - AS DEZ PRAGAS (Êxodo 7–12): uma subsecção numerada e dedicada para CADA UMA das 10 pragas (1ª…10ª). Em cada praga desenvolva: (1) o que o texto relata; (2) qual dimensão da criação ou da ordem egípcia é atingida; (3) o endurecimento de Faraó e o que isso ensina; (4) o que revela sobre o carácter do Senhor (justiça, soberania, paciência); (5) uma aplicação para hoje (ídolatria, opressão, dureza de coração, confiança) — sem alegorizar cada pormenor biológico.
 - MOISÉS E A SARÇA, O NOME DE DEUS, AS DESCULPAS E A RESISTÊNCIA (Êxodo 3–4): porque Moisés hesita, o que isso mostra sobre medo e vocação; não reduza a um parágrafo.
-- PRÉ-ÊXODO: o episódio do egíncio morto, a fuga para Midiã, o casamento e o contexto — explique o porquê narrativo e espiritual, não só "Moisés fugiu".
+- PRÉ-ÊXODO: o episódio do egípcio morto, a fuga para Midiã, o casamento e o contexto — explique o porquê narrativo e espiritual, não só "Moisés fugiu".
 - PÁSCOA, SAÍDA DO EGITO, MAR VERMELHO: secções próprias e substanciais.
 - SINAI, ALIANÇA, LEI, BEZERRO DE OURO, TABERNÁCULO: cada um com desenvolvimento profundo e ligação à história da redenção.
 `;
