@@ -109,9 +109,46 @@ async function findDuplicateDevotionalGroups() {
 }
 
 /**
- * Gera com IA e grava na BD (mesma lógica do painel público, mas persiste).
+ * IA gera título, nova passagem (NVI quando possível), reflexão longa — alinhado ao tema (resolveThemeForDev365).
+ */
+async function generateDayFullAiAndSave(day, year, options = {}) {
+    devotionalAi.clearDev365Cache();
+    const theme = bibleService.resolveThemeForDev365(day, year, {
+        temaModo: options.temaModo || 'mes_auto',
+        temaPersonalizado: options.temaPersonalizado || ''
+    });
+    const full = await devotionalAi.generateFullDevotional365Day({
+        dayOfYear: day,
+        year,
+        estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao',
+        theme
+    });
+    if (full.error) {
+        return { ok: false, error: full.error };
+    }
+    let versiculo_texto = full.versiculo_texto || '';
+    if (!versiculo_texto && full.versiculo_ref) {
+        const t = bibleService.getTextForRef(full.versiculo_ref.trim(), 'nvi');
+        if (t && t.text) versiculo_texto = t.text.trim();
+    }
+    await bibleRepository.upsertDevocional365(day, {
+        titulo: full.titulo || '',
+        versiculo_ref: full.versiculo_ref || '',
+        versiculo_texto: versiculo_texto || '',
+        reflexao: full.reflexao || '',
+        aplicacao: full.aplicacao || '',
+        oracao: full.oracao || ''
+    });
+    return { ok: true, data: { day_of_year: day, titulo: full.titulo, versiculo_ref: full.versiculo_ref } };
+}
+
+/**
+ * Gera com IA e grava na BD (enriquece reflexão sobre catálogo) ou modo completo (fullTheme).
  */
 async function generateDayAndSave(day, year, options = {}) {
+    if (options.fullTheme) {
+        return generateDayFullAiAndSave(day, year, options);
+    }
     const result = await bibleService.getDevocional365(day, {
         useAi: true,
         aiExplicitOff: false,
@@ -144,7 +181,12 @@ async function generateRangeAndSave(startDay, endDay, year, options = {}) {
     const to = Math.max(a, b);
     for (let d = from; d <= to; d++) {
         /* eslint-disable no-await-in-loop */
-        const r = await generateDayAndSave(d, year, options);
+        const r = await generateDayAndSave(d, year, {
+            temaModo: options.temaModo,
+            temaPersonalizado: options.temaPersonalizado,
+            estilo: options.estilo,
+            fullTheme: !!options.fullTheme
+        });
         results.push({ day: d, ok: r.ok, error: r.error || null });
         if (delayMs && d < to) {
             await new Promise(function (resolve) {
@@ -175,7 +217,8 @@ async function generateMonthAndSave(year, month, options = {}) {
         const r = await generateDayAndSave(d, y, {
             temaModo,
             temaPersonalizado: options.temaPersonalizado || '',
-            estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao'
+            estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao',
+            fullTheme: !!options.fullTheme
         });
         results.push({ day: d, ok: r.ok, error: r.error || null });
         if (delayMs && i < days.length - 1) {
@@ -195,6 +238,54 @@ async function generateMonthAndSave(year, month, options = {}) {
     };
 }
 
+/**
+ * Regenera todos os dias que aparecem em grupos de hash duplicado (reflexão idêntica).
+ */
+async function regenerateDuplicateDaysAi(year, options = {}) {
+    const y = parseInt(year, 10) || new Date().getFullYear();
+    const dupData = await findDuplicateDevotionalGroups();
+    const duplicates = dupData.duplicates || [];
+    const daySet = new Set();
+    for (let i = 0; i < duplicates.length; i++) {
+        const g = duplicates[i];
+        const days = g.days || [];
+        for (let j = 0; j < days.length; j++) daySet.add(days[j]);
+    }
+    const daysList = Array.from(daySet).sort(function (a, b) { return a - b; });
+    if (!daysList.length) {
+        return { ok: true, message: 'Nenhum duplicado na base.', total: 0, errors: 0, results: [], daysRegenerated: [] };
+    }
+    devotionalAi.clearDev365Cache();
+    const delayMs = Math.max(0, parseInt(options.delayMs, 10) || 400);
+    const fullTheme = options.fullTheme !== false;
+    const baseOpts = {
+        temaModo: options.temaModo || 'mes_auto',
+        temaPersonalizado: options.temaPersonalizado || '',
+        estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao',
+        fullTheme
+    };
+    const results = [];
+    for (let i = 0; i < daysList.length; i++) {
+        const d = daysList[i];
+        /* eslint-disable no-await-in-loop */
+        const r = await generateDayAndSave(d, y, baseOpts);
+        results.push({ day: d, ok: r.ok, error: r.error || null });
+        if (delayMs && i < daysList.length - 1) {
+            await new Promise(function (resolve) {
+                setTimeout(resolve, delayMs);
+            });
+        }
+    }
+    return {
+        ok: true,
+        year: y,
+        daysRegenerated: daysList,
+        results,
+        total: results.length,
+        errors: results.filter(function (x) { return !x.ok; }).length
+    };
+}
+
 module.exports = {
     getMonthThemesForYear,
     setMonthTheme,
@@ -203,6 +294,7 @@ module.exports = {
     generateDayAndSave,
     generateRangeAndSave,
     generateMonthAndSave,
+    regenerateDuplicateDaysAi,
     getDayOfYearListForCalendarMonth,
     MONTH_THEMES_FILE
 };

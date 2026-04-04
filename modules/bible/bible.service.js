@@ -958,6 +958,7 @@ async function searchBibleEcosystem(query, limit) {
 }
 
 module.exports = {
+    resolveThemeForDev365,
     getVerseOfDay,
     getNumbers,
     getNameMeaning,
