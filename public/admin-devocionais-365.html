@@ -91,17 +91,17 @@
 
         <section id="panel-dev365" class="panel active">
             <div class="card">
-                <h2><i class="fas fa-palette"></i> Temas por mês (ficheiro no servidor)</h2>
-                <p style="margin-bottom:12px">Os temas são gravados em <code style="color:#7dd3fc">data/bible/dev365_month_themes.json</code> no servidor da API. Use a URL da API acima se o site estático não tiver <code>/api</code>.</p>
+                <h2><i class="fas fa-palette"></i> Temas por mês (ficheiro no seu computador)</h2>
+                <p style="margin-bottom:12px"><strong>Carregar temas</strong> abre um ficheiro JSON no PC e preenche os meses que existirem no ficheiro (se tiver 12 meses, preenche os 12; se tiver só 2, só esses dois — os restantes ficam vazios). <strong>Guardar temas editados</strong> grava no computador o que está nos campos (descarga de JSON). A geração com IA abaixo continua a usar o servidor (URL da API + token).</p>
+                <input type="file" id="themes-file-input" accept=".json,application/json" style="display:none" aria-hidden="true">
                 <div class="row">
                     <div>
                         <label for="themes-year">Ano dos temas</label>
                         <input type="number" id="themes-year" min="2000" max="2100" style="width:100px">
                     </div>
-                    <button type="button" class="btn btn-secondary" id="btn-themes-load"><i class="fas fa-download"></i> Carregar temas</button>
+                    <button type="button" class="btn btn-secondary" id="btn-themes-load"><i class="fas fa-folder-open"></i> Carregar temas</button>
                     <button type="button" class="btn btn-secondary" id="btn-themes-save"><i class="fas fa-save"></i> Guardar temas editados</button>
                     <button type="button" class="btn btn-secondary" id="btn-themes-generate-all"><i class="fas fa-magic"></i> Gerar linha para os 12 meses (automático)</button>
-                    <button type="button" class="btn btn-secondary" id="btn-themes-export"><i class="fas fa-file-export"></i> Exportar JSON</button>
                 </div>
                 <div id="themes-months-host" style="margin-top:14px"></div>
             </div>
@@ -607,13 +607,13 @@
         if (!v) {
             try { localStorage.removeItem(LS_API); } catch (e) {}
             setApiBaseUi();
-            flash('A usar o domínio desta página. Se Carregar temas falhar, volte a indicar a URL da API (Render).', 'warn');
+            flash('A usar o domínio desta página. Para gerar devocionais ou temas por IA no servidor, indique a URL da API (Render).', 'warn');
             return;
         }
         try {
             localStorage.setItem(LS_API, v.replace(/\/$/, ''));
             setApiBaseUi();
-            flash('URL da API guardada. Carregar/Guardar temas e geração passam a usar este servidor.', 'ok');
+            flash('URL da API guardada. Geração com IA e devocionais passam a usar este servidor.', 'ok');
         } catch (e) {
             flash('Não foi possível guardar.', 'err');
         }
@@ -636,36 +636,92 @@
         }
     }
 
+    function clearAllThemeFields() {
+        for (var m = 1; m <= 12; m++) {
+            var el = document.getElementById('theme-m-' + m);
+            if (el) el.value = '';
+        }
+    }
+
+    /** Aceita { year, themes: { "1": "..." } }, ou só themes, ou objecto plano com chaves "1".."12". */
+    function parseThemesJsonObject(raw) {
+        var obj = raw;
+        if (!obj || typeof obj !== 'object') return { year: null, themes: {} };
+        var year = null;
+        if (obj.year != null && !Array.isArray(obj)) {
+            var y = parseInt(obj.year, 10);
+            if (!isNaN(y) && y >= 2000 && y <= 2100) year = y;
+        }
+        var themes = {};
+        var src = obj.themes;
+        if (src && typeof src === 'object' && !Array.isArray(src)) {
+            Object.keys(src).forEach(function (k) {
+                var n = parseInt(k, 10);
+                if (n >= 1 && n <= 12) themes[String(n)] = String(src[k] == null ? '' : src[k]);
+            });
+        } else {
+            Object.keys(obj).forEach(function (k) {
+                if (k === 'year') return;
+                var n = parseInt(k, 10);
+                if (n >= 1 && n <= 12) themes[String(n)] = String(obj[k] == null ? '' : obj[k]);
+            });
+        }
+        return { year: year, themes: themes };
+    }
+
+    function applyThemesFromFileParsed(parsed) {
+        clearAllThemeFields();
+        var t = parsed.themes || {};
+        var count = 0;
+        Object.keys(t).forEach(function (k) {
+            var el = document.getElementById('theme-m-' + k);
+            if (el) {
+                el.value = t[k];
+                if (String(t[k]).trim().length) count += 1;
+            }
+        });
+        if (parsed.year != null) {
+            document.getElementById('themes-year').value = String(parsed.year);
+        }
+        return count;
+    }
+
     document.getElementById('btn-themes-load').addEventListener('click', function () {
-        var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
-        var btn = document.getElementById('btn-themes-load');
-        btn.disabled = true;
-        apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr)
-            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-            .then(function (x) {
-                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha ao carregar (verifique token e URL da API).');
-                fillThemesFromServer(x.j.data && x.j.data.themes);
-                flash('Temas do ano ' + yr + ' carregados do servidor.', 'ok');
-            })
-            .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
-            .finally(function () { btn.disabled = false; });
+        var inp = document.getElementById('themes-file-input');
+        if (inp) inp.click();
+    });
+
+    document.getElementById('themes-file-input').addEventListener('change', function () {
+        var f = this.files && this.files[0];
+        this.value = '';
+        if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+            try {
+                var text = String(reader.result || '');
+                var obj = JSON.parse(text);
+                var parsed = parseThemesJsonObject(obj);
+                var n = applyThemesFromFileParsed(parsed);
+                flash('Ficheiro carregado: ' + n + ' mês(es) com texto. O ano no campo foi ' + (parsed.year != null ? 'actualizado para ' + parsed.year + '.' : 'mantido.'), 'ok');
+            } catch (e) {
+                flash('Ficheiro inválido. Use JSON com formato { "year": 2026, "themes": { "1": "...", "2": "..." } } ou só as chaves dos meses.', 'err');
+            }
+        };
+        reader.onerror = function () {
+            flash('Não foi possível ler o ficheiro.', 'err');
+        };
+        reader.readAsText(f, 'UTF-8');
     });
 
     document.getElementById('btn-themes-save').addEventListener('click', function () {
         var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
-        var btn = document.getElementById('btn-themes-save');
-        btn.disabled = true;
-        apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr, {
-            method: 'PUT',
-            body: JSON.stringify(collectThemesBody())
-        })
-            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-            .then(function (x) {
-                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha ao guardar.');
-                flash('Temas guardados no servidor para o ano ' + yr + '.', 'ok');
-            })
-            .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
-            .finally(function () { btn.disabled = false; });
+        var blob = new Blob([JSON.stringify({ year: yr, themes: collectThemesBody() }, null, 2)], { type: 'application/json;charset=utf-8' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'dev365_temas_' + yr + '.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        flash('Ficheiro guardado no computador: dev365_temas_' + yr + '.json', 'ok');
     });
 
     document.getElementById('btn-themes-generate-all').addEventListener('click', function () {
@@ -685,17 +741,6 @@
             })
             .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
             .finally(function () { btn.disabled = false; });
-    });
-
-    document.getElementById('btn-themes-export').addEventListener('click', function () {
-        var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
-        var blob = new Blob([JSON.stringify({ year: yr, themes: collectThemesBody() }, null, 2)], { type: 'application/json' });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'dev365_temas_' + yr + '.json';
-        a.click();
-        URL.revokeObjectURL(a.href);
-        flash('Ficheiro JSON descarregado (cópia de segurança local).', 'ok');
     });
 
     document.getElementById('btn-batch-sync').addEventListener('click', function () {
@@ -1017,18 +1062,6 @@
         if (tabEstudo) tabEstudo.click();
     }
 
-    (function tryLoadThemesOnStart() {
-        if (!getToken()) return;
-        var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
-        apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr)
-            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-            .then(function (x) {
-                if (x.ok && x.j.success && x.j.data && x.j.data.themes) {
-                    fillThemesFromServer(x.j.data.themes);
-                }
-            })
-            .catch(function () { /* página estática sem API: ignorar */ });
-    })();
 })();
     </script>
 </body>
