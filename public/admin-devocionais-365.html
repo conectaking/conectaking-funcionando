@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bíblia &amp; Devocionais (ADM)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0d0d10; color: #e8e8e8; min-height: 100vh; padding: 20px; padding-bottom: 48px; line-height: 1.5; }
+        .wrap { max-width: 1100px; margin: 0 auto; }
+        h1 { font-size: 1.35rem; color: #FFC700; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+        .sub { color: #888; font-size: 0.9rem; margin-bottom: 20px; }
+        .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,199,0,0.2); padding-bottom: 12px; }
+        .tabs button {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #ccc;
+            padding: 10px 16px; border-radius: 10px; cursor: pointer; font-size: 0.88rem; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .tabs button:hover { background: rgba(255,199,0,0.12); color: #fff; }
+        .tabs button.active { background: rgba(255,199,0,0.2); border-color: #FFC700; color: #FFC700; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .card {
+            background: rgba(22,22,28,0.95); border: 1px solid rgba(255,199,0,0.18); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px;
+        }
+        .card h2 { font-size: 1rem; color: #FFC700; margin-bottom: 12px; }
+        .card p, .card li { color: #b8b8b8; font-size: 0.92rem; margin-bottom: 10px; }
+        .card ul { margin-left: 1.2rem; margin-bottom: 12px; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 0.88rem;
+            border: none; cursor: pointer; font-family: inherit; text-decoration: none; color: #111; background: #FFC700;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #e8e8e8; border: 1px solid rgba(255,255,255,0.15); }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 12px; }
+        label { font-size: 0.78rem; color: #888; display: block; margin-bottom: 4px; }
+        input, select { padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.35); color: #e8e8e8; font-size: 0.9rem; min-width: 0; }
+        .msg { padding: 12px 14px; border-radius: 10px; font-size: 0.88rem; margin-bottom: 14px; }
+        .msg-err { background: rgba(220,60,60,0.15); border: 1px solid rgba(220,60,60,0.4); color: #f5a097; }
+        .msg-ok { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.35); color: #86efac; }
+        .msg-warn { background: rgba(255,199,0,0.1); border: 1px solid rgba(255,199,0,0.35); color: #e8d4a0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); vertical-align: top; }
+        th { color: #FFC700; font-weight: 600; }
+        .preview { color: #888; max-width: 280px; }
+        .month-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        .modal-bg.show { display: flex; }
+        .modal { background: #16161c; border: 1px solid rgba(255,199,0,0.3); border-radius: 14px; max-width: 640px; max-height: 85vh; overflow: auto; padding: 20px; width: 100%; }
+        .modal pre { white-space: pre-wrap; font-size: 0.88rem; color: #ccc; line-height: 1.55; }
+        .auth-bar { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .token-input { flex: 1; min-width: 200px; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h1><i class="fas fa-book-bible"></i> Bíblia &amp; Devocionais (ADM)</h1>
+        <p class="sub">Geração com IA para o <strong>Devocional 365</strong> (texto que aparece no cartão público — &quot;Devocional diário&quot;). Requer token de administrador.</p>
+
+        <div id="flash"></div>
+
+        <div class="auth-bar">
+            <label style="flex:1;min-width:220px">Token (ou inicie sessão no dashboard no mesmo domínio)
+                <input type="password" class="token-input" id="token-manual" placeholder="Cole Bearer token se necessário" autocomplete="off">
+            </label>
+            <button type="button" class="btn btn-secondary" id="btn-save-token"><i class="fas fa-save"></i> Usar token</button>
+        </div>
+
+        <div class="tabs" role="tablist">
+            <button type="button" class="active" data-tab="dev365"><i class="fas fa-calendar-alt"></i> Devocionais 365</button>
+            <button type="button" data-tab="plano"><i class="fas fa-book-open"></i> Um capítulo por dia</button>
+            <button type="button" data-tab="estudo"><i class="fas fa-book-reader"></i> Estudo por livro</button>
+            <button type="button" data-tab="ajuda"><i class="fas fa-question-circle"></i> Ajuda</button>
+        </div>
+
+        <section id="panel-dev365" class="panel active">
+            <div class="card">
+                <h2><i class="fas fa-robot"></i> Gerar com IA — por dia ou por mês civil</h2>
+                <p style="margin-bottom:14px">Use os atalhos abaixo ou a tabela. Cada pedido chama a API no servidor (OpenAI configurada no Render).</p>
+                <div class="row">
+                    <div>
+                        <label for="gen-day">Dia do ano (1–365)</label>
+                        <input type="number" id="gen-day" min="1" max="365" value="1" style="width:100px">
+                    </div>
+                    <div>
+                        <label for="gen-year-day">Ano civil</label>
+                        <input type="number" id="gen-year-day" min="2000" max="2100" style="width:100px">
+                    </div>
+                    <div>
+                        <label for="gen-tema">Modo de tema</label>
+                        <select id="gen-tema">
+                            <option value="mes_auto">Automático do mês</option>
+                            <option value="ano_auto">Automático do ano</option>
+                            <option value="mes_e_ano">Mês + ano</option>
+                            <option value="personalizado">Personalizado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="gen-estilo">Estilo</label>
+                        <select id="gen-estilo">
+                            <option value="padrao">Padrão</option>
+                            <option value="cunha">Estilo cunha</option>
+                        </select>
+                    </div>
+                    <div style="padding-bottom:8px">
+                        <label><input type="checkbox" id="gen-full" checked> Tema completo (reflexão longa)</label>
+                    </div>
+                    <button type="button" class="btn" id="btn-gen-one-day"><i class="fas fa-magic"></i> Gerar este dia</button>
+                </div>
+                <div class="row">
+                    <div>
+                        <label for="gen-month">Mês civil</label>
+                        <select id="gen-month">
+                            <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option>
+                            <option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option>
+                            <option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="gen-year-month">Ano</label>
+                        <input type="number" id="gen-year-month" min="2000" max="2100" style="width:100px">
+                    </div>
+                    <div>
+                        <label for="gen-delay">Intervalo entre dias (ms)</label>
+                        <input type="number" id="gen-delay" min="0" value="400" style="width:90px">
+                    </div>
+                    <button type="button" class="btn" id="btn-gen-whole-month"><i class="fas fa-calendar-check"></i> Gerar todo o mês</button>
+                </div>
+                <p class="msg-warn" style="margin-top:12px;margin-bottom:0"><i class="fas fa-info-circle"></i> Gerar um mês inteiro pode levar vários minutos e consumir muitos tokens. Não feche o separador até o servidor responder.</p>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-list"></i> Todos os dias registados</h2>
+                <div class="row">
+                    <div>
+                        <label for="filtro-dia">Filtrar por número do dia</label>
+                        <input type="text" id="filtro-dia" placeholder="ex.: 94 ou 9" style="width:140px">
+                    </div>
+                    <div>
+                        <label for="filtro-mes">Filtrar por mês civil</label>
+                        <select id="filtro-mes">
+                            <option value="">Todos</option>
+                            <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option>
+                            <option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option>
+                            <option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-ano-tabela">Ano (para mês civil)</label>
+                        <input type="number" id="filtro-ano-tabela" min="2000" max="2100" style="width:100px">
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="btn-reload-table"><i class="fas fa-sync"></i> Atualizar lista</button>
+                </div>
+                <div class="month-grid" id="month-quick-btns"></div>
+                <div style="overflow:auto;margin-top:14px">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dia</th>
+                                <th>Título</th>
+                                <th>Passagem</th>
+                                <th>Prévia</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-dev365"><tr><td colspan="5">Carregue a lista.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="panel-plano" class="panel">
+            <div class="card">
+                <h2>Plano de leitura — um capítulo por dia</h2>
+                <p>Isto é diferente do <strong>Devocional 365</strong> (texto diário com reflexão, aplicação e oração — gerado ou editado na aba <strong>Devocionais 365</strong>). O plano de leitura segue a sequência de capítulos da Bíblia ao longo do ano; o visitante vê os capítulos do dia na experiência pública.</p>
+                <ul>
+                    <li>O texto do <strong>Devocional 365</strong> edita-se e gera-se com IA na aba <strong>Devocionais 365</strong> (acima).</li>
+                    <li>O leitor acompanha o capítulo sugerido na página pública do cartão.</li>
+                </ul>
+                <div class="row" style="margin-top:16px">
+                    <a class="btn" href="/bible.html" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Bíblia (bible.html)</a>
+                    <a class="btn btn-secondary" href="#" id="link-biblia-api"><i class="fas fa-link"></i> Bíblia (URL da API)</a>
+                    <a class="btn btn-secondary" href="/dashboard.html"><i class="fas fa-th-large"></i> Ir ao painel</a>
+                </div>
+                <p style="margin-top:14px;font-size:0.85rem;color:#666">Se um dos links falhar, experimente o outro (ficheiro estático vs. servidor da API).</p>
+            </div>
+            <div class="card" style="border-color:rgba(52,152,219,0.35)">
+                <h2><i class="fas fa-magic"></i> IA para o Devocional 365 neste plano</h2>
+                <p>O conteúdo que o visitante lê em <strong>Devocional diário</strong> na Bíblia pública vem do mesmo registo que você gera aqui. Use <strong>Gerar este dia</strong> ou <strong>Gerar todo o mês</strong> na aba Devocionais 365, ou os atalhos rápidos:</p>
+                <div class="row">
+                    <button type="button" class="btn btn-secondary" id="btn-goto-gen"><i class="fas fa-arrow-up"></i> Abrir geração IA (aba Devocionais 365)</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="panel-estudo" class="panel">
+            <div class="card">
+                <h2>Estudo por livro</h2>
+                <p>Envio de Word/PDF e gestão de estudos por livro usam o painel de API: <code style="color:#7dd3fc">/api/admin/bible/...</code> (documentação interna). Abra o dashboard e o módulo Bíblia, ou utilize ferramentas de upload já ligadas ao seu fluxo.</p>
+                <a class="btn btn-secondary" href="/dashboard.html"><i class="fas fa-th-large"></i> Dashboard</a>
+            </div>
+        </section>
+
+        <section id="panel-ajuda" class="panel">
+            <div class="card">
+                <h2>Ajuda</h2>
+                <ul>
+                    <li><strong>Gerar este dia:</strong> cria/atualiza o devocional do dia 1–365 na base (título, versículo, reflexão, aplicação, oração).</li>
+                    <li><strong>Gerar todo o mês:</strong> percorre todos os dias do mês civil no ano escolhido (ex.: todos os dias de abril de 2026).</li>
+                    <li>É necessário <code>OPENAI_API_KEY</code> (ou <code>BIBLE_OPENAI_API_KEY</code>) no servidor.</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <div id="modal-ver" class="modal-bg" role="dialog">
+        <div class="modal">
+            <h2 style="color:#FFC700;margin-bottom:12px;font-size:1.05rem" id="modal-ver-title">Devocional</h2>
+            <pre id="modal-ver-body"></pre>
+            <button type="button" class="btn btn-secondary" style="margin-top:16px" id="modal-ver-close"><i class="fas fa-times"></i> Fechar</button>
+        </div>
+    </div>
+
+    <script>
+(function () {
+    var API = '';
+    var yNow = new Date().getFullYear();
+
+    function flash(msg, kind) {
+        var el = document.getElementById('flash');
+        el.className = 'msg ' + (kind === 'err' ? 'msg-err' : kind === 'ok' ? 'msg-ok' : 'msg-warn');
+        el.textContent = msg;
+        el.style.display = 'block';
+        if (kind === 'ok' || kind === 'err') {
+            setTimeout(function () { el.style.display = 'none'; }, 8000);
+        }
+    }
+
+    function getToken() {
+        try {
+            var t = localStorage.getItem('token') || localStorage.getItem('conectaKingToken') || '';
+            var manual = document.getElementById('token-manual');
+            if (manual && manual.value.trim()) return manual.value.trim();
+            return t;
+        } catch (e) { return ''; }
+    }
+
+    function setApiBase() {
+        API = window.location.origin.replace(/\/$/, '');
+        document.getElementById('link-biblia-api').href = API + '/bible.html';
+    }
+
+    function apiFetch(path, opts) {
+        opts = opts || {};
+        var headers = opts.headers || {};
+        var tok = getToken();
+        if (tok) headers['Authorization'] = 'Bearer ' + tok;
+        headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+        return fetch(API + path, Object.assign({}, opts, { headers: headers }));
+    }
+
+    document.getElementById('gen-year-day').value = yNow;
+    document.getElementById('gen-year-month').value = yNow;
+    document.getElementById('filtro-ano-tabela').value = yNow;
+
+    document.getElementById('btn-save-token').addEventListener('click', function () {
+        var v = document.getElementById('token-manual').value.trim();
+        if (!v) { flash('Cole o token JWT de administrador.', 'err'); return; }
+        try {
+            localStorage.setItem('token', v);
+            flash('Token guardado em localStorage (chave token).', 'ok');
+        } catch (e) {
+            flash('Não foi possível guardar.', 'err');
+        }
+    });
+
+    document.querySelectorAll('.tabs button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var tab = btn.getAttribute('data-tab');
+            document.querySelectorAll('.tabs button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+            document.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('active'); });
+            var map = { dev365: 'panel-dev365', plano: 'panel-plano', estudo: 'panel-estudo', ajuda: 'panel-ajuda' };
+            var el = document.getElementById(map[tab]);
+            if (el) el.classList.add('active');
+        });
+    });
+
+    document.getElementById('btn-goto-gen').addEventListener('click', function () {
+        document.querySelector('.tabs button[data-tab="dev365"]').click();
+        window.scrollTo(0, 0);
+    });
+
+    function bodyGenOpts() {
+        return {
+            temaModo: document.getElementById('gen-tema').value,
+            temaPersonalizado: '',
+            estilo: document.getElementById('gen-estilo').value,
+            fullTheme: document.getElementById('gen-full').checked
+        };
+    }
+
+    document.getElementById('btn-gen-one-day').addEventListener('click', function () {
+        var day = parseInt(document.getElementById('gen-day').value, 10);
+        var year = parseInt(document.getElementById('gen-year-day').value, 10);
+        if (day < 1 || day > 365) { flash('Dia entre 1 e 365.', 'err'); return; }
+        if (isNaN(year)) year = yNow;
+        var btn = document.getElementById('btn-gen-one-day');
+        btn.disabled = true;
+        var o = bodyGenOpts();
+        apiFetch('/api/admin/bible/devotionals-365/day/' + day + '/generate-ai', {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({ year: year }, o))
+        })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (x) {
+                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha');
+                flash('Dia ' + day + ' gerado e gravado.', 'ok');
+                loadTable();
+            })
+            .catch(function (e) { flash(e.message || 'Erro ao gerar.', 'err'); })
+            .finally(function () { btn.disabled = false; });
+    });
+
+    document.getElementById('btn-gen-whole-month').addEventListener('click', function () {
+        var month = parseInt(document.getElementById('gen-month').value, 10);
+        var year = parseInt(document.getElementById('gen-year-month').value, 10);
+        var delayMs = parseInt(document.getElementById('gen-delay').value, 10) || 400;
+        if (isNaN(year)) year = yNow;
+        if (!confirm('Gerar com IA todos os dias do mês ' + month + '/' + year + '? Pode demorar.')) return;
+        var btn = document.getElementById('btn-gen-whole-month');
+        btn.disabled = true;
+        var o = bodyGenOpts();
+        apiFetch('/api/admin/bible/devotionals-365/generate-month-ai/' + year + '/' + month, {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({ delayMs: delayMs }, o))
+        })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (x) {
+                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha');
+                var d = x.j.data || {};
+                flash('Mês gerado. Total: ' + (d.total != null ? d.total : '—') + '. Erros: ' + (d.errors != null ? d.errors : '—'), 'ok');
+                loadTable();
+            })
+            .catch(function (e) { flash(e.message || 'Erro ao gerar mês.', 'err'); })
+            .finally(function () { btn.disabled = false; });
+    });
+
+    function dayOfYearToMonth(doy, y) {
+        var leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+        var dim = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        var d = doy;
+        for (var m = 0; m < 12; m++) {
+            if (d <= dim[m]) return m + 1;
+            d -= dim[m];
+        }
+        return 12;
+    }
+
+    var tableRows = [];
+
+    function loadTable() {
+        var tb = document.getElementById('tbody-dev365');
+        tb.innerHTML = '<tr><td colspan="5">A carregar…</td></tr>';
+        apiFetch('/api/admin/bible/devotionals-365/admin-full')
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+                if (!j.success || !j.data || !j.data.rows) throw new Error(j.message || 'Lista inválida');
+                tableRows = j.data.rows;
+                renderTable();
+            })
+            .catch(function (e) {
+                tb.innerHTML = '<tr><td colspan="5">' + (e.message || 'Erro ao carregar') + '</td></tr>';
+            });
+    }
+
+    function renderTable() {
+        var filtroDia = (document.getElementById('filtro-dia').value || '').trim();
+        var filtroMes = document.getElementById('filtro-mes').value;
+        var ano = parseInt(document.getElementById('filtro-ano-tabela').value, 10) || yNow;
+        var tb = document.getElementById('tbody-dev365');
+        var rows = tableRows.filter(function (r) {
+            var day = r.day_of_year;
+            if (filtroDia) {
+                if (String(day).indexOf(filtroDia) === -1) return false;
+            }
+            if (filtroMes) {
+                if (String(dayOfYearToMonth(day, ano)) !== filtroMes) return false;
+            }
+            return true;
+        });
+        if (!rows.length) {
+            tb.innerHTML = '<tr><td colspan="5">Nenhum registo com este filtro.</td></tr>';
+            return;
+        }
+        tb.innerHTML = rows.map(function (r) {
+            var prev = (r.reflexao_preview || '').replace(/</g, '&lt;');
+            return '<tr data-day="' + r.day_of_year + '">' +
+                '<td>' + r.day_of_year + '</td>' +
+                '<td>' + (r.titulo || '').replace(/</g, '&lt;') + '</td>' +
+                '<td>' + (r.versiculo_ref || '').replace(/</g, '&lt;') + '</td>' +
+                '<td class="preview">' + prev + '</td>' +
+                '<td><button type="button" class="btn btn-secondary btn-sm btn-ver" data-day="' + r.day_of_year + '">Ver</button> ' +
+                '<button type="button" class="btn btn-sm btn-gen-row" data-day="' + r.day_of_year + '">Gerar</button></td></tr>';
+        }).join('');
+        tb.querySelectorAll('.btn-ver').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var day = parseInt(b.getAttribute('data-day'), 10);
+                apiFetch('/api/admin/bible/devotionals-365/day/' + day)
+                    .then(function (r) { return r.json(); })
+                    .then(function (j) {
+                        if (!j.success || !j.data) throw new Error(j.message || 'Erro');
+                        var d = j.data;
+                        document.getElementById('modal-ver-title').textContent = 'Dia ' + day + ' — ' + (d.titulo || '');
+                        var text = [
+                            d.versiculo_ref || '',
+                            d.versiculo_texto ? '\n\n' + d.versiculo_texto : '',
+                            d.reflexao ? '\n\n— Reflexão —\n' + d.reflexao : '',
+                            d.aplicacao ? '\n\n— Aplicação —\n' + d.aplicacao : '',
+                            d.oracao ? '\n\n— Oração —\n' + d.oracao : ''
+                        ].join('');
+                        document.getElementById('modal-ver-body').textContent = text;
+                        document.getElementById('modal-ver').classList.add('show');
+                    })
+                    .catch(function (e) { flash(e.message || 'Erro', 'err'); });
+            });
+        });
+        tb.querySelectorAll('.btn-gen-row').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var day = parseInt(b.getAttribute('data-day'), 10);
+                var year = parseInt(document.getElementById('gen-year-day').value, 10) || yNow;
+                if (!confirm('Gerar com IA o dia ' + day + ' (' + year + ')?')) return;
+                b.disabled = true;
+                var o = bodyGenOpts();
+                apiFetch('/api/admin/bible/devotionals-365/day/' + day + '/generate-ai', {
+                    method: 'POST',
+                    body: JSON.stringify(Object.assign({ year: year }, o))
+                })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                    .then(function (x) {
+                        if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha');
+                        flash('Dia ' + day + ' gerado.', 'ok');
+                        loadTable();
+                    })
+                    .catch(function (e) { flash(e.message || 'Erro', 'err'); })
+                    .finally(function () { b.disabled = false; });
+            });
+        });
+    }
+
+    document.getElementById('filtro-dia').addEventListener('input', renderTable);
+    document.getElementById('filtro-mes').addEventListener('change', renderTable);
+    document.getElementById('filtro-ano-tabela').addEventListener('change', renderTable);
+    document.getElementById('btn-reload-table').addEventListener('click', loadTable);
+
+    function yearForMonthActions() {
+        var y = parseInt(document.getElementById('gen-year-month').value, 10);
+        return isNaN(y) ? yNow : y;
+    }
+
+    function buildMonthQuick() {
+        var host = document.getElementById('month-quick-btns');
+        var names = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        host.innerHTML = '<span style="width:100%;font-size:0.82rem;color:#888;margin-bottom:4px">Gerar IA — mês civil (use o ano do bloco &quot;Gerar todo o mês&quot; acima):</span>';
+        names.forEach(function (nm, i) {
+            var m = i + 1;
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'btn btn-secondary btn-sm';
+            b.textContent = nm + ' — Gerar';
+            b.addEventListener('click', function () {
+                var yr = yearForMonthActions();
+                if (!confirm('Gerar com IA todos os dias de ' + nm + '/' + yr + '?')) return;
+                b.disabled = true;
+                var o = bodyGenOpts();
+                var delayMs = parseInt(document.getElementById('gen-delay').value, 10) || 400;
+                apiFetch('/api/admin/bible/devotionals-365/generate-month-ai/' + yr + '/' + m, {
+                    method: 'POST',
+                    body: JSON.stringify(Object.assign({ delayMs: delayMs }, o))
+                })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                    .then(function (x) {
+                        if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha');
+                        flash(nm + ' concluído.', 'ok');
+                        loadTable();
+                    })
+                    .catch(function (e) { flash(e.message || 'Erro', 'err'); })
+                    .finally(function () { b.disabled = false; });
+            });
+            host.appendChild(b);
+        });
+    }
+
+    document.getElementById('modal-ver-close').addEventListener('click', function () {
+        document.getElementById('modal-ver').classList.remove('show');
+    });
+    document.getElementById('modal-ver').addEventListener('click', function (e) {
+        if (e.target.id === 'modal-ver') document.getElementById('modal-ver').classList.remove('show');
+    });
+
+    setApiBase();
+    buildMonthQuick();
+    loadTable();
+})();
+    </script>
+</body>
+</html>
