@@ -383,7 +383,45 @@ Use versiculo_texto vazio (o servidor preenche com a NVI quando possível).`;
  * Tokens: BIBLE_BOOK_STUDY_MAX_TOKENS (máx. 16384). Recomendado 15000–16000 para não cortar Êxodo/Levítico densos.
  */
 const MODEL_BOOK_STUDY = process.env.BIBLE_BOOK_STUDY_AI_MODEL || process.env.BIBLE_DEV365_AI_MODEL || 'gpt-4o';
-const BOOK_STUDY_MAX_TOKENS = Math.min(16384, Math.max(4000, parseInt(process.env.BIBLE_BOOK_STUDY_MAX_TOKENS, 10) || 15000));
+const BOOK_STUDY_MAX_TOKENS = Math.min(16384, Math.max(4000, parseInt(process.env.BIBLE_BOOK_STUDY_MAX_TOKENS, 10) || 16000));
+
+/**
+ * Êxodo: lista nominal das pragas + âncoras (NVI/Almeida — pequenas variações de versículo são aceitáveis).
+ * O modelo deve REPRODUZIR os nomes e desenvolver cada uma; não basta dizer "houve pragas".
+ */
+const EXODUS_STUDY_DIRECTIVE = `
+
+=== ÊXODO — CONCRETUDE OBRIGATÓRIA (RESPOSTA INACEITÁVEL SE FOR GENÉRICA) ===
+
+REGRAS GERAIS DESTE LIVRO:
+- Cite referências bíblicas ao longo do texto no formato: Êxodo capítulo:versículo ou intervalo (ex.: Êxodo 7:14–25). O leitor precisa poder localizar cada afirmação.
+- Nomeie personagens e lugares: Moisés, Arão, Miriã, Faraó, Midiane, Sinai, etc., sempre que o texto o fizer — não use só "o líder" ou "o faraó" sem contexto quando o relato é específico.
+- PROIBIDO escrever uma única secção genérica intitulada "As dez pragas" com dois parágrafos. É OBRIGATÓRIO uma subsecção dedicada para CADA praga, com TÍTULO que contenha o NOME da praga.
+
+AS DEZ PRAGAS — LISTA NOMINAL (ordem clássica do texto; desenvolva CADA UMA em profundidade, mínimo ~200–400 palavras POR PRAGA, vários parágrafos):
+
+► 1ª PRAGA — Águas do Nilo (e canais) transformadas em sangue (Êxodo 7:14–25).
+► 2ª PRAGA — Rãs cobrindo a terra e invadindo casas (Êxodo 7:25–8:15).
+► 3ª PRAGA — Piolhos (ou enxames / "mosquitos" conforme tradução) — e o fracasso dos magos de Faraó (Êxodo 8:16–28).
+► 4ª PRAGA — Enxames de moscas ou moscas venenosas (Êxodo 8:29–32).
+► 5ª PRAGA — Morte do gado e dos rebanhos no Egito (Êxodo 9:1–7).
+► 6ª PRAGA — Úlceras ou feridas inflamadas em humanos e animais (Êxodo 9:8–12).
+► 7ª PRAGA — Granizo severo, raios e fogo na terra (Êxodo 9:13–35).
+► 8ª PRAGA — Gafanhotos devorando o que restou (Êxodo 10:1–20).
+► 9ª PRAGA — Trevas espessas e palpáveis sobre o Egito (Êxodo 10:21–29).
+► 10ª PRAGA — Morte dos primogênitos; instituição da Páscoa e libertação (Êxodo 11–12) — desenvolva teologia da Páscoa e ligação com o cordeiro.
+
+EM CADA UMA DAS 10 SUBSECÇÕES ACIMA, INCLUA OBRIGATORIAMENTE:
+(1) O que o narrador descreve (factos do texto); (2) o endurecimento de Faraó e o papel da soberania divina; (3) significado teológico (juízo, misericórdia, revelação do nome do Senhor); (4) uma aplicação para hoje (ídolatria, dureza de coração, opressão, confiança) — sem alegoria forçada em cada pormenor.
+
+OUTROS BLOCOS OBRIGATÓRIOS (cada um com secção própria, referências e profundidade, não um parágrafo):
+- Narrativa de Moisés: nascimento, salvação do Nilo, matar o egípcio, fuga a Midiã, Zípora (Êxodo 2; 4).
+- Sarça ardente, vocação, objecções de Moisés, sinais da vara (Êxodo 3–4).
+- Confronto com os magos; progressão das pragas como liturgia de juízo (Êxodo 7–12).
+- Cantico do Mar, êxodo e caminho no deserto (Êxodo 14–18).
+- Sinai: aliança, Decálogo, quebra (bezerro de ouro), intercessão (Êxodo 19–34).
+- Tabernáculo e presença de Deus no meio do povo (Êxodo 35–40).
+`;
 
 /**
  * Directivas extra por livro: obriga desenvolvimento de tópicos de alto impacto (ex.: dez pragas em Êxodo).
@@ -400,15 +438,7 @@ function getBookStudyExtraDirectives(bookId, bookName) {
         .toLowerCase();
 
     if (id === 'ex' || n.includes('êxodo')) {
-        return `
-
-=== OBRIGATÓRIO PARA ÊXODO (NÃO RESUMA ISTO NUMA ÚNICA SECÇÃO) ===
-- AS DEZ PRAGAS (Êxodo 7–12): uma subsecção numerada e dedicada para CADA UMA das 10 pragas (1ª…10ª). Em cada praga desenvolva: (1) o que o texto relata; (2) qual dimensão da criação ou da ordem egípcia é atingida; (3) o endurecimento de Faraó e o que isso ensina; (4) o que revela sobre o carácter do Senhor (justiça, soberania, paciência); (5) uma aplicação para hoje (ídolatria, opressão, dureza de coração, confiança) — sem alegorizar cada pormenor biológico.
-- MOISÉS E A SARÇA, O NOME DE DEUS, AS DESCULPAS E A RESISTÊNCIA (Êxodo 3–4): porque Moisés hesita, o que isso mostra sobre medo e vocação; não reduza a um parágrafo.
-- PRÉ-ÊXODO: o episódio do egípcio morto, a fuga para Midiã, o casamento e o contexto — explique o porquê narrativo e espiritual, não só "Moisés fugiu".
-- PÁSCOA, SAÍDA DO EGITO, MAR VERMELHO: secções próprias e substanciais.
-- SINAI, ALIANÇA, LEI, BEZERRO DE OURO, TABERNÁCULO: cada um com desenvolvimento profundo e ligação à história da redenção.
-`;
+        return EXODUS_STUDY_DIRECTIVE;
     }
 
     if (id === 'lv' || n.includes('levítico')) {
@@ -530,9 +560,16 @@ PROFUNDIDADE OBRIGATÓRIA (QUALQUER LIVRO):
 - O leitor pode dedicar UMA HORA OU MAIS a este texto: priorize explicação real em vez de brevidade artificial. Prefira muitos parágrafos bem desenvolvidos a listas telegráficas.
 - Identifique os "pontos de máximo impacto" do livro (acontecimentos, leis, discursos, imagens proféticas, doutrinas centrais) e desenvolva CADA UM com subsecção própria: contexto → o que o texto diz → significado teológico → implicações para a vida cristã hoje.
 - Não se limite a "uma frase por capítulo". Agrupe capítulos quando fizer sentido, mas aprofunde os blocos que mais moldam a mensagem do livro.
-- Síntese teológica: integre perspectiva histórico-gramatical e teologia bíblica (história da redenção). Pode aludir, em termos GERAIS, a paralelos históricos ou debates académicos (contexto antigo do Oriente Próximo, tradição judaica antiga, leituras patrísticas ou reformadas) quando útil.
-- FONTES EXTRA-BÍBLICAS: NÃO invente citações entre aspas, páginas ou edições. NÃO atribua frases específicas a Flávio Josefo, Filão, "Carta aos Hebreus" ou outros autores a menos que esteja a parafrasear ideias amplamente conhecidas; quando mencionar historiografia ou literatura judaica antiga, diga "segundo relatos da historiografia antiga…" ou "a tradição judaica posterior discute…" sem fabricar detalhes. A Escritura permanece a autoridade; o resto é ilustração prudente.
-- Não cite nomes de pastores ou obras comerciais recentes; pode referir categorias ("comentadores clássicos", "teologia sistemática reformada") sem inventar títulos.
+
+CONCRETUDE, NOMES E REFERÊNCIAS (CRÍTICO — EXTRAIA O MÁXIMO DO CONHECIMENTO BÍBLICO, SEM SER VAGO):
+- PROIBIDO substituir factos nomeados no texto por frases genéricas ("houve milagres", "Deus castigou", "aconteceram coisas terríveis"). Se o texto lista pragas, juízes, milagres, leis ou parábolas, NOMEIE-OS ou enumere-os como o próprio relato faz.
+- OBRIGATÓRIO: ao desenvolver cada grande tema, inclua referências bíblicas no formato "NomeDoLivro capítulo:versículo" ou intervalos (ex.: Êxodo 9:13–35). O objectivo é o leitor poder abrir a Bíblia na passagem certa.
+- Cada tópico central deve ter NO MÍNIMO dois parágrafos de explicação do texto ANTES da aplicação contemporânea.
+- Quando o livro apresentar uma série de eventos (pragas, vitórias, discursos, salmos encadeados), é INACEITÁVEL condensar toda a série num único parágrafo: desenvolva cada elemento importante ou agrupe com critério explicativo, nunca com omissão dos nomes.
+
+Síntese teológica: integre perspectiva histórico-gramatical e teologia bíblica (história da redenção). Pode aludir, em termos GERAIS, a paralelos históricos ou debates académicos quando útil.
+- FONTES EXTRA-BÍBLICAS: NÃO invente citações entre aspas, páginas ou edições. NÃO atribua frases específicas a autores antigos sem base; quando mencionar historiografia ou tradição, faça-o de modo geral. A Escritura permanece a autoridade.
+- Não cite nomes de pastores ou obras comerciais recentes; pode referir categorias teológicas sem inventar títulos.
 `;
 
 /**
@@ -591,8 +628,9 @@ REQUISITOS DE ESTRUTURA (obrigatórios):
 - O leitor deve poder compreender narrativa, doutrinas e contexto com profundidade (como se tivesse lido o livro com um professor ao lado).
 - Organize com títulos em linha própria (MAIÚSCULAS curtas ou "► Secção").
 - Inclua no mínimo estas áreas (adaptando ao género do livro): VISÃO GERAL; CONTEXTO; ESTRUTURA E CONTEÚDO (grandes blocos com aprofundamento real); PERSONAGENS OU TEMAS CENTRAIS; MENSAGEM TEOLÓGICA E LUGAR NA HISTÓRIA DA REDENÇÃO; APLICAÇÃO PARA HOJE.
-- Ao citar passagens, use o nome do livro como na Bíblia em português (ex.: ${bookName} 3; Salmos 23; João 3) para o site poder criar links.
-- Não invente versículos longos entre aspas; pode parafrasear com precisão.
+- Ao citar passagens, use o nome do livro como na Bíblia em português (ex.: ${bookName} 3; Salmos 23; João 3) para o site poder criar links. Insira referências ao longo de CADA secção importante, não só no início.
+- Não invente versículos longos entre aspas; pode parafrasear com precisão, mas o conteúdo deve corresponder ao texto sagrado.
+- PRIORIDADE MÁXIMA: especificidade (nomes, eventos, referências). Se faltar espaço, corte adjetivos vazios, não corte listas de factos bíblicos exigidas pelas directivas do livro.
 ${bookDirectives}
 ${modoGenesisExtra}
 ${refBlock}
@@ -608,13 +646,15 @@ Responda SOMENTE com o texto do estudo, sem comentários introdutórios nem mark
             },
             body: JSON.stringify({
                 model: MODEL_BOOK_STUDY,
-                temperature: 0.48,
+                temperature: 0.4,
                 max_tokens: BOOK_STUDY_MAX_TOKENS,
+                presence_penalty: 0.12,
+                frequency_penalty: 0.08,
                 messages: [
                     {
                         role: 'system',
                         content:
-                            'Você é teólogo evangélico, exegeta e professor de Bíblia em português do Brasil, com nível de profundidade equivalente a estudos avançados (teologia bíblica, exegese histórico-gramatical, história da redenção). Domina os 66 livros e respeita géneros literários; não contradiz a Escritura. Produz estudos extensos, pastorais e rigorosos: priorize substância e desenvolvimento de cada tópico importante do livro. Nunca invente citações textuais de obras extra-bíblicas, nem páginas ou edições; quando aludir a historiografia ou tradição, faça-o de modo geral e prudente.'
+                            'Você é teólogo evangélico, exegeta e professor de Bíblia em português do Brasil, com nível de estudos avançados (teologia bíblica, exegese histórico-gramatical, história da redenção). Domina os 66 livros; não contradiz a Escritura. Produz estudos extensos e rigorosos: priorize FACTOS DO TEXTO — nomes próprios, sequências de eventos, referências capítulo/versículo — e recusa resumos vagos. Quando o utilizador pedir desenvolvimento de séries (ex.: dez pragas), nomeie e explique cada elemento. Nunca invente citações textuais de obras extra-bíblicas nem páginas; alusões a tradição ou historiografia só em termos gerais.'
                     },
                     { role: 'user', content: userPrompt }
                 ]
@@ -630,10 +670,10 @@ Responda SOMENTE com o texto do estudo, sem comentários introdutórios nem mark
 
         const text = (raw.choices && raw.choices[0] && raw.choices[0].message && raw.choices[0].message.content) || '';
         const trimmed = String(text).trim();
-        if (trimmed.length < 1500) {
+        if (trimmed.length < 2200) {
             return {
                 error:
-                    'A resposta da IA ficou curta demais para o nível de profundidade pedido. Aumente BIBLE_BOOK_STUDY_MAX_TOKENS no servidor ou regenere; se persistir, use um modelo com janela maior.'
+                    'A resposta da IA ficou curta demais para o nível de profundidade pedido. Defina BIBLE_BOOK_STUDY_MAX_TOKENS=16000 (ou o máximo permitido), use BIBLE_BOOK_STUDY_AI_MODEL=gpt-4o e regenere; textos como Êxodo exigem saída longa.'
             };
         }
         return { text: trimmed };
