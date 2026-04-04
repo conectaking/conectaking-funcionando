@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { randomUUID } = require('crypto');
 const bibleService = require('./bible.service');
 const bibleRepository = require('./bible.repository');
 const devotionalAi = require('./bibleDevotionalAi.service');
@@ -171,7 +172,8 @@ async function generateRangeAndSave(startDay, endDay, year, options = {}) {
         const r = await generateDayAndSave(d, year, {
             temaModo: options.temaModo,
             temaPersonalizado: options.temaPersonalizado,
-            estilo: options.estilo
+            estilo: options.estilo,
+            fullTheme: !!options.fullTheme
         });
         results.push({ day: d, ok: r.ok, error: r.error || null });
         if (delayMs && d < to) {
@@ -203,7 +205,8 @@ async function generateMonthAndSave(year, month, options = {}) {
         const r = await generateDayAndSave(d, y, {
             temaModo,
             temaPersonalizado: options.temaPersonalizado || '',
-            estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao'
+            estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao',
+            fullTheme: !!options.fullTheme
         });
         results.push({ day: d, ok: r.ok, error: r.error || null });
         if (delayMs && i < days.length - 1) {
@@ -223,6 +226,173 @@ async function generateMonthAndSave(year, month, options = {}) {
     };
 }
 
+/** União ordenada dos dias do ano (1–365) que caem nos meses civis indicados. */
+function collectDaysForCalendarMonths(year, monthsArr) {
+    const y = parseInt(year, 10) || new Date().getFullYear();
+    const set = new Set();
+    monthsArr.forEach(function (m) {
+        getDayOfYearListForCalendarMonth(y, m).forEach(function (d) {
+            set.add(d);
+        });
+    });
+    return Array.from(set).sort(function (a, b) {
+        return a - b;
+    });
+}
+
+function normalizeMonthsInput(raw) {
+    if (raw === 'all' || raw === true) {
+        return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    }
+    if (!Array.isArray(raw)) return [];
+    const set = new Set();
+    raw.forEach(function (x) {
+        const m = parseInt(x, 10);
+        if (!Number.isNaN(m) && m >= 1 && m <= 12) set.add(m);
+    });
+    return Array.from(set).sort(function (a, b) {
+        return a - b;
+    });
+}
+
+const dev365GenJobs = new Map();
+const MAX_DEV365_JOBS = 64;
+
+function pruneDev365JobsIfNeeded() {
+    while (dev365GenJobs.size >= MAX_DEV365_JOBS) {
+        const first = dev365GenJobs.keys().next().value;
+        dev365GenJobs.delete(first);
+    }
+}
+
+async function executeCalendarMonthsJob(jobId, days, year, options) {
+    const job = dev365GenJobs.get(jobId);
+    if (!job) return;
+    job.status = 'running';
+    job.updatedAt = Date.now();
+    const delayMs = Math.max(0, parseInt(options.delayMs, 10) || 400);
+    const temaModo = options.temaModo || 'mes_auto';
+    const estilo = options.estilo === 'cunha' ? 'cunha' : 'padrao';
+    const fullTheme = !!options.fullTheme;
+    const total = days.length;
+    devotionalAi.clearDev365Cache();
+    try {
+        for (let i = 0; i < days.length; i++) {
+            const d = days[i];
+            job.currentDay = d;
+            job.updatedAt = Date.now();
+            const r = await generateDayAndSave(d, year, {
+                temaModo,
+                temaPersonalizado: options.temaPersonalizado || '',
+                estilo,
+                fullTheme
+            });
+            job.processed = i + 1;
+            if (!r.ok) {
+                job.errors += 1;
+                if (job.failedSamples.length < 50) {
+                    job.failedSamples.push({ day: d, error: r.error || '?' });
+                }
+            }
+            const elapsed = Date.now() - job.startedAt;
+            const avgPerItem = elapsed / job.processed;
+            job.etaSeconds = Math.max(0, Math.round(((total - job.processed) * avgPerItem) / 1000));
+            job.updatedAt = Date.now();
+            if (delayMs && i < days.length - 1) {
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, delayMs);
+                });
+            }
+        }
+        job.status = 'done';
+        job.currentDay = null;
+        job.etaSeconds = 0;
+        job.processed = total;
+    } catch (e) {
+        logger.error('bible.adminDev365 executeCalendarMonthsJob:', e);
+        job.status = 'error';
+        job.errorMessage = e.message || String(e);
+    }
+    job.updatedAt = Date.now();
+}
+
+/**
+ * Inicia geração por meses civis em segundo plano (não bloqueia o HTTP).
+ * O estado fica em memória no processo Node (reinício do servidor cancela o trabalho).
+ */
+function startCalendarMonthsBackgroundJob(year, monthsInput, options) {
+    const y = parseInt(year, 10);
+    if (Number.isNaN(y) || y < 2000 || y > 2100) {
+        return { ok: false, error: 'Ano inválido (2000–2100).' };
+    }
+    const months = normalizeMonthsInput(monthsInput);
+    if (!months.length) {
+        return { ok: false, error: 'Selecione pelo menos um mês ou envie months: "all".' };
+    }
+    const days = collectDaysForCalendarMonths(y, months);
+    if (!days.length) {
+        return { ok: false, error: 'Nenhum dia a gerar.' };
+    }
+    pruneDev365JobsIfNeeded();
+    const jobId = randomUUID();
+    const job = {
+        id: jobId,
+        status: 'queued',
+        year: y,
+        months,
+        total: days.length,
+        processed: 0,
+        errors: 0,
+        etaSeconds: null,
+        currentDay: null,
+        startedAt: Date.now(),
+        updatedAt: Date.now(),
+        errorMessage: null,
+        failedSamples: []
+    };
+    dev365GenJobs.set(jobId, job);
+    setImmediate(function () {
+        executeCalendarMonthsJob(jobId, days, y, options || {}).catch(function (e) {
+            logger.error('bible.adminDev365 executeCalendarMonthsJob outer:', e);
+            const j = dev365GenJobs.get(jobId);
+            if (j) {
+                j.status = 'error';
+                j.errorMessage = e.message || String(e);
+                j.updatedAt = Date.now();
+            }
+        });
+    });
+    return { ok: true, jobId, total: days.length };
+}
+
+function getDev365GenerationJob(jobId) {
+    const j = dev365GenJobs.get(jobId);
+    if (!j) return null;
+    const total = j.total || 0;
+    const processed = j.processed || 0;
+    let progress = total > 0 ? Math.min(100, Math.floor((100 * processed) / total)) : 0;
+    if (j.status === 'done') progress = 100;
+    let etaMinutes = null;
+    if (j.etaSeconds != null && j.status === 'running') {
+        etaMinutes = Math.round((j.etaSeconds / 60) * 10) / 10;
+    }
+    return {
+        id: j.id,
+        status: j.status,
+        year: j.year,
+        months: j.months,
+        total,
+        processed,
+        progress,
+        errors: j.errors || 0,
+        etaSeconds: j.etaSeconds,
+        etaMinutes,
+        currentDay: j.currentDay,
+        errorMessage: j.errorMessage || null,
+        failedSamples: (j.failedSamples || []).slice(0, 20)
+    };
+}
+
 module.exports = {
     getMonthThemesForYear,
     setMonthTheme,
@@ -232,5 +402,7 @@ module.exports = {
     generateRangeAndSave,
     generateMonthAndSave,
     getDayOfYearListForCalendarMonth,
+    startCalendarMonthsBackgroundJob,
+    getDev365GenerationJob,
     MONTH_THEMES_FILE
 };

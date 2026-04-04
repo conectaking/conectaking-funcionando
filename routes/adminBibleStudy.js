@@ -16,6 +16,12 @@ const logger = require('../utils/logger');
 
 const router = express.Router();
 
+function dev365FullThemeFlag(body) {
+    if (!body || typeof body !== 'object') return false;
+    const v = body.fullTheme;
+    return v === true || v === 'true' || v === 1 || v === '1';
+}
+
 /** Fallback: lista dos 66 livros quando o manifest (arquivo) não carrega (ex.: path em produção). */
 const BOOKS_MANIFEST_FALLBACK = {
     at: [
@@ -261,12 +267,48 @@ router.post('/bible/devotionals-365/generate-month-ai/:year/:month', protectAdmi
             delayMs: req.body && req.body.delayMs,
             temaModo: (req.body && req.body.temaModo) || 'mes_auto',
             temaPersonalizado: (req.body && req.body.temaPersonalizado) || '',
-            estilo: req.body && req.body.estilo === 'cunha' ? 'cunha' : 'padrao'
+            estilo: req.body && req.body.estilo === 'cunha' ? 'cunha' : 'padrao',
+            fullTheme: dev365FullThemeFlag(req.body)
         });
         res.json({ success: true, data: out });
     } catch (e) {
         logger.error('adminBibleStudy generate-month-ai:', e);
         res.status(500).json({ success: false, message: e.message || 'Erro.' });
+    }
+});
+
+/** POST /api/admin/bible/devotionals-365/generate-calendar-months-async — Meses civis em segundo plano. Body: { year, months: [1,3] | "all", delayMs, temaModo, estilo } */
+router.post('/bible/devotionals-365/generate-calendar-months-async', protectAdmin, async (req, res) => {
+    let year = parseInt(req.body && req.body.year, 10);
+    if (Number.isNaN(year) || year < 2000 || year > 2100) year = new Date().getFullYear();
+    try {
+        const out = bibleAdminDev365.startCalendarMonthsBackgroundJob(year, req.body && req.body.months, {
+            delayMs: req.body && req.body.delayMs,
+            temaModo: (req.body && req.body.temaModo) || 'mes_auto',
+            temaPersonalizado: (req.body && req.body.temaPersonalizado) || '',
+            estilo: req.body && req.body.estilo === 'cunha' ? 'cunha' : 'padrao',
+            fullTheme: dev365FullThemeFlag(req.body)
+        });
+        if (!out.ok) {
+            return res.status(400).json({ success: false, message: out.error || 'Pedido inválido.' });
+        }
+        res.status(202).json({ success: true, data: { jobId: out.jobId, total: out.total } });
+    } catch (e) {
+        logger.error('adminBibleStudy generate-calendar-months-async:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro.' });
+    }
+});
+
+/** GET /api/admin/bible/devotionals-365/generation-job/:jobId — Estado do trabalho em segundo plano (memória do processo). */
+router.get('/bible/devotionals-365/generation-job/:jobId', protectAdmin, async (req, res) => {
+    try {
+        const j = bibleAdminDev365.getDev365GenerationJob(req.params.jobId);
+        if (!j) {
+            return res.status(404).json({ success: false, message: 'Trabalho não encontrado ou já expirou (memória do servidor).' });
+        }
+        res.json({ success: true, data: j });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
     }
 });
 
