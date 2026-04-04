@@ -250,25 +250,27 @@
         <section id="panel-estudo" class="panel">
             <div class="card">
                 <h2><i class="fas fa-book-reader"></i> Estudo por livro</h2>
-                <p>Envie Word/PDF <strong>ou</strong> use <strong>Gerar via IA</strong> para criar um estudo longo e completo (mesmo tipo de profundidade do estudo de Gênesis no site). Requer a URL da API e token de administrador acima. Máx. 15 MB por ficheiro.</p>
+                <p>Envie Word/PDF <strong>ou</strong> use <strong>Gerar por IA</strong> (entre Enviar e Remover) para criar um estudo longo e completo (como o de Gênesis no site). Requer a URL da API e token acima. Máx. 15 MB por ficheiro.</p>
                 <div class="row" style="margin-top:10px">
                     <div style="flex:1;min-width:200px">
                         <label for="study-book-search">Pesquisar livro (nome ou código, ex.: jo, Salmos)</label>
                         <input type="text" id="study-book-search" placeholder="Filtrar lista…" style="width:100%;max-width:320px">
                     </div>
                     <button type="button" class="btn btn-secondary" id="btn-study-reload"><i class="fas fa-sync"></i> Atualizar lista de livros</button>
+                    <button type="button" class="btn btn-secondary" id="btn-study-bulk-remove" style="border-color:rgba(220,80,80,0.45);color:#f5a097"><i class="fas fa-trash-alt"></i> Remover estudos seleccionados</button>
                 </div>
                 <div style="overflow:auto;margin-top:14px">
                     <table>
                         <thead>
                             <tr>
+                                <th style="width:40px;text-align:center" title="Seleccionar para remover em massa"><input type="checkbox" id="study-select-all" aria-label="Seleccionar todos os livros visíveis"></th>
                                 <th>Livro</th>
                                 <th>Estado</th>
-                                <th>Importar / IA</th>
-                                <th></th>
+                                <th>Importar</th>
+                                <th style="min-width:200px">Enviar · Gerar por IA · Remover</th>
                             </tr>
                         </thead>
-                        <tbody id="tbody-study-books"><tr><td colspan="4">Carregue a lista.</td></tr></tbody>
+                        <tbody id="tbody-study-books"><tr><td colspan="5">Carregue a lista.</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -384,7 +386,7 @@
             return name.indexOf(q) >= 0 || id.indexOf(q) >= 0;
         });
         if (!rows.length) {
-            tb.innerHTML = '<tr><td colspan="4">Nenhum livro com este filtro.</td></tr>';
+            tb.innerHTML = '<tr><td colspan="5">Nenhum livro com este filtro.</td></tr>';
             return;
         }
         tb.innerHTML = rows.map(function (b) {
@@ -392,12 +394,13 @@
             var has = b.has_study;
             var st = has ? '<span style="color:#86efac">Com estudo</span>' : '<span style="color:#888">Sem estudo</span>';
             return '<tr data-bid="' + bid + '">' +
+                '<td style="text-align:center;vertical-align:middle"><input type="checkbox" class="study-row-cb" data-bid="' + bid + '" aria-label="Seleccionar ' + escStudyCell(b.book_name) + '"></td>' +
                 '<td><strong>' + escStudyCell(b.book_name) + '</strong><br><span style="font-size:0.8rem;color:#888">' + escStudyCell(b.book_id) + '</span></td>' +
                 '<td>' + st + '</td>' +
-                '<td style="min-width:280px"><input type="file" class="study-file-inp" accept=".doc,.docx,.pdf" data-bid="' + bid + '" style="max-width:190px;font-size:0.72rem;vertical-align:middle"> ' +
-                '<button type="button" class="btn btn-secondary btn-sm study-upload-btn" data-bid="' + bid + '">Enviar</button> ' +
-                '<button type="button" class="btn btn-sm study-ai-btn" data-bid="' + bid + '" title="Gera estudo longo completo (como Gênesis)"><i class="fas fa-magic"></i> Gerar via IA</button></td>' +
-                '<td><button type="button" class="btn btn-secondary btn-sm study-remove-btn" data-bid="' + bid + '">Remover</button></td></tr>';
+                '<td style="min-width:200px"><input type="file" class="study-file-inp" accept=".doc,.docx,.pdf" data-bid="' + bid + '" style="max-width:180px;font-size:0.72rem;vertical-align:middle"></td>' +
+                '<td style="white-space:normal"><button type="button" class="btn btn-secondary btn-sm study-upload-btn" data-bid="' + bid + '">Enviar</button> ' +
+                '<button type="button" class="btn btn-sm study-ai-btn" data-bid="' + bid + '" title="Gera estudo longo completo (como Gênesis)"><i class="fas fa-magic"></i> Gerar por IA</button> ' +
+                '<button type="button" class="btn btn-secondary btn-sm study-remove-btn" data-bid="' + bid + '">Remover</button></td></tr>';
         }).join('');
 
         tb.querySelectorAll('.study-upload-btn').forEach(function (btn) {
@@ -451,12 +454,35 @@
                     .finally(function () { btn.disabled = false; });
             });
         });
+
+        var master = document.getElementById('study-select-all');
+        if (master) {
+            master.checked = false;
+            master.onchange = function () {
+                var on = master.checked;
+                tb.querySelectorAll('.study-row-cb').forEach(function (cb) { cb.checked = on; });
+            };
+        }
+    }
+
+    function getSelectedStudyBookIds() {
+        var ids = [];
+        document.querySelectorAll('#tbody-study-books .study-row-cb:checked').forEach(function (cb) {
+            var bid = cb.getAttribute('data-bid');
+            if (bid) ids.push(bid);
+        });
+        return ids;
+    }
+
+    function deleteStudyBook(bid) {
+        return apiFetch('/api/admin/bible/study/book/' + encodeURIComponent(bid), { method: 'DELETE' })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j, status: r.status }; }); });
     }
 
     function loadStudyBooksList() {
         var tb = document.getElementById('tbody-study-books');
         if (!tb) return;
-        tb.innerHTML = '<tr><td colspan="4">A carregar…</td></tr>';
+        tb.innerHTML = '<tr><td colspan="5">A carregar…</td></tr>';
         apiFetch('/api/admin/bible/study/books')
             .then(function (r) { return r.json(); })
             .then(function (j) {
@@ -465,7 +491,7 @@
                 renderStudyBooksTable();
             })
             .catch(function (e) {
-                tb.innerHTML = '<tr><td colspan="4">' + escStudyCell(e.message || 'Erro ao carregar') + '</td></tr>';
+                tb.innerHTML = '<tr><td colspan="5">' + escStudyCell(e.message || 'Erro ao carregar') + '</td></tr>';
             });
     }
 
@@ -1055,6 +1081,38 @@
     if (studySearchEl) studySearchEl.addEventListener('input', renderStudyBooksTable);
     var studyReloadBtn = document.getElementById('btn-study-reload');
     if (studyReloadBtn) studyReloadBtn.addEventListener('click', loadStudyBooksList);
+    var studyBulkRemoveBtn = document.getElementById('btn-study-bulk-remove');
+    if (studyBulkRemoveBtn) {
+        studyBulkRemoveBtn.addEventListener('click', function () {
+            var ids = getSelectedStudyBookIds();
+            if (!ids.length) { flash('Marque as checkboxes dos livros cujo estudo quer remover.', 'warn'); return; }
+            if (!confirm('Remover o estudo gravado de ' + ids.length + ' livro(s) seleccionado(s)?')) return;
+            studyBulkRemoveBtn.disabled = true;
+            var ok = 0;
+            var fail = 0;
+            var i = 0;
+            function next() {
+                if (i >= ids.length) {
+                    studyBulkRemoveBtn.disabled = false;
+                    var master = document.getElementById('study-select-all');
+                    if (master) master.checked = false;
+                    flash('Removidos: ' + ok + (fail ? ' · Não removidos (sem estudo ou erro): ' + fail : ''), fail ? 'warn' : 'ok');
+                    loadStudyBooksList();
+                    return;
+                }
+                var bid = ids[i];
+                i += 1;
+                deleteStudyBook(bid)
+                    .then(function (x) {
+                        if (x.ok && x.j && x.j.success) ok++;
+                        else fail++;
+                    })
+                    .catch(function () { fail++; })
+                    .then(next);
+            }
+            next();
+        });
+    }
     loadStudyBooksList();
 
     if (location.hash === '#study' || location.hash === '#estudo') {
