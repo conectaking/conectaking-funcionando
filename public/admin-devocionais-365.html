@@ -353,6 +353,122 @@
         return fetch(base + path, Object.assign({}, opts, { headers: headers }));
     }
 
+    var studyBooksData = [];
+
+    function apiUploadStudyBook(bookId, file) {
+        var fd = new FormData();
+        fd.append('file', file);
+        var headers = {};
+        var tok = getToken();
+        if (tok) headers['Authorization'] = 'Bearer ' + tok;
+        return fetch(getApiBase() + '/api/admin/bible/study/book/' + encodeURIComponent(bookId) + '/upload', {
+            method: 'POST',
+            headers: headers,
+            body: fd
+        });
+    }
+
+    function escStudyCell(s) {
+        return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    }
+
+    function renderStudyBooksTable() {
+        var tb = document.getElementById('tbody-study-books');
+        if (!tb) return;
+        var searchEl = document.getElementById('study-book-search');
+        var q = (searchEl && searchEl.value || '').toLowerCase().trim();
+        var rows = studyBooksData.filter(function (b) {
+            if (!q) return true;
+            var name = (b.book_name || '').toLowerCase();
+            var id = (b.book_id || '').toLowerCase();
+            return name.indexOf(q) >= 0 || id.indexOf(q) >= 0;
+        });
+        if (!rows.length) {
+            tb.innerHTML = '<tr><td colspan="4">Nenhum livro com este filtro.</td></tr>';
+            return;
+        }
+        tb.innerHTML = rows.map(function (b) {
+            var bid = String(b.book_id || '').replace(/"/g, '&quot;');
+            var has = b.has_study;
+            var st = has ? '<span style="color:#86efac">Com estudo</span>' : '<span style="color:#888">Sem estudo</span>';
+            return '<tr data-bid="' + bid + '">' +
+                '<td><strong>' + escStudyCell(b.book_name) + '</strong><br><span style="font-size:0.8rem;color:#888">' + escStudyCell(b.book_id) + '</span></td>' +
+                '<td>' + st + '</td>' +
+                '<td style="min-width:280px"><input type="file" class="study-file-inp" accept=".doc,.docx,.pdf" data-bid="' + bid + '" style="max-width:190px;font-size:0.72rem;vertical-align:middle"> ' +
+                '<button type="button" class="btn btn-secondary btn-sm study-upload-btn" data-bid="' + bid + '">Enviar</button> ' +
+                '<button type="button" class="btn btn-sm study-ai-btn" data-bid="' + bid + '" title="Gera estudo longo completo (como Gênesis)"><i class="fas fa-magic"></i> Gerar via IA</button></td>' +
+                '<td><button type="button" class="btn btn-secondary btn-sm study-remove-btn" data-bid="' + bid + '">Remover</button></td></tr>';
+        }).join('');
+
+        tb.querySelectorAll('.study-upload-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var bid = btn.getAttribute('data-bid');
+                var tr = btn.closest('tr');
+                var inp = tr && tr.querySelector('.study-file-inp');
+                if (!inp || !inp.files || !inp.files[0]) { flash('Escolha um ficheiro Word ou PDF.', 'err'); return; }
+                btn.disabled = true;
+                apiUploadStudyBook(bid, inp.files[0])
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                    .then(function (x) {
+                        if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha no envio');
+                        flash((x.j && x.j.message) || 'Importado.', 'ok');
+                        loadStudyBooksList();
+                    })
+                    .catch(function (e) { flash(e.message || 'Erro no upload.', 'err'); })
+                    .finally(function () { btn.disabled = false; });
+            });
+        });
+        tb.querySelectorAll('.study-ai-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var bid = btn.getAttribute('data-bid');
+                if (!confirm('Gerar estudo COMPLETO por IA para este livro? Pode demorar vários minutos e usar muitos tokens. Para livros que não sejam Gênesis, o servidor usa o estudo de Gênesis (se existir) só como referência de formato.')) return;
+                btn.disabled = true;
+                flash('A gerar estudo por IA… aguarde (não feche o separador).', 'warn');
+                apiFetch('/api/admin/bible/study/book/' + encodeURIComponent(bid) + '/generate-ai', { method: 'POST', body: '{}' })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                    .then(function (x) {
+                        if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha na IA');
+                        flash((x.j && x.j.message) || 'Estudo gerado e gravado.', 'ok');
+                        loadStudyBooksList();
+                    })
+                    .catch(function (e) { flash(e.message || 'Erro ao gerar.', 'err'); })
+                    .finally(function () { btn.disabled = false; });
+            });
+        });
+        tb.querySelectorAll('.study-remove-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var bid = btn.getAttribute('data-bid');
+                if (!confirm('Remover o estudo gravado para ' + bid + '?')) return;
+                btn.disabled = true;
+                apiFetch('/api/admin/bible/study/book/' + encodeURIComponent(bid), { method: 'DELETE' })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                    .then(function (x) {
+                        if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha');
+                        flash('Estudo removido.', 'ok');
+                        loadStudyBooksList();
+                    })
+                    .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
+                    .finally(function () { btn.disabled = false; });
+            });
+        });
+    }
+
+    function loadStudyBooksList() {
+        var tb = document.getElementById('tbody-study-books');
+        if (!tb) return;
+        tb.innerHTML = '<tr><td colspan="4">A carregar…</td></tr>';
+        apiFetch('/api/admin/bible/study/books')
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+                if (!j.success || !j.data || !j.data.books) throw new Error(j.message || 'Lista inválida');
+                studyBooksData = j.data.books;
+                renderStudyBooksTable();
+            })
+            .catch(function (e) {
+                tb.innerHTML = '<tr><td colspan="4">' + escStudyCell(e.message || 'Erro ao carregar') + '</td></tr>';
+            });
+    }
+
     function monthNamesPt() {
         return ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     }
@@ -889,6 +1005,17 @@
     buildMonthQuick();
     loadTable();
     resumeBgJobIfAny();
+
+    var studySearchEl = document.getElementById('study-book-search');
+    if (studySearchEl) studySearchEl.addEventListener('input', renderStudyBooksTable);
+    var studyReloadBtn = document.getElementById('btn-study-reload');
+    if (studyReloadBtn) studyReloadBtn.addEventListener('click', loadStudyBooksList);
+    loadStudyBooksList();
+
+    if (location.hash === '#study' || location.hash === '#estudo') {
+        var tabEstudo = document.querySelector('.tabs button[data-tab="estudo"]');
+        if (tabEstudo) tabEstudo.click();
+    }
 
     (function tryLoadThemesOnStart() {
         if (!getToken()) return;
