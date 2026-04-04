@@ -426,7 +426,7 @@
         <!-- Devocionais 365, Estudos, Esboços -->
         <div class="bible-card">
             <h3 style="margin-bottom:16px;color:#FFC700">Devocionais 365</h3>
-            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Escolha o dia (1–365), o modo de tema e, se quiser, reflexão enriquecida (recomendado). O administrador pode rever e gerar conteúdos no painel dedicado.</p>
+            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Use o <strong>calendário</strong> ou o <strong>dia 1–365</strong> do ano civil que escolher abaixo; o modo de tema segue o mês/ano. Reflexão enriquecida é opcional (recomendado).</p>
             <div style="margin-bottom:12px">
                 <label style="font-size:0.85rem;color:#A1A1A1;display:block;margin-bottom:6px">Como aplicar o tema</label>
                 <select id="dev365-tema-modo" style="width:100%;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.35);color:#ECECEC;font-size:0.9rem;cursor:pointer">
@@ -447,12 +447,20 @@
             <div style="margin-bottom:12px">
                 <label style="font-size:0.85rem;color:#A1A1A1;display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-dev365-estilo-cunha" style="width:18px;height:18px;accent-color:#FFC700"> Tom estilo mensagem de rádio / devocional em áudio (inspirado em fé diária; não copia terceiros)</label>
             </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-                <input type="number" id="dev365-day" min="1" max="365" placeholder="Dia (1-365)" style="width:100px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;align-items:flex-end">
+                <div>
+                    <label for="dev365-date" style="font-size:0.82rem;color:#A1A1A1;display:block;margin-bottom:6px"><i class="fas fa-calendar-alt" style="margin-right:6px;opacity:0.9"></i>Data no calendário</label>
+                    <input type="date" id="dev365-date" style="padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC;font-size:0.95rem;min-height:42px;box-sizing:border-box"/>
+                </div>
+                <div>
+                    <label for="dev365-day" style="font-size:0.82rem;color:#A1A1A1;display:block;margin-bottom:6px">Dia do ano (1–365)</label>
+                    <input type="number" id="dev365-day" min="1" max="365" placeholder="1–365" style="width:100px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC"/>
+                </div>
                 <button type="button" class="bible-btn" id="btn-dev365-load"><i class="fas fa-book-open"></i> Carregar</button>
                 <button type="button" class="bible-btn secondary" id="btn-dev365-today"><i class="fas fa-calendar-check"></i> Dia de hoje</button>
             </div>
-            <div id="dev365-content"><p style="color:#A1A1A1;font-size:0.9rem">Selecione um dia ou clique em "Dia de hoje".</p></div>
+            <p id="dev365-date-hint" style="font-size:0.88rem;color:#FFC700;margin:0 0 14px;line-height:1.45"></p>
+            <div id="dev365-content"><p style="color:#A1A1A1;font-size:0.9rem">Escolha uma data ou um número de dia e clique em Carregar, ou use Dia de hoje.</p></div>
             <div class="bible-actions" id="dev365-actions" style="display:none;margin-top:12px;flex-wrap:wrap;gap:10px">
                 <button type="button" class="bible-btn" id="dev365-btn-ouvir" title="Ouvir o devocional 365"><i class="fas fa-volume-up"></i> Ouvir</button>
                 <button type="button" class="bible-btn secondary" id="dev365-btn-parar" style="display:none;background:rgba(239,68,68,0.2);color:#f87171"><i class="fas fa-stop"></i> Parar</button>
@@ -1059,6 +1067,29 @@
                 updatePlanoDateHint(cur);
             }
 
+            function getDev365CalendarYear() {
+                var yEl = document.getElementById('dev365-year');
+                var y = yEl && yEl.value ? parseInt(yEl.value, 10) : new Date().getFullYear();
+                if (isNaN(y) || y < 2000 || y > 2100) y = new Date().getFullYear();
+                return y;
+            }
+
+            function setDev365DateInputFromDay(dayNum) {
+                var y = getDev365CalendarYear();
+                var d = dayOfYearToDate(dayNum, y);
+                var el = document.getElementById('dev365-date');
+                if (!el) return;
+                el.value = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+            }
+
+            function updateDev365DateHint(dayNum) {
+                var hint = document.getElementById('dev365-date-hint');
+                if (!hint || !dayNum || dayNum < 1 || dayNum > 365) return;
+                var y = getDev365CalendarYear();
+                var d = dayOfYearToDate(dayNum, y);
+                hint.textContent = 'Dia ' + dayNum + ' no ano civil ' + y + ' → ' + formatDateLong(d) + '.';
+            }
+
             async function loadPlanoDay(dayNum) {
                 var el = document.getElementById('plano-content');
                 if (!el) return;
@@ -1104,7 +1135,18 @@
             var currentDev365Day = 0;
             (function initDev365Year() {
                 var yEl = document.getElementById('dev365-year');
+                var dDay = document.getElementById('dev365-day');
+                var dIn = document.getElementById('dev365-date');
                 if (yEl && !yEl.value) yEl.value = new Date().getFullYear();
+                var todayDoy = getDayOfYear();
+                if (dDay && !String(dDay.value || '').trim()) dDay.value = todayDoy;
+                var cur = dDay ? parseInt(dDay.value, 10) : NaN;
+                if (isNaN(cur) || cur < 1 || cur > 365) {
+                    cur = todayDoy;
+                    if (dDay) dDay.value = cur;
+                }
+                if (dIn && !dIn.value) setDev365DateInputFromDay(cur);
+                updateDev365DateHint(cur);
             })();
             (function initDev365TemaModo() {
                 var sel = document.getElementById('dev365-tema-modo');
@@ -1160,11 +1202,17 @@
                     var aiBanner = '';
                     if (d.ai_gerado) aiBanner = '<p style="font-size:0.82rem;color:#86efac;margin-bottom:10px;line-height:1.45">Reflexão enriquecida gerada para este tema e dia.</p>';
                     else if (d.ai_aviso) aiBanner = '<p style="font-size:0.88rem;color:#fbbf24;margin-bottom:12px;line-height:1.45"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>' + String(d.ai_aviso).replace(/</g, '&lt;') + '</p>';
+                    var dtCalDev = dayOfYearToDate(day, year);
+                    var calBannerDev = '<p style="color:#FFC700;font-size:0.92rem;margin-bottom:14px;line-height:1.45"><i class="fas fa-calendar-alt" style="margin-right:8px;opacity:0.9"></i>' +
+                        dtCalDev.getDate() + ' de ' + dtCalDev.toLocaleDateString('pt-BR', { month: 'long' }) + ' de ' + dtCalDev.getFullYear() +
+                        ' <span style="color:#A1A1A1;font-size:0.88rem;font-weight:400">(dia ' + day + ' de 365)</span></p>';
                     var reflexaoHtml = (d.reflexao || '').replace(/\n/g, '<br>');
                     var aplicacaoHtml = d.aplicacao ? '<div class="bible-reflexao" style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)"><strong style="font-size:1rem;color:#FFC700">Aplicação Prática</strong><p style="margin-top:12px;font-size:1.05rem;line-height:1.8">' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
                     var oracaoHtml = d.oracao ? '<div class="bible-reflexao" style="margin-top:20px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1.05rem;line-height:1.8;font-style:italic">' + (d.oracao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
                     var btnHtml = '<div class="bible-actions" style="margin-top:20px;flex-wrap:wrap;gap:10px"><button type="button" class="bible-btn" id="dev365-btn-share" data-day="' + day + '"><i class="fas fa-share-alt"></i> Compartilhar</button><button type="button" class="bible-btn secondary dev365-mark-read" data-day="' + day + '"><i class="far fa-check-circle"></i> Marcar como lido</button></div>';
-                    el.innerHTML = temaBlock + aiBanner + '<div class="bible-ref" style="font-size:1.2rem;margin-bottom:12px">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:1rem;margin-bottom:16px;font-weight:600">' + (d.versiculo_ref || '') + '</div>' + (d.versiculo_texto ? '<div class="bible-text" style="margin-bottom:24px;font-size:1.1rem;line-height:1.8">"' + d.versiculo_texto + '"</div>' : '') + '<div class="bible-text" style="line-height:1.85;font-size:1.05rem">' + reflexaoHtml + '</div>' + aplicacaoHtml + oracaoHtml + btnHtml;
+                    el.innerHTML = calBannerDev + temaBlock + aiBanner + '<div class="bible-ref" style="font-size:1.2rem;margin-bottom:12px">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:1rem;margin-bottom:16px;font-weight:600">' + (d.versiculo_ref || '') + '</div>' + (d.versiculo_texto ? '<div class="bible-text" style="margin-bottom:24px;font-size:1.1rem;line-height:1.8">"' + d.versiculo_texto + '"</div>' : '') + '<div class="bible-text" style="line-height:1.85;font-size:1.05rem">' + reflexaoHtml + '</div>' + aplicacaoHtml + oracaoHtml + btnHtml;
+                    setDev365DateInputFromDay(day);
+                    updateDev365DateHint(day);
                     var dev365Actions = document.getElementById('dev365-actions');
                     if (dev365Actions) dev365Actions.style.display = 'flex';
                     var dev365ShareBtn = el.querySelector('#dev365-btn-share');
@@ -1202,6 +1250,8 @@
             document.getElementById('btn-dev365-load').addEventListener('click', function() {
                 var day = parseInt(document.getElementById('dev365-day').value, 10);
                 if (day < 1 || day > 365) { alert('Digite um dia entre 1 e 365.'); return; }
+                setDev365DateInputFromDay(day);
+                updateDev365DateHint(day);
                 loadDev365ByDay(day);
             });
             document.getElementById('btn-dev365-today').addEventListener('click', function() {
@@ -1209,8 +1259,42 @@
                 document.getElementById('dev365-day').value = day;
                 var yEl = document.getElementById('dev365-year');
                 if (yEl) yEl.value = new Date().getFullYear();
+                setDev365DateInputFromDay(day);
+                updateDev365DateHint(day);
                 loadDev365ByDay(day);
             });
+            (function bindDev365DatePicker() {
+                var ddate = document.getElementById('dev365-date');
+                if (!ddate) return;
+                ddate.addEventListener('change', function() {
+                    var v = ddate.value;
+                    if (!v) return;
+                    var p = v.split('-');
+                    var y = parseInt(p[0], 10);
+                    var m = parseInt(p[1], 10) - 1;
+                    var da = parseInt(p[2], 10);
+                    if (isNaN(y) || isNaN(m) || isNaN(da)) return;
+                    var yEl = document.getElementById('dev365-year');
+                    if (yEl) yEl.value = y;
+                    var dt = new Date(y, m, da);
+                    var day = dateToDayOfYearCal(dt);
+                    document.getElementById('dev365-day').value = day;
+                    updateDev365DateHint(day);
+                    loadDev365ByDay(day);
+                });
+            })();
+            (function bindDev365YearSync() {
+                var yEl = document.getElementById('dev365-year');
+                if (!yEl) return;
+                yEl.addEventListener('change', function() {
+                    var pd = document.getElementById('dev365-day');
+                    var day = pd ? parseInt(pd.value, 10) : NaN;
+                    if (!isNaN(day) && day >= 1 && day <= 365) {
+                        setDev365DateInputFromDay(day);
+                        updateDev365DateHint(day);
+                    }
+                });
+            })();
             document.getElementById('btn-plano-load').addEventListener('click', function() {
                 var day = parseInt(document.getElementById('plano-day').value, 10);
                 if (day < 1 || day > 365) { alert('Digite um dia entre 1 e 365.'); return; }
