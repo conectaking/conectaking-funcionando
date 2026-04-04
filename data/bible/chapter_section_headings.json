@@ -1,0 +1,39 @@
+{
+  "mt": {
+    "5": [
+      { "beforeVerse": 1, "text": "O sermão da montanha: as bem-aventuranças" },
+      { "beforeVerse": 13, "text": "O sal da terra e a luz do mundo" },
+      { "beforeVerse": 17, "text": "A Lei e a justiça do Reino" },
+      { "beforeVerse": 21, "text": "Raiva, reconciliação e pureza" },
+      { "beforeVerse": 27, "text": "Adultério e divórcio" },
+      { "beforeVerse": 31, "text": "Juramentos" },
+      { "beforeVerse": 33, "text": "Não resistir ao mal; amar os inimigos" },
+      { "beforeVerse": 38, "text": "Dar a túnica também" },
+      { "beforeVerse": 43, "text": "Amar o próximo e orar pelos inimigos" },
+      { "beforeVerse": 48, "text": "Sede perfeitos" }
+    ],
+    "6": [
+      { "beforeVerse": 1, "text": "Continuação do sermão da montanha: esmola, oração e jejum" },
+      { "beforeVerse": 19, "text": "Tesouros no céu" },
+      { "beforeVerse": 22, "text": "A lâmpada do corpo" },
+      { "beforeVerse": 24, "text": "Deus e as riquezas" },
+      { "beforeVerse": 25, "text": "Não vos inquieteis" },
+      { "beforeVerse": 28, "text": "As aves e os lírios" },
+      { "beforeVerse": 33, "text": "Buscai primeiro o Reino" }
+    ],
+    "7": [
+      { "beforeVerse": 1, "text": "Continuação do sermão da montanha. O hábito de julgar os outros" },
+      { "beforeVerse": 7, "text": "A bondade de Deus" },
+      { "beforeVerse": 13, "text": "A porta estreita" },
+      { "beforeVerse": 15, "text": "Cuidado com os falsos profetas" },
+      { "beforeVerse": 21, "text": "Quem entra no Reino?" },
+      { "beforeVerse": 24, "text": "As duas casas" },
+      { "beforeVerse": 28, "text": "A admiração da multidão" }
+    ]
+  },
+  "1sm": {
+    "17": [
+      { "beforeVerse": 1, "text": "Davi enfrenta Golias" }
+    ]
+  }
+}

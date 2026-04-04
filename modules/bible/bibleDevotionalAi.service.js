@@ -13,6 +13,16 @@ const MODEL = process.env.BIBLE_DEV365_AI_MODEL || 'gpt-4o-mini';
 const cache = new Map();
 const TTL_MS = 1000 * 60 * 60 * 6;
 
+function fnv1aShort(s) {
+    const str = String(s || '');
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0).toString(36);
+}
+
 function cacheGet(key) {
     const row = cache.get(key);
     if (!row) return null;
@@ -28,37 +38,55 @@ function cacheSet(key, data) {
 }
 
 /**
- * @param {object} devotional — titulo, versiculo_ref, reflexao, tema_mes, tema_ano, day_of_year
- * @param {{ dayOfYear: number, year: number }} ctx
- * @returns {Promise<{ reflexao?: string, aplicacao?: string, oracao?: string, error?: string }>}
+ * @param {object} devotional — titulo, versiculo_ref, reflexao, tema_mes, tema_ano, tema_ia_instrucao
+ * @param {{ dayOfYear: number, year: number, estilo?: string }} ctx
  */
 async function enrichDevotional365(devotional, ctx) {
     const { dayOfYear, year } = ctx;
+    const estilo = (ctx.estilo || 'padrao').toLowerCase() === 'cunha' ? 'cunha' : 'padrao';
+
     if (!OPENAI_API_KEY || !String(OPENAI_API_KEY).trim()) {
         return { error: 'OPENAI_API_KEY não configurada no servidor (Render).' };
     }
 
-    const key = `dev365-ai:${year}:${dayOfYear}:${MODEL}`;
-    const hit = cacheGet(key);
+    const instr = String(devotional.tema_ia_instrucao || '').slice(0, 1200);
+    const cacheKey = `dev365-ai:${year}:${dayOfYear}:${MODEL}:${estilo}:${fnv1aShort(instr)}:${fnv1aShort(devotional.reflexao || '').slice(0, 200)}`;
+    const hit = cacheGet(cacheKey);
     if (hit) return hit;
 
     const titulo = (devotional.titulo || '').slice(0, 200);
     const ref = (devotional.versiculo_ref || '').slice(0, 120);
     const baseReflexao = String(devotional.reflexao || '').replace(/\s+/g, ' ').trim().slice(0, 1200);
-    const temaMes = (devotional.tema_mes || '').slice(0, 200);
-    const temaAno = (devotional.tema_ano || '').slice(0, 200);
+    const temaMes = (devotional.tema_mes || '').slice(0, 220);
+    const temaAno = (devotional.tema_ano || '').slice(0, 220);
 
-    const userPrompt = `Dia bíblico do ano: ${dayOfYear} (calendário civil de referência: ${year}).
-Título do devocional: ${titulo}
-Referência bíblica principal: ${ref}
-Tema espiritual do MÊS (alinhe a introdução e o tom): ${temaMes}
-Tema espiritual do ANO (alinhe uma frase de abertura ou fechamento): ${temaAno}
-Texto-base / reflexão de catálogo (inspire-se na mensagem; não copie literalmente longos trechos): ${baseReflexao || '(sem texto-base)'}
+    const estiloCunha =
+        estilo === 'cunha'
+            ? `
+ESTILO DE ENTREGA (obrigatório): Devocional no estilo de mensagem de rádio cristã brasileira — linguagem calorosa, simples, direta, como se falasse ao ouvinte; parágrafos curtos; "você" ou "nós"; tom de fé e esperança. Não cite nomes de pastores nem reproduza frases literais de terceiros; inspire-se apenas no tipo de mensagem (devocional em áudio).
+`
+            : '';
+
+    const userPrompt = `Dia do ano: ${dayOfYear} · Ano civil: ${year}.
+
+PASSAGEM / referência principal: ${ref}
+Título de apoio (pode inspirar o tom): ${titulo}
+
+TEMA DO MÊS (contexto): ${temaMes}
+TEMA DO ANO (contexto): ${temaAno}
+
+INSTRUÇÃO DE TEMA (obedeça à letra na estrutura da reflexão):
+${instr || 'Ligue a reflexão à passagem e aos temas acima.'}
+
+Texto-base do catálogo (use só como ideia geral da mensagem; não copie trechos longos):
+${baseReflexao || '(sem texto-base)'}
+
+${estiloCunha}
 
 Responda APENAS com um JSON válido neste formato exato (sem markdown):
-{"reflexao":"3 a 5 parágrafos curtos em português do Brasil","aplicacao":"1 parágrafo com aplicação prática","oracao":"1 oração curta em primeira pessoa plural ou singular"}
+{"reflexao":"3 a 5 parágrafos em português do Brasil","aplicacao":"1 parágrafo com aplicação prática","oracao":"1 oração curta"}
 
-Regras: tom pastoral evangélico; não invente números de capítulos que não sejam a referência dita; não contradiga a Bíblia.`;
+Regras: a reflexão DEVE demonstrar que o tema instruído foi seguido (não genérico); tom pastoral evangélico; não invente referências bíblicas além da dada; não contradiga a Escritura.`;
 
     try {
         const res = await fetch(CHAT_URL, {
@@ -69,13 +97,15 @@ Regras: tom pastoral evangélico; não invente números de capítulos que não s
             },
             body: JSON.stringify({
                 model: MODEL,
-                temperature: 0.65,
-                max_tokens: 1400,
+                temperature: estilo === 'cunha' ? 0.72 : 0.65,
+                max_tokens: 1600,
                 messages: [
                     {
                         role: 'system',
                         content:
-                            'Você é um assistente cristão que escreve devocionais em português do Brasil. Responde somente JSON válido, sem blocos de código.'
+                            estilo === 'cunha'
+                                ? 'Você escreve devocionais cristãos em português do Brasil, em tom acolhedor e claro, como mensagem de rádio. Responde somente JSON válido, sem blocos de código.'
+                                : 'Você escreve devocionais cristãos em português do Brasil. Responde somente JSON válido, sem blocos de código.'
                     },
                     { role: 'user', content: userPrompt }
                 ]
@@ -107,7 +137,7 @@ Regras: tom pastoral evangélico; não invente números de capítulos que não s
         if (!out.reflexao) {
             return { error: 'A IA não devolveu reflexão.' };
         }
-        cacheSet(key, out);
+        cacheSet(cacheKey, out);
         return out;
     } catch (e) {
         logger.error('bibleDevotionalAi enrichDevotional365:', e);

@@ -265,9 +265,16 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             const bibleItemId = itemRes.rows[0]?.id || null;
             const biblePanelUrl = bibleItemId ? getBiblePanelUrl(bibleItemId, req, slug) : `${baseUrl}/${slug}/biblia`;
             const returnTo = (req.query.returnTo && typeof req.query.returnTo === 'string') ? req.query.returnTo : '';
-            const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter);
+            const verseCount = chapterData.verses ? chapterData.verses.length : 0;
+            const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter, verseCount);
             const manifestReader = bibleService.loadBooksManifest();
             const isOldTestament = (manifestReader.at || []).some((b) => b && b.id === bookId);
+            const sectionHeadings = bibleService.getSectionHeadingsForChapter(bookId, chapter);
+            const allBooksList = (manifestReader.at || []).concat(manifestReader.nt || []);
+            const chapterCountsByBook = {};
+            allBooksList.forEach((b) => {
+                if (b && b.id) chapterCountsByBook[b.id] = bibleService.getChapterCountForBook(b.id);
+            });
             const frontendBase = getFrontendBase();
             const isLocal = isLocalFrontend(frontendBase);
             const ttsScriptSrc = frontendBase + (isLocal ? '/public_html/js/tts.js' : '/js/tts.js');
@@ -278,11 +285,15 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 baseUrl,
                 tParam,
                 biblePanelUrl,
+                dashboardUrl: `${baseUrl.replace(/\/$/, '')}/dashboard.html`,
                 returnTo,
                 API_URL: process.env.FRONTEND_URL || baseUrl,
                 ttsScriptSrc,
                 jesusVerseNumbers: jesusVerseNumbers || [],
-                isOldTestament
+                isOldTestament,
+                sectionHeadings: sectionHeadings || [],
+                allBooksList,
+                chapterCountsByBook
             });
         } finally {
             client.release();

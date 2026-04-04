@@ -89,12 +89,23 @@ function loadDevocionais() {
     }
 }
 
-/** Evita repetição a cada N dias (ex.: lista com 10 itens) usando dispersão por primos. */
-function pickDevotionalFallbackIndex(dayOfYear, len) {
+/**
+ * Escolhe um índice na lista fallback sem repetir a cada N dias (N = tamanho da lista).
+ * Índices só por (dia do ano) mod L repetem com período L; por isso usamos ano+dia (hash).
+ * Altere os textos dos temas em TEMAS_MES_PT / TEMAS_ANO_ROTATIVOS abaixo.
+ */
+function pickDevotionalFallbackIndex(dayOfYear, year, len) {
     if (len < 1) return 0;
-    return ((dayOfYear - 1) * 7919 + 104729) % len;
+    const s = `dev365|${year}|${dayOfYear}`;
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) % len;
 }
 
+/** Temas por mês (automático) — edite aqui ou use tema personalizado na UI (Devocional 365). */
 const TEMAS_MES_PT = [
     'Janeiro — Propósito em Deus e novos começos',
     'Fevereiro — Amor, fé e relacionamentos restaurados',
@@ -110,6 +121,7 @@ const TEMAS_MES_PT = [
     'Dezembro — Luz de Cristo e encerramento do ano com fé'
 ];
 
+/** Temas do ano (automático, rodam com o ano civil) — edite aqui se quiser. */
 const TEMAS_ANO_ROTATIVOS = [
     'Ano da fé que se manifesta nas atitudes',
     'Ano da esperança que ancora a alma em Cristo',
@@ -143,6 +155,51 @@ function getDevotional365Themes(dayOfYear, year) {
         ano_calendario: year,
         tema_mes: temaMes,
         tema_ano: temaAno
+    };
+}
+
+/**
+ * temaModo: mes_auto | ano_auto | mes_e_ano | personalizado
+ * temaPersonalizado: obrigatório se personalizado
+ */
+function resolveThemeForDev365(dayOfYear, year, options = {}) {
+    const base = getDevotional365Themes(dayOfYear, year);
+    const modo = String(options.temaModo || 'mes_auto').toLowerCase().replace(/-/g, '_');
+    const custom = String(options.temaPersonalizado || '').trim().slice(0, 500);
+
+    if ((modo === 'personalizado' || modo === 'custom') && custom) {
+        return {
+            ...base,
+            tema_mes: custom,
+            tema_modo_aplicado: 'personalizado',
+            tema_ia_instrucao:
+                `O devocional deve girar em torno deste tema escolhido pelo usuário: "${custom}". ` +
+                'A abertura e o fecho devem deixar isso explícito.'
+        };
+    }
+    if (modo === 'ano_auto' || modo === 'ano') {
+        return {
+            ...base,
+            tema_modo_aplicado: 'ano',
+            tema_ia_instrucao:
+                `Priorize o TEMA DO ANO em toda a reflexão (introdução e conclusão centrados nele). ` +
+                `TEMA DO ANO: ${base.tema_ano}. O tema do mês é apenas apoio.`
+        };
+    }
+    if (modo === 'mes_e_ano' || modo === 'mes_ano' || modo === 'ambos') {
+        return {
+            ...base,
+            tema_modo_aplicado: 'mes_e_ano',
+            tema_ia_instrucao:
+                `Integre de forma visível o TEMA DO MÊS (${base.tema_mes}) e o TEMA DO ANO (${base.tema_ano}) — ` +
+                'pelo menos uma frase para cada, além da ligação com a passagem.'
+        };
+    }
+    return {
+        ...base,
+        tema_modo_aplicado: 'mes',
+        tema_ia_instrucao:
+            `Priorize o TEMA DO MÊS (${base.tema_mes}). O tema do ano pode aparecer só no fecho se couber.`
     };
 }
 
@@ -180,7 +237,11 @@ async function getDevocionalDoDia(dateStr) {
     }
     const list = loadDevocionais();
     if (!list.length) return null;
-    const index = pickDevotionalFallbackIndex(dayOfYear, list.length);
+    let y = new Date().getFullYear();
+    if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        y = parseInt(dateStr.slice(0, 4), 10);
+    }
+    const index = pickDevotionalFallbackIndex(dayOfYear, y, list.length);
     return { ...list[index], date: dateStr || new Date().toISOString().slice(0, 10) };
 }
 
@@ -366,14 +427,58 @@ function loadJesusVerses() {
     }
 }
 
+let _chapterSectionHeadings = null;
+function loadChapterSectionHeadings() {
+    if (_chapterSectionHeadings !== null) return _chapterSectionHeadings;
+    try {
+        const filePath = path.join(DATA_DIR, 'chapter_section_headings.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        _chapterSectionHeadings = JSON.parse(data);
+        return _chapterSectionHeadings;
+    } catch (e) {
+        _chapterSectionHeadings = {};
+        return _chapterSectionHeadings;
+    }
+}
+
+/**
+ * Subtítulos de secção (estilo estudos / ARC) antes de um versículo.
+ * @returns {{ beforeVerse: number, text: string }[]}
+ */
+function getSectionHeadingsForChapter(bookId, chapterNum) {
+    const book = (bookId || '').toLowerCase();
+    const data = loadChapterSectionHeadings();
+    const chapters = data[book];
+    if (!chapters || typeof chapters !== 'object') return [];
+    const list = chapters[String(chapterNum)];
+    if (!Array.isArray(list)) return [];
+    return list
+        .filter(function (h) {
+            return h && typeof h.text === 'string' && h.text.trim() && typeof h.beforeVerse === 'number';
+        })
+        .map(function (h) {
+            return { beforeVerse: h.beforeVerse, text: h.text.trim() };
+        })
+        .sort(function (a, b) {
+            return a.beforeVerse - b.beforeVerse;
+        });
+}
+
 /** Retorna array de números de versículos em que Jesus fala no capítulo (para destaque no NT). */
-function getJesusVerseNumbersForChapter(bookId, chapterNum) {
+function getJesusVerseNumbersForChapter(bookId, chapterNum, totalVerses) {
     const book = (bookId || '').toLowerCase();
     const data = loadJesusVerses();
     const chapters = data[book];
     if (!chapters || typeof chapters !== 'object') return [];
-    const list = chapters[String(chapterNum)];
-    return Array.isArray(list) ? list : [];
+    const raw = chapters[String(chapterNum)];
+    if (raw === 'all') {
+        const n = parseInt(totalVerses, 10) || 0;
+        if (n < 1) return [];
+        const out = [];
+        for (let i = 1; i <= n; i++) out.push(i);
+        return out;
+    }
+    return Array.isArray(raw) ? raw : [];
 }
 
 let _bookNameToId = null;
@@ -461,6 +566,18 @@ const TOTAL_CHAPTERS_BIBLE = 1189;
 
 /** Número de capítulos por livro, na ordem do books_manifest (at + nt). Evita 66 leituras de arquivo que travavam o servidor. */
 const CHAPTER_COUNTS_66 = [50, 40, 27, 36, 34, 24, 21, 4, 31, 24, 22, 25, 29, 36, 10, 13, 10, 42, 150, 31, 12, 8, 66, 52, 5, 48, 12, 14, 3, 9, 1, 4, 7, 3, 3, 3, 2, 14, 4, 28, 16, 24, 21, 28, 16, 16, 13, 6, 6, 4, 4, 5, 3, 6, 4, 3, 1, 13, 5, 5, 3, 5, 1, 1, 1, 22];
+
+/** Número de capítulos de um livro (alinhado a books_manifest e CHAPTER_COUNTS_66). */
+function getChapterCountForBook(bookId) {
+    const manifest = loadBooksManifest();
+    const allBooks = (manifest.at || []).concat(manifest.nt || []);
+    const idx = allBooks.findIndex(function (b) {
+        return b && b.id === bookId;
+    });
+    if (idx < 0) return 1;
+    const n = CHAPTER_COUNTS_66[idx];
+    return typeof n === 'number' && n >= 1 ? n : 1;
+}
 
 let _bibleChapterSequence = null;
 /** Lista ordenada de { bookId, bookName, chapter } para cada um dos 1189 capítulos da Bíblia. Sem I/O pesado. */
@@ -577,7 +694,15 @@ function getDevocionalBibliaInteira(mode, monthOrDay, dayOptional) {
 }
 
 async function getDevocional365(dayOrDate, options = {}) {
-    const useAi = !!options.useAi;
+    let useAi;
+    if (options.aiExplicitOff) {
+        useAi = false;
+    } else if (process.env.BIBLE_DEV365_AI_DEFAULT === '1') {
+        useAi = true;
+    } else {
+        useAi = !!options.useAi;
+    }
+
     let year = options.year;
     if (typeof year !== 'number' || Number.isNaN(year) || year < 2000 || year > 2100) {
         year = new Date().getFullYear();
@@ -590,6 +715,11 @@ async function getDevocional365(dayOrDate, options = {}) {
         dayOfYear = getVerseOfDayIndex(dayOrDate);
     }
     if (dayOfYear < 1 || dayOfYear > 365) return null;
+
+    const themeOpts = {
+        temaModo: options.temaModo || 'mes_auto',
+        temaPersonalizado: options.temaPersonalizado || ''
+    };
 
     const fromDb = await repository.getDevocional365(dayOfYear);
     let result;
@@ -607,7 +737,7 @@ async function getDevocional365(dayOrDate, options = {}) {
     } else {
         const list = loadDevocionais();
         if (!list.length) return null;
-        const index = pickDevotionalFallbackIndex(dayOfYear, list.length);
+        const index = pickDevotionalFallbackIndex(dayOfYear, year, list.length);
         const item = list[index];
         result = {
             day_of_year: dayOfYear,
@@ -620,10 +750,15 @@ async function getDevocional365(dayOrDate, options = {}) {
         };
     }
 
-    Object.assign(result, getDevotional365Themes(dayOfYear, year));
+    Object.assign(result, resolveThemeForDev365(dayOfYear, year, themeOpts));
+    result.estilo_devocional = options.estilo === 'cunha' ? 'cunha' : 'padrao';
 
     if (useAi) {
-        const ai = await devotionalAi.enrichDevotional365(result, { dayOfYear, year });
+        const ai = await devotionalAi.enrichDevotional365(result, {
+            dayOfYear,
+            year,
+            estilo: result.estilo_devocional
+        });
         if (ai.reflexao) {
             result.reflexao_estatica = result.reflexao;
             result.reflexao = ai.reflexao;
@@ -636,6 +771,7 @@ async function getDevocional365(dayOrDate, options = {}) {
         }
     }
 
+    delete result.tema_ia_instrucao;
     return result;
 }
 
@@ -690,6 +826,8 @@ module.exports = {
     searchBibleEcosystem,
     loadBooksManifest,
     getJesusVerseNumbersForChapter,
+    getSectionHeadingsForChapter,
+    getChapterCountForBook,
     getBookChapter,
     getTextForRef,
     markDevotionalRead,
