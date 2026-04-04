@@ -1,0 +1,31 @@
+{
+  "_comment": "AT: versículos em que Deus/Senhor fala diretamente (complementa heurística por texto na página). Formato r = intervalos inclusivos.",
+  "js": {
+    "1": { "r": [[2, 9]] }
+  },
+  "ex": {
+    "3": { "r": [[1, 22]] },
+    "6": { "r": [[2, 8]] },
+    "19": { "r": [[3, 25]] },
+    "20": { "r": [[1, 17]] }
+  },
+  "1sm": {
+    "3": { "r": [[7, 18]] }
+  },
+  "dn": {
+    "9": { "r": [[20, 27]] },
+    "10": { "r": [[10, 11]] }
+  },
+  "is": {
+    "6": { "r": [[1, 13]] }
+  },
+  "jr": {
+    "1": { "r": [[4, 10]] }
+  },
+  "ez": {
+    "1": { "r": [[3, 28]] }
+  },
+  "gn": {
+    "12": { "r": [[1, 3]] }
+  }
+}

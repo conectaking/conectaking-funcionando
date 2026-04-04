@@ -10,6 +10,8 @@ const pdfParse = require('pdf-parse');
 const { protectAdmin } = require('../middleware/protectAdmin');
 const bibleService = require('../modules/bible/bible.service');
 const bibleRepository = require('../modules/bible/bible.repository');
+const bibleAdminDev365 = require('../modules/bible/bible.adminDev365.service');
+const bibleDevotionalAi = require('../modules/bible/bibleDevotionalAi.service');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -171,6 +173,129 @@ router.post('/bible/study/book/:bookId/upload', protectAdmin, (req, res, next) =
 });
 
 // --- Devocionais 365 (só ADM): listar dias com conteúdo, adicionar/editar, remover ---
+
+/** GET /api/admin/bible/devotionals-365/admin-full — Lista todos + grupos de possíveis duplicados (hash). */
+router.get('/bible/devotionals-365/admin-full', protectAdmin, async (req, res) => {
+    try {
+        const data = await bibleAdminDev365.findDuplicateDevotionalGroups();
+        res.json({ success: true, data });
+    } catch (e) {
+        logger.error('adminBibleStudy admin-full dev365:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro.' });
+    }
+});
+
+/** POST /api/admin/bible/devotionals-365/day/:day/generate-ai — Gera reflexão com IA e grava na BD. */
+router.post('/bible/devotionals-365/day/:day/generate-ai', protectAdmin, async (req, res) => {
+    const day = parseInt(req.params.day, 10);
+    let year = parseInt(req.body.year || req.query.year, 10);
+    if (!day || day < 1 || day > 365) {
+        return res.status(400).json({ success: false, message: 'Dia 1–365.' });
+    }
+    if (Number.isNaN(year) || year < 2000 || year > 2100) year = new Date().getFullYear();
+    try {
+        const r = await bibleAdminDev365.generateDayAndSave(day, year, {
+            temaModo: req.body.temaModo || 'mes_auto',
+            temaPersonalizado: req.body.temaPersonalizado || '',
+            estilo: req.body.estilo === 'cunha' ? 'cunha' : 'padrao'
+        });
+        if (!r.ok) return res.status(400).json({ success: false, message: r.error || 'Falha ao gerar.' });
+        res.json({ success: true, data: r.data });
+    } catch (e) {
+        logger.error('adminBibleStudy generate-ai day:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro.' });
+    }
+});
+
+/** POST /api/admin/bible/devotionals-365/generate-range-ai — Gera um intervalo de dias (lote). Body: start, end, year, delayMs, temaModo, estilo */
+router.post('/bible/devotionals-365/generate-range-ai', protectAdmin, async (req, res) => {
+    const start = parseInt(req.body.start, 10);
+    const end = parseInt(req.body.end, 10);
+    let year = parseInt(req.body.year, 10);
+    if (Number.isNaN(year) || year < 2000 || year > 2100) year = new Date().getFullYear();
+    if (Number.isNaN(start) || Number.isNaN(end)) {
+        return res.status(400).json({ success: false, message: 'Informe start e end (1–365).' });
+    }
+    try {
+        const out = await bibleAdminDev365.generateRangeAndSave(start, end, year, {
+            delayMs: req.body.delayMs,
+            temaModo: req.body.temaModo || 'mes_auto',
+            temaPersonalizado: req.body.temaPersonalizado || '',
+            estilo: req.body.estilo === 'cunha' ? 'cunha' : 'padrao'
+        });
+        res.json({ success: true, data: out });
+    } catch (e) {
+        logger.error('adminBibleStudy generate-range-ai:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro.' });
+    }
+});
+
+/** GET /api/admin/bible/devotionals-365/month-themes/:year */
+router.get('/bible/devotionals-365/month-themes/:year', protectAdmin, async (req, res) => {
+    const year = parseInt(req.params.year, 10);
+    if (Number.isNaN(year) || year < 2000 || year > 2100) {
+        return res.status(400).json({ success: false, message: 'Ano inválido.' });
+    }
+    try {
+        const themes = bibleAdminDev365.getMonthThemesForYear(year);
+        res.json({ success: true, data: { year, themes } });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+/** PUT /api/admin/bible/devotionals-365/month-themes/:year — Body: { "1": "...", "2": "...", ... "12": "..." } */
+router.put('/bible/devotionals-365/month-themes/:year', protectAdmin, async (req, res) => {
+    const year = parseInt(req.params.year, 10);
+    if (Number.isNaN(year) || year < 2000 || year > 2100) {
+        return res.status(400).json({ success: false, message: 'Ano inválido.' });
+    }
+    try {
+        const themes = bibleAdminDev365.setAllMonthThemesForYear(year, req.body || {});
+        res.json({ success: true, data: { year, themes } });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+/** POST /api/admin/bible/devotionals-365/month-themes/:year/generate/:month (1-12) */
+router.post('/bible/devotionals-365/month-themes/:year/generate/:month', protectAdmin, async (req, res) => {
+    const year = parseInt(req.params.year, 10);
+    const month = parseInt(req.params.month, 10);
+    if (Number.isNaN(year) || month < 1 || month > 12) {
+        return res.status(400).json({ success: false, message: 'Ano ou mês inválido.' });
+    }
+    try {
+        const hint = (req.body && req.body.hint) || '';
+        const r = await bibleDevotionalAi.generateMonthThemeLine(year, month, hint);
+        if (r.error) return res.status(400).json({ success: false, message: r.error });
+        const themes = bibleAdminDev365.setMonthTheme(year, month, r.text);
+        res.json({ success: true, data: { year, month, text: r.text, themes } });
+    } catch (e) {
+        logger.error('adminBibleStudy generate month theme:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+/** POST /api/admin/bible/devotionals-365/month-themes/:year/generate-all — gera os 12 meses */
+router.post('/bible/devotionals-365/month-themes/:year/generate-all', protectAdmin, async (req, res) => {
+    const year = parseInt(req.params.year, 10);
+    if (Number.isNaN(year) || year < 2000 || year > 2100) {
+        return res.status(400).json({ success: false, message: 'Ano inválido.' });
+    }
+    try {
+        const delayMs = req.body && req.body.delayMs != null ? req.body.delayMs : 400;
+        const r = await bibleDevotionalAi.generateAllMonthThemesForYear(year, delayMs);
+        if (r.errors && r.errors.length === 12) {
+            return res.status(400).json({ success: false, message: r.errors[0].error || 'Falha.', errors: r.errors });
+        }
+        const themes = bibleAdminDev365.setAllMonthThemesForYear(year, r.themes);
+        res.json({ success: true, data: { year, themes, errors: r.errors } });
+    } catch (e) {
+        logger.error('adminBibleStudy generate-all month themes:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
 
 /** GET /api/admin/bible/devotionals-365/days — Lista dias 1-365 com has_devocional (só ADM). */
 router.get('/bible/devotionals-365/days', protectAdmin, async (req, res) => {

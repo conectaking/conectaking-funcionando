@@ -266,9 +266,12 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
             const biblePanelUrl = bibleItemId ? getBiblePanelUrl(bibleItemId, req, slug) : `${baseUrl}/${slug}/biblia`;
             const returnTo = (req.query.returnTo && typeof req.query.returnTo === 'string') ? req.query.returnTo : '';
             const verseCount = chapterData.verses ? chapterData.verses.length : 0;
-            const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter, verseCount);
             const manifestReader = bibleService.loadBooksManifest();
             const isOldTestament = (manifestReader.at || []).some((b) => b && b.id === bookId);
+            const jesusVerseNumbers = bibleService.getJesusVerseNumbersForChapter(bookId, chapter, verseCount);
+            const godVerseNumbers = isOldTestament
+                ? bibleService.getGodVerseNumbersForChapter(bookId, chapter, verseCount)
+                : [];
             const sectionHeadings = bibleService.getSectionHeadingsForChapter(bookId, chapter);
             const allBooksList = (manifestReader.at || []).concat(manifestReader.nt || []);
             const chapterCountsByBook = {};
@@ -290,6 +293,7 @@ router.get('/:slug/bible/:bookId/:chapter', asyncHandler(async (req, res) => {
                 API_URL: process.env.FRONTEND_URL || baseUrl,
                 ttsScriptSrc,
                 jesusVerseNumbers: jesusVerseNumbers || [],
+                godVerseNumbers: godVerseNumbers || [],
                 isOldTestament,
                 sectionHeadings: sectionHeadings || [],
                 allBooksList,

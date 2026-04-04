@@ -431,6 +431,83 @@ function loadJesusVerses() {
     }
 }
 
+let _redLetterGospels = null;
+function loadRedLetterGospels() {
+    if (_redLetterGospels !== null) return _redLetterGospels;
+    try {
+        const filePath = path.join(DATA_DIR, 'red_letter_gospels.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        _redLetterGospels = JSON.parse(data);
+        return _redLetterGospels;
+    } catch (e) {
+        _redLetterGospels = {};
+        return _redLetterGospels;
+    }
+}
+
+let _godSpeechVerses = null;
+function loadGodSpeechVerses() {
+    if (_godSpeechVerses !== null) return _godSpeechVerses;
+    try {
+        const filePath = path.join(DATA_DIR, 'god_speech_verses.json');
+        const data = fs.readFileSync(filePath, 'utf8');
+        _godSpeechVerses = JSON.parse(data);
+        return _godSpeechVerses;
+    } catch (e) {
+        _godSpeechVerses = {};
+        return _godSpeechVerses;
+    }
+}
+
+/** Expande lista, "all", "none", ou { r: [[início,fim],...] } para números de versículo (limitado a totalVerses). */
+function expandVerseSpec(raw, totalVerses) {
+    const max = parseInt(totalVerses, 10) || 0;
+    if (raw === 'none' || raw === false || raw === null) return [];
+    if (raw === 'all') {
+        return buildVerseNumberRange(max);
+    }
+    if (Array.isArray(raw)) {
+        return raw
+            .map(function (v) {
+                return parseInt(v, 10);
+            })
+            .filter(function (v) {
+                return !Number.isNaN(v) && v >= 1 && v <= max;
+            });
+    }
+    if (raw && typeof raw === 'object' && Array.isArray(raw.r)) {
+        const out = [];
+        for (let i = 0; i < raw.r.length; i++) {
+            const pair = raw.r[i];
+            if (!Array.isArray(pair) || pair.length < 2) continue;
+            let a = parseInt(pair[0], 10);
+            let b = parseInt(pair[1], 10);
+            if (Number.isNaN(a) || Number.isNaN(b)) continue;
+            if (a > b) {
+                const t = a;
+                a = b;
+                b = t;
+            }
+            for (let v = a; v <= b && v <= max; v++) {
+                if (v >= 1) out.push(v);
+            }
+        }
+        const seen = {};
+        const uniq = [];
+        out.sort(function (x, y) {
+            return x - y;
+        });
+        for (let j = 0; j < out.length; j++) {
+            if (!seen[out[j]]) {
+                seen[out[j]] = true;
+                uniq.push(out[j]);
+            }
+        }
+        return uniq;
+    }
+    return [];
+}
+
 let _chapterSectionHeadings = null;
 function loadChapterSectionHeadings() {
     if (_chapterSectionHeadings !== null) return _chapterSectionHeadings;
@@ -477,31 +554,37 @@ function buildVerseNumberRange(totalVerses) {
 }
 
 /**
- * Evangelhos: mesmos números de versículo em todas as traduções (NVI, ARC, KJV, KJA…).
- * Capítulos só com narrativa/genealogia podem estar em _gospelSkipChapters ou "none".
- * Capítulo sem entrada em JSON = todos os versículos em vermelho (palavras de Jesus),
- * salvo exceções acima. Mateus 5–7 mantém listas explícitas (ex.: Mt 5 começa no v. 3).
+ * Evangelhos: letra vermelha só onde Jesus fala (data/bible/red_letter_gospels.json + overrides em jesus_verses.json).
+ * jesus_verses.json tem prioridade por capítulo (ex.: "none", listas antigas).
  */
 function getJesusVerseNumbersForChapter(bookId, chapterNum, totalVerses) {
     const GOSPELS = ['mt', 'mk', 'lk', 'jo'];
     const book = (bookId || '').toLowerCase();
     const chStr = String(chapterNum);
-    const chNum = parseInt(chapterNum, 10) || 0;
-    const data = loadJesusVerses();
-
     if (!GOSPELS.includes(book)) return [];
 
-    const skipLists = data._gospelSkipChapters || {};
-    const skip = Array.isArray(skipLists[book]) ? skipLists[book] : [];
-    const bookChapters = data[book] && typeof data[book] === 'object' ? data[book] : {};
-    const raw = bookChapters[chStr];
+    const legacy = loadJesusVerses();
+    const red = loadRedLetterGospels();
+    const legacyBook = legacy[book] && typeof legacy[book] === 'object' ? legacy[book] : {};
+    const redBook = red[book] && typeof red[book] === 'object' ? red[book] : {};
 
-    if (raw === 'none') return [];
-    if (Array.isArray(raw)) return raw;
-    if (raw === 'all') return buildVerseNumberRange(totalVerses);
-    if (skip.indexOf(chNum) !== -1) return [];
+    if (Object.prototype.hasOwnProperty.call(legacyBook, chStr)) {
+        return expandVerseSpec(legacyBook[chStr], totalVerses);
+    }
+    if (Object.prototype.hasOwnProperty.call(redBook, chStr)) {
+        return expandVerseSpec(redBook[chStr], totalVerses);
+    }
+    return [];
+}
 
-    return buildVerseNumberRange(totalVerses);
+/** AT: versículos explícitos de fala divina (data/bible/god_speech_verses.json); combina com heurística no cliente. */
+function getGodVerseNumbersForChapter(bookId, chapterNum, totalVerses) {
+    const book = (bookId || '').toLowerCase();
+    const chStr = String(chapterNum);
+    const data = loadGodSpeechVerses();
+    const bookData = data[book] && typeof data[book] === 'object' ? data[book] : {};
+    if (!Object.prototype.hasOwnProperty.call(bookData, chStr)) return [];
+    return expandVerseSpec(bookData[chStr], totalVerses);
 }
 
 let _bookNameToId = null;
@@ -849,6 +932,7 @@ module.exports = {
     searchBibleEcosystem,
     loadBooksManifest,
     getJesusVerseNumbersForChapter,
+    getGodVerseNumbersForChapter,
     getSectionHeadingsForChapter,
     getChapterCountForBook,
     getBookChapter,

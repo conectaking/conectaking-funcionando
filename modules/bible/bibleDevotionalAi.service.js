@@ -1,12 +1,14 @@
 /**
- * Enriquecimento opcional dos devocionais 365 com reflexão gerada por IA (OpenAI).
- * Requer OPENAI_API_KEY no ambiente do servidor.
+ * Devocionais 365 — mesma API OpenAI que o King Brief: OPENAI_API_KEY (ou BIBLE_OPENAI_API_KEY).
  */
 
 const fetch = require('node-fetch');
 const logger = require('../../utils/logger');
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+function getOpenAiKey() {
+    return String(process.env.OPENAI_API_KEY || process.env.BIBLE_OPENAI_API_KEY || '').trim();
+}
+
 const CHAT_URL = 'https://api.openai.com/v1/chat/completions';
 const MODEL = process.env.BIBLE_DEV365_AI_MODEL || 'gpt-4o-mini';
 
@@ -45,8 +47,8 @@ async function enrichDevotional365(devotional, ctx) {
     const { dayOfYear, year } = ctx;
     const estilo = (ctx.estilo || 'padrao').toLowerCase() === 'cunha' ? 'cunha' : 'padrao';
 
-    if (!OPENAI_API_KEY || !String(OPENAI_API_KEY).trim()) {
-        return { error: 'OPENAI_API_KEY não configurada no servidor (Render).' };
+    if (!getOpenAiKey()) {
+        return { error: 'Chave OpenAI não configurada (OPENAI_API_KEY ou BIBLE_OPENAI_API_KEY).' };
     }
 
     const instr = String(devotional.tema_ia_instrucao || '').slice(0, 1200);
@@ -96,7 +98,7 @@ Regras: a reflexão DEVE demonstrar que o tema instruído foi seguido (não gen�
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${OPENAI_API_KEY.trim()}`
+                Authorization: `Bearer ${getOpenAiKey()}`
             },
             body: JSON.stringify({
                 model: MODEL,
@@ -148,6 +150,88 @@ Regras: a reflexão DEVE demonstrar que o tema instruído foi seguido (não gen�
     }
 }
 
+const MONTH_NAMES = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+/**
+ * Gera uma frase-tema para o mês (devocional 365 / painel admin).
+ */
+async function generateMonthThemeLine(year, month, extraHint) {
+    const key = getOpenAiKey();
+    if (!key) {
+        return { error: 'Chave OpenAI não configurada (OPENAI_API_KEY ou BIBLE_OPENAI_API_KEY).' };
+    }
+    const m = Math.max(1, Math.min(12, parseInt(month, 10) || 1));
+    const y = parseInt(year, 10) || new Date().getFullYear();
+    const nome = MONTH_NAMES[m - 1] || String(m);
+    const hint = String(extraHint || '').slice(0, 400);
+    const userPrompt =
+        `Ano ${y}, mês: ${nome}.\n` +
+        (hint ? `Contexto ou tema anterior: ${hint}\n` : '') +
+        'Responda com UMA frase curta em português do Brasil (máx. 120 caracteres), tema cristão devocional para este mês, sem citar marca nem pastor. Só a frase, sem aspas.';
+
+    try {
+        const res = await fetch(CHAT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key}`
+            },
+            body: JSON.stringify({
+                model: MODEL,
+                temperature: 0.75,
+                max_tokens: 200,
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'Escreve apenas uma linha de tema devocional em português do Brasil.'
+                    },
+                    { role: 'user', content: userPrompt }
+                ]
+            })
+        });
+        const raw = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const msg = raw.error && raw.error.message ? raw.error.message : res.statusText;
+            return { error: msg || 'Erro OpenAI.' };
+        }
+        const text = (raw.choices && raw.choices[0] && raw.choices[0].message && raw.choices[0].message.content) || '';
+        const line = String(text).replace(/\s+/g, ' ').trim().slice(0, 200);
+        if (!line) return { error: 'Resposta vazia.' };
+        return { text: line };
+    } catch (e) {
+        logger.error('bibleDevotionalAi generateMonthThemeLine:', e);
+        return { error: e.message || 'Falha de rede.' };
+    }
+}
+
+async function generateAllMonthThemesForYear(year, delayMs) {
+    const delay = Math.max(0, parseInt(delayMs, 10) || 350);
+    const themes = {};
+    const errors = [];
+    for (let m = 1; m <= 12; m++) {
+        /* eslint-disable no-await-in-loop */
+        const prev = m > 1 ? themes[m - 1] : '';
+        const r = await generateMonthThemeLine(year, m, prev);
+        if (r.error) {
+            errors.push({ month: m, error: r.error });
+            themes[m] = '';
+        } else {
+            themes[m] = r.text;
+        }
+        if (delay && m < 12) {
+            await new Promise(function (resolve) {
+                setTimeout(resolve, delay);
+            });
+        }
+    }
+    return { themes, errors };
+}
+
 module.exports = {
-    enrichDevotional365
+    enrichDevotional365,
+    generateMonthThemeLine,
+    generateAllMonthThemesForYear
 };

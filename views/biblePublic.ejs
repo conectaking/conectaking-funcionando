@@ -440,7 +440,7 @@
         <!-- Devocionais 365, Estudos, Esboços -->
         <div class="bible-card">
             <h3 style="margin-bottom:16px;color:#FFC700">Devocionais 365</h3>
-            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">O catálogo local tem poucos modelos — <strong style="color:#E8E8E8">sem IA</strong> o texto repete ao longo do ano. Use <strong style="color:#E8E8E8">Gerar com IA</strong> para reflexão única alinhada ao tema (exige <code style="color:#FFC700;font-size:0.85rem">OPENAI_API_KEY</code> no Render). Temas automáticos por mês/ano podem ser editados no ficheiro <code style="color:#FFC700;font-size:0.85rem">modules/bible/bible.service.js</code> (listas <code style="color:#FFC700;font-size:0.85rem">TEMAS_MES_PT</code> e <code style="color:#FFC700;font-size:0.85rem">TEMAS_ANO_ROTATIVOS</code>).</p>
+            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Escolha o dia (1–365), o modo de tema e, se quiser, reflexão enriquecida (recomendado). O administrador pode rever e gerar conteúdos no painel dedicado.</p>
             <div style="margin-bottom:12px">
                 <label style="font-size:0.85rem;color:#A1A1A1;display:block;margin-bottom:6px">Como aplicar o tema</label>
                 <select id="dev365-tema-modo" style="width:100%;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.35);color:#ECECEC;font-size:0.9rem;cursor:pointer">
@@ -452,11 +452,11 @@
             </div>
             <div id="dev365-tema-custom-wrap" style="display:none;margin-bottom:12px">
                 <label style="font-size:0.85rem;color:#A1A1A1;display:block;margin-bottom:6px">Seu tema (ex.: perseverança na família)</label>
-                <input type="text" id="dev365-tema-custom" maxlength="500" placeholder="Digite o tema que a IA deve seguir" style="width:100%;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,199,0,0.35);background:rgba(0,0,0,0.3);color:#ECECEC;font-size:0.95rem">
+                <input type="text" id="dev365-tema-custom" maxlength="500" placeholder="Ex.: perseverança na família" style="width:100%;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,199,0,0.35);background:rgba(0,0,0,0.3);color:#ECECEC;font-size:0.95rem">
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
                 <label style="font-size:0.85rem;color:#A1A1A1">Ano (calendário): <input type="number" id="dev365-year" min="2000" max="2100" style="width:88px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC"></label>
-                <label style="font-size:0.85rem;color:#A1A1A1;display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-dev365-ai" checked style="width:18px;height:18px;accent-color:#FFC700"> Gerar reflexão com IA (recomendado)</label>
+                <label style="font-size:0.85rem;color:#A1A1A1;display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-dev365-ai" checked style="width:18px;height:18px;accent-color:#FFC700"> Reflexão enriquecida (recomendado)</label>
             </div>
             <div style="margin-bottom:12px">
                 <label style="font-size:0.85rem;color:#A1A1A1;display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-dev365-estilo-cunha" style="width:18px;height:18px;accent-color:#FFC700"> Tom estilo mensagem de rádio / devocional em áudio (inspirado em fé diária; não copia terceiros)</label>
@@ -1216,7 +1216,7 @@
                 var useAi = chkAi && chkAi.checked;
                 var year = yEl && yEl.value ? parseInt(yEl.value, 10) : new Date().getFullYear();
                 if (isNaN(year) || year < 2000 || year > 2100) year = new Date().getFullYear();
-                el.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>' + (useAi ? 'Gerando com IA…' : 'Carregando…') + '</p></div>';
+                el.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando…</p></div>';
                 try {
                     var q = '?year=' + encodeURIComponent(year) + '&ai=' + (useAi ? '1' : '0');
                     var temaModoEl = document.getElementById('dev365-tema-modo');
@@ -1243,14 +1243,13 @@
                             temaBlock += '<div style="color:#A1A1A1;font-size:0.8rem;margin-bottom:8px">Modo de tema: <strong style="color:#E8E8E8">' + (modos[d.tema_modo_aplicado] || d.tema_modo_aplicado) + '</strong></div>';
                         }
                         if (d.tema_mes) temaBlock += '<div style="color:#FFC700;font-weight:600;margin-bottom:6px"><i class="fas fa-calendar-alt" style="margin-right:8px"></i>' + (d.tema_modo_aplicado === 'personalizado' ? 'Tema escolhido' : 'Tema do mês') + '</div><div style="color:#E8E8E8;margin-bottom:12px">' + String(d.tema_mes).replace(/</g, '&lt;') + '</div>';
-                        if (d.tema_mes_calendario && d.tema_modo_aplicado === 'personalizado') temaBlock += '<div style="color:#A1A1A1;font-size:0.85rem;margin-bottom:10px">Tema do mês (calendário, também usado na IA): <span style="color:#E8E8E8">' + String(d.tema_mes_calendario).replace(/</g, '&lt;') + '</span></div>';
+                        if (d.tema_mes_calendario && d.tema_modo_aplicado === 'personalizado') temaBlock += '<div style="color:#A1A1A1;font-size:0.85rem;margin-bottom:10px">Tema do mês (calendário): <span style="color:#E8E8E8">' + String(d.tema_mes_calendario).replace(/</g, '&lt;') + '</span></div>';
                         if (d.tema_ano && d.tema_modo_aplicado !== 'personalizado') temaBlock += '<div style="color:#FFC700;font-weight:600;margin-bottom:6px"><i class="fas fa-sun" style="margin-right:8px"></i>Tema do ano' + (d.ano_calendario ? ' (' + d.ano_calendario + ')' : '') + '</div><div style="color:#E8E8E8">' + String(d.tema_ano).replace(/</g, '&lt;') + '</div>';
                         if (d.tema_ano && d.tema_modo_aplicado === 'personalizado') temaBlock += '<div style="color:#FFC700;font-weight:600;margin-bottom:6px"><i class="fas fa-sun" style="margin-right:8px"></i>Tema do ano (referência)</div><div style="color:#A1A1A1;font-size:0.88rem">' + String(d.tema_ano).replace(/</g, '&lt;') + '</div>';
                         temaBlock += '</div>';
                     }
                     var aiBanner = '';
-                    if (d.ai_gerado) aiBanner = '<p style="font-size:0.88rem;color:#86efac;margin-bottom:12px;line-height:1.45"><i class="fas fa-robot" style="margin-right:6px"></i>Reflexão gerada com IA' + (d.estilo_devocional === 'cunha' ? ' (tom estilo mensagem de fé)' : '') + ', alinhada às instruções de tema acima. A Palavra de Deus continua sendo a medida final.</p>';
-                    else if (d.ai_aviso) aiBanner = '<p style="font-size:0.88rem;color:#fbbf24;margin-bottom:12px;line-height:1.45"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>' + String(d.ai_aviso).replace(/</g, '&lt;') + '</p>';
+                    if (d.ai_aviso) aiBanner = '<p style="font-size:0.88rem;color:#fbbf24;margin-bottom:12px;line-height:1.45"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>' + String(d.ai_aviso).replace(/</g, '&lt;') + '</p>';
                     var reflexaoHtml = (d.reflexao || '').replace(/\n/g, '<br>');
                     var aplicacaoHtml = d.aplicacao ? '<div class="bible-reflexao" style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)"><strong style="font-size:1rem;color:#FFC700">Aplicação Prática</strong><p style="margin-top:12px;font-size:1.05rem;line-height:1.8">' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
                     var oracaoHtml = d.oracao ? '<div class="bible-reflexao" style="margin-top:20px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1.05rem;line-height:1.8;font-style:italic">' + (d.oracao || '').replace(/\n/g, '<br>') + '</p></div>' : '';

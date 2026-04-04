@@ -286,15 +286,16 @@
     <span class="reader-fab reader-fab-next disabled" id="fab-next" aria-hidden="true"><i class="fas fa-chevron-right"></i></span>
     <% } %>
     <div class="reader-wrap">
-        <p class="reader-color-legend">Em <strong>todas as traduções</strong> (NVI, ARC, KJV, KJA, etc.): no NT, palavras de Jesus em <span style="color:#f87171;font-weight:600">vermelho</span>; no AT, fala do Senhor (deteção por texto) em <span style="color:#4ade80;font-weight:600">verde</span>.</p>
+        <p class="reader-color-legend">NT (evangelhos): palavras de Jesus em <span style="color:#f87171;font-weight:600">vermelho</span> (edição letra vermelha). AT: fala explícita de Deus/Senhor em <span style="color:#4ade80;font-weight:600">verde</span> + deteção por texto nas traduções.</p>
         <div class="verses-card">
         <div id="verses-container">
             <% var jesusList = (typeof jesusVerseNumbers !== 'undefined' && Array.isArray(jesusVerseNumbers)) ? jesusVerseNumbers : []; %>
+            <% var godList = (typeof godVerseNumbers !== 'undefined' && Array.isArray(godVerseNumbers)) ? godVerseNumbers : []; %>
             <% chapterData.verses.forEach(function(v) { %>
             <% _headList.filter(function(h) { return h.beforeVerse === v.verse; }).forEach(function(h) { %>
             <div class="section-heading"><%= h.text %></div>
             <% }); %>
-            <div class="verse-block selectable <%= jesusList.indexOf(v.verse) !== -1 ? 'verse-jesus' : '' %>" data-verse="<%= v.verse %>">
+            <div class="verse-block selectable <%= jesusList.indexOf(v.verse) !== -1 ? 'verse-jesus' : '' %> <%= godList.indexOf(v.verse) !== -1 ? 'verse-god-speech' : '' %>" data-verse="<%= v.verse %>">
                 <span class="verse-num"><%= v.verse %></span>
                 <span class="verse-text"><%= v.text %></span>
             </div>
@@ -411,6 +412,7 @@
                 ];
                 document.querySelectorAll('.verse-block').forEach(function(block) {
                     if (block.classList.contains('verse-jesus')) return;
+                    if (block.classList.contains('verse-god-speech')) return;
                     var el = block.querySelector('.verse-text');
                     if (!el) return;
                     var t = el.textContent || '';

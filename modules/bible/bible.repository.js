@@ -199,6 +199,23 @@ async function getDevocional365(dayOfYear) {
     }
 }
 
+/** Lista todos os devocionais (admin): dia, título, preview e hash para detetar duplicados. */
+async function getAllDevotionals365ForAdmin() {
+    const client = await db.pool.connect();
+    try {
+        const r = await client.query(
+            `SELECT day_of_year, titulo, versiculo_ref,
+                    LEFT(COALESCE(reflexao, ''), 200) AS reflexao_preview,
+                    MD5(COALESCE(reflexao, ''))::text AS reflexao_hash
+             FROM bible_devotionals_365
+             ORDER BY day_of_year ASC`
+        );
+        return r.rows || [];
+    } finally {
+        client.release();
+    }
+}
+
 /** Lista quais dias (1-365) possuem devocional cadastrado. Para uso admin. */
 async function getDevotionals365DaysWithContent() {
     const client = await db.pool.connect();
@@ -671,6 +688,7 @@ module.exports = {
     markRead,
     resetProgress,
     getDevocional365,
+    getAllDevotionals365ForAdmin,
     getDevotionals365DaysWithContent,
     upsertDevocional365,
     deleteDevocional365,
