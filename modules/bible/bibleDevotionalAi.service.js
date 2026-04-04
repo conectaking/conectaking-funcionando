@@ -374,8 +374,16 @@ Use versiculo_texto vazio (o servidor preenche com a NVI quando possível).`;
     }
 }
 
-const MODEL_BOOK_STUDY = process.env.BIBLE_BOOK_STUDY_AI_MODEL || process.env.BIBLE_DEV365_AI_MODEL || 'gpt-4o-mini';
-const BOOK_STUDY_MAX_TOKENS = Math.min(16384, Math.max(4000, parseInt(process.env.BIBLE_BOOK_STUDY_MAX_TOKENS, 10) || 12000));
+/**
+ * Estudos por livro — ordem de preferência do modelo:
+ * 1) BIBLE_BOOK_STUDY_AI_MODEL (recomendado: gpt-4o para textos longos e coerentes)
+ * 2) BIBLE_DEV365_AI_MODEL (se já definido para os 365)
+ * 3) gpt-4o — fallback "melhor qualidade" para estudos (custo maior que mini)
+ *
+ * Tokens: BIBLE_BOOK_STUDY_MAX_TOKENS (máx. 16384). Recomendado 15000–16000 para não cortar Êxodo/Levítico densos.
+ */
+const MODEL_BOOK_STUDY = process.env.BIBLE_BOOK_STUDY_AI_MODEL || process.env.BIBLE_DEV365_AI_MODEL || 'gpt-4o';
+const BOOK_STUDY_MAX_TOKENS = Math.min(16384, Math.max(4000, parseInt(process.env.BIBLE_BOOK_STUDY_MAX_TOKENS, 10) || 15000));
 
 /**
  * Directivas extra por livro: obriga desenvolvimento de tópicos de alto impacto (ex.: dez pragas em Êxodo).
