@@ -221,7 +221,10 @@ router.post('/bible/devotionals-365/day/:day/generate-ai', protectAdmin, async (
         const r = await bibleAdminDev365.generateDayAndSave(day, year, {
             temaModo: req.body.temaModo || 'mes_auto',
             temaPersonalizado: req.body.temaPersonalizado || '',
-            estilo: req.body.estilo === 'cunha' ? 'cunha' : 'padrao'
+            estilo: req.body.estilo === 'cunha' ? 'cunha' : 'padrao',
+            fullTheme: req.body && Object.prototype.hasOwnProperty.call(req.body, 'fullTheme')
+                ? dev365FullThemeFlag(req.body)
+                : true
         });
         if (!r.ok) return res.status(400).json({ success: false, message: r.error || 'Falha ao gerar.' });
         res.json({ success: true, data: r.data });
