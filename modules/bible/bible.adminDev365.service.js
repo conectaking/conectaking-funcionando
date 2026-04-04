@@ -389,7 +389,8 @@ function startCalendarMonthsBackgroundJob(year, monthsInput, options) {
         startedAt: Date.now(),
         updatedAt: Date.now(),
         errorMessage: null,
-        failedSamples: []
+        failedSamples: [],
+        cancelRequested: false
     };
     dev365GenJobs.set(jobId, job);
     setImmediate(function () {
@@ -404,6 +405,18 @@ function startCalendarMonthsBackgroundJob(year, monthsInput, options) {
         });
     });
     return { ok: true, jobId, total: days.length };
+}
+
+function cancelDev365GenerationJob(jobId) {
+    const j = dev365GenJobs.get(jobId);
+    if (!j) {
+        return { ok: false, error: 'Trabalho não encontrado ou já expirou.' };
+    }
+    if (j.status === 'done' || j.status === 'error' || j.status === 'cancelled') {
+        return { ok: false, error: 'Este trabalho já terminou.' };
+    }
+    j.cancelRequested = true;
+    return { ok: true };
 }
 
 function getDev365GenerationJob(jobId) {
@@ -446,6 +459,7 @@ module.exports = {
     generateMonthAndSave,
     getDayOfYearListForCalendarMonth,
     startCalendarMonthsBackgroundJob,
+    cancelDev365GenerationJob,
     getDev365GenerationJob,
     MONTH_THEMES_FILE
 };

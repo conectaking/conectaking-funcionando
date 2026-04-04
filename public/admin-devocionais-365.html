@@ -52,6 +52,14 @@
         .modal pre { white-space: pre-wrap; font-size: 0.88rem; color: #ccc; line-height: 1.55; }
         .auth-bar { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .token-input { flex: 1; min-width: 200px; }
+        textarea { padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.35); color: #e8e8e8; font-size: 0.88rem; width: 100%; min-height: 52px; resize: vertical; font-family: inherit; }
+        .theme-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; margin-bottom: 10px; }
+        .theme-row label { font-size: 0.82rem; color: #aaa; margin-bottom: 4px; }
+        .progress-wrap { margin-top: 12px; background: rgba(0,0,0,0.35); border-radius: 8px; height: 10px; overflow: hidden; border: 1px solid rgba(255,199,0,0.2); }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, #b8860b, #FFC700); width: 0%; transition: width 0.3s ease; }
+        .job-status { font-size: 0.82rem; color: #aaa; margin-top: 8px; line-height: 1.45; }
+        .month-checks { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 10px 0; font-size: 0.85rem; }
+        .month-checks label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: #ccc; margin: 0; }
     </style>
 </head>
 <body>
@@ -67,6 +75,12 @@
             </label>
             <button type="button" class="btn btn-secondary" id="btn-save-token"><i class="fas fa-save"></i> Usar token</button>
         </div>
+        <div class="auth-bar" style="margin-top:-8px">
+            <label style="flex:1;min-width:260px">URL base da API (obrigatório se esta página está no Hostinger sem /api — ex.: <code style="color:#7dd3fc">https://seu-app.onrender.com</code>)
+                <input type="text" class="token-input" id="api-base-url" placeholder="Deixe vazio para usar o mesmo domínio desta página" autocomplete="off">
+            </label>
+            <button type="button" class="btn btn-secondary" id="btn-save-api-base"><i class="fas fa-link"></i> Guardar URL</button>
+        </div>
 
         <div class="tabs" role="tablist">
             <button type="button" class="active" data-tab="dev365"><i class="fas fa-calendar-alt"></i> Devocionais 365</button>
@@ -76,6 +90,43 @@
         </div>
 
         <section id="panel-dev365" class="panel active">
+            <div class="card">
+                <h2><i class="fas fa-palette"></i> Temas por mês (ficheiro no servidor)</h2>
+                <p style="margin-bottom:12px">Os temas são gravados em <code style="color:#7dd3fc">data/bible/dev365_month_themes.json</code> no servidor da API. Use a URL da API acima se o site estático não tiver <code>/api</code>.</p>
+                <div class="row">
+                    <div>
+                        <label for="themes-year">Ano dos temas</label>
+                        <input type="number" id="themes-year" min="2000" max="2100" style="width:100px">
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="btn-themes-load"><i class="fas fa-download"></i> Carregar temas</button>
+                    <button type="button" class="btn btn-secondary" id="btn-themes-save"><i class="fas fa-save"></i> Guardar temas editados</button>
+                    <button type="button" class="btn btn-secondary" id="btn-themes-generate-all"><i class="fas fa-magic"></i> Gerar linha para os 12 meses (automático)</button>
+                    <button type="button" class="btn btn-secondary" id="btn-themes-export"><i class="fas fa-file-export"></i> Exportar JSON</button>
+                </div>
+                <div id="themes-months-host" style="margin-top:14px"></div>
+            </div>
+
+            <div class="card" id="card-batch-job">
+                <h2><i class="fas fa-cloud"></i> Gerar vários meses (civil) — síncrono ou segundo plano</h2>
+                <p style="margin-bottom:10px">Marque os meses e o ano civil. <strong>Gerar agora</strong> bloqueia até terminar. <strong>Segundo plano</strong> continua no servidor; ao recarregar a página, o progresso reaparece se o trabalho ainda existir na memória do Render.</p>
+                <div class="row">
+                    <div>
+                        <label for="batch-year">Ano civil</label>
+                        <input type="number" id="batch-year" min="2000" max="2100" style="width:100px">
+                    </div>
+                </div>
+                <div class="month-checks" id="batch-month-checks"></div>
+                <div class="row" style="margin-top:8px">
+                    <button type="button" class="btn" id="btn-batch-sync"><i class="fas fa-play"></i> Gerar agora (síncrono)</button>
+                    <button type="button" class="btn btn-secondary" id="btn-batch-async"><i class="fas fa-server"></i> Gerar em segundo plano (servidor)</button>
+                    <button type="button" class="btn btn-secondary" id="btn-batch-stop" style="display:none;border-color:rgba(220,80,80,0.5);color:#f5a097"><i class="fas fa-stop"></i> Parar</button>
+                </div>
+                <div id="batch-job-panel" style="display:none;margin-top:14px">
+                    <div class="progress-wrap"><div class="progress-bar" id="batch-progress-bar"></div></div>
+                    <p class="job-status" id="batch-job-status"></p>
+                </div>
+            </div>
+
             <div class="card">
                 <h2><i class="fas fa-robot"></i> Gerar com IA — por dia ou por mês civil</h2>
                 <p style="margin-bottom:14px">Use os atalhos abaixo ou a tabela. Cada pedido chama a API no servidor (OpenAI configurada no Render).</p>
@@ -226,8 +277,10 @@
 
     <script>
 (function () {
-    var API = '';
     var yNow = new Date().getFullYear();
+    var LS_API = 'CONECTAKING_API_BASE';
+    var LS_JOB = 'dev365_bg_job_id';
+    var bgPollTimer = null;
 
     function flash(msg, kind) {
         var el = document.getElementById('flash');
@@ -248,9 +301,27 @@
         } catch (e) { return ''; }
     }
 
-    function setApiBase() {
-        API = window.location.origin.replace(/\/$/, '');
-        document.getElementById('link-biblia-api').href = API + '/bible.html';
+    function getApiBase() {
+        var el = document.getElementById('api-base-url');
+        var v = el && el.value.trim();
+        if (v) return v.replace(/\/$/, '');
+        try {
+            v = localStorage.getItem(LS_API);
+            if (v) return v.replace(/\/$/, '');
+        } catch (e) {}
+        return window.location.origin.replace(/\/$/, '');
+    }
+
+    function setApiBaseUi() {
+        var el = document.getElementById('api-base-url');
+        if (el) {
+            try {
+                var s = localStorage.getItem(LS_API);
+                if (s && !el.value.trim()) el.value = s;
+            } catch (e) {}
+        }
+        var link = document.getElementById('link-biblia-api');
+        if (link) link.href = getApiBase() + '/bible.html';
     }
 
     function apiFetch(path, opts) {
@@ -259,12 +330,306 @@
         var tok = getToken();
         if (tok) headers['Authorization'] = 'Bearer ' + tok;
         headers['Content-Type'] = headers['Content-Type'] || 'application/json';
-        return fetch(API + path, Object.assign({}, opts, { headers: headers }));
+        var base = getApiBase();
+        return fetch(base + path, Object.assign({}, opts, { headers: headers }));
+    }
+
+    function monthNamesPt() {
+        return ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    }
+
+    function buildThemesHost() {
+        var host = document.getElementById('themes-months-host');
+        var names = monthNamesPt();
+        host.innerHTML = names.map(function (nm, i) {
+            var m = i + 1;
+            return '<div class="theme-row"><div><label for="theme-m-' + m + '">' + nm + '</label>' +
+                '<textarea id="theme-m-' + m + '" rows="2" placeholder="Tema ou linha de orientação para o mês…"></textarea></div>' +
+                '<button type="button" class="btn btn-secondary btn-sm btn-theme-gen" data-month="' + m + '">Gerar</button></div>';
+        }).join('');
+        host.querySelectorAll('.btn-theme-gen').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var mo = parseInt(b.getAttribute('data-month'), 10);
+                var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
+                var hintEl = document.getElementById('theme-m-' + mo);
+                var hint = hintEl ? hintEl.value.trim() : '';
+                b.disabled = true;
+                apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr + '/generate/' + mo, {
+                    method: 'POST',
+                    body: JSON.stringify({ hint: hint })
+                })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                    .then(function (x) {
+                        if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha');
+                        var t = x.j.data && x.j.data.text;
+                        if (hintEl && t) hintEl.value = t;
+                        flash('Tema do mês ' + mo + ' gerado e guardado no servidor.', 'ok');
+                    })
+                    .catch(function (e) { flash(e.message || 'Erro ao gerar tema.', 'err'); })
+                    .finally(function () { b.disabled = false; });
+            });
+        });
+    }
+
+    function buildBatchMonthChecks() {
+        var host = document.getElementById('batch-month-checks');
+        var names = monthNamesPt();
+        host.innerHTML = names.map(function (nm, i) {
+            var m = i + 1;
+            return '<label><input type="checkbox" class="batch-m-cb" value="' + m + '" ' + (m === 1 ? 'checked' : '') + '> ' + nm + '</label>';
+        }).join('');
+    }
+
+    function getSelectedBatchMonths() {
+        var out = [];
+        document.querySelectorAll('.batch-m-cb:checked').forEach(function (cb) {
+            out.push(parseInt(cb.value, 10));
+        });
+        return out.sort(function (a, b) { return a - b; });
+    }
+
+    function applyJobUi(d) {
+        var panel = document.getElementById('batch-job-panel');
+        var bar = document.getElementById('batch-progress-bar');
+        var st = document.getElementById('batch-job-status');
+        var btnStop = document.getElementById('btn-batch-stop');
+        if (!d) {
+            panel.style.display = 'none';
+            btnStop.style.display = 'none';
+            return;
+        }
+        panel.style.display = 'block';
+        btnStop.style.display = (d.status === 'running' || d.status === 'queued') ? 'inline-flex' : 'none';
+        var pct = d.progress != null ? d.progress : 0;
+        bar.style.width = Math.min(100, pct) + '%';
+        var eta = d.etaMinutes != null ? ' • ~' + d.etaMinutes + ' min restantes' : '';
+        var cur = d.currentDay != null ? ' • a gerar: dia ' + d.currentDay : '';
+        st.textContent = (pct || 0) + '%' + eta + ' • ' + (d.processed || 0) + '/' + (d.total || 0) + ' dias' + cur +
+            ' — estado: ' + (d.status || '?') + (d.errorMessage ? ' — ' + d.errorMessage : '') +
+            ' — última actualização: ' + new Date().toLocaleTimeString('pt-BR');
+    }
+
+    function stopBgPoll() {
+        if (bgPollTimer) {
+            clearInterval(bgPollTimer);
+            bgPollTimer = null;
+        }
+    }
+
+    function pollJob(jobId) {
+        apiFetch('/api/admin/bible/devotionals-365/generation-job/' + encodeURIComponent(jobId))
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j, status: r.status }; }); })
+            .then(function (x) {
+                if (x.status === 404 || !x.ok) {
+                    try { localStorage.removeItem(LS_JOB); } catch (e) {}
+                    stopBgPoll();
+                    applyJobUi(null);
+                    flash('Trabalho em segundo plano não encontrado (servidor reiniciou ou expirou).', 'warn');
+                    return;
+                }
+                if (!x.j.success || !x.j.data) {
+                    applyJobUi(null);
+                    return;
+                }
+                var d = x.j.data;
+                applyJobUi(d);
+                if (d.status === 'done' || d.status === 'error' || d.status === 'cancelled') {
+                    try { localStorage.removeItem(LS_JOB); } catch (e) {}
+                    stopBgPoll();
+                    if (d.status === 'done') flash('Geração em segundo plano concluída.', 'ok');
+                    else if (d.status === 'cancelled') flash('Geração em segundo plano cancelada.', 'warn');
+                    else flash('Geração em segundo plano terminou com erro.', 'err');
+                    loadTable();
+                }
+            })
+            .catch(function () {
+                flash('Erro ao consultar estado do trabalho.', 'err');
+            });
+    }
+
+    function startBgPoll(jobId) {
+        try { localStorage.setItem(LS_JOB, jobId); } catch (e) {}
+        stopBgPoll();
+        pollJob(jobId);
+        bgPollTimer = setInterval(function () { pollJob(jobId); }, 4000);
+    }
+
+    function resumeBgJobIfAny() {
+        var id;
+        try { id = localStorage.getItem(LS_JOB); } catch (e) { id = null; }
+        if (!id) return;
+        startBgPoll(id);
     }
 
     document.getElementById('gen-year-day').value = yNow;
     document.getElementById('gen-year-month').value = yNow;
     document.getElementById('filtro-ano-tabela').value = yNow;
+    document.getElementById('themes-year').value = yNow;
+    document.getElementById('batch-year').value = yNow;
+
+    document.getElementById('btn-save-api-base').addEventListener('click', function () {
+        var v = document.getElementById('api-base-url').value.trim();
+        if (!v) {
+            try { localStorage.removeItem(LS_API); } catch (e) {}
+            setApiBaseUi();
+            flash('A usar o domínio desta página. Se Carregar temas falhar, volte a indicar a URL da API (Render).', 'warn');
+            return;
+        }
+        try {
+            localStorage.setItem(LS_API, v.replace(/\/$/, ''));
+            setApiBaseUi();
+            flash('URL da API guardada. Carregar/Guardar temas e geração passam a usar este servidor.', 'ok');
+        } catch (e) {
+            flash('Não foi possível guardar.', 'err');
+        }
+    });
+
+    function collectThemesBody() {
+        var o = {};
+        for (var m = 1; m <= 12; m++) {
+            var el = document.getElementById('theme-m-' + m);
+            o[String(m)] = el ? (el.value || '').trim() : '';
+        }
+        return o;
+    }
+
+    function fillThemesFromServer(themes) {
+        themes = themes || {};
+        for (var m = 1; m <= 12; m++) {
+            var el = document.getElementById('theme-m-' + m);
+            if (el) el.value = themes[String(m)] != null ? String(themes[String(m)]) : '';
+        }
+    }
+
+    document.getElementById('btn-themes-load').addEventListener('click', function () {
+        var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
+        var btn = document.getElementById('btn-themes-load');
+        btn.disabled = true;
+        apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr)
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (x) {
+                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha ao carregar (verifique token e URL da API).');
+                fillThemesFromServer(x.j.data && x.j.data.themes);
+                flash('Temas do ano ' + yr + ' carregados do servidor.', 'ok');
+            })
+            .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
+            .finally(function () { btn.disabled = false; });
+    });
+
+    document.getElementById('btn-themes-save').addEventListener('click', function () {
+        var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
+        var btn = document.getElementById('btn-themes-save');
+        btn.disabled = true;
+        apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr, {
+            method: 'PUT',
+            body: JSON.stringify(collectThemesBody())
+        })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (x) {
+                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha ao guardar.');
+                flash('Temas guardados no servidor para o ano ' + yr + '.', 'ok');
+            })
+            .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
+            .finally(function () { btn.disabled = false; });
+    });
+
+    document.getElementById('btn-themes-generate-all').addEventListener('click', function () {
+        var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
+        if (!confirm('Gerar automaticamente uma linha de tema para cada um dos 12 meses de ' + yr + '? Isto chama a IA várias vezes.')) return;
+        var btn = document.getElementById('btn-themes-generate-all');
+        btn.disabled = true;
+        apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr + '/generate-all', {
+            method: 'POST',
+            body: JSON.stringify({ delayMs: 400 })
+        })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (x) {
+                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha.');
+                fillThemesFromServer(x.j.data && x.j.data.themes);
+                flash('Temas gerados e guardados no servidor.', 'ok');
+            })
+            .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
+            .finally(function () { btn.disabled = false; });
+    });
+
+    document.getElementById('btn-themes-export').addEventListener('click', function () {
+        var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
+        var blob = new Blob([JSON.stringify({ year: yr, themes: collectThemesBody() }, null, 2)], { type: 'application/json' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'dev365_temas_' + yr + '.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        flash('Ficheiro JSON descarregado (cópia de segurança local).', 'ok');
+    });
+
+    document.getElementById('btn-batch-sync').addEventListener('click', function () {
+        var months = getSelectedBatchMonths();
+        if (!months.length) { flash('Seleccione pelo menos um mês.', 'err'); return; }
+        var year = parseInt(document.getElementById('batch-year').value, 10) || yNow;
+        var delayMs = parseInt(document.getElementById('gen-delay').value, 10) || 400;
+        if (!confirm('Gerar com IA todos os dias dos meses seleccionados em ' + year + ', um mês após o outro? O navegador fica à espera até terminar.')) return;
+        var btn = document.getElementById('btn-batch-sync');
+        btn.disabled = true;
+        var o = bodyGenOpts();
+        var chain = Promise.resolve();
+        months.forEach(function (m) {
+            chain = chain.then(function () {
+                return apiFetch('/api/admin/bible/devotionals-365/generate-month-ai/' + year + '/' + m, {
+                    method: 'POST',
+                    body: JSON.stringify(Object.assign({ delayMs: delayMs }, o))
+                }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                    .then(function (x) {
+                        if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || ('Mês ' + m + ' falhou'));
+                    });
+            });
+        });
+        chain
+            .then(function () { flash('Todos os meses seleccionados foram gerados.', 'ok'); loadTable(); })
+            .catch(function (e) { flash(e.message || 'Erro na geração síncrona.', 'err'); })
+            .finally(function () { btn.disabled = false; });
+    });
+
+    document.getElementById('btn-batch-async').addEventListener('click', function () {
+        var months = getSelectedBatchMonths();
+        if (!months.length) { flash('Seleccione pelo menos um mês.', 'err'); return; }
+        var year = parseInt(document.getElementById('batch-year').value, 10) || yNow;
+        var delayMs = parseInt(document.getElementById('gen-delay').value, 10) || 400;
+        var o = bodyGenOpts();
+        var btn = document.getElementById('btn-batch-async');
+        btn.disabled = true;
+        apiFetch('/api/admin/bible/devotionals-365/generate-calendar-months-async', {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({ year: year, months: months, delayMs: delayMs }, o))
+        })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j, status: r.status }; }); })
+            .then(function (x) {
+                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Falha ao iniciar trabalho.');
+                var jobId = x.j.data && x.j.data.jobId;
+                if (!jobId) throw new Error('Sem jobId.');
+                flash('Geração em segundo plano iniciada. Pode recarregar a página — o progresso continua enquanto o servidor não reiniciar.', 'ok');
+                startBgPoll(jobId);
+            })
+            .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
+            .finally(function () { btn.disabled = false; });
+    });
+
+    document.getElementById('btn-batch-stop').addEventListener('click', function () {
+        var id;
+        try { id = localStorage.getItem(LS_JOB); } catch (e) { id = null; }
+        if (!id) { flash('Nenhum trabalho activo.', 'warn'); return; }
+        var btn = document.getElementById('btn-batch-stop');
+        btn.disabled = true;
+        apiFetch('/api/admin/bible/devotionals-365/generation-job/' + encodeURIComponent(id) + '/cancel', { method: 'POST', body: '{}' })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (x) {
+                if (!x.ok || !x.j.success) throw new Error((x.j && x.j.message) || 'Não cancelou');
+                flash('Pedido de paragem enviado (termina após o dia actual).', 'ok');
+                pollJob(id);
+            })
+            .catch(function (e) { flash(e.message || 'Erro.', 'err'); })
+            .finally(function () { btn.disabled = false; });
+    });
 
     document.getElementById('btn-save-token').addEventListener('click', function () {
         var v = document.getElementById('token-manual').value.trim();
@@ -499,9 +864,25 @@
         if (e.target.id === 'modal-ver') document.getElementById('modal-ver').classList.remove('show');
     });
 
-    setApiBase();
+    buildThemesHost();
+    buildBatchMonthChecks();
+    setApiBaseUi();
     buildMonthQuick();
     loadTable();
+    resumeBgJobIfAny();
+
+    (function tryLoadThemesOnStart() {
+        if (!getToken()) return;
+        var yr = parseInt(document.getElementById('themes-year').value, 10) || yNow;
+        apiFetch('/api/admin/bible/devotionals-365/month-themes/' + yr)
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (x) {
+                if (x.ok && x.j.success && x.j.data && x.j.data.themes) {
+                    fillThemesFromServer(x.j.data.themes);
+                }
+            })
+            .catch(function () { /* página estática sem API: ignorar */ });
+    })();
 })();
     </script>
 </body>

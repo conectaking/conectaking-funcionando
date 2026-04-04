@@ -302,6 +302,19 @@ router.post('/bible/devotionals-365/generate-calendar-months-async', protectAdmi
     }
 });
 
+/** POST /api/admin/bible/devotionals-365/generation-job/:jobId/cancel — Pedido de paragem (processa após o dia atual). */
+router.post('/bible/devotionals-365/generation-job/:jobId/cancel', protectAdmin, async (req, res) => {
+    try {
+        const out = bibleAdminDev365.cancelDev365GenerationJob(req.params.jobId);
+        if (!out.ok) {
+            return res.status(400).json({ success: false, message: out.error || 'Não foi possível cancelar.' });
+        }
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 /** GET /api/admin/bible/devotionals-365/generation-job/:jobId — Estado do trabalho em segundo plano (memória do processo). */
 router.get('/bible/devotionals-365/generation-job/:jobId', protectAdmin, async (req, res) => {
     try {
