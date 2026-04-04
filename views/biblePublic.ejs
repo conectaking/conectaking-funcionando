@@ -279,7 +279,7 @@
         <!-- Receba mais de Deus hoje -->
         <div class="receba-card">
             <h2>Receba mais de Deus hoje:</h2>
-            <p class="receba-hint">Versículo com reflexão, salmo, leitura sequencial por capítulos, <strong>devocional diário</strong> (cronograma anual) e mais — cada opção tem um propósito diferente.</p>
+            <p class="receba-hint">Versículo com reflexão, salmo, leitura sequencial por capítulos, <strong>devocional diário</strong> (mesmo texto do Devocional 365 do painel) e mais — cada opção tem um propósito diferente.</p>
             <div class="receba-grid">
                 <div class="receba-item active" data-tipo="versiculo">
                     <span><i class="fas fa-book-open" style="margin-right:8px"></i>Versículo do dia</span>
@@ -378,12 +378,12 @@
                     <button type="button" class="bible-btn secondary" id="btn-plano-today"><i class="fas fa-calendar-day"></i> Dia de hoje</button>
                 </div>
                 <p id="plano-date-hint" style="font-size:0.88rem;color:#FFC700;margin:0 0 16px;line-height:1.45"></p>
-                <div id="plano-content"><p style="color:#A1A1A1;font-size:0.9rem">Escolha uma data ou um número de dia e clique em Carregar, ou use Dia de hoje.</p></div>
-                <div class="bible-actions" id="plano-actions" style="display:none;margin-top:16px;flex-wrap:wrap;gap:10px;align-items:center">
+                <div class="bible-actions" id="plano-actions" style="display:none;margin-bottom:16px;flex-wrap:wrap;gap:10px;align-items:center">
                     <button type="button" class="bible-btn" id="plano-btn-ouvir" title="Ouvir"><i class="fas fa-volume-up"></i> Ouvir</button>
                     <button type="button" class="bible-btn" id="plano-btn-share"><i class="fas fa-share-alt"></i> Compartilhar</button>
                     <button type="button" class="bible-btn secondary" id="plano-btn-mark-read" title="Marcar este dia como lido"><i class="far fa-check-circle"></i> Marcar como lido</button>
                 </div>
+                <div id="plano-content"><p style="color:#A1A1A1;font-size:0.9rem">Escolha uma data ou um número de dia e clique em Carregar, ou use Dia de hoje.</p></div>
             </div>
             <div id="receba-estudo-livro" class="receba-content">
                 <p style="font-size:0.95rem;color:#A1A1A1;margin-bottom:16px">Introduções e estudos publicados no cartão. Conteúdo é definido pelo administrador; para gerar ou revisar estudos com apoio de IA, use o <strong>painel Conecta King</strong> (gestão da Bíblia).</p>
@@ -1009,6 +1009,7 @@
                 }
                 if (pdate && !pdate.value) setPlanoDateInputFromDay(cur);
                 updatePlanoDateHint(cur);
+                loadPlanoDay(cur);
             }
 
             function bindPlanoMarkRead(dayNum) {
@@ -1022,7 +1023,7 @@
                     .then(function (r) { return r.json(); })
                     .then(function (j) {
                         var read = (j.data && j.data.read) || [];
-                        var isRead = read.some(function (row) { return row.day_of_year === dayNum; });
+                        var isRead = read.some(function (row) { return Number(row.day_of_year) === dayNum; });
                         if (isRead) {
                             btn.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> Lido';
                             btn.disabled = true;
@@ -1067,18 +1068,32 @@
                     var yCal = getPlanoYearFromInputs();
                     var dtCal = dayOfYearToDate(d, yCal);
                     var dataFmt = dtCal.getDate() + ' de ' + dtCal.toLocaleDateString('pt-BR', { month: 'long' }) + ' de ' + dtCal.getFullYear();
+                    function planoDevTrim(x) { return (x == null || x === '') ? '' : String(x).trim(); }
                     var html = '<p style="color:#FFC700;font-size:0.92rem;margin-bottom:8px"><i class="fas fa-calendar-alt" style="margin-right:8px;opacity:0.9"></i>' + dataFmt + '</p>';
                     html += '<p style="color:#e8e8e8;margin-bottom:12px"><strong>Dia ' + d + '</strong> — Leitura: ' + (data.summary || bookId + ' cap. ' + from + (to > from ? ' a ' + to : '')) + '</p><p style="margin-bottom:12px">' + links.join(' ') + '</p>';
-                    if (data.devocional && (data.devocional.titulo || data.devocional.reflexao || data.devocional.aplicacao || data.devocional.oracao)) {
-                        var dev = data.devocional;
+                    var devRaw = data.devocional;
+                    if (devRaw && (planoDevTrim(devRaw.titulo) || planoDevTrim(devRaw.versiculo_ref) || planoDevTrim(devRaw.versiculo_texto) || planoDevTrim(devRaw.reflexao) || planoDevTrim(devRaw.aplicacao) || planoDevTrim(devRaw.oracao))) {
+                        var dev = {
+                            titulo: planoDevTrim(devRaw.titulo),
+                            versiculo_ref: planoDevTrim(devRaw.versiculo_ref),
+                            versiculo_texto: planoDevTrim(devRaw.versiculo_texto),
+                            reflexao: planoDevTrim(devRaw.reflexao),
+                            aplicacao: planoDevTrim(devRaw.aplicacao),
+                            oracao: planoDevTrim(devRaw.oracao)
+                        };
                         html += '<div class="bible-card" style="margin-top:16px;padding:14px;border-radius:10px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.08)">';
+                        html += '<div style="font-size:0.78rem;color:#A1A1A1;margin-bottom:10px;letter-spacing:0.02em">Devocional 365 (painel)</div>';
                         html += '<div class="bible-ref">' + (dev.titulo || 'Devocional') + '</div>';
-                        if (dev.versiculo_ref) html += '<div style="color:#FFC700;font-size:0.9rem;margin:8px 0">' + String(dev.versiculo_ref).replace(/</g, '&lt;') + '</div>';
-                        if (dev.versiculo_texto) html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.6">' + String(dev.versiculo_texto || '').replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</div>';
-                        if (dev.reflexao) html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.75;margin-top:12px">' + String(dev.reflexao || '').replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</div>';
-                        if (dev.aplicacao) html += '<div class="bible-reflexao" style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1)"><strong style="font-size:1rem;color:#FFC700">Aplicação prática</strong><p style="margin-top:10px;font-size:1rem;line-height:1.75;color:#ccc">' + String(dev.aplicacao).replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p></div>';
-                        if (dev.oracao) html += '<div class="bible-reflexao" style="margin-top:18px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1rem;line-height:1.8;font-style:italic;color:#e8e8e8">' + String(dev.oracao).replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p></div>';
+                        if (dev.versiculo_ref) html += '<div style="color:#FFC700;font-size:0.9rem;margin:8px 0">' + dev.versiculo_ref.replace(/</g, '&lt;') + '</div>';
+                        if (dev.versiculo_texto) html += '<div class="bible-text" style="color:#e8e8e8;line-height:1.6">' + dev.versiculo_texto.replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</div>';
+                        if (dev.reflexao) html += '<div style="margin-top:14px"><strong style="font-size:0.9rem;color:#FFC700;display:block;margin-bottom:8px">Reflexão</strong><div class="bible-text" style="color:#e8e8e8;line-height:1.75">' + dev.reflexao.replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</div></div>';
+                        if (dev.aplicacao) html += '<div class="bible-reflexao" style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1)"><strong style="font-size:1rem;color:#FFC700">Aplicação prática</strong><p style="margin-top:10px;font-size:1rem;line-height:1.75;color:#ccc">' + dev.aplicacao.replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p></div>';
+                        else html += '<p style="margin-top:16px;font-size:0.88rem;color:#888;line-height:1.5"><em>Aplicação prática:</em> ainda não cadastrada no painel para o dia ' + d + '.</p>';
+                        if (dev.oracao) html += '<div class="bible-reflexao" style="margin-top:18px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1rem;line-height:1.8;font-style:italic;color:#e8e8e8">' + dev.oracao.replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p></div>';
+                        else html += '<p style="margin-top:14px;font-size:0.88rem;color:#888;line-height:1.5"><em>Oração:</em> ainda não cadastrada no painel para o dia ' + d + '.</p>';
                         html += '</div>';
+                    } else {
+                        html += '<p style="margin-top:14px;font-size:0.9rem;color:#A1A1A1;line-height:1.5">Não há texto de devocional cadastrado no painel (Devocional 365) para o <strong>dia ' + d + '</strong>. Publique o conteúdo no administrador para este dia.</p>';
                     }
                     el.innerHTML = html;
                     currentPlanoData = data;

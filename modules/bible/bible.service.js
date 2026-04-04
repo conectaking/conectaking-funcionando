@@ -405,17 +405,32 @@ function getReadingPlanDayFallback(dayNumber) {
     };
 }
 
+/** Mesmo registro editado no painel em Devocional 365 (bible_devotionals_365). */
+function shapeDevocional365ForPublic(row) {
+    if (!row || typeof row !== 'object') return null;
+    return {
+        titulo: row.titulo != null ? String(row.titulo) : null,
+        versiculo_ref: row.versiculo_ref != null ? String(row.versiculo_ref) : null,
+        versiculo_texto: row.versiculo_texto != null ? String(row.versiculo_texto) : null,
+        reflexao: row.reflexao != null ? String(row.reflexao) : null,
+        aplicacao: row.aplicacao != null ? String(row.aplicacao) : null,
+        oracao: row.oracao != null ? String(row.oracao) : null
+    };
+}
+
 async function getReadingPlanDay(dayNumber) {
     const repo = require('./bible.repository');
     const dayRow = await repo.getReadingPlanDay(dayNumber);
     if (dayRow) {
-        const devocional = await repo.getDevocional365(dayNumber);
-        return { ...dayRow, devocional: devocional || null };
+        const raw = await repo.getDevocional365(dayNumber);
+        const devocional = shapeDevocional365ForPublic(raw);
+        return { ...dayRow, devocional };
     }
     const fallback = getReadingPlanDayFallback(dayNumber);
     if (fallback) {
-        const devocional = await repo.getDevocional365(dayNumber);
-        return { ...fallback, devocional: devocional || null };
+        const raw = await repo.getDevocional365(dayNumber);
+        const devocional = shapeDevocional365ForPublic(raw);
+        return { ...fallback, devocional };
     }
     return null;
 }
