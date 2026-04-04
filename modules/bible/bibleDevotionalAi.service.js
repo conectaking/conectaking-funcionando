@@ -232,15 +232,25 @@ async function generateAllMonthThemesForYear(year, delayMs) {
     return { themes, errors };
 }
 
+function normalizeDev365Ref(s) {
+    return String(s || '')
+        .toLowerCase()
+        .replace(/[–—−]/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 /**
  * Gera devocional completo (título, passagem nova, reflexão longa) alinhado ao tema — uso admin.
- * @param {{ dayOfYear: number, year: number, estilo?: string, theme: object }} ctx — theme = saída de resolveThemeForDev365
+ * @param {{ dayOfYear: number, year: number, estilo?: string, theme: object, avoidSnapshots?: Array<{titulo?:string,versiculo_ref?:string}>, retryExtra?: string }} ctx — theme = saída de resolveThemeForDev365
  */
 async function generateFullDevotional365Day(ctx) {
     const dayOfYear = ctx.dayOfYear;
     const year = ctx.year;
     const estilo = (ctx.estilo || 'padrao').toLowerCase() === 'cunha' ? 'cunha' : 'padrao';
     const theme = ctx.theme || {};
+    const avoidSnapshots = Array.isArray(ctx.avoidSnapshots) ? ctx.avoidSnapshots : [];
+    const retryExtra = String(ctx.retryExtra || '').slice(0, 800);
 
     if (!getOpenAiKey()) {
         return { error: 'Chave OpenAI não configurada (OPENAI_API_KEY ou BIBLE_OPENAI_API_KEY).' };
@@ -251,7 +261,19 @@ async function generateFullDevotional365Day(ctx) {
     const temaAno = (theme.tema_ano || '').slice(0, 300);
     const temaMesCal = (theme.tema_mes_calendario || '').slice(0, 300);
 
-    const cacheKey = `dev365-full:${year}:${dayOfYear}:${MODEL}:${estilo}:${fnv1aShort(instr).slice(0, 24)}`;
+    const avoidLines = avoidSnapshots
+        .filter((r) => r && (r.versiculo_ref || r.titulo))
+        .slice(0, 45)
+        .map((r) => {
+            const ref = (r.versiculo_ref || '').trim();
+            const tit = (r.titulo || '').trim();
+            if (ref && tit) return `- ${ref} (título já usado: «${tit.slice(0, 80)}»)`;
+            if (ref) return `- ${ref}`;
+            return `- (título) «${tit.slice(0, 80)}»`;
+        })
+        .join('\n');
+
+    const cacheKey = `dev365-full:${year}:${dayOfYear}:${MODEL}:${estilo}:${fnv1aShort(instr).slice(0, 24)}:${fnv1aShort(avoidLines).slice(0, 16)}:${fnv1aShort(retryExtra).slice(0, 8)}`;
     const hit = cacheGet(cacheKey);
     if (hit) return hit;
 
@@ -263,7 +285,7 @@ ESTILO (obrigatório): Tom de mensagem de rádio cristã brasileira — linguage
             : '';
 
     const userPrompt = `Dia do ano: ${dayOfYear} de 365 · Ano civil: ${year}.
-MODO: GERAÇÃO COMPLETA — você escolhe UM título, UMA passagem bíblica principal e escreve tudo novo (não copie catálogos antigos).
+MODO: GERAÇÃO COMPLETA — você escolhe UM título NOVO, UMA passagem bíblica principal DIFERENTE das listadas abaixo e escreve tudo original (não copie devocionais de outros dias).
 
 TEMA DO MÊS (painel): ${temaMes}
 ${temaMesCal ? `TEMA DO MÊS CALENDÁRIO: ${temaMesCal}\n` : ''}TEMA DO ANO: ${temaAno}
@@ -271,11 +293,15 @@ ${temaMesCal ? `TEMA DO MÊS CALENDÁRIO: ${temaMesCal}\n` : ''}TEMA DO ANO: ${t
 INSTRUÇÃO DE TEMA (obedeça; estruture título + reflexão + aplicação em função disto):
 ${instr || 'Ligue o devocional ao tema do mês e ao contexto do dia.'}
 
+${avoidLines ? `PASSAGENS E TÍTULOS JÁ USADOS (NÃO REPITA — escolha OUTRO livro da Bíblia ou OUTRO capítulo/versículo; há 66 livros, explore variedade):\n${avoidLines}\n` : ''}
+${retryExtra ? `CORREÇÃO OBRIGATÓRIA: ${retryExtra}\n` : ''}
+
 ${estiloCunha}
 
 REGRAS CRÍTICAS:
-- Este é o dia ${dayOfYear} — o conteúdo deve ser ÚNICO e claramente diferente de qualquer outro dia (outra passagem ou outro ângulo na mesma linha temática).
-- Escolha uma passagem que dialogue com o tema. "versiculo_ref" deve ser UMA referência válida em português, nome do livro como na Bíblia NVI no Brasil (ex.: João, Salmos, Romanos, 1 Coríntios, 2 Samuel), formato "Livro capítulo:versículo" ou "Livro capítulo:versículo-versículo" se for trecho curto.
+- Este é o dia ${dayOfYear} — título e "versiculo_ref" devem ser OBRIGATORIAMENTE distintos de qualquer linha da lista acima (nem a mesma passagem com redação diferente).
+- Varie os livros ao longo do calendário: não fique preso a um único livro ou história em dias consecutivos.
+- Escolha uma passagem que dialogue com o tema. "versiculo_ref" deve ser UMA referência válida em português, nome do livro como na Bíblia NVI no Brasil (ex.: João, Salmos, Romanos, 1 Coríntios, 2 Reis), formato "Livro capítulo:versículo" ou "Livro capítulo:versículo-versículo" se for trecho curto.
 - A reflexão deve ser LONGA e PROFUNDA: 6 a 10 parágrafos em português do Brasil, explicando o texto, o contexto espiritual, implicações para a vida, sem superficialidade.
 - Não cite nomes de pastores; não copie texto de terceiros.
 
@@ -291,9 +317,12 @@ Use versiculo_texto vazio (o servidor preenche com a NVI quando possível).`;
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${getOpenAiKey()}`
             },
-            body: JSON.stringify({
+                body: JSON.stringify({
                 model: MODEL,
-                temperature: estilo === 'cunha' ? 0.82 : 0.78,
+                temperature: Math.min(
+                    0.92,
+                    (estilo === 'cunha' ? 0.82 : 0.78) + ((dayOfYear % 11) * 0.008)
+                ),
                 max_tokens: 5200,
                 messages: [
                     {
@@ -354,5 +383,6 @@ module.exports = {
     generateFullDevotional365Day,
     generateMonthThemeLine,
     generateAllMonthThemesForYear,
-    clearDev365Cache
+    clearDev365Cache,
+    normalizeDev365Ref
 };

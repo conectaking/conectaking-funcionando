@@ -104,8 +104,9 @@
                             <option value="cunha">Estilo cunha</option>
                         </select>
                     </div>
-                    <div style="padding-bottom:8px">
-                        <label><input type="checkbox" id="gen-full" checked> Tema completo (reflexão longa)</label>
+                    <div style="padding-bottom:8px;font-size:0.82rem;color:#888">
+                        <input type="hidden" id="gen-full" value="1">
+                        Geração <strong>sempre completa</strong>: novo título, nova passagem e textos (a IA evita repetir versículos já usados no mês).
                     </div>
                     <button type="button" class="btn" id="btn-gen-one-day"><i class="fas fa-magic"></i> Gerar este dia</button>
                 </div>
@@ -296,8 +297,7 @@
         return {
             temaModo: document.getElementById('gen-tema').value,
             temaPersonalizado: '',
-            estilo: document.getElementById('gen-estilo').value,
-            fullTheme: document.getElementById('gen-full').checked
+            estilo: document.getElementById('gen-estilo').value
         };
     }
 

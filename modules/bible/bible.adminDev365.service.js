@@ -96,24 +96,63 @@ async function getAdminDev365List() {
     return { rows };
 }
 
+function collisionDev365WithAvoid(out, rows, norm) {
+    const nr = norm(out.versiculo_ref || '');
+    const nt = norm((out.titulo || '').trim());
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const rr = norm(row.versiculo_ref || '');
+        if (nr.length > 6 && rr.length > 6 && nr === rr) return 'versiculo_ref';
+        const rt = norm((row.titulo || '').trim());
+        if (nt.length > 10 && rt.length > 10 && nt === rt) return 'titulo';
+    }
+    return null;
+}
+
 /**
  * Gera com IA e grava na BD: título, passagem NVI quando possível, reflexão longa — alinhado ao tema.
+ * Usa lista de passagens/títulos já usados no mesmo mês civil (+ lote em memória) para não repetir.
  */
 async function generateDayFullAiAndSave(day, year, options = {}) {
-    devotionalAi.clearDev365Cache();
-    const theme = bibleService.resolveThemeForDev365(day, year, {
+    const y = parseInt(year, 10) || new Date().getFullYear();
+    const md = dayOfYearToMonthDay(day, y);
+    const monthDays = getDayOfYearListForCalendarMonth(y, md.month);
+    const otherDays = monthDays.filter(function (d) {
+        return d !== day;
+    });
+    let avoidRows = await bibleRepository.getDev365SnapshotForDays(otherDays);
+    const sess = Array.isArray(options.sessionAvoid) ? options.sessionAvoid.slice(-42) : [];
+    if (sess.length) {
+        avoidRows = avoidRows.concat(sess);
+    }
+
+    const theme = bibleService.resolveThemeForDev365(day, y, {
         temaModo: options.temaModo || 'mes_auto',
         temaPersonalizado: options.temaPersonalizado || ''
     });
-    const full = await devotionalAi.generateFullDevotional365Day({
-        dayOfYear: day,
-        year,
-        estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao',
-        theme
-    });
-    if (full.error) {
-        return { ok: false, error: full.error };
+    const estilo = options.estilo === 'cunha' ? 'cunha' : 'padrao';
+    const norm = devotionalAi.normalizeDev365Ref;
+
+    let retryExtra = '';
+    let full = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+        devotionalAi.clearDev365Cache();
+        full = await devotionalAi.generateFullDevotional365Day({
+            dayOfYear: day,
+            year: y,
+            estilo,
+            theme,
+            avoidSnapshots: avoidRows,
+            retryExtra
+        });
+        if (full.error) {
+            return { ok: false, error: full.error };
+        }
+        const col = collisionDev365WithAvoid(full, avoidRows, norm);
+        if (!col) break;
+        retryExtra = `Colisão (${col}): não repita essa passagem nem esse título; escolha outro livro ou capítulo da Bíblia, mantendo o tema.`;
     }
+
     let versiculo_texto = full.versiculo_texto || '';
     if (!versiculo_texto && full.versiculo_ref) {
         const t = bibleService.getTextForRef(full.versiculo_ref.trim(), 'nvi');
@@ -131,32 +170,11 @@ async function generateDayFullAiAndSave(day, year, options = {}) {
 }
 
 /**
- * Gera com IA e grava na BD (enriquece reflexão sobre catálogo) ou modo completo (fullTheme).
+ * Gera sempre conteúdo completo novo (título + passagem + textos). O modo antigo só enriquecia a reflexão
+ * e mantinha a mesma referência — causava dias repetidos; foi removido.
  */
 async function generateDayAndSave(day, year, options = {}) {
-    if (options.fullTheme) {
-        return generateDayFullAiAndSave(day, year, options);
-    }
-    const result = await bibleService.getDevocional365(day, {
-        useAi: true,
-        aiExplicitOff: false,
-        year,
-        temaModo: options.temaModo || 'mes_auto',
-        temaPersonalizado: options.temaPersonalizado || '',
-        estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao'
-    });
-    if (!result.ai_gerado) {
-        return { ok: false, error: result.ai_aviso || 'Não foi possível gerar (verifique a chave OpenAI no servidor).' };
-    }
-    await bibleRepository.upsertDevocional365(day, {
-        titulo: result.titulo || '',
-        versiculo_ref: result.versiculo_ref || '',
-        versiculo_texto: result.versiculo_texto || '',
-        reflexao: result.reflexao || '',
-        aplicacao: result.aplicacao || '',
-        oracao: result.oracao || ''
-    });
-    return { ok: true, data: { day_of_year: day, titulo: result.titulo, versiculo_ref: result.versiculo_ref } };
+    return generateDayFullAiAndSave(day, year, options);
 }
 
 /** Gera vários dias em sequência (evite intervalos enormes num único request: use lotes). */
@@ -167,14 +185,22 @@ async function generateRangeAndSave(startDay, endDay, year, options = {}) {
     const b = Math.max(1, Math.min(365, parseInt(endDay, 10) || 365));
     const from = Math.min(a, b);
     const to = Math.max(a, b);
+    const sessionAvoid = [];
     for (let d = from; d <= to; d++) {
         /* eslint-disable no-await-in-loop */
-        const r = await generateDayAndSave(d, year, {
+        const r = await generateDayFullAiAndSave(d, year, {
             temaModo: options.temaModo,
             temaPersonalizado: options.temaPersonalizado,
             estilo: options.estilo,
-            fullTheme: !!options.fullTheme
+            sessionAvoid: sessionAvoid.slice()
         });
+        if (r.ok && r.data) {
+            sessionAvoid.push({
+                day_of_year: d,
+                titulo: r.data.titulo,
+                versiculo_ref: r.data.versiculo_ref
+            });
+        }
         results.push({ day: d, ok: r.ok, error: r.error || null });
         if (delayMs && d < to) {
             await new Promise(function (resolve) {
@@ -199,15 +225,23 @@ async function generateMonthAndSave(year, month, options = {}) {
     const delayMs = Math.max(0, parseInt(options.delayMs, 10) || 400);
     const temaModo = options.temaModo || 'mes_auto';
     const results = [];
+    const sessionAvoid = [];
     for (let i = 0; i < days.length; i++) {
         const d = days[i];
         /* eslint-disable no-await-in-loop */
-        const r = await generateDayAndSave(d, y, {
+        const r = await generateDayFullAiAndSave(d, y, {
             temaModo,
             temaPersonalizado: options.temaPersonalizado || '',
             estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao',
-            fullTheme: !!options.fullTheme
+            sessionAvoid: sessionAvoid.slice()
         });
+        if (r.ok && r.data) {
+            sessionAvoid.push({
+                day_of_year: d,
+                titulo: r.data.titulo,
+                versiculo_ref: r.data.versiculo_ref
+            });
+        }
         results.push({ day: d, ok: r.ok, error: r.error || null });
         if (delayMs && i < days.length - 1) {
             await new Promise(function (resolve) {
@@ -273,20 +307,27 @@ async function executeCalendarMonthsJob(jobId, days, year, options) {
     const delayMs = Math.max(0, parseInt(options.delayMs, 10) || 400);
     const temaModo = options.temaModo || 'mes_auto';
     const estilo = options.estilo === 'cunha' ? 'cunha' : 'padrao';
-    const fullTheme = !!options.fullTheme;
     const total = days.length;
     devotionalAi.clearDev365Cache();
+    const sessionAvoid = [];
     try {
         for (let i = 0; i < days.length; i++) {
             const d = days[i];
             job.currentDay = d;
             job.updatedAt = Date.now();
-            const r = await generateDayAndSave(d, year, {
+            const r = await generateDayFullAiAndSave(d, year, {
                 temaModo,
                 temaPersonalizado: options.temaPersonalizado || '',
                 estilo,
-                fullTheme
+                sessionAvoid: sessionAvoid.slice()
             });
+            if (r.ok && r.data) {
+                sessionAvoid.push({
+                    day_of_year: d,
+                    titulo: r.data.titulo,
+                    versiculo_ref: r.data.versiculo_ref
+                });
+            }
             job.processed = i + 1;
             if (!r.ok) {
                 job.errors += 1;

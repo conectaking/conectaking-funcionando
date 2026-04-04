@@ -634,6 +634,32 @@ async function deleteBookStudy(bookId) {
     }
 }
 
+/** Referências e títulos já gravados para estes dias (evitar repetição na geração IA). */
+async function getDev365SnapshotForDays(dayNumbers) {
+    const client = await db.pool.connect();
+    try {
+        if (!dayNumbers || !dayNumbers.length) return [];
+        const uniq = [...new Set(dayNumbers.map((d) => parseInt(d, 10)).filter((d) => d >= 1 && d <= 365))];
+        if (!uniq.length) return [];
+        const r = await client.query(
+            `SELECT day_of_year, titulo, versiculo_ref
+             FROM bible_devotionals_365
+             WHERE day_of_year = ANY($1::int[])
+               AND (
+                 (versiculo_ref IS NOT NULL AND TRIM(versiculo_ref) <> '')
+                 OR (titulo IS NOT NULL AND TRIM(titulo) <> '')
+               )`,
+            [uniq]
+        );
+        return r.rows || [];
+    } catch (err) {
+        logger.error('bible.repository getDev365SnapshotForDays:', err);
+        return [];
+    } finally {
+        client.release();
+    }
+}
+
 async function getDevotionalReadStatus(userId, visitorId, days) {
     const client = await db.pool.connect();
     try {
@@ -700,6 +726,7 @@ module.exports = {
     searchBibleEcosystem,
     markDevotionalRead,
     getDevotionalReadStatus,
+    getDev365SnapshotForDays,
     getReadingPlanDay,
     getReadingPlanList,
     getBookIdsWithFullStudy,
