@@ -174,14 +174,6 @@ router.post('/bible/study/book/:bookId/upload', protectAdmin, (req, res, next) =
 
 // --- Devocionais 365 (só ADM): listar dias com conteúdo, adicionar/editar, remover ---
 
-function dev365FullThemeFlag(body) {
-    if (!body || body.fullTheme === undefined || body.fullTheme === null) return false;
-    const v = body.fullTheme;
-    if (v === true || v === 1 || v === '1') return true;
-    if (typeof v === 'string' && v.toLowerCase() === 'true') return true;
-    return false;
-}
-
 /** GET /api/admin/bible/devotionals-365/day/:day — Devocional completo (visualização). */
 router.get('/bible/devotionals-365/day/:day', protectAdmin, async (req, res) => {
     const day = parseInt(req.params.day, 10);
@@ -200,10 +192,10 @@ router.get('/bible/devotionals-365/day/:day', protectAdmin, async (req, res) => 
     }
 });
 
-/** GET /api/admin/bible/devotionals-365/admin-full — Lista todos + grupos de possíveis duplicados (hash). */
+/** GET /api/admin/bible/devotionals-365/admin-full — Lista todos os registos (tabela admin). */
 router.get('/bible/devotionals-365/admin-full', protectAdmin, async (req, res) => {
     try {
-        const data = await bibleAdminDev365.findDuplicateDevotionalGroups();
+        const data = await bibleAdminDev365.getAdminDev365List();
         res.json({ success: true, data });
     } catch (e) {
         logger.error('adminBibleStudy admin-full dev365:', e);
@@ -211,7 +203,7 @@ router.get('/bible/devotionals-365/admin-full', protectAdmin, async (req, res) =
     }
 });
 
-/** POST /api/admin/bible/devotionals-365/day/:day/generate-ai — Gera reflexão com IA e grava na BD. */
+/** POST /api/admin/bible/devotionals-365/day/:day/generate-ai — Gera devocional completo com IA e grava na BD. */
 router.post('/bible/devotionals-365/day/:day/generate-ai', protectAdmin, async (req, res) => {
     const day = parseInt(req.params.day, 10);
     let year = parseInt(req.body.year || req.query.year, 10);
@@ -223,8 +215,7 @@ router.post('/bible/devotionals-365/day/:day/generate-ai', protectAdmin, async (
         const r = await bibleAdminDev365.generateDayAndSave(day, year, {
             temaModo: req.body.temaModo || 'mes_auto',
             temaPersonalizado: req.body.temaPersonalizado || '',
-            estilo: req.body.estilo === 'cunha' ? 'cunha' : 'padrao',
-            fullTheme: dev365FullThemeFlag(req.body)
+            estilo: req.body.estilo === 'cunha' ? 'cunha' : 'padrao'
         });
         if (!r.ok) return res.status(400).json({ success: false, message: r.error || 'Falha ao gerar.' });
         res.json({ success: true, data: r.data });
@@ -270,33 +261,11 @@ router.post('/bible/devotionals-365/generate-month-ai/:year/:month', protectAdmi
             delayMs: req.body && req.body.delayMs,
             temaModo: (req.body && req.body.temaModo) || 'mes_auto',
             temaPersonalizado: (req.body && req.body.temaPersonalizado) || '',
-            estilo: req.body && req.body.estilo === 'cunha' ? 'cunha' : 'padrao',
-            fullTheme: dev365FullThemeFlag(req.body || {})
+            estilo: req.body && req.body.estilo === 'cunha' ? 'cunha' : 'padrao'
         });
         res.json({ success: true, data: out });
     } catch (e) {
         logger.error('adminBibleStudy generate-month-ai:', e);
-        res.status(500).json({ success: false, message: e.message || 'Erro.' });
-    }
-});
-
-/** POST /api/admin/bible/devotionals-365/deduplicate-ai — Regenera todos os dias que entram em grupos de reflexão duplicada. Body: year, delayMs, temaModo, estilo, fullTheme (default true). */
-router.post('/bible/devotionals-365/deduplicate-ai', protectAdmin, async (req, res) => {
-    let year = parseInt((req.body && req.body.year) || req.query.year, 10);
-    if (Number.isNaN(year) || year < 2000 || year > 2100) year = new Date().getFullYear();
-    const body = req.body || {};
-    const fullTheme = body.fullTheme === undefined || body.fullTheme === null ? true : dev365FullThemeFlag(body);
-    try {
-        const out = await bibleAdminDev365.regenerateDuplicateDaysAi(year, {
-            delayMs: body.delayMs,
-            temaModo: body.temaModo || 'mes_auto',
-            temaPersonalizado: body.temaPersonalizado || '',
-            estilo: body.estilo === 'cunha' ? 'cunha' : 'padrao',
-            fullTheme
-        });
-        res.json({ success: true, data: out });
-    } catch (e) {
-        logger.error('adminBibleStudy deduplicate-ai dev365:', e);
         res.status(500).json({ success: false, message: e.message || 'Erro.' });
     }
 });

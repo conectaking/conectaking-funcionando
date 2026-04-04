@@ -1,5 +1,5 @@
 /**
- * Admin: gerar devocionais 365 com IA, temas mensais, detetar duplicados.
+ * Admin: gerar devocionais 365 com IA (geração completa) e temas mensais.
  * Chave OpenAI: mesma do King Brief (OPENAI_API_KEY ou BIBLE_OPENAI_API_KEY).
  */
 
@@ -89,27 +89,14 @@ function setAllMonthThemesForYear(year, monthsObj) {
     return all[y];
 }
 
-/** Devolve grupos de dias com mesmo hash de reflexão (possível duplicado). */
-async function findDuplicateDevotionalGroups() {
+/** Lista todos os registos para o painel admin (tabela + filtros). */
+async function getAdminDev365List() {
     const rows = await bibleRepository.getAllDevotionals365ForAdmin();
-    const byHash = {};
-    for (let i = 0; i < rows.length; i++) {
-        const h = rows[i].reflexao_hash || 'empty';
-        if (!byHash[h]) byHash[h] = [];
-        byHash[h].push(rows[i].day_of_year);
-    }
-    const duplicates = [];
-    Object.keys(byHash).forEach(function (h) {
-        if (h === 'empty') return;
-        if (byHash[h].length > 1) {
-            duplicates.push({ reflexao_hash: h, days: byHash[h].sort(function (a, b) { return a - b; }) });
-        }
-    });
-    return { rows, duplicates };
+    return { rows };
 }
 
 /**
- * IA gera título, nova passagem (NVI quando possível), reflexão longa — alinhado ao tema (resolveThemeForDev365).
+ * Gera com IA e grava na BD: título, passagem NVI quando possível, reflexão longa — alinhado ao tema.
  */
 async function generateDayFullAiAndSave(day, year, options = {}) {
     devotionalAi.clearDev365Cache();
@@ -184,8 +171,7 @@ async function generateRangeAndSave(startDay, endDay, year, options = {}) {
         const r = await generateDayAndSave(d, year, {
             temaModo: options.temaModo,
             temaPersonalizado: options.temaPersonalizado,
-            estilo: options.estilo,
-            fullTheme: !!options.fullTheme
+            estilo: options.estilo
         });
         results.push({ day: d, ok: r.ok, error: r.error || null });
         if (delayMs && d < to) {
@@ -217,8 +203,7 @@ async function generateMonthAndSave(year, month, options = {}) {
         const r = await generateDayAndSave(d, y, {
             temaModo,
             temaPersonalizado: options.temaPersonalizado || '',
-            estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao',
-            fullTheme: !!options.fullTheme
+            estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao'
         });
         results.push({ day: d, ok: r.ok, error: r.error || null });
         if (delayMs && i < days.length - 1) {
@@ -238,63 +223,14 @@ async function generateMonthAndSave(year, month, options = {}) {
     };
 }
 
-/**
- * Regenera todos os dias que aparecem em grupos de hash duplicado (reflexão idêntica).
- */
-async function regenerateDuplicateDaysAi(year, options = {}) {
-    const y = parseInt(year, 10) || new Date().getFullYear();
-    const dupData = await findDuplicateDevotionalGroups();
-    const duplicates = dupData.duplicates || [];
-    const daySet = new Set();
-    for (let i = 0; i < duplicates.length; i++) {
-        const g = duplicates[i];
-        const days = g.days || [];
-        for (let j = 0; j < days.length; j++) daySet.add(days[j]);
-    }
-    const daysList = Array.from(daySet).sort(function (a, b) { return a - b; });
-    if (!daysList.length) {
-        return { ok: true, message: 'Nenhum duplicado na base.', total: 0, errors: 0, results: [], daysRegenerated: [] };
-    }
-    devotionalAi.clearDev365Cache();
-    const delayMs = Math.max(0, parseInt(options.delayMs, 10) || 400);
-    const fullTheme = options.fullTheme !== false;
-    const baseOpts = {
-        temaModo: options.temaModo || 'mes_auto',
-        temaPersonalizado: options.temaPersonalizado || '',
-        estilo: options.estilo === 'cunha' ? 'cunha' : 'padrao',
-        fullTheme
-    };
-    const results = [];
-    for (let i = 0; i < daysList.length; i++) {
-        const d = daysList[i];
-        /* eslint-disable no-await-in-loop */
-        const r = await generateDayAndSave(d, y, baseOpts);
-        results.push({ day: d, ok: r.ok, error: r.error || null });
-        if (delayMs && i < daysList.length - 1) {
-            await new Promise(function (resolve) {
-                setTimeout(resolve, delayMs);
-            });
-        }
-    }
-    return {
-        ok: true,
-        year: y,
-        daysRegenerated: daysList,
-        results,
-        total: results.length,
-        errors: results.filter(function (x) { return !x.ok; }).length
-    };
-}
-
 module.exports = {
     getMonthThemesForYear,
     setMonthTheme,
     setAllMonthThemesForYear,
-    findDuplicateDevotionalGroups,
+    getAdminDev365List,
     generateDayAndSave,
     generateRangeAndSave,
     generateMonthAndSave,
-    regenerateDuplicateDaysAi,
     getDayOfYearListForCalendarMonth,
     MONTH_THEMES_FILE
 };

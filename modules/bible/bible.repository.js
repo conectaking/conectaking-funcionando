@@ -199,14 +199,13 @@ async function getDevocional365(dayOfYear) {
     }
 }
 
-/** Lista todos os devocionais (admin): dia, título, preview e hash para detetar duplicados. */
+/** Lista todos os devocionais (admin): dia, título, referência e prévia da reflexão. */
 async function getAllDevotionals365ForAdmin() {
     const client = await db.pool.connect();
     try {
         const r = await client.query(
             `SELECT day_of_year, titulo, versiculo_ref,
-                    LEFT(COALESCE(reflexao, ''), 200) AS reflexao_preview,
-                    MD5(COALESCE(reflexao, ''))::text AS reflexao_hash
+                    LEFT(COALESCE(reflexao, ''), 200) AS reflexao_preview
              FROM bible_devotionals_365
              ORDER BY day_of_year ASC`
         );
