@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const repository = require('./bible.repository');
+const devotionalAi = require('./bibleDevotionalAi.service');
 const logger = require('../../utils/logger');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data', 'bible');
@@ -88,6 +89,63 @@ function loadDevocionais() {
     }
 }
 
+/** Evita repetição a cada N dias (ex.: lista com 10 itens) usando dispersão por primos. */
+function pickDevotionalFallbackIndex(dayOfYear, len) {
+    if (len < 1) return 0;
+    return ((dayOfYear - 1) * 7919 + 104729) % len;
+}
+
+const TEMAS_MES_PT = [
+    'Janeiro — Propósito em Deus e novos começos',
+    'Fevereiro — Amor, fé e relacionamentos restaurados',
+    'Março — Vida no Espírito e renovação interior',
+    'Abril — Esperança viva e a vitória em Cristo',
+    'Maio — Família, cuidado e bênção sob o olhar de Deus',
+    'Junho — Serviço humilde e missão no cotidiano',
+    'Julho — Descanso em Deus e confiança no tempo dEle',
+    'Agosto — Sabedoria divina para decisões e palavras',
+    'Setembro — Fidelidade e perseverança na caminhada',
+    'Outubro — Reavivamento pessoal e testemunho sincero',
+    'Novembro — Gratidão e generosidade cristã',
+    'Dezembro — Luz de Cristo e encerramento do ano com fé'
+];
+
+const TEMAS_ANO_ROTATIVOS = [
+    'Ano da fé que se manifesta nas atitudes',
+    'Ano da esperança que ancora a alma em Cristo',
+    'Ano do amor que transforma corações',
+    'Ano da graça que fortalece o caminho',
+    'Ano da Palavra vivida no dia a dia'
+];
+
+function isLeapYear(y) {
+    return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+
+function dayOfYearToMonthDay(doy, year) {
+    const leap = isLeapYear(year);
+    const dim = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let d = doy;
+    for (let m = 0; m < 12; m++) {
+        if (d <= dim[m]) return { month: m + 1, day: d };
+        d -= dim[m];
+    }
+    return { month: 12, day: dim[11] };
+}
+
+function getDevotional365Themes(dayOfYear, year) {
+    const md = dayOfYearToMonthDay(dayOfYear, year);
+    const temaMes = TEMAS_MES_PT[md.month - 1] || TEMAS_MES_PT[0];
+    const temaAno = TEMAS_ANO_ROTATIVOS[((year % 5) + 5) % 5];
+    return {
+        mes: md.month,
+        dia_mes: md.day,
+        ano_calendario: year,
+        tema_mes: temaMes,
+        tema_ano: temaAno
+    };
+}
+
 async function getPalavraDoDia(dateStr) {
     const list = loadPalavrasDoDia();
     if (!list.length) return null;
@@ -122,7 +180,7 @@ async function getDevocionalDoDia(dateStr) {
     }
     const list = loadDevocionais();
     if (!list.length) return null;
-    const index = dayOfYear % list.length;
+    const index = pickDevotionalFallbackIndex(dayOfYear, list.length);
     return { ...list[index], date: dateStr || new Date().toISOString().slice(0, 10) };
 }
 
@@ -518,7 +576,13 @@ function getDevocionalBibliaInteira(mode, monthOrDay, dayOptional) {
     };
 }
 
-async function getDevocional365(dayOrDate) {
+async function getDevocional365(dayOrDate, options = {}) {
+    const useAi = !!options.useAi;
+    let year = options.year;
+    if (typeof year !== 'number' || Number.isNaN(year) || year < 2000 || year > 2100) {
+        year = new Date().getFullYear();
+    }
+
     let dayOfYear;
     if (typeof dayOrDate === 'number' || (typeof dayOrDate === 'string' && /^\d+$/.test(dayOrDate))) {
         dayOfYear = parseInt(dayOrDate, 10);
@@ -526,21 +590,53 @@ async function getDevocional365(dayOrDate) {
         dayOfYear = getVerseOfDayIndex(dayOrDate);
     }
     if (dayOfYear < 1 || dayOfYear > 365) return null;
+
     const fromDb = await repository.getDevocional365(dayOfYear);
-    if (fromDb) return fromDb;
-    const list = loadDevocionais();
-    if (!list.length) return null;
-    const index = (dayOfYear - 1) % list.length;
-    const item = list[index];
-    return {
-        day_of_year: dayOfYear,
-        titulo: item.titulo,
-        versiculo_ref: item.versiculo,
-        versiculo_texto: null,
-        reflexao: item.texto,
-        aplicacao: null,
-        oracao: item.oracao
-    };
+    let result;
+
+    if (fromDb) {
+        result = {
+            day_of_year: fromDb.day_of_year,
+            titulo: fromDb.titulo,
+            versiculo_ref: fromDb.versiculo_ref,
+            versiculo_texto: fromDb.versiculo_texto,
+            reflexao: fromDb.reflexao,
+            aplicacao: fromDb.aplicacao,
+            oracao: fromDb.oracao
+        };
+    } else {
+        const list = loadDevocionais();
+        if (!list.length) return null;
+        const index = pickDevotionalFallbackIndex(dayOfYear, list.length);
+        const item = list[index];
+        result = {
+            day_of_year: dayOfYear,
+            titulo: item.titulo,
+            versiculo_ref: item.versiculo,
+            versiculo_texto: null,
+            reflexao: item.texto,
+            aplicacao: null,
+            oracao: item.oracao
+        };
+    }
+
+    Object.assign(result, getDevotional365Themes(dayOfYear, year));
+
+    if (useAi) {
+        const ai = await devotionalAi.enrichDevotional365(result, { dayOfYear, year });
+        if (ai.reflexao) {
+            result.reflexao_estatica = result.reflexao;
+            result.reflexao = ai.reflexao;
+            if (ai.aplicacao) result.aplicacao = ai.aplicacao;
+            if (ai.oracao) result.oracao = ai.oracao;
+            result.ai_gerado = true;
+        } else {
+            result.ai_gerado = false;
+            result.ai_aviso = ai.error || 'IA indisponível.';
+        }
+    }
+
+    return result;
 }
 
 async function getStudyThemes() {

@@ -440,7 +440,11 @@
         <!-- Devocionais 365, Estudos, Esboços -->
         <div class="bible-card">
             <h3 style="margin-bottom:16px;color:#FFC700">Devocionais 365</h3>
-            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Reflexões para cada dia do ano.</p>
+            <p style="font-size:0.9rem;color:#A1A1A1;margin-bottom:12px">Reflexões para cada dia do ano. Cada mês e cada ano têm um <strong style="color:#E8E8E8">tema espiritual</strong> (mostrado ao carregar). Marque <strong style="color:#E8E8E8">Gerar com IA</strong> para uma reflexão nova alinhada a esses temas (requer <code style="color:#FFC700;font-size:0.85rem">OPENAI_API_KEY</code> no servidor).</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+                <label style="font-size:0.85rem;color:#A1A1A1">Ano (temas): <input type="number" id="dev365-year" min="2000" max="2100" style="width:88px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC"></label>
+                <label style="font-size:0.85rem;color:#A1A1A1;display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="chk-dev365-ai" style="width:18px;height:18px;accent-color:#FFC700"> Gerar reflexão com IA</label>
+            </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
                 <input type="number" id="dev365-day" min="1" max="365" placeholder="Dia (1-365)" style="width:100px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ECECEC">
                 <button type="button" class="bible-btn" id="btn-dev365-load"><i class="fas fa-book-open"></i> Carregar</button>
@@ -1173,21 +1177,42 @@
             }
 
             var currentDev365Day = 0;
+            (function initDev365Year() {
+                var yEl = document.getElementById('dev365-year');
+                if (yEl && !yEl.value) yEl.value = new Date().getFullYear();
+            })();
             async function loadDev365ByDay(day) {
                 var el = document.getElementById('dev365-content');
-                el.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>';
+                var chkAi = document.getElementById('chk-dev365-ai');
+                var yEl = document.getElementById('dev365-year');
+                var useAi = chkAi && chkAi.checked;
+                var year = yEl && yEl.value ? parseInt(yEl.value, 10) : new Date().getFullYear();
+                if (isNaN(year) || year < 2000 || year > 2100) year = new Date().getFullYear();
+                el.innerHTML = '<div class="bible-loading"><i class="fas fa-spinner fa-spin"></i><p>' + (useAi ? 'Gerando com IA…' : 'Carregando…') + '</p></div>';
                 try {
-                    var res = await fetch(API_URL + '/api/bible/devotionals-365/' + day);
+                    var q = '?year=' + encodeURIComponent(year);
+                    if (useAi) q += '&ai=1';
+                    var res = await fetch(API_URL + '/api/bible/devotionals-365/' + day + q);
                     var json = await res.json().catch(function() { return {}; });
                     var d = json.data;
                     if (!d) throw new Error('Devocional não encontrado para este dia.');
                     currentDev365Day = day;
                     currentDev365Data = d;
+                    var temaBlock = '';
+                    if (d.tema_mes || d.tema_ano) {
+                        temaBlock = '<div style="padding:12px 14px;margin-bottom:16px;background:rgba(26,77,46,0.35);border:1px solid rgba(255,199,0,0.28);border-radius:12px;font-size:0.92rem;line-height:1.55">';
+                        if (d.tema_mes) temaBlock += '<div style="color:#FFC700;font-weight:600;margin-bottom:6px"><i class="fas fa-calendar-alt" style="margin-right:8px"></i>Tema do mês</div><div style="color:#E8E8E8;margin-bottom:12px">' + String(d.tema_mes).replace(/</g, '&lt;') + '</div>';
+                        if (d.tema_ano) temaBlock += '<div style="color:#FFC700;font-weight:600;margin-bottom:6px"><i class="fas fa-sun" style="margin-right:8px"></i>Tema do ano' + (d.ano_calendario ? ' (' + d.ano_calendario + ')' : '') + '</div><div style="color:#E8E8E8">' + String(d.tema_ano).replace(/</g, '&lt;') + '</div>';
+                        temaBlock += '</div>';
+                    }
+                    var aiBanner = '';
+                    if (d.ai_gerado) aiBanner = '<p style="font-size:0.88rem;color:#86efac;margin-bottom:12px;line-height:1.45"><i class="fas fa-robot" style="margin-right:6px"></i>Reflexão gerada com IA, alinhada ao tema do mês e do ano. A Palavra de Deus continua sendo a medida final.</p>';
+                    else if (d.ai_aviso) aiBanner = '<p style="font-size:0.88rem;color:#fbbf24;margin-bottom:12px;line-height:1.45"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>' + String(d.ai_aviso).replace(/</g, '&lt;') + '</p>';
                     var reflexaoHtml = (d.reflexao || '').replace(/\n/g, '<br>');
                     var aplicacaoHtml = d.aplicacao ? '<div class="bible-reflexao" style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1)"><strong style="font-size:1rem;color:#FFC700">Aplicação Prática</strong><p style="margin-top:12px;font-size:1.05rem;line-height:1.8">' + (d.aplicacao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
                     var oracaoHtml = d.oracao ? '<div class="bible-reflexao" style="margin-top:20px;padding:16px;background:rgba(255,199,0,0.08);border-radius:12px;border-left:4px solid #FFC700"><strong style="font-size:0.95rem;color:#FFC700">Oração</strong><p style="margin-top:10px;font-size:1.05rem;line-height:1.8;font-style:italic">' + (d.oracao || '').replace(/\n/g, '<br>') + '</p></div>' : '';
                     var btnHtml = '<div class="bible-actions" style="margin-top:20px;flex-wrap:wrap;gap:10px"><button type="button" class="bible-btn" id="dev365-btn-share" data-day="' + day + '"><i class="fas fa-share-alt"></i> Compartilhar</button><button type="button" class="bible-btn secondary dev365-mark-read" data-day="' + day + '"><i class="far fa-check-circle"></i> Marcar como lido</button></div>';
-                    el.innerHTML = '<div class="bible-ref" style="font-size:1.2rem;margin-bottom:12px">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:1rem;margin-bottom:16px;font-weight:600">' + (d.versiculo_ref || '') + '</div>' + (d.versiculo_texto ? '<div class="bible-text" style="margin-bottom:24px;font-size:1.1rem;line-height:1.8">"' + d.versiculo_texto + '"</div>' : '') + '<div class="bible-text" style="line-height:1.85;font-size:1.05rem">' + reflexaoHtml + '</div>' + aplicacaoHtml + oracaoHtml + btnHtml;
+                    el.innerHTML = temaBlock + aiBanner + '<div class="bible-ref" style="font-size:1.2rem;margin-bottom:12px">' + (d.titulo || '') + '</div><div style="color:#FFC700;font-size:1rem;margin-bottom:16px;font-weight:600">' + (d.versiculo_ref || '') + '</div>' + (d.versiculo_texto ? '<div class="bible-text" style="margin-bottom:24px;font-size:1.1rem;line-height:1.8">"' + d.versiculo_texto + '"</div>' : '') + '<div class="bible-text" style="line-height:1.85;font-size:1.05rem">' + reflexaoHtml + '</div>' + aplicacaoHtml + oracaoHtml + btnHtml;
                     var dev365Actions = document.getElementById('dev365-actions');
                     if (dev365Actions) dev365Actions.style.display = 'flex';
                     var dev365ShareBtn = el.querySelector('#dev365-btn-share');
@@ -1230,6 +1255,8 @@
             document.getElementById('btn-dev365-today').addEventListener('click', function() {
                 var day = getDayOfYear();
                 document.getElementById('dev365-day').value = day;
+                var yEl = document.getElementById('dev365-year');
+                if (yEl) yEl.value = new Date().getFullYear();
                 loadDev365ByDay(day);
             });
             document.getElementById('btn-plano-load').addEventListener('click', function() {

@@ -183,7 +183,12 @@ async function getDevocionalBibliaInteira(req, res) {
 async function getDevocional365(req, res) {
     try {
         const day = req.params.day; // 1-365 ou date YYYY-MM-DD
-        const result = await bibleService.getDevocional365(day);
+        const useAi = req.query.ai === '1' || req.query.ai === 'true';
+        let year = parseInt(req.query.year, 10);
+        if (Number.isNaN(year) || year < 2000 || year > 2100) {
+            year = undefined;
+        }
+        const result = await bibleService.getDevocional365(day, { useAi, year });
         if (!result) return responseFormatter.error(res, 'Devocional não encontrado', 404);
         return responseFormatter.success(res, result);
     } catch (e) {
