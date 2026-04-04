@@ -67,18 +67,21 @@ ESTILO DE ENTREGA (obrigatório): Devocional no estilo de mensagem de rádio cri
 `
             : '';
 
-    const userPrompt = `Dia do ano: ${dayOfYear} · Ano civil: ${year}.
+    const temaMesCal = (devotional.tema_mes_calendario || '').slice(0, 220);
+
+    const userPrompt = `Dia do ano: ${dayOfYear} de 365 · Ano civil: ${year}.
+IMPORTANTE: Este é o dia ${dayOfYear} — a reflexão deve ser claramente DISTINTA da de outros dias (outro ângulo, outros exemplos, outra abertura). Não reproduza o texto-base como cópia; reescreva por completo.
 
 PASSAGEM / referência principal: ${ref}
 Título de apoio (pode inspirar o tom): ${titulo}
 
-TEMA DO MÊS (contexto): ${temaMes}
-TEMA DO ANO (contexto): ${temaAno}
+TEMA DO MÊS (contexto na UI): ${temaMes}
+${temaMesCal ? `TEMA DO MÊS CALENDÁRIO (integrar na reflexão): ${temaMesCal}\n` : ''}TEMA DO ANO (contexto): ${temaAno}
 
 INSTRUÇÃO DE TEMA (obedeça à letra na estrutura da reflexão):
 ${instr || 'Ligue a reflexão à passagem e aos temas acima.'}
 
-Texto-base do catálogo (use só como ideia geral da mensagem; não copie trechos longos):
+Texto-base do catálogo (use só como ideia geral; NÃO copie frases literais — parafraseie e personalize para o dia ${dayOfYear}):
 ${baseReflexao || '(sem texto-base)'}
 
 ${estiloCunha}
@@ -86,7 +89,7 @@ ${estiloCunha}
 Responda APENAS com um JSON válido neste formato exato (sem markdown):
 {"reflexao":"3 a 5 parágrafos em português do Brasil","aplicacao":"1 parágrafo com aplicação prática","oracao":"1 oração curta"}
 
-Regras: a reflexão DEVE demonstrar que o tema instruído foi seguido (não genérico); tom pastoral evangélico; não invente referências bíblicas além da dada; não contradiga a Escritura.`;
+Regras: a reflexão DEVE demonstrar que o tema instruído foi seguido (não genérico); o primeiro parágrafo deve amarrar tema + passagem; tom pastoral evangélico; não invente referências bíblicas além da dada; não contradiga a Escritura.`;
 
     try {
         const res = await fetch(CHAT_URL, {

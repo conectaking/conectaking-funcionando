@@ -158,18 +158,22 @@
         .verse-block.selectable.selected { background: rgba(255,199,0,0.15); border-left-color: #FFC700; }
         .verse-num { font-weight: 600; color: #FFC700; font-size: 0.85rem; margin-right: 8px; }
         .verse-text { font-family: 'Lora', serif; font-size: 1.1rem; line-height: 1.7; }
-        /* Palavras de Jesus (NT) — vermelho */
-        .verse-block.verse-jesus .verse-text { color: #f87171; font-weight: 600; }
-        body.theme-light .verse-block.verse-jesus .verse-text { color: #dc2626; }
+        /* Palavras de Jesus (NT) — vermelho (prioridade sobre tema claro) */
+        .verse-block.verse-jesus .verse-text { color: #f87171 !important; font-weight: 600; }
+        body.theme-light .verse-block.verse-jesus .verse-text { color: #dc2626 !important; }
         /* Fala do Senhor no AT (heurística) — verde */
-        .verse-block.verse-god-speech .verse-text { color: #4ade80; font-weight: 600; }
-        body.theme-light .verse-block.verse-god-speech .verse-text { color: #15803d; }
+        .verse-block.verse-god-speech .verse-text { color: #4ade80 !important; font-weight: 600; }
+        body.theme-light .verse-block.verse-god-speech .verse-text { color: #15803d !important; }
         body.theme-light { background: #f5f5f0; background-image: none; color: #1a1a1a; }
         body.theme-light .back-link { color: #555; }
         body.theme-light .back-link:hover { color: #b8860b; }
         body.theme-light .reader-header h1, body.theme-light .verse-num { color: #b8860b; }
-        body.theme-light .verse-text { color: #222; }
+        /* Não aplicar cinza/preto aos versículos já marcados (evitava vermelho/verde no tema claro) */
+        body.theme-light .verse-block:not(.verse-jesus):not(.verse-god-speech) .verse-text { color: #222; }
         body.theme-light .verse-block.selectable.selected { background: rgba(184,134,11,0.2); border-left-color: #b8860b; }
+        body.theme-light .verse-block.verse-jesus.selectable.selected,
+        body.theme-light .verse-block.verse-god-speech.selectable.selected { background: rgba(220,38,38,0.12); border-left-color: #dc2626; }
+        body.theme-light .verse-block.verse-god-speech.selectable.selected { background: rgba(21,128,61,0.12); border-left-color: #15803d; }
         body.theme-light .verses-card { background: #fff; border-color: rgba(184,134,11,0.25); box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
         body.theme-light .reader-header .nav-chapters a { background: rgba(184,134,11,0.15); color: #8b6914; }
         body.theme-light .reader-header .nav-chapters a:hover { background: rgba(184,134,11,0.25); }
@@ -282,7 +286,7 @@
     <span class="reader-fab reader-fab-next disabled" id="fab-next" aria-hidden="true"><i class="fas fa-chevron-right"></i></span>
     <% } %>
     <div class="reader-wrap">
-        <p class="reader-color-legend">Novo Testamento: palavras de Jesus em <span style="color:#f87171;font-weight:600">vermelho</span>. Antigo Testamento: trechos de fala divina (heurística) em <span style="color:#4ade80;font-weight:600">verde</span>.</p>
+        <p class="reader-color-legend">Em <strong>todas as traduções</strong> (NVI, ARC, KJV, KJA, etc.): no NT, palavras de Jesus em <span style="color:#f87171;font-weight:600">vermelho</span>; no AT, fala do Senhor (deteção por texto) em <span style="color:#4ade80;font-weight:600">verde</span>.</p>
         <div class="verses-card">
         <div id="verses-container">
             <% var jesusList = (typeof jesusVerseNumbers !== 'undefined' && Array.isArray(jesusVerseNumbers)) ? jesusVerseNumbers : []; %>
@@ -350,17 +354,60 @@
             updateMarkReadButton();
             (function markOldTestamentGodSpeech() {
                 if (!isOldTestament) return;
+                /* Português (NVI, ARC, ACF, NTLH, ARA…) + inglês (KJV, KJA…) — mesmo critério em qualquer tradução. */
                 var patterns = [
                     /Assim diz o Senhor/i,
+                    /Assim diz o Senhor DEUS/i,
                     /Assim falou o Senhor/i,
                     /Palavra do Senhor/i,
+                    /Palavras do Senhor/i,
+                    /A palavra do Senhor/i,
                     /E disse o Senhor/i,
                     /\bDiz o Senhor\b/i,
                     /Oráculo do Senhor/i,
                     /Fala o Senhor/i,
                     /Disse-lhe o Senhor/i,
                     /O Senhor disse/i,
-                    /Então o Senhor/i
+                    /Então o Senhor/i,
+                    /Eis o que diz o Senhor/i,
+                    /Ouvi a palavra do Senhor/i,
+                    /Thus saith the LORD/i,
+                    /Thus saith the Lord/i,
+                    /thus saith the LORD/i,
+                    /THUS SAITH THE LORD/i,
+                    /The LORD said/i,
+                    /And the LORD said/i,
+                    /Then the LORD said/i,
+                    /The LORD spake/i,
+                    /And the LORD spake/i,
+                    /The LORD hath said/i,
+                    /The LORD speaketh/i,
+                    /The LORD commanded/i,
+                    /The word of the LORD/i,
+                    /The word of the Lord/i,
+                    /And the word of the LORD came/i,
+                    /Saith the LORD/i,
+                    /\bsaith the LORD\b/i,
+                    /Hear the word of the LORD/i,
+                    /Hearken unto the word of the LORD/i,
+                    /For I am the LORD/i,
+                    /I am the LORD thy God/i,
+                    /I the LORD have spoken/i,
+                    /The LORD of hosts/i,
+                    /God said/i,
+                    /And God said/i,
+                    /And God spake/i,
+                    /God spake unto/i,
+                    /The LORD called/i,
+                    /out of the mouth of the LORD/i,
+                    /by the mouth of the LORD/i,
+                    /The mouth of the LORD hath spoken/i,
+                    /Oracle of the LORD/i,
+                    /declareth the LORD/i,
+                    /Thus shalt thou say unto/i,
+                    /Ye shall say unto them/i,
+                    /Whom shall I send/i,
+                    /The Spirit of the Lord/i
                 ];
                 document.querySelectorAll('.verse-block').forEach(function(block) {
                     if (block.classList.contains('verse-jesus')) return;

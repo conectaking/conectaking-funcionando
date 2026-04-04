@@ -168,13 +168,17 @@ function resolveThemeForDev365(dayOfYear, year, options = {}) {
     const custom = String(options.temaPersonalizado || '').trim().slice(0, 500);
 
     if ((modo === 'personalizado' || modo === 'custom') && custom) {
+        const md = dayOfYearToMonthDay(dayOfYear, year);
+        const temaMesCalendario = TEMAS_MES_PT[md.month - 1] || TEMAS_MES_PT[0];
         return {
             ...base,
             tema_mes: custom,
+            tema_mes_calendario: temaMesCalendario,
             tema_modo_aplicado: 'personalizado',
             tema_ia_instrucao:
                 `O devocional deve girar em torno deste tema escolhido pelo usuário: "${custom}". ` +
-                'A abertura e o fecho devem deixar isso explícito.'
+                `Inclua também uma ligação clara ao TEMA DO MÊS CALENDÁRIO (${md.month}/${year}): ${temaMesCalendario} — pelo menos uma frase no corpo da reflexão. ` +
+                'A abertura e o fecho devem deixar o tema personalizado explícito.'
         };
     }
     if (modo === 'ano_auto' || modo === 'ano') {
@@ -464,21 +468,40 @@ function getSectionHeadingsForChapter(bookId, chapterNum) {
         });
 }
 
-/** Retorna array de números de versículos em que Jesus fala no capítulo (para destaque no NT). */
+function buildVerseNumberRange(totalVerses) {
+    const n = parseInt(totalVerses, 10) || 0;
+    if (n < 1) return [];
+    const out = [];
+    for (let i = 1; i <= n; i++) out.push(i);
+    return out;
+}
+
+/**
+ * Evangelhos: mesmos números de versículo em todas as traduções (NVI, ARC, KJV, KJA…).
+ * Capítulos só com narrativa/genealogia podem estar em _gospelSkipChapters ou "none".
+ * Capítulo sem entrada em JSON = todos os versículos em vermelho (palavras de Jesus),
+ * salvo exceções acima. Mateus 5–7 mantém listas explícitas (ex.: Mt 5 começa no v. 3).
+ */
 function getJesusVerseNumbersForChapter(bookId, chapterNum, totalVerses) {
+    const GOSPELS = ['mt', 'mk', 'lk', 'jo'];
     const book = (bookId || '').toLowerCase();
+    const chStr = String(chapterNum);
+    const chNum = parseInt(chapterNum, 10) || 0;
     const data = loadJesusVerses();
-    const chapters = data[book];
-    if (!chapters || typeof chapters !== 'object') return [];
-    const raw = chapters[String(chapterNum)];
-    if (raw === 'all') {
-        const n = parseInt(totalVerses, 10) || 0;
-        if (n < 1) return [];
-        const out = [];
-        for (let i = 1; i <= n; i++) out.push(i);
-        return out;
-    }
-    return Array.isArray(raw) ? raw : [];
+
+    if (!GOSPELS.includes(book)) return [];
+
+    const skipLists = data._gospelSkipChapters || {};
+    const skip = Array.isArray(skipLists[book]) ? skipLists[book] : [];
+    const bookChapters = data[book] && typeof data[book] === 'object' ? data[book] : {};
+    const raw = bookChapters[chStr];
+
+    if (raw === 'none') return [];
+    if (Array.isArray(raw)) return raw;
+    if (raw === 'all') return buildVerseNumberRange(totalVerses);
+    if (skip.indexOf(chNum) !== -1) return [];
+
+    return buildVerseNumberRange(totalVerses);
 }
 
 let _bookNameToId = null;
