@@ -3323,6 +3323,35 @@ async function ksListApprovalsByClientRound(pgClient, galleryId, clientId, selec
   }));
 }
 
+/**
+ * Todas as linhas de aprovação do cliente na galeria (todas as rodadas).
+ * O painel do fotógrafo usa por rodada (`ksListApprovalsByClientRound`); o cliente precisa ver
+ * fotos liberadas em qualquer rodada — senão só a última rodada aparecia em `approvedPhotoIds`.
+ */
+async function ksListApprovalsForClientAllRounds(pgClient, galleryId, clientId) {
+  if (!(await hasTable(pgClient, 'king_selection_photo_approvals'))) return [];
+  const hasBatch = await hasColumn(pgClient, 'king_selection_photo_approvals', 'selection_batch');
+  const batchSel = hasBatch ? 'a.selection_batch' : '1 AS selection_batch';
+  const rows = (await pgClient.query(
+    `SELECT a.id, a.photo_id, a.status, a.delivery_mode, a.decided_at, ${batchSel} AS selection_batch, p.original_name, p."order"
+     FROM king_selection_photo_approvals a
+     JOIN king_photos p ON p.id = a.photo_id AND p.gallery_id = a.gallery_id
+     WHERE a.gallery_id=$1 AND a.client_id=$2
+     ORDER BY ${hasBatch ? 'a.selection_batch ASC, ' : ''}p."order" ASC, p.id ASC`,
+    [galleryId, clientId]
+  )).rows || [];
+  return rows.map((r) => ({
+    id: parseInt(r.id, 10) || 0,
+    photo_id: parseInt(r.photo_id, 10) || 0,
+    selection_batch: Math.max(1, parseInt(r.selection_batch, 10) || 1),
+    status: String(r.status || 'pending').toLowerCase(),
+    delivery_mode: ksNormDeliveryMode(r.delivery_mode),
+    decided_at: r.decided_at || null,
+    original_name: r.original_name || null,
+    order: parseInt(r.order, 10) || 0
+  }));
+}
+
 router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
@@ -7368,13 +7397,18 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
     const paymentState = (salesModeActive && salesClientId)
       ? await ksGetPaymentByClientRound(client, gallery.id, salesClientId, salesSelectionRound)
       : null;
+    /** Incluir aprovações de TODAS as rodadas; antes só a última rodada comercial era listada e rodadas anteriores "sumiam". */
     const approvalsState = (salesModeActive && salesClientId)
-      ? await ksListApprovalsByClientRound(client, gallery.id, salesClientId, salesSelectionRound)
+      ? await ksListApprovalsForClientAllRounds(client, gallery.id, salesClientId)
       : [];
-    const approvedPhotoIds = approvalsState
-      .filter((a) => String(a.status || '').toLowerCase() === 'approved')
-      .map((a) => parseInt(a.photo_id, 10))
-      .filter(Boolean);
+    const approvedPhotoIds = [
+      ...new Set(
+        approvalsState
+          .filter((a) => String(a.status || '').toLowerCase() === 'approved')
+          .map((a) => parseInt(a.photo_id, 10))
+          .filter((n) => Number.isFinite(n) && n > 0)
+      )
+    ];
 
     const faceOn = hasFaceEnabled && !!gallery.face_recognition_enabled;
     const faceRecognitionUsable = !!(faceOn && resolvedClientId);
@@ -7572,19 +7606,18 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
       return res.status(429).json({ message: 'Muitas tentativas de download. Tente novamente em instantes.' });
     }
 
-    const round = await ksGetSalesSelectionRound(client, payload.galleryId, cid);
     const hasEditedPath = await hasColumn(client, 'king_photos', 'edited_file_path');
+    /** Aprovações de todas as rodadas: o cliente pode ter fotos liberadas na 1ª rodada e outras na 2ª. */
     const rows = (await client.query(
-      `SELECT a.photo_id, a.selection_batch, a.delivery_mode, p.original_name, p.file_path${hasEditedPath ? ', p.edited_file_path' : ', NULL::text AS edited_file_path'}
+      `SELECT DISTINCT ON (a.photo_id) a.photo_id, a.selection_batch, a.delivery_mode, p.original_name, p.file_path${hasEditedPath ? ', p.edited_file_path' : ', NULL::text AS edited_file_path'}
        FROM king_selection_photo_approvals a
        JOIN king_photos p ON p.id = a.photo_id AND p.gallery_id = a.gallery_id
        WHERE a.gallery_id=$1
          AND a.client_id=$2
-         AND a.selection_batch=$3
          AND lower(a.status)='approved'
-         AND a.photo_id = ANY($4::int[])
-       ORDER BY a.photo_id ASC`,
-      [payload.galleryId, cid, round, wantedIds]
+         AND a.photo_id = ANY($3::int[])
+       ORDER BY a.photo_id ASC, a.selection_batch DESC`,
+      [payload.galleryId, cid, wantedIds]
     )).rows || [];
     if (!rows.length) {
       return res.status(404).json({ message: 'Nenhuma foto aprovada encontrada para as seleções informadas.' });
