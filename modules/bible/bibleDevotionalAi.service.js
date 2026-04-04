@@ -379,12 +379,14 @@ const BOOK_STUDY_MAX_TOKENS = Math.min(16384, Math.max(2000, parseInt(process.en
 
 /**
  * Gera texto longo de estudo introdutório do livro (bible_book_studies), no tom de estudo completo tipo Gênesis no site.
- * @param {{ bookId: string, bookName: string, referenceSample?: string }} opts — referenceSample = trecho do estudo de Gênesis para espelhar profundidade (opcional)
+ * @param {{ bookId: string, bookName: string, referenceSample?: string, baseadoEmGenesis?: boolean, profundidadeEstiloGenesis?: boolean }} opts — referenceSample = trecho do estudo de Gênesis para espelhar profundidade (opcional)
  */
 async function generateBookStudyFullText(opts) {
     const bookId = String(opts.bookId || '').trim();
     const bookName = String(opts.bookName || bookId).trim();
     const referenceSample = String(opts.referenceSample || '').trim();
+    const baseadoEmGenesis = !!(opts && opts.baseadoEmGenesis);
+    const profundidadeEstiloGenesis = !!(opts && opts.profundidadeEstiloGenesis);
 
     if (!getOpenAiKey()) {
         return { error: 'Chave OpenAI não configurada (OPENAI_API_KEY ou BIBLE_OPENAI_API_KEY).' };
@@ -404,6 +406,21 @@ ${referenceSample.slice(0, 11000)}
 `
             : '';
 
+    const modoGenesisExtra =
+        baseadoEmGenesis || profundidadeEstiloGenesis
+            ? `
+
+MODO PROFUNDIDADE (OBRIGATÓRIO — pedido explícito pelo painel):
+- Trate este livro com o mesmo nível de riqueza que um estudo "tipo Gênesis" no site: muitas subsecções, muitas histórias ou arcos narrativos desenvolvidos (não uma frase por capítulo).
+- Inclua secções claras com títulos em linha própria:
+  ► O QUE ESTE LIVRO REPRESENTA no conjunto da Escritura e na história da redenção.
+  ► O QUE APRENDEMOS COM ${bookName} (síntese espiritual e prática).
+  ► NARRATIVAS E HISTÓRIAS PRINCIPAIS: para CADA grande história ou bloco (conforme o livro), escreva um desenvolvimento substancial: o que acontece, quem são os actores, tensão espiritual, e o que isso revela sobre Deus e sobre o ser humano. Onde fizer sentido, ligue histórias entre si.
+- Vá além do óbvio: explicações memoráveis e bem fundamentadas no texto, sem clichês vazios; linguagem acessível mas não superficial.
+- Não invente factos históricos fora da Bíblia; pode contextualizar de forma geral (época, género literário) quando útil.
+`
+            : '';
+
     const userPrompt = `Livro bíblico: ${bookName} (id técnico: ${bookId}).
 
 Escreva um ÚNICO estudo completo do livro em português do Brasil, para leitor cristão evangélico.
@@ -415,7 +432,7 @@ REQUISITOS (obrigatórios):
 - Inclua secções como: VISÃO GERAL; CONTEXTO; ESTRUTURA E CONTEÚDO (percorra os grandes blocos do livro com desenvolvimento — não se limite a uma frase por capítulo: agrupe e aprofunde); PERSONAGENS OU TEMAS CENTRAIS; MENSAGEM TEOLÓGICA; APLICAÇÃO PARA HOJE.
 - Ao citar passagens, use o formato com nome do livro como na Bíblia em português (ex.: ${bookName} 3, ou Salmos 23, João 3) para o site poder criar links.
 - Não invente citações literais longas da Bíblia; pode parafrasear. Não cite nomes de pastores ou obras comerciais.
-
+${modoGenesisExtra}
 ${refBlock}
 
 Responda SOMENTE com o texto do estudo, sem comentários introdutórios nem markdown de código.`;

@@ -11,6 +11,7 @@ const { protectAdmin } = require('../middleware/protectAdmin');
 const bibleService = require('../modules/bible/bible.service');
 const bibleRepository = require('../modules/bible/bible.repository');
 const bibleAdminDev365 = require('../modules/bible/bible.adminDev365.service');
+const bibleBookStudyAiJobs = require('../modules/bible/bible.adminBookStudyAiJobs.service');
 const bibleDevotionalAi = require('../modules/bible/bibleDevotionalAi.service');
 const logger = require('../utils/logger');
 
@@ -194,6 +195,7 @@ router.post('/bible/study/book/:bookId/generate-ai', protectAdmin, async (req, r
             return res.status(400).json({ success: false, message: 'Livro não encontrado no manifesto.' });
         }
         const bookName = bookMeta.name || bookId;
+        const baseadoEmGenesis = !!(req.body && req.body.baseadoEmGenesis);
 
         let referenceSample = '';
         if (String(bookId).toLowerCase() !== 'gn') {
@@ -206,7 +208,9 @@ router.post('/bible/study/book/:bookId/generate-ai', protectAdmin, async (req, r
         const r = await bibleDevotionalAi.generateBookStudyFullText({
             bookId,
             bookName,
-            referenceSample
+            referenceSample,
+            baseadoEmGenesis: baseadoEmGenesis || undefined,
+            profundidadeEstiloGenesis: !!baseadoEmGenesis
         });
         if (r.error) {
             return res.status(400).json({ success: false, message: r.error });
@@ -223,6 +227,48 @@ router.post('/bible/study/book/:bookId/generate-ai', protectAdmin, async (req, r
     } catch (e) {
         logger.error('adminBibleStudy generate-ai book study:', e);
         res.status(500).json({ success: false, message: e.message || 'Erro ao gerar estudo.' });
+    }
+});
+
+/** POST /api/admin/bible/study/generate-ai-async — Um ou vários livros em segundo plano. Body: { bookIds: ['lv','nm'], baseadoEmGenesis?: boolean } */
+router.post('/bible/study/generate-ai-async', protectAdmin, async (req, res) => {
+    try {
+        const bookIds = req.body && req.body.bookIds;
+        const baseadoEmGenesis = !!(req.body && req.body.baseadoEmGenesis);
+        const out = bibleBookStudyAiJobs.startBookStudyAiBackgroundJob(bookIds, { baseadoEmGenesis });
+        if (!out.ok) {
+            return res.status(400).json({ success: false, message: out.error || 'Pedido inválido.' });
+        }
+        res.status(202).json({ success: true, data: { jobId: out.jobId, total: out.total } });
+    } catch (e) {
+        logger.error('adminBibleStudy generate-ai-async:', e);
+        res.status(500).json({ success: false, message: e.message || 'Erro.' });
+    }
+});
+
+/** GET /api/admin/bible/study/generation-job/:jobId */
+router.get('/bible/study/generation-job/:jobId', protectAdmin, async (req, res) => {
+    try {
+        const j = bibleBookStudyAiJobs.getBookStudyAiJob(req.params.jobId);
+        if (!j) {
+            return res.status(404).json({ success: false, message: 'Trabalho não encontrado ou expirou (memória do servidor).' });
+        }
+        res.json({ success: true, data: j });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+/** POST /api/admin/bible/study/generation-job/:jobId/cancel */
+router.post('/bible/study/generation-job/:jobId/cancel', protectAdmin, async (req, res) => {
+    try {
+        const out = bibleBookStudyAiJobs.cancelBookStudyAiJob(req.params.jobId);
+        if (!out.ok) {
+            return res.status(400).json({ success: false, message: out.error || 'Não foi possível cancelar.' });
+        }
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
     }
 });
 
