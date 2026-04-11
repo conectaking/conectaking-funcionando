@@ -1735,32 +1735,32 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   // Só aplica a rotação escolhida no painel.
   const wmBase = sharp(wmBuf).rotate(rotate);
 
-  // Padrão (Conecta King): um único logo centralizado (não em mosaico)
+  // Padrão (Conecta King): mosaico diagonal denso — cobre bem fotos horizontais largas (antes: só 1 logo no centro)
   if (watermark?.mode === 'tile_dense') {
     let wmPng = await wmBase
       .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: false })
       .png()
       .toBuffer();
     wmPng = await applyOpacityPng(wmPng, opacity);
-    let wmFinal = wmPng;
-    try {
-      const m = await sharp(wmFinal).metadata();
-      const w = m.width || 0;
-      const h = m.height || 0;
-      if (w > outW || h > outH) {
-        const left = Math.max(0, Math.floor((w - outW) / 2));
-        const top = Math.max(0, Math.floor((h - outH) / 2));
-        wmFinal = await sharp(wmFinal)
-          .extract({ left, top, width: Math.min(outW, w), height: Math.min(outH, h) })
-          .png()
-          .toBuffer();
-        pipeline = pipeline.composite([{ input: wmFinal, top: 0, left: 0, blend: 'over' }]);
-      } else {
-        pipeline = pipeline.composite([{ input: wmFinal, gravity: 'center', blend: 'over' }]);
-      }
-    } catch (_) {
-      pipeline = pipeline.composite([{ input: wmFinal, gravity: 'center', blend: 'over' }]);
-    }
+    const b64 = wmPng.toString('base64');
+    const stepFactor = 0.78;
+    const stepMin = 128;
+    const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.12, scale) * stepFactor)));
+    const w = outW;
+    const h = outH;
+    const svg = Buffer.from(
+      `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="pTileDense" patternUnits="userSpaceOnUse" width="${step}" height="${step}">
+            <image href="data:image/png;base64,${b64}" x="0" y="0" width="${boxW}" height="${boxH}"/>
+          </pattern>
+        </defs>
+        <g transform="rotate(-25 ${Math.round(w / 2)} ${Math.round(h / 2)})">
+          <rect x="-${w}" y="-${h}" width="${w * 3}" height="${h * 3}" fill="url(#pTileDense)"/>
+        </g>
+      </svg>`
+    );
+    pipeline = pipeline.composite([{ input: svg, top: 0, left: 0 }]);
     return pipeline.jpeg({ quality: jq, progressive: jp }).toBuffer();
   }
 
@@ -6525,11 +6525,13 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
     if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
 
-    // Watermark X (30%) e resize 1200
+    // Preview: limite de lado (default 1200). Query ?max= permite reduzir para UI leve (ex.: modal de duplicatas).
+    const qMax = parseInt(String(req.query.max || '1200'), 10);
+    const maxSide = Number.isFinite(qMax) && qMax >= 320 && qMax <= 2000 ? qMax : 1200;
     const img = sharp(buf).rotate();
     const meta = await img.metadata();
-    const { width, height } = getDisplayDimensions(meta, 1200, 1200);
-    const max = 1200;
+    const { width, height } = getDisplayDimensions(meta, maxSide, maxSide);
+    const max = maxSide;
     const scale = Math.min(max / Math.max(width, height), 1);
     const outW = Math.max(1, Math.round(width * scale));
     const outH = Math.max(1, Math.round(height * scale));
