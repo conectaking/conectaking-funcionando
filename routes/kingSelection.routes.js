@@ -3352,6 +3352,156 @@ async function ksListApprovalsForClientAllRounds(pgClient, galleryId, clientId) 
   }));
 }
 
+/**
+ * Aprova todas as fotos selecionadas na rodada (mesma lógica de approve-all).
+ * Usado após pagamento quitado para alinhar cortesia/PIX com o que o cliente vê como «liberado».
+ */
+async function ksAutoApproveAllSelectedForClientRound(pgClient, galleryId, clientId, selectionBatch, decidedByUserId) {
+  if (!(await hasTable(pgClient, 'king_selection_photo_approvals'))) return 0;
+  const hasSelBatch = await hasColumn(pgClient, 'king_selections', 'selection_batch');
+  const selectedRows = (await pgClient.query(
+    `SELECT photo_id
+     FROM king_selections
+     WHERE gallery_id=$1 AND client_id=$2 ${hasSelBatch ? 'AND selection_batch=$3' : ''}
+     ORDER BY photo_id ASC`,
+    hasSelBatch ? [galleryId, clientId, selectionBatch] : [galleryId, clientId]
+  )).rows || [];
+  const photoIds = selectedRows.map((r) => parseInt(r.photo_id, 10)).filter(Boolean);
+  const deliveryMode = ksNormDeliveryMode('original');
+  for (const photoId of photoIds) {
+    // eslint-disable-next-line no-await-in-loop
+    await pgClient.query(
+      `INSERT INTO king_selection_photo_approvals
+         (gallery_id, client_id, selection_batch, photo_id, status, delivery_mode, decided_by_user_id, decided_at, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW(),NOW())
+       ON CONFLICT (gallery_id, client_id, selection_batch, photo_id)
+       DO UPDATE SET status=EXCLUDED.status, delivery_mode=EXCLUDED.delivery_mode,
+                     decided_by_user_id=EXCLUDED.decided_by_user_id, decided_at=NOW(), updated_at=NOW()`,
+      [galleryId, clientId, selectionBatch, photoId, 'approved', deliveryMode, decidedByUserId]
+    );
+  }
+  return photoIds.length;
+}
+
+/** Se o saldo da rodada está zero após revisão de pagamento, grava aprovações em massa. */
+async function ksMaybeAutoApproveAfterPaymentReview(pgClient, galleryId, clientId, selectionBatch, userId) {
+  try {
+    if (!(await hasTable(pgClient, 'king_selection_photo_approvals'))) return;
+    const pay = await ksGetPaymentByClientRound(pgClient, galleryId, clientId, selectionBatch);
+    if (!pay) return;
+    const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
+    if (bal > 0) return;
+    await ksAutoApproveAllSelectedForClientRound(pgClient, galleryId, clientId, selectionBatch, userId);
+  } catch (e) {
+    console.error('ksMaybeAutoApproveAfterPaymentReview', e);
+  }
+}
+
+/**
+ * Cortesia / pagamento quitado sem clicar em «Aprovar todas»: o cliente deve ver «liberado».
+ * Mescla aprovações sintéticas por (photo_id, selection_batch) quando o saldo da rodada é zero.
+ */
+async function ksMergePaidReleaseIntoApprovalsState(
+  pgClient,
+  galleryId,
+  salesClientId,
+  approvalsState,
+  selectedPhotoIds,
+  selectionBatchByPhotoId,
+  hasSelBatch
+) {
+  const byKey = new Map();
+  for (const a of approvalsState) {
+    const pid = parseInt(a.photo_id, 10);
+    if (!pid) continue;
+    const b = Math.max(1, parseInt(a.selection_batch, 10) || 1);
+    byKey.set(`${pid}:${b}`, { ...a });
+  }
+  const batchSet = new Set();
+  if (hasSelBatch && selectionBatchByPhotoId && Object.keys(selectionBatchByPhotoId).length) {
+    for (const pidRaw of selectedPhotoIds) {
+      batchSet.add(selectionBatchByPhotoId[String(pidRaw)] || 1);
+    }
+  } else {
+    batchSet.add(1);
+  }
+  for (const batch of batchSet) {
+    const pay = await ksGetPaymentByClientRound(pgClient, galleryId, salesClientId, batch);
+    if (!pay) continue;
+    const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
+    if (bal > 0) continue;
+    for (const pidRaw of selectedPhotoIds) {
+      const pid = parseInt(pidRaw, 10);
+      if (!pid) continue;
+      const pb = hasSelBatch ? (selectionBatchByPhotoId[String(pid)] || 1) : 1;
+      if (pb !== batch) continue;
+      const k = `${pid}:${batch}`;
+      const cur = byKey.get(k);
+      const st = cur ? String(cur.status || '').toLowerCase() : '';
+      if (st === 'rejected') continue;
+      if (st === 'approved') continue;
+      byKey.set(k, {
+        id: cur?.id || 0,
+        photo_id: pid,
+        selection_batch: batch,
+        status: 'approved',
+        delivery_mode: cur?.delivery_mode || 'original',
+        decided_at: cur?.decided_at || null,
+        original_name: cur?.original_name || null,
+        order: cur?.order || 0
+      });
+    }
+  }
+  const out = Array.from(byKey.values());
+  const approvedPhotoIds = [
+    ...new Set(
+      out
+        .filter((a) => String(a.status || '').toLowerCase() === 'approved')
+        .map((a) => parseInt(a.photo_id, 10))
+        .filter((n) => Number.isFinite(n) && n > 0)
+    )
+  ];
+  return { approvalsState: out, approvedPhotoIds };
+}
+
+/**
+ * Download permitido se houver linha approved OU a rodada da seleção estiver quitada (cortesia/PIX).
+ */
+async function ksClientDownloadApprovedOrPaid(pgClient, galleryId, clientId, photoId) {
+  if (!(await hasTable(pgClient, 'king_selection_photo_approvals'))) {
+    return { ok: false, selection_batch: 1, delivery_mode: 'original' };
+  }
+  const appr = await pgClient.query(
+    `SELECT selection_batch, delivery_mode
+     FROM king_selection_photo_approvals
+     WHERE gallery_id=$1 AND client_id=$2 AND photo_id=$3 AND lower(status)='approved'
+     ORDER BY selection_batch DESC
+     LIMIT 1`,
+    [galleryId, clientId, photoId]
+  );
+  if (appr.rows.length) {
+    return {
+      ok: true,
+      selection_batch: Math.max(1, parseInt(appr.rows[0].selection_batch, 10) || 1),
+      delivery_mode: ksNormDeliveryMode(appr.rows[0].delivery_mode)
+    };
+  }
+  const hasSelBatch = await hasColumn(pgClient, 'king_selections', 'selection_batch');
+  const sel = await pgClient.query(
+    hasSelBatch
+      ? `SELECT selection_batch FROM king_selections WHERE gallery_id=$1 AND client_id=$2 AND photo_id=$3 LIMIT 1`
+      : `SELECT 1 AS selection_batch FROM king_selections WHERE gallery_id=$1 AND client_id=$2 AND photo_id=$3 LIMIT 1`,
+    [galleryId, clientId, photoId]
+  );
+  if (!sel.rows.length) return { ok: false, selection_batch: 1, delivery_mode: 'original' };
+  const batch = hasSelBatch ? Math.max(1, parseInt(sel.rows[0].selection_batch, 10) || 1) : 1;
+  const pay = await ksGetPaymentByClientRound(pgClient, galleryId, clientId, batch);
+  if (!pay) return { ok: false, selection_batch: batch, delivery_mode: 'original' };
+  const bal = pay.balance_due_cents != null ? Math.max(0, parseInt(pay.balance_due_cents, 10) || 0) : 0;
+  if (bal > 0) return { ok: false, selection_batch: batch, delivery_mode: 'original' };
+  return { ok: true, selection_batch: batch, delivery_mode: 'original' };
+}
+
 router.get('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
@@ -4156,6 +4306,7 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
            note_admin=EXCLUDED.note_admin, reviewed_by_user_id=EXCLUDED.reviewed_by_user_id, reviewed_at=NOW(), updated_at=NOW()`,
         [galleryId, clientId, selectionBatch, 'confirmed', amtL != null ? amtL : 0, noteAdmin, req.user.userId]
       );
+      await ksMaybeAutoApproveAfterPaymentReview(dbClient, galleryId, clientId, selectionBatch, req.user.userId);
       const payment = await ksGetPaymentByClientRound(dbClient, galleryId, clientId, selectionBatch);
       return res.json({ success: true, payment });
     }
@@ -4257,6 +4408,7 @@ router.post('/galleries/:id/sales/clients/:clientId/round/:selectionBatch/paymen
       );
     }
 
+    await ksMaybeAutoApproveAfterPaymentReview(dbClient, galleryId, clientId, selectionBatch, req.user.userId);
     const payment = await ksGetPaymentByClientRound(dbClient, galleryId, clientId, selectionBatch);
     res.json({ success: true, payment });
   } finally {
@@ -7624,10 +7776,10 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
       ? await ksGetPaymentByClientRound(client, gallery.id, salesClientId, salesSelectionRound)
       : null;
     /** Incluir aprovações de TODAS as rodadas; antes só a última rodada comercial era listada e rodadas anteriores "sumiam". */
-    const approvalsState = (salesModeActive && salesClientId)
+    let approvalsState = (salesModeActive && salesClientId)
       ? await ksListApprovalsForClientAllRounds(client, gallery.id, salesClientId)
       : [];
-    const approvedPhotoIds = [
+    let approvedPhotoIds = [
       ...new Set(
         approvalsState
           .filter((a) => String(a.status || '').toLowerCase() === 'approved')
@@ -7635,6 +7787,19 @@ router.get('/client/gallery', requireClient, asyncHandler(async (req, res) => {
           .filter((n) => Number.isFinite(n) && n > 0)
       )
     ];
+    if (salesModeActive && salesClientId) {
+      const merged = await ksMergePaidReleaseIntoApprovalsState(
+        client,
+        gallery.id,
+        salesClientId,
+        approvalsState,
+        selectedPhotoIds,
+        selectionBatchByPhotoId,
+        hasSelBatch
+      );
+      approvalsState = merged.approvalsState;
+      approvedPhotoIds = merged.approvedPhotoIds;
+    }
 
     const faceOn = hasFaceEnabled && !!gallery.face_recognition_enabled;
     const faceRecognitionUsable = !!(faceOn && resolvedClientId);
@@ -7834,7 +7999,7 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
 
     const hasEditedPath = await hasColumn(client, 'king_photos', 'edited_file_path');
     /** Aprovações de todas as rodadas: o cliente pode ter fotos liberadas na 1ª rodada e outras na 2ª. */
-    const rows = (await client.query(
+    let rows = (await client.query(
       `SELECT DISTINCT ON (a.photo_id) a.photo_id, a.selection_batch, a.delivery_mode, p.original_name, p.file_path${hasEditedPath ? ', p.edited_file_path' : ', NULL::text AS edited_file_path'}
        FROM king_selection_photo_approvals a
        JOIN king_photos p ON p.id = a.photo_id AND p.gallery_id = a.gallery_id
@@ -7845,6 +8010,32 @@ router.post('/client/download-zip', requireClient, asyncHandler(async (req, res)
        ORDER BY a.photo_id ASC, a.selection_batch DESC`,
       [payload.galleryId, cid, wantedIds]
     )).rows || [];
+    const foundIds = new Set(rows.map((r) => parseInt(r.photo_id, 10) || 0));
+    const missingIds = wantedIds.filter((id) => !foundIds.has(id));
+    for (const photoId of missingIds) {
+      // eslint-disable-next-line no-await-in-loop
+      const d = await ksClientDownloadApprovedOrPaid(client, payload.galleryId, cid, photoId);
+      if (!d.ok) continue;
+      // eslint-disable-next-line no-await-in-loop
+      const pr = await client.query(
+        `SELECT $1::int AS photo_id, $2::int AS selection_batch, $3::text AS delivery_mode, p.original_name, p.file_path${hasEditedPath ? ', p.edited_file_path' : ', NULL::text AS edited_file_path'}
+         FROM king_photos p
+         WHERE p.id=$1 AND p.gallery_id=$4
+         LIMIT 1`,
+        [photoId, d.selection_batch, d.delivery_mode, payload.galleryId]
+      );
+      if (pr.rows.length) rows.push(pr.rows[0]);
+    }
+    const byPhotoZip = new Map();
+    for (const r of rows) {
+      const pid = parseInt(r.photo_id, 10) || 0;
+      if (!pid) continue;
+      const prev = byPhotoZip.get(pid);
+      const sb = parseInt(r.selection_batch, 10) || 0;
+      const psb = prev ? parseInt(prev.selection_batch, 10) || 0 : -1;
+      if (!prev || sb >= psb) byPhotoZip.set(pid, r);
+    }
+    rows = Array.from(byPhotoZip.values());
     if (!rows.length) {
       return res.status(404).json({ message: 'Nenhuma foto aprovada encontrada para as seleções informadas.' });
     }
@@ -10139,22 +10330,11 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
         return res.status(503).send('Aprovação de download indisponível no servidor.');
       }
 
-      const approvalRes = await client.query(
-        `SELECT a.selection_batch, a.delivery_mode
-         FROM king_selection_photo_approvals a
-         WHERE a.gallery_id=$1
-           AND a.client_id=$2
-           AND a.photo_id=$3
-           AND lower(a.status)='approved'
-         ORDER BY a.selection_batch DESC
-         LIMIT 1`,
-        [payload.galleryId, cid, photoId]
-      );
-      if (!approvalRes.rows.length) {
+      const dl = await ksClientDownloadApprovedOrPaid(client, payload.galleryId, cid, photoId);
+      if (!dl.ok) {
         return res.status(403).send('Foto ainda não aprovada para download.');
       }
-      const ap = approvalRes.rows[0];
-      const mode = ksNormDeliveryMode(ap.delivery_mode);
+      const mode = ksNormDeliveryMode(dl.delivery_mode);
       const hasEditedPath = await hasColumn(client, 'king_photos', 'edited_file_path');
       if (mode === 'edited') {
         const editedPath = hasEditedPath ? String(photo.edited_file_path || '').trim() : '';
@@ -10166,7 +10346,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
           `INSERT INTO king_download_audit
              (gallery_id, client_id, photo_id, selection_batch, action, ip_address, user_agent, created_at)
            VALUES ($1,$2,$3,$4,'download_clean',$5,$6,NOW())`,
-          [payload.galleryId, cid, photoId, parseInt(ap.selection_batch, 10) || null, String(req.ip || '').slice(0, 100), String(req.headers['user-agent'] || '').slice(0, 400)]
+          [payload.galleryId, cid, photoId, parseInt(dl.selection_batch, 10) || null, String(req.ip || '').slice(0, 100), String(req.headers['user-agent'] || '').slice(0, 400)]
         );
       } catch (_) { }
 
