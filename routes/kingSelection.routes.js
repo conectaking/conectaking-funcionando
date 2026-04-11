@@ -5638,6 +5638,112 @@ router.get('/galleries/:id/clients/:clientId/password', protectUser, asyncHandle
   }
 }));
 
+const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
+
+async function ksOpenAiShareTextChat({ system, user, maxTokens }) {
+  const key = (process.env.OPENAI_API_KEY || '').trim();
+  if (!key) {
+    const err = new Error('OPENAI_API_KEY não configurada no servidor.');
+    err.code = 'KS_OPENAI_MISSING';
+    throw err;
+  }
+  const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ],
+      temperature: 0.45,
+      max_tokens: maxTokens
+    })
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    const err = new Error(text?.slice(0, 500) || 'Falha na API OpenAI.');
+    err.status = response.status;
+    throw err;
+  }
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (_) {
+    const err = new Error('Resposta inválida da API OpenAI.');
+    throw err;
+  }
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content || typeof content !== 'string') throw new Error('Resposta vazia da IA.');
+  return content.trim();
+}
+
+/** Gera texto de partilha (mensagem opcional ou mensagem completa) via OpenAI — mesma chave do resto do sistema. */
+router.post('/galleries/:id/ai/share-text', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+
+  const { kind, hint, shareLink, projectName, currentCustom, currentFull } = req.body || {};
+  if (kind !== 'custom_append' && kind !== 'full_message') {
+    return res.status(400).json({ message: 'kind deve ser custom_append ou full_message' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id, g.nome_projeto FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const row = own.rows[0];
+    const nome = String(projectName || row.nome_projeto || 'ensaio').trim();
+    const link = String(shareLink || '').trim() || '(o link público da galeria será colocado no texto)';
+
+    let system;
+    let userMsg;
+    if (kind === 'custom_append') {
+      system =
+        'És um assistente para um fotógrafo profissional no Brasil. Escreve apenas em português do Brasil, tom cordial e profissional. Uma mensagem curta (2 a 4 frases) que o fotógrafo pode acrescentar ao partilhar o link da galeria com o cliente. Não inventes preços ou datas. Não uses hashtags. Devolve só o texto, sem aspas nem markdown.';
+      userMsg = `Nome do projeto/evento: ${nome}.\nReferência do link: ${link}.\n`;
+      if (currentCustom) userMsg += `Texto opcional atual (podes melhorar): ${String(currentCustom).slice(0, 2000)}\n`;
+      if (hint) userMsg += `Instruções do fotógrafo: ${String(hint).slice(0, 600)}`;
+    } else {
+      system =
+        'És um assistente para um fotógrafo profissional no Brasil. Escreve uma mensagem completa para WhatsApp ou e-mail, em português do Brasil, cordial e clara, para o cliente aceder à galeria de fotos online para seleção. Inclui saudação (por exemplo Olá!), indica que as fotos estão disponíveis para seleção, inclui o link completo numa linha própria ou após "Link:", e uma despedida curta. Usa o nome do projeto. Não inventes preços. Devolve só o texto da mensagem, sem aspas nem título.';
+      userMsg = `Nome do projeto/evento: ${nome}.\nO link público a incluir no texto é: ${link}\n`;
+      if (currentCustom) userMsg += `Mensagem opcional / nota do fotógrafo para inspirar o tom: ${String(currentCustom).slice(0, 2000)}\n`;
+      if (currentFull) userMsg += `Rascunho atual (podes reescrever por completo): ${String(currentFull).slice(0, 4000)}\n`;
+      if (hint) userMsg += `Instruções do fotógrafo: ${String(hint).slice(0, 600)}`;
+    }
+
+    try {
+      const out = await ksOpenAiShareTextChat({
+        system,
+        user: userMsg,
+        maxTokens: kind === 'custom_append' ? 450 : 950
+      });
+      return res.json({ text: out });
+    } catch (e) {
+      if (e.code === 'KS_OPENAI_MISSING') {
+        return res.status(503).json({ message: e.message });
+      }
+      if (e.status === 429) {
+        return res.status(503).json({ message: 'Limite de uso da API OpenAI. Tente mais tarde.' });
+      }
+      throw e;
+    }
+  } finally {
+    client.release();
+  }
+}));
+
 router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
@@ -5936,6 +6042,10 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'promo_instructions') {
         if (val === '' || val === 'null' || val == null) val = null;
         else val = String(val).trim().slice(0, 2000);
+      }
+      if (key === 'share_link_custom_append' || key === 'share_link_full_message') {
+        if (val === '' || val === 'null' || val == null) val = null;
+        else val = String(val).trim().slice(0, key === 'share_link_full_message' ? 12000 : 4000);
       }
       sets.push(`${key}=$${idx++}`);
       values.push(val);
