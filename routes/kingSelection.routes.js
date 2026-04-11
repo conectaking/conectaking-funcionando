@@ -5695,7 +5695,9 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'promo_valid_until',
     'promo_free_photo_count',
     'promo_social_links',
-    'promo_instructions'
+    'promo_instructions',
+    'share_link_custom_append',
+    'share_link_full_message'
   ];
 
   const body = req.body || {};
