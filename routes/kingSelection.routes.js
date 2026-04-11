@@ -5744,6 +5744,75 @@ router.post('/galleries/:id/ai/share-text', protectUser, asyncHandler(async (req
   }
 }));
 
+/** Gera texto para um dos modelos WhatsApp (Fotos e vendas) — placeholders {{nome}}, {{link}}, {{galeria}}. */
+router.post('/galleries/:id/ai/sales-whatsapp-template', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+
+  const { kind, hint, currentText } = req.body || {};
+  const kinds = ['pending', 'rejected', 'awaiting', 'approved'];
+  if (!kinds.includes(kind)) {
+    return res.status(400).json({ message: 'kind deve ser pending, rejected, awaiting ou approved' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id, g.nome_projeto FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const row = own.rows[0];
+    const nomeProjeto = String(row.nome_projeto || 'ensaio').trim();
+
+    const basePlaceholders =
+      'O texto DEVE incluir literalmente as sequências exatas {{nome}}, {{link}} e {{galeria}} (com chaves duplas), para o sistema substituir depois. Cada uma pelo menos uma vez. Podes usar *asteriscos* para negrito no WhatsApp.';
+
+    const scenarios = {
+      pending: `Cenário: mensagem automática quando o cliente já escolheu fotos mas o pagamento (PIX ou saldo) ainda está pendente ou em aberto. Tom claro, profissional, em português do Brasil.`,
+      rejected: `Cenário: o comprovante de pagamento foi recusado; pedir que o cliente envie um comprovante válido ou refaça o PIX, sem ser agressivo.`,
+      awaiting: `Cenário: o pagamento foi reconhecido, mas as fotos ainda aguardam a tua revisão/aprovação antes de liberar o download.`,
+      approved: `Cenário: tudo certo — fotos aprovadas pelo fotógrafo; o cliente pode abrir o link e baixar. Tom positivo e objetivo.`
+    };
+
+    const system = `És um assistente para fotógrafos profissionais no Brasil. Escreve UMA mensagem de WhatsApp, em português do Brasil, cordial e profissional.
+${scenarios[kind]}
+${basePlaceholders}
+Não inventes valores em reais nem datas concretas. Não uses hashtags. Devolve só o corpo da mensagem, sem título, sem aspas envolvendo o texto.`;
+
+    let userMsg = `Nome do projeto/evento (referência para o tom): ${nomeProjeto}.\n`;
+    if (currentText && String(currentText).trim()) {
+      userMsg += `Texto atual ou rascunho (podes reescrever por completo, mantendo os placeholders): ${String(currentText).slice(0, 4000)}\n`;
+    }
+    if (hint && String(hint).trim()) {
+      userMsg += `Instruções adicionais do fotógrafo: ${String(hint).slice(0, 600)}`;
+    }
+
+    try {
+      const out = await ksOpenAiShareTextChat({
+        system,
+        user: userMsg,
+        maxTokens: 950
+      });
+      return res.json({ text: out });
+    } catch (e) {
+      if (e.code === 'KS_OPENAI_MISSING') {
+        return res.status(503).json({ message: e.message });
+      }
+      if (e.status === 429) {
+        return res.status(503).json({ message: 'Limite de uso da API OpenAI. Tente mais tarde.' });
+      }
+      throw e;
+    }
+  } finally {
+    client.release();
+  }
+}));
+
 router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
