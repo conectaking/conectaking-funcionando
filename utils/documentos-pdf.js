@@ -174,11 +174,12 @@ async function gerarPdfBuffer(documento, colors = null, options = null) {
     const cBlue = () => rgb(rgbBlue.r, rgbBlue.g, rgbBlue.b);
     const cOrange = () => rgb(rgbOrange.r, rgbOrange.g, rgbOrange.b);
 
-    // Carregar logo: 1) logo do próprio orçamento (emitente), 2) logo de Configuração (default), 3) logo da empresa (company)
+    // Logomarca: 1) Configurações do módulo (default_logo_url) — fonte da “logo fixa”; 2) cópia no emitente do documento;
+    // 3) logo da conta (company). Antes emitente vinha primeiro e PDF/recibo mostrava URL antiga mesmo após trocar a fixa.
     const emitenteLogoUrl = (emitente && (emitente.logo_url || emitente.logo || emitente.logomarca)) ? String(emitente.logo_url || emitente.logo || emitente.logomarca).trim() : null;
     const defaultLogoUrl = (options && options.defaultLogoUrl) ? String(options.defaultLogoUrl).trim() : null;
     const companyLogoUrl = (options && options.companyLogoUrl) ? String(options.companyLogoUrl).trim() : null;
-    const urlsToTry = [emitenteLogoUrl, defaultLogoUrl, companyLogoUrl].filter(Boolean);
+    const urlsToTry = [defaultLogoUrl, emitenteLogoUrl, companyLogoUrl].filter(Boolean);
     let logoImg = null;
     for (const urlStr of urlsToTry) {
         if (!urlStr) continue;
