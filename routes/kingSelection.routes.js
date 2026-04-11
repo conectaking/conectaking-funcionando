@@ -5689,6 +5689,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'sales_whatsapp_template_approved',
     'sales_whatsapp_template_pending',
     'sales_whatsapp_template_rejected',
+    'sales_whatsapp_template_awaiting',
     'promo_enabled',
     'promo_coupon_code',
     'promo_valid_until',
@@ -5758,15 +5759,26 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     if (
       Object.prototype.hasOwnProperty.call(body, 'sales_whatsapp_template_approved') ||
       Object.prototype.hasOwnProperty.call(body, 'sales_whatsapp_template_pending') ||
-      Object.prototype.hasOwnProperty.call(body, 'sales_whatsapp_template_rejected')
+      Object.prototype.hasOwnProperty.call(body, 'sales_whatsapp_template_rejected') ||
+      Object.prototype.hasOwnProperty.call(body, 'sales_whatsapp_template_awaiting')
     ) {
       const a = await hasColumn(client, 'king_galleries', 'sales_whatsapp_template_approved');
       const b = await hasColumn(client, 'king_galleries', 'sales_whatsapp_template_pending');
       const c = await hasColumn(client, 'king_galleries', 'sales_whatsapp_template_rejected');
+      const d = await hasColumn(client, 'king_galleries', 'sales_whatsapp_template_awaiting');
       if (!a || !b || !c) {
         return res.status(503).json({
           message:
             'O banco ainda não tem os campos de mensagens WhatsApp (vendas). Execute a migration 212 no Postgres (212_add_kingselection_sales_whatsapp_templates.sql).'
+        });
+      }
+      const awaitingVal = body.sales_whatsapp_template_awaiting;
+      const awaitingNonEmpty =
+        awaitingVal != null && awaitingVal !== '' && String(awaitingVal).trim() !== '';
+      if (!d && awaitingNonEmpty) {
+        return res.status(503).json({
+          message:
+            'O banco ainda não tem sales_whatsapp_template_awaiting. Execute a migration 217 no Postgres (217_kingselection_sales_whatsapp_template_awaiting.sql).'
         });
       }
     }
@@ -5883,7 +5895,8 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (
         key === 'sales_whatsapp_template_approved' ||
         key === 'sales_whatsapp_template_pending' ||
-        key === 'sales_whatsapp_template_rejected'
+        key === 'sales_whatsapp_template_rejected' ||
+        key === 'sales_whatsapp_template_awaiting'
       ) {
         if (val === '' || val === 'null' || val == null) val = null;
         else val = String(val).trim().slice(0, 4000);
@@ -6473,6 +6486,27 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
   }
 }));
 
+/** JPEG 1200×630 para prévia de link (WhatsApp) quando não há capa ou falha ao ler o arquivo. */
+async function ksBuildOgImageFallbackBuffer() {
+  const w = 1200;
+  const h = 630;
+  const svg = Buffer.from(
+    `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#0f172a"/>
+          <stop offset="100%" stop-color="#1e293b"/>
+        </linearGradient>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#g)"/>
+      <rect x="80" y="200" width="1040" height="6" rx="3" fill="#fbbf24" opacity="0.85"/>
+      <text x="600" y="320" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="48" fill="#fbbf24" font-weight="700">King Selection</text>
+      <text x="600" y="380" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="26" fill="#94a3b8">Galeria de fotos</text>
+    </svg>`
+  );
+  return sharp(svg).jpeg({ quality: 86 }).toBuffer();
+}
+
 // Imagem OG (WhatsApp/Instagram): usa a capa do projeto sem cortar o assunto principal.
 // Ajusta proporção final conforme orientação da capa (horizontal ou vertical).
 router.get('/public/og-image', asyncHandler(async (req, res) => {
@@ -6485,39 +6519,50 @@ router.get('/public/og-image', asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).send('Galeria não encontrada');
     const galleryId = gRes.rows[0].id;
 
-    const coverPath = await ksResolveGalleryLinkCoverFilePath(client, galleryId);
-    if (!coverPath) return res.status(404).send('Sem capa');
-    const buf = await fetchPhotoFileBufferFromFilePath(coverPath);
-    if (!buf) return res.status(500).send('Não foi possível carregar a capa (Cloudflare/R2 não configurado).');
+    let buf = null;
+    try {
+      const coverPath = await ksResolveGalleryLinkCoverFilePath(client, galleryId);
+      if (coverPath) buf = await fetchPhotoFileBufferFromFilePath(coverPath);
+    } catch (_) {
+      buf = null;
+    }
 
-    const meta = await sharp(buf).rotate().metadata();
-    const isPortrait = Number(meta?.height || 0) > Number(meta?.width || 0);
-    const outW = isPortrait ? 1080 : 1200;
-    const outH = isPortrait ? 1350 : 630;
+    if (!buf) {
+      buf = await ksBuildOgImageFallbackBuffer();
+    } else {
+      try {
+        const meta = await sharp(buf).rotate().metadata();
+        const isPortrait = Number(meta?.height || 0) > Number(meta?.width || 0);
+        const outW = isPortrait ? 1080 : 1200;
+        const outH = isPortrait ? 1350 : 630;
 
-    // Fundo desfocado (preenche canvas) + foto inteira por cima (contain)
-    const bg = await sharp(buf)
-      .rotate()
-      .resize(outW, outH, { fit: 'cover', position: 'entropy' })
-      .blur(18)
-      .modulate({ brightness: 0.78, saturation: 0.95 })
-      .jpeg({ quality: 78 })
-      .toBuffer();
+        // Fundo desfocado (preenche canvas) + foto inteira por cima (contain)
+        const bg = await sharp(buf)
+          .rotate()
+          .resize(outW, outH, { fit: 'cover', position: 'entropy' })
+          .blur(18)
+          .modulate({ brightness: 0.78, saturation: 0.95 })
+          .jpeg({ quality: 78 })
+          .toBuffer();
 
-    const fg = await sharp(buf)
-      .rotate()
-      .resize(outW, outH, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      .jpeg({ quality: 88 })
-      .toBuffer();
+        const fg = await sharp(buf)
+          .rotate()
+          .resize(outW, outH, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+          .jpeg({ quality: 88 })
+          .toBuffer();
 
-    const out = await sharp(bg)
-      .composite([{ input: fg, top: 0, left: 0 }])
-      .jpeg({ quality: 84 })
-      .toBuffer();
+        buf = await sharp(bg)
+          .composite([{ input: fg, top: 0, left: 0 }])
+          .jpeg({ quality: 84 })
+          .toBuffer();
+      } catch (_) {
+        buf = await ksBuildOgImageFallbackBuffer();
+      }
+    }
 
     res.set('Content-Type', 'image/jpeg');
     res.set('Cache-Control', 'public, max-age=900'); // 15min
-    res.send(out);
+    res.send(buf);
   } finally {
     client.release();
   }
