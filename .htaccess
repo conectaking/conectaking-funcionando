@@ -10,6 +10,9 @@ AddDefaultCharset UTF-8
 # ------------------------------------------------------------------------------
 RewriteEngine On
 
+# Favicon: o browser pede /favicon.ico por defeito — redireciona para o logo já usado no site (evita 404 no console)
+RewriteRule ^favicon\.ico$ https://i.ibb.co/60sW9k75/logo.png [R=302,L]
+
 # FORÇAR HTTPS (CONEXÃO SEGURA)
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
