@@ -221,6 +221,9 @@ app.use(helmet({
                 "'self'",
                 "http://127.0.0.1:*",
                 "http://localhost:*",
+                /* Apex e www: *.conectaking.com.br não cobre o domínio raiz (cartão em iframe na home). */
+                "https://conectaking.com.br",
+                "https://www.conectaking.com.br",
                 "https://*.conectaking.com.br",
                 "https://conectaking-api.onrender.com"
             ]
