@@ -154,12 +154,13 @@ router.get('/status', protectUser, async (req, res) => {
         user.hasKingBrief = hasModule('kingbrief');
         user.hasKingSelection = hasModule('king_selection');
         user.hasPhotographerSite = hasModule('photographer_site');
+        user.hasDigitalForm = hasModule('digital_form');
         user.plan_code = planCode; // para debug: qual plano foi usado para calcular os módulos
         
         // Buscar limites de links (módulo isolado)
         try {
             const linkLimitsService = require('../modules/linkLimits/linkLimits.service');
-            user.linkLimits = await linkLimitsService.getUserLinkLimits(userId);
+            user.linkLimits = await linkLimitsService.getUserLinkLimits(req.user.userId);
         } catch (limitError) {
             // Se houver erro, não quebrar a resposta, apenas logar
             console.warn('Erro ao buscar limites de links:', limitError.message);
@@ -179,6 +180,7 @@ router.get('/status', protectUser, async (req, res) => {
             hasBranding: user.hasBranding,
             hasKingSelection: user.hasKingSelection,
             hasPhotographerSite: user.hasPhotographerSite,
+            hasDigitalForm: user.hasDigitalForm,
             financeInBase: baseSet.has('finance'),
             financeInIndividual: individualSet.has('finance'),
             financeExcluded: excludedSet.has('finance')

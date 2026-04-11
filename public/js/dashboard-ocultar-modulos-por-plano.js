@@ -1,6 +1,7 @@
 /**
- * Oculta no menu do dashboard os itens Gestão Financeira, Contratos e Agenda Inteligente
- * quando o usuário não tem esses módulos no plano (igual Modo Empresa).
+ * Oculta no menu do dashboard itens cujo módulo não está no plano (module_plan_availability
+ * + individual_user_plans − exclusions), via flags de /api/account/status (ex.: Gestão Financeira,
+ * Contratos, Agenda, King Forms, etc.).
  * Inclua este script no dashboard.html e chame applyModulesVisibility(user) após carregar o usuário,
  * OU chame initModulesByPlan() para buscar /api/account/status e aplicar.
  */
@@ -38,7 +39,8 @@
             hasAgenda: user.hasAgenda,
             hasModoEmpresa: user.hasModoEmpresa,
             hasBranding: user.hasBranding,
-            hasKingSelection: user.hasKingSelection
+            hasKingSelection: user.hasKingSelection,
+            hasDigitalForm: user.hasDigitalForm
         });
 
         var map = [
@@ -48,12 +50,18 @@
             { key: 'hasModoEmpresa', module: 'modo_empresa', labels: ['Modo Empresa'] },
             { key: 'hasBranding', module: 'branding', labels: ['Personalização da Marca', 'Personalizacao da Marca'] },
             { key: 'hasKingBrief', module: 'kingbrief', labels: ['KingBrief'] },
-            { key: 'hasKingSelection', module: 'king_selection', labels: ['King Selection'] }
+            { key: 'hasKingSelection', module: 'king_selection', labels: ['King Selection'] },
+            { key: 'hasDigitalForm', module: 'digital_form', labels: ['King Forms', 'Formulário King'] }
         ];
 
         map.forEach(function (item) {
             // Verificar se o módulo está ativo (true ou 1 ou 'true')
-            var show = user[item.key] === true || user[item.key] === 1 || user[item.key] === 'true';
+            var raw = user[item.key];
+            var show = raw === true || raw === 1 || raw === 'true';
+            // API antiga sem hasDigitalForm: manter visível (evita sumir o menu antes do deploy do back-end)
+            if (item.key === 'hasDigitalForm' && raw === undefined) {
+                show = true;
+            }
             
             // Buscar elementos por data-module primeiro
             var els = document.querySelectorAll('[data-module="' + item.module + '"]');
