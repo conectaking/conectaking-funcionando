@@ -41,6 +41,26 @@ async function remove(id, userId) {
     return documentosRepository.remove(id, userId);
 }
 
+/** Cria um novo documento com os mesmos dados do original (novo número, novo token de link). */
+async function duplicate(sourceId, userId) {
+    const src = await documentosRepository.getById(sourceId, userId);
+    if (!src) return null;
+    const baseTitulo = src.titulo && String(src.titulo).trim() ? String(src.titulo).trim() : null;
+    const titulo = baseTitulo ? `${baseTitulo} (cópia)` : null;
+    return create(userId, {
+        tipo: src.tipo || 'recibo',
+        titulo,
+        emitente_json: src.emitente_json || {},
+        cliente_json: src.cliente_json || {},
+        itens_json: src.itens_json || [],
+        anexos_json: src.anexos_json || [],
+        observacoes: src.observacoes,
+        condicoes_pagamento: src.condicoes_pagamento,
+        data_documento: src.data_documento,
+        validade_ate: src.validade_ate
+    });
+}
+
 async function addAnexo(id, userId, anexo) {
     const doc = await documentosRepository.getById(id, userId);
     if (!doc) return null;
@@ -152,6 +172,7 @@ module.exports = {
     update,
     updateByToken,
     remove,
+    duplicate,
     addAnexo,
     processarComprovante,
     gerarPdf,

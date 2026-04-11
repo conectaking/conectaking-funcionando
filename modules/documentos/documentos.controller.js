@@ -158,6 +158,19 @@ async function remove(req, res) {
     }
 }
 
+async function duplicate(req, res) {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (!id) return responseFormatter.error(res, 'ID inválido', 400);
+        const doc = await documentosService.duplicate(id, req.user.userId);
+        if (!doc) return responseFormatter.error(res, 'Documento não encontrado', 404);
+        return responseFormatter.success(res, doc, 'Documento duplicado.', 201);
+    } catch (e) {
+        logger.error('documentos duplicate:', e);
+        return responseFormatter.error(res, e.message || 'Erro ao duplicar', 500);
+    }
+}
+
 /** POST /upload-logo — importar logomarca (upload de imagem). Devolve { url } para usar em emitente_json.logo_url. */
 async function uploadLogo(req, res) {
     try {
@@ -347,6 +360,7 @@ module.exports = {
     update,
     updateByToken,
     remove,
+    duplicate,
     getSettings,
     putSettings,
     uploadLogo,

@@ -26,6 +26,7 @@ router.put('/settings', asyncHandler(controller.putSettings));
 router.post('/upload-logo', uploadImage.single('image'), asyncHandler(controller.uploadLogo));
 router.post('/', asyncHandler(controller.create));
 router.get('/', asyncHandler(controller.list));
+router.post('/:id/duplicate', asyncHandler(controller.duplicate));
 router.get('/:id/pdf', asyncHandler(controller.getPdf));
 router.get('/:id', asyncHandler(controller.getOne));
 router.put('/:id', asyncHandler(controller.update));
