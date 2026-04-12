@@ -6472,10 +6472,10 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         const n = parseFloat(val);
         val = Number.isFinite(n) ? Math.max(50, Math.min(400, Math.round(n * 100) / 100)) : 100;
       }
-      if (key === 'watermark_path') {
-        // normalizar string vazia como NULL
+      if (key === 'watermark_path' || key === 'watermark_path_portrait' || key === 'watermark_path_landscape') {
         if (val === '' || val === 'null') val = null;
-        newWmPath = val;
+        else if (val != null) val = String(val).trim().slice(0, 2000);
+        if (key === 'watermark_path') newWmPath = val;
       }
       if (key === 'thank_you_title' || key === 'thank_you_message' || key === 'thank_you_image_url') {
         if (val === '' || val === 'null') val = null;
