@@ -1,20 +1,48 @@
 /**
  * King Selection — painel do fotógrafo (kingSelectionProject.html, /kingSelection, …).
- * Lista de abas sem scroll interno: só o scroll global da página (classe via JS no <html>).
+ * Um único scroll (barra “de fora”): o documento; sem scroll preso na coluna “Atividades”.
  *
  * Incluir em kingSelectionProject.html depois dos outros CSS:
- *   <link rel="stylesheet" href="/king-selection-project-mobile.css">
+ *   <link rel="stylesheet" href="/king-selection-project-mobile.css?v=3">
  */
 @media (max-width: 900px) {
-  html.ks-project-mobile-unstick,
-  html.ks-project-mobile-unstick body {
-    overflow-x: hidden;
-    overflow-y: auto;
+  /*
+   * Layouts SPA: html/body com height:100vh + overflow:hidden criam scroll interno.
+   * Aqui só o <html> rola; o body cresce com o conteúdo (uma barra de rolagem).
+   */
+  html.ks-project-mobile-unstick {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100% !important;
+    max-height: none !important;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
   }
 
-  /* Tailwind / utilitários comuns que criam scroll aninhado */
+  html.ks-project-mobile-unstick body {
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    height: auto !important;
+    min-height: 100% !important;
+    max-height: none !important;
+    position: relative !important;
+    touch-action: pan-y;
+  }
+
+  /* Raízes Vue/React comuns — não podem truncar altura nem esconder overflow vertical */
+  html.ks-project-mobile-unstick #app,
+  html.ks-project-mobile-unstick #root,
+  html.ks-project-mobile-unstick #__next,
+  html.ks-project-mobile-unstick [data-v-app],
+  html.ks-project-mobile-unstick [id$="-app"] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+  }
+
+  /* Tailwind / utilitários que criam scroll aninhado */
   html.ks-project-mobile-unstick .overflow-y-auto,
   html.ks-project-mobile-unstick .overflow-y-scroll,
   html.ks-project-mobile-unstick .overflow-auto,

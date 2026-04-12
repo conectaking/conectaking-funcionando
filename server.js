@@ -521,7 +521,7 @@ function getInjectedKingSelectionPhotographerHtml() {
     if (!html.includes(KS_PROJECT_SCROLL_MARKER) && html.includes('</head>')) {
         html = html.replace(
             '</head>',
-            '  <link rel="stylesheet" href="/king-selection-project-mobile.css?v=2" />\n  <script src="/king-selection-project-scroll.js?v=2" defer></script>\n</head>'
+            '  <link rel="stylesheet" href="/king-selection-project-mobile.css?v=3" />\n  <script src="/king-selection-project-scroll.js?v=3" defer></script>\n</head>'
         );
     }
     _ksPhotographerHtmlCache = { filePath, mtimeMs: st.mtimeMs, html };

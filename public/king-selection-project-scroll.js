@@ -25,6 +25,14 @@
     return window.matchMedia('(max-width: 900px)').matches;
   }
 
+  function forceVisibleScroll(el) {
+    el.style.setProperty('max-height', 'none', 'important');
+    el.style.setProperty('overflow-y', 'visible', 'important');
+    el.style.setProperty('overflow-x', 'visible', 'important');
+    el.style.setProperty('-webkit-overflow-scrolling', 'auto', 'important');
+    el.style.setProperty('overscroll-behavior', 'auto', 'important');
+  }
+
   function unstick() {
     if (!shouldRun()) {
       document.documentElement.classList.remove('ks-project-mobile-unstick');
@@ -32,21 +40,35 @@
     }
     document.documentElement.classList.add('ks-project-mobile-unstick');
 
+    /* Raiz da app: muitas vezes é aqui que fica overflow:hidden + height:100% */
+    var roots = ['app', 'root', '__next'];
+    for (var r = 0; r < roots.length; r++) {
+      var root = document.getElementById(roots[r]);
+      if (root) {
+        forceVisibleScroll(root);
+        root.style.setProperty('height', 'auto', 'important');
+        root.style.setProperty('min-height', '0', 'important');
+      }
+    }
+
     var all = document.querySelectorAll('aside, nav, section, article, main, div, ul, ol');
     for (var i = 0; i < all.length; i++) {
       var el = all[i];
       if (el === document.body || el === document.documentElement) continue;
       var st = window.getComputedStyle(el);
       var oy = st.overflowY;
-      if (oy !== 'auto' && oy !== 'scroll') continue;
-      if (el.scrollHeight <= el.clientHeight + 5) continue;
-      // Antes só corrigíamos se max-height estivesse definido — muitos layouts usam
-      // flex + height 100% + overflow-y:auto sem max-height, e o scroll ficava preso.
-      el.style.setProperty('max-height', 'none', 'important');
-      el.style.setProperty('overflow-y', 'visible', 'important');
-      el.style.setProperty('overflow-x', 'visible', 'important');
-      el.style.setProperty('-webkit-overflow-scrolling', 'auto', 'important');
-      el.style.setProperty('overscroll-behavior', 'auto', 'important');
+      var taller = el.scrollHeight > el.clientHeight + 5;
+
+      /* Scroll interno explícito */
+      if ((oy === 'auto' || oy === 'scroll') && taller) {
+        forceVisibleScroll(el);
+        continue;
+      }
+
+      /* overflow:hidden mas conteúdo maior que a caixa = scroll “preso” noutro filho */
+      if (oy === 'hidden' && taller && el.clientHeight > 80) {
+        forceVisibleScroll(el);
+      }
     }
   }
 
