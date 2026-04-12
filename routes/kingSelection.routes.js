@@ -1593,8 +1593,21 @@ async function cropBufferToAspectCenter(imgBuffer, aspectW, aspectH) {
   }
   cropW = Math.min(cropW, iw - left);
   cropH = Math.min(cropH, ih - top);
-  const buf = await sharp(imgBuffer).rotate().extract({ left, top, width: cropW, height: cropH }).toBuffer();
-  return { buf, meta: await sharp(buf).metadata() };
+  cropW = Math.max(1, cropW);
+  cropH = Math.max(1, cropH);
+  if (left + cropW > iw) left = Math.max(0, iw - cropW);
+  if (top + cropH > ih) top = Math.max(0, ih - cropH);
+  if (cropW < 1 || cropH < 1 || left < 0 || top < 0 || left >= iw || top >= ih) {
+    const buf = await rotated.toBuffer();
+    return { buf, meta: await sharp(buf).metadata() };
+  }
+  try {
+    const buf = await sharp(imgBuffer).rotate().extract({ left, top, width: cropW, height: cropH }).toBuffer();
+    return { buf, meta: await sharp(buf).metadata() };
+  } catch (_) {
+    const buf = await rotated.toBuffer();
+    return { buf, meta: await sharp(buf).metadata() };
+  }
 }
 
 async function loadWatermarkForGallery(pgClient, galleryId) {
@@ -6659,23 +6672,44 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     );
     if (pRes.rows.length === 0) return res.status(404).send('Não encontrado');
     const photo = pRes.rows[0];
-    const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
-    if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
+    let buf;
+    try {
+      buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
+    } catch (fetchErr) {
+      console.error('[king-selection] preview fetchPhotoFileBufferFromFilePath:', fetchErr?.message || fetchErr);
+      return res.status(502).json({
+        message: 'Não foi possível obter o ficheiro da imagem (armazenamento). Tente novamente em instantes.'
+      });
+    }
+    if (!buf) {
+      return res.status(502).json({
+        message: 'Não foi possível carregar a imagem (Cloudflare/R2 não configurado ou ficheiro em falta).'
+      });
+    }
 
     // Simula retrato/paisagem no painel: recorte central 3:4 ou 16:9 etc. (?wm_aspect_w=&wm_aspect_h=)
     let workBuf = buf;
     const qAw = parseInt(String(req.query.wm_aspect_w || ''), 10);
     const qAh = parseInt(String(req.query.wm_aspect_h || ''), 10);
     if (Number.isFinite(qAw) && Number.isFinite(qAh) && qAw > 0 && qAh > 0) {
-      const cropped = await cropBufferToAspectCenter(buf, qAw, qAh);
-      workBuf = cropped.buf;
+      try {
+        const cropped = await cropBufferToAspectCenter(buf, qAw, qAh);
+        workBuf = cropped.buf;
+      } catch (cropErr) {
+        console.warn('[king-selection] preview aspect crop skipped:', cropErr?.message || cropErr);
+      }
     }
 
     // Preview: limite de lado (default 1200). Query ?max= permite reduzir para UI leve (ex.: modal de duplicatas).
     const qMax = parseInt(String(req.query.max || '1200'), 10);
     const maxSide = Number.isFinite(qMax) && qMax >= 320 && qMax <= 2000 ? qMax : 1200;
-    const img = sharp(workBuf).rotate();
-    const meta = await img.metadata();
+    let meta;
+    try {
+      const img = sharp(workBuf).rotate();
+      meta = await img.metadata();
+    } catch (metaErr) {
+      return res.status(422).json({ message: 'Não foi possível ler esta imagem (ficheiro inválido ou corrompido).' });
+    }
     const { width, height } = getDisplayDimensions(meta, maxSide, maxSide);
     const max = maxSide;
     const scale = Math.min(max / Math.max(width, height), 1);
