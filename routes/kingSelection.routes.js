@@ -6930,6 +6930,10 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     if (Number.isFinite(qStH)) wm.stretchHPct = Math.max(50, Math.min(400, Math.round(qStH * 100) / 100));
     const qStrict = String(req.query.wm_strict || '') === '1';
     if (qStrict) wm.strict = true;
+    const qPathP = String(req.query.wm_path_portrait || '').trim();
+    const qPathL = String(req.query.wm_path_landscape || '').trim();
+    if (qPathP) wm.pathPortrait = qPathP;
+    if (qPathL) wm.pathLandscape = qPathL;
     let out = null;
     try {
       out = await buildWatermarkedJpeg({
