@@ -6461,8 +6461,16 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'watermark_logo_fine_rotate',
     'watermark_logo_offset_x',
     'watermark_logo_offset_y',
+    'watermark_logo_offset_x_portrait',
+    'watermark_logo_offset_y_portrait',
+    'watermark_logo_offset_x_landscape',
+    'watermark_logo_offset_y_landscape',
     'watermark_stretch_w_pct',
     'watermark_stretch_h_pct',
+    'watermark_stretch_w_pct_portrait',
+    'watermark_stretch_h_pct_portrait',
+    'watermark_stretch_w_pct_landscape',
+    'watermark_stretch_h_pct_landscape',
     'face_recognition_enabled',
     'client_image_quality',
     'pix_enabled',
@@ -6669,14 +6677,28 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         const n = parseInt(val || 0, 10) || 0;
         val = Math.max(-45, Math.min(45, n));
       }
-      if (key === 'watermark_logo_offset_x' || key === 'watermark_logo_offset_y') {
+      if (
+        key === 'watermark_logo_offset_x' ||
+        key === 'watermark_logo_offset_y' ||
+        key === 'watermark_logo_offset_x_portrait' ||
+        key === 'watermark_logo_offset_y_portrait' ||
+        key === 'watermark_logo_offset_x_landscape' ||
+        key === 'watermark_logo_offset_y_landscape'
+      ) {
         if (val === '' || val === null || val === 'null' || typeof val === 'undefined') val = 0;
         else {
           const n = parseFloat(val);
           val = Number.isFinite(n) ? Math.max(-50, Math.min(50, Math.round(n * 100) / 100)) : 0;
         }
       }
-      if (key === 'watermark_stretch_w_pct' || key === 'watermark_stretch_h_pct') {
+      if (
+        key === 'watermark_stretch_w_pct' ||
+        key === 'watermark_stretch_h_pct' ||
+        key === 'watermark_stretch_w_pct_portrait' ||
+        key === 'watermark_stretch_h_pct_portrait' ||
+        key === 'watermark_stretch_w_pct_landscape' ||
+        key === 'watermark_stretch_h_pct_landscape'
+      ) {
         const n = parseFloat(val);
         val = Number.isFinite(n) ? Math.max(50, Math.min(400, Math.round(n * 100) / 100)) : 100;
       }
