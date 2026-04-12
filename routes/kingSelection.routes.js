@@ -1549,11 +1549,61 @@ function clampInt(n, a, b) {
   return Math.max(a, Math.min(b, x));
 }
 
+/** Alinha a densidade do mosaico ao tamanho da foto (mesma lógica do tile_dense: passo ≈ maxSide × scale × 0,78). */
+function suggestWatermarkScaleForOutputDims(outW, outH) {
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
+  const maxSide = Math.max(outW, outH);
+  const minSide = Math.min(outW, outH);
+  const stepFactor = 0.78;
+  const stepMin = 128;
+  const targetStep = Math.max(stepMin, Math.round(minSide * 0.36));
+  let s = targetStep / (maxSide * stepFactor);
+  s = clamp(s, 0.12, 5.0);
+  return Math.round(s * 100) / 100;
+}
+
+/** Recorte central para simular retrato/paisagem nas prévias do painel (?wm_aspect_w / wm_aspect_h). */
+async function cropBufferToAspectCenter(imgBuffer, aspectW, aspectH) {
+  const aw = parseInt(aspectW, 10);
+  const ah = parseInt(aspectH, 10);
+  const rotated = sharp(imgBuffer).rotate();
+  if (!Number.isFinite(aw) || !Number.isFinite(ah) || aw <= 0 || ah <= 0) {
+    const buf = await rotated.toBuffer();
+    return { buf, meta: await sharp(buf).metadata() };
+  }
+  const meta = await rotated.metadata();
+  const iw = meta.width || 1;
+  const ih = meta.height || 1;
+  const targetRatio = aw / ah;
+  const curRatio = iw / ih;
+  if (Math.abs(curRatio - targetRatio) < 1e-4) {
+    const buf = await rotated.toBuffer();
+    return { buf, meta: await sharp(buf).metadata() };
+  }
+  let cropW = iw;
+  let cropH = ih;
+  let left = 0;
+  let top = 0;
+  if (curRatio > targetRatio) {
+    cropW = Math.round(ih * targetRatio);
+    left = Math.max(0, Math.floor((iw - cropW) / 2));
+  } else {
+    cropH = Math.round(iw / targetRatio);
+    top = Math.max(0, Math.floor((ih - cropH) / 2));
+  }
+  cropW = Math.min(cropW, iw - left);
+  cropH = Math.min(cropH, ih - top);
+  const buf = await sharp(imgBuffer).rotate().extract({ left, top, width: cropW, height: cropH }).toBuffer();
+  return { buf, meta: await sharp(buf).metadata() };
+}
+
 async function loadWatermarkForGallery(pgClient, galleryId) {
   const hasMode = await hasColumn(pgClient, 'king_galleries', 'watermark_mode');
   const hasPath = await hasColumn(pgClient, 'king_galleries', 'watermark_path');
   const hasOpacity = await hasColumn(pgClient, 'king_galleries', 'watermark_opacity');
   const hasScale = await hasColumn(pgClient, 'king_galleries', 'watermark_scale');
+  const hasScaleP = await hasColumn(pgClient, 'king_galleries', 'watermark_scale_portrait');
+  const hasScaleL = await hasColumn(pgClient, 'king_galleries', 'watermark_scale_landscape');
   const hasRotate = await hasColumn(pgClient, 'king_galleries', 'watermark_rotate');
   const hasTileL = await hasColumn(pgClient, 'king_galleries', 'watermark_tile_angle_landscape');
   const hasTileP = await hasColumn(pgClient, 'king_galleries', 'watermark_tile_angle_portrait');
@@ -1561,19 +1611,48 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   // Padrão pré-configurado: transparência 15%, tamanho 119%
   const DEFAULT_OPACITY = 0.15;
   const DEFAULT_SCALE = 1.19;
-  if (!hasMode && !hasPath && !hasOpacity && !hasScale && !hasRotate) return { mode: 'x', path: null, opacity: DEFAULT_OPACITY, scale: DEFAULT_SCALE, rotate: 0, tileAngleLandscape: 0, tileAnglePortrait: 0, logoFineRotate: 0 };
+  const clamp01 = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
+  if (!hasMode && !hasPath && !hasOpacity && !hasScale && !hasRotate) {
+    return {
+      mode: 'x',
+      path: null,
+      opacity: DEFAULT_OPACITY,
+      scale: DEFAULT_SCALE,
+      scalePortrait: null,
+      scaleLandscape: null,
+      rotate: 0,
+      tileAngleLandscape: 0,
+      tileAnglePortrait: 0,
+      logoFineRotate: 0
+    };
+  }
   const cols = [
     hasMode ? 'watermark_mode' : `'x'::text AS watermark_mode`,
     hasPath ? 'watermark_path' : 'NULL::text AS watermark_path',
     hasOpacity ? 'watermark_opacity' : `${DEFAULT_OPACITY}::numeric AS watermark_opacity`,
     hasScale ? 'watermark_scale' : `${DEFAULT_SCALE}::numeric AS watermark_scale`,
+    hasScaleP ? 'watermark_scale_portrait' : 'NULL::numeric AS watermark_scale_portrait',
+    hasScaleL ? 'watermark_scale_landscape' : 'NULL::numeric AS watermark_scale_landscape',
     hasRotate ? 'watermark_rotate' : '0::int AS watermark_rotate',
     hasTileL ? 'watermark_tile_angle_landscape' : '0::smallint AS watermark_tile_angle_landscape',
     hasTileP ? 'watermark_tile_angle_portrait' : '0::smallint AS watermark_tile_angle_portrait',
     hasLogoFine ? 'watermark_logo_fine_rotate' : '0::smallint AS watermark_logo_fine_rotate'
   ].join(', ');
   const res = await pgClient.query(`SELECT ${cols} FROM king_galleries WHERE id=$1`, [galleryId]);
-  if (!res.rows.length) return { mode: 'x', path: null, opacity: DEFAULT_OPACITY, scale: DEFAULT_SCALE, rotate: 0, tileAngleLandscape: 0, tileAnglePortrait: 0, logoFineRotate: 0 };
+  if (!res.rows.length) {
+    return {
+      mode: 'x',
+      path: null,
+      opacity: DEFAULT_OPACITY,
+      scale: DEFAULT_SCALE,
+      scalePortrait: null,
+      scaleLandscape: null,
+      rotate: 0,
+      tileAngleLandscape: 0,
+      tileAnglePortrait: 0,
+      logoFineRotate: 0
+    };
+  }
   const row = res.rows[0] || {};
   const op = parseFloat(row.watermark_opacity);
   const sc = parseFloat(row.watermark_scale);
@@ -1582,6 +1661,12 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const tileAngleLandscape = clampInt(row.watermark_tile_angle_landscape, -45, 45);
   const tileAnglePortrait = clampInt(row.watermark_tile_angle_portrait, -45, 45);
   const logoFineRotate = clampInt(row.watermark_logo_fine_rotate, -45, 45);
+  const rawSp = row.watermark_scale_portrait;
+  const rawSl = row.watermark_scale_landscape;
+  const scalePortrait =
+    rawSp != null && Number.isFinite(parseFloat(rawSp)) ? clamp01(parseFloat(rawSp), 0.1, 5.0) : null;
+  const scaleLandscape =
+    rawSl != null && Number.isFinite(parseFloat(rawSl)) ? clamp01(parseFloat(rawSl), 0.1, 5.0) : null;
   // Normalização: antigas galerias podem estar com "x"/vazio. Como o padrão do sistema
   // é a marca d'água completa, forçamos "tile_dense" nesses casos.
   let mode = row.watermark_mode || 'x';
@@ -1591,6 +1676,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
     path: row.watermark_path || null,
     opacity: Number.isFinite(op) ? op : DEFAULT_OPACITY,
     scale: Number.isFinite(sc) ? sc : DEFAULT_SCALE,
+    scalePortrait,
+    scaleLandscape,
     rotate,
     tileAngleLandscape,
     tileAnglePortrait,
@@ -1721,12 +1808,19 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   }
   const wmBuf = wmBufRaw;
   const opacity = clamp(parseFloat(watermark?.opacity), 0.0, 1.0);
-  const scale = clamp(parseFloat(watermark?.scale), 0.10, 5.0);
+  const baseScale = clamp(parseFloat(watermark?.scale), 0.10, 5.0);
+  const rawSp = watermark?.scalePortrait;
+  const rawSl = watermark?.scaleLandscape;
+  const scalePortrait = Number.isFinite(parseFloat(rawSp)) ? clamp(parseFloat(rawSp), 0.10, 5.0) : null;
+  const scaleLandscape = Number.isFinite(parseFloat(rawSl)) ? clamp(parseFloat(rawSl), 0.10, 5.0) : null;
   const rot = parseInt(watermark?.rotate || 0, 10) || 0;
   const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
   const logoFineRotate = clampInt(watermark?.logoFineRotate ?? 0, -45, 45);
   const maxSide = Math.max(outW, outH);
   const isLandscape = outW >= outH;
+  const effectiveScale = isLandscape
+    ? (scaleLandscape != null ? scaleLandscape : baseScale)
+    : (scalePortrait != null ? scalePortrait : baseScale);
   const patternRotateDeg = clampInt(
     isLandscape ? (watermark?.tileAngleLandscape ?? 0) : (watermark?.tileAnglePortrait ?? 0),
     -45,
@@ -1754,8 +1848,8 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   // Automático (ajustar na foto): escala respeitando o formato da foto
   // - horizontal: logo tende a crescer na largura
   // - vertical: logo tende a crescer na altura
-  const boxW = Math.max(140, Math.round(outW * scale));
-  const boxH = Math.max(140, Math.round(outH * scale));
+  const boxW = Math.max(140, Math.round(outW * effectiveScale));
+  const boxH = Math.max(140, Math.round(outH * effectiveScale));
   // IMPORTANTE: não auto-rotacionar marca d’água por EXIF (alguns PNGs ficam “de lado”).
   // Rotação em passos (0/90/180/270) + ajuste fino (°) no painel.
   const wmBase = sharp(wmBuf).rotate(rotate + logoFineRotate);
@@ -1770,7 +1864,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
     const b64 = wmPng.toString('base64');
     const stepFactor = 0.78;
     const stepMin = 128;
-    const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.12, scale) * stepFactor)));
+    const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.12, effectiveScale) * stepFactor)));
     const w = outW;
     const h = outH;
     const svg = Buffer.from(
@@ -1781,7 +1875,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
           </pattern>
         </defs>
         <g transform="rotate(${patternRotateDeg} ${Math.round(w / 2)} ${Math.round(h / 2)})">
-          <rect x="-${w}" y="-${h}" width="${w * 3}" height="${h * 3}" fill="url(#pTileDense)"/>
+          <rect x="-${w * 2}" y="-${h * 2}" width="${w * 5}" height="${h * 5}" fill="url(#pTileDense)"/>
         </g>
       </svg>`
     );
@@ -1816,7 +1910,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
     const b64 = wmPng.toString('base64');
     const stepFactor = 1.35;
     const stepMin = 180;
-    const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.15, scale) * stepFactor)));
+    const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.15, effectiveScale) * stepFactor)));
     const w = outW;
     const h = outH;
     const svg = Buffer.from(
@@ -1827,7 +1921,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
           </pattern>
         </defs>
         <g transform="rotate(${patternRotateDeg} ${Math.round(w / 2)} ${Math.round(h / 2)})">
-          <rect x="-${w}" y="-${h}" width="${w * 3}" height="${h * 3}" fill="url(#p)"/>
+          <rect x="-${w * 2}" y="-${h * 2}" width="${w * 5}" height="${h * 5}" fill="url(#p)"/>
         </g>
       </svg>`
     );
@@ -6019,6 +6113,8 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'watermark_path',
     'watermark_opacity',
     'watermark_scale',
+    'watermark_scale_portrait',
+    'watermark_scale_landscape',
     'watermark_rotate',
     'watermark_tile_angle_landscape',
     'watermark_tile_angle_portrait',
@@ -6211,6 +6307,15 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         const n = parseFloat(val);
         val = Number.isFinite(n) ? Math.max(0.10, Math.min(5.0, n)) : 1.19;
         val = Math.round(val * 100) / 100;
+      }
+      if (key === 'watermark_scale_portrait' || key === 'watermark_scale_landscape') {
+        if (val === '' || val === null || val === 'null' || typeof val === 'undefined') {
+          val = null;
+        } else {
+          const n = parseFloat(val);
+          val = Number.isFinite(n) ? Math.max(0.10, Math.min(5.0, n)) : null;
+          if (val != null) val = Math.round(val * 100) / 100;
+        }
       }
       if (key === 'watermark_rotate') {
         const n = parseInt(val || 0, 10) || 0;
@@ -6557,10 +6662,19 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
     if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
 
+    // Simula retrato/paisagem no painel: recorte central 3:4 ou 16:9 etc. (?wm_aspect_w=&wm_aspect_h=)
+    let workBuf = buf;
+    const qAw = parseInt(String(req.query.wm_aspect_w || ''), 10);
+    const qAh = parseInt(String(req.query.wm_aspect_h || ''), 10);
+    if (Number.isFinite(qAw) && Number.isFinite(qAh) && qAw > 0 && qAh > 0) {
+      const cropped = await cropBufferToAspectCenter(buf, qAw, qAh);
+      workBuf = cropped.buf;
+    }
+
     // Preview: limite de lado (default 1200). Query ?max= permite reduzir para UI leve (ex.: modal de duplicatas).
     const qMax = parseInt(String(req.query.max || '1200'), 10);
     const maxSide = Number.isFinite(qMax) && qMax >= 320 && qMax <= 2000 ? qMax : 1200;
-    const img = sharp(buf).rotate();
+    const img = sharp(workBuf).rotate();
     const meta = await img.metadata();
     const { width, height } = getDisplayDimensions(meta, maxSide, maxSide);
     const max = maxSide;
@@ -6576,6 +6690,10 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     if (Number.isFinite(qOp)) wm.opacity = qOp;
     const qScale = parseFloat(req.query.wm_scale);
     if (Number.isFinite(qScale)) wm.scale = qScale;
+    const qSp = parseFloat(req.query.wm_scale_portrait);
+    const qSl = parseFloat(req.query.wm_scale_landscape);
+    if (Number.isFinite(qSp)) wm.scalePortrait = qSp;
+    if (Number.isFinite(qSl)) wm.scaleLandscape = qSl;
     const qRot = parseInt(req.query.wm_rotate || 0, 10);
     if ([0, 90, 180, 270].includes(qRot)) wm.rotate = qRot;
     const qTl = parseInt(String(req.query.wm_tile_angle_landscape ?? ''), 10);
@@ -6589,7 +6707,7 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     let out = null;
     try {
       out = await buildWatermarkedJpeg({
-        imgBuffer: buf,
+        imgBuffer: workBuf,
         outW,
         outH,
         watermark: wm
@@ -6606,6 +6724,42 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
     res.send(out);
+  } finally {
+    client.release();
+  }
+}));
+
+// Sugestão de escala para "Ajustar à dimensão" (retrato vs paisagem) — alinhada ao tile_dense.
+router.get('/galleries/:id/watermark-suggest-scales', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id
+       FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (own.rows.length === 0) return res.status(403).json({ message: 'Sem permissão' });
+
+    const pw = Math.max(100, Math.min(4000, parseInt(String(req.query.portrait_w || '900'), 10) || 900));
+    const ph = Math.max(100, Math.min(6000, parseInt(String(req.query.portrait_h || '1200'), 10) || 1200));
+    const lw = Math.max(100, Math.min(6000, parseInt(String(req.query.landscape_w || '1600'), 10) || 1600));
+    const lh = Math.max(100, Math.min(4000, parseInt(String(req.query.landscape_h || '900'), 10) || 900));
+
+    const watermark_scale_portrait = suggestWatermarkScaleForOutputDims(pw, ph);
+    const watermark_scale_landscape = suggestWatermarkScaleForOutputDims(lw, lh);
+
+    res.json({
+      success: true,
+      watermark_scale_portrait,
+      watermark_scale_landscape,
+      reference_dims: { portrait: `${pw}x${ph}`, landscape: `${lw}x${lh}` }
+    });
   } finally {
     client.release();
   }
@@ -10422,7 +10576,7 @@ router.get('/client/photos/:photoId/preview', asyncHandler(async (req, res) => {
     }
     const spec = getClientPreviewOutputSpec(galleryQuality, useThumb);
     const wm = (isDownload && ksIsPaidEventAccessMode(accessMode))
-      ? { mode: 'none', opacity: 0, scale: 1.0, rotate: 0, tileAngleLandscape: 0, tileAnglePortrait: 0, logoFineRotate: 0, logoBuffer: null }
+      ? { mode: 'none', opacity: 0, scale: 1.0, scalePortrait: null, scaleLandscape: null, rotate: 0, tileAngleLandscape: 0, tileAnglePortrait: 0, logoFineRotate: 0, logoBuffer: null }
       : await loadWatermarkForGallery(client, payload.galleryId);
     const buf = await fetchPhotoFileBufferFromFilePath(photo.file_path);
     if (!buf) return res.status(500).send('Não foi possível carregar a imagem (Cloudflare/R2 não configurado).');
