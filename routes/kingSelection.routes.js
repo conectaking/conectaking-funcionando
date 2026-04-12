@@ -1622,6 +1622,7 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const hasTileL = await hasColumn(pgClient, 'king_galleries', 'watermark_tile_angle_landscape');
   const hasTileP = await hasColumn(pgClient, 'king_galleries', 'watermark_tile_angle_portrait');
   const hasLogoFine = await hasColumn(pgClient, 'king_galleries', 'watermark_logo_fine_rotate');
+  const hasLogoOffX = await hasColumn(pgClient, 'king_galleries', 'watermark_logo_offset_x');
   // Padrão pré-configurado: transparência 15%, tamanho 119%
   const DEFAULT_OPACITY = 0.15;
   const DEFAULT_SCALE = 1.19;
@@ -1637,7 +1638,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
       rotate: 0,
       tileAngleLandscape: 0,
       tileAnglePortrait: 0,
-      logoFineRotate: 0
+      logoFineRotate: 0,
+      logoOffsetX: 0
     };
   }
   const cols = [
@@ -1650,7 +1652,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
     hasRotate ? 'watermark_rotate' : '0::int AS watermark_rotate',
     hasTileL ? 'watermark_tile_angle_landscape' : '0::smallint AS watermark_tile_angle_landscape',
     hasTileP ? 'watermark_tile_angle_portrait' : '0::smallint AS watermark_tile_angle_portrait',
-    hasLogoFine ? 'watermark_logo_fine_rotate' : '0::smallint AS watermark_logo_fine_rotate'
+    hasLogoFine ? 'watermark_logo_fine_rotate' : '0::smallint AS watermark_logo_fine_rotate',
+    hasLogoOffX ? 'watermark_logo_offset_x' : '0::numeric AS watermark_logo_offset_x'
   ].join(', ');
   const res = await pgClient.query(`SELECT ${cols} FROM king_galleries WHERE id=$1`, [galleryId]);
   if (!res.rows.length) {
@@ -1664,7 +1667,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
       rotate: 0,
       tileAngleLandscape: 0,
       tileAnglePortrait: 0,
-      logoFineRotate: 0
+      logoFineRotate: 0,
+      logoOffsetX: 0
     };
   }
   const row = res.rows[0] || {};
@@ -1675,6 +1679,11 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const tileAngleLandscape = clampInt(row.watermark_tile_angle_landscape, -45, 45);
   const tileAnglePortrait = clampInt(row.watermark_tile_angle_portrait, -45, 45);
   const logoFineRotate = clampInt(row.watermark_logo_fine_rotate, -45, 45);
+  const rawOffX = row.watermark_logo_offset_x;
+  const logoOffsetX =
+    rawOffX != null && Number.isFinite(parseFloat(rawOffX))
+      ? Math.max(-50, Math.min(50, Math.round(parseFloat(rawOffX) * 100) / 100))
+      : 0;
   const rawSp = row.watermark_scale_portrait;
   const rawSl = row.watermark_scale_landscape;
   const scalePortrait =
@@ -1695,7 +1704,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
     rotate,
     tileAngleLandscape,
     tileAnglePortrait,
-    logoFineRotate
+    logoFineRotate,
+    logoOffsetX
   };
 }
 
