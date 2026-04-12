@@ -1633,6 +1633,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const hasLogoOffY = await hasColumn(pgClient, 'king_galleries', 'watermark_logo_offset_y');
   const hasStretchW = await hasColumn(pgClient, 'king_galleries', 'watermark_stretch_w_pct');
   const hasStretchH = await hasColumn(pgClient, 'king_galleries', 'watermark_stretch_h_pct');
+  const hasPathP = await hasColumn(pgClient, 'king_galleries', 'watermark_path_portrait');
+  const hasPathL = await hasColumn(pgClient, 'king_galleries', 'watermark_path_landscape');
   // Padrão pré-configurado: transparência 15%, tamanho 119%
   const DEFAULT_OPACITY = 0.15;
   const DEFAULT_SCALE = 1.19;
@@ -1654,12 +1656,16 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
       logoOffsetX: 0,
       logoOffsetY: 0,
       stretchWPct: 100,
-      stretchHPct: 100
+      stretchHPct: 100,
+      pathPortrait: null,
+      pathLandscape: null
     };
   }
   const cols = [
     hasMode ? 'watermark_mode' : `'x'::text AS watermark_mode`,
     hasPath ? 'watermark_path' : 'NULL::text AS watermark_path',
+    hasPathP ? 'watermark_path_portrait' : 'NULL::text AS watermark_path_portrait',
+    hasPathL ? 'watermark_path_landscape' : 'NULL::text AS watermark_path_landscape',
     hasOpacity ? 'watermark_opacity' : `${DEFAULT_OPACITY}::numeric AS watermark_opacity`,
     hasScale ? 'watermark_scale' : `${DEFAULT_SCALE}::numeric AS watermark_scale`,
     hasScaleP ? 'watermark_scale_portrait' : 'NULL::numeric AS watermark_scale_portrait',
@@ -1693,7 +1699,9 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
       logoOffsetX: 0,
       logoOffsetY: 0,
       stretchWPct: 100,
-      stretchHPct: 100
+      stretchHPct: 100,
+      pathPortrait: null,
+      pathLandscape: null
     };
   }
   const row = res.rows[0] || {};
@@ -1739,9 +1747,13 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   // é a marca d'água completa, forçamos "tile_dense" nesses casos.
   let mode = row.watermark_mode || 'x';
   if (!mode || mode === 'x' || mode === 'tile_sparse' || mode === 'tile') mode = 'tile_dense';
+  const rawPathP = hasPathP ? row.watermark_path_portrait : null;
+  const rawPathL = hasPathL ? row.watermark_path_landscape : null;
   return {
     mode,
     path: row.watermark_path || null,
+    pathPortrait: rawPathP != null && String(rawPathP).trim() !== '' ? String(rawPathP).trim() : null,
+    pathLandscape: rawPathL != null && String(rawPathL).trim() !== '' ? String(rawPathL).trim() : null,
     opacity: Number.isFinite(op) ? op : DEFAULT_OPACITY,
     scale: Number.isFinite(sc) ? sc : DEFAULT_SCALE,
     scalePortrait,
@@ -1787,7 +1799,11 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   }
 
   // 2) Marca d’água por arquivo (Cloudflare) ou padrão do sistema
-  const fpRaw = String(watermark.path || '').trim();
+  const isLandscape = outW >= outH;
+  const legacyPath = String(watermark.path || '').trim();
+  const pathP = String(watermark.pathPortrait || '').trim();
+  const pathL = String(watermark.pathLandscape || '').trim();
+  const fpRaw = isLandscape ? (pathL || legacyPath) : (pathP || legacyPath);
   const mode = String(watermark.mode || 'x');
   const strict = !!watermark?.strict;
   let localDefaultBuf = null;
@@ -1888,7 +1904,6 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   const scalePortrait = Number.isFinite(parseFloat(rawSp)) ? clamp(parseFloat(rawSp), 0.10, 5.0) : null;
   const scaleLandscape = Number.isFinite(parseFloat(rawSl)) ? clamp(parseFloat(rawSl), 0.10, 5.0) : null;
   const maxSide = Math.max(outW, outH);
-  const isLandscape = outW >= outH;
   const rotP = parseInt(watermark?.rotatePortrait ?? watermark?.rotate ?? 0, 10) || 0;
   const rotL = parseInt(watermark?.rotateLandscape ?? watermark?.rotate ?? 0, 10) || 0;
   const rotate = [0, 90, 180, 270].includes(isLandscape ? rotL : rotP) ? (isLandscape ? rotL : rotP) : 0;
@@ -6224,6 +6239,8 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'client_card_height_px',
     'watermark_mode',
     'watermark_path',
+    'watermark_path_portrait',
+    'watermark_path_landscape',
     'watermark_opacity',
     'watermark_scale',
     'watermark_scale_portrait',
