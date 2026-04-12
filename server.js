@@ -493,6 +493,48 @@ function loadKingSelectionClienteHtmlTemplate() {
     return kingSelectionClienteHtmlTemplate;
 }
 
+const KS_PROJECT_SCROLL_MARKER = 'king-selection-project-scroll.js';
+let _ksPhotographerHtmlCache = { filePath: '', mtimeMs: 0, html: null };
+
+/** Injeta CSS/JS anti-scroll preso no mobile; cache invalida quando o .html muda. */
+function getInjectedKingSelectionPhotographerHtml() {
+    const filePath = fs.existsSync(kingSelectionProjectHtml)
+        ? kingSelectionProjectHtml
+        : fs.existsSync(kingSelectionEditHtml)
+            ? kingSelectionEditHtml
+            : null;
+    if (!filePath) return null;
+    let st;
+    try {
+        st = fs.statSync(filePath);
+    } catch (e) {
+        return null;
+    }
+    if (
+        _ksPhotographerHtmlCache.html &&
+        _ksPhotographerHtmlCache.filePath === filePath &&
+        _ksPhotographerHtmlCache.mtimeMs === st.mtimeMs
+    ) {
+        return _ksPhotographerHtmlCache.html;
+    }
+    let html = fs.readFileSync(filePath, 'utf8');
+    if (!html.includes(KS_PROJECT_SCROLL_MARKER) && html.includes('</head>')) {
+        html = html.replace(
+            '</head>',
+            '  <link rel="stylesheet" href="/king-selection-project-mobile.css" />\n  <script src="/king-selection-project-scroll.js" defer></script>\n</head>'
+        );
+    }
+    _ksPhotographerHtmlCache = { filePath, mtimeMs: st.mtimeMs, html };
+    return html;
+}
+
+function serveKingSelectionPhotographerPage(req, res, next) {
+    const html = getInjectedKingSelectionPhotographerHtml();
+    if (!html) return next();
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.type('html').send(html);
+}
+
 function escHtmlAttr(s) {
     return String(s || '')
         .replace(/&/g, '&amp;')
@@ -634,12 +676,20 @@ function proxyKingSelection(req, res, next) {
     }
 }
 
-// /kingSelection sem slug → painel do fotógrafo (mesmo ficheiro que kingSelectionEdit.html)
-app.get(['/kingSelection', '/kingSelection/', '/kingselection', '/kingselection/'], (req, res, next) => {
-    if (fs.existsSync(kingSelectionProjectHtml)) return res.sendFile(kingSelectionProjectHtml);
-    if (fs.existsSync(kingSelectionEditHtml)) return res.sendFile(kingSelectionEditHtml);
-    return next();
-});
+// /kingSelection sem slug → painel do fotógrafo (injeta CSS/JS mobile; /mr/ igual)
+app.get(
+    [
+        '/kingSelection',
+        '/kingSelection/',
+        '/kingselection',
+        '/kingselection/',
+        '/mr/kingSelection',
+        '/mr/kingSelection/',
+        '/mr/kingselection',
+        '/mr/kingselection/'
+    ],
+    serveKingSelectionPhotographerPage
+);
 
 // Compat legado: qualquer URL antiga kingSelectionEdit* deve cair no caminho oficial /kingSelection
 app.get(
