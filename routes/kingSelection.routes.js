@@ -1556,11 +1556,14 @@ function clampInt(n, a, b) {
  */
 function suggestWatermarkScaleForOutputDims(outW, outH, mode = 'fill') {
   const clamp = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
-  const maxSide = Math.max(outW, outH);
   const m = String(mode || 'fill').toLowerCase();
-  // Número alvo de “ladrilhos” no lado maior (mais alto = escala menor = mais repetições).
-  const div = m === 'fit' ? 4.2 : m === 'center' ? 5.8 : 3.1;
-  let s = maxSide / div / maxSide;
+  // Escala ≈ 1/div: div maior → marca menor → mais repetições (mais “Centro”).
+  // Preencher usa div menor que Ajustar/Centro para ladrilhos maiores e menos “micro-mosaico”.
+  const div = m === 'fit' ? 3.8 : m === 'center' ? 5.4 : 2.5;
+  let s = 1 / div;
+  // Fotos muito alongadas: ligeiro reforço na escala para o mosaico não ficar minúsculo na direção curta.
+  const ar = Math.max(outW, outH) / Math.max(1, Math.min(outW, outH));
+  if (ar > 1.35) s *= 1 + Math.min(0.12, (ar - 1.35) * 0.08);
   s = clamp(s, 0.15, 5.0);
   return Math.round(s * 100) / 100;
 }
