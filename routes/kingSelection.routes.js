@@ -1549,17 +1549,19 @@ function clampInt(n, a, b) {
   return Math.max(a, Math.min(b, x));
 }
 
-/** Alinha a densidade do mosaico ao tamanho da foto (mesma lógica do tile_dense: passo ≈ maxSide × scale × 0,78). */
-function suggestWatermarkScaleForOutputDims(outW, outH) {
+/**
+ * Sugere escala (0,10–5,0) para a marca — alinhada ao mosaico tile_dense.
+ * mode: fill = poucas repetições grandes (tipo “Preencher” no Windows);
+ *       fit = meio-termo (“Ajustar”); center = mais pequeno ao centro.
+ */
+function suggestWatermarkScaleForOutputDims(outW, outH, mode = 'fill') {
   const clamp = (n, a, b) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
   const maxSide = Math.max(outW, outH);
-  const minSide = Math.min(outW, outH);
-  const stepFactor = 0.78;
-  const stepMin = 128;
-  // Mais “cheio” na foto que a versão antiga (0,36 → ~0,52) + ligeiro boost para o painel não ficar “miúdo”.
-  const targetStep = Math.max(stepMin, Math.round(minSide * 0.52));
-  let s = targetStep / (maxSide * stepFactor);
-  s = clamp(s * 1.35, 0.12, 5.0);
+  const m = String(mode || 'fill').toLowerCase();
+  // Número alvo de “ladrilhos” no lado maior (mais alto = escala menor = mais repetições).
+  const div = m === 'fit' ? 4.2 : m === 'center' ? 5.8 : 3.1;
+  let s = maxSide / div / maxSide;
+  s = clamp(s, 0.15, 5.0);
   return Math.round(s * 100) / 100;
 }
 
@@ -1619,6 +1621,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const hasScaleP = await hasColumn(pgClient, 'king_galleries', 'watermark_scale_portrait');
   const hasScaleL = await hasColumn(pgClient, 'king_galleries', 'watermark_scale_landscape');
   const hasRotate = await hasColumn(pgClient, 'king_galleries', 'watermark_rotate');
+  const hasRotP = await hasColumn(pgClient, 'king_galleries', 'watermark_rotate_portrait');
+  const hasRotL = await hasColumn(pgClient, 'king_galleries', 'watermark_rotate_landscape');
   const hasTileL = await hasColumn(pgClient, 'king_galleries', 'watermark_tile_angle_landscape');
   const hasTileP = await hasColumn(pgClient, 'king_galleries', 'watermark_tile_angle_portrait');
   const hasLogoFine = await hasColumn(pgClient, 'king_galleries', 'watermark_logo_fine_rotate');
@@ -1636,6 +1640,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
       scalePortrait: null,
       scaleLandscape: null,
       rotate: 0,
+      rotatePortrait: 0,
+      rotateLandscape: 0,
       tileAngleLandscape: 0,
       tileAnglePortrait: 0,
       logoFineRotate: 0,
@@ -1650,6 +1656,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
     hasScaleP ? 'watermark_scale_portrait' : 'NULL::numeric AS watermark_scale_portrait',
     hasScaleL ? 'watermark_scale_landscape' : 'NULL::numeric AS watermark_scale_landscape',
     hasRotate ? 'watermark_rotate' : '0::int AS watermark_rotate',
+    hasRotP ? 'watermark_rotate_portrait' : (hasRotate ? 'watermark_rotate AS watermark_rotate_portrait' : '0::int AS watermark_rotate_portrait'),
+    hasRotL ? 'watermark_rotate_landscape' : (hasRotate ? 'watermark_rotate AS watermark_rotate_landscape' : '0::int AS watermark_rotate_landscape'),
     hasTileL ? 'watermark_tile_angle_landscape' : '0::smallint AS watermark_tile_angle_landscape',
     hasTileP ? 'watermark_tile_angle_portrait' : '0::smallint AS watermark_tile_angle_portrait',
     hasLogoFine ? 'watermark_logo_fine_rotate' : '0::smallint AS watermark_logo_fine_rotate',
@@ -1665,6 +1673,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
       scalePortrait: null,
       scaleLandscape: null,
       rotate: 0,
+      rotatePortrait: 0,
+      rotateLandscape: 0,
       tileAngleLandscape: 0,
       tileAnglePortrait: 0,
       logoFineRotate: 0,
@@ -1675,7 +1685,12 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const op = parseFloat(row.watermark_opacity);
   const sc = parseFloat(row.watermark_scale);
   const rot = parseInt(row.watermark_rotate || 0, 10) || 0;
-  const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
+  const rotateLegacy = [0, 90, 180, 270].includes(rot) ? rot : 0;
+  let rotatePortrait = parseInt(String(row.watermark_rotate_portrait ?? ''), 10);
+  if (![0, 90, 180, 270].includes(rotatePortrait)) rotatePortrait = rotateLegacy;
+  let rotateLandscape = parseInt(String(row.watermark_rotate_landscape ?? ''), 10);
+  if (![0, 90, 180, 270].includes(rotateLandscape)) rotateLandscape = rotateLegacy;
+  const rotate = rotatePortrait;
   const tileAngleLandscape = clampInt(row.watermark_tile_angle_landscape, -45, 45);
   const tileAnglePortrait = clampInt(row.watermark_tile_angle_portrait, -45, 45);
   const logoFineRotate = clampInt(row.watermark_logo_fine_rotate, -45, 45);
@@ -1702,6 +1717,8 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
     scalePortrait,
     scaleLandscape,
     rotate,
+    rotatePortrait,
+    rotateLandscape,
     tileAngleLandscape,
     tileAnglePortrait,
     logoFineRotate,
@@ -1837,19 +1854,16 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   const rawSl = watermark?.scaleLandscape;
   const scalePortrait = Number.isFinite(parseFloat(rawSp)) ? clamp(parseFloat(rawSp), 0.10, 5.0) : null;
   const scaleLandscape = Number.isFinite(parseFloat(rawSl)) ? clamp(parseFloat(rawSl), 0.10, 5.0) : null;
-  const rot = parseInt(watermark?.rotate || 0, 10) || 0;
-  const rotate = [0, 90, 180, 270].includes(rot) ? rot : 0;
-  const logoFineRotate = clampInt(watermark?.logoFineRotate ?? 0, -45, 45);
   const maxSide = Math.max(outW, outH);
   const isLandscape = outW >= outH;
+  const rotP = parseInt(watermark?.rotatePortrait ?? watermark?.rotate ?? 0, 10) || 0;
+  const rotL = parseInt(watermark?.rotateLandscape ?? watermark?.rotate ?? 0, 10) || 0;
+  const rotate = [0, 90, 180, 270].includes(isLandscape ? rotL : rotP) ? (isLandscape ? rotL : rotP) : 0;
+  const logoFineRotate = 0;
   const effectiveScale = isLandscape
     ? (scaleLandscape != null ? scaleLandscape : baseScale)
     : (scalePortrait != null ? scalePortrait : baseScale);
-  const patternRotateDeg = clampInt(
-    isLandscape ? (watermark?.tileAngleLandscape ?? 0) : (watermark?.tileAnglePortrait ?? 0),
-    -45,
-    45
-  );
+  const patternRotateDeg = 0;
   const rawLogoOff = watermark?.logoOffsetX;
   const logoOffPct =
     rawLogoOff != null && Number.isFinite(parseFloat(rawLogoOff))
@@ -1884,7 +1898,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   // Rotação em passos (0/90/180/270) + ajuste fino (°) no painel.
   const wmBase = sharp(wmBuf).rotate(rotate + logoFineRotate);
 
-  // Padrão (Conecta King): mosaico denso — ângulo do padrão vem de tileAngle* (default 0° = alinhado ao quadro)
+  // Padrão (Conecta King): mosaico denso — passo ≥ tamanho do ladrilho (evita “micro-quadradinhos” cortados).
   if (watermark?.mode === 'tile_dense') {
     let wmPng = await wmBase
       .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: false })
@@ -1892,9 +1906,9 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
       .toBuffer();
     wmPng = await applyOpacityPng(wmPng, opacity);
     const b64 = wmPng.toString('base64');
-    const stepFactor = 0.78;
     const stepMin = 128;
-    const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.12, effectiveScale) * stepFactor)));
+    const cell = Math.max(boxW, boxH);
+    const step = Math.max(stepMin, Math.round(cell * 1.08));
     const w = outW;
     const h = outH;
     const svg = Buffer.from(
@@ -1940,9 +1954,9 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
     // Mosaico (tipo álbum): repete a marca d'água na foto inteira
     // Para o mosaico, o espaçamento usa o maior lado (mais estável)
     const b64 = wmPng.toString('base64');
-    const stepFactor = 1.35;
     const stepMin = 180;
-    const step = Math.max(stepMin, Math.round(maxSide * (Math.max(0.15, effectiveScale) * stepFactor)));
+    const cell = Math.max(boxW, boxH);
+    const step = Math.max(stepMin, Math.round(cell * 1.08));
     const w = outW;
     const h = outH;
     const svg = Buffer.from(
@@ -6153,6 +6167,8 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'watermark_scale_portrait',
     'watermark_scale_landscape',
     'watermark_rotate',
+    'watermark_rotate_portrait',
+    'watermark_rotate_landscape',
     'watermark_tile_angle_landscape',
     'watermark_tile_angle_portrait',
     'watermark_logo_fine_rotate',
@@ -6355,7 +6371,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
           if (val != null) val = Math.round(val * 100) / 100;
         }
       }
-      if (key === 'watermark_rotate') {
+      if (key === 'watermark_rotate' || key === 'watermark_rotate_portrait' || key === 'watermark_rotate_landscape') {
         const n = parseInt(val || 0, 10) || 0;
         val = [0, 90, 180, 270].includes(n) ? n : 0;
       }
@@ -6760,14 +6776,17 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     const qSl = parseFloat(req.query.wm_scale_landscape);
     if (Number.isFinite(qSp)) wm.scalePortrait = qSp;
     if (Number.isFinite(qSl)) wm.scaleLandscape = qSl;
-    const qRot = parseInt(req.query.wm_rotate || 0, 10);
+    const qRpt = parseInt(String(req.query.wm_rotate_portrait ?? ''), 10);
+    const qRls = parseInt(String(req.query.wm_rotate_landscape ?? ''), 10);
+    const qRot = parseInt(String(req.query.wm_rotate ?? ''), 10);
+    if ([0, 90, 180, 270].includes(qRpt)) wm.rotatePortrait = qRpt;
+    else if ([0, 90, 180, 270].includes(qRot)) wm.rotatePortrait = qRot;
+    if ([0, 90, 180, 270].includes(qRls)) wm.rotateLandscape = qRls;
+    else if ([0, 90, 180, 270].includes(qRot)) wm.rotateLandscape = qRot;
     if ([0, 90, 180, 270].includes(qRot)) wm.rotate = qRot;
-    const qTl = parseInt(String(req.query.wm_tile_angle_landscape ?? ''), 10);
-    if (Number.isFinite(qTl)) wm.tileAngleLandscape = clampInt(qTl, -45, 45);
-    const qTp = parseInt(String(req.query.wm_tile_angle_portrait ?? ''), 10);
-    if (Number.isFinite(qTp)) wm.tileAnglePortrait = clampInt(qTp, -45, 45);
-    const qLf = parseInt(String(req.query.wm_logo_fine_rotate ?? ''), 10);
-    if (Number.isFinite(qLf)) wm.logoFineRotate = clampInt(qLf, -45, 45);
+    wm.tileAngleLandscape = 0;
+    wm.tileAnglePortrait = 0;
+    wm.logoFineRotate = 0;
     const qOx = parseFloat(String(req.query.wm_logo_offset_x ?? ''));
     if (Number.isFinite(qOx)) wm.logoOffsetX = Math.max(-50, Math.min(50, Math.round(qOx * 100) / 100));
     const qStrict = String(req.query.wm_strict || '') === '1';
@@ -6819,13 +6838,16 @@ router.get('/galleries/:id/watermark-suggest-scales', protectUser, asyncHandler(
     const lw = Math.max(100, Math.min(6000, parseInt(String(req.query.landscape_w || '1600'), 10) || 1600));
     const lh = Math.max(100, Math.min(4000, parseInt(String(req.query.landscape_h || '900'), 10) || 900));
 
-    const watermark_scale_portrait = suggestWatermarkScaleForOutputDims(pw, ph);
-    const watermark_scale_landscape = suggestWatermarkScaleForOutputDims(lw, lh);
+    const mode = String(req.query.mode || 'fill').toLowerCase();
+    const m = ['fill', 'fit', 'center'].includes(mode) ? mode : 'fill';
+    const watermark_scale_portrait = suggestWatermarkScaleForOutputDims(pw, ph, m);
+    const watermark_scale_landscape = suggestWatermarkScaleForOutputDims(lw, lh, m);
 
     res.json({
       success: true,
       watermark_scale_portrait,
       watermark_scale_landscape,
+      wm_auto_mode: m,
       reference_dims: { portrait: `${pw}x${ph}`, landscape: `${lw}x${lh}` }
     });
   } finally {
