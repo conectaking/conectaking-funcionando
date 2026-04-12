@@ -1783,8 +1783,16 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
       logoFineRotate: 0,
       logoOffsetX: 0,
       logoOffsetY: 0,
+      logoOffsetXPortrait: 0,
+      logoOffsetYPortrait: 0,
+      logoOffsetXLandscape: 0,
+      logoOffsetYLandscape: 0,
       stretchWPct: 100,
       stretchHPct: 100,
+      stretchPortraitW: 100,
+      stretchPortraitH: 100,
+      stretchLandscapeW: 100,
+      stretchLandscapeH: 100,
       pathPortrait: null,
       pathLandscape: null
     };
@@ -1822,6 +1830,26 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
     rawStH != null && Number.isFinite(parseFloat(rawStH))
       ? Math.max(50, Math.min(400, Math.round(parseFloat(rawStH) * 100) / 100))
       : 100;
+  const parseOffRow = (v, fallback) => {
+    if (v == null || v === '') return fallback;
+    const n = parseFloat(v);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(-50, Math.min(50, Math.round(n * 100) / 100));
+  };
+  const parseStretchRow = (v, fallback) => {
+    if (v == null || v === '') return fallback;
+    const n = parseFloat(v);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(50, Math.min(400, Math.round(n * 100) / 100));
+  };
+  const logoOffsetXPortrait = hasOxP ? parseOffRow(row.watermark_logo_offset_x_portrait, logoOffsetX) : logoOffsetX;
+  const logoOffsetYPortrait = hasOyP ? parseOffRow(row.watermark_logo_offset_y_portrait, logoOffsetY) : logoOffsetY;
+  const logoOffsetXLandscape = hasOxL ? parseOffRow(row.watermark_logo_offset_x_landscape, logoOffsetX) : logoOffsetX;
+  const logoOffsetYLandscape = hasOyL ? parseOffRow(row.watermark_logo_offset_y_landscape, logoOffsetY) : logoOffsetY;
+  const stretchPortraitW = hasStWP ? parseStretchRow(row.watermark_stretch_w_pct_portrait, stretchWPct) : stretchWPct;
+  const stretchPortraitH = hasStHP ? parseStretchRow(row.watermark_stretch_h_pct_portrait, stretchHPct) : stretchHPct;
+  const stretchLandscapeW = hasStWL ? parseStretchRow(row.watermark_stretch_w_pct_landscape, stretchWPct) : stretchWPct;
+  const stretchLandscapeH = hasStHL ? parseStretchRow(row.watermark_stretch_h_pct_landscape, stretchHPct) : stretchHPct;
   const rawSp = row.watermark_scale_portrait;
   const rawSl = row.watermark_scale_landscape;
   const scalePortrait =
@@ -1851,8 +1879,16 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
     logoFineRotate,
     logoOffsetX,
     logoOffsetY,
+    logoOffsetXPortrait,
+    logoOffsetYPortrait,
+    logoOffsetXLandscape,
+    logoOffsetYLandscape,
     stretchWPct,
-    stretchHPct
+    stretchHPct,
+    stretchPortraitW,
+    stretchPortraitH,
+    stretchLandscapeW,
+    stretchLandscapeH
   };
 }
 
@@ -2003,26 +2039,56 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
     ? (scaleLandscape != null ? scaleLandscape : baseScale)
     : (scalePortrait != null ? scalePortrait : baseScale);
   const patternRotateDeg = 0;
-  const rawLogoOff = watermark?.logoOffsetX;
-  const logoOffPct =
-    rawLogoOff != null && Number.isFinite(parseFloat(rawLogoOff))
-      ? Math.max(-50, Math.min(50, parseFloat(rawLogoOff)))
-      : 0;
+  const pickOffX = () => {
+    const prim = isLandscape ? watermark?.logoOffsetXLandscape : watermark?.logoOffsetXPortrait;
+    if (prim != null && Number.isFinite(parseFloat(prim))) {
+      return Math.max(-50, Math.min(50, parseFloat(prim)));
+    }
+    const leg = watermark?.logoOffsetX;
+    if (leg != null && Number.isFinite(parseFloat(leg))) {
+      return Math.max(-50, Math.min(50, parseFloat(leg)));
+    }
+    return 0;
+  };
+  const pickOffY = () => {
+    const prim = isLandscape ? watermark?.logoOffsetYLandscape : watermark?.logoOffsetYPortrait;
+    if (prim != null && Number.isFinite(parseFloat(prim))) {
+      return Math.max(-50, Math.min(50, parseFloat(prim)));
+    }
+    const leg = watermark?.logoOffsetY;
+    if (leg != null && Number.isFinite(parseFloat(leg))) {
+      return Math.max(-50, Math.min(50, parseFloat(leg)));
+    }
+    return 0;
+  };
+  const pickStretchW = () => {
+    const prim = isLandscape ? watermark?.stretchLandscapeW : watermark?.stretchPortraitW;
+    if (prim != null && Number.isFinite(parseFloat(prim))) {
+      return Math.max(50, Math.min(400, parseFloat(prim)));
+    }
+    const leg = watermark?.stretchWPct;
+    if (leg != null && Number.isFinite(parseFloat(leg))) {
+      return Math.max(50, Math.min(400, parseFloat(leg)));
+    }
+    return 100;
+  };
+  const pickStretchH = () => {
+    const prim = isLandscape ? watermark?.stretchLandscapeH : watermark?.stretchPortraitH;
+    if (prim != null && Number.isFinite(parseFloat(prim))) {
+      return Math.max(50, Math.min(400, parseFloat(prim)));
+    }
+    const leg = watermark?.stretchHPct;
+    if (leg != null && Number.isFinite(parseFloat(leg))) {
+      return Math.max(50, Math.min(400, parseFloat(leg)));
+    }
+    return 100;
+  };
+  const logoOffPct = pickOffX();
   const logoOffPx = Math.round((outW * logoOffPct) / 100);
-  const rawLogoOffY = watermark?.logoOffsetY;
-  const logoOffYPct =
-    rawLogoOffY != null && Number.isFinite(parseFloat(rawLogoOffY))
-      ? Math.max(-50, Math.min(50, parseFloat(rawLogoOffY)))
-      : 0;
+  const logoOffYPct = pickOffY();
   const logoOffYPx = Math.round((outH * logoOffYPct) / 100);
-  const stretchWPct =
-    watermark?.stretchWPct != null && Number.isFinite(parseFloat(watermark.stretchWPct))
-      ? Math.max(50, Math.min(400, parseFloat(watermark.stretchWPct)))
-      : 100;
-  const stretchHPct =
-    watermark?.stretchHPct != null && Number.isFinite(parseFloat(watermark.stretchHPct))
-      ? Math.max(50, Math.min(400, parseFloat(watermark.stretchHPct)))
-      : 100;
+  const stretchWPct = pickStretchW();
+  const stretchHPct = pickStretchH();
 
   async function applyOpacityPng(pngBuf, op) {
     const o = clamp(parseFloat(op), 0.0, 1.0);
