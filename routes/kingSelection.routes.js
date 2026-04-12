@@ -1696,6 +1696,14 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
   const hasStretchH = await hasColumn(pgClient, 'king_galleries', 'watermark_stretch_h_pct');
   const hasPathP = await hasColumn(pgClient, 'king_galleries', 'watermark_path_portrait');
   const hasPathL = await hasColumn(pgClient, 'king_galleries', 'watermark_path_landscape');
+  const hasOxP = await hasColumn(pgClient, 'king_galleries', 'watermark_logo_offset_x_portrait');
+  const hasOyP = await hasColumn(pgClient, 'king_galleries', 'watermark_logo_offset_y_portrait');
+  const hasOxL = await hasColumn(pgClient, 'king_galleries', 'watermark_logo_offset_x_landscape');
+  const hasOyL = await hasColumn(pgClient, 'king_galleries', 'watermark_logo_offset_y_landscape');
+  const hasStWP = await hasColumn(pgClient, 'king_galleries', 'watermark_stretch_w_pct_portrait');
+  const hasStHP = await hasColumn(pgClient, 'king_galleries', 'watermark_stretch_h_pct_portrait');
+  const hasStWL = await hasColumn(pgClient, 'king_galleries', 'watermark_stretch_w_pct_landscape');
+  const hasStHL = await hasColumn(pgClient, 'king_galleries', 'watermark_stretch_h_pct_landscape');
   // Padrão pré-configurado: transparência 15%, tamanho 119%
   const DEFAULT_OPACITY = 0.15;
   const DEFAULT_SCALE = 1.19;
@@ -1716,8 +1724,16 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
       logoFineRotate: 0,
       logoOffsetX: 0,
       logoOffsetY: 0,
+      logoOffsetXPortrait: 0,
+      logoOffsetYPortrait: 0,
+      logoOffsetXLandscape: 0,
+      logoOffsetYLandscape: 0,
       stretchWPct: 100,
       stretchHPct: 100,
+      stretchPortraitW: 100,
+      stretchPortraitH: 100,
+      stretchLandscapeW: 100,
+      stretchLandscapeH: 100,
       pathPortrait: null,
       pathLandscape: null
     };
@@ -1740,7 +1756,15 @@ async function loadWatermarkForGallery(pgClient, galleryId) {
     hasLogoOffX ? 'watermark_logo_offset_x' : '0::numeric AS watermark_logo_offset_x',
     hasLogoOffY ? 'watermark_logo_offset_y' : '0::numeric AS watermark_logo_offset_y',
     hasStretchW ? 'watermark_stretch_w_pct' : '100::numeric AS watermark_stretch_w_pct',
-    hasStretchH ? 'watermark_stretch_h_pct' : '100::numeric AS watermark_stretch_h_pct'
+    hasStretchH ? 'watermark_stretch_h_pct' : '100::numeric AS watermark_stretch_h_pct',
+    hasOxP ? 'watermark_logo_offset_x_portrait' : 'NULL::numeric AS watermark_logo_offset_x_portrait',
+    hasOyP ? 'watermark_logo_offset_y_portrait' : 'NULL::numeric AS watermark_logo_offset_y_portrait',
+    hasOxL ? 'watermark_logo_offset_x_landscape' : 'NULL::numeric AS watermark_logo_offset_x_landscape',
+    hasOyL ? 'watermark_logo_offset_y_landscape' : 'NULL::numeric AS watermark_logo_offset_y_landscape',
+    hasStWP ? 'watermark_stretch_w_pct_portrait' : 'NULL::numeric AS watermark_stretch_w_pct_portrait',
+    hasStHP ? 'watermark_stretch_h_pct_portrait' : 'NULL::numeric AS watermark_stretch_h_pct_portrait',
+    hasStWL ? 'watermark_stretch_w_pct_landscape' : 'NULL::numeric AS watermark_stretch_w_pct_landscape',
+    hasStHL ? 'watermark_stretch_h_pct_landscape' : 'NULL::numeric AS watermark_stretch_h_pct_landscape'
   ].join(', ');
   const res = await pgClient.query(`SELECT ${cols} FROM king_galleries WHERE id=$1`, [galleryId]);
   if (!res.rows.length) {
