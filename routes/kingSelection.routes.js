@@ -1362,26 +1362,87 @@ function getDefaultWatermarkAssetAbsPath() {
   return path.resolve(__dirname, '..', 'public_html', 'marca dagua KingSelection .png');
 }
 
+/** @param {string} raw */
+async function fetchWatermarkBufferFromDescriptor(raw) {
+  const r = String(raw || '').trim();
+  if (!r) return null;
+  const low = r.toLowerCase();
+  if (low.startsWith('cfimage:')) {
+    const id = r.slice('cfimage:'.length).trim();
+    if (id) {
+      const b = await fetchCloudflareImageBuffer(id);
+      if (b) return b;
+    }
+    return null;
+  }
+  if (low.startsWith('http://') || low.startsWith('https://')) {
+    try {
+      const res = await fetch(r);
+      if (res.ok) return res.buffer();
+    } catch (_) { }
+    return null;
+  }
+  const abs = path.isAbsolute(r) ? r : path.resolve(__dirname, '..', r);
+  try {
+    return await fs.promises.readFile(abs);
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Marca oficial Conecta King por orientação da foto de saída:
+ * - paisagem (lado maior = largura) → ficheiro "horizontal"
+ * - retrato → ficheiro "vertical"
+ */
+async function fetchDefaultWatermarkAssetBufferForOrientation(isLandscape) {
+  const envL = (
+    process.env.KINGSELECTION_DEFAULT_WATERMARK_LANDSCAPE_FILE ||
+    process.env.KINGSELECTION_DEFAULT_WATERMARK_HORIZONTAL_FILE ||
+    ''
+  )
+    .toString()
+    .trim();
+  const envP = (
+    process.env.KINGSELECTION_DEFAULT_WATERMARK_PORTRAIT_FILE ||
+    process.env.KINGSELECTION_DEFAULT_WATERMARK_VERTICAL_FILE ||
+    ''
+  )
+    .toString()
+    .trim();
+  const raw = isLandscape ? envL : envP;
+  if (raw) {
+    const b = await fetchWatermarkBufferFromDescriptor(raw);
+    if (b) return b;
+  }
+
+  const baseDir = path.resolve(__dirname, '..', 'public_html');
+  const repoRoot = path.resolve(__dirname, '..');
+  const fileName = isLandscape ? 'marca dagua KingSelection horizontal.png' : 'marca dagua KingSelection vertical.png';
+  const candidates = [
+    path.resolve(baseDir, fileName),
+    path.resolve(repoRoot, fileName),
+    path.resolve(baseDir, isLandscape ? 'marca_dagua_kingselection_horizontal.png' : 'marca_dagua_kingselection_vertical.png'),
+    path.resolve(repoRoot, isLandscape ? 'marca_dagua_kingselection_horizontal.png' : 'marca_dagua_kingselection_vertical.png')
+  ];
+  for (const abs of candidates) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      return await fs.promises.readFile(abs);
+    } catch (_) { }
+  }
+
+  return fetchDefaultWatermarkAssetBuffer();
+}
+
 async function fetchDefaultWatermarkAssetBuffer() {
   // Suporta também:
   // - KINGSELECTION_DEFAULT_WATERMARK_FILE=cfimage:<id>  (Cloudflare Images)
   // - KINGSELECTION_DEFAULT_WATERMARK_FILE=https://...png (URL pública)
   const raw = (process.env.KINGSELECTION_DEFAULT_WATERMARK_FILE || '').toString().trim();
   if (raw) {
-    const low = raw.toLowerCase();
-    if (low.startsWith('cfimage:')) {
-      const id = raw.slice('cfimage:'.length).trim();
-      if (id) {
-        const b = await fetchCloudflareImageBuffer(id);
-        if (b) return b;
-      }
-    }
-    if (low.startsWith('http://') || low.startsWith('https://')) {
-      try {
-        const r = await fetch(raw);
-        if (r.ok) return r.buffer();
-      } catch (_) { }
-    }
+    const b = await fetchWatermarkBufferFromDescriptor(raw);
+    if (b) return b;
   }
 
   // Tentar caminhos conhecidos (o arquivo tem um espaço no nome; alguns deploys podem remover)
@@ -1812,10 +1873,12 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   // - sempre usar a marca padrão do sistema, mesmo que exista marca personalizada enviada.
   // Assim, o cliente pode enviar uma marca, mas só será usada quando selecionar o modo "logo".
   if (mode === 'tile_dense') {
-    localDefaultBuf = await fetchDefaultWatermarkAssetBuffer();
+    localDefaultBuf = await fetchDefaultWatermarkAssetBufferForOrientation(isLandscape);
     if (!localDefaultBuf) {
       if (strict) {
-        const err = new Error('Marca d’água padrão não encontrada no servidor. Faça deploy do arquivo (public_html/marca dagua KingSelection .png) ou defina KINGSELECTION_DEFAULT_WATERMARK_FILE.');
+        const err = new Error(
+          'Marca d’água padrão não encontrada no servidor. Faça deploy de public_html/marca dagua KingSelection horizontal.png e vertical.png (ou defina KINGSELECTION_DEFAULT_WATERMARK_LANDSCAPE_FILE / KINGSELECTION_DEFAULT_WATERMARK_PORTRAIT_FILE).'
+        );
         err.statusCode = 500;
         throw err;
       }
@@ -1833,10 +1896,12 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
 
   // Se não há marca d’água personalizada, usar a marca d’água oficial do sistema
   if (!fpRaw && !localDefaultBuf) {
-    localDefaultBuf = await fetchDefaultWatermarkAssetBuffer();
+    localDefaultBuf = await fetchDefaultWatermarkAssetBufferForOrientation(isLandscape);
     if (!localDefaultBuf) {
       if (strict) {
-        const err = new Error('Marca d’água padrão não encontrada no servidor. Faça deploy do arquivo (public_html/marca dagua KingSelection .png) ou defina KINGSELECTION_DEFAULT_WATERMARK_FILE.');
+        const err = new Error(
+          'Marca d’água padrão não encontrada no servidor. Faça deploy de public_html/marca dagua KingSelection horizontal.png e vertical.png (ou defina KINGSELECTION_DEFAULT_WATERMARK_LANDSCAPE_FILE / KINGSELECTION_DEFAULT_WATERMARK_PORTRAIT_FILE).'
+        );
         err.statusCode = 500;
         throw err;
       }
@@ -1854,33 +1919,35 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
 
   // aceitar também URL imagedelivery.net (caso alguém salve assim)
   let logoImageId = null;
-  if (fpRaw.toLowerCase().startsWith('cfimage:')) {
-    logoImageId = fpRaw.slice('cfimage:'.length).trim();
-  } else {
-    const m = fpRaw.match(/^https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\//i);
-    if (m && m[1]) logoImageId = m[1];
-  }
-
   let wmCloudBuf = null;
   let wmR2Buf = null;
-  if (fpRaw.toLowerCase().startsWith('r2:')) {
-    wmR2Buf = await fetchPhotoFileBufferFromFilePath(fpRaw);
-  }
-  // Só tentamos usar a marca personalizada quando não for tile_dense.
-  if (logoImageId && mode !== 'tile_dense') {
-    wmCloudBuf = await fetchCloudflareImageBuffer(logoImageId);
-  }
-  // Se falhou carregar personalizada e temos a oficial, usa a oficial.
-  // Atenção: no modo "tile_dense" (Conecta King), a personalizada é ignorada por regra,
-  // então não deve gerar erro mesmo em modo estrito.
-  if (strict && mode !== 'tile_dense' && fpRaw && !wmCloudBuf && fpRaw.toLowerCase().startsWith('cfimage:')) {
-    const err = new Error('Falha ao carregar marca d’água personalizada no Cloudflare (verifique CF_IMAGES_ACCOUNT_ID + token/key).');
-    err.statusCode = 424;
-    throw err;
-  }
-  // Se existe watermark_path mas o Cloudflare falhou (rate-limit/token), tenta a marca d’água oficial como fallback (não-estrito)
-  if (!strict && fpRaw && !wmCloudBuf && !localDefaultBuf) {
-    localDefaultBuf = await fetchDefaultWatermarkAssetBuffer();
+  if (fpRaw) {
+    if (fpRaw.toLowerCase().startsWith('cfimage:')) {
+      logoImageId = fpRaw.slice('cfimage:'.length).trim();
+    } else {
+      const m = fpRaw.match(/^https?:\/\/imagedelivery\.net\/[^/]+\/([^/]+)\//i);
+      if (m && m[1]) logoImageId = m[1];
+    }
+
+    if (fpRaw.toLowerCase().startsWith('r2:')) {
+      wmR2Buf = await fetchPhotoFileBufferFromFilePath(fpRaw);
+    }
+    // Só tentamos usar a marca personalizada quando não for tile_dense.
+    if (logoImageId && mode !== 'tile_dense') {
+      wmCloudBuf = await fetchCloudflareImageBuffer(logoImageId);
+    }
+    // Se falhou carregar personalizada e temos a oficial, usa a oficial.
+    // Atenção: no modo "tile_dense" (Conecta King), a personalizada é ignorada por regra,
+    // então não deve gerar erro mesmo em modo estrito.
+    if (strict && mode !== 'tile_dense' && fpRaw && !wmCloudBuf && fpRaw.toLowerCase().startsWith('cfimage:')) {
+      const err = new Error('Falha ao carregar marca d’água personalizada no Cloudflare (verifique CF_IMAGES_ACCOUNT_ID + token/key).');
+      err.statusCode = 424;
+      throw err;
+    }
+    // Se existe watermark_path mas o Cloudflare falhou (rate-limit/token), tenta a marca d’água oficial como fallback (não-estrito)
+    if (!strict && fpRaw && !wmCloudBuf && !localDefaultBuf) {
+      localDefaultBuf = await fetchDefaultWatermarkAssetBufferForOrientation(isLandscape);
+    }
   }
   // Se for tile_dense, força o padrão (ignora custom). Senão, prioriza R2 > Cloudflare > padrão.
   const wmBufRaw = (mode === 'tile_dense') ? localDefaultBuf : (wmR2Buf || wmCloudBuf || localDefaultBuf);
@@ -3403,8 +3470,12 @@ router.get('/galleries/:id/watermark-file', protectUser, asyncHandler(async (req
       const imageId = fp.replace('cfimage:', '').trim();
       buf = await fetchCloudflareImageBuffer(imageId);
     }
-    // fallback para a marca d'água padrão do sistema
-    if (!buf) buf = await fetchDefaultWatermarkAssetBuffer();
+    // fallback: marca oficial Conecta King (dois ficheiros por orientação, ou legado único)
+    if (!buf) {
+      if (which === 'portrait') buf = await fetchDefaultWatermarkAssetBufferForOrientation(false);
+      else if (which === 'landscape') buf = await fetchDefaultWatermarkAssetBufferForOrientation(true);
+      else buf = await fetchDefaultWatermarkAssetBuffer();
+    }
     if (!buf) return res.status(500).send('Não foi possível carregar a marca d’água (Cloudflare/token ou arquivo padrão).');
     const out = await sharp(buf).rotate().resize(560, 560, { fit: 'inside' }).png().toBuffer();
     res.set('Content-Type', 'image/png');
