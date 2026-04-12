@@ -1556,9 +1556,10 @@ function suggestWatermarkScaleForOutputDims(outW, outH) {
   const minSide = Math.min(outW, outH);
   const stepFactor = 0.78;
   const stepMin = 128;
-  const targetStep = Math.max(stepMin, Math.round(minSide * 0.36));
+  // Mais “cheio” na foto que a versão antiga (0,36 → ~0,52) + ligeiro boost para o painel não ficar “miúdo”.
+  const targetStep = Math.max(stepMin, Math.round(minSide * 0.52));
   let s = targetStep / (maxSide * stepFactor);
-  s = clamp(s, 0.12, 5.0);
+  s = clamp(s * 1.35, 0.12, 5.0);
   return Math.round(s * 100) / 100;
 }
 
