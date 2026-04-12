@@ -1850,6 +1850,12 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
     -45,
     45
   );
+  const rawLogoOff = watermark?.logoOffsetX;
+  const logoOffPct =
+    rawLogoOff != null && Number.isFinite(parseFloat(rawLogoOff))
+      ? Math.max(-50, Math.min(50, parseFloat(rawLogoOff)))
+      : 0;
+  const logoOffPx = Math.round((outW * logoOffPct) / 100);
 
   async function applyOpacityPng(pngBuf, op) {
     const o = clamp(parseFloat(op), 0.0, 1.0);
@@ -1899,7 +1905,9 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
           </pattern>
         </defs>
         <g transform="rotate(${patternRotateDeg} ${Math.round(w / 2)} ${Math.round(h / 2)})">
-          <rect x="-${w * 2}" y="-${h * 2}" width="${w * 5}" height="${h * 5}" fill="url(#pTileDense)"/>
+          <g transform="translate(${logoOffPx}, 0)">
+            <rect x="-${w * 2}" y="-${h * 2}" width="${w * 5}" height="${h * 5}" fill="url(#pTileDense)"/>
+          </g>
         </g>
       </svg>`
     );
@@ -1945,7 +1953,9 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
           </pattern>
         </defs>
         <g transform="rotate(${patternRotateDeg} ${Math.round(w / 2)} ${Math.round(h / 2)})">
-          <rect x="-${w * 2}" y="-${h * 2}" width="${w * 5}" height="${h * 5}" fill="url(#p)"/>
+          <g transform="translate(${logoOffPx}, 0)">
+            <rect x="-${w * 2}" y="-${h * 2}" width="${w * 5}" height="${h * 5}" fill="url(#p)"/>
+          </g>
         </g>
       </svg>`
     );
@@ -1966,7 +1976,10 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
           .toBuffer();
         pipeline = pipeline.composite([{ input: wmFinal, top: 0, left: 0, blend: 'over' }]);
       } else {
-        pipeline = pipeline.composite([{ input: wmFinal, gravity: 'center', blend: 'over' }]);
+        let left = Math.floor((outW - w) / 2 + logoOffPx);
+        left = Math.max(0, Math.min(left, outW - w));
+        const top = Math.floor((outH - h) / 2);
+        pipeline = pipeline.composite([{ input: wmFinal, left, top, blend: 'over' }]);
       }
     } catch (_) {
       pipeline = pipeline.composite([{ input: wmFinal, gravity: 'center', blend: 'over' }]);
@@ -6143,6 +6156,7 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'watermark_tile_angle_landscape',
     'watermark_tile_angle_portrait',
     'watermark_logo_fine_rotate',
+    'watermark_logo_offset_x',
     'face_recognition_enabled',
     'client_image_quality',
     'pix_enabled',
@@ -6348,6 +6362,13 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
       if (key === 'watermark_tile_angle_landscape' || key === 'watermark_tile_angle_portrait' || key === 'watermark_logo_fine_rotate') {
         const n = parseInt(val || 0, 10) || 0;
         val = Math.max(-45, Math.min(45, n));
+      }
+      if (key === 'watermark_logo_offset_x') {
+        if (val === '' || val === null || val === 'null' || typeof val === 'undefined') val = 0;
+        else {
+          const n = parseFloat(val);
+          val = Number.isFinite(n) ? Math.max(-50, Math.min(50, Math.round(n * 100) / 100)) : 0;
+        }
       }
       if (key === 'watermark_path') {
         // normalizar string vazia como NULL
@@ -6747,6 +6768,8 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     if (Number.isFinite(qTp)) wm.tileAnglePortrait = clampInt(qTp, -45, 45);
     const qLf = parseInt(String(req.query.wm_logo_fine_rotate ?? ''), 10);
     if (Number.isFinite(qLf)) wm.logoFineRotate = clampInt(qLf, -45, 45);
+    const qOx = parseFloat(String(req.query.wm_logo_offset_x ?? ''));
+    if (Number.isFinite(qOx)) wm.logoOffsetX = Math.max(-50, Math.min(50, Math.round(qOx * 100) / 100));
     const qStrict = String(req.query.wm_strict || '') === '1';
     if (qStrict) wm.strict = true;
     let out = null;
