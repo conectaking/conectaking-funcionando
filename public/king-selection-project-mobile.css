@@ -1,0 +1,31 @@
+/**
+ * King Selection — painel do fotógrafo (/kingSelection sem slug).
+ * Remove scroll “preso” na lista de abas no mobile: a página inteira rola.
+ *
+ * Incluir em kingSelectionProject.html (Hostinger / public_html), depois dos outros CSS:
+ *   <link rel="stylesheet" href="/king-selection-project-mobile.css">
+ * Se o ficheiro estiver só na API: href="https://conectaking-api.onrender.com/king-selection-project-mobile.css"
+ */
+@media (max-width: 900px) {
+  html.ks-project-mobile-unstick,
+  html.ks-project-mobile-unstick body {
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Colunas / rails com overflow forçado (Tailwind e similares) */
+  html.ks-project-mobile-unstick .overflow-y-auto,
+  html.ks-project-mobile-unstick .overflow-y-scroll,
+  html.ks-project-mobile-unstick [class*="overflow-y-auto"],
+  html.ks-project-mobile-unstick [class*="overflow-y-scroll"] {
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+    min-height: 0 !important;
+  }
+
+  /* Alguns layouts usam min-h-0 + flex para encaixar scroll interno */
+  html.ks-project-mobile-unstick .min-h-0 {
+    min-height: unset !important;
+  }
+}
