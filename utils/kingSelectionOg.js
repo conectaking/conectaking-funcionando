@@ -36,8 +36,17 @@ function ensureHttpsUrl(u) {
   return String(u).replace(/^http:\/\//i, 'https://');
 }
 
+function pickPhotoStoragePathForOg(photoRow) {
+  if (!photoRow) return null;
+  const edited = String(photoRow.edited_file_path || '').trim();
+  const raw = String(photoRow.file_path || '').trim();
+  if (edited) return edited;
+  return raw || null;
+}
+
 /**
  * Dados para Open Graph (capa da galeria, título).
+ * Alinhado com `ksResolveGalleryLinkCoverFilePath`: capa de link da galeria, versão editada da foto, depois is_cover.
  * @param {import('pg').Pool} pool
  * @param {string} slug
  */
@@ -45,36 +54,83 @@ async function fetchKingSelectionOgData(pool, slug) {
   if (!pool) return null;
   const client = await pool.connect();
   try {
-    const gRes = await client.query(
-      'SELECT id, nome_projeto, slug FROM king_galleries WHERE lower(trim(slug)) = lower(trim($1)) LIMIT 1',
-      [String(slug).trim()]
-    );
-    if (!gRes.rows.length) return null;
-    const g = gRes.rows[0];
-    let pRow = null;
-    const qCover = `
-      SELECT id, file_path FROM king_photos
-      WHERE gallery_id = $1 AND file_path IS NOT NULL AND trim(file_path) <> ''
-      ORDER BY is_cover DESC NULLS LAST, "order" ASC, id ASC
-      LIMIT 1`;
+    let gRes = null;
     try {
-      const pRes = await client.query(qCover, [g.id]);
-      pRow = pRes.rows[0] || null;
+      gRes = await client.query(
+        `SELECT id, nome_projeto, slug, gallery_link_cover_file_path, gallery_link_cover_photo_id
+         FROM king_galleries WHERE lower(trim(slug)) = lower(trim($1)) LIMIT 1`,
+        [String(slug).trim()]
+      );
     } catch (e) {
       if (e.code !== '42703') throw e;
-      const pRes = await client.query(
-        `SELECT id, file_path FROM king_photos
-         WHERE gallery_id = $1 AND file_path IS NOT NULL AND trim(file_path) <> ''
-         ORDER BY "order" ASC, id ASC
-         LIMIT 1`,
-        [g.id]
+      gRes = await client.query(
+        'SELECT id, nome_projeto, slug FROM king_galleries WHERE lower(trim(slug)) = lower(trim($1)) LIMIT 1',
+        [String(slug).trim()]
       );
-      pRow = pRes.rows[0] || null;
     }
-    let imageUrl = pRow ? kingPhotoFilePathToPublicUrl(pRow.file_path) : null;
-    if (imageUrl && pRow && pRow.id) {
+    if (!gRes.rows.length) return null;
+    const g = gRes.rows[0];
+    let storagePath = null;
+    let versionId = null;
+
+    const customLink = String(g.gallery_link_cover_file_path || '').trim();
+    if (customLink) {
+      storagePath = customLink;
+    } else {
+      const coverPid = parseInt(g.gallery_link_cover_photo_id, 10) || 0;
+      if (coverPid > 0) {
+        let pById = null;
+        try {
+          pById = await client.query(
+            `SELECT id, file_path, edited_file_path FROM king_photos WHERE gallery_id=$1 AND id=$2 LIMIT 1`,
+            [g.id, coverPid]
+          );
+        } catch (e) {
+          if (e.code !== '42703') throw e;
+          pById = await client.query(
+            `SELECT id, file_path FROM king_photos WHERE gallery_id=$1 AND id=$2 LIMIT 1`,
+            [g.id, coverPid]
+          );
+        }
+        const row = pById.rows?.[0];
+        storagePath = pickPhotoStoragePathForOg(row);
+        if (row && row.id) versionId = row.id;
+      }
+    }
+
+    if (!storagePath) {
+      let pRow = null;
+      const qCover = `
+        SELECT id, file_path, edited_file_path FROM king_photos
+        WHERE gallery_id = $1
+          AND (
+            (file_path IS NOT NULL AND trim(file_path) <> '')
+            OR (edited_file_path IS NOT NULL AND trim(edited_file_path) <> '')
+          )
+        ORDER BY is_cover DESC NULLS LAST, "order" ASC, id ASC
+        LIMIT 1`;
+      try {
+        const pRes = await client.query(qCover, [g.id]);
+        pRow = pRes.rows[0] || null;
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+        const pRes = await client.query(
+          `SELECT id, file_path FROM king_photos
+           WHERE gallery_id = $1 AND file_path IS NOT NULL AND trim(file_path) <> ''
+           ORDER BY "order" ASC, id ASC
+           LIMIT 1`,
+          [g.id]
+        );
+        pRow = pRes.rows[0] || null;
+      }
+      storagePath = pickPhotoStoragePathForOg(pRow) || (pRow ? String(pRow.file_path || '').trim() : null);
+      if (pRow && pRow.id) versionId = pRow.id;
+    }
+
+    let imageUrl = storagePath ? kingPhotoFilePathToPublicUrl(storagePath) : null;
+    if (imageUrl && versionId) {
       const sep = imageUrl.includes('?') ? '&' : '?';
-      imageUrl = `${imageUrl}${sep}v=${encodeURIComponent(String(pRow.id))}`;
+      imageUrl = `${imageUrl}${sep}v=${encodeURIComponent(String(versionId))}`;
     }
     imageUrl = ensureHttpsUrl(imageUrl);
     return {

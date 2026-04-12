@@ -1582,6 +1582,76 @@ function extractR2Key(filePath) {
   return null;
 }
 
+/** Extrai chave `galleries/...` a partir de uma URL HTTPS pública do R2/CDN. */
+function extractR2KeyFromPublicHttpsUrl(filePath) {
+  try {
+    const u = new URL(String(filePath || '').trim());
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+    const path = u.pathname.replace(/^\/+/, '');
+    return normalizeR2Key(path);
+  } catch (_) {
+    return null;
+  }
+}
+
+/** Fetch seguro para URLs https usadas em file_path (R2 público, Cloudflare Images). */
+async function fetchPhotoBufferFromHttpsUrl(fp) {
+  const raw = String(fp || '').trim();
+  if (!raw) return null;
+  let u;
+  try {
+    u = new URL(raw);
+  } catch (_) {
+    return null;
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+  const host = (u.hostname || '').toLowerCase();
+
+  if (host === 'imagedelivery.net') {
+    const seg = u.pathname.split('/').filter(Boolean);
+    if (seg.length >= 2) {
+      const b = await fetchCloudflareImageBuffer(seg[1]);
+      if (b) return b;
+    }
+  }
+
+  const keyFromUrl = extractR2KeyFromPublicHttpsUrl(raw);
+  if (keyFromUrl) {
+    const cfg = getR2Config();
+    if (cfg.publicBaseUrl) {
+      const buf = await r2GetObjectViaPublicUrl(keyFromUrl);
+      if (buf) return buf;
+    }
+    const buf = await r2GetObjectBuffer(keyFromUrl);
+    if (buf) return buf;
+  }
+
+  let publicHost = '';
+  try {
+    const b = (getR2Config().publicBaseUrl || '').trim();
+    if (b) publicHost = new URL(b).hostname.toLowerCase();
+  } catch (_) {
+    publicHost = '';
+  }
+  const allowed =
+    (publicHost && host === publicHost) ||
+    host.endsWith('.r2.dev') ||
+    host.endsWith('.r2.cloudflarestorage.com');
+  if (!allowed) return null;
+
+  try {
+    const res = await fetch(raw.replace(/^http:\/\//i, 'https://'), {
+      headers: { Accept: 'image/*' }
+    });
+    if (!res.ok) return null;
+    const buf = await res.buffer();
+    if (!buf || buf.length > 18 * 1024 * 1024) return null;
+    return buf;
+  } catch (_) {
+    return null;
+  }
+}
+
 async function fetchPhotoFileBufferFromFilePath(filePath) {
   const fp = String(filePath || '').trim();
   if (!fp) return null;
@@ -1590,6 +1660,10 @@ async function fetchPhotoFileBufferFromFilePath(filePath) {
     const imageId = fp.slice('cfimage:'.length).trim();
     if (!imageId) return null;
     return await fetchCloudflareImageBuffer(imageId);
+  }
+  if (low.startsWith('https://') || low.startsWith('http://')) {
+    const fromHttp = await fetchPhotoBufferFromHttpsUrl(fp);
+    if (fromHttp) return fromHttp;
   }
   const key = extractR2Key(filePath);
   if (key) {
@@ -7368,7 +7442,18 @@ router.get('/public/photos/:photoId/preview', asyncHandler(async (req, res) => {
   }
 }));
 
+/** Preferir versão editada da foto quando existir (mesma regra da entrega ao cliente). */
+function ksPickPhotoStoragePath(photoRow) {
+  if (!photoRow) return null;
+  const edited = String(photoRow.edited_file_path || '').trim();
+  const raw = String(photoRow.file_path || '').trim();
+  if (edited) return edited;
+  return raw || null;
+}
+
 async function ksResolveGalleryLinkCoverFilePath(pgClient, galleryId) {
+  const hasEdited = await hasColumn(pgClient, 'king_photos', 'edited_file_path');
+  const photoSelect = hasEdited ? 'file_path, edited_file_path' : 'file_path';
   const hasLinkCoverPhoto = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_photo_id');
   const hasLinkCoverFile = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_file_path');
   if (hasLinkCoverPhoto || hasLinkCoverFile) {
@@ -7383,20 +7468,25 @@ async function ksResolveGalleryLinkCoverFilePath(pgClient, galleryId) {
       const coverPhotoId = parseInt(row.gallery_link_cover_photo_id, 10) || 0;
       if (coverPhotoId > 0) {
         const pById = await pgClient.query(
-          'SELECT file_path FROM king_photos WHERE gallery_id=$1 AND id=$2 LIMIT 1',
+          `SELECT ${photoSelect} FROM king_photos WHERE gallery_id=$1 AND id=$2 LIMIT 1`,
           [galleryId, coverPhotoId]
         );
-        const byIdPath = String(pById.rows?.[0]?.file_path || '').trim();
+        const byIdPath = ksPickPhotoStoragePath(pById.rows?.[0]);
         if (byIdPath) return byIdPath;
       }
     }
   }
   const hasCover = await hasColumn(pgClient, 'king_photos', 'is_cover');
   const pRes = hasCover
-    ? await pgClient.query('SELECT file_path FROM king_photos WHERE gallery_id=$1 ORDER BY is_cover DESC, "order" ASC, id ASC LIMIT 1', [galleryId])
-    : await pgClient.query('SELECT file_path FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1', [galleryId]);
-  const fallbackPath = String(pRes.rows?.[0]?.file_path || '').trim();
-  return fallbackPath || null;
+    ? await pgClient.query(
+        `SELECT ${photoSelect} FROM king_photos WHERE gallery_id=$1 ORDER BY is_cover DESC, "order" ASC, id ASC LIMIT 1`,
+        [galleryId]
+      )
+    : await pgClient.query(
+        `SELECT ${photoSelect} FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1`,
+        [galleryId]
+      );
+  return ksPickPhotoStoragePath(pRes.rows?.[0]) || null;
 }
 
 router.get('/public/cover', asyncHandler(async (req, res) => {
@@ -7405,7 +7495,10 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
 
   const client = await db.pool.connect();
   try {
-    const gRes = await client.query('SELECT id FROM king_galleries WHERE slug=$1', [slug]);
+    const gRes = await client.query(
+      'SELECT id FROM king_galleries WHERE lower(trim(slug)) = lower(trim($1)) LIMIT 1',
+      [slug]
+    );
     if (gRes.rows.length === 0) return res.status(404).send('Galeria não encontrada');
     const galleryId = gRes.rows[0].id;
 
@@ -7474,7 +7567,10 @@ router.get('/public/og-image', asyncHandler(async (req, res) => {
 
   const client = await db.pool.connect();
   try {
-    const gRes = await client.query('SELECT id FROM king_galleries WHERE slug=$1', [slug]);
+    const gRes = await client.query(
+      'SELECT id FROM king_galleries WHERE lower(trim(slug)) = lower(trim($1)) LIMIT 1',
+      [slug]
+    );
     if (gRes.rows.length === 0) return res.status(404).send('Galeria não encontrada');
     const galleryId = gRes.rows[0].id;
 
