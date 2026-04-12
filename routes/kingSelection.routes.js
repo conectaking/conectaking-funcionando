@@ -3114,17 +3114,52 @@ router.post('/galleries/:id/watermark', protectUser, (req, res, next) => {
       return res.status(502).json({ success: false, message: msg });
     }
 
-    const sets = ['watermark_path=$1'];
-    const vals = [`r2:${key}`, galleryId];
+    const r2 = `r2:${key}`;
+    const which = String(req.query.which || req.body?.which || '').toLowerCase().trim();
+    const hasPathP = await hasColumn(client, 'king_galleries', 'watermark_path_portrait');
+    const hasPathL = await hasColumn(client, 'king_galleries', 'watermark_path_landscape');
+    const curRes = await client.query(
+      `SELECT watermark_path${hasPathP ? ', watermark_path_portrait' : ''}${hasPathL ? ', watermark_path_landscape' : ''}
+       FROM king_galleries WHERE id=$1`,
+      [galleryId]
+    );
+    const cur = curRes.rows[0] || {};
+    const legacyEmpty = !String(cur.watermark_path || '').trim();
+
+    const sets = [];
+    const vals = [];
+    let i = 1;
+    if (which === 'portrait' && hasPathP) {
+      sets.push(`watermark_path_portrait=$${i++}`);
+      vals.push(r2);
+      if (legacyEmpty) {
+        sets.push(`watermark_path=$${i++}`);
+        vals.push(r2);
+      }
+    } else if (which === 'landscape' && hasPathL) {
+      sets.push(`watermark_path_landscape=$${i++}`);
+      vals.push(r2);
+      if (legacyEmpty) {
+        sets.push(`watermark_path=$${i++}`);
+        vals.push(r2);
+      }
+    } else {
+      sets.push(`watermark_path=$${i++}`);
+      vals.push(r2);
+    }
     if (await hasColumn(client, 'king_galleries', 'watermark_mode')) {
-      sets.push('watermark_mode=$3');
+      sets.push(`watermark_mode=$${i++}`);
       vals.push('logo');
     }
+    vals.push(galleryId);
     await client.query(
-      `UPDATE king_galleries SET ${sets.join(', ')} WHERE id=$2`,
+      `UPDATE king_galleries SET ${sets.join(', ')}, updated_at=NOW() WHERE id=$${i}`,
       vals
     );
-    res.json({ success: true, watermark_path: `r2:${key}` });
+    const json = { success: true, watermark_path: r2 };
+    if (which === 'portrait' && hasPathP) json.watermark_path_portrait = r2;
+    if (which === 'landscape' && hasPathL) json.watermark_path_landscape = r2;
+    res.json(json);
   } finally {
     client.release();
   }
@@ -3336,18 +3371,30 @@ router.post('/galleries/:id/photos/batch', protectUser, asyncHandler(async (req,
 router.get('/galleries/:id/watermark-file', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).send('galleryId inválido');
+  const which = String(req.query.which || '').toLowerCase().trim();
   const client = await db.pool.connect();
   try {
     const userId = req.user.userId;
+    const hasPathP = await hasColumn(client, 'king_galleries', 'watermark_path_portrait');
+    const hasPathL = await hasColumn(client, 'king_galleries', 'watermark_path_landscape');
+    const sel = ['g.watermark_path'];
+    if (hasPathP) sel.push('g.watermark_path_portrait');
+    if (hasPathL) sel.push('g.watermark_path_landscape');
     const gRes = await client.query(
-      `SELECT g.watermark_path
+      `SELECT ${sel.join(', ')}
        FROM king_galleries g
        JOIN profile_items pi ON pi.id = g.profile_item_id
        WHERE g.id=$1 AND pi.user_id=$2`,
       [galleryId, userId]
     );
     if (!gRes.rows.length) return res.status(404).send('Galeria não encontrada');
-    const fp = String(gRes.rows[0].watermark_path || '');
+    const row = gRes.rows[0];
+    const legacy = String(row.watermark_path || '');
+    const pathP = hasPathP ? String(row.watermark_path_portrait || '').trim() : '';
+    const pathL = hasPathL ? String(row.watermark_path_landscape || '').trim() : '';
+    let fp = legacy;
+    if (which === 'portrait') fp = pathP || legacy;
+    else if (which === 'landscape') fp = pathL || legacy;
     let buf = null;
     if (fp.toLowerCase().startsWith('r2:')) {
       buf = await fetchPhotoFileBufferFromFilePath(fp);
