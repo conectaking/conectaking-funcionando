@@ -1903,6 +1903,20 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
       ? Math.max(-50, Math.min(50, parseFloat(rawLogoOff)))
       : 0;
   const logoOffPx = Math.round((outW * logoOffPct) / 100);
+  const rawLogoOffY = watermark?.logoOffsetY;
+  const logoOffYPct =
+    rawLogoOffY != null && Number.isFinite(parseFloat(rawLogoOffY))
+      ? Math.max(-50, Math.min(50, parseFloat(rawLogoOffY)))
+      : 0;
+  const logoOffYPx = Math.round((outH * logoOffYPct) / 100);
+  const stretchWPct =
+    watermark?.stretchWPct != null && Number.isFinite(parseFloat(watermark.stretchWPct))
+      ? Math.max(50, Math.min(400, parseFloat(watermark.stretchWPct)))
+      : 100;
+  const stretchHPct =
+    watermark?.stretchHPct != null && Number.isFinite(parseFloat(watermark.stretchHPct))
+      ? Math.max(50, Math.min(400, parseFloat(watermark.stretchHPct)))
+      : 100;
 
   async function applyOpacityPng(pngBuf, op) {
     const o = clamp(parseFloat(op), 0.0, 1.0);
@@ -1922,6 +1936,21 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
       .png()
       .toBuffer();
   }
+
+  async function resizeWmForTile(wmSharp, bw, bh, swP, shP) {
+    const sw = Math.max(0.5, Math.min(4, parseFloat(swP) / 100));
+    const sh = Math.max(0.5, Math.min(4, parseFloat(shP) / 100));
+    if (Math.abs(sw - 1) < 1e-9 && Math.abs(sh - 1) < 1e-9) {
+      return wmSharp
+        .resize({ width: bw, height: bh, fit: 'inside', withoutEnlargement: false })
+        .png()
+        .toBuffer();
+    }
+    const tw0 = Math.max(32, Math.round(bw * sw));
+    const th0 = Math.max(32, Math.round(bh * sh));
+    return wmSharp.resize({ width: tw0, height: th0, fit: 'fill' }).png().toBuffer();
+  }
+
   // Automático (ajustar na foto): escala respeitando o formato da foto
   // - horizontal: logo tende a crescer na largura
   // - vertical: logo tende a crescer na altura
@@ -1933,14 +1962,14 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
 
   // Padrão (Conecta King): mosaico denso — passo ≥ tamanho do ladrilho (evita “micro-quadradinhos” cortados).
   if (watermark?.mode === 'tile_dense') {
-    let wmPng = await wmBase
-      .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: false })
-      .png()
-      .toBuffer();
+    let wmPng = await resizeWmForTile(wmBase, boxW, boxH, stretchWPct, stretchHPct);
     wmPng = await applyOpacityPng(wmPng, opacity);
     const b64 = wmPng.toString('base64');
+    const dim = await sharp(wmPng).metadata();
+    const imgW = dim.width || boxW;
+    const imgH = dim.height || boxH;
     const stepMin = 128;
-    const cell = Math.max(boxW, boxH);
+    const cell = Math.max(imgW, imgH);
     const step = Math.max(stepMin, Math.round(cell * 1.08));
     const w = outW;
     const h = outH;
@@ -1948,11 +1977,11 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
       `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="pTileDense" patternUnits="userSpaceOnUse" width="${step}" height="${step}">
-            <image href="data:image/png;base64,${b64}" x="0" y="0" width="${boxW}" height="${boxH}"/>
+            <image href="data:image/png;base64,${b64}" x="0" y="0" width="${imgW}" height="${imgH}"/>
           </pattern>
         </defs>
         <g transform="rotate(${patternRotateDeg} ${Math.round(w / 2)} ${Math.round(h / 2)})">
-          <g transform="translate(${logoOffPx}, 0)">
+          <g transform="translate(${logoOffPx}, ${logoOffYPx})">
             <rect x="-${w * 2}" y="-${h * 2}" width="${w * 5}" height="${h * 5}" fill="url(#pTileDense)"/>
           </g>
         </g>
@@ -1975,11 +2004,7 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
   }
 
   // Automático (ajustar no meio): fit inside e permite aumentar até 500%
-  let wmPng = await wmBase
-    // fit "inside" ajusta automaticamente para logo horizontal/vertical
-    .resize({ width: boxW, height: boxH, fit: 'inside', withoutEnlargement: false })
-    .png()
-    .toBuffer();
+  let wmPng = await resizeWmForTile(wmBase, boxW, boxH, stretchWPct, stretchHPct);
   wmPng = await applyOpacityPng(wmPng, opacity);
 
   // aplica no centro com opacidade usando SVG mask simples
@@ -1987,8 +2012,11 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
     // Mosaico (tipo álbum): repete a marca d'água na foto inteira
     // Para o mosaico, o espaçamento usa o maior lado (mais estável)
     const b64 = wmPng.toString('base64');
+    const dimT = await sharp(wmPng).metadata();
+    const imgW = dimT.width || boxW;
+    const imgH = dimT.height || boxH;
     const stepMin = 180;
-    const cell = Math.max(boxW, boxH);
+    const cell = Math.max(imgW, imgH);
     const step = Math.max(stepMin, Math.round(cell * 1.08));
     const w = outW;
     const h = outH;
@@ -1996,11 +2024,11 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
       `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="p" patternUnits="userSpaceOnUse" width="${step}" height="${step}">
-            <image href="data:image/png;base64,${b64}" x="0" y="0" width="${boxW}" height="${boxH}"/>
+            <image href="data:image/png;base64,${b64}" x="0" y="0" width="${imgW}" height="${imgH}"/>
           </pattern>
         </defs>
         <g transform="rotate(${patternRotateDeg} ${Math.round(w / 2)} ${Math.round(h / 2)})">
-          <g transform="translate(${logoOffPx}, 0)">
+          <g transform="translate(${logoOffPx}, ${logoOffYPx})">
             <rect x="-${w * 2}" y="-${h * 2}" width="${w * 5}" height="${h * 5}" fill="url(#p)"/>
           </g>
         </g>
@@ -2025,7 +2053,8 @@ async function buildWatermarkedJpeg({ imgBuffer, outW, outH, watermark, jpegOpts
       } else {
         let left = Math.floor((outW - w) / 2 + logoOffPx);
         left = Math.max(0, Math.min(left, outW - w));
-        const top = Math.floor((outH - h) / 2);
+        let top = Math.floor((outH - h) / 2 + logoOffYPx);
+        top = Math.max(0, Math.min(top, outH - h));
         pipeline = pipeline.composite([{ input: wmFinal, left, top, blend: 'over' }]);
       }
     } catch (_) {
@@ -6206,6 +6235,9 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
     'watermark_tile_angle_portrait',
     'watermark_logo_fine_rotate',
     'watermark_logo_offset_x',
+    'watermark_logo_offset_y',
+    'watermark_stretch_w_pct',
+    'watermark_stretch_h_pct',
     'face_recognition_enabled',
     'client_image_quality',
     'pix_enabled',
@@ -6412,12 +6444,16 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         const n = parseInt(val || 0, 10) || 0;
         val = Math.max(-45, Math.min(45, n));
       }
-      if (key === 'watermark_logo_offset_x') {
+      if (key === 'watermark_logo_offset_x' || key === 'watermark_logo_offset_y') {
         if (val === '' || val === null || val === 'null' || typeof val === 'undefined') val = 0;
         else {
           const n = parseFloat(val);
           val = Number.isFinite(n) ? Math.max(-50, Math.min(50, Math.round(n * 100) / 100)) : 0;
         }
+      }
+      if (key === 'watermark_stretch_w_pct' || key === 'watermark_stretch_h_pct') {
+        const n = parseFloat(val);
+        val = Number.isFinite(n) ? Math.max(50, Math.min(400, Math.round(n * 100) / 100)) : 100;
       }
       if (key === 'watermark_path') {
         // normalizar string vazia como NULL
@@ -6822,6 +6858,12 @@ router.get('/photos/:photoId/preview', protectUser, asyncHandler(async (req, res
     wm.logoFineRotate = 0;
     const qOx = parseFloat(String(req.query.wm_logo_offset_x ?? ''));
     if (Number.isFinite(qOx)) wm.logoOffsetX = Math.max(-50, Math.min(50, Math.round(qOx * 100) / 100));
+    const qOy = parseFloat(String(req.query.wm_logo_offset_y ?? ''));
+    if (Number.isFinite(qOy)) wm.logoOffsetY = Math.max(-50, Math.min(50, Math.round(qOy * 100) / 100));
+    const qStW = parseFloat(String(req.query.wm_stretch_w_pct ?? ''));
+    if (Number.isFinite(qStW)) wm.stretchWPct = Math.max(50, Math.min(400, Math.round(qStW * 100) / 100));
+    const qStH = parseFloat(String(req.query.wm_stretch_h_pct ?? ''));
+    if (Number.isFinite(qStH)) wm.stretchHPct = Math.max(50, Math.min(400, Math.round(qStH * 100) / 100));
     const qStrict = String(req.query.wm_strict || '') === '1';
     if (qStrict) wm.strict = true;
     let out = null;
