@@ -3,7 +3,9 @@
  * Uso: node scripts/run-migrate-auto.js
  * No Windows também: migrate-auto.cmd na raiz do projeto.
  */
-require('dotenv').config();
+const path = require('path');
+const { loadDotenv } = require('../utils/loadDotenv');
+loadDotenv(path.join(__dirname, '..'));
 const migrator = require('../utils/auto-migrate');
 
 migrator

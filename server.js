@@ -1,4 +1,5 @@
-require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+const { loadDotenv } = require('./utils/loadDotenv');
+loadDotenv(__dirname);
 
 // Logar erros não tratados para aparecer nos logs do Render (evita "Exited with status 1" sem causa visível)
 process.on('uncaughtException', (err) => {

@@ -5,7 +5,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # Environment variables (caminho do .env: raiz do back-end = .../conectaking-funcionando)
+# Opcional: .env.path = uma linha com caminho para o .env (ex.: pasta noutro disco)
 .env
+.env.path
 .env.local
 .env.*.local
 

@@ -3,10 +3,11 @@
  * Uso: node scripts/run-migrations.js
  */
 
-require('dotenv').config();
+const path = require('path');
+const { loadDotenv } = require('../utils/loadDotenv');
+loadDotenv(path.join(__dirname, '..'));
 const { Pool } = require('pg');
 const fs = require('fs');
-const path = require('path');
 const config = require('../config');
 
 // Detectar se deve usar SSL baseado no host
