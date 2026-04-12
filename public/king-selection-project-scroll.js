@@ -1,6 +1,6 @@
 /**
- * King Selection — painel do projeto (/kingSelection ou /mr/kingSelection, sem slug de galeria).
- * Desativa regiões com max-height + overflow que prendem o scroll no telemóvel.
+ * King Selection — painel do fotógrafo (kingSelectionProject.html, /kingSelection, etc.).
+ * Remove scroll “preso” na lista de abas: um único scroll da página (como a zona da marca d’água).
  *
  * Incluir antes de </body> em kingSelectionProject.html:
  *   <script src="/king-selection-project-scroll.js" defer></script>
@@ -8,16 +8,20 @@
 (function () {
   'use strict';
 
-  function isProjectPath() {
-    var p = (location.pathname || '/').replace(/\/+$/, '') || '/';
-    var segs = p.split('/').filter(Boolean);
+  function isKingSelectionPhotographerUi() {
+    var path = (location.pathname || '/').toLowerCase();
+    // Hostinger: /kingSelectionProject.html?itemId=… (URL real do utilizador)
+    if (path.indexOf('kingselectionproject') !== -1) return true;
+    if (path.indexOf('kingselectionedit') !== -1) return true;
+    var clean = path.replace(/\/+$/, '') || '/';
+    var segs = clean.split('/').filter(Boolean);
     if (segs.length === 1 && /^kingselection$/i.test(segs[0])) return true;
     if (segs.length === 2 && /^mr$/i.test(segs[0]) && /^kingselection$/i.test(segs[1])) return true;
     return false;
   }
 
   function shouldRun() {
-    if (!isProjectPath()) return false;
+    if (!isKingSelectionPhotographerUi()) return false;
     return window.matchMedia('(max-width: 900px)').matches;
   }
 
@@ -28,19 +32,21 @@
     }
     document.documentElement.classList.add('ks-project-mobile-unstick');
 
-    var all = document.querySelectorAll('aside, nav, section, div, ul, ol');
+    var all = document.querySelectorAll('aside, nav, section, article, main, div, ul, ol');
     for (var i = 0; i < all.length; i++) {
       var el = all[i];
       if (el === document.body || el === document.documentElement) continue;
       var st = window.getComputedStyle(el);
       var oy = st.overflowY;
       if (oy !== 'auto' && oy !== 'scroll') continue;
-      if (el.scrollHeight <= el.clientHeight + 8) continue;
-      var mh = st.maxHeight;
-      if (mh === 'none' || mh === '0px') continue;
+      if (el.scrollHeight <= el.clientHeight + 5) continue;
+      // Antes só corrigíamos se max-height estivesse definido — muitos layouts usam
+      // flex + height 100% + overflow-y:auto sem max-height, e o scroll ficava preso.
       el.style.setProperty('max-height', 'none', 'important');
       el.style.setProperty('overflow-y', 'visible', 'important');
       el.style.setProperty('overflow-x', 'visible', 'important');
+      el.style.setProperty('-webkit-overflow-scrolling', 'auto', 'important');
+      el.style.setProperty('overscroll-behavior', 'auto', 'important');
     }
   }
 
@@ -49,7 +55,7 @@
     window.addEventListener('resize', function () {
       unstick();
     });
-    var t = [0, 400, 1200];
+    var t = [0, 200, 500, 1000, 2000, 3500];
     for (var j = 0; j < t.length; j++) {
       setTimeout(unstick, t[j]);
     }
@@ -62,7 +68,7 @@
         try {
           mo.disconnect();
         } catch (e) {}
-      }, 8000);
+      }, 20000);
     }
   }
 
