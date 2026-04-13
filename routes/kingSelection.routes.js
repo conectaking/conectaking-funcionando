@@ -6564,6 +6564,63 @@ Não inventes valores em reais nem datas concretas. Não uses hashtags. Devolve 
   }
 }));
 
+/** Mensagem padrão do botão Suporte WhatsApp (texto que o cliente envia ao fotógrafo) — OpenAI, mesma chave. */
+router.post('/galleries/:id/ai/support-default-message', protectUser, asyncHandler(async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
+
+  const { hint, currentText, buttonLabel } = req.body || {};
+
+  const client = await db.pool.connect();
+  try {
+    const userId = req.user.userId;
+    const own = await client.query(
+      `SELECT g.id, g.nome_projeto FROM king_galleries g
+       JOIN profile_items pi ON pi.id = g.profile_item_id
+       WHERE g.id=$1 AND pi.user_id=$2`,
+      [galleryId, userId]
+    );
+    if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
+
+    const nomeProjeto = String(own.rows[0].nome_projeto || 'ensaio').trim();
+    const label = String(buttonLabel || '').trim().slice(0, 120);
+
+    const system = `És um assistente para fotógrafos profissionais no Brasil.
+Escreve UMA mensagem curta em português do Brasil (pt-BR), na primeira pessoa, como se fosses o cliente da galeria de fotos a contactar o fotógrafo pelo WhatsApp (botão de suporte).
+Tom cordial e claro: pedir ajuda com seleção de fotos, pagamento, liberação para download ou dúvidas sobre a galeria — conforme fizer sentido.
+2 a 4 frases no máximo. Sem hashtags. Sem markdown. Sem título. Podes usar uma saudação simples (ex.: Olá! ou Olá, bom dia!).
+Não inventes nomes de pessoas. Podes mencionar de forma genérica "as fotos" ou "a galeria" ou referir o nome do projeto se fornecido.`;
+
+    let userMsg = `Nome do projeto ou evento (referência de contexto): ${nomeProjeto}.\n`;
+    if (label) userMsg += `Texto do botão de suporte na galeria (referência): ${label}\n`;
+    if (currentText && String(currentText).trim()) {
+      userMsg += `Rascunho atual ou texto a melhorar (podes reescrever por completo): ${String(currentText).slice(0, 2000)}\n`;
+    }
+    if (hint && String(hint).trim()) {
+      userMsg += `Instruções do fotógrafo: ${String(hint).slice(0, 600)}`;
+    }
+
+    try {
+      const out = await ksOpenAiShareTextChat({
+        system,
+        user: userMsg,
+        maxTokens: 400
+      });
+      return res.json({ text: out });
+    } catch (e) {
+      if (e.code === 'KS_OPENAI_MISSING') {
+        return res.status(503).json({ message: e.message });
+      }
+      if (e.status === 429) {
+        return res.status(503).json({ message: 'Limite de uso da API OpenAI. Tente mais tarde.' });
+      }
+      throw e;
+    }
+  } finally {
+    client.release();
+  }
+}));
+
 router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
   if (!galleryId) return res.status(400).json({ message: 'galleryId inválido' });
