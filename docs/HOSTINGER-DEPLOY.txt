@@ -1,0 +1,34 @@
+================================================================================
+CONECTA KING — Deploy na Hostinger (front-end em public_html)
+================================================================================
+(Ficheiro versionado no Git. Na tua máquina, a pasta public_html espelha isto.)
+
+1) RAIZ DO DOMÍNIO
+   No hPanel (Websites → Gerir → Domínios), confirme que conectaking.com.br usa
+   como "Raiz do documento" / public_html a pasta correta (normalmente
+   /home/USER/public_html ou domains/conectaking.com.br/public_html).
+
+2) FICHEIROS
+   Envie TODO o conteúdo da pasta public_html (no teu PC) para essa raiz no
+   servidor (FTP, File Manager ou Git deploy). Inclua ficheiros ocultos: .htaccess
+
+3) .HTACCESS
+   O ficheiro public_html/.htaccess no projeto está alinhado com /.htaccess na
+   raiz do repositório. Sem ele, URLs limpas, HTTPS e King Selection (PHP) podem
+   falhar. Copia também o /.htaccess da raiz para public_html se só actualizares
+   um dos dois.
+
+4) TESTES RÁPIDOS (após upload)
+   https://www.conectaking.com.br/
+   https://www.conectaking.com.br/dashboard.html
+   https://www.conectaking.com.br/kingSelection
+
+5) ERRO 500 APÓS SUBIR .HTACCESS
+   Renomeia temporariamente .htaccess para .htaccess.bak. Se o site voltar,
+   o servidor pode ter mod_rewrite desativado — contacta o suporte Hostinger.
+
+6) API
+   O front usa a API em Render (config.js → conectaking-api.onrender.com).
+   Isto é independente da pasta public_html no hosting.
+
+================================================================================
