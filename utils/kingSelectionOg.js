@@ -71,6 +71,34 @@ async function fetchKingSelectionOgData(pool, slug) {
     }
     if (!gRes.rows.length) return null;
     const g = gRes.rows[0];
+
+    let accessMode = 'private';
+    let allowSelfSignup = false;
+    try {
+      const amRes = await client.query(
+        `SELECT access_mode, COALESCE(allow_self_signup, false) AS allow_self_signup FROM king_galleries WHERE id = $1 LIMIT 1`,
+        [g.id]
+      );
+      const row = amRes.rows[0];
+      if (row) {
+        accessMode = String(row.access_mode || 'private').toLowerCase().trim();
+        allowSelfSignup = !!row.allow_self_signup;
+      }
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      try {
+        const amRes = await client.query(
+          `SELECT access_mode FROM king_galleries WHERE id = $1 LIMIT 1`,
+          [g.id]
+        );
+        if (amRes.rows[0]) {
+          accessMode = String(amRes.rows[0].access_mode || 'private').toLowerCase().trim();
+        }
+      } catch (e2) {
+        if (e2.code !== '42703') throw e2;
+      }
+    }
+
     let storagePath = null;
     let versionId = null;
 
@@ -137,11 +165,36 @@ async function fetchKingSelectionOgData(pool, slug) {
     return {
       title: String(g.nome_projeto || g.slug || 'Galeria').trim() || 'Galeria',
       slug: g.slug,
-      imageUrl
+      imageUrl,
+      access_mode: accessMode,
+      allow_self_signup: allowSelfSignup
     };
   } finally {
     client.release();
   }
+}
+
+/**
+ * Texto OG/twitter alinhado ao modo de acesso (evita «nome, e-mail e WhatsApp» em galerias privadas).
+ * @param {string} title
+ * @param {string} [accessMode]
+ * @param {boolean} [allowSelfSignup]
+ */
+function buildKingSelectionOgDescription(title, accessMode, allowSelfSignup) {
+  const t = String(title || 'Galeria').trim() || 'Galeria';
+  const m = String(accessMode || 'private').toLowerCase().trim();
+  if (m === 'paid_event_photos') {
+    return `Galeria ${t}. Aceda pelo link com o mesmo nome, e-mail e WhatsApp do cadastro e baixe as suas fotos.`;
+  }
+  if (m === 'public') {
+    return `Galeria ${t}. Aceda pelo link partilhado pelo fotógrafo para ver e selecionar as suas fotografias.`;
+  }
+  if (m === 'password' || m === 'signup') {
+    return allowSelfSignup
+      ? `Galeria ${t}. Crie o seu acesso com e-mail e senha para ver e selecionar as suas fotografias.`
+      : `Galeria ${t}. Aceda com e-mail e senha para ver e selecionar as suas fotografias.`;
+  }
+  return `Galeria ${t}. Aceda com o e-mail e senha fornecidos pelo fotógrafo para ver e selecionar as suas fotografias.`;
 }
 
 function defaultOgImageUrl() {
@@ -209,7 +262,11 @@ function buildShareMetaPayload(ogRow, hostnameForCanonical, slugRequested) {
   return {
     success: true,
     ogTitle: `${ogRow.title} — King Selection`,
-    ogDescription: `Galeria ${ogRow.title}. Aceda pelo link com o mesmo nome, e-mail e WhatsApp do cadastro e baixe as suas fotos.`,
+    ogDescription: buildKingSelectionOgDescription(
+      ogRow.title,
+      ogRow.access_mode,
+      ogRow.allow_self_signup
+    ),
     ogImage: sameHostOg || ogFromApi || ensureHttpsUrl(ogRow.imageUrl) || defaultImg,
     slug: ogRow.slug,
     canonicalUrl: canonical
@@ -223,5 +280,6 @@ module.exports = {
   defaultOgImageUrl,
   ogImageUrlForGallerySlug,
   ogImageProxyUrlForHost,
-  buildShareMetaPayload
+  buildShareMetaPayload,
+  buildKingSelectionOgDescription
 };

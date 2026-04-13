@@ -26,7 +26,13 @@ const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const config = require('./config');
-const { fetchKingSelectionOgData, ensureHttpsUrl, defaultOgImageUrl, ogImageUrlForGallerySlug } = require('./utils/kingSelectionOg');
+const {
+    fetchKingSelectionOgData,
+    ensureHttpsUrl,
+    defaultOgImageUrl,
+    ogImageUrlForGallerySlug,
+    buildKingSelectionOgDescription
+} = require('./utils/kingSelectionOg');
 const logger = require('./utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/errorHandler');
 const { spawn } = require('child_process');
@@ -484,13 +490,21 @@ const KING_SELECTION_CLIENTE_RESERVED_SLUGS = new Set([
     'public'
 ]);
 
-let kingSelectionClienteHtmlTemplate = null;
+let _ksClienteHtmlCache = { mtimeMs: 0, html: null };
 
+/** Recarrega o .html quando o ficheiro muda (evita template antigo em memória até reiniciar o Node). */
 function loadKingSelectionClienteHtmlTemplate() {
-    if (!kingSelectionClienteHtmlTemplate && fs.existsSync(kingSelectionClienteHtml)) {
-        kingSelectionClienteHtmlTemplate = fs.readFileSync(kingSelectionClienteHtml, 'utf8');
+    if (!fs.existsSync(kingSelectionClienteHtml)) return null;
+    let st;
+    try {
+        st = fs.statSync(kingSelectionClienteHtml);
+    } catch (e) {
+        return null;
     }
-    return kingSelectionClienteHtmlTemplate;
+    if (!_ksClienteHtmlCache.html || _ksClienteHtmlCache.mtimeMs !== st.mtimeMs) {
+        _ksClienteHtmlCache = { mtimeMs: st.mtimeMs, html: fs.readFileSync(kingSelectionClienteHtml, 'utf8') };
+    }
+    return _ksClienteHtmlCache.html;
 }
 
 const KS_PROJECT_SCROLL_MARKER = 'king-selection-project-scroll.js';
@@ -556,9 +570,10 @@ async function serveKingSelectionClienteGallery(req, res, next) {
     let ogDesc = 'Aceda à sua galeria King Selection e selecione as suas fotografias.';
     let ogImage = defaultOgImage;
     let canonical = '';
+    let og = null;
 
     try {
-        const og = await fetchKingSelectionOgData(db.pool, slug);
+        og = await fetchKingSelectionOgData(db.pool, slug);
         const protoHdr = (req.headers['x-forwarded-proto'] || req.protocol || 'https').toString();
         const proto = protoHdr.split(',')[0].trim().split(/\s+/)[0] || 'https';
         const hostHdr = (req.headers['x-forwarded-host'] || req.headers.host || '').toString();
@@ -566,7 +581,7 @@ async function serveKingSelectionClienteGallery(req, res, next) {
         if (og) {
             ogTitle = `${og.title} — King Selection`;
             pageTitle = ogTitle;
-            ogDesc = `Galeria ${og.title}. Aceda pelo link com o mesmo nome, e-mail e WhatsApp do cadastro e baixe as suas fotos.`;
+            ogDesc = buildKingSelectionOgDescription(og.title, og.access_mode, og.allow_self_signup);
             // Mesmo host da página (WhatsApp ignora ou falha com og:image só no domínio externo da API).
             ogImage = host
                 ? `${proto}://${host}/api/king-selection/public/og-image?slug=${encodeURIComponent(og.slug)}`
@@ -578,6 +593,12 @@ async function serveKingSelectionClienteGallery(req, res, next) {
     } catch (e) {
         logger.warn('KingSelection OG: falha ao montar meta', { message: e.message });
     }
+
+    const bootMeta = {
+        access_mode: og ? String(og.access_mode || 'private').toLowerCase().trim() : 'private',
+        allow_self_signup: !!(og && og.allow_self_signup)
+    };
+    const bootScript = `<script>window.__KS_BOOT_GALLERY_META=${JSON.stringify(bootMeta)};</script>`;
 
     const metaBlock = [
         '<meta property="og:type" content="website" />',
@@ -594,7 +615,7 @@ async function serveKingSelectionClienteGallery(req, res, next) {
         .filter(Boolean)
         .join('\n  ');
 
-    let html = tpl.replace('</head>', `  ${metaBlock}\n</head>`);
+    let html = tpl.replace('</head>', `  ${metaBlock}\n  ${bootScript}\n</head>`);
     html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escHtmlAttr(pageTitle)}</title>`);
 
     res.setHeader('Cache-Control', 'public, max-age=300');
