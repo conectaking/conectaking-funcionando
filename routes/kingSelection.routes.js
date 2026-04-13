@@ -6578,6 +6578,26 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
   ];
 
   const body = req.body || {};
+  // Capa do link: `gallery_link_cover_file_path` tem prioridade na leitura. Se o cliente grava só
+  // `gallery_link_cover_photo_id` (foto da galeria) sem limpar o caminho externo antigo, a capa fica
+  // presa a um ficheiro inválido/apagado. Alinhar os dois campos quando só um lado é enviado no PATCH.
+  if (Object.prototype.hasOwnProperty.call(body, 'gallery_link_cover_photo_id')) {
+    const pid = parseInt(body.gallery_link_cover_photo_id, 10) || 0;
+    if (pid > 0 && !Object.prototype.hasOwnProperty.call(body, 'gallery_link_cover_file_path')) {
+      body.gallery_link_cover_file_path = null;
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'gallery_link_cover_file_path')) {
+    const rawFp = body.gallery_link_cover_file_path;
+    const hasPath =
+      rawFp != null &&
+      String(rawFp).trim() !== '' &&
+      String(rawFp).trim().toLowerCase() !== 'null';
+    if (hasPath && !Object.prototype.hasOwnProperty.call(body, 'gallery_link_cover_photo_id')) {
+      body.gallery_link_cover_photo_id = null;
+    }
+  }
+
   const client = await db.pool.connect();
   try {
     const userId = req.user.userId;
@@ -7451,7 +7471,11 @@ function ksPickPhotoStoragePath(photoRow) {
   return raw || null;
 }
 
-async function ksResolveGalleryLinkCoverFilePath(pgClient, galleryId) {
+/**
+ * Carrega bytes da capa do link com fallback: se o caminho externo (R2/URL) estiver órfão ou inválido,
+ * usa a foto escolhida na galeria e depois a regra is_cover / primeira foto.
+ */
+async function ksFetchGalleryLinkCoverBuffer(pgClient, galleryId) {
   const hasEdited = await hasColumn(pgClient, 'king_photos', 'edited_file_path');
   const photoSelect = hasEdited ? 'file_path, edited_file_path' : 'file_path';
   const hasLinkCoverPhoto = await hasColumn(pgClient, 'king_galleries', 'gallery_link_cover_photo_id');
@@ -7464,7 +7488,10 @@ async function ksResolveGalleryLinkCoverFilePath(pgClient, galleryId) {
     if (gRes.rows.length) {
       const row = gRes.rows[0] || {};
       const customPath = String(row.gallery_link_cover_file_path || '').trim();
-      if (customPath) return customPath;
+      if (customPath) {
+        const buf = await fetchPhotoFileBufferFromFilePath(customPath);
+        if (buf) return buf;
+      }
       const coverPhotoId = parseInt(row.gallery_link_cover_photo_id, 10) || 0;
       if (coverPhotoId > 0) {
         const pById = await pgClient.query(
@@ -7472,7 +7499,10 @@ async function ksResolveGalleryLinkCoverFilePath(pgClient, galleryId) {
           [galleryId, coverPhotoId]
         );
         const byIdPath = ksPickPhotoStoragePath(pById.rows?.[0]);
-        if (byIdPath) return byIdPath;
+        if (byIdPath) {
+          const buf = await fetchPhotoFileBufferFromFilePath(byIdPath);
+          if (buf) return buf;
+        }
       }
     }
   }
@@ -7486,7 +7516,9 @@ async function ksResolveGalleryLinkCoverFilePath(pgClient, galleryId) {
         `SELECT ${photoSelect} FROM king_photos WHERE gallery_id=$1 ORDER BY "order" ASC, id ASC LIMIT 1`,
         [galleryId]
       );
-  return ksPickPhotoStoragePath(pRes.rows?.[0]) || null;
+  const fallbackPath = ksPickPhotoStoragePath(pRes.rows?.[0]);
+  if (!fallbackPath) return null;
+  return await fetchPhotoFileBufferFromFilePath(fallbackPath);
 }
 
 router.get('/public/cover', asyncHandler(async (req, res) => {
@@ -7502,10 +7534,8 @@ router.get('/public/cover', asyncHandler(async (req, res) => {
     if (gRes.rows.length === 0) return res.status(404).send('Galeria não encontrada');
     const galleryId = gRes.rows[0].id;
 
-    const coverPath = await ksResolveGalleryLinkCoverFilePath(client, galleryId);
-    if (!coverPath) return res.status(404).send('Sem capa');
-    const buf = await fetchPhotoFileBufferFromFilePath(coverPath);
-    if (!buf) return res.status(500).send('Não foi possível carregar a capa (Cloudflare/R2 não configurado).');
+    const buf = await ksFetchGalleryLinkCoverBuffer(client, galleryId);
+    if (!buf) return res.status(404).send('Sem capa');
 
     // Capa: preview watermarked + blur leve, 1400px
     const img = sharp(buf).rotate();
@@ -7576,8 +7606,7 @@ router.get('/public/og-image', asyncHandler(async (req, res) => {
 
     let buf = null;
     try {
-      const coverPath = await ksResolveGalleryLinkCoverFilePath(client, galleryId);
-      if (coverPath) buf = await fetchPhotoFileBufferFromFilePath(coverPath);
+      buf = await ksFetchGalleryLinkCoverBuffer(client, galleryId);
     } catch (_) {
       buf = null;
     }
@@ -7637,10 +7666,8 @@ router.get('/galleries/:id/link-cover-preview', protectUser, asyncHandler(async 
     );
     if (!own.rows.length) return res.status(403).json({ message: 'Sem permissão' });
 
-    const coverPath = await ksResolveGalleryLinkCoverFilePath(client, galleryId);
-    if (!coverPath) return res.status(404).send('Sem capa');
-    const buf = await fetchPhotoFileBufferFromFilePath(coverPath);
-    if (!buf) return res.status(500).send('Não foi possível carregar a capa.');
+    const buf = await ksFetchGalleryLinkCoverBuffer(client, galleryId);
+    if (!buf) return res.status(404).send('Sem capa');
 
     const img = sharp(buf).rotate();
     const meta = await img.metadata();

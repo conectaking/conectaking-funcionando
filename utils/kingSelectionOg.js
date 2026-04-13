@@ -46,7 +46,8 @@ function pickPhotoStoragePathForOg(photoRow) {
 
 /**
  * Dados para Open Graph (capa da galeria, título).
- * Alinhado com `ksResolveGalleryLinkCoverFilePath`: capa de link da galeria, versão editada da foto, depois is_cover.
+ * Alinhado com a ordem em `ksFetchGalleryLinkCoverBuffer` (kingSelection.routes): capa externa, foto
+ * escolhida, versão editada da foto, depois is_cover / primeira foto.
  * @param {import('pg').Pool} pool
  * @param {string} slug
  */
