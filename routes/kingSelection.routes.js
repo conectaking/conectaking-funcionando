@@ -3,6 +3,7 @@ const db = require('../db');
 const { protectUser } = require('../middleware/protectUser');
 const { asyncHandler } = require('../middleware/errorHandler');
 const config = require('../config');
+const logger = require('../utils/logger');
 const fetch = require('node-fetch');
 const FormData = require('form-data');
 const sharp = require('sharp');
@@ -6920,22 +6921,21 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
           }
         }
         if (!Array.isArray(arr)) arr = [];
-        val = arr
+        const cleaned = arr
           .slice(0, 20)
           .map((x) => ({
             handle: String(x?.handle || '').trim().slice(0, 80),
             url: String(x?.url || '').trim().slice(0, 500)
           }))
           .filter((x) => x.url);
-        try {
-          val = JSON.parse(JSON.stringify(val));
-        } catch (_) {
-          val = [];
-        }
+        // Texto JSON + cast ::jsonb evita 22P02 com alguns drivers/versões do pg ao passar object JS.
+        sets.push(`${key}=$${idx++}::jsonb`);
+        values.push(JSON.stringify(cleaned));
+        continue;
       }
       if (key === 'promo_instructions') {
         if (val === '' || val === 'null' || val == null) val = null;
-        else val = String(val).trim().slice(0, 2000);
+        else val = String(val).trim().replace(/\u0000/g, '').slice(0, 2000);
       }
       if (key === 'share_link_custom_append' || key === 'share_link_full_message') {
         if (val === '' || val === 'null' || val == null) val = null;
@@ -6956,9 +6956,16 @@ router.put('/galleries/:id', protectUser, asyncHandler(async (req, res) => {
         });
       }
       if (err.code === '22P02') {
+        logger.warn('king_galleries PUT 22P02', {
+          galleryId,
+          detail: err.detail,
+          message: err.message,
+          where: err.where
+        });
         return res.status(400).json({
           message:
-            'Dados inválidos para o banco (data, número ou JSON). Verifique validade do cupom, valores numéricos e perfis de rede. Se persistir, rode a migration 213 (cupom) no Postgres.'
+            'Dados inválidos para o banco (data, número ou JSON). Verifique validade do cupom, URLs dos perfis e o texto das instruções. Se persistir, rode a migration 213 (cupom) no Postgres.',
+          ...(config.isProduction ? {} : { pg: err.message, detail: err.detail })
         });
       }
       throw err;
